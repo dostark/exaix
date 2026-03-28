@@ -365,15 +365,17 @@ function validateToolsAgainstIdentity(
 
 **Success Criteria:**
 
-- [ ] Flow YAML with write tool in dynamic step `permitted_tools` fails validation with a clear error message
-- [ ] Flow YAML with tool not in identity's `permitted_tools` fails validation
-- [ ] Valid declared and dynamic steps both pass `exactl flow validate`
+- [x] Flow YAML with write tool in dynamic step `permitted_tools` fails validation with a clear error message
+- [ ] Flow YAML with tool not in identity's `permitted_tools` fails validation (deferred to Task 4 - requires BlueprintLoader)
+- [x] Valid declared and dynamic steps both pass `exactl flow validate`
 
 **Planned Tests:**
 
-- Unit test: dynamic step with write tool in `permitted_tools` is rejected (see Task 7.2).
-- Unit test: dynamic step with tool not in identity's `permitted_tools` is rejected.
-- Unit test: valid declared and dynamic steps pass validation.
+- ✅ Unit test: dynamic step with write tool in `permitted_tools` is rejected.
+- ⏸️ Unit test: dynamic step with tool not in identity's `permitted_tools` is rejected (deferred).
+- ✅ Unit test: valid declared and dynamic steps pass validation.
+
+**✅ IMPLEMENTED** — `src/flows/flow_loader.ts`, `tests/flows/flow_loader_validation_test.ts`, 5/5 tests passing
 
 ---
 

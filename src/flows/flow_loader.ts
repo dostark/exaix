@@ -9,8 +9,34 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { IFlow } from "../shared/schemas/flow.ts";
+import { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
 import { FlowSchema } from "../shared/schemas/flow.ts";
+import { StepExecutionMode } from "../shared/enums.ts";
+import { WRITE_TOOLS } from "../shared/constants.ts";
+
+/**
+ * Validate that dynamic steps do not contain write tools in permitted_tools.
+ * Returns an array of error messages (empty if valid).
+ */
+function validateDynamicStepTools(steps: IFlowStep[]): string[] {
+  const errors: string[] = [];
+
+  for (const step of steps) {
+    if (step.execution_mode !== StepExecutionMode.DYNAMIC) continue;
+    if (!step.permitted_tools || step.permitted_tools.length === 0) continue;
+
+    for (const tool of step.permitted_tools) {
+      if (WRITE_TOOLS.has(tool)) {
+        errors.push(
+          `Step "${step.id}": tool "${tool}" is a write tool and cannot be ` +
+            `used in execution_mode: "dynamic". Move to a declared step.`,
+        );
+      }
+    }
+  }
+
+  return errors;
+}
 
 /**
  * FlowLoader handles loading and managing flow definitions from the file system.
@@ -95,6 +121,12 @@ export class FlowLoader {
       // Validate that the flow ID matches the filename
       if (flow.id !== flowId) {
         throw new Error(`Flow ID '${flow.id}' does not match filename '${flowId}'`);
+      }
+
+      // Validate dynamic step tool permissions (Phase 56)
+      const validationErrors = validateDynamicStepTools(flow.steps);
+      if (validationErrors.length > 0) {
+        throw new Error(`Flow validation failed:\n  - ${validationErrors.join("\n  - ")}`);
       }
 
       return flow;
