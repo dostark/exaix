@@ -15,7 +15,7 @@ import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
 import { DatabaseService as DatabaseService } from "../../src/services/db.ts";
 import { ArtifactRegistry } from "../../src/services/artifact_registry.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 

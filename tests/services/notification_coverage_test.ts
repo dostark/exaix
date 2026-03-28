@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { createStubDb } from "../test_helpers.ts";
+import { createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { NotificationService } from "../../src/services/notification.ts";
 import { MemoryScope } from "../../src/shared/enums.ts";

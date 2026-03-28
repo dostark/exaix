@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { createStubConfig, createStubContext, createStubDb } from "./test_helpers.ts";
+import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { type IReviewMetadata, ReviewCommands } from "../src/cli/commands/review_commands.ts";
 import { PlanStatus } from "../src/shared/status/plan_status.ts";
 import { ReviewStatus } from "../src/reviews/review_status.ts";

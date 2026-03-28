@@ -5,19 +5,19 @@
  * of mock files, request factories, and common visual primitives.
  */
 
-import type { IDatabaseService } from "../src/services/db.ts";
-import type { ActivityRepository } from "../src/repositories/activity_repository.ts";
-import { type Config, ConfigSchema } from "../src/shared/schemas/config.ts";
-import type { ICliApplicationContext } from "../src/cli/cli_context.ts";
-import type { IModelProvider } from "../src/ai/types.ts";
-import type { IGitService } from "../src/shared/interfaces/i_git_service.ts";
-import type { IDisplayService } from "../src/shared/interfaces/i_display_service.ts";
-import type { IConfigService, IPortalConfigEntry } from "../src/shared/interfaces/i_config_service.ts";
-import type { PortalExecutionStrategy } from "../src/shared/enums.ts";
-import { JSONObject, type JSONValue, type LogMetadata } from "../src/shared/types/json.ts";
-import { ExaPathDefaults } from "../src/shared/constants.ts";
-import { LogLevel } from "../src/shared/enums.ts";
-import { createGitServiceStub } from "../src/shared/helpers/stub_factories.ts";
+import type { IDatabaseService } from "../../src/services/db.ts";
+import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
+import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
+import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
+import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
+import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
+import type { PortalExecutionStrategy } from "../../src/shared/enums.ts";
+import { JSONObject, type JSONValue, type LogMetadata } from "../../src/shared/types/json.ts";
+import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { LogLevel } from "../../src/shared/enums.ts";
+import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";
 
 /**
  * Create a fully-typed stub implementation of the DatabaseService used in tests.

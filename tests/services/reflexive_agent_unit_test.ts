@@ -17,7 +17,7 @@ import {
   type IValidationResult,
   OutputValidator,
 } from "../../src/services/output_validator.ts";
-import { createStubDb } from "../test_helpers.ts";
+import { createStubDb } from "../helpers/test_helpers.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 
 function createMockRunner(

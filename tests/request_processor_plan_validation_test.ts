@@ -19,7 +19,7 @@ import { getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./helpers/path
 import { RequestShowHandler } from "../src/cli/handlers/request_show_handler.ts";
 import { StatusManager } from "../src/services/request_processing/status_manager.ts";
 import type { EventLogger } from "../src/services/event_logger.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "./test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../src/cli/cli_context.ts";
 
 import type { JSONObject } from "../src/shared/types/json.ts";

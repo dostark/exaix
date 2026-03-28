@@ -18,7 +18,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { getMemoryProjectsDir } from "../../helpers/paths_helper.ts";
 import { GitTestHelper, setupGitRepo } from "../../helpers/git_test_helper.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 import type {
   IPortalKnowledgeConfig,

@@ -13,7 +13,7 @@ import type { ConfigService } from "../../src/config/service.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/db.ts";
 import { ContextCardGenerator } from "../../src/services/context_card_generator.ts";
 import { ContextCardAdapter } from "../../src/services/adapters/context_card_adapter.ts";
-import { createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import { PortalService } from "../../src/services/portal.ts";
 import { PortalAdapter } from "../../src/services/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";

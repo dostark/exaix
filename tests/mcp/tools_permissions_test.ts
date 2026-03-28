@@ -13,7 +13,7 @@ import { ReadFileTool } from "../../src/mcp/handlers/read_file_tool.ts";
 import { WriteFileTool } from "../../src/mcp/handlers/write_file_tool.ts";
 import { PortalPermissionsService } from "../../src/services/portal_permissions.ts";
 import { initToolPermissionTest } from "./helpers/test_setup.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 
 // ============================================================================

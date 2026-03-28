@@ -8,7 +8,7 @@ import type { MCPToolResponse } from "../../../src/shared/schemas/mcp.ts";
 import { GitCreateBranchTool } from "../../../src/mcp/handlers/git_create_branch_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
 import { PortalOperation } from "../../../src/shared/enums.ts";
-import { createStubConfig, createStubContext } from "../../test_helpers.ts";
+import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
 import { join } from "@std/path";
 import { SafeSubprocess } from "../../../src/helpers/subprocess.ts";

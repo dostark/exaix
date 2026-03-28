@@ -14,7 +14,7 @@ import type { IRecordedResponse } from "../../../src/ai/providers/mock_llm_provi
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import { DatabaseService } from "../../../src/services/db.ts";

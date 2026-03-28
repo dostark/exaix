@@ -14,7 +14,7 @@ import type {
 import { PortalService } from "../../src/services/portal.ts";
 import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "../../src/shared/enums.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { createStubConfig, createStubDisplay } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay } from "../helpers/test_helpers.ts";
 import type { IContextCardGeneratorService } from "../../src/shared/interfaces/i_context_card_generator_service.ts";
 
 function createMockContextCardGenerator(): IContextCardGeneratorService {

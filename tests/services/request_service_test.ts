@@ -10,7 +10,7 @@ import { RequestService } from "../../src/services/request.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { RequestPriority, RequestSource } from "../../src/shared/enums.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { createStubConfig, createStubDisplay } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay } from "../helpers/test_helpers.ts";
 import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
 
 function createTestRequestService(root: string, overrides?: {

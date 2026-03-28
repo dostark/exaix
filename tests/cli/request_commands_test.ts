@@ -16,7 +16,7 @@ import { DatabaseService as DatabaseService } from "../../src/services/db.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { AnalysisMode, type IRequestOptions } from "../../src/shared/types/request.ts";
 

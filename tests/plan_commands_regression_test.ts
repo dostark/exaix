@@ -8,8 +8,8 @@
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { createStubContext, createStubDb } from "./test_helpers.ts";
-import { createStubConfig } from "./test_helpers.ts";
+import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
+import { createStubConfig } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "../src/shared/constants.ts";
 import { PlanStatus } from "../src/shared/status/plan_status.ts";
 import type { IPlanMetadata } from "../src/shared/types/plan.ts";

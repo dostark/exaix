@@ -10,7 +10,7 @@ import { ensureDir } from "@std/fs";
 import { PlanService } from "../../src/services/plan.ts";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { createStubConfig, createStubDb, createStubDisplay } from "../test_helpers.ts";
+import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";
 
 function createPlanTestEnv(root: string) {
   const config = createMockConfig(root);

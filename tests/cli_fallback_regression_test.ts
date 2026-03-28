@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { EventLogger } from "../src/services/event_logger.ts";
-import { createStubConfig, createStubContext, createStubDb } from "./test_helpers.ts";
+import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "./helpers/config.ts";
 import type { IDatabaseService } from "../src/services/db.ts";
 import { ExaPathDefaults } from "../src/shared/constants.ts";

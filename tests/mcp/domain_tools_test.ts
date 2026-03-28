@@ -12,7 +12,7 @@ import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } f
 import { DatabaseService } from "../../src/services/db.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { initActivityTableSchema } from "../helpers/db.ts";
 

@@ -11,7 +11,7 @@ import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "../../src/repositories/activity_repository.ts";
 import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
 import type { DatabaseService } from "../../src/services/db.ts";
-import { createStubDb } from "../test_helpers.ts";
+import { createStubDb } from "../helpers/test_helpers.ts";
 
 // Mock IActivity entity for testing
 interface IActivity {

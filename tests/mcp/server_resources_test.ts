@@ -13,7 +13,7 @@ import { ensureDir } from "@std/fs";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { MCPServer } from "../../src/mcp/server.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 
 /**
