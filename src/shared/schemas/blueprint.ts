@@ -9,6 +9,7 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "../constants.ts";
+import { McpToolName } from "../enums.ts";
 
 // ============================================================================
 // Blueprint Interfaces
@@ -95,6 +96,13 @@ export const BlueprintFrontmatterSchema = z.object({
 
   /** Default skills to apply to all requests for this agent (Phase 17) */
   default_skills: z.array(z.string()).optional(),
+
+  /**
+   * Tools this identity is permitted to use in dynamic execution steps (Phase 56).
+   * Flow steps may narrow but not expand this set.
+   * Omitting this field means the identity has no dynamic tool permissions.
+   */
+  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
 });
 
 export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;
