@@ -14,11 +14,16 @@ import type { IRecordedResponse } from "../../../src/ai/providers/mock_llm_provi
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import {
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  createStubProvider,
+} from "../../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import { DatabaseService } from "../../../src/services/db.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "../../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import {
@@ -43,8 +48,8 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRejectedDir,
   getWorkspaceRequestsDir,
-} from "../../helpers/paths_helper.ts";
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+} from "../../../helpers/paths_helper.ts";
+import { setupGitRepo } from "../../../helpers/git_test_helper.ts";
 
 export interface ITestEnvironmentOptions {
   /** Custom config overrides */

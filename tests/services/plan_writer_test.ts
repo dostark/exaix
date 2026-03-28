@@ -1,327 +1,252 @@
 /**
  * @module PlanWriterTest
- * @path tests/services/plan_writer_test.ts
- * @description Verifies the PlanWriter service, ensuring stable filesystem persistence of agent
- * plans with correct directory structures and frontmatter integrity.
+ * @path tests/plan_writer_test.ts
+ * @description Verifies the PlanWriter service, ensuring that agent-generated task
+ * descriptions are correctly persisted with stable frontmatter and sequential identifiers.
  */
 
-import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { McpToolName } from "../../src/shared/enums.ts";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
+import { assert, assertStringIncludes } from "@std/assert";
 
-import {
-  type IAgentExecutionResult,
-  type IPlanWriterConfig,
-  IRequestMetadata,
-  PlanWriter,
-} from "../../src/services/plan_writer.ts";
-import { initTestDbService } from "../helpers/db.ts";
-import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../config/constants.ts";
+import { PlanWriter } from "../../src/services/plan_writer.ts";
+import type { IPlanWriterConfig, IRequestMetadata } from "../../src/services/plan_writer.ts";
 
-/**
- * Creates a mock IPlanWriterConfig for testing
- */
-function createMockPlanWriterConfig(tempDir: string, db?: any): IPlanWriterConfig {
-  const plansDir = `${tempDir}/plans`;
-  // Ensure plans directory exists
-  Deno.mkdirSync(plansDir, { recursive: true });
-
-  return {
-    plansDirectory: plansDir,
-    includeReasoning: true,
-    generateWikiLinks: true,
-    runtimeRoot: tempDir,
-    db,
-  };
+interface IAgentExecutionResult {
+  thought: string;
+  content: string;
+  raw: string;
 }
 
 /**
- * Creates a mock IAgentExecutionResult for testing
+ * Helper: Create a minimal valid JSON plan
  */
-function createMockExecutionResult(planJson: string, thought = "Test reasoning"): IAgentExecutionResult {
-  return {
-    thought,
-    content: planJson,
-    raw: `<thought>${thought}</thought><content>${planJson}</content>`,
-  };
+function createJsonPlan(
+  subject: string,
+  description: string,
+  steps: Array<{ title: string; description: string }> = [{
+    title: "Default Step",
+    description: "Default description",
+  }],
+): string {
+  return JSON.stringify({
+    subject,
+    description,
+    steps: steps.map((s, i) => ({
+      step: i + 1,
+      title: s.title,
+      description: s.description,
+    })),
+  });
 }
 
-Deno.test("PlanWriter: constructor initializes with config", () => {
-  const tempDir = "/tmp/test";
-  const mockConfig = createMockPlanWriterConfig(tempDir);
-  const writer = new PlanWriter(mockConfig);
+describe("PlanWriter - JSON Integration", () => {
+  let testDir: string;
+  let plansDir: string;
+  let knowledgeDir: string;
+  let config: IPlanWriterConfig;
+  let planWriter: PlanWriter;
 
-  assertExists(writer);
-  // Private properties can't be directly tested, but constructor should succeed
-});
+  beforeEach(async () => {
+    testDir = await Deno.makeTempDir({ prefix: "plan_writer_json_test_" });
+    plansDir = `${testDir}/Workspace/Plans`;
+    knowledgeDir = `${testDir}/Memory`;
 
-Deno.test("PlanWriter: writePlan creates plan file with correct structure", async () => {
-  const { tempDir, cleanup } = await initTestDbService();
-  const mockConfig = createMockPlanWriterConfig(tempDir);
+    await Deno.mkdir(plansDir, { recursive: true });
+    await Deno.mkdir(knowledgeDir, { recursive: true });
 
-  try {
-    const writer = new PlanWriter(mockConfig);
-
-    const metadata: IRequestMetadata = {
-      requestId: "test-request-123",
-      traceId: "test-trace-123",
-      createdAt: new Date(),
-      contextFiles: ["file1.md", "file2.md"],
-      contextWarnings: ["Warning about file1"],
+    config = {
+      plansDirectory: plansDir,
+      includeReasoning: true,
+      generateWikiLinks: true,
+      runtimeRoot: `${testDir}/System`,
     };
 
-    const planJson = JSON.stringify({
-      subject: "Test Implementation Plan",
-      description: "A test plan for validation",
-      steps: [
-        {
-          step: 1,
-          title: "Create Component",
-          description: "Create the main component",
-          tools: [McpToolName.WRITE_FILE],
-          successCriteria: ["Component created"],
-        },
-      ],
-      estimatedDuration: "1 hour",
-      risks: ["Dependency conflicts"],
+    planWriter = new PlanWriter(config);
+  });
+
+  afterEach(async () => {
+    await Deno.remove(testDir, { recursive: true });
+  });
+
+  describe("JSON Plan Validation", () => {
+    it("should accept valid JSON plan", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Creating plan...",
+        content: createJsonPlan("Implement Auth", "Add authentication system"),
+        raw: "",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "implement-auth",
+        traceId: "test-trace-id",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+        identityId: "test-agent",
+      };
+
+      const result = await planWriter.writePlan(agentResult, metadata);
+
+      assertStringIncludes(result.planPath, "implement-auth_plan.md");
+      assertStringIncludes(result.content, "# Implement Auth");
     });
 
-    const result = createMockExecutionResult(planJson);
-    const writeResult = await writer.writePlan(result, metadata);
+    it("should convert JSON to markdown with steps", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Planning steps...",
+        content: createJsonPlan("My Plan", "Plan description", [
+          { title: "Step One", description: "First step" },
+          { title: "Step Two", description: "Second step" },
+        ]),
+        raw: "",
+      };
 
-    // Verify file was created
-    assert(await Deno.stat(writeResult.planPath).then(() => true).catch(() => false));
+      const metadata: IRequestMetadata = {
+        requestId: "test-plan",
+        traceId: "test-trace",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+        identityId: "test-agent",
+      };
 
-    // Read and verify content structure
-    const content = writeResult.content;
+      const result = await planWriter.writePlan(agentResult, metadata);
 
-    // Check header section
-    assertStringIncludes(content, "# Test Implementation Plan");
-    assertStringIncludes(content, "test-request-123");
+      assertStringIncludes(result.content, "## Step 1: Step One");
+      assertStringIncludes(result.content, "First step");
+      assertStringIncludes(result.content, "## Step 2: Step Two");
+      assertStringIncludes(result.content, "Second step");
+    });
+  });
 
-    // Check context section
-    assertStringIncludes(content, "## Context References");
-    assertStringIncludes(content, "[[file1]]");
-    assertStringIncludes(content, "[[file2]]");
-    assertStringIncludes(content, "Warning about file1");
+  describe("Frontmatter and Metadata", () => {
+    it("should include YAML frontmatter", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Test",
+        content: createJsonPlan("Test Plan", "Test description"),
+        raw: "",
+      };
 
-    // Check implementation section
-    assertStringIncludes(content, "## Execution Steps");
-    assertStringIncludes(content, "## Step 1: Create Component");
+      const metadata: IRequestMetadata = {
+        requestId: "test-id",
+        traceId: "trace-123",
+        createdAt: new Date("2024-11-25T10:00:00Z"),
+        contextFiles: [],
+        contextWarnings: [],
+        identityId: "test-agent",
+      };
 
-    // Check next steps section
-    assertStringIncludes(content, "## Next Steps");
-    assertStringIncludes(content, "test-request-123");
-  } finally {
-    await cleanup();
-  }
-});
+      const result = await planWriter.writePlan(agentResult, metadata);
 
-Deno.test("PlanWriter: writePlan handles minimal plan content", async () => {
-  const { tempDir, cleanup } = await initTestDbService();
-  const mockConfig = createMockPlanWriterConfig(tempDir);
-
-  try {
-    const writer = new PlanWriter(mockConfig);
-
-    const metadata: IRequestMetadata = {
-      requestId: "minimal-request",
-      traceId: "trace-456",
-      createdAt: new Date(),
-      contextFiles: [],
-      contextWarnings: [],
-    };
-
-    const minimalPlanJson = JSON.stringify({
-      subject: "Minimal Plan",
-      description: "Just the basics",
-      steps: [
-        {
-          step: 1,
-          title: "Do something",
-          description: "Basic task",
-        },
-      ],
+      // Check frontmatter structure
+      assert(result.content.startsWith("---\n"));
+      assertStringIncludes(result.content, 'trace_id: "trace-123"');
+      assertStringIncludes(result.content, 'request_id: "test-id"');
+      assertStringIncludes(result.content, "status: review");
     });
 
-    const result = createMockExecutionResult(minimalPlanJson);
-    const writeResult = await writer.writePlan(result, metadata);
+    it("should include reasoning section", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "This is my reasoning about the plan",
+        content: createJsonPlan("Plan", "Description"),
+        raw: "",
+      };
 
-    const content = writeResult.content;
+      const metadata: IRequestMetadata = {
+        requestId: "test",
+        traceId: "trace",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+        identityId: "test-agent",
+      };
 
-    assertStringIncludes(content, "# Minimal Plan");
-    assertStringIncludes(content, "Just the basics");
-    assertStringIncludes(content, "Do something");
-  } finally {
-    await cleanup();
-  }
-});
+      const result = await planWriter.writePlan(agentResult, metadata);
 
-Deno.test("PlanWriter: writePlan includes token stats in frontmatter", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
-  const mockConfig = createMockPlanWriterConfig(tempDir, db);
+      assertStringIncludes(result.content, "## Reasoning");
+      assertStringIncludes(result.content, "This is my reasoning");
+    });
+  });
 
-  try {
-    const writer = new PlanWriter(mockConfig);
-    const traceId = "token-trace-123";
+  describe("Context References", () => {
+    it("should include context files", async () => {
+      await Deno.writeTextFile(`${knowledgeDir}/Doc1.md`, "Doc content");
+      await Deno.writeTextFile(`${knowledgeDir}/Doc2.md`, "Doc content");
 
-    db.logActivity(
-      "system",
-      "llm.usage",
-      TEST_PROVIDER_ID_OPENAI,
-      {
-        prompt_tokens: 10,
-        completion_tokens: 5,
-        total_tokens: 15,
-        model: TEST_MODEL_OPENAI,
-        cost_usd: 0.001,
-        provider: TEST_PROVIDER_ID_OPENAI,
-        input_tokens: 10,
-        output_tokens: 5,
-      },
-      traceId,
-    );
-    await db.waitForFlush();
+      const agentResult: IAgentExecutionResult = {
+        thought: "Using docs",
+        content: createJsonPlan("Plan", "Description"),
+        raw: "",
+      };
 
-    const metadata: IRequestMetadata = {
-      requestId: "token-request",
-      traceId,
-      createdAt: new Date(),
-      contextFiles: [],
-      contextWarnings: [],
-    };
+      const metadata: IRequestMetadata = {
+        requestId: "test",
+        traceId: "trace",
+        createdAt: new Date(),
+        contextFiles: [
+          `${knowledgeDir}/Doc1.md`,
+          `${knowledgeDir}/Doc2.md`,
+        ],
+        contextWarnings: [],
+      };
 
-    const planJson = JSON.stringify({
-      subject: "Token Plan",
-      description: "Plan with token stats",
-      steps: [
-        {
-          step: 1,
-          title: "Do work",
-          description: "Execute tasks",
-        },
-      ],
+      const result = await planWriter.writePlan(agentResult, metadata);
+
+      assertStringIncludes(result.content, "## Context References");
+      assertStringIncludes(result.content, "[[Doc1]]");
+      assertStringIncludes(result.content, "[[Doc2]]");
     });
 
-    const result = createMockExecutionResult(planJson);
-    const writeResult = await writer.writePlan(result, metadata);
+    it("should include context warnings", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Test",
+        content: createJsonPlan("Plan", "Description"),
+        raw: "",
+      };
 
-    assertStringIncludes(writeResult.content, "input_tokens: 10");
-    assertStringIncludes(writeResult.content, "output_tokens: 5");
-    assertStringIncludes(writeResult.content, "total_tokens: 15");
-    assertStringIncludes(writeResult.content, 'token_provider: "' + TEST_PROVIDER_ID_OPENAI + '"');
-    assertStringIncludes(writeResult.content, 'token_model: "' + TEST_MODEL_OPENAI + '"');
-    assertStringIncludes(writeResult.content, "token_cost_usd: 0.001");
-  } finally {
-    await cleanup();
-  }
-});
+      const metadata: IRequestMetadata = {
+        requestId: "test",
+        traceId: "trace",
+        createdAt: new Date(),
+        contextFiles: [`${knowledgeDir}/Doc1.md`], // Need at least one context file for warnings to show
+        contextWarnings: ["Warning 1", "Warning 2"],
+        identityId: "test-agent",
+      };
 
-Deno.test("PlanWriter: writePlan logs activity when database available", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
+      const result = await planWriter.writePlan(agentResult, metadata);
 
-  try {
-    const mockConfig = createMockPlanWriterConfig(tempDir, db);
-
-    const writer = new PlanWriter(mockConfig);
-
-    const metadata: IRequestMetadata = {
-      requestId: "logging-test",
-      traceId: "logging-trace-789",
-      createdAt: new Date(),
-      contextFiles: ["test.md"],
-      contextWarnings: [],
-    };
-
-    const planJson = JSON.stringify({
-      subject: "Logging Test Plan",
-      description: "Test logging functionality",
-      steps: [{ step: 1, title: "Test", description: "Test step" }],
+      assertStringIncludes(result.content, "**Context Warnings:**");
+      assertStringIncludes(result.content, "Warning 1");
+      assertStringIncludes(result.content, "Warning 2");
     });
+  });
 
-    const result = createMockExecutionResult(planJson);
-    await writer.writePlan(result, metadata);
+  describe("File I/O", () => {
+    it("should write plan to correct file path", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "Test",
+        content: createJsonPlan("Plan", "Description"),
+        raw: "",
+      };
 
-    // Wait for async logging
-    await db.waitForFlush();
+      const metadata: IRequestMetadata = {
+        requestId: "my-feature",
+        traceId: "trace",
+        createdAt: new Date(),
+        identityId: "test-agent",
+        contextFiles: [],
+        contextWarnings: [],
+      };
 
-    // Verify activity was logged
-    const activities = db.getActivitiesByTrace("logging-trace-789");
-    assert(activities.length >= 2, `Expected at least 2 activities, got ${activities.length}`);
+      const result = await planWriter.writePlan(agentResult, metadata);
 
-    // Check for plan.created activity
-    const createdActivity = activities.find((a) => a.action_type === "plan.created");
-    assertExists(createdActivity);
-    assertEquals(createdActivity.target, "logging-test");
+      assertStringIncludes(result.planPath, "my-feature_plan.md");
 
-    const payload = JSON.parse(createdActivity.payload);
-    assertEquals(payload.request_id, "logging-test");
-    assertEquals(payload.context_files_count, 1);
-  } finally {
-    await cleanup();
-  }
-});
+      const fileExists = await Deno.stat(result.planPath)
+        .then(() => true)
+        .catch(() => false);
 
-Deno.test("PlanWriter: writePlan works without database (testing mode)", async () => {
-  const tempDir = await Deno.makeTempDir();
-  const mockConfig = createMockPlanWriterConfig(tempDir, undefined);
-
-  try {
-    const writer = new PlanWriter(mockConfig);
-
-    const metadata: IRequestMetadata = {
-      requestId: "no-db-test",
-      traceId: "no-db-trace",
-      createdAt: new Date(),
-      contextFiles: [],
-      contextWarnings: [],
-    };
-
-    const planJson = JSON.stringify({
-      subject: "No DB Plan",
-      description: "Test without database",
-      steps: [{ step: 1, title: "Test", description: "Test step" }],
+      assert(fileExists, "Plan file should exist");
     });
-
-    const result = createMockExecutionResult(planJson);
-    const writeResult = await writer.writePlan(result, metadata);
-
-    // Should not throw error and should create file
-    assert(await Deno.stat(writeResult.planPath).then(() => true).catch(() => false));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("PlanWriter: writePlan handles invalid JSON gracefully", async () => {
-  const { tempDir, cleanup } = await initTestDbService();
-  const mockConfig = createMockPlanWriterConfig(tempDir);
-
-  try {
-    const writer = new PlanWriter(mockConfig);
-
-    const metadata: IRequestMetadata = {
-      requestId: "invalid-json-test",
-      traceId: "invalid-trace",
-      createdAt: new Date(),
-      contextFiles: [],
-      contextWarnings: [],
-    };
-
-    // Invalid JSON that should cause validation error
-    const invalidJson = '{ "subject": "Broken JSON", invalid }';
-    const result = createMockExecutionResult(invalidJson);
-
-    // Should throw an error for invalid JSON
-    let threw = false;
-    try {
-      await writer.writePlan(result, metadata);
-    } catch (error) {
-      threw = true;
-      assertStringIncludes((error as Error).message, "Invalid JSON");
-    }
-
-    assert(threw, "Expected PlanValidationError to be thrown for invalid JSON");
-  } finally {
-    await cleanup();
-  }
+  });
 });

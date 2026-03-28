@@ -14,7 +14,7 @@ import { SecureCredentialStore } from "../../src/helpers/credential_security.ts"
 import { DaemonStatus, MockStrategy, ProviderType } from "../../src/shared/enums.ts";
 
 import { AiConfigSchema } from "../../src/shared/schemas/ai_config.ts";
-import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";
+import { createTestConfig, getProviderForModel } from "../helpers/test_config.ts";
 
 // ============================================================================
 // Test Fixtures

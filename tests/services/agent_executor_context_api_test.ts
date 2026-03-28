@@ -17,7 +17,7 @@ import { createMockConfig } from "../helpers/config.ts";
 import { EventLogger } from "../../src/services/event_logger.ts";
 import { PathResolver } from "../../src/services/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal_permissions.ts";
-import { setupPortalWorkspaceTestDirs } from "./helpers/portal_workspace_test_helper.ts";
+import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
 
 describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
   let tempDir: string;

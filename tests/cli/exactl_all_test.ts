@@ -22,8 +22,8 @@ import {
   VerificationStatus,
 } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
-import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
-import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { captureAllOutputs, captureConsoleOutput } from "../helpers/console_utils.ts";
+import { expectExitWithLogs, withTestMod } from "../helpers/test_utils.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
 import type { IRequestOptions } from "../../src/shared/types/request.ts";
 import type { RequestStatusType } from "../../src/shared/status/request_status.ts";

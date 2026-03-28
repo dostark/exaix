@@ -30,8 +30,8 @@ import type { OutputFormat } from "../../src/cli/memory_types.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
 import type { IRequestOptions } from "../../src/shared/types/request.ts";
 import type { RequestStatusType } from "../../src/shared/status/request_status.ts";
-import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
-import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
+import { captureAllOutputs, captureConsoleOutput } from "../helpers/console_utils.ts";
+import { expectExitWithLogs, withTestMod } from "../helpers/test_utils.ts";
 import { TEST_MODEL_OPENAI } from "../config/constants.ts";
 
 // ===== Plan Command Error Handlers =====

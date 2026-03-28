@@ -7,7 +7,7 @@
 
 import { assertStringIncludes } from "@std/assert";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";
-import { googleResponseConfig, registerProviderTests, spyFetch } from "./helpers/provider_test_helper.ts";
+import { googleResponseConfig, registerProviderTests, spyFetch } from "../helpers/provider_test_helper.ts";
 
 // Register all standard provider tests with Google-specific body extractor
 registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({

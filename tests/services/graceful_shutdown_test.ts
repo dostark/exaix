@@ -8,7 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { assertSpyCalls, spy, stub } from "@std/testing/mock";
 import { GracefulShutdown } from "../../src/services/graceful_shutdown.ts";
-import { createMockLogger } from "./helpers/graceful_shutdown_test_helpers.ts";
+import { createMockLogger } from "../helpers/graceful_shutdown_test_helpers.ts";
 import {
   LOG_MSG_ERROR_HANDLERS_REGISTERED,
   LOG_MSG_SIGNAL_HANDLERS_REGISTERED,

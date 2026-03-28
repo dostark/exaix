@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ModelFactory } from "../../src/ai/providers.ts";
-import { getTestModel } from "./helpers/test_model.ts";
+import { getTestModel } from "../helpers/test_model.ts";
 import { isCi } from "../helpers/env.ts";
 import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";
 

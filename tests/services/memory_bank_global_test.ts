@@ -27,7 +27,7 @@ import {
 } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { getMemoryGlobalDir } from "../helpers/paths_helper.ts";
-import { createSampleLearning, createTestMemoryBankWithGlobal } from "./helpers/memory_bank_test_helpers.ts";
+import { createSampleLearning, createTestMemoryBankWithGlobal } from "../helpers/memory_bank_test_helpers.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
 
 // ===== ILearning Schema Tests =====

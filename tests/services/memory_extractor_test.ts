@@ -31,8 +31,8 @@ import {
   createMinimalProposal,
   createSuccessfulExecutionMemory,
   createTestProposal,
-} from "./helpers/memory_test_helpers.ts";
-import { createMinimalProjectMemory } from "./helpers/memory_bank_test_helpers.ts";
+} from "../helpers/memory_test_helpers.ts";
+import { createMinimalProjectMemory } from "../helpers/memory_bank_test_helpers.ts";
 
 // ===== MemoryUpdateProposalSchema Tests =====
 

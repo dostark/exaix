@@ -8,7 +8,7 @@
 import { assertEquals, assertRejects, assertThrows } from "https://deno.land/std@0.203.0/testing/asserts.ts";
 import { PlanSchema } from "../../src/shared/schemas/plan_schema.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
-import { getProviderForModel } from "./helpers/test_config.ts";
+import { getProviderForModel } from "../helpers/test_config.ts";
 
 // Check if LlamaProvider tests should run
 const shouldRunLlamaTests = Deno.env.get("EXA_TEST_ENABLE_LLAMA") === "true";

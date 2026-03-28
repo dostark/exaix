@@ -10,7 +10,7 @@
 import { assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { RequestCommands } from "../../../src/cli/commands/request_commands.ts";
-import { createCliTestContext } from "../helpers/test_setup.ts";
+import { createCliTestContext } from "../../helpers/test_setup.ts";
 import { getWorkspaceRequestsDir } from "../../helpers/paths_helper.ts";
 import { join } from "@std/path";
 

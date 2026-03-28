@@ -10,7 +10,7 @@ import { withEnv } from "../helpers/env.ts";
 import { OllamaProvider } from "../../src/ai/providers.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 
-import { createTestConfig } from "./helpers/test_config.ts";
+import { createTestConfig } from "../helpers/test_config.ts";
 
 // Note: We can't easily test OpenAIShim directly as it's not exported,
 // but we test it via the ModelFactory if needed

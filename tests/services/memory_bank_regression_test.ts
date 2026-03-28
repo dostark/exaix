@@ -15,7 +15,7 @@ import {
   searchMemoryAdvanced,
 } from "../../src/services/memory_search.ts";
 import { IExecutionMemory, type IProjectMemory } from "../../src/shared/schemas/memory_bank.ts";
-import { createTestLearning } from "./helpers/memory_test_helpers.ts";
+import { createTestLearning } from "../helpers/memory_test_helpers.ts";
 import {
   ConfidenceLevel,
   ExecutionStatus,

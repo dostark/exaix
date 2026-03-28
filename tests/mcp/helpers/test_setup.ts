@@ -11,10 +11,15 @@ import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists } from "@std/assert";
 import { MCPServer } from "../../../src/mcp/server.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
-import { initTestDbService } from "../../helpers/db.ts";
-import { createMockConfig } from "../../helpers/config.ts";
+import { initTestDbService } from "../../../helpers/db.ts";
+import { createMockConfig } from "../../../helpers/config.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import {
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  createStubProvider,
+} from "../../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 
 export interface IToolPermissionOptions {
@@ -53,7 +58,7 @@ export interface IToolPermissionTestContext {
   cleanup: () => Promise<void>;
 }
 
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { setupGitRepo } from "../../../helpers/git_test_helper.ts";
 export { setupGitRepo };
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { createTestProposal, runNotificationTest } from "./helpers/notification_test_helper.ts";
+import { createTestProposal, runNotificationTest } from "../helpers/notification_test_helper.ts";
 
 // ===== NotificationService Tests =====
 

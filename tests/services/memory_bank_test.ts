@@ -26,7 +26,7 @@ import {
   createMinimalProjectMemory,
   createSampleProjectMemory,
   createTestMemoryBankWithProject,
-} from "./helpers/memory_bank_test_helpers.ts";
+} from "../helpers/memory_bank_test_helpers.ts";
 // Helper function to generate valid UUIDs for testing
 function generateTestUUID(): string {
   return crypto.randomUUID();
