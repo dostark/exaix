@@ -294,7 +294,7 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
 
 - [x] `StepExecutionMode` enum added to `src/shared/enums.ts`
 - [x] `FlowStepSchema` includes `execution_mode` and `permitted_tools`
-- [ ] `BlueprintFrontmatterSchema` includes `permitted_tools`
+- [x] `BlueprintFrontmatterSchema` includes `permitted_tools`
 - [x] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants added
 - [x] TypeScript compilation succeeds
 
@@ -303,8 +303,9 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
 - ✅ Type-level tests: ensure all new schema fields are required/optional as intended.
 - ✅ Unit test: verify that `StepExecutionMode` enum and constants are exported and used in schema.
 - ✅ Unit test: parse valid/invalid `FlowStepSchema` objects (8/8 tests passing).
+- ✅ Unit test: parse valid/invalid `BlueprintFrontmatterSchema` objects (5/5 tests passing).
 
-**✅ IMPLEMENTED** — `src/shared/enums.ts`, `src/shared/constants.ts`, `src/shared/schemas/flow.ts`, 13/13 tests passing (Task 1.1, 1.2, 1.4)
+**✅ IMPLEMENTED** — `src/shared/enums.ts`, `src/shared/constants.ts`, `src/shared/schemas/flow.ts`, `src/shared/schemas/blueprint.ts`, 18/18 tests passing (Task 1.1-1.4 complete)
 
 ---
 
@@ -1130,7 +1131,7 @@ The audit trail is *richer* in dynamic mode — the journal captures what the mo
   - Enumerate possible attack vectors for dynamic tool selection (e.g., model requesting undeclared tools, blueprint/flow YAML tampering, tool argument injection).
   - Review audit trail completeness for dynamic vs. declared steps.
 
-2. **Security Test Case Design**
+1.
 
   - Write tests for attempts to use write tools in dynamic steps (should be blocked at load and runtime).
   - Test that step `permitted_tools` cannot exceed identity's `permitted_tools` (YAML and runtime).
@@ -1139,12 +1140,12 @@ The audit trail is *richer* in dynamic mode — the journal captures what the mo
   - Confirm that all tool calls in dynamic steps are journaled with correct `traceId` and step context.
   - Fuzz test tool argument handling for injection or privilege escalation attempts.
 
-3. **CI Integration**
+1.
 
   - Add security regression tests to CI pipeline (e.g., `tests/flows/flow_loader_dynamic_security_test.ts`).
   - Require all new tools and step execution modes to have corresponding negative and positive security tests before merge.
 
-4. **Documentation**
+1.
 
   - Document security boundaries and audit guarantees for dynamic toolsets in developer docs and blueprint authoring guides.
 
