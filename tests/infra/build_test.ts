@@ -1,6 +1,6 @@
 /**
  * @module Build_Test
- * @path tests_infra/build_test.ts
+ * @path tests/infra/build_test.ts
  * @description Module for build_test.
  */
 

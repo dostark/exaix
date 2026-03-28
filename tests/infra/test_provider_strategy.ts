@@ -1,18 +1,25 @@
+/**
+ * @module ProviderStrategyTest
+ * @path tests/infra/test_provider_strategy.ts
+ * @description Integration tests for LLM Provider Strategy, verifying provider
+ * switching, fallback chains, budget enforcement, and concurrent requests.
+ */
+
 // Integration tests for LLM Provider Strategy
 // Tests provider switching, fallback chains, budget enforcement, and concurrent requests
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { DEFAULT_MCP_VERSION } from "../src/shared/constants.ts";
-import { HealthCheckVerdict } from "../src/shared/enums.ts";
-import { TestEnvironment } from "../tests/integration/helpers/test_environment.ts";
-import { ProviderSelector } from "../src/ai/provider_selector.ts";
-import { CostTracker } from "../src/services/cost_tracker.ts";
-import { HealthCheckService } from "../src/services/health_check_service.ts";
-import { MockProviderFactory } from "../src/ai/factories/mock_factory.ts";
-import { OllamaProviderFactory } from "../src/ai/factories/ollama_factory.ts";
-import { OpenAIProviderFactory } from "../src/ai/factories/openai_factory.ts";
-import { ProviderRegistry } from "../src/ai/provider_registry.ts";
-import { PricingTier, ProviderCostTier, TaskComplexity } from "../src/shared/enums.ts";
+import { DEFAULT_MCP_VERSION } from "../../src/shared/constants.ts";
+import { HealthCheckVerdict } from "../../src/shared/enums.ts";
+import { TestEnvironment } from "../integration/helpers/test_environment.ts";
+import { ProviderSelector } from "../../src/ai/provider_selector.ts";
+import { CostTracker } from "../../src/services/cost_tracker.ts";
+import { HealthCheckService } from "../../src/services/health_check_service.ts";
+import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";
+import { OllamaProviderFactory } from "../../src/ai/factories/ollama_factory.ts";
+import { OpenAIProviderFactory } from "../../src/ai/factories/openai_factory.ts";
+import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
+import { PricingTier, ProviderCostTier, TaskComplexity } from "../../src/shared/enums.ts";
 
 Deno.test("Provider Strategy: Full agent execution with provider switching", async (t) => {
   // Initialize provider registry for testing

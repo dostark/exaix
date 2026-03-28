@@ -20,7 +20,7 @@
     "scenario:test:unit": "deno test --allow-all tests/scenario_framework/tests/unit/",
     "test": "deno test --allow-all",
     "test:security": "deno test --allow-all --filter \"[security]\" tests/",
-    "test:ci": "deno test --allow-all tests_infra/",
+    "test:ci": "deno test --allow-all tests/infra/",
     "test:llama": "EXA_RUN_LLAMA_TESTS=true deno test --allow-all tests/llama_provider_test.ts",
     "test:watch": "deno test --watch --allow-all tests/",
     "test:coverage": "deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts",

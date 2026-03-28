@@ -1,6 +1,6 @@
 /**
  * @module Script_Test
- * @path tests_infra/script_test.ts
+ * @path tests/infra/script_test.ts
  * @description Module for script_test.
  */
 

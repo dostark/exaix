@@ -1,6 +1,6 @@
 /**
  * @module Gates_Test
- * @path tests_infra/gates_test.ts
+ * @path tests/infra/gates_test.ts
  * @description Module for gates_test.
  */
 
