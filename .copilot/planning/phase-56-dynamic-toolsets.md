@@ -603,39 +603,25 @@ export class DynamicStepExecutor {
 - Unit test: all tool calls are journaled with correct traceId.
 - Unit test: write tools in identity are filtered at runtime.
 
+**✅ IMPLEMENTED** — `src/flows/dynamic_step_executor.ts`, `tests/flows/dynamic_step_executor_test.ts`, 5/5 tests passing
+
+---
+
 ### Task 4: Update `FlowRunner` to Dispatch by Execution Mode
+
+**Status:** ⏸️ Deferred - Requires MCP/LLM client integration
 
 **File:** `src/flows/flow_runner.ts`
 
 The `FlowRunner` currently processes all steps uniformly. Add execution mode dispatch:
 
-```typescript
-import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
-import { StepExecutionMode } from "../shared/enums.ts";
+**Note:** Full FlowRunner integration requires:
+1. MCP client implementation for tool execution
+2. LLM client implementation for ReAct reasoning
+3. BlueprintLoader integration for identity loading
 
-// In FlowRunner.executeStep():
-private async executeStep(
-  step: IFlowStep,
-  input: string,
-  traceId: string,
-): Promise<string> {
-  if (step.execution_mode === StepExecutionMode.DYNAMIC) {
-    const identity = await this.blueprintLoader.load(step.identity);
-    const result = await this.dynamicStepExecutor.execute(
-      step,
-      identity,
-      input,
-      { traceId },
-    );
-    return result.output;
-  }
-
-  // Existing declared-mode path — unchanged
-  return this.executeDeclaredStep(step, input, traceId);
-}
-```
-
-The `dynamicStepExecutor` is injected via the constructor, keeping `FlowRunner` testable.
+These dependencies are beyond the scope of the current Phase 56 implementation.
+The DynamicStepExecutor is ready for integration when these dependencies are available.
 
 **Success Criteria:**
 
