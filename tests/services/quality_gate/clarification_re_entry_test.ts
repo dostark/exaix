@@ -28,8 +28,8 @@ import {
   RequestQualityLevel,
   RequestQualityRecommendation,
 } from "../../../src/shared/schemas/request_quality_assessment.ts";
-import { initTestDbService } from "../../helpers/db.ts";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { initTestDbService } from "../../../helpers/db.ts";
+import { createMockProvider } from "../../../helpers/mock_provider.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers

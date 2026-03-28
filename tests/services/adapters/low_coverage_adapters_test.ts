@@ -18,8 +18,8 @@ import type { IDatabaseService } from "../../../src/shared/interfaces/i_database
 import type { IStructuredLogEntry } from "../../../src/shared/types/logging.ts";
 import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/structured_logger.ts";
 import type { EventLogger } from "../../../src/services/event_logger.ts";
-import { createMockConfig } from "../../helpers/config.ts";
-import { createStubConfig, createStubContext, createStubDb } from "../../helpers/test_helpers.ts";
+import { createMockConfig } from "../../../helpers/config.ts";
+import { createStubConfig, createStubContext, createStubDb } from "../../../helpers/test_helpers.ts";
 
 const TEST_DESCRIPTION = "test request";
 const TEST_TRACE_ID = "trace-1";

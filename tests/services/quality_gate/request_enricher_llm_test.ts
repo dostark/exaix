@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createMockProvider } from "../../../helpers/mock_provider.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import {
   type IRequestQualityIssue,

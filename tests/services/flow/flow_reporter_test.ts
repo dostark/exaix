@@ -1,0 +1,327 @@
+/**
+ * @module FlowReporterTest
+ * @path tests/services/flow_reporter_test.ts
+ * @description Verifies the FlowReporter service, ensuring step execution results and
+ * aggregate workflow metrics are correctly tracked and persisted in the activity journal.
+ */
+
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
+import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
+import { exists } from "@std/fs";
+import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow_reporter.ts";
+import { createMockConfig } from "../../helpers/config.ts";
+import { initTestDbService } from "../../helpers/db.ts";
+import type { IFlow, IFlowInput } from "../../../src/shared/schemas/flow.ts";
+import type { IFlowResult, IStepResult } from "../../../src/flows/flow_runner.ts";
+import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../../config/constants.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
+import { DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
+
+describe("FlowReporter", () => {
+  let tempDir: string;
+  let cleanup: () => Promise<void>;
+  let config: Config;
+  let reportConfig: IFlowReportConfig;
+  let reporter: FlowReporter;
+
+  beforeEach(async () => {
+    const dbResult = await initTestDbService();
+    tempDir = dbResult.tempDir;
+    cleanup = dbResult.cleanup;
+    config = createMockConfig(tempDir);
+
+    reportConfig = {
+      reportsDirectory: join(tempDir, "Memory", "Reports"),
+      db: dbResult.db,
+    };
+
+    // Ensure reports directory exists
+    await Deno.mkdir(reportConfig.reportsDirectory, { recursive: true });
+
+    reporter = new FlowReporter(config, reportConfig);
+  });
+
+  afterEach(async () => {
+    await cleanup();
+  });
+
+  describe("constructor", () => {
+    it("should initialize with valid config", () => {
+      assertExists(reporter);
+    });
+
+    it("should initialize without database", () => {
+      const configWithoutDb = { ...reportConfig, db: undefined };
+      const reporterWithoutDb = new FlowReporter(config, configWithoutDb);
+      assertExists(reporterWithoutDb);
+    });
+  });
+
+  describe("generate", () => {
+    it("should generate report for successful flow execution", async () => {
+      // Create mock flow data
+      const flow: IFlowInput = {
+        id: "test-flow",
+        name: "Test Flow",
+        description: "A test flow",
+        version: DEFAULT_FLOW_VERSION,
+        steps: [
+          {
+            id: "step1",
+            name: "First Step",
+            identity: "test-agent",
+            dependsOn: [],
+            input: {
+              source: FlowInputSource.REQUEST,
+              transform: "passthrough",
+            },
+            retry: {
+              maxAttempts: 1,
+              backoffMs: 1000,
+            },
+          },
+          {
+            id: "step2",
+            name: "Second Step",
+            identity: "test-agent",
+            dependsOn: ["step1"],
+            input: {
+              source: FlowInputSource.REQUEST,
+              transform: "passthrough",
+            },
+            retry: {
+              maxAttempts: 1,
+              backoffMs: 1000,
+            },
+          },
+        ],
+        output: {
+          from: "step2",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism: 3,
+          failFast: true,
+        },
+      };
+
+      const stepResults = new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: true,
+            duration: 1000,
+            startedAt: new Date("2025-01-01T10:00:00Z"),
+            completedAt: new Date("2025-01-01T10:00:01Z"),
+            result: {
+              thought: "Step 1 reasoning",
+              content: "Step 1 output",
+              raw: "Raw response 1",
+            },
+          },
+        ],
+        [
+          "step2",
+          {
+            stepId: "step2",
+            success: true,
+            duration: 2000,
+            startedAt: new Date("2025-01-01T10:00:02Z"),
+            completedAt: new Date("2025-01-01T10:00:04Z"),
+            result: {
+              thought: "Step 2 reasoning",
+              content: "Step 2 output",
+              raw: "Raw response 2",
+            },
+          },
+        ],
+      ]);
+
+      const flowResult: IFlowResult = {
+        flowRunId: "run-123-456",
+        success: true,
+        stepResults,
+        output: "Final aggregated output",
+        duration: 4000,
+        startedAt: new Date("2025-01-01T10:00:00Z"),
+        completedAt: new Date("2025-01-01T10:00:04Z"),
+        tokenSummary: {
+          input_tokens: 300,
+          output_tokens: 120,
+          total_tokens: 420,
+          token_provider: TEST_PROVIDER_ID_OPENAI,
+          token_model: TEST_MODEL_OPENAI,
+          token_cost_usd: 0.01,
+        },
+      };
+
+      const requestId = "request-abc123";
+
+      // Generate report
+      const result = await reporter.generate(flow as IFlow, flowResult, requestId);
+
+      // Verify result structure
+      assertExists(result.reportPath);
+      assertExists(result.content);
+      assertExists(result.createdAt);
+
+      // Verify file was created
+      assertEquals(await exists(result.reportPath), true);
+
+      // Verify content includes required sections
+      assertStringIncludes(result.content, 'type: "flow_report"');
+      assertStringIncludes(result.content, 'flow: "test-flow"');
+      assertStringIncludes(result.content, 'flow_run_id: "run-123-456"');
+      assertStringIncludes(result.content, "success: true");
+      assertStringIncludes(result.content, 'request_id: "request-abc123"');
+      assertStringIncludes(result.content, "input_tokens: 300");
+      assertStringIncludes(result.content, "output_tokens: 120");
+      assertStringIncludes(result.content, "total_tokens: 420");
+      assertStringIncludes(result.content, 'token_provider: "' + TEST_PROVIDER_ID_OPENAI + '"');
+      assertStringIncludes(result.content, 'token_model: "' + TEST_MODEL_OPENAI + '"');
+      assertStringIncludes(result.content, "token_cost_usd: 0.01");
+      assertStringIncludes(result.content, "# IFlow Report: Test Flow");
+      assertStringIncludes(result.content, "## Execution Summary");
+      assertStringIncludes(result.content, "## Step Outputs");
+      assertStringIncludes(result.content, "## Dependency Graph");
+    });
+
+    it("should generate report for failed flow execution", async () => {
+      // Create mock flow data with failure
+      const flow: IFlowInput = {
+        id: "failed-flow",
+        name: "Failed Flow",
+        description: "A flow that fails",
+        version: DEFAULT_FLOW_VERSION,
+        steps: [
+          {
+            id: "step1",
+            name: "Failing Step",
+            identity: "test-agent",
+            dependsOn: [],
+            input: {
+              source: FlowInputSource.REQUEST,
+              transform: "passthrough",
+            },
+            retry: {
+              maxAttempts: 1,
+              backoffMs: 1000,
+            },
+          },
+        ],
+        output: {
+          from: "step1",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism: 3,
+          failFast: true,
+        },
+      };
+
+      const stepResults = new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: false,
+            error: "Agent execution failed",
+            duration: 500,
+            startedAt: new Date("2025-01-01T10:00:00Z"),
+            completedAt: new Date("2025-01-01T10:00:00.500Z"),
+          },
+        ],
+      ]);
+
+      const flowResult: IFlowResult = {
+        flowRunId: "run-789-012",
+        success: false,
+        stepResults,
+        output: "",
+        duration: 500,
+        startedAt: new Date("2025-01-01T10:00:00Z"),
+        completedAt: new Date("2025-01-01T10:00:00.500Z"),
+      };
+
+      // Generate report
+      const result = await reporter.generate(flow as IFlow, flowResult);
+
+      // Verify content indicates failure
+      assertStringIncludes(result.content, "success: false");
+      assertStringIncludes(result.content, "steps_failed: 1");
+      assertStringIncludes(result.content, "steps_completed: 0");
+      assertStringIncludes(result.content, "❌ Failed");
+      assertStringIncludes(result.content, "Agent execution failed");
+    });
+
+    it("should generate correct filename format", async () => {
+      // Create minimal mock data
+      const flow: IFlowInput = {
+        id: "filename-test",
+        name: "Filename Test",
+        description: "Test filename generation",
+        version: DEFAULT_FLOW_VERSION,
+        steps: [{
+          id: "step1",
+          name: "Step 1",
+          identity: "test-agent",
+          dependsOn: [],
+          input: {
+            source: FlowInputSource.REQUEST,
+            transform: "passthrough",
+          },
+          retry: {
+            maxAttempts: 1,
+            backoffMs: 1000,
+          },
+        }],
+        output: {
+          from: "step1",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism: 3,
+          failFast: true,
+        },
+      };
+
+      const stepResults = new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: true,
+            duration: 100,
+            startedAt: new Date(),
+            completedAt: new Date(),
+            result: {
+              thought: "Output reasoning",
+              content: "output",
+              raw: "raw output",
+            },
+          },
+        ],
+      ]);
+
+      const flowResult: IFlowResult = {
+        flowRunId: "run-abc-def-ghi",
+        success: true,
+        stepResults,
+        output: "output",
+        duration: 100,
+        startedAt: new Date(),
+        completedAt: new Date(),
+      };
+
+      const result = await reporter.generate(flow as IFlow, flowResult);
+
+      // Filename should match pattern: flow_{flowId}_{shortRunId}_{timestamp}.md
+      const filename = result.reportPath.split("/").pop()!;
+      assertStringIncludes(filename, "flow_filename-test_run-abc-_");
+      assertStringIncludes(filename, ".md");
+    });
+  });
+});

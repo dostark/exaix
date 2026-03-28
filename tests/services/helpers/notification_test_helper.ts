@@ -5,7 +5,7 @@
  * simulating alert emission and history synchronization.
  */
 
-import { initTestDbService } from "../../../helpers/db.ts";
+import { initTestDbService } from "../../helpers/db.ts";
 import { NotificationService } from "../../../src/services/notification.ts";
 import type { IMemoryUpdateProposal } from "../../../src/shared/schemas/memory_bank.ts";
 import {

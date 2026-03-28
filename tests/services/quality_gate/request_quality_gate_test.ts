@@ -9,7 +9,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createMockProvider } from "../../../helpers/mock_provider.ts";
 import { createOutputValidator } from "../../../src/services/output_validator.ts";
 import { RequestQualityRecommendation } from "../../../src/shared/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "../../../src/shared/enums.ts";
