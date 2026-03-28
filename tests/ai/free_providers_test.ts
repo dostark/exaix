@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ModelFactory } from "../../src/ai/providers.ts";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
-import { getTestModel, getTestModelDisplay } from "../helpers/test_model.ts";
+import { getTestModel, getTestModelDisplay } from "./helpers/test_model.ts";
 import { isCi } from "../helpers/env.ts";
 
 import type { JSONObject } from "../../src/shared/types/json.ts";

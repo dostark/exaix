@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { initTestDbService } from "../../helpers/db.ts";
-import { createTestProposal, runNotificationTest } from "../../helpers/notification_test_helper.ts";
+import { createTestProposal, runNotificationTest } from "../helpers/notification_test_helper.ts";
 
 // ===== Migration Tests =====
 

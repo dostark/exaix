@@ -9,11 +9,11 @@ import { AgentExecutor } from "../../../src/services/agent_executor.ts";
 import type { EventLogger } from "../../../src/services/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
 import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
 import type { DatabaseService } from "../../../src/services/db.ts";
 import type { PathResolver } from "../../../src/services/path_resolver.ts";
 import type { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
 import type { IChangesetResult } from "../../../src/shared/schemas/agent_executor.ts";
+import { createMockConfig } from "../../helpers/config.ts";
 
 /**
  * Tests for Step 55.3: AgentExecutor journal field separation
@@ -34,60 +34,15 @@ function createMockLogger(eventCapture: ILogEvent[]): Partial<EventLogger> {
   } as Partial<EventLogger>;
 }
 
-function createMockConfig(): Config {
-  return {
-    system: { root: "/tmp/test", version: "1.0.0", log_level: "info", schema_version: "1.0.0" },
-    paths: {
-      memory: "./Memory",
-      blueprints: "./Blueprints",
-      runtime: "./.exa",
-      workspace: "./Workspace",
-      portals: "./Portals",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      identities: "Identities",
-      flows: "Flows",
-      memoryProjects: "Projects",
-      memoryExecution: "Execution",
-      memoryIndex: "Index",
-      memorySkills: "Skills",
-      memoryPending: "Pending",
-      memoryTasks: "Tasks",
-      memoryGlobal: "Global",
-    },
-    database: { sqlite: { journal_mode: "WAL", foreign_keys: true, busy_timeout_ms: 5000 } },
-    agents: { default_model: "default", timeout_sec: 60, max_iterations: 10 },
-    models: { default: { provider: "mock", model: "gpt-5.2-pro", timeout_ms: 30000 } },
-    mock: { delay_ms: 0, input_tokens: 0, output_tokens: 0 },
-    mcp: { enabled: false, servers: [] },
-    git: { author_name: "Test", author_email: "test@test.com" },
-    tools: { enabled: [] },
-    health: { enabled: false },
-    skills: { enabled: false },
-    memory: { enabled: false },
-    notifications: { enabled: false },
-    reviews: { enabled: false },
-    artifacts: { enabled: false },
-    plans_config: { enabled: false },
-    requests_config: { enabled: false },
-    identities_config: { enabled: false },
-    flows_config: { enabled: false },
-    portals_config: { enabled: false },
-    ai: { providers: [] },
-    security: { mode: "sandboxed" },
-    request_analysis: { enabled: false },
-    quality_gates: { enabled: false },
-  } as Config;
+function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
+  return createMockConfig("/tmp/test");
 }
 
 Deno.test("AgentExecutor: logExecutionStart writes correct field separation", async () => {
   // Arrange
   const loggedEvents: ILogEvent[] = [];
   const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfig();
+  const mockConfig = createMockConfigForTest();
   const mockDb = {} as Partial<DatabaseService>;
   const mockPathResolver = {} as Partial<PathResolver>;
   const mockPermissions = {} as Partial<PortalPermissionsService>;
@@ -119,7 +74,7 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
   // Arrange
   const loggedEvents: ILogEvent[] = [];
   const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfig();
+  const mockConfig = createMockConfigForTest();
   const mockDb = {} as Partial<DatabaseService>;
   const mockPathResolver = {} as Partial<PathResolver>;
   const mockPermissions = {} as Partial<PortalPermissionsService>;
@@ -159,7 +114,7 @@ Deno.test("AgentExecutor: logExecutionError writes correct field separation", as
   // Arrange
   const loggedEvents: ILogEvent[] = [];
   const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfig();
+  const mockConfig = createMockConfigForTest();
   const mockDb = {} as Partial<DatabaseService>;
   const mockPathResolver = {} as Partial<PathResolver>;
   const mockPermissions = {} as Partial<PortalPermissionsService>;
@@ -197,7 +152,7 @@ Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint 
   // Arrange
   const loggedEvents: ILogEvent[] = [];
   const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfig();
+  const mockConfig = createMockConfigForTest();
   const mockDb = {} as Partial<DatabaseService>;
   const mockPathResolver = {} as Partial<PathResolver>;
   const mockPermissions = {} as Partial<PortalPermissionsService>;

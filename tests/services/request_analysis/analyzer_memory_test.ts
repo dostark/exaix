@@ -15,7 +15,7 @@ import {
   makeValidAnalysisJson as makeValidJson,
   setupTestAnalyzer,
   setupTestLlmAnalyzer,
-} from "../../helpers/test_helpers.ts";
+} from "./test_helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Fixtures

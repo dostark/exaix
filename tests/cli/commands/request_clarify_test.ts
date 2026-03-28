@@ -17,7 +17,7 @@ import {
 import { ClarifyResultStatus } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";
-import { createCliTestContext } from "../../helpers/test_setup.ts";
+import { createCliTestContext } from "../helpers/test_setup.ts";
 
 // ---------------------------------------------------------------------------
 // Fixtures

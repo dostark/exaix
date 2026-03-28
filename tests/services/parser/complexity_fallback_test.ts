@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
-import { calculateComplexityFromText } from "../scripts/measure_complexity.ts";
+import { calculateComplexityFromText } from "../../../scripts/measure_complexity.ts";
 
 Deno.test("[heuristic] simple complexity counts", () => {
   const src = `function f(x) { if (x) { return 1 } else { return 2 } }`;

@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists } from "https://deno.land/std@0.203.0/assert/mod.ts";
 import { PortalOperation } from "../../src/shared/enums.ts";
 
-import { buildIndex, chunkText, extractFrontmatter } from "../scripts/build_agents_index.ts";
+import { buildIndex, chunkText, extractFrontmatter } from "../../scripts/build_agents_index.ts";
 
 Deno.test("build_agents_index creates manifest and chunks (skips if no write access)", async () => {
   const perm = await Deno.permissions.query({ name: PortalOperation.WRITE as "write", path: ".copilot/chunks" });

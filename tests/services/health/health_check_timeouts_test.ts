@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { HealthCheckService, type IHealthCheck } from "../../../src/services/health_check_service.ts";
 import { HealthCheckVerdict, HealthStatus } from "../../../src/shared/enums.ts";
-import { createTestConfig } from "../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { DEFAULT_MCP_VERSION } from "../../../src/shared/constants.ts";
 
 class SlowCheck {

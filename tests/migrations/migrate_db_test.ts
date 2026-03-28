@@ -13,7 +13,7 @@ import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = join(__dirname, "..");
+const REPO_ROOT = join(__dirname, "..", "..");
 
 // Helper to run migrate_db.ts with given args
 async function runMigrate(

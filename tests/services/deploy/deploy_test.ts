@@ -10,7 +10,7 @@ import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/m
 import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = join(__dirname, "..");
+const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 async function runDeploy(target: string) {
   const scriptPath = join(REPO_ROOT, "scripts", "deploy_workspace.sh");

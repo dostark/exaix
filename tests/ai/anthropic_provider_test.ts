@@ -6,7 +6,7 @@
  */
 
 import { AnthropicProvider } from "../../src/ai/providers/anthropic_provider.ts";
-import { anthropicResponseConfig, registerProviderTests } from "../helpers/provider_test_helper.ts";
+import { anthropicResponseConfig, registerProviderTests } from "./helpers/provider_test_helper.ts";
 
 // Register all standard provider tests
 registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({

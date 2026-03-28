@@ -11,7 +11,7 @@ import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = join(__dirname, "..");
+const REPO_ROOT = join(__dirname, "..", "..");
 
 // Helper to run scaffold.sh with given args
 async function runScaffold(

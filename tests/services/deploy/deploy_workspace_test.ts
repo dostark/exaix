@@ -11,7 +11,7 @@ import { getDefaultPaths } from "../../../src/config/paths.ts";
 import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = join(__dirname, "..");
+const REPO_ROOT = join(__dirname, "..", "..", "..");
 const _paths = getDefaultPaths(REPO_ROOT);
 
 Deno.test("deploy_workspace.sh --no-run creates deploy files", async () => {
@@ -76,7 +76,7 @@ async function runExactl(
   args: string[],
   env?: Record<string, string>,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
+  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
   const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
   const fullEnv = { ...Deno.env.toObject(), ...env };
   delete fullEnv.EXA_TEST_MODE;
@@ -101,7 +101,7 @@ async function runExactl(
 // Helper to deploy and setup a test workspace
 async function deployTestWorkspace(): Promise<string> {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-daemon-test-" });
-  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..");
+  const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
   const deployScript = join(repoRoot, "scripts", "deploy_workspace.sh");
 
   // Deploy with --no-run (we'll run setup manually)

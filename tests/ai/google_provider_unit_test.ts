@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";
-import { spyFetch } from "../helpers/provider_test_helper.ts";
+import { spyFetch } from "./helpers/provider_test_helper.ts";
 
 Deno.test("GoogleProvider: generate calls correct endpoint and extracts text content", async () => {
   const provider = new GoogleProvider({ apiKey: "test-key", model: "gemini-pro" });

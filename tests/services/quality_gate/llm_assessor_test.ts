@@ -9,7 +9,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../../helpers/mock_provider.ts";
+import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createOutputValidator } from "../../../src/services/output_validator.ts";
 import {
   RequestQualityLevel,

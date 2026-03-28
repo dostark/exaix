@@ -11,8 +11,8 @@ import { IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import { UIOutputFormat } from "../../src/shared/enums.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
-import { captureAllOutputs, captureConsoleOutput } from "../helpers/console_utils.ts";
-import { expectExitWithLogs } from "../helpers/test_utils.ts";
+import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
+import { expectExitWithLogs } from "./helpers/test_utils.ts";
 import {
   JOURNAL_ACTOR_USER,
   JOURNAL_CAPTURE_COUNT_ONE,

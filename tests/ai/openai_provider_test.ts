@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
-import { openaiResponseConfig, registerProviderTests, spyFetch } from "../helpers/provider_test_helper.ts";
+import { openaiResponseConfig, registerProviderTests, spyFetch } from "./helpers/provider_test_helper.ts";
 
 // Register all standard provider tests
 registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({

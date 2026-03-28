@@ -7,7 +7,7 @@
 
 import { assert } from "https://deno.land/std@0.203.0/assert/mod.ts";
 import { join } from "https://deno.land/std@0.203.0/path/mod.ts";
-import { generateManifestObject } from "../scripts/build_agents_index.ts";
+import { generateManifestObject } from "../../scripts/build_agents_index.ts";
 import { REPO_ROOT, withRepoRoot } from "../helpers/repo_root.ts";
 
 function normalize(obj: any) {

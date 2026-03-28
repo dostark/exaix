@@ -107,7 +107,7 @@ function initNotificationTest() {
   };
 }
 
-import { createTestProposal } from "../../helpers/notification_test_helper.ts";
+import { createTestProposal } from "../helpers/notification_test_helper.ts";
 
 // Note: Database corruption or file errors are handled by DatabaseService/SQLite driver themselves.
 // These tests are updated to ensure the service behaves reasonably when the table is empty.

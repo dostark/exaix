@@ -5,11 +5,11 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { MemoryBankSource } from "../src/shared/enums.ts";
+import { MemoryBankSource } from "../../src/shared/enums.ts";
 
-import { initActivityTableSchema, initTestDbService } from "./helpers/db.ts";
-import { DatabaseService } from "../src/services/db.ts";
-import { createMockConfig } from "./helpers/config.ts";
+import { initActivityTableSchema, initTestDbService } from "../helpers/db.ts";
+import { DatabaseService } from "../../src/services/db.ts";
+import { createMockConfig } from "../helpers/config.ts";
 
 /**
  * Tests for DatabaseService (Activity Journal Storage)

@@ -7,11 +7,11 @@
 
 import { assert } from "https://deno.land/std@0.201.0/testing/asserts.ts";
 import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { getRuntimeDir } from "./helpers/paths_helper.ts";
+import { getRuntimeDir } from "../helpers/paths_helper.ts";
 
 // Resolve repository root (two levels up from this test file)
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const REPO_ROOT = join(__dirname, "..");
+const REPO_ROOT = join(__dirname, "..", "..");
 
 // Helper to list columns for a table using sqlite3 CLI
 async function tableColumns(dbPath: string, table: string) {

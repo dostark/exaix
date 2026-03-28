@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
-import { spyFetch } from "../helpers/provider_test_helper.ts";
+import { spyFetch } from "./helpers/provider_test_helper.ts";
 
 Deno.test("LlamaProvider: constructor validates model name", () => {
   // Should throw for unsupported models
