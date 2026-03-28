@@ -8,7 +8,15 @@
  */
 
 import { z } from "zod";
-import { FlowConsensusMethod, FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "../enums.ts";
+import {
+  FlowConsensusMethod,
+  FlowGateOnFail,
+  FlowInputSource,
+  FlowOutputFormat,
+  FlowStepType,
+  McpToolName,
+  StepExecutionMode,
+} from "../enums.ts";
 import { JSONValueSchema } from "../types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "../constants.ts";
 
@@ -64,6 +72,10 @@ export const FlowStepSchema = z.object({
   type: z.nativeEnum(FlowStepType).optional().default(FlowStepType.AGENT),
   /** Identity reference (required for agent type, optional for others) */
   identity: z.string().min(1, "Identity reference cannot be empty"),
+  /** Execution mode: DECLARED (default) or DYNAMIC (ReAct-style tool selection) */
+  execution_mode: z.nativeEnum(StepExecutionMode).optional().default(StepExecutionMode.DECLARED),
+  /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */
+  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
   dependsOn: z.array(z.string()).default([]),
   input: z.object({
     source: z.nativeEnum(FlowInputSource).default(FlowInputSource.REQUEST),

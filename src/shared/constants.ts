@@ -7,7 +7,7 @@
  * @related-files [src/shared/enums.ts, src/config/schema.ts]
  */
 
-import { LogLevel, McpTransportType, MockStrategy, ProviderCostTier, ProviderType } from "./enums.ts";
+import { LogLevel, McpToolName, McpTransportType, MockStrategy, ProviderCostTier, ProviderType } from "./enums.ts";
 
 // ============================================================================
 // Path Configuration Defaults
@@ -1128,3 +1128,27 @@ export const COMPLEXITY_BODY_LENGTH_LOW = 50;
  * Applied with the 'gi' flags (global, case-insensitive).
  */
 export const COMPLEXITY_FILE_REF_PATTERN = /(\/[\w.-]+|[a-z0-9_]+\.(ts|js|md|json|py|go|rs|c|cpp|h))/gi;
+
+// ============================================================================
+// Tool Classification for Dynamic Execution (Phase 56)
+// ============================================================================
+
+/**
+ * Read-only MCP tools — safe for dynamic step execution.
+ * Model can call these freely within a dynamic step.
+ */
+export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
+  McpToolName.READ_FILE,
+  McpToolName.LIST_DIRECTORY,
+  McpToolName.SEARCH_FILES,
+]);
+
+/**
+ * Write MCP tools — require declared execution_mode and human plan approval.
+ * These tools CANNOT be listed in permitted_tools for a dynamic step.
+ */
+export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
+  McpToolName.WRITE_FILE,
+  McpToolName.RUN_COMMAND,
+  McpToolName.CREATE_DIRECTORY,
+]);

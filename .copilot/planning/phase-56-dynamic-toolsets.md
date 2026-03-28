@@ -197,11 +197,13 @@ export enum StepExecutionMode {
   DECLARED = "declared",
   DYNAMIC = "dynamic",
 }
-```text
+```
 
 #### 1.2 — Update `FlowStepSchema`
 
 **File:** `src/shared/schemas/flow.ts`
+
+**✅ IMPLEMENTED** — `src/shared/schemas/flow.ts`, 8/8 tests passing
 
 ```typescript
 import { StepExecutionMode, ... } from "../enums.ts";
@@ -258,7 +260,7 @@ export const BlueprintFrontmatterSchema = z.object({
    */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
 });
-```text
+```
 
 #### 1.4 — Add Tool Classification Constants
 
@@ -286,7 +288,7 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.RUN_COMMAND,
   McpToolName.CREATE_DIRECTORY,
 ]);
-```text
+```
 
 **Success Criteria:**
 
@@ -295,6 +297,12 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
 - [ ] `BlueprintFrontmatterSchema` includes `permitted_tools`
 - [ ] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants added
 - [ ] TypeScript compilation succeeds
+
+**Planned Tests:**
+
+- Type-level tests: ensure all new schema fields are required/optional as intended.
+- Unit test: verify that `StepExecutionMode` enum and constants are exported and used in schema.
+- Unit test: parse valid/invalid `FlowStepSchema` and `BlueprintFrontmatterSchema` objects (see Task 7.1 for examples).
 
 ---
 
@@ -327,7 +335,7 @@ function validateDynamicStepTools(flow: IFlow): string[] {
 
   return errors;
 }
-```text
+```
 
 Also validate that a dynamic step's `permitted_tools` is a subset of its referenced identity's `permitted_tools`:
 
@@ -350,7 +358,7 @@ function validateToolsAgainstIdentity(
 
   return errors;
 }
-```text
+```
 
 **Success Criteria:**
 
@@ -358,23 +366,12 @@ function validateToolsAgainstIdentity(
 - [ ] Flow YAML with tool not in identity's `permitted_tools` fails validation
 - [ ] Valid declared and dynamic steps both pass `exactl flow validate`
 
----
-
-Here is the document from **Task 3** onwards:
-
-***
-
-```markdown
-
-### Task 3: Dynamic Step Executor
-
-**File:** `src/flows/dynamic_step_executor.ts`
-
-Here is the document from `### Task 3` onwards:
+**Planned Tests:**
+- Unit test: dynamic step with write tool in `permitted_tools` is rejected (see Task 7.2).
+- Unit test: dynamic step with tool not in identity's `permitted_tools` is rejected.
+- Unit test: valid declared and dynamic steps pass validation.
 
 ---
-
-```markdown
 
 ### Task 3: Dynamic Step Executor
 
@@ -580,7 +577,7 @@ export class DynamicStepExecutor {
     return `${context}\n\n[Tool: ${tool}]\n${result}`;
   }
 }
-```text
+```
 
 **Success Criteria:**
 
@@ -590,7 +587,13 @@ export class DynamicStepExecutor {
 - [ ] `resolvePermittedTools` correctly narrows step tools against identity's declaration
 - [ ] `completed: false` is returned (not thrown) when `maxIterations` is reached
 
-***
+**Planned Tests:**
+
+- Unit test: executor iterates until model declares done (see Task 7.3).
+- Unit test: executor returns `completed: false` when max iterations reached.
+- Unit test: executor throws if model selects tool outside permitted_tools.
+- Unit test: all tool calls are journaled with correct traceId.
+- Unit test: write tools in identity are filtered at runtime.
 
 ### Task 4: Update `FlowRunner` to Dispatch by Execution Mode
 
@@ -622,7 +625,7 @@ private async executeStep(
   // Existing declared-mode path — unchanged
   return this.executeDeclaredStep(step, input, traceId);
 }
-```text
+```
 
 The `dynamicStepExecutor` is injected via the constructor, keeping `FlowRunner` testable.
 
@@ -631,6 +634,11 @@ The `dynamicStepExecutor` is injected via the constructor, keeping `FlowRunner` 
 - [ ] `FlowRunner` routes `execution_mode: "dynamic"` steps to `DynamicStepExecutor`
 - [ ] `FlowRunner` routes `execution_mode: "declared"` (and default) steps through existing path unchanged
 - [ ] No behavior change for any existing flow YAML without `execution_mode`
+
+**Planned Tests:**
+
+- Integration test: dynamic and declared steps are dispatched to correct executor.
+- Regression test: legacy flows (no `execution_mode`) run unchanged.
 
 ***
 
@@ -678,7 +686,7 @@ function validateFlowForCli(flow: IFlow): ICliValidationReport {
 
   return { errors, warnings, valid: errors.length === 0 };
 }
-```text
+```
 
 **CLI output example:**
 
@@ -694,7 +702,7 @@ $ exactl flow validate Blueprints/Flows/bad-dynamic.yaml
 ❌ Validation failed (1 error):
    Step "write-docs": "write_file" is a write tool. Dynamic steps may only use
    read-only tools: [read_file, list_directory, search_files]
-```text
+```
 
 **Success Criteria:**
 
@@ -702,7 +710,11 @@ $ exactl flow validate Blueprints/Flows/bad-dynamic.yaml
 - [ ] `exactl flow validate` outputs warnings for missing `permitted_tools` and missing `timeout`
 - [ ] Exit code 1 on errors, 0 on warnings-only
 
-***
+**Planned Tests:**
+
+- CLI test: validation errors for write tools in dynamic steps.
+- CLI test: warnings for missing permitted_tools and timeout.
+- CLI test: exit code is correct for errors vs. warnings.
 
 ### Task 6: Example Flow YAML and Blueprint Updates
 
@@ -745,7 +757,7 @@ output:
 settings:
   maxParallelism: 1
   failFast: true
-```text
+```
 
 #### 6.2 — Updated identity blueprint with `permitted_tools`
 
@@ -763,7 +775,7 @@ permitted_tools:
   - search_files
 default_skills: [typescript, deno]
 ---
-```text
+```
 
 **Success Criteria:**
 
@@ -771,7 +783,10 @@ default_skills: [typescript, deno]
 - [ ] Example clearly demonstrates the declared/dynamic hybrid pattern
 - [ ] `senior-coder` blueprint has `permitted_tools` in frontmatter
 
-***
+**Planned Tests:**
+
+- Example flow is validated in CI and passes with no errors.
+- Example blueprint is parsed and used in a test flow.
 
 ### Task 7: Tests
 
@@ -814,13 +829,7 @@ it("rejects unknown execution_mode value", () => {
   });
   expect(result.success).toBe(false);
 });
-```text
-
-Here is the document from `#### 7.2 — FlowLoader validation tests` to the end:
-
-***
-
-```markdown
+```
 
 #### 7.2 — FlowLoader validation tests
 
@@ -909,7 +918,7 @@ it("accepts step permitted_tools that is a strict subset of identity tools", asy
   const errors = validateToolsAgainstIdentity(step, identityTools);
   expect(errors).toHaveLength(0);
 });
-```text
+```
 
 #### 7.3 — DynamicStepExecutor unit tests
 
@@ -1019,7 +1028,7 @@ it("filters write tools from resolvePermittedTools even if identity declares the
   expect(availableTools).toContain("read_file");
   expect(availableTools).not.toContain("write_file");
 });
-```text
+```
 
 **Success Criteria:**
 
@@ -1045,12 +1054,12 @@ it("filters write tools from resolvePermittedTools even if identity declares the
 
 ## Auditability Model: Before and After
 
+```text
 ### Before (Declared Only)
 
 Plan step:    tools: [read_file, grep_search]   ← human approves exact call list
 Execution:    read_file("src/main.ts")           ← journal entry
               grep_search("pattern")             ← journal entry
-```text
 
 ### After (Hybrid)
 
@@ -1066,7 +1075,7 @@ Execution (dynamic step):
   Iteration 2: list_directory("src/")            ← journal entry, traceId: abc123
   Iteration 3: read_file("src/flows/")           ← journal entry, traceId: abc123
   → Model declares done
-```text
+```
 
 The audit trail is *richer* in dynamic mode — the journal captures what the model actually did, not just what was planned. Human pre-approval shifts from "exact call sequence" to "permission boundary + step intent", which is more meaningful for exploratory tasks.
 
@@ -1101,6 +1110,48 @@ The audit trail is *richer* in dynamic mode — the journal captures what the mo
 
 ## Implementation Timeline
 
+---
+
+## Security Test Planning for Dynamic Toolsets
+
+### Goals
+
+- Ensure all new tool selection and execution logic is robust against privilege escalation, injection, and audit bypass.
+- Validate that dynamic tool boundaries cannot be circumvented by blueprint or flow YAML manipulation.
+- Guarantee that all tool calls (including dynamic) are fully journaled and traceable.
+
+### Planned Steps
+
+1. **Threat Modeling**
+
+  - Enumerate possible attack vectors for dynamic tool selection (e.g., model requesting undeclared tools, blueprint/flow YAML tampering, tool argument injection).
+  - Review audit trail completeness for dynamic vs. declared steps.
+
+2. **Security Test Case Design**
+
+  - Write tests for attempts to use write tools in dynamic steps (should be blocked at load and runtime).
+  - Test that step `permitted_tools` cannot exceed identity's `permitted_tools` (YAML and runtime).
+  - Attempt to inject tool names or arguments via LLM output and verify runtime guards.
+  - Simulate blueprint/flow YAML tampering (e.g., removing `permitted_tools` or adding write tools) and validate loader/runtime rejection.
+  - Confirm that all tool calls in dynamic steps are journaled with correct `traceId` and step context.
+  - Fuzz test tool argument handling for injection or privilege escalation attempts.
+
+3. **CI Integration**
+
+  - Add security regression tests to CI pipeline (e.g., `tests/flows/flow_loader_dynamic_security_test.ts`).
+  - Require all new tools and step execution modes to have corresponding negative and positive security tests before merge.
+
+4. **Documentation**
+
+  - Document security boundaries and audit guarantees for dynamic toolsets in developer docs and blueprint authoring guides.
+
+### Success Criteria
+
+- [ ] All security test cases pass (blocked on violation, allowed on valid use)
+- [ ] No privilege escalation or audit bypass possible via dynamic tool selection
+- [ ] Security regression tests run in CI and block on failure
+- [ ] Security boundaries and audit model are clearly documented
+
 | Task | Description | Duration | Dependencies |
 | ------------ | ------------------------------------------ | -------- | ------------ |
 | **Task 1** | Schema + enum + constants updates | 1 day | — |
@@ -1130,5 +1181,3 @@ The audit trail is *richer* in dynamic mode — the journal captures what the mo
 - [`src/shared/schemas/blueprint.ts`](../../src/shared/schemas/blueprint.ts) — `BlueprintFrontmatterSchema`
 - [`src/flows/flow_runner.ts`](../../src/flows/flow_runner.ts) — step execution dispatch
 - [`src/flows/flow_loader.ts`](../../src/flows/flow_loader.ts) — flow YAML parsing and validation
-
-```

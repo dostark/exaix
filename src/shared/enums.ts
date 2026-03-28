@@ -834,6 +834,16 @@ export enum FlowOutputFormat {
 }
 
 /**
+ * Execution mode for a flow step.
+ * - DECLARED: tools are committed in the plan before execution (default, current behavior)
+ * - DYNAMIC: model selects tools from permitted_tools at runtime (ReAct-style)
+ */
+export enum StepExecutionMode {
+  DECLARED = "declared",
+  DYNAMIC = "dynamic",
+}
+
+/**
 /**
  * Standard MCP tool names used in the system.
  */
