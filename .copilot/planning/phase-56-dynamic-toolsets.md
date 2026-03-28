@@ -292,17 +292,19 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
 
 **Success Criteria:**
 
-- [ ] `StepExecutionMode` enum added to `src/shared/enums.ts`
-- [ ] `FlowStepSchema` includes `execution_mode` and `permitted_tools`
+- [x] `StepExecutionMode` enum added to `src/shared/enums.ts`
+- [x] `FlowStepSchema` includes `execution_mode` and `permitted_tools`
 - [ ] `BlueprintFrontmatterSchema` includes `permitted_tools`
-- [ ] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants added
-- [ ] TypeScript compilation succeeds
+- [x] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants added
+- [x] TypeScript compilation succeeds
 
 **Planned Tests:**
 
-- Type-level tests: ensure all new schema fields are required/optional as intended.
-- Unit test: verify that `StepExecutionMode` enum and constants are exported and used in schema.
-- Unit test: parse valid/invalid `FlowStepSchema` and `BlueprintFrontmatterSchema` objects (see Task 7.1 for examples).
+- ✅ Type-level tests: ensure all new schema fields are required/optional as intended.
+- ✅ Unit test: verify that `StepExecutionMode` enum and constants are exported and used in schema.
+- ✅ Unit test: parse valid/invalid `FlowStepSchema` objects (8/8 tests passing).
+
+**✅ IMPLEMENTED** — `src/shared/enums.ts`, `src/shared/constants.ts`, `src/shared/schemas/flow.ts`, 13/13 tests passing (Task 1.1, 1.2, 1.4)
 
 ---
 
@@ -367,6 +369,7 @@ function validateToolsAgainstIdentity(
 - [ ] Valid declared and dynamic steps both pass `exactl flow validate`
 
 **Planned Tests:**
+
 - Unit test: dynamic step with write tool in `permitted_tools` is rejected (see Task 7.2).
 - Unit test: dynamic step with tool not in identity's `permitted_tools` is rejected.
 - Unit test: valid declared and dynamic steps pass validation.
