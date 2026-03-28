@@ -1,0 +1,27 @@
+```typescript
+export const BlueprintFrontmatterSchema = z.object({
+  agent_id: z.string()...,
+  name: z.string()...,
+  model: z.string()...,
+  capabilities: z.array(z.string()).optional().default([]),
+  default_skills: z.array(z.string()).optional(),
+  // ... no permitted_tools
+});
+```text
+
+**Existing `McpToolName` enum (already in `src/shared/enums.ts`):**
+
+```typescript
+export enum McpToolName {
+  READ_FILE = "read_file",
+  WRITE_FILE = "write_file",
+  RUN_COMMAND = "run_command",
+  LIST_DIRECTORY = "list_directory",
+  SEARCH_FILES = "search_files",
+  CREATE_DIRECTORY = "create_directory",
+}
+```text
+
+This enum is the foundation for tool permission classification — no new tool names need to be invented.
+
+### Execution Flow Today

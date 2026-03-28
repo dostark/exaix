@@ -1,0 +1,13 @@
+If `search` appears zero times → error (tool fails loudly, model must reconsider).
+If `search` appears more than once → error with count (ambiguous; model must make search more specific).
+If `search` appears exactly once → replacement applied, result written back.
+
+---
+
+## Implementation Plan
+
+### Task 1: Zod Schemas
+
+**File:** `src/shared/schemas/mcp.ts`
+
+Add after existing tool schemas:

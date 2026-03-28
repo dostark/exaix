@@ -1,7 +1,7 @@
 ---
 agent: claude
 scope: dev
-title: "Phase 56: New MCP Tool Handlers — File and Directory Operations"
+title: "Phase 57: New MCP Tool Handlers — File and Directory Operations"
 short*summary: "Implement patch*file, delete*file, move*file, and create_directory MCP tool handlers to close critical gaps in Exaix's file operation toolset, enabling agents to perform refactoring, targeted edits, and directory management within portals."
 version: "1.0"
 topics: ["mcp", "tools", "file-operations", "handlers", "schemas", "security", "portal"]

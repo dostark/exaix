@@ -1,0 +1,9 @@
+`patch*file` is the most important tool in this phase and deserves careful design. Unlike `write*file`
+which replaces entire file content, `patch_file` applies a targeted replacement — making it:
+
+- **More auditable** — the diff between before/after is small and meaningful
+- **Token-efficient** — the model only needs to emit the changed section, not the entire file
+- **Safer** — less risk of accidentally clobbering unrelated file content
+- **Preferred** by all mature coding agents (Cursor, Claude Code, Copilot Workspace, SWE-agent)
+
+### Patch Strategy: String Replacement

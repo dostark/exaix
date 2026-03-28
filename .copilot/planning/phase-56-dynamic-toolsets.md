@@ -1,7 +1,7 @@
 ---
 agent: claude
 scope: dev
-title: "Phase 55: Hybrid Dynamic Tool Selection for Flow Steps"
+title: "Phase 56: Hybrid Dynamic Tool Selection for Flow Steps"
 short_summary: "Introduce execution_mode: 'dynamic' as an opt-in per flow step, allowing the model to select tools from a pre-defined toolset at runtime (ReAct-style) while keeping declared-tool behavior as the default and preserving full Activity Journal auditability."
 version: "1.0"
 topics: ["flows", "tools", "dynamic-execution", "react", "blueprints", "schema", "auditability", "mcp"]

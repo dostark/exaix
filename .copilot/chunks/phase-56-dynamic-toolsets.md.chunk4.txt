@@ -1,0 +1,11 @@
+- [ ] Add `StepExecutionMode` enum: `declared` | `dynamic`
+- [ ] Add `permitted_tools` and `execution_mode` fields to `FlowStepSchema`
+- [ ] Add `permitted_tools` field to `BlueprintFrontmatterSchema`
+- [ ] Add `READ_ONLY_TOOLS` and `WRITE_TOOLS` classification sets to `src/shared/constants.ts`
+- [ ] Implement `DynamicStepExecutor` in `src/flows/dynamic_step_executor.ts`
+- [ ] Update `FlowRunner` to dispatch dynamic vs. declared steps correctly
+- [ ] Update `FlowLoader` to validate that dynamic steps do not list write tools in `permitted_tools`
+- [ ] Add `exactl flow validate` warnings for dynamic steps referencing write tools
+- [ ] Write unit tests for `DynamicStepExecutor` and schema validation
+- [ ] Update `Blueprints/Flows/` examples with at least one dynamic step demo flow
+- [ ] Update blueprint documentation (`Blueprints/README.md`)

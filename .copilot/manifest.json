@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-28T10:16:12.411Z",
+  "generated_at": "2026-03-28T10:35:45.735Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -765,6 +765,33 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-57-new-mcp-tools-handlers.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 57: New MCP Tool Handlers — File and Directory Operations",
+      "short_summary": "",
+      "version": "1.0",
+      "topics": [
+        "mcp",
+        "tools",
+        "file-operations",
+        "handlers",
+        "schemas",
+        "security",
+        "portal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk0.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk1.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk2.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk3.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk4.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk5.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk6.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-30-cli-flow-request.md",
       "agent": "claude",
       "scope": "dev",
@@ -839,61 +866,6 @@
         ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk5.txt",
         ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk6.txt",
         ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-55-dynamic-toolsets.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 55: Hybrid Dynamic Tool Selection for Flow Steps",
-      "short_summary": "Introduce execution_mode: 'dynamic' as an opt-in per flow step, allowing the model to select tools from a pre-defined toolset at runtime (ReAct-style) while keeping declared-tool behavior as the default and preserving full Activity Journal auditability.",
-      "version": "1.0",
-      "topics": [
-        "flows",
-        "tools",
-        "dynamic-execution",
-        "react",
-        "blueprints",
-        "schema",
-        "auditability",
-        "mcp"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk0.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk1.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk2.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk3.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk4.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk5.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk6.txt",
-        ".copilot/chunks/phase-55-dynamic-toolsets.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-56-new-mcp-tools-handlers.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 56: New MCP Tool Handlers — File and Directory Operations",
-      "short_summary": "",
-      "version": "1.0",
-      "topics": [
-        "mcp",
-        "tools",
-        "file-operations",
-        "handlers",
-        "schemas",
-        "security",
-        "portal"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk0.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk1.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk2.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk3.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk4.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk5.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk6.txt",
-        ".copilot/chunks/phase-56-new-mcp-tools-handlers.md.chunk7.txt"
       ]
     },
     {
@@ -1054,6 +1026,34 @@
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk5.txt",
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk6.txt",
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-56-dynamic-toolsets.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 56: Hybrid Dynamic Tool Selection for Flow Steps",
+      "short_summary": "Introduce execution_mode: 'dynamic' as an opt-in per flow step, allowing the model to select tools from a pre-defined toolset at runtime (ReAct-style) while keeping declared-tool behavior as the default and preserving full Activity Journal auditability.",
+      "version": "1.0",
+      "topics": [
+        "flows",
+        "tools",
+        "dynamic-execution",
+        "react",
+        "blueprints",
+        "schema",
+        "auditability",
+        "mcp"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk0.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk1.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk2.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk3.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk4.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk5.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk6.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk7.txt"
       ]
     },
     {

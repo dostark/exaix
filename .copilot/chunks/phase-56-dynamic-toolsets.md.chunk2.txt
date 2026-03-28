@@ -1,0 +1,7 @@
+- **No behavioral regression** — `execution_mode: "declared"` (default) is unchanged
+- **Human approves boundaries, not sequences** — for dynamic steps, the plan shows the permitted toolset + step intent; the model decides the call sequence at runtime
+- **Auditability preserved** — every actual tool call is still logged in the Activity Journal with `trace_id`, regardless of execution mode
+- **Read/write distinction** — read-only tools (`read_file`, `list_directory`, `search_files`) are permitted in dynamic steps; write tools (`write_file`, `run_command`, `create_directory`) are disallowed in dynamic steps and require declared mode
+- **Toolset authority lives in the blueprint** — the identity's `permitted_tools` frontmatter field defines the maximum set available for dynamic selection
+
+---

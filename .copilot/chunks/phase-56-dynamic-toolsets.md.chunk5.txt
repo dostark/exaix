@@ -1,0 +1,21 @@
+---
+
+## Current State Analysis
+
+### Existing Tool Execution Model
+
+**Current `FlowStepSchema` (relevant portion):**
+
+```typescript
+// src/shared/schemas/flow.ts
+export const FlowStepSchema = z.object({
+  id: z.string().min(1, "Step ID cannot be empty"),
+  name: z.string().min(1, "Step name cannot be empty"),
+  type: z.nativeEnum(FlowStepType).optional().default(FlowStepType.AGENT),
+  identity: z.string().min(1, "Identity reference cannot be empty"),
+  // ... no execution_mode, no permitted_tools
+  skills: z.array(z.string()).optional(),
+});
+```text
+
+**Current blueprint frontmatter (`BlueprintFrontmatterSchema`):**

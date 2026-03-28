@@ -367,13 +367,13 @@ steps: Array<{
 - [x] TypeScript compilation succeeds
 - [x] All `defineFlow()` call sites pass `identity:` (not `agent:`)
 
-**✅ IMPLEMENTED** — `src/flows/define_flow.ts`, `tests/flows/define_flow_unit_test.ts`, 6/6 tests passing
+**✅ IMPLEMENTED** — `src/flows/define*flow.ts`, `tests/flows/define*flow*unit*test.ts`, 6/6 tests passing
 
 ---
 
 ### Step 9 — Remove Runtime Fallback Logic
 
-**Files:** `src/flows/flow_runner.ts`, `src/flows/flow_loader.ts`, `tests/flows/flow_runner_test.ts`
+**Files:** `src/flows/flow*runner.ts`, `src/flows/flow*loader.ts`, `tests/flows/flow*runner*test.ts`
 
 Per GLOSSARY.md, ensure proper separation of concerns:
 
@@ -395,7 +395,7 @@ Per GLOSSARY.md, ensure proper separation of concerns:
 
 **Test file migration:**
 
-- All `agent:` step definitions in `flow_runner_test.ts` → `identity:` (63 occurrences)
+- All `agent:` step definitions in `flow*runner*test.ts` → `identity:` (63 occurrences)
 
 **Success criteria:**
 
@@ -405,7 +405,7 @@ Per GLOSSARY.md, ensure proper separation of concerns:
 - [x] Journal events use `identity` for identity references
 - [x] All flow_runner tests pass: 39/39
 
-**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`, 39/39 tests passing
+**✅ IMPLEMENTED** — `src/flows/flow*runner.ts`, `tests/flows/flow*runner_test.ts`, 39/39 tests passing
 
 ---
 
@@ -1219,19 +1219,19 @@ deno run -A scripts/ci.ts all
 - Zero `agent:` keys remain in flow step definitions
 - Flow validation passes for all migrated files
 
-### Step 11 — Add actor_type, agent_kind, identity_id columns ✅
+### Step 11 — Add actor*type, agent*kind, identity_id columns ✅
 
-**✅ IMPLEMENTED** — `migrations/002_actor_identity_fields.sql` created
+**✅ IMPLEMENTED** — `migrations/002*actor*identity_fields.sql` created
 
-- Migration adds `actor_type`, `agent_kind`, `identity_id` columns to `activity` table
-- Backfills `identity_id` from existing `agent_id` values
+- Migration adds `actor*type`, `agent*kind`, `identity_id` columns to `activity` table
+- Backfills `identity*id` from existing `agent*id` values
 - Creates indexes for new columns
 
 ### Step 12 — Update ActivityRecordSchema and LogEntry ✅
 
 **✅ IMPLEMENTED** — `src/services/db.ts` updated
 
-- `ActivityRecordSchema` includes `actor_type`, `agent_kind`, `identity_id` fields
+- `ActivityRecordSchema` includes `actor*type`, `agent*kind`, `identity_id` fields
 - `LogEntry` interface includes new fields
 - INSERT statement writes all new columns
 
@@ -1272,7 +1272,7 @@ deno run -A scripts/ci.ts all
 
 | Commit | Description |
 | -------- | ------------- |
-| `0b28129c` | Steps 8-9: define_flow.ts, flow_runner.ts logging |
+| `0b28129c` | Steps 8-9: define*flow.ts, flow*runner.ts logging |
 | `06da0900` | Steps 10-12: YAML migration, database schema |
 | `02c0679f` | Steps 14-16: ILogEvent, EventLogger, ActorType/AgentKind enums |
 
@@ -1431,17 +1431,17 @@ async logExecutionError(
 
 ```typescript
 // BEFORE
-await this.logExecutionStart(context.trace_id, options.agent_id, options.portal);
-await this.logExecutionComplete(context.trace_id, options.agent_id, validated);
-await this.logExecutionError(context.trace_id, options.agent_id, { ... });
+await this.logExecutionStart(context.trace*id, options.agent*id, options.portal);
+await this.logExecutionComplete(context.trace*id, options.agent*id, validated);
+await this.logExecutionError(context.trace*id, options.agent*id, { ... });
 
 // AFTER
-await this.logExecutionStart(context.trace_id, options.identity_id, options.portal);
-await this.logExecutionComplete(context.trace_id, options.identity_id, validated);
-await this.logExecutionError(context.trace_id, options.identity_id, { ... });
+await this.logExecutionStart(context.trace*id, options.identity*id, options.portal);
+await this.logExecutionComplete(context.trace*id, options.identity*id, validated);
+await this.logExecutionError(context.trace*id, options.identity*id, { ... });
 ```
 
-Note: `options.agent_id` → `options.identity_id` here because the field
+Note: `options.agent*id` → `options.identity*id` here because the field
 in `IAgentExecutionOptions` that carries the blueprint slug must also be
 renamed (see Step 21).
 
@@ -1464,13 +1464,13 @@ deno task test -- --filter agent_executor
 
 ---
 
-### Step 21 — Fix `IAgentExecutionOptions` and `IExecutionContext` schemas: rename `agent_id` field to `identity_id`
+### Step 21 — Fix `IAgentExecutionOptions` and `IExecutionContext` schemas: rename `agent*id` field to `identity*id`
 
 **File:** `src/shared/schemas/agent_executor.ts`
 
 **Background.**
 `IAgentExecutionOptions.agent_id` holds the identity blueprint slug.  Per
-GLOSSARY.md this field should be `identity_id`.  `agent_id` in these schemas
+GLOSSARY.md this field should be `identity*id`.  `agent*id` in these schemas
 means "which blueprint to use", not "which runtime agent", so the name is wrong.
 
 **What to do:**
@@ -1503,8 +1503,8 @@ After renaming, find all usages of `options.agent_id` across the codebase and
 replace with `options.identity_id`:
 
 ```bash
-grep -rn "options\.agent_id\|opts\.agent_id" src/ tests/
-# Replace every match with options.identity_id / opts.identity_id
+grep -rn "options\.agent*id\|opts\.agent*id" src/ tests/
+# Replace every match with options.identity*id / opts.identity*id
 ```
 
 Also update the `permissions.checkAgentAllowed` call in `executeStep` — the
@@ -1516,7 +1516,7 @@ check method's parameter locally for clarity:
 if (!this.permissions.checkAgentAllowed(options.portal, options.agent_id).allowed) {
   throw new Error(`Agent not allowed to access portal: ${options.agent_id} -> ${options.portal}`);
 }
-const _blueprint = await this.loadBlueprint(options.agent_id);
+const *blueprint = await this.loadBlueprint(options.agent*id);
 
 // AFTER
 if (!this.permissions.checkAgentAllowed(options.portal, options.identity_id).allowed) {
@@ -1524,16 +1524,16 @@ if (!this.permissions.checkAgentAllowed(options.portal, options.identity_id).all
     `Identity not allowed to access portal: ${options.identity_id} -> ${options.portal}`
   );
 }
-const _blueprint = await this.loadBlueprint(options.identity_id);
+const *blueprint = await this.loadBlueprint(options.identity*id);
 ```
 
 **Verification:**
 
 ```bash
-grep -rn "agent_id" src/shared/schemas/agent_executor.ts
+grep -rn "agent*id" src/shared/schemas/agent*executor.ts
 # Must return zero results
 
-grep -rn "options\.agent_id\|opts\.agent_id" src/ tests/
+grep -rn "options\.agent*id\|opts\.agent*id" src/ tests/
 # Must return zero results
 
 deno check src/
@@ -1542,7 +1542,7 @@ deno task test
 
 **Success criteria:**
 
-- [x] `IAgentExecutionOptions.identity_id` replaces `agent_id`
+- [x] `IAgentExecutionOptions.identity*id` replaces `agent*id`
 - [x] All callers updated
 - [x] Zero TypeScript errors
 - [x] All tests pass
@@ -1555,8 +1555,8 @@ deno task test
 
 **Background.**
 `MemoryBankService.logActivity` currently calls `db.logActivity` with
-`"system"` as actor and `null` as `agent_id`.  It carries no `actor_type`,
-`agent_kind`, or `identity_id`.  Per GLOSSARY.md, memory bank is an Exaix
+`"system"` as actor and `null` as `agent*id`.  It carries no `actor*type`,
+`agent*kind`, or `identity*id`.  Per GLOSSARY.md, memory bank is an Exaix
 internal service acting as an **Actor** of type `"service"`, the runtime
 agent handling the call is `"memory-bank"`, and there is no LLM identity
 involved in storage operations (so `identity_id` is `null`).
@@ -1645,7 +1645,7 @@ Update all `MemoryBankService` calls to `logActivity` to pass the new fields:
 this.logActivity({
   event_type: "memory.execution.recorded",
   target: execution.portal,
-  trace_id: execution.trace_id,
+  trace*id: execution.trace*id,
   metadata: {
     status: execution.status,
     agent: execution.agent,     // ← field named "agent" in metadata
@@ -1657,10 +1657,10 @@ this.logActivity({
 this.logActivity({
   event_type: "memory.execution.recorded",
   target: execution.portal,
-  trace_id: execution.trace_id,
+  trace*id: execution.trace*id,
   metadata: {
     status: execution.status,
-    identity_id: execution.agent,   // ← rename metadata key: agent → identity_id
+    identity*id: execution.agent,   // ← rename metadata key: agent → identity*id
     files_changed: ...,
   },
 });
@@ -1751,7 +1751,7 @@ export const MemoryUpdateProposalSchema = z.object({
   // ...
   reason: z.string().describe("Why this update is proposed"),
   agent: z.string().describe("Agent that proposed the update"),
-  execution_id: z.string().optional().describe("Related execution trace_id"),
+  execution*id: z.string().optional().describe("Related execution trace*id"),
   // ...
 });
 ```
@@ -1763,7 +1763,7 @@ export const MemoryUpdateProposalSchema = z.object({
   // ...
   reason: z.string().describe("Why this update is proposed"),
   identity_id: z.string().describe("Identity (blueprint name) that proposed the update"),
-  execution_id: z.string().optional().describe("Related execution trace_id"),
+  execution*id: z.string().optional().describe("Related execution trace*id"),
   // ...
 });
 ```
@@ -1778,9 +1778,9 @@ Should return zero results after the change.
 
 **Success criteria:**
 
-  - [x] `IMemoryUpdateProposal.agent` no longer exists
-  - [x] `IMemoryUpdateProposal.identity_id` is `string` (required)
-  - [x] `deno check src/shared/schemas/memory_bank.ts` passes
+[x] `IMemoryUpdateProposal.agent` no longer exists
+[x] `IMemoryUpdateProposal.identity_id` is `string` (required)
+[x] `deno check src/shared/schemas/memory_bank.ts` passes
 
 ### Step 25 — Update `MemoryBankService` to use `identity_id` in execution records and activity logging
 
@@ -1794,7 +1794,7 @@ Should return zero results after the change.
 this.logActivity({
   event_type: "memory.execution.recorded",
   target: execution.portal,
-  trace_id: execution.trace_id,
+  trace*id: execution.trace*id,
   metadata: {
     status: execution.status,
     agent: execution.agent,
@@ -1809,11 +1809,11 @@ this.logActivity({
 this.logActivity({
   event_type: "memory.execution.recorded",
   target: execution.portal,
-  trace_id: execution.trace_id,
+  trace*id: execution.trace*id,
   metadata: {
     status: execution.status,
-    identity_id: execution.identity_id,
-    agent_id: execution.agent_id,
+    identity*id: execution.identity*id,
+    agent*id: execution.agent*id,
     files_changed: ...
   },
 });
@@ -1873,7 +1873,7 @@ async createProposal(
     learning,
     reason: `Extracted from execution ${execution.trace_id}`,
     agent,
-    execution_id: execution.trace_id,
+    execution*id: execution.trace*id,
     status: MemoryStatus.PENDING,
   };
 
@@ -1910,7 +1910,7 @@ async createProposal(
     learning,
     reason: `Extracted from execution ${execution.trace_id}`,
     identity_id: identityId,
-    execution_id: execution.trace_id,
+    execution*id: execution.trace*id,
     status: MemoryStatus.PENDING,
   };
 
@@ -1938,16 +1938,16 @@ For each call site, rename the third argument variable from `agent` to the appro
 
 **Success criteria:**
 
-  - [x] `createProposal` parameter renamed from `agent` to `identityId`
-  - [x] `proposal.agent` assignment replaced with `proposal.identity_id = identityId`
-- All call sites updated to pass identity name as third argument
-  - [x] `deno check src/services/memory_extractor.ts` passes
+[x] `createProposal` parameter renamed from `agent` to `identityId`
+[x] `proposal.agent` assignment replaced with `proposal.identity_id = identityId`
+[x] All call sites updated to pass identity name as third argument
+[x] `deno check src/services/memory_extractor.ts` passes
 
 ### Step 27 — Audit `NotificationService` actor semantics and fix logActivity calls
 
 **File:** `src/services/notification.ts`
 
-**Problem:** The `logActivity` private helper passes `"notification-service"` as the first argument (actor). This is a system-internal actor name — acceptable. However, `notifyMemoryUpdate()` should carry `identity_id` in metadata when the proposal contains one (after Step 24, `proposal.identity_id` exists).
+**Problem:** The `logActivity` private helper passes `"notification-service"` as the first argument (actor). This is a system-internal actor name — acceptable. However, `notifyMemoryUpdate()` should carry `identity*id` in metadata when the proposal contains one (after Step 24, `proposal.identity*id` exists).
 
 **BEFORE (in `notifyMemoryUpdate`):**
 
@@ -1973,7 +1973,7 @@ this.logActivity({
     proposal_id: proposal.id,
     learning_title: proposal.learning?.title || "Untitled",
     reason: proposal.reason,
-    identity_id: proposal.identity_id,   // which identity triggered this proposal
+    identity*id: proposal.identity*id,   // which identity triggered this proposal
   },
 });
 ```
@@ -1991,9 +1991,9 @@ Both should return zero results.
 
 **Success criteria:**
 
-  - [x] `notifyMemoryUpdate` metadata includes `identity_id` from proposal
-- No `agent` field references in `notification.ts`
-  - [x] `deno check src/services/notification.ts` passes
+[x] `notifyMemoryUpdate` metadata includes `identity_id` from proposal
+[x] No `agent` field references in `notification.ts`
+[x] `deno check src/services/notification.ts` passes
 
 ### Cross-cutting Final Audit (Step 28 — Optional cleanup pass)
 
@@ -2029,9 +2029,9 @@ deno test tests/services/ --allow-all
 
 | Location | BEFORE | AFTER |
 | --- | --- | --- |
-| `ExecutionMemorySchema` | `agent: string` | `identity_id: string`, `agent_id?: string` |
+| `ExecutionMemorySchema` | `agent: string` | `identity*id: string`, `agent*id?: string` |
 | `MemoryUpdateProposalSchema` | `agent: string` | `identity_id: string` |
-| `MemoryBankService.createExecutionRecord` | `metadata.agent` | `metadata.identity_id`, `metadata.agent_id` |
+| `MemoryBankService.createExecutionRecord` | `metadata.agent` | `metadata.identity*id`, `metadata.agent*id` |
 | `MemoryExtractorService.createProposal` | param `agent`, sets `proposal.agent` | param `identityId`, sets `proposal.identity_id` |
 | `NotificationService.notifyMemoryUpdate` | no identity in metadata | `metadata.identity_id` from proposal |
 

@@ -1,0 +1,16 @@
+```typescript
+export const PatchFileToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  path: z.string().min(1, "File path required"),
+  /** Exact string to search for in the file. Must match exactly once. */
+  search: z.string().min(1, "Search string required"),
+  /** Replacement string. May be empty to delete the matched section. */
+  replace: z.string(),
+  agent_id: z.string().min(1, "Agent ID required").default("system"),
+});
+
+export const DeleteFileToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  path: z.string().min(1, "File path required"),
+  agent_id: z.string().min(1, "Agent ID required").default("system"),
+});

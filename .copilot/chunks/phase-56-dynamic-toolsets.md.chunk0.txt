@@ -1,0 +1,12 @@
+> [!NOTE]
+> **Status: ⏳ Pending**
+> This phase adds hybrid dynamic tool execution to Exaix flows. The current plan-and-execute model
+> (ReWOO-style, tools committed during planning) is preserved as the default. A new `execution_mode: "dynamic"`
+> opt-in at the step level allows the model to select tools from a step-scoped `permitted_tools` list at
+> runtime, with read-only tools pre-approved and write tools continuing to require declared plan steps.
+>
+> **No breaking changes** — all existing flow YAML files continue to work unchanged.
+>
+> **Prerequisite:** Phase 53 (Identity rename) should be applied before this phase.
+
+## Executive Summary

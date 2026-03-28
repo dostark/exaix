@@ -1,0 +1,10 @@
+Exaix currently uses a Plan-and-Execute (ReWOO) model: tools are declared in the plan before human approval,
+before the model has seen any tool output. This is maximally auditable but inflexible — exploratory tasks like
+codebase analysis or dependency mapping are unnecessarily constrained by pre-committing to exact tool call
+sequences.
+
+This phase introduces **Option C (Hybrid)**: a per-step `execution_mode` field that unlocks ReAct-style
+dynamic tool selection within a declared permission boundary (`permitted_tools`). Destructive write operations
+remain fully declared and human-approved. Exploratory read operations gain genuine model-driven flexibility.
+
+### **Design Principles**
