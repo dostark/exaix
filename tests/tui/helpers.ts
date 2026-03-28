@@ -539,7 +539,7 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
     actor: (a.actor as string | null) ?? null,
     actor_type: null,
     identity_id: (a.identity_id as string | null) ?? null,
-    identity_kind: null,
+    agent_kind: null,
     action_type: String(a.action_type ?? "unknown"),
     target: (a.target as string | null) ?? null,
     payload: typeof a.payload === "string" ? a.payload : JSON.stringify(a.payload ?? {}),

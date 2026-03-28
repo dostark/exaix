@@ -1680,7 +1680,7 @@ class MockDatabaseService {
       actor: "test",
       actor_type: null,
       identity_id: null,
-      identity_kind: null,
+      agent_kind: null,
       target: null,
     }));
   }
@@ -1702,7 +1702,7 @@ class MockDatabaseService {
     _traceId?: string,
     _actorType?: string | null,
     _identityId?: string | null,
-    _identityKind?: string | null,
+    _agentKind?: string | null,
   ): void {}
   waitForFlush(): Promise<void> {
     return Promise.resolve();

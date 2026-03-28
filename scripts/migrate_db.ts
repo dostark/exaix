@@ -153,7 +153,7 @@ function validateMigration(migrationFile: string, db: Database): ValidationResul
         "idx_activity_trace",
         "idx_activity_identity",
         "idx_activity_actor_type",
-        "idx_activity_identity_kind",
+        "idx_activity_agent_kind",
         "idx_leases_identity",
         "idx_reviews_trace_id",
         "idx_reviews_status",

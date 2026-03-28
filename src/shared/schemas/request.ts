@@ -20,16 +20,13 @@ import { REQUEST_STATUS_VALUES } from "../status/request_status.ts";
  */
 export const RequestSchema = z.object({
   trace_id: z.string().uuid("Invalid trace_id: must be a valid UUID"),
-  /** Identity blueprint to use (Phase 54 canonical field) */
-  identity: z.string().min(1, "Identity cannot be empty").optional(),
-  /** Legacy agent identification (Phase 53 and earlier) */
-  identity_id: z.string().min(1, "identity_id cannot be empty").optional(),
+  identity_id: z.string().min(1, "identity_id cannot be empty"),
+  agent_kind: z.string().min(0).optional(),
   status: z.enum(REQUEST_STATUS_VALUES),
   priority: z.number().int().min(0).max(10).default(5),
   created_at: z.string().datetime().optional(),
   tags: z.array(z.string()).default([]),
 
-  // Phase 17: Request-level skill overrides
   /** Explicit skills to apply for this request (overrides trigger matching) */
   skills: z.array(z.string()).optional(),
   /** Skills to skip/disable for this request */

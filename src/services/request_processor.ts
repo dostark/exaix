@@ -236,7 +236,7 @@ export class RequestProcessor {
     const analysisMode = (this.config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode;
     const analysis = analysisEnabled
       ? await this.analyzer.analyze(assessedBody, {
-        identityId: frontmatter.identity ?? frontmatter.agent ?? frontmatter.flow,
+        identityId: frontmatter.identity ?? frontmatter.identity ?? frontmatter.flow,
         priority: frontmatter.priority,
         mode: analysisMode,
         memories: memoryContext,
@@ -398,7 +398,7 @@ export class RequestProcessor {
     const { frontmatter, filePath, traceLogger } = args;
 
     const hasFlow = !!frontmatter.flow;
-    const hasAgent = !!frontmatter.identity || !!frontmatter.agent;
+    const hasAgent = !!frontmatter.identity || !!frontmatter.identity;
 
     if (hasFlow && hasAgent) {
       traceLogger.error("request.invalid", filePath, {
@@ -560,7 +560,7 @@ export class RequestProcessor {
     specification?: IRequestSpecification,
     memoryContext?: EnhancedRequest,
   ): Promise<string | null> {
-    const identityId = frontmatter.identity || frontmatter.agent;
+    const identityId = frontmatter.identity || frontmatter.identity;
     const loadedBlueprint = await this.loadBlueprintWithFallback(identityId!, traceLogger);
 
     if (!loadedBlueprint) {
@@ -638,7 +638,7 @@ export class RequestProcessor {
       createdAt: new Date(frontmatter.created),
       contextFiles: [],
       contextWarnings: [],
-      identityId: frontmatter.identity || frontmatter.agent,
+      identityId: frontmatter.identity || frontmatter.identity,
       model: frontmatter.model,
       portal: frontmatter.portal,
       targetBranch: frontmatter.target_branch,

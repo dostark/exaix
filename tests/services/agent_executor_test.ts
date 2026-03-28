@@ -1610,7 +1610,7 @@ Deno.test({
   fn: () => {
     const error1 = new AgentExecutionError("Test error");
     assertEquals(error1.message, "Test error");
-    assertEquals(error1.type, "agent_error");
+    assertEquals(error1.type, "execution_error");
     assertEquals(error1.name, "AgentExecutionError");
     assertEquals(error1.cause, undefined);
 

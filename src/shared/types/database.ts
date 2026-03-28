@@ -33,7 +33,7 @@ export interface IActivityRecord {
   actor: string | null;
   actor_type: string | null;
   identity_id: string | null;
-  identity_kind?: string | null;
+  agent_kind?: string | null;
   action_type: string;
   target: string | null;
   payload: string;

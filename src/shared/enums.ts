@@ -782,7 +782,7 @@ export enum AgentExecutionErrorType {
   TOOL_ERROR = "tool_error",
   GIT_ERROR = "git_error",
   SECURITY_VIOLATION = "security_violation",
-  AGENT_ERROR = "agent_error",
+  EXECUTION_ERROR = "execution_error",
 }
 
 /**

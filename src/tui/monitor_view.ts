@@ -26,7 +26,7 @@ export interface ILogEntry {
   actor: string | null;
   actor_type: string | null;
   identity_id: string | null;
-  identity_kind?: string | null;
+  agent_kind?: string | null;
   action_type: string;
   target: string | null;
   payload: JSONObject;
@@ -222,7 +222,7 @@ export class MonitorView {
       this.logs = activities.map((log: IActivityRecord): ILogEntry => ({
         ...log,
         payload: (typeof log.payload === "string" ? JSON.parse(log.payload) : log.payload) as JSONObject,
-        identity_kind: log.identity_kind ?? null,
+        agent_kind: log.agent_kind ?? null,
       }));
     }
   }
@@ -350,7 +350,7 @@ export class MinimalLogServiceMock implements IJournalService {
       payload: JSON.stringify(log.payload),
       actor_type: log.actor_type ?? null,
       identity_id: log.identity_id ?? null,
-      identity_kind: log.identity_kind ?? null,
+      agent_kind: log.agent_kind ?? null,
     }))]);
   }
 

@@ -113,7 +113,7 @@ Deno.test("JournalServiceAdapter query and distinct-values handling", async () =
     actor: "cli",
     actor_type: null,
     identity_id: TEST_IDENTITY_ID,
-    identity_kind: null,
+    agent_kind: null,
     action_type: "run",
     target: "target",
     payload: "{}",

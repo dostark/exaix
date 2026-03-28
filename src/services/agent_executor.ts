@@ -39,7 +39,7 @@ import {
   type IChangesetResult,
   type IExecutionContext,
 } from "../shared/schemas/agent_executor.ts";
-import { ActorType, AgentKind, LogLevel, SecurityMode } from "../shared/enums.ts";
+import { ActorType, AgentExecutionErrorType, AgentKind, LogLevel, SecurityMode } from "../shared/enums.ts";
 import { InputValidator } from "../shared/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "./prompt_context.ts";
 import { JSONValue } from "../shared/types/json.ts";
@@ -61,7 +61,7 @@ export interface IBlueprint {
 export class AgentExecutionError extends Error {
   constructor(
     message: string,
-    public type: string = "agent_error",
+    public type: string = AgentExecutionErrorType.EXECUTION_ERROR,
     public override cause?: Error,
   ) {
     super(message);
@@ -408,7 +408,7 @@ export class AgentExecutor {
     } catch (error) {
       // Log error
       await this.logExecutionError(context.trace_id, options.identity_id ?? "", {
-        type: "agent_error",
+        type: AgentExecutionErrorType.EXECUTION_ERROR,
         message: error instanceof Error ? error.message : String(error),
         trace_id: context.trace_id,
       });
@@ -1014,7 +1014,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      identityKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: AgentKind.AGENT_EXECUTOR,
       identityId: identityId,
       payload: {
         portal,
@@ -1038,7 +1038,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      identityKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: AgentKind.AGENT_EXECUTOR,
       identityId: identityId,
       payload: {
         branch: result.branch,
@@ -1066,7 +1066,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
-      identityKind: AgentKind.AGENT_EXECUTOR,
+      agentKind: AgentKind.AGENT_EXECUTOR,
       identityId: identityId,
       level: LogLevel.ERROR,
       payload: {

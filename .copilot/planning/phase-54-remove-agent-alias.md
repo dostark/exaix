@@ -1057,10 +1057,10 @@ deno task test
 
 **Success criteria:**
 
-- [ ] All ten renames applied in `src/shared/enums.ts`
-- [ ] Zero remaining usages of old member names (grep returns zero)
-- [ ] Zero TypeScript errors
-- [ ] All tests pass
+- [x] All ten renames applied in `src/shared/enums.ts`
+- [x] Zero remaining usages of old member names (grep returns zero)
+- [x] Zero TypeScript errors
+- [x] All tests pass
 
 ---
 
@@ -1183,11 +1183,11 @@ deno run -A scripts/ci.ts all
 
 **Success criteria:**
 
-- [ ] All "must be zero" greps return zero results
-- [ ] All "must be non-zero" greps confirm kept names still exist
-- [ ] `deno check src/` reports zero TypeScript errors
-- [ ] `deno task test` reports zero failures
-- [ ] CI pipeline green end-to-end
+- [x] All "must be zero" greps return zero results
+- [x] All "must be non-zero" greps confirm kept names still exist
+- [x] `deno check src/` reports zero TypeScript errors
+- [x] `deno task test` reports zero failures
+- [x] CI pipeline green end-to-end
 
 ---
 
@@ -1542,10 +1542,10 @@ deno task test
 
 **Success criteria:**
 
-- [ ] `IAgentExecutionOptions.identity_id` replaces `agent_id`
-- [ ] All callers updated
+- [x] `IAgentExecutionOptions.identity_id` replaces `agent_id`
+- [x] All callers updated
 - [x] Zero TypeScript errors
-- [ ] All tests pass
+- [x] All tests pass
 
 ---
 
