@@ -1,5 +1,5 @@
 > [!NOTE]
-> **Status: ⏳ Pending**
+> **Status: ✅ Complete**
 > This phase adds four new MCP tool handlers following the established `ToolHandler` base class pattern.
 > All tools operate within portal bounds, check `PortalOperation.WRITE` permissions, and log every
 > execution to the Activity Journal.

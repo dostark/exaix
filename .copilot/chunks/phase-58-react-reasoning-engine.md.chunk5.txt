@@ -1,5 +1,10 @@
-### LlmClient (`src/ai/llm_client.ts`)
-Implements the ReAct reasoning prompt and JSON response parsing. It uses the `ModelFactory` to select the appropriate provider based on the identity's configuration. The prompt is dynamically built to include full tool schemas for better model accuracy.
+- **Runtime Supervision**: `DynamicStepExecutor` enforces that only `READ_ONLY_TOOLS` can be called in dynamic mode.
+- **Permission Boundaries**: Tools are further restricted to the `permitted_tools` list defined in the blueprint or step.
+- **Full Traceability**: Every iteration of the ReAct loop is logged with the same `traceId` as the parent flow run.
+- **Cost Control**: `maxIterations` (default: 10) prevents infinite loops and excessive token expenditure.
 
-### ActivityJournal (`src/journal/activity_journal.ts`)
-A service that logs dynamic execution events (tool calls, reasoning steps, termination) to the `EventLogger`. This ensures all dynamic behavior is visible in the Activity Journal and queryable by `traceId`.
+---
+
+## Success Verification
+
+### Unit Tests

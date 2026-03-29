@@ -83,7 +83,7 @@ export interface IActivityJournal {
 ### Data Structures
 
 #### Dynamic Step Result
-The result returned by `DynamicStepExecutor.execute()`:
+
 ```typescript
 export interface IDynamicStepResult {
   stepId: string;
@@ -95,7 +95,7 @@ export interface IDynamicStepResult {
 ```
 
 #### Journal Entry
-Auditable events logged during execution:
+
 ```typescript
 export interface JournalEntry {
   traceId: string;
@@ -111,20 +111,17 @@ export interface JournalEntry {
 ## Implementation Summary
 
 ### McpClient (`src/mcp/mcp_client.ts`)
-A wrapper that bridges the `IMcpClient` interface to the existing MCP `ToolHandler` infrastructure. It provides both tool execution and metadata retrieval (name, description, input schema).
 
 ### LlmClient (`src/ai/llm_client.ts`)
-Implements the ReAct reasoning prompt and JSON response parsing. It uses the `ModelFactory` to select the appropriate provider based on the identity's configuration. The prompt is dynamically built to include full tool schemas for better model accuracy.
 
 ### ActivityJournal (`src/journal/activity_journal.ts`)
-A service that logs dynamic execution events (tool calls, reasoning steps, termination) to the `EventLogger`. This ensures all dynamic behavior is visible in the Activity Journal and queryable by `traceId`.
 
 ### FlowRunner Integration (`src/flows/flow_runner.ts`)
-The `FlowRunner` now dispatches steps based on `execution_mode`.
+
 1. If `DYNAMIC`, it loads the identity blueprint via `BlueprintLoader`.
-2. It instantiates a `DynamicStepExecutor` with the required clients.
-3. It filters `permitted_tools` against `READ_ONLY_TOOLS` at runtime for safety.
-4. It executes the ReAct loop and converts the result into a standard `IStepResult`.
+
+1.
+1.
 
 ---
 
@@ -140,12 +137,14 @@ The `FlowRunner` now dispatches steps based on `execution_mode`.
 ## Success Verification
 
 ### Unit Tests
+
 - `tests/ai/llm_client_test.ts`: 4 tests passing (prompt construction, JSON parsing, error handling).
 - `tests/mcp/mcp_client_test.ts`: 3 tests passing (tool routing, error propagation).
 - `tests/journal/activity_journal_test.ts`: 1 test passing (trace correlation).
 - `tests/flows/dynamic_step_executor_test.ts`: 5 tests passing (ReAct loop logic, tool filtering).
 
 ### Integration Test
+
 - `tests/flows/dynamic_flow_integration_test.ts`: Successfully executed a multi-iteration ReAct loop where a mock researcher used `read_file` to satisfy a step objective.
 
 ---

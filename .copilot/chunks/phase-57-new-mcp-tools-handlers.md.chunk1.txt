@@ -4,10 +4,3 @@ moving files, and removing dead code requires deletion. This phase implements th
 operation toolset for a coding agent, using the exact same handler pattern as existing tools.
 
 ### **Tool Inventory: This Phase**
-
-| Tool | MCP Name | Priority | Operation Type |
-| -------------- | -------------------- | -------- | -------------- |
-| `patch*file` | `patch*file` | P0 | Write (targeted) |
-| `delete*file` | `delete*file` | P1 | Write (destructive) |
-| `move*file` | `move*file` | P1 | Write (destructive) |
-| `create*directory` | `create*directory` | P1 | Write (safe) |

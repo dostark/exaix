@@ -1,5 +1,3 @@
-#### Dynamic Step Result
-The result returned by `DynamicStepExecutor.execute()`:
 ```typescript
 export interface IDynamicStepResult {
   stepId: string;
@@ -11,7 +9,7 @@ export interface IDynamicStepResult {
 ```
 
 #### Journal Entry
-Auditable events logged during execution:
+
 ```typescript
 export interface JournalEntry {
   traceId: string;
@@ -27,4 +25,18 @@ export interface JournalEntry {
 ## Implementation Summary
 
 ### McpClient (`src/mcp/mcp_client.ts`)
-A wrapper that bridges the `IMcpClient` interface to the existing MCP `ToolHandler` infrastructure. It provides both tool execution and metadata retrieval (name, description, input schema).
+
+### LlmClient (`src/ai/llm_client.ts`)
+
+### ActivityJournal (`src/journal/activity_journal.ts`)
+
+### FlowRunner Integration (`src/flows/flow_runner.ts`)
+
+1. If `DYNAMIC`, it loads the identity blueprint via `BlueprintLoader`.
+
+1.
+1.
+
+---
+
+## Security and Auditability

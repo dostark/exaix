@@ -30,3 +30,5 @@ export interface IActivityJournal {
 ```
 
 ### Data Structures
+
+#### Dynamic Step Result

@@ -1,4 +1,13 @@
-> **Not in this phase:** `delete*directory`, `run*command`, `run_script`.
+| Tool | MCP Name | Priority | Operation Type |
+| -------------- | -------------------- | -------- | -------------- |
+| `patch*file` | `patch*file` | P0 | Write (targeted) |
+| `delete*file` | `delete*file` | P1 | Write (destructive) |
+| `move*file` | `move*file` | P1 | Write (destructive) |
+| `create_directory` | `create_directory` | P1 | Write (safe) |
+| `run_command` | `run_command` | P0 | Write (unsafe/exec) |
+| `search_files` | `search_files` | P0 | Read (search) |
+
+> **Not in this phase:** `delete_directory`, `run_script`.
 > `delete_directory` is deferred — recursive deletion is too destructive for the current
 > supervised model without additional confirmation gates.
 

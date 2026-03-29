@@ -1,3 +1,7 @@
+---
+
+## Design: `patch_file` in Depth
+
 `patch*file` is the most important tool in this phase and deserves careful design. Unlike `write*file`
 which replaces entire file content, `patch_file` applies a targeted replacement — making it:
 
