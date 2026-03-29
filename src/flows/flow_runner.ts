@@ -679,47 +679,9 @@ export class FlowRunner implements IFlowRunner {
     const startedAt = new Date();
 
     // Evaluate step condition if present
-    if (step.condition) {
-      const conditionResult = this.conditionEvaluator.evaluateStepCondition(
-        step,
-        stepResults,
-        request,
-        flow,
-      );
-
-      await this.eventLogger.log("flow.step.condition.evaluated", {
-        flowRunId,
-        stepId,
-        condition: step.condition,
-        shouldExecute: conditionResult.shouldExecute,
-        error: conditionResult.error,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-
-      if (!conditionResult.shouldExecute) {
-        const completedAt = new Date();
-        const duration = completedAt.getTime() - startedAt.getTime();
-
-        await this.eventLogger.log("flow.step.skipped", {
-          flowRunId,
-          stepId,
-          condition: step.condition,
-          reason: conditionResult.error || "Condition evaluated to false",
-          traceId: request.traceId,
-          requestId: request.requestId,
-        });
-
-        return {
-          stepId,
-          success: true, // Skipped steps are considered successful
-          skipped: true,
-          skipReason: conditionResult.error || `Condition "${step.condition}" evaluated to false`,
-          duration,
-          startedAt,
-          completedAt,
-        };
-      }
+    const conditionResult = await this.evaluateStepCondition(flowRunId, step, flow, stepResults, request, startedAt);
+    if (conditionResult) {
+      return conditionResult;
     }
 
     // Log step queued (ready for execution)
@@ -745,135 +707,255 @@ export class FlowRunner implements IFlowRunner {
     try {
       // Prepare step input
       const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
-
-      // Log input preparation
-      await this.eventLogger.log("flow.step.input.prepared", {
-        flowRunId,
-        stepId,
-        inputSource: step.input.source,
-        hasContext: !!stepRequest.context,
-        hasSkills: !!stepRequest.skills?.length,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-
-      // Execute step: gate steps route to GateEvaluator; others use agentExecutor
-      if (step.type === FlowStepType.GATE && step.evaluate && this.gateEvaluator) {
-        const gateConfig = toGateConfig(step.evaluate);
-        // Step 11: flow-level default upgrades the per-step flag (step wins when true; flow-level true propagates)
-        const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
-        const effectiveGateConfig: GateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
-        if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
-          await this.eventLogger.log("flow.gate.criteria.no_analysis", {
-            flowRunId,
-            stepId,
-            traceId: request.traceId,
-            requestId: request.requestId,
-          });
-        }
-        const gateResult: IGateResult = await this.gateEvaluator.evaluate(
-          effectiveGateConfig,
-          stepRequest.userPrompt,
-          stepRequest.userPrompt,
-          0,
-          stepRequest.requestAnalysis,
-        );
-        const completedAt = new Date();
-        const duration = completedAt.getTime() - startedAt.getTime();
-        return {
-          stepId,
-          success: gateResult.passed,
-          result: {
-            thought: "",
-            content: gateResult.evaluation.feedback,
-            raw: JSON.stringify(gateResult.evaluation),
-          },
-          duration,
-          startedAt,
-          completedAt,
-        };
-      }
-
-      let result: IAgentExecutionResult;
-
-      if (step.execution_mode === StepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
-        // Dynamic mode execution
-        const blueprintsPath = this.config
-          ? join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities)
-          : "";
-        const loader = new BlueprintLoader({ blueprintsPath });
-        const loaded = await loader.load(step.identity);
-
-        if (!loaded) {
-          throw new Error(`Blueprint not found for dynamic step: ${step.identity}`);
-        }
-
-        const dynamicResult = await this.dynamicStepExecutor.execute(
-          step,
-          loaded.frontmatter as IBlueprintFrontmatter,
-          stepRequest.userPrompt,
-          { traceId: request.traceId || crypto.randomUUID() },
-        );
-
-        result = {
-          thought: `Dynamic execution completed in ${dynamicResult.iterations} iterations`,
-          content: dynamicResult.output,
-          raw: JSON.stringify(dynamicResult.toolCallsLog),
-        };
-      } else {
-        // Declared mode execution
-        result = await this.agentExecutor.run(step.identity, stepRequest);
-      }
-
-      const completedAt = new Date();
-      const duration = completedAt.getTime() - startedAt.getTime();
-
-      // Log step completion with detailed results
-      await this.eventLogger.log("flow.step.completed", {
-        flowRunId,
-        stepId,
-        identityId: step.identity,
-        success: true,
-        duration,
-        outputLength: result.content.length,
-        hasThought: !!result.thought,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
-
-      return {
-        stepId,
-        success: true,
-        result,
-        duration,
-        startedAt,
-        completedAt,
-      };
+      const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+      return this.formatStepSuccess(flowRunId, step, request, result, startedAt);
     } catch (error) {
+      return this.formatStepFailure(flowRunId, step, request, error, startedAt);
+    }
+  }
+
+  /**
+   * Evaluate step condition and return skip result if condition fails
+   */
+  private async evaluateStepCondition(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    stepResults: Map<string, IStepResult>,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    startedAt: Date,
+  ): Promise<IStepResult | null> {
+    if (!step.condition) {
+      return null;
+    }
+
+    const conditionResult = this.conditionEvaluator.evaluateStepCondition(step, stepResults, request, flow);
+
+    await this.eventLogger.log("flow.step.condition.evaluated", {
+      flowRunId,
+      stepId: step.id,
+      condition: step.condition,
+      shouldExecute: conditionResult.shouldExecute,
+      error: conditionResult.error,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    if (!conditionResult.shouldExecute) {
       const completedAt = new Date();
       const duration = completedAt.getTime() - startedAt.getTime();
 
-      // Log step failure with detailed error information
-      await this.eventLogger.log("flow.step.failed", {
+      await this.eventLogger.log("flow.step.skipped", {
         flowRunId,
-        stepId,
-        identityId: step.identity,
-        error: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : "Unknown",
-        duration,
+        stepId: step.id,
+        condition: step.condition,
+        reason: conditionResult.error || "Condition evaluated to false",
         traceId: request.traceId,
         requestId: request.requestId,
       });
 
       return {
-        stepId,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
+        stepId: step.id,
+        success: true,
+        skipped: true,
+        skipReason: conditionResult.error || `Condition "${step.condition}" evaluated to false`,
         duration,
         startedAt,
         completedAt,
       };
     }
+
+    return null;
+  }
+
+  /**
+   * Execute step logic (gate or agent execution)
+   */
+  private executeStepLogic(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepRequest: IFlowStepRequest,
+    startedAt: Date,
+  ): Promise<IAgentExecutionResult> {
+    // Gate steps route to GateEvaluator
+    if (step.type === FlowStepType.GATE && step.evaluate && this.gateEvaluator) {
+      return this.executeGateStep(flowRunId, step, flow, request, stepRequest, startedAt);
+    }
+
+    // Agent execution (dynamic or declared mode)
+    return this.executeAgentStep(step, request, stepRequest);
+  }
+
+  /**
+   * Execute a gate step
+   */
+  private async executeGateStep(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepRequest: IFlowStepRequest,
+    _startedAt: Date,
+  ): Promise<IAgentExecutionResult> {
+    if (!step.evaluate || !this.gateEvaluator) {
+      throw new Error("Gate evaluator not available");
+    }
+
+    const gateConfig = toGateConfig(step.evaluate);
+    const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
+    const effectiveGateConfig: GateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
+
+    if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
+      await this.eventLogger.log("flow.gate.criteria.no_analysis", {
+        flowRunId,
+        stepId: step.id,
+        traceId: request.traceId,
+        requestId: request.requestId,
+      });
+    }
+
+    const gateResult: IGateResult = await this.gateEvaluator.evaluate(
+      effectiveGateConfig,
+      stepRequest.userPrompt,
+      stepRequest.userPrompt,
+      0,
+      stepRequest.requestAnalysis,
+    );
+
+    return {
+      thought: "",
+      content: gateResult.evaluation.feedback,
+      raw: JSON.stringify(gateResult.evaluation),
+    };
+  }
+
+  /**
+   * Execute an agent step (dynamic or declared mode)
+   */
+  private executeAgentStep(
+    step: IFlowStep,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepRequest: IFlowStepRequest,
+  ): Promise<IAgentExecutionResult> {
+    if (step.execution_mode === StepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
+      return this.executeDynamicStep(step, request, stepRequest);
+    }
+    return this.executeDeclaredStep(step, stepRequest);
+  }
+
+  /**
+   * Execute a dynamic step using ReAct reasoning engine
+   */
+  private async executeDynamicStep(
+    step: IFlowStep,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepRequest: IFlowStepRequest,
+  ): Promise<IAgentExecutionResult> {
+    const blueprintsPath = this.config
+      ? join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities)
+      : "";
+    const loader = new BlueprintLoader({ blueprintsPath });
+    const loaded = await loader.load(step.identity);
+
+    if (!loaded) {
+      throw new Error(`Blueprint not found for dynamic step: ${step.identity}`);
+    }
+
+    const dynamicResult = await this.dynamicStepExecutor!.execute(
+      step,
+      loaded.frontmatter as IBlueprintFrontmatter,
+      stepRequest.userPrompt,
+      { traceId: request.traceId || crypto.randomUUID() },
+    );
+
+    return {
+      thought: `Dynamic execution completed in ${dynamicResult.iterations} iterations`,
+      content: dynamicResult.output,
+      raw: JSON.stringify(dynamicResult.toolCallsLog),
+    };
+  }
+
+  /**
+   * Execute a declared step using agent executor
+   */
+  private async executeDeclaredStep(
+    step: IFlowStep,
+    stepRequest: IFlowStepRequest,
+  ): Promise<IAgentExecutionResult> {
+    return await this.agentExecutor.run(step.identity, stepRequest);
+  }
+
+  /**
+   * Format successful step result
+   */
+  private formatStepSuccess(
+    flowRunId: string,
+    step: IFlowStep,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    result: IAgentExecutionResult,
+    startedAt: Date,
+  ): IStepResult {
+    const completedAt = new Date();
+    const duration = completedAt.getTime() - startedAt.getTime();
+
+    this.eventLogger.log("flow.step.completed", {
+      flowRunId,
+      stepId: step.id,
+      identityId: step.identity,
+      success: true,
+      duration,
+      outputLength: result.content.length,
+      hasThought: !!result.thought,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    return {
+      stepId: step.id,
+      success: true,
+      result,
+      duration,
+      startedAt,
+      completedAt,
+    };
+  }
+
+  /**
+   * Format failed step result
+   */
+  private formatStepFailure(
+    flowRunId: string,
+    step: IFlowStep,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    error: unknown,
+    startedAt: Date,
+  ): IStepResult {
+    const completedAt = new Date();
+    const duration = completedAt.getTime() - startedAt.getTime();
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorType = error instanceof Error ? error.constructor.name : "Unknown";
+
+    this.eventLogger.log("flow.step.failed", {
+      flowRunId,
+      stepId: step.id,
+      identityId: step.identity,
+      error: errorMessage,
+      errorType,
+      duration,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    return {
+      stepId: step.id,
+      success: false,
+      error: errorMessage,
+      duration,
+      startedAt,
+      completedAt,
+    };
   }
 
   /**

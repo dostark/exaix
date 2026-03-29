@@ -8,7 +8,7 @@
 import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
 import { ConfigService } from "../../src/config/service.ts";
 import { join } from "@std/path";
-import * as DEFAULTS from "../../src/shared/constants.ts";
+import { getDefaultPaths } from "../../src/config/paths.ts";
 import { SqliteJournalMode } from "../../src/shared/enums.ts";
 
 /**
@@ -23,6 +23,9 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
     local: { provider: "ollama", model: "llama3.2", timeout_ms: 30000 },
   };
 
+  // Use getDefaultPaths for consistent path defaults
+  const pathDefaults = getDefaultPaths(root);
+
   return ConfigSchema.parse({
     ...overrides,
     system: {
@@ -32,25 +35,25 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
     },
     // Provide explicit path defaults - schema defaults may not apply correctly with empty object
     paths: {
-      workspace: DEFAULTS.DEFAULT_WORKSPACE_PATH,
-      runtime: DEFAULTS.DEFAULT_RUNTIME_PATH,
-      memory: DEFAULTS.DEFAULT_MEMORY_PATH,
-      portals: DEFAULTS.DEFAULT_PORTALS_PATH,
-      blueprints: DEFAULTS.DEFAULT_BLUEPRINTS_PATH,
-      active: DEFAULTS.DEFAULT_ACTIVE_PATH,
-      archive: DEFAULTS.DEFAULT_ARCHIVE_PATH,
-      plans: DEFAULTS.DEFAULT_PLANS_PATH,
-      requests: DEFAULTS.DEFAULT_REQUESTS_PATH,
-      rejected: DEFAULTS.DEFAULT_REJECTED_PATH,
-      identities: DEFAULTS.DEFAULT_IDENTITIES_PATH,
-      flows: DEFAULTS.DEFAULT_FLOWS_PATH,
-      memoryProjects: DEFAULTS.DEFAULT_PROJECTS_MEMORY_PATH,
-      memoryExecution: DEFAULTS.DEFAULT_EXECUTION_MEMORY_PATH,
-      memoryIndex: DEFAULTS.DEFAULT_INDEX_MEMORY_PATH,
-      memorySkills: DEFAULTS.DEFAULT_SKILLS_MEMORY_PATH,
-      memoryPending: DEFAULTS.DEFAULT_PENDING_MEMORY_PATH,
-      memoryTasks: DEFAULTS.DEFAULT_TASKS_MEMORY_PATH,
-      memoryGlobal: DEFAULTS.DEFAULT_GLOBAL_MEMORY_PATH,
+      workspace: pathDefaults.workspace,
+      runtime: pathDefaults.runtime,
+      memory: pathDefaults.memory,
+      portals: pathDefaults.portals,
+      blueprints: pathDefaults.blueprints,
+      active: pathDefaults.active,
+      archive: pathDefaults.archive,
+      plans: pathDefaults.plans,
+      requests: pathDefaults.requests,
+      rejected: pathDefaults.rejected,
+      identities: pathDefaults.identities,
+      flows: pathDefaults.flows,
+      memoryProjects: pathDefaults.memoryProjects,
+      memoryExecution: pathDefaults.memoryExecution,
+      memoryIndex: pathDefaults.memoryIndex,
+      memorySkills: pathDefaults.memorySkills,
+      memoryPending: pathDefaults.memoryPending,
+      memoryTasks: pathDefaults.memoryTasks,
+      memoryGlobal: pathDefaults.memoryGlobal,
       ...(overrides.paths ?? {}),
     },
     // Provide stable defaults used by many tests, while still allowing overrides.

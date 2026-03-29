@@ -9,35 +9,15 @@
  * - Notification lifecycle management with soft-deletes
  *
  * @architectural-layer Services
- * @dependencies [Config, DatabaseService, IMemoryUpdateProposal]
- * @related-files [src/services/db.ts, src/services/memory_bank/index.builder.ts]
+ * @dependencies [Config, DatabaseService, IMemoryUpdateProposal, IMemoryNotification]
+ * @related-files [src/services/db.ts, src/services/memory_bank/index.builder.ts, src/shared/types/notification.ts]
  */
 
 import type { Config } from "../shared/schemas/config.ts";
 import { IDatabaseService } from "./db.ts";
 import type { IMemoryUpdateProposal } from "../shared/schemas/memory_bank.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../shared/types/json.ts";
-
-/**
- * Notification structure for memory updates
- */
-export interface IMemoryNotification {
-  id?: string;
-  type:
-    | "memory_update_pending"
-    | "memory_approved"
-    | "memory_rejected"
-    | "info"
-    | "success"
-    | "warning"
-    | "error";
-  message: string;
-  proposal_id?: string;
-  trace_id?: string;
-  created_at?: string;
-  dismissed_at?: string | null;
-  metadata?: string;
-}
+import type { IMemoryNotification } from "../shared/types/notification.ts";
 
 /**
  * Interface for Notification Service to support mocks and strict typing

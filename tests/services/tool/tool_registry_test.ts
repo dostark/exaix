@@ -48,6 +48,16 @@ function createRegistry(root?: string): ToolRegistry {
       paths: { ...mockConfig.paths, workspace: "Workspace" },
     })
     : mockConfig;
+
+  // Ensure the root directory exists for command execution
+  if (config.system.root) {
+    try {
+      Deno.mkdirSync(config.system.root, { recursive: true });
+    } catch {
+      // Ignore if directory already exists or cannot be created
+    }
+  }
+
   return new ToolRegistry({ config, db: mockDb });
 }
 

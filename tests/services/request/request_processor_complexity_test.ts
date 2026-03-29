@@ -29,6 +29,40 @@ import {
 } from "../../../src/shared/constants.ts";
 
 /**
+ * Create a test RequestProcessor with minimal config
+ */
+async function createTestProcessor() {
+  const { db, config, cleanup } = await initTestDbService();
+  const processor = new RequestProcessor(config, db, {
+    workspacePath: "",
+    requestsDir: "",
+    blueprintsPath: "",
+    includeReasoning: false,
+  });
+  return { db, config, cleanup, processor };
+}
+
+/**
+ * Create test blueprint and frontmatter
+ */
+function createTestBlueprintAndFrontmatter(): { blueprint: IBlueprint; frontmatter: IRequestFrontmatter } {
+  return {
+    blueprint: {
+      identityId: "generic-agent",
+      systemPrompt: "test",
+    },
+    frontmatter: {
+      trace_id: "t1",
+      created: new Date().toISOString(),
+      status: RequestStatus.PENDING,
+      priority: "normal",
+      source: RequestSource.CLI,
+      created_by: "user",
+    },
+  };
+}
+
+/**
  * Interface representing the private method for testing.
  */
 interface IRequestProcessorTest {
@@ -116,27 +150,9 @@ function buildComplexityRequest(body: string, traceId = "t1", reqId = "req-1"): 
 }
 
 Deno.test("[classifyTaskComplexity] uses analysis complexity as primary signal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { cleanup, processor } = await createTestProcessor();
   try {
-    const processor = new RequestProcessor(config, db, {
-      workspacePath: "",
-      requestsDir: "",
-      blueprintsPath: "",
-      includeReasoning: false,
-    });
-
-    const blueprint: IBlueprint = {
-      identityId: "generic-agent",
-      systemPrompt: "test",
-    };
-    const frontmatter: IRequestFrontmatter = {
-      trace_id: "t1",
-      created: new Date().toISOString(),
-      status: RequestStatus.PENDING,
-      priority: "normal",
-      source: RequestSource.CLI,
-      created_by: "user",
-    };
+    const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
     const request = buildParsedRequest(
       "body",
       frontmatter,
@@ -170,28 +186,9 @@ Deno.test("[classifyTaskComplexity] uses analysis complexity as primary signal",
 });
 
 Deno.test("[classifyTaskComplexity] falls back to content heuristics without analysis", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { cleanup, processor } = await createTestProcessor();
   try {
-    const processor = new RequestProcessor(config, db, {
-      workspacePath: "",
-      requestsDir: "",
-      blueprintsPath: "",
-      includeReasoning: false,
-    });
-
-    const blueprint: IBlueprint = {
-      identityId: "generic-agent",
-      systemPrompt: "test",
-    };
-
-    const frontmatter: IRequestFrontmatter = {
-      trace_id: "t1",
-      created: new Date().toISOString(),
-      status: RequestStatus.PENDING,
-      priority: "normal",
-      source: RequestSource.CLI,
-      created_by: "user",
-    };
+    const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
 
     // Short body -> SIMPLE
     const shortRequest = buildParsedRequest(

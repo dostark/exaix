@@ -3,7 +3,8 @@
  * @path src/journal/activity_journal.ts
  * @description Audit logging for dynamic step execution, integrating with existing event logger.
  * @architectural-layer Journal
- * @dependencies [EventLogger, dynamic_step_executor.ts]
+ * @dependencies [EventLogger, dynamic_step_executor.ts, flow_runner.ts]
+ * @related-files [src/flows/dynamic_step_executor.ts, src/flows/flow_runner.ts]
  */
 import { IActivityJournal, JournalEntry } from "../flows/dynamic_step_executor.ts";
 import { IFlowEventLogger } from "../flows/flow_runner.ts";

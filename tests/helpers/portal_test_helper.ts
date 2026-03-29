@@ -27,6 +27,73 @@ import { getPortalsDir } from "./paths_helper.ts";
 /**
  * Helper class for config-based portal tests
  */
+/**
+ * Create a mock PortalKnowledgeService for testing
+ */
+export function createMockKnowledgeService(): IPortalKnowledgeService {
+  return {
+    analyze: (p1, _p2, p3) =>
+      Promise.resolve({
+        portal: p1,
+        gatheredAt: new Date().toISOString(),
+        version: 1,
+        architectureOverview: "",
+        layers: [],
+        keyFiles: [],
+        conventions: [],
+        dependencies: [],
+        techStack: { primaryLanguage: "typescript" },
+        symbolMap: [],
+        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
+        metadata: { mode: p3 || PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
+      }),
+    getOrAnalyze: (p1, _p2) =>
+      Promise.resolve({
+        portal: p1,
+        gatheredAt: new Date().toISOString(),
+        version: 1,
+        architectureOverview: "",
+        layers: [],
+        keyFiles: [],
+        conventions: [],
+        dependencies: [],
+        techStack: { primaryLanguage: "typescript" },
+        symbolMap: [],
+        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
+        metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
+      }),
+    isStale: () => Promise.resolve(false),
+    updateKnowledge: (p1, _p2) =>
+      Promise.resolve({
+        portal: p1,
+        gatheredAt: new Date().toISOString(),
+        version: 1,
+        architectureOverview: "",
+        layers: [],
+        keyFiles: [],
+        conventions: [],
+        dependencies: [],
+        techStack: { primaryLanguage: "typescript" },
+        symbolMap: [],
+        stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
+        metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
+      }),
+  };
+}
+
+/**
+ * Default portal knowledge config for testing
+ */
+export const DEFAULT_KNOWLEDGE_CONFIG: IPortalKnowledgeConfig = {
+  autoAnalyzeOnMount: false,
+  defaultMode: PortalAnalysisMode.QUICK,
+  quickScanLimit: 0,
+  maxFilesToRead: 0,
+  ignorePatterns: [],
+  staleness: 0,
+  useLlmInference: false,
+};
+
 export class PortalConfigTestHelper {
   constructor(
     public tempRoot: string,
@@ -67,63 +134,8 @@ export class PortalConfigTestHelper {
           configService,
           contextCards,
           createStubDisplay(db),
-          {
-            analyze: (p1, _p2, p3) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: p3 || PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-            getOrAnalyze: (p1, _p2) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-            isStale: () => Promise.resolve(false),
-            updateKnowledge: (p1, _p2) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-          } as IPortalKnowledgeService,
-          {
-            autoAnalyzeOnMount: false,
-            defaultMode: PortalAnalysisMode.QUICK,
-            quickScanLimit: 0,
-            maxFilesToRead: 0,
-            ignorePatterns: [],
-            staleness: 0,
-            useLlmInference: false,
-          } as IPortalKnowledgeConfig,
+          createMockKnowledgeService(),
+          DEFAULT_KNOWLEDGE_CONFIG,
         ),
       ),
     };
@@ -207,63 +219,8 @@ export class PortalConfigTestHelper {
           this.configService,
           contextCards,
           createStubDisplay(this.db),
-          {
-            analyze: (p1, _p2, p3) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: p3 || PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-            getOrAnalyze: (p1, _p2) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-            isStale: () => Promise.resolve(false),
-            updateKnowledge: (p1, _p2) =>
-              Promise.resolve({
-                portal: p1,
-                gatheredAt: new Date().toISOString(),
-                version: 1,
-                architectureOverview: "",
-                layers: [],
-                keyFiles: [],
-                conventions: [],
-                dependencies: [],
-                techStack: { primaryLanguage: "typescript" },
-                symbolMap: [],
-                stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
-                metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
-              }),
-          } as IPortalKnowledgeService,
-          {
-            autoAnalyzeOnMount: false,
-            defaultMode: PortalAnalysisMode.QUICK,
-            quickScanLimit: 0,
-            maxFilesToRead: 0,
-            ignorePatterns: [],
-            staleness: 0,
-            useLlmInference: false,
-          } as IPortalKnowledgeConfig,
+          createMockKnowledgeService(),
+          DEFAULT_KNOWLEDGE_CONFIG,
         ),
       ),
     };

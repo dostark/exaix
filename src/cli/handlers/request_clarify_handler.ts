@@ -132,40 +132,12 @@ export class RequestClarifyHandler extends BaseCommand {
         }
       }
 
-      const updated = await options.engine.processAnswers(session, answers);
-      await this.persistence.save(filePath, updated);
-
-      if (TERMINAL_STATUSES.has(updated.status)) {
-        await this._setStatus(filePath, RequestStatus.PENDING);
-        return { status: ClarifyResultStatus.COMPLETE, score: updated.qualityHistory.at(-1)?.score };
-      }
-
-      const latestRound = updated.rounds.at(-1);
-      return {
-        status: ClarifyResultStatus.QUESTIONS,
-        questions: latestRound?.questions,
-        round: latestRound?.round,
-        score: updated.qualityHistory.at(-1)?.score,
-      };
+      return this._processAnswersAndReturnResult(filePath, session, answers, options.engine);
     }
 
     // --answers: submit answers and advance session
     if (options.answers && options.engine) {
-      const updated = await options.engine.processAnswers(session, options.answers);
-      await this.persistence.save(filePath, updated);
-
-      if (TERMINAL_STATUSES.has(updated.status)) {
-        await this._setStatus(filePath, RequestStatus.PENDING);
-        return { status: ClarifyResultStatus.COMPLETE, score: updated.qualityHistory.at(-1)?.score };
-      }
-
-      const latestRound = updated.rounds.at(-1);
-      return {
-        status: ClarifyResultStatus.QUESTIONS,
-        questions: latestRound?.questions,
-        round: latestRound?.round,
-        score: updated.qualityHistory.at(-1)?.score,
-      };
+      return this._processAnswersAndReturnResult(filePath, session, options.answers, options.engine);
     }
 
     // Default: display current pending questions
@@ -175,6 +147,30 @@ export class RequestClarifyHandler extends BaseCommand {
       questions: currentRound?.questions,
       round: currentRound?.round,
       score: latestScore,
+    };
+  }
+
+  /** Process answers and return clarification result */
+  private async _processAnswersAndReturnResult(
+    filePath: string,
+    session: ClarificationSession,
+    answers: Record<string, string>,
+    engine: ClarificationEngine,
+  ): Promise<ClarifyResult> {
+    const updated = await engine.processAnswers(session, answers);
+    await this.persistence.save(filePath, updated);
+
+    if (TERMINAL_STATUSES.has(updated.status)) {
+      await this._setStatus(filePath, RequestStatus.PENDING);
+      return { status: ClarifyResultStatus.COMPLETE, score: updated.qualityHistory.at(-1)?.score };
+    }
+
+    const latestRound = updated.rounds.at(-1);
+    return {
+      status: ClarifyResultStatus.QUESTIONS,
+      questions: latestRound?.questions,
+      round: latestRound?.round,
+      score: updated.qualityHistory.at(-1)?.score,
     };
   }
 
