@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
 import { z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "../../src/shared/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
@@ -400,6 +400,7 @@ Deno.test("IFlow as Flow schemas: can be imported and used by other modules", ()
     name: "Test Step",
     type: FlowStepType.AGENT,
     identity: "test-agent",
+    execution_mode: StepExecutionMode.DECLARED,
     dependsOn: [],
     input: {
       source: FlowInputSource.REQUEST,

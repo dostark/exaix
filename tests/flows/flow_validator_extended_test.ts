@@ -5,7 +5,7 @@
  * required output configurations and wave-based execution constraints.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
 import { FlowValidatorImpl } from "../../src/services/flow_validator.ts";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
 import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
@@ -76,6 +76,7 @@ function createStep(id: string, identity: string, dependsOn: string[] = []): IFl
     name: `Step ${id}`,
     identity,
     type: FlowStepType.AGENT,
+    execution_mode: StepExecutionMode.DECLARED,
     dependsOn,
     input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
     retry: { maxAttempts: 1, backoffMs: 1000 },

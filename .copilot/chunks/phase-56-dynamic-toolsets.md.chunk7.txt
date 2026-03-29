@@ -1,14 +1,8 @@
 ```text
-Plan generation → Human approval (reviews exact tools per step) → Flow execution (tools called as declared)
-```text
-
-### Target Execution Flow (Hybrid)
-
-```text
 Plan generation → Human approval (reviews toolset boundary for dynamic steps) → Flow execution:
   ├── declared steps: tools called exactly as planned (unchanged)
   └── dynamic steps: model selects from permitted_tools via ReAct loop until step objective met
-```text
+```
 
 ---
 

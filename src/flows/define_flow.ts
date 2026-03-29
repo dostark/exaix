@@ -7,7 +7,7 @@
  * @related-files [src/schemas/flow.ts, src/enums.ts]
  */
 import { FlowSchema, type IFlow } from "../shared/schemas/flow.ts";
-import { FlowInputSource, FlowOutputFormat, FlowStepType } from "../shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
 import { JSONValue } from "../shared/types/json.ts";
 export function defineFlow(config: {
   id: string;
@@ -62,6 +62,7 @@ export function defineFlow(config: {
       name: step.name,
       type: FlowStepType.AGENT, // Default step type
       identity: step.identity,
+      execution_mode: StepExecutionMode.DECLARED,
       dependsOn: step.dependsOn ?? [],
       input: {
         source: (step.input?.source as FlowInputSource) ?? FlowInputSource.REQUEST,

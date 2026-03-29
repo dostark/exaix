@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { ConditionEvaluator, IConditionContext } from "../../src/flows/condition_evaluator.ts";
 import { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
@@ -45,6 +45,7 @@ const createMockStep = (overrides: Partial<IFlowStep> = {}): IFlowStep => ({
   name: "Test Step",
   type: FlowStepType.AGENT,
   identity: "test-agent",
+  execution_mode: StepExecutionMode.DECLARED,
   dependsOn: [],
   input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
   retry: { maxAttempts: 1, backoffMs: 1000 },

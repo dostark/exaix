@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { StepExecutionMode } from "../../src/shared/enums.ts";
+import { FlowOutputFormat, StepExecutionMode } from "../../src/shared/enums.ts";
 import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
 
 /**
@@ -63,7 +63,8 @@ Deno.test("FlowRunner: flow with mixed execution modes", () => {
     name: "Mixed Mode Flow",
     description: "Flow with both dynamic and declared steps",
     version: "1.0",
-    output: { from: "step", format: "markdown" },
+    output: { from: "step", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true, includeRequestCriteria: false },
     steps: [
       {
         id: "explore",
