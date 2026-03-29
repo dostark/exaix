@@ -1,0 +1,12 @@
+> [!NOTE]
+> **Status: ⏳ Pending**
+> This phase extends the scenario framework to validate all features introduced in Phases 56, 57, and 58.
+> New scenarios will test dynamic tool selection, ReAct reasoning, and the six new MCP tool handlers
+> in realistic end-to-end workflows.
+>
+> **Prerequisites:**
+> - Phase 56 (Dynamic Tool Selection) — provides `execution_mode`, `permitted_tools`, `DynamicStepExecutor`
+> - Phase 57 (New MCP Tools) — provides `patch_file`, `delete_file`, `move_file`, `create_directory`, `run_command`, `search_files`
+> - Phase 58 (ReAct Reasoning Engine) — provides `LlmClient`, `McpClient`, `ActivityJournal`, FlowRunner integration
+
+## Executive Summary

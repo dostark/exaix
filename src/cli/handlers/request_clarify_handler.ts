@@ -153,10 +153,10 @@ export class RequestClarifyHandler extends BaseCommand {
   /** Process answers and return clarification result */
   private async _processAnswersAndReturnResult(
     filePath: string,
-    session: ClarificationSession,
+    session: IClarificationSession,
     answers: Record<string, string>,
-    engine: ClarificationEngine,
-  ): Promise<ClarifyResult> {
+    engine: IClarificationEngineForCLI,
+  ): Promise<IClarifyResult> {
     const updated = await engine.processAnswers(session, answers);
     await this.persistence.save(filePath, updated);
 

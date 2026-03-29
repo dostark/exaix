@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-29T14:19:58.229Z",
+  "generated_at": "2026-03-30T10:29:39.183Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -973,6 +973,32 @@
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk4.txt",
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk5.txt",
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk6.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-59-scenario-framework-extension.md",
+      "agent": "qwen",
+      "scope": "dev",
+      "title": "Phase 59: Scenario Framework Extension for Dynamic Execution & New MCP Tools",
+      "short_summary": "Extend the scenario framework with comprehensive test scenarios for Phase 56/57/58 features: dynamic tool selection, ReAct reasoning engine, and new MCP tool handlers.",
+      "version": "1.0",
+      "topics": [
+        "scenario-framework",
+        "testing",
+        "dynamic-execution",
+        "react",
+        "mcp-tools",
+        "integration-tests"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk0.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk1.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk2.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk3.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk4.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk5.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk6.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk7.txt"
       ]
     },
     {

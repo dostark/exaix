@@ -17,8 +17,7 @@ import type { Config } from "../shared/schemas/config.ts";
 import { IDatabaseService } from "./db.ts";
 import type { IMemoryUpdateProposal } from "../shared/schemas/memory_bank.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../shared/types/json.ts";
-import type { IMemoryNotification } from "../shared/types/notification.ts";
-
+import { IMemoryNotification } from "../shared/types/notification.ts";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */

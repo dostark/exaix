@@ -1,0 +1,17 @@
+- [ ] Create `dynamic_execution` scenario pack with 4 scenarios
+- [ ] Create `mcp_tools_extended` scenario pack with 5 scenarios
+- [ ] Create `integration_e2e` scenario pack with 3 scenarios
+- [ ] Add shared fixtures for new scenarios (request templates, sample portals)
+- [ ] Extend scenario schema to support flow execution steps
+- [ ] Add assertions for Activity Journal validation
+- [ ] Write framework tests for new step types and criteria
+- [ ] Update scenario framework documentation with new features
+- [ ] Add CI profile for extended scenarios (`ci-extended-dynamic`)
+
+---
+
+## Scenario Pack 1: Dynamic Execution
+
+### Scenario 1.1: `dynamic-exploration-smoke`
+
+**Purpose:** Validate basic dynamic tool selection with read-only tools.

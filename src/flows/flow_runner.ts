@@ -1036,6 +1036,15 @@ export class FlowRunner implements IFlowRunner {
     // Merge skills: step-level skills override flow-level defaults (Phase 17)
     const skills = step.skills ?? flow.defaultSkills;
 
+    // Log input.prepared event for test visibility
+    await this.eventLogger.log("flow.step.input.prepared", {
+      flowRunId,
+      stepId: step.id,
+      hasSkills: !!skills && Array.isArray(skills) ? skills.length > 0 : !!skills,
+      traceId: originalRequest.traceId,
+      requestId: originalRequest.requestId,
+    });
+
     return {
       userPrompt,
       context: {},

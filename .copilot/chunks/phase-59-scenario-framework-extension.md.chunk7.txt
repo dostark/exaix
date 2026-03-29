@@ -1,0 +1,31 @@
+**Flow Fixture (`explore.flow.yaml`):**
+```yaml
+# @schema-version: 1.0.0
+---
+id: "explore-codebase"
+name: "Explore Codebase Structure"
+version: "1.0.0"
+steps:
+  - id: "explore"
+    name: "Explore and analyze codebase structure"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 60000
+```
+
+**Success Criteria:**
+- [ ] Flow executes without errors
+- [ ] At least 3 tool calls are logged in the Activity Journal
+- [ ] All tool calls have the same trace ID
+- [ ] Dynamic step completes within timeout
+- [ ] Output contains codebase structure summary
+
+---
+
+### Scenario 1.2: `dynamic-permission-boundary`

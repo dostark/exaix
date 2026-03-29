@@ -10,6 +10,7 @@ import { ConfigService } from "../../src/config/service.ts";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";
 import { SqliteJournalMode } from "../../src/shared/enums.ts";
+import { ExaPathDefaults } from "../../src/shared/constants.ts";
 
 /**
  * Creates a mock configuration for testing.
@@ -94,25 +95,25 @@ log_level = "info"
 root = "${root}"
 
 [paths]
-memory = "${DEFAULTS.ExaPathDefaults.memory}"
-blueprints = "${DEFAULTS.ExaPathDefaults.blueprints}"
-runtime = "${DEFAULTS.ExaPathDefaults.runtime}"
-portals = "${DEFAULTS.ExaPathDefaults.portals}"
-workspace = "${DEFAULTS.ExaPathDefaults.workspace}"
-active = "${DEFAULTS.ExaPathDefaults.active}"
-archive = "${DEFAULTS.ExaPathDefaults.archive}"
-plans = "${DEFAULTS.ExaPathDefaults.plans}"
-requests = "${DEFAULTS.ExaPathDefaults.requests}"
-rejected = "${DEFAULTS.ExaPathDefaults.rejected}"
-agents = "${DEFAULTS.ExaPathDefaults.identities}"
-flows = "${DEFAULTS.ExaPathDefaults.flows}"
-memoryProjects = "${DEFAULTS.ExaPathDefaults.memoryProjects}"
-memoryExecution = "${DEFAULTS.ExaPathDefaults.memoryExecution}"
-memoryIndex = "${DEFAULTS.ExaPathDefaults.memoryIndex}"
-memorySkills = "${DEFAULTS.ExaPathDefaults.memorySkills}"
-memoryPending = "${DEFAULTS.ExaPathDefaults.memoryPending}"
-memoryTasks = "${DEFAULTS.ExaPathDefaults.memoryTasks}"
-memoryGlobal = "${DEFAULTS.ExaPathDefaults.memoryGlobal}"
+memory = "${ExaPathDefaults.memory}"
+blueprints = "${ExaPathDefaults.blueprints}"
+runtime = "${ExaPathDefaults.runtime}"
+portals = "${ExaPathDefaults.portals}"
+workspace = "${ExaPathDefaults.workspace}"
+active = "${ExaPathDefaults.active}"
+archive = "${ExaPathDefaults.archive}"
+plans = "${ExaPathDefaults.plans}"
+requests = "${ExaPathDefaults.requests}"
+rejected = "${ExaPathDefaults.rejected}"
+agents = "${ExaPathDefaults.identities}"
+flows = "${ExaPathDefaults.flows}"
+memoryProjects = "${ExaPathDefaults.memoryProjects}"
+memoryExecution = "${ExaPathDefaults.memoryExecution}"
+memoryIndex = "${ExaPathDefaults.memoryIndex}"
+memorySkills = "${ExaPathDefaults.memorySkills}"
+memoryPending = "${ExaPathDefaults.memoryPending}"
+memoryTasks = "${ExaPathDefaults.memoryTasks}"
+memoryGlobal = "${ExaPathDefaults.memoryGlobal}"
 
 [database]
 batch_flush_ms = 100

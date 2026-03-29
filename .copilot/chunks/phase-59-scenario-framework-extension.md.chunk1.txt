@@ -1,0 +1,16 @@
+The scenario framework currently has 5 scenarios in the `agent_flows` pack, covering:
+- Request analysis smoke tests
+- Portal knowledge snapshot
+- Quality gate clarification
+- Memory-aware analysis
+- Acceptance criteria propagation
+
+**This phase adds 12 new scenarios** organized into 3 new scenario packs:
+
+| Pack | Scenarios | Focus |
+|------|-----------|-------|
+| `dynamic_execution` | 4 | Dynamic tool selection, ReAct loops, permission boundaries |
+| `mcp_tools_extended` | 5 | New MCP tool handlers in realistic workflows |
+| `integration_e2e` | 3 | End-to-end flows combining all new features |
+
+### **Design Principles**
