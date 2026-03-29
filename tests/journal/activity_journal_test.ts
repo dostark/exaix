@@ -27,5 +27,5 @@ Deno.test("ActivityJournal - logs entries with traceId", async () => {
   assertEquals(loggedEvent.traceId, "test-trace");
   assertEquals(loggedEvent.action, "test-event");
   assertEquals(loggedEvent.target, "step-1");
-  assertEquals(loggedEvent.payload.data, "some data");
+  assertEquals(loggedEvent.data, "some data");
 });

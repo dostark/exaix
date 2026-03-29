@@ -28,6 +28,7 @@ import { LlmClient } from "../ai/llm_client.ts";
 import { ToolHandler } from "../mcp/tool_handler.ts";
 import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint_loader.ts";
+import { IDisplayService } from "../shared/interfaces/i_display_service.ts";
 
 export interface IFlowRunner {
   /**
