@@ -1,0 +1,15 @@
+- [ ] Implement `McpClient` wrapper around existing MCP tool execution
+- [ ] Implement `LlmClient` with ReAct reasoning loop
+- [ ] Implement `ActivityJournal` for audit logging
+- [ ] Integrate `DynamicStepExecutor` into `FlowRunner.executeStep()`
+- [ ] Write unit tests for all client implementations
+- [ ] Add integration test for end-to-end dynamic step execution
+- [ ] Update Phase 56 planning document to mark Task 4 complete
+
+---
+
+## Current State Analysis
+
+### Phase 56 Deferred Task 4
+
+**From `phase-56-dynamic-toolsets.md`:**

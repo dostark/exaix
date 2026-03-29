@@ -1,0 +1,28 @@
+> **Task 4: Update `FlowRunner` to Dispatch by Execution Mode**
+>
+> **Status:** ⏸️ Deferred - Requires MCP/LLM client integration
+>
+> **File:** `src/flows/flow_runner.ts`
+>
+> The `FlowRunner` currently processes all steps uniformly. Add execution mode dispatch:
+>
+> ```typescript
+> // In FlowRunner.executeStep() or equivalent dispatch method:
+>
+> if (step.execution_mode === StepExecutionMode.DYNAMIC) {
+>   // Route to DynamicStepExecutor
+>   const executor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
+>   return await executor.execute(step, identity, input, {
+>     traceId: request.traceId,
+>     maxIterations: step.timeout ? Math.floor(step.timeout / 1000) : 10,
+>   });
+> } else {
+>   // Route to existing declared-mode execution path (unchanged)
+>   return await this.executeDeclaredStep(step, identity, input);
+> }
+> ```
+>
+> **Note:** Full FlowRunner integration requires:
+> 1. MCP client implementation for tool execution
+> 2. LLM client implementation for ReAct reasoning
+> 3. BlueprintLoader integration for identity loading

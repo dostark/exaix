@@ -1,0 +1,20 @@
+### Existing Infrastructure
+
+**`DynamicStepExecutor` (Phase 56, implemented):**
+- Located: `src/flows/dynamic_step_executor.ts`
+- 251 lines, 5/5 tests passing
+- Interfaces defined: `IMcpClient`, `ILlmClient`, `IActivityJournal`
+- Methods: `execute()`, `resolvePermittedTools()`, `appendObservation()`
+
+**`FlowRunner` (existing):**
+- Located: `src/flows/flow_runner.ts`
+- 1,124 lines
+- Uses `agentExecutor` (`AgentRunner`) for declared steps
+- Uses `gateEvaluator` (`GateEvaluator`) for gate steps
+- Has `eventLogger` for activity logging
+
+**MCP Tool Handlers (existing + Phase 57):**
+- `ReadFileTool`, `WriteFileTool`, `PatchFileTool`, `DeleteFileTool`, `MoveFileTool`
+- `ListDirectoryTool`, `SearchFilesTool`
+- `GitCreateBranchTool`, `GitCommitTool`, `GitStatusTool`
+- `CreateDirectoryTool`

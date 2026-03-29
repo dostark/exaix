@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-28T15:40:31.947Z",
+  "generated_at": "2026-03-29T10:54:00.793Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -947,6 +947,33 @@
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk5.txt",
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk6.txt",
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-58-react-reasoning-engine.md",
+      "agent": "qwen",
+      "scope": "dev",
+      "title": "Phase 58: ReAct Reasoning Engine for Dynamic Flow Steps",
+      "short_summary": "Implement the ReAct reasoning engine and client interfaces required for dynamic tool selection in flow steps, enabling FlowRunner integration (Phase 56 Task 4) with full auditability and supervision.",
+      "version": "1.0",
+      "topics": [
+        "flows",
+        "react",
+        "reasoning",
+        "llm-client",
+        "mcp-client",
+        "dynamic-execution",
+        "auditability"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk0.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk1.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk2.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk3.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk4.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk5.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk6.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk7.txt"
       ]
     },
     {

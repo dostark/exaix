@@ -1,0 +1,16 @@
+**LLM Provider Infrastructure (existing):**
+- `src/ai/providers.ts` — provider selection
+- `src/ai/provider_selector.ts` — provider routing
+- `BlueprintFrontmatter` has `model` field for identity-specific model selection
+
+---
+
+## Design: ReAct Reasoning Loop
+
+### Overview
+
+ReAct (Reasoning + Acting) is an iterative pattern where the LLM:
+1. **Reasons** about what action to take next
+2. **Acts** by selecting a tool and arguments
+3. **Observes** the tool result
+4. **Repeats** until the objective is met
