@@ -19,6 +19,10 @@ import { GitStatusTool } from "./handlers/git_status_tool.ts";
 import { ListDirectoryTool } from "./handlers/list_directory_tool.ts";
 import { ReadFileTool } from "./handlers/read_file_tool.ts";
 import { WriteFileTool } from "./handlers/write_file_tool.ts";
+import { PatchFileTool } from "./handlers/patch_file_tool.ts";
+import { DeleteFileTool } from "./handlers/delete_file_tool.ts";
+import { MoveFileTool } from "./handlers/move_file_tool.ts";
+import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
@@ -120,6 +124,10 @@ export class MCPServer {
     // Register tools
     this.registerTool(new ReadFileTool(this.context));
     this.registerTool(new WriteFileTool(this.context));
+    this.registerTool(new PatchFileTool(this.context));
+    this.registerTool(new DeleteFileTool(this.context));
+    this.registerTool(new MoveFileTool(this.context));
+    this.registerTool(new CreateDirectoryTool(this.context));
     this.registerTool(new ListDirectoryTool(this.context));
     this.registerTool(new GitCreateBranchTool(this.context));
     this.registerTool(new GitCommitTool(this.context));

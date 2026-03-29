@@ -854,6 +854,12 @@ export enum McpToolName {
   LIST_DIRECTORY = "list_directory",
   SEARCH_FILES = "search_files",
   CREATE_DIRECTORY = "create_directory",
+  PATCH_FILE = "patch_file",
+  DELETE_FILE = "delete_file",
+  MOVE_FILE = "move_file",
+  GIT_CREATE_BRANCH = "git_create_branch",
+  GIT_COMMIT = "git_commit",
+  GIT_STATUS = "git_status",
 }
 
 /**

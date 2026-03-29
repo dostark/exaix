@@ -67,6 +67,35 @@ export const GitStatusToolArgsSchema = z.object({
   identity_id: z.string().min(1, "Identity ID required").default("system"),
 });
 
+export const PatchFileToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  path: z.string().min(1, "File path required"),
+  /** Exact string to search for in the file. Must match exactly once. */
+  search: z.string().min(1, "Search string required"),
+  /** Replacement string. May be empty to delete the matched section. */
+  replace: z.string(),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const DeleteFileToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  path: z.string().min(1, "File path required"),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const MoveFileToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  from: z.string().min(1, "Source path required"),
+  to: z.string().min(1, "Destination path required"),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const CreateDirectoryToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  path: z.string().min(1, "Directory path required"),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
 export const CreateRequestToolArgsSchema = z.object({
   description: z.string().min(1, "Description required"),
   /** @deprecated Use identity instead */
@@ -104,7 +133,11 @@ export type MCPToolArgs =
   | z.infer<typeof CreateRequestToolArgsSchema>
   | z.infer<typeof ListPlansToolArgsSchema>
   | z.infer<typeof ApprovePlanToolArgsSchema>
-  | z.infer<typeof QueryJournalToolArgsSchema>;
+  | z.infer<typeof QueryJournalToolArgsSchema>
+  | z.infer<typeof PatchFileToolArgsSchema>
+  | z.infer<typeof DeleteFileToolArgsSchema>
+  | z.infer<typeof MoveFileToolArgsSchema>
+  | z.infer<typeof CreateDirectoryToolArgsSchema>;
 
 // ============================================================================
 // MCP Response Schemas

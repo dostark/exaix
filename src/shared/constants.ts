@@ -1141,14 +1141,20 @@ export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.READ_FILE,
   McpToolName.LIST_DIRECTORY,
   McpToolName.SEARCH_FILES,
+  McpToolName.GIT_STATUS,
 ]);
 
 /**
  * Write MCP tools — require declared execution_mode and human plan approval.
- * These tools CANNOT be listed in permitted_tools for a dynamic step.
+ * Cannot be listed in permitted_tools for a dynamic flow step.
+ * Updated in Phase 57 to reflect all implemented write handlers.
  */
 export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.WRITE_FILE,
-  McpToolName.RUN_COMMAND,
+  McpToolName.PATCH_FILE,
+  McpToolName.DELETE_FILE,
+  McpToolName.MOVE_FILE,
   McpToolName.CREATE_DIRECTORY,
+  McpToolName.GIT_CREATE_BRANCH,
+  McpToolName.GIT_COMMIT,
 ]);
