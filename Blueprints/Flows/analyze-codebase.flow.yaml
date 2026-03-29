@@ -1,0 +1,51 @@
+id: analyze-codebase
+name: Analyze Codebase and Write Report
+description: >
+  Explores the codebase structure dynamically using model-driven tool selection,
+  then writes a structured analysis report. The exploration phase uses dynamic
+  execution mode for flexible codebase investigation; the report writing uses
+  declared mode for controlled file output.
+version: "1.0"
+steps:
+  - id: explore
+    name: Explore codebase structure and gather context
+    identity: senior-coder
+    execution_mode: dynamic
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    timeout: 120000 # 2 minutes max for exploration
+    skills:
+      - typescript-patterns
+      - architecture-review
+    input:
+      source: request
+      transform: passthrough
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+  - id: write-report
+    name: Write analysis report
+    identity: senior-coder
+    execution_mode: declared
+    dependsOn:
+      - explore
+    input:
+      source: step
+      stepId: explore
+      transform: passthrough
+    tools:
+      - write_file
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
+
+output:
+  from: write-report
+  format: markdown
+
+settings:
+  maxParallelism: 1
+  failFast: true

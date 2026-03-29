@@ -8,6 +8,11 @@ created_by: "exaix-setup"
 version: "1.0.0"
 description: "Expert-level software engineer for complex implementation tasks"
 default_skills: ["typescript-patterns", "error-handling", "code-review", "portal-grounding"]
+permitted_tools:
+  - read_file
+  - list_directory
+  - search_files
+  - write_file
 ---
 
 # Senior Software Engineer Agent

@@ -643,14 +643,16 @@ $ exactl flow validate Blueprints/Flows/bad-dynamic.yaml
 
 #### 6.1 — New example flow demonstrating hybrid mode
 
-**File:** `Blueprints/Flows/analyze-codebase.yaml` (new)
+**File:** `Blueprints/Flows/analyze-codebase.flow.yaml` (new)
 
 ```yaml
 id: analyze-codebase
 name: Analyze Codebase and Write Report
 description: >
-  Explores the codebase structure dynamically, then writes a structured
-  analysis report. Exploration is dynamic (model-driven); writing is declared.
+  Explores the codebase structure dynamically using model-driven tool selection,
+  then writes a structured analysis report. The exploration phase uses dynamic
+  execution mode for flexible codebase investigation; the report writing uses
+  declared mode for controlled file output.
 version: "1.0"
 steps:
   - id: explore
@@ -662,21 +664,36 @@ steps:
       - list_directory
       - search_files
     timeout: 120000  # 2 minutes max for exploration
-    skills: [typescript, architecture-review]
+    skills:
+      - typescript-patterns
+      - architecture-review
+    input:
+      source: request
+      transform: passthrough
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
 
   - id: write-report
     name: Write analysis report
     identity: senior-coder
     execution_mode: declared
-    tools: [write_file]
-    dependsOn: [explore]
+    dependsOn:
+      - explore
     input:
       source: step
       stepId: explore
+      transform: passthrough
+    tools:
+      - write_file
+    retry:
+      maxAttempts: 1
+      backoffMs: 1000
 
 output:
   from: write-report
   format: markdown
+
 settings:
   maxParallelism: 1
   failFast: true
@@ -688,28 +705,37 @@ settings:
 
 ```yaml
 ---
-agent_id: senior-coder
-name: Senior Coder
-model: anthropic:claude-opus-4-5
-capabilities: [code-generation, refactoring, architecture-review]
+identity_id: "senior-coder"
+name: "Senior Software Engineer"
+model: "google:gemini-2.0-flash-exp"
+capabilities: ["code_generation", "architecture", "debugging", "testing", "code_review"]
+created: "2025-12-09T13:47:00Z"
+created_by: "exaix-setup"
+version: "1.0.0"
+description: "Expert-level software engineer for complex implementation tasks"
+default_skills: ["typescript-patterns", "error-handling", "code-review", "portal-grounding"]
 permitted_tools:
   - read_file
   - list_directory
   - search_files
-default_skills: [typescript, deno]
+  - write_file
 ---
 ```
 
 **Success Criteria:**
 
-- [ ] `analyze-codebase.yaml` passes `exactl flow validate` with no errors
-- [ ] Example clearly demonstrates the declared/dynamic hybrid pattern
-- [ ] `senior-coder` blueprint has `permitted_tools` in frontmatter
+- [x] `analyze-codebase.yaml` passes `exactl flow validate` with no errors
+- [x] Example clearly demonstrates the declared/dynamic hybrid pattern
+- [x] `senior-coder` blueprint has `permitted_tools` in frontmatter
 
 **Planned Tests:**
 
-- Example flow is validated in CI and passes with no errors.
-- Example blueprint is parsed and used in a test flow.
+- ✅ Example flow is validated in CI and passes with no errors.
+- ✅ Example blueprint is parsed and used in a test flow.
+
+**✅ IMPLEMENTED** — `Blueprints/Flows/analyze-codebase.flow.yaml`, `Blueprints/Identities/senior-coder.md` (updated)
+
+---
 
 ### Task 7: Tests
 
