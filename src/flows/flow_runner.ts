@@ -8,6 +8,7 @@
  */
 
 import { IFlow, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
+import { join } from "@std/path";
 import { DependencyResolver } from "./dependency_resolver.ts";
 import { IAgentExecutionResult } from "../services/agent_runner.ts";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
@@ -16,8 +17,17 @@ import { jsonExtract, JSONValue } from "../shared/types/json.ts";
 import type { IDatabaseService } from "../services/db.ts";
 import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
+import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
+import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
 import { GateConfig, GateEvaluator, IGateResult } from "./gate_evaluator.ts";
-import { FlowStepType } from "../shared/enums.ts";
+import { FlowStepType, StepExecutionMode } from "../shared/enums.ts";
+import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
+import { ActivityJournal } from "../journal/activity_journal.ts";
+import { McpClient } from "../mcp/mcp_client.ts";
+import { LlmClient } from "../ai/llm_client.ts";
+import { ToolHandler } from "../mcp/tool_handler.ts";
+import { Config } from "../shared/schemas/config.ts";
+import { BlueprintLoader } from "../services/blueprint_loader.ts";
 
 export interface IFlowRunner {
   /**
@@ -223,14 +233,51 @@ export function toGateConfig(evaluate: IGateEvaluate): GateConfig {
  */
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
+  private dynamicStepExecutor?: DynamicStepExecutor;
 
   constructor(
     private agentExecutor: IAgentExecutor,
     private eventLogger: IFlowEventLogger,
     private db?: IDatabaseService, // Optional for token aggregation
     private gateEvaluator?: GateEvaluator,
+    private config?: Config,
+    private mcpHandlers?: ToolHandler[],
   ) {
     this.conditionEvaluator = new ConditionEvaluator();
+
+    if (config && mcpHandlers && eventLogger) {
+      const activityJournal = new ActivityJournal(eventLogger);
+      // Build a minimal ICliApplicationContext for McpClient without forbidden casts.
+      // McpClient only uses context.config and context.db; the remaining fields
+      // (provider, display, git) are required by the interface but never exercised
+      // by McpClient, so we satisfy them with proper no-op implementations.
+      const noopDisplay: IDisplayService = {
+        info: () => Promise.resolve(),
+        warn: () => Promise.resolve(),
+        error: () => Promise.resolve(),
+        debug: () => Promise.resolve(),
+        fatal: () => Promise.resolve(),
+      };
+      const mcpClient = new McpClient({
+        config: {
+          get: () => config,
+          getAll: () => config,
+          getConfigPath: () => "",
+          reload: () => config,
+          getSchemaVersion: () => "1.0.0",
+          getPortals: () => [],
+          getPortal: (_alias: string) => undefined,
+          addPortal: (_alias: string, _path: string) => Promise.resolve(),
+          removePortal: (_alias: string) => Promise.resolve(),
+        },
+        db: db!,
+        provider: createProviderStub(),
+        display: noopDisplay,
+        git: createGitServiceStub(),
+      }, mcpHandlers);
+      const llmClient = new LlmClient(config);
+      this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
+    }
   }
 
   private getIFlowLogBase(
@@ -746,7 +793,36 @@ export class FlowRunner implements IFlowRunner {
         };
       }
 
-      const result = await this.agentExecutor.run(step.identity, stepRequest);
+      let result: IAgentExecutionResult;
+
+      if (step.execution_mode === StepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
+        // Dynamic mode execution
+        const blueprintsPath = this.config
+          ? join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities)
+          : "";
+        const loader = new BlueprintLoader({ blueprintsPath });
+        const loaded = await loader.load(step.identity);
+
+        if (!loaded) {
+          throw new Error(`Blueprint not found for dynamic step: ${step.identity}`);
+        }
+
+        const dynamicResult = await this.dynamicStepExecutor.execute(
+          step,
+          loaded.frontmatter as IBlueprintFrontmatter,
+          stepRequest.userPrompt,
+          { traceId: request.traceId || crypto.randomUUID() },
+        );
+
+        result = {
+          thought: `Dynamic execution completed in ${dynamicResult.iterations} iterations`,
+          content: dynamicResult.output,
+          raw: JSON.stringify(dynamicResult.toolCallsLog),
+        };
+      } else {
+        // Declared mode execution
+        result = await this.agentExecutor.run(step.identity, stepRequest);
+      }
 
       const completedAt = new Date();
       const duration = completedAt.getTime() - startedAt.getTime();

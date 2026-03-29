@@ -122,6 +122,20 @@ export const QueryJournalToolArgsSchema = z.object({
   identity_id: z.string().min(1, "Identity ID required").default("system"),
 });
 
+export const RunCommandToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  command: z.string().min(1, "Command required"),
+  args: z.array(z.string()).optional(),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const SearchFilesToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  pattern: z.string().min(1, "Pattern required"),
+  path: z.string().optional().default(""),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
 // Union type for all tool arguments
 export type MCPToolArgs =
   | z.infer<typeof ReadFileToolArgsSchema>
@@ -137,7 +151,9 @@ export type MCPToolArgs =
   | z.infer<typeof PatchFileToolArgsSchema>
   | z.infer<typeof DeleteFileToolArgsSchema>
   | z.infer<typeof MoveFileToolArgsSchema>
-  | z.infer<typeof CreateDirectoryToolArgsSchema>;
+  | z.infer<typeof CreateDirectoryToolArgsSchema>
+  | z.infer<typeof RunCommandToolArgsSchema>
+  | z.infer<typeof SearchFilesToolArgsSchema>;
 
 // ============================================================================
 // MCP Response Schemas

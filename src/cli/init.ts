@@ -16,6 +16,7 @@ import { FlowLoader } from "../flows/flow_loader.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
 import type { Config } from "../shared/schemas/config.ts";
 import { DatabaseService, IDatabaseService } from "../services/db.ts";
+import { ToolRegistry } from "../services/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
@@ -163,6 +164,11 @@ export async function initializeServices(
       dbLocal,
     );
 
+    const toolRegistry = new ToolRegistry({
+      config: cfg,
+      db: dbLocal as DatabaseService, // ToolRegistry expects concrete DatabaseService
+    });
+
     const portals = new PortalService(
       cfg,
       configAdapter,
@@ -189,6 +195,7 @@ export async function initializeServices(
       provider: providerLocal,
       display: displayAdapter,
       config: configAdapter,
+      toolRegistry: toolRegistry,
       memoryBank: new MemoryBankAdapter(memoryBank),
       extractor: new MemoryExtractorAdapter(extractor),
       embeddings: new MemoryEmbeddingAdapter(embedding),

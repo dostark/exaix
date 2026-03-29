@@ -1,28 +1,30 @@
-> **Task 4: Update `FlowRunner` to Dispatch by Execution Mode**
->
-> **Status:** ⏸️ Deferred - Requires MCP/LLM client integration
->
-> **File:** `src/flows/flow_runner.ts`
->
-> The `FlowRunner` currently processes all steps uniformly. Add execution mode dispatch:
->
-> ```typescript
-> // In FlowRunner.executeStep() or equivalent dispatch method:
->
-> if (step.execution_mode === StepExecutionMode.DYNAMIC) {
->   // Route to DynamicStepExecutor
->   const executor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
->   return await executor.execute(step, identity, input, {
->     traceId: request.traceId,
->     maxIterations: step.timeout ? Math.floor(step.timeout / 1000) : 10,
->   });
-> } else {
->   // Route to existing declared-mode execution path (unchanged)
->   return await this.executeDeclaredStep(step, identity, input);
-> }
-> ```
->
-> **Note:** Full FlowRunner integration requires:
-> 1. MCP client implementation for tool execution
-> 2. LLM client implementation for ReAct reasoning
-> 3. BlueprintLoader integration for identity loading
+#### Dynamic Step Result
+The result returned by `DynamicStepExecutor.execute()`:
+```typescript
+export interface IDynamicStepResult {
+  stepId: string;
+  output: string;
+  toolCallsLog: IDynamicToolCall[];
+  iterations: number;
+  completed: boolean;
+}
+```
+
+#### Journal Entry
+Auditable events logged during execution:
+```typescript
+export interface JournalEntry {
+  traceId: string;
+  stepId: string;
+  event: string;
+  timestamp?: string;
+  [key: string]: JSONValue;
+}
+```
+
+---
+
+## Implementation Summary
+
+### McpClient (`src/mcp/mcp_client.ts`)
+A wrapper that bridges the `IMcpClient` interface to the existing MCP `ToolHandler` infrastructure. It provides both tool execution and metadata retrieval (name, description, input schema).

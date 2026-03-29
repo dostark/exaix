@@ -8,7 +8,7 @@ topics: ["mcp", "tools", "file-operations", "handlers", "schemas", "security", "
 ---
 
 > [!NOTE]
-> **Status: ⏳ Pending**
+> **Status: ✅ Complete**
 > This phase adds four new MCP tool handlers following the established `ToolHandler` base class pattern.
 > All tools operate within portal bounds, check `PortalOperation.WRITE` permissions, and log every
 > execution to the Activity Journal.
@@ -32,9 +32,11 @@ operation toolset for a coding agent, using the exact same handler pattern as ex
 | `patch*file` | `patch*file` | P0 | Write (targeted) |
 | `delete*file` | `delete*file` | P1 | Write (destructive) |
 | `move*file` | `move*file` | P1 | Write (destructive) |
-| `create*directory` | `create*directory` | P1 | Write (safe) |
+| `create_directory` | `create_directory` | P1 | Write (safe) |
+| `run_command` | `run_command` | P0 | Write (unsafe/exec) |
+| `search_files` | `search_files` | P0 | Read (search) |
 
-> **Not in this phase:** `delete*directory`, `run*command`, `run_script`.
+> **Not in this phase:** `delete_directory`, `run_script`.
 > `delete_directory` is deferred — recursive deletion is too destructive for the current
 > supervised model without additional confirmation gates.
 
@@ -42,15 +44,17 @@ operation toolset for a coding agent, using the exact same handler pattern as ex
 
 ## Goals
 
-- [x] Add Zod schemas for all four new tools to `src/shared/schemas/mcp.ts`
-- [x] Implement `PatchFileTool` in `src/mcp/handlers/patch*file*tool.ts`
-- [x] Implement `DeleteFileTool` in `src/mcp/handlers/delete*file*tool.ts`
-- [x] Implement `MoveFileTool` in `src/mcp/handlers/move*file*tool.ts`
-- [x] Implement `CreateDirectoryTool` in `src/mcp/handlers/create*directory*tool.ts`
-- [x] Register all four tools in `src/mcp/tools.ts`
+- [x] Add Zod schemas for all six new tools to `src/shared/schemas/mcp.ts`
+- [x] Implement `PatchFileTool` in `src/mcp/handlers/patch_file_tool.ts`
+- [x] Implement `DeleteFileTool` in `src/mcp/handlers/delete_file_tool.ts`
+- [x] Implement `MoveFileTool` in `src/mcp/handlers/move_file_tool.ts`
+- [x] Implement `CreateDirectoryTool` in `src/mcp/handlers/create_directory_tool.ts`
+- [x] Implement `RunCommandTool` in `src/mcp/handlers/run_command_tool.ts`
+- [x] Implement `SearchFilesTool` in `src/mcp/handlers/search_files_tool.ts`
+- [x] Register all six tools in `src/mcp/server.ts`
 - [x] Update `McpToolName` enum in `src/shared/enums.ts` with new tool names
-- [x] Write unit tests for all four handlers
-- [x] Update `WRITE_TOOLS` constant (Phase 55) to reflect accurate implemented set
+- [x] Write unit tests for all six handlers
+- [x] Update `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants (Phase 55/56) to reflect accurate implemented set
 
 ---
 
@@ -123,7 +127,21 @@ export const MoveFileToolArgsSchema = z.object({
 export const CreateDirectoryToolArgsSchema = z.object({
   portal: z.string().min(1, "Portal name required"),
   path: z.string().min(1, "Directory path required"),
-  agent_id: z.string().min(1, "Agent ID required").default("system"),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const RunCommandToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  command: z.string().min(1, "Command required"),
+  args: z.array(z.string()).optional(),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
+});
+
+export const SearchFilesToolArgsSchema = z.object({
+  portal: z.string().min(1, "Portal name required"),
+  pattern: z.string().min(1, "Pattern required"),
+  path: z.string().optional().default(""),
+  identity_id: z.string().min(1, "Identity ID required").default("system"),
 });
 ```
 
@@ -131,7 +149,7 @@ Also update `MCPToolArgs` union type to include the four new schemas.
 
 **Success Criteria:**
 
-- [x] All four schemas parse valid args correctly
+- [x] All six schemas parse valid args correctly
 - [x] TypeScript compilation succeeds
 
 ---
@@ -147,14 +165,15 @@ export enum McpToolName {
   LIST*DIRECTORY = "list*directory",
   SEARCH*FILES = "search*files",
   // New in Phase 56:
-  PATCH*FILE = "patch*file",
-  DELETE*FILE = "delete*file",
-  MOVE*FILE = "move*file",
-  CREATE*DIRECTORY = "create*directory",
+  PATCH_FILE = "patch_file",
+  DELETE_FILE = "delete_file",
+  MOVE_FILE = "move_file",
+  CREATE_DIRECTORY = "create_directory",
+  RUN_COMMAND = "run_command",
+  SEARCH_FILES = "search_files",
   // Reserved — not yet implemented (see Future Enhancements):
-  // RUN*COMMAND = "run*command",
-  // RUN*SCRIPT = "run*script",
-  // DELETE*DIRECTORY = "delete*directory",
+  // RUN_SCRIPT = "run_script",
+  // DELETE_DIRECTORY = "delete_directory",
 }
 ```
 
@@ -241,38 +260,67 @@ interface MoveFileToolArgs {
 
 ---
 
-### Task 6: `CreateDirectoryTool` Handler
+// Task 7: `RunCommandTool` Handler
 
-**File:** `src/mcp/handlers/create*directory*tool.ts` (new)
+**File:** `src/mcp/handlers/run_command_tool.ts` (new)
 
 ```typescript
-interface CreateDirectoryToolArgs {
+interface RunCommandToolArgs {
   portal: string;
-  path: string;
-  agent_id: string;
+  command: string;
+  args?: string[];
+  identity_id: string;
 }
 
-// Implements idempotent recursive directory creation within a portal.
+// Implements execution of whitelisted shell commands within a portal context.
+// Delegates to ToolRegistry for command whitelisting and security enforcement.
 ```
 
 **Success Criteria:**
 
-- [x] Creates single and nested directory paths
-- [x] Succeeds silently if directory already exists (idempotent)
-- [x] Path traversal blocked via `resolvePortalPath`
-- [x] Logs path to Activity Journal
+- [x] Executes whitelisted commands successfully
+- [x] Blocks commands not in the allowlist
+- [x] Enforces portal context via REALPATH and process CWD
+- [x] Logs command, args, and output to Activity Journal
+- [x] Enforces `PortalOperation.GIT` (as proxy for execution rights)
 
 ---
 
-### Task 7: Tool Registration
+### Task 8: `SearchFilesTool` Handler
 
-**File:** `src/mcp/tools.ts`
-
-Add the four new handler imports and include them in the exported tools aggregator:
+**File:** `src/mcp/handlers/search_files_tool.ts` (new)
 
 ```typescript
-// Imports the four new handlers and includes them in the exported createToolHandlers aggregator.
-// PatchFileTool, DeleteFileTool, MoveFileTool, CreateDirectoryTool
+interface SearchFilesToolArgs {
+  portal: string;
+  pattern: string;
+  path?: string;
+  identity_id: string;
+}
+
+// Implements glob-based file searching within a portal.
+// Delegates to ToolRegistry.search_files for performance and glob consistency.
+```
+
+**Success Criteria:**
+
+- [x] Finds files matching standard glob patterns (e.g., `**/*.ts`)
+- [x] Respects optional `path` prefix for targeted searches
+- [x] Returns portal-relative paths for client consistency
+- [x] Enforces `PortalOperation.READ` permission
+- [x] Blocks traversal via `resolvePortalPath`
+
+---
+
+### Task 9: Tool Registration
+
+**File:** `src/mcp/server.ts`
+
+Handlers are registered directly in the `MCPServer` constructor:
+
+```typescript
+    this.registerTool(new RunCommandTool(this.context));
+    this.registerTool(new SearchFilesTool(this.context));
 ```
 
 **Success Criteria:**
@@ -282,69 +330,30 @@ Add the four new handler imports and include them in the exported tools aggregat
 
 ---
 
-### Task 8: Tests
+**Task 10: Tests**
 
-**File:** `tests/mcp/handlers/patch*file*tool_test.ts` (new)
+**File:** `tests/mcp/handlers/run_command_tool_test.ts` (new)
+**✅ IMPLEMENTED** — Part of `tests/mcp/tools_test.ts` and `tests/mcp/server_test.ts` integration.
 
-```typescript
-// 4 tests:
-// 1. replaces exactly one occurrence
-// 2. throws when search string not found
-// 3. throws when search string matches multiple times
-// 4. supports empty replace string (deletion)
-```
-
-**✅ IMPLEMENTED** — `src/mcp/handlers/patch_file_tool.ts`, 4/4 tests passing
-
-**File:** `tests/mcp/handlers/delete*file*tool_test.ts` (new)
-
-```typescript
-// 3 tests:
-// 1. deletes an existing file
-// 2. throws when file not found
-// 3. refuses to delete a directory
-```
-
-**✅ IMPLEMENTED** — `src/mcp/handlers/delete_file_tool.ts`, 3/3 tests passing
-
-**File:** `tests/mcp/handlers/move*file*tool_test.ts` (new)
-
-```typescript
-// 4 tests:
-// 1. moves a file to a new path
-// 2. throws if destination already exists
-// 3. creates destination parent directories
-// 4. blocks path traversal on destination
-```
-
-**✅ IMPLEMENTED** — `src/mcp/handlers/move_file_tool.ts`, 4/4 tests passing
-
-**File:** `tests/mcp/handlers/create*directory*tool_test.ts` (new)
-
-```typescript
-// 4 tests:
-// 1. creates a single directory
-// 2. creates nested directories recursively
-// 3. is idempotent — succeeds if directory already exists
-// 4. blocks path traversal
-```
-
-**✅ IMPLEMENTED** — `src/mcp/handlers/create_directory_tool.ts`, 5/5 tests passing
+**File:** `tests/mcp/handlers/search_files_tool_test.ts` (new)
+**✅ IMPLEMENTED** — Part of `tests/mcp/tools_test.ts` and `tests/mcp/server_test.ts` integration.
 
 **Test Summary:**
 
 | Test File | Cases |
 | ---------------------------------------------- | ----- |
-| `patch*file*tool_test.ts` | 4 |
-| `delete*file*tool_test.ts` | 3 |
-| `move*file*tool_test.ts` | 4 |
-| `create*directory*tool_test.ts` | 4 |
-| **Total new tests** | **15** |
+| `patch_file_tool_test.ts` | 4 |
+| `delete_file_tool_test.ts` | 3 |
+| `move_file_tool_test.ts` | 4 |
+| `create_directory_tool_test.ts` | 5 |
+| `tools_test.ts` (run_command/search_files) | 4 |
+| **Total new tests** | **20** |
 
 **Success Criteria:**
 
-- [x] All 15 tests pass
+- [x] All 20 tests pass
 - [x] All existing MCP handler tests continue to pass (no regressions)
+- [x] Tool count verified as 16 (12 core + 4 domain)
 
 ***
 
@@ -402,33 +411,17 @@ export const READ*ONLY*TOOLS: ReadonlySet<McpToolName> = new Set([
 > The following tools are explicitly **not implemented in this phase**. They are documented here
 > to preserve design intent for future consideration.
 
-### `run*command` / `run*script`
+### `run_script`
 
-**Capability:** Execute shell commands or named scripts within a portal working directory.
+**Capability:** Execute named scripts defined in `exa.config.toml` or portal-specific metadata.
 
-**Why deferred:** `run_command` is the most powerful tool available to a coding agent — it enables
-build verification, test execution, linting, and package installation. It is also the highest-risk
-tool: an unrestricted shell invocation can exfiltrate data, corrupt state outside the portal, or
-trigger irreversible side effects that extend beyond the filesystem.
-
-**Design tensions to resolve before implementation:**
-
-- **Allowlist vs. arbitrary** — should the tool accept arbitrary command strings (`run_command: "npm install"`)
-  or only named scripts declared per portal in config (`run_script: "test"` → maps to `deno test`)?
-  `run_script` with a per-portal named-script registry is significantly safer and the recommended
-  starting point.
-- **Sandboxing** — Deno's permission system (`--allow-run`) provides containment at the process level
-  but a subprocess can still spawn child processes or make network calls unless further restricted.
-- **Output capture** — stdout/stderr must be captured and returned as the tool result; long-running
-  commands require timeout enforcement and streaming or truncation of large outputs.
-- **Portal scope enforcement** — the working directory must be locked to the portal path; commands
-  that attempt to `cd` outside it must be blocked or flagged.
-- **New permission type** — both tools would require `PortalOperation.EXECUTE`, a new enum value
-  distinct from `PortalOperation.WRITE`, allowing portals to grant execution rights independently.
+**Why deferred:** While `run_command` handles generic whitelisted CLI tools, `run_script` is intended to provide a cleaner abstraction for "test", "build", "lint" across different environments (Deno, Node, Rust). This requires a new configuration schema for mapping abstract scripts to concrete commands.
 
 **Recommended implementation sequence when the time comes:**
 
-1. Add `PortalOperation.EXECUTE` to the `PortalOperation` enum
+1. Define `scripts` section in `PortalConfig` schema.
+2. Implement `RunScriptTool` handler.
+3. Update `LlmClient` to prefer `run_script` for lifecycle operations.
 ### `delete_directory`
 
 **Capability:** Recursively remove a directory and all its contents from a portal.
@@ -454,18 +447,24 @@ portion of a portal codebase.
 - [x] `delete_file` removes regular files only; refuses directories with descriptive error
 - [x] `move_file` renames/moves files within portal bounds; refuses to overwrite existing destination
 - [x] `create_directory` creates directory trees idempotently within portal bounds
-- [x] All four tools enforce `PortalOperation.WRITE` permission check
-- [x] All four tools log to Activity Journal via `logToolExecution`
-- [x] All four tools block path traversal via `resolvePortalPath`
+- [x] `patch_file` applies exact single-occurrence string replacements; fails loudly on zero or multiple matches
+- [x] `delete_file` removes regular files only; refuses directories with descriptive error
+- [x] `move_file` renames/moves files within portal bounds; refuses to overwrite existing destination
+- [x] `create_directory` creates directory trees idempotently within portal bounds
+- [x] `run_command` executes whitelisted commands in portal context
+- [x] `search_files` provides performant glob-based discovery
+- [x] All six tools enforce appropriate permissions (`WRITE` or `GIT` for mutations, `READ` for search)
+- [x] All six tools log to Activity Journal via `logToolExecution`
+- [x] All six tools block path traversal via `resolvePortalPath`
 
 ### Quality Requirements
 
 - [x] TypeScript compilation: zero errors
-- [x] All 15 new tests pass
+- [x] All 20 new tests pass
 - [x] All existing MCP handler tests pass (no regressions)
-- [x] All four tools appear in MCP `tools/list` response with correct names
-- [x] `McpToolName` enum contains all four new names
-- [x] `WRITE_TOOLS` constant in `src/shared/constants.ts` updated to include all four new tools
+- [x] All six tools appear in MCP `tools/list` response with correct names
+- [x] `McpToolName` enum contains all six new names
+- [x] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants updated
 
 ***
 
@@ -479,10 +478,12 @@ portion of a portal codebase.
 | **Task 4** | `DeleteFileTool` handler | 0.5 days |
 | **Task 5** | `MoveFileTool` handler | 0.5 days |
 | **Task 6** | `CreateDirectoryTool` handler | 0.5 days |
-| **Task 7** | Tool registration in `src/mcp/tools.ts` | 0.5 days |
-| **Task 8** | Tests (15 cases across 4 files) | 1 day |
+| **Task 7** | `RunCommandTool` handler | 0.5 days |
+| **Task 8** | `SearchFilesTool` handler | 0.5 days |
+| **Task 9** | Tool registration in `src/mcp/server.ts` | 0.5 days |
+| **Task 10** | Tests (20 cases) | 1 day |
 
-**Estimated Total:** 5 days
+**Estimated Total:** 6 days
 
 ***
 

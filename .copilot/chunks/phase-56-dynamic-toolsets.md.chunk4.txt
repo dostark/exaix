@@ -3,7 +3,7 @@
 - [x] Add `permitted_tools` field to `BlueprintFrontmatterSchema`
 - [x] Add `READ_ONLY_TOOLS` and `WRITE_TOOLS` classification sets to `src/shared/constants.ts`
 - [x] Implement `DynamicStepExecutor` in `src/flows/dynamic_step_executor.ts`
-- [ ] Update `FlowRunner` to dispatch dynamic vs. declared steps correctly **(deferred to Phase 58)**
+- [x] Update `FlowRunner` to dispatch dynamic vs. declared steps correctly **(implemented in Phase 58)**
 - [x] Update `FlowLoader` to validate that dynamic steps do not list write tools in `permitted_tools`
 - [x] Add `exactl flow validate` warnings for dynamic steps referencing write tools
 - [x] Write unit tests for `DynamicStepExecutor` and schema validation

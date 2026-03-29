@@ -1,10 +1,16 @@
-| Missing Component | Status | Blocker For |
-|------------------|--------|-------------|
-| `IMcpClient` implementation | ❌ Not implemented | Phase 56 Task 4 |
-| `ILlmClient` implementation | ❌ Not implemented | Phase 56 Task 4 |
-| `IActivityJournal` implementation | ❌ Not implemented | Phase 56 Task 4 |
-| ReAct reasoning loop | ❌ Not implemented | Phase 56 Task 4 |
+- [x] Implement `McpClient` wrapper around existing MCP tool execution
+- [x] Implement `LlmClient` with ReAct reasoning loop and JSON schema support
+- [x] Implement `ActivityJournal` for audit logging via `EventLogger`
+- [x] Integrate `DynamicStepExecutor` into `FlowRunner.executeStep()`
+- [x] Update `BlueprintLoader` and `RuntimeBlueprintFrontmatterSchema` for `permitted_tools`
+- [x] Write unit tests for all client implementations
+- [x] Add integration test for end-to-end dynamic step execution
+- [x] Update Phase 56 planning document to mark Task 4 complete
 
-This phase implements all four components, enabling full dynamic tool selection in flow steps.
+---
 
-### **Design Principles**
+## Technical Architecture
+
+### Core Interfaces
+
+The system relies on three primary interfaces injected into the `DynamicStepExecutor`:

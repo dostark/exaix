@@ -23,6 +23,8 @@ import { PatchFileTool } from "./handlers/patch_file_tool.ts";
 import { DeleteFileTool } from "./handlers/delete_file_tool.ts";
 import { MoveFileTool } from "./handlers/move_file_tool.ts";
 import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
+import { RunCommandTool } from "./handlers/run_command_tool.ts";
+import { SearchFilesTool } from "./handlers/search_files_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
@@ -136,6 +138,8 @@ export class MCPServer {
     this.registerTool(new ListPlansTool(this.context));
     this.registerTool(new ApprovePlanTool(this.context));
     this.registerTool(new QueryJournalTool(this.context));
+    this.registerTool(new RunCommandTool(this.context));
+    this.registerTool(new SearchFilesTool(this.context));
   }
 
   /**

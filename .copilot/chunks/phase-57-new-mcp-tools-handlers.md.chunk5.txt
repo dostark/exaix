@@ -12,4 +12,4 @@ patch_file args:
   path: "src/main.ts"
   search: "export function oldName("
   replace: "export function newName("
-```text
+```

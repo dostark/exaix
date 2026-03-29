@@ -1,5 +1,5 @@
 > [!NOTE]
-> **Status: ⏳ Pending**
+> **Status: ✅ Complete**
 > This phase adds hybrid dynamic tool execution to Exaix flows. The current plan-and-execute model
 > (ReWOO-style, tools committed during planning) is preserved as the default. A new `execution_mode: "dynamic"`
 > opt-in at the step level allows the model to select tools from a step-scoped `permitted_tools` list at

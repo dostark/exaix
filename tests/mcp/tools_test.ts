@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
+import { TOTAL_MCP_TOOLS } from "../../src/shared/constants.ts";
 
 import { join } from "@std/path";
 import {
@@ -103,7 +104,7 @@ Deno.test("read_file: logs invocation to IActivity Journal", async () => {
 
       const logs = db.instance.prepare(
         "SELECT * FROM activity WHERE action_type = ?",
-      ).all("mcp.tool.read_file");
+      ).all(`mcp.tool.${McpToolName.READ_FILE}`);
 
       assertEquals(logs.length, 1);
       const log = logs[0] as { target: string; payload: string };
@@ -161,18 +162,18 @@ Deno.test("read_file: read_file appears in tools/list", async () => {
 
     assertExists(response.result);
     const result = response.result as { tools: Array<{ name: string; description: string }> };
-    assertEquals(result.tools.length, 10);
+    assertEquals(result.tools.length, TOTAL_MCP_TOOLS);
     const toolNames = result.tools.map((t) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));
     assert(toolNames.includes(McpToolName.LIST_DIRECTORY));
-    assert(toolNames.includes("git_create_branch"));
-    assert(toolNames.includes("git_commit"));
-    assert(toolNames.includes("git_status"));
-    assert(toolNames.includes("exaix_create_request"));
-    assert(toolNames.includes("exaix_list_plans"));
-    assert(toolNames.includes("exaix_approve_plan"));
-    assert(toolNames.includes("exaix_query_journal"));
+    assert(toolNames.includes(McpToolName.GIT_CREATE_BRANCH));
+    assert(toolNames.includes(McpToolName.GIT_COMMIT));
+    assert(toolNames.includes(McpToolName.GIT_STATUS));
+    assert(toolNames.includes(McpToolName.CREATE_REQUEST));
+    assert(toolNames.includes(McpToolName.LIST_PLANS));
+    assert(toolNames.includes(McpToolName.APPROVE_PLAN));
+    assert(toolNames.includes(McpToolName.QUERY_JOURNAL));
     const readTool = result.tools.find((t) => t.name === McpToolName.READ_FILE)!;
     assertStringIncludes(readTool.description, "Read");
   });
@@ -295,7 +296,7 @@ Deno.test("write_file: logs invocation to IActivity Journal", async () => {
 
     const logs = db.instance.prepare(
       "SELECT * FROM activity WHERE action_type = ?",
-    ).all("mcp.tool.write_file");
+    ).all(`mcp.tool.${McpToolName.WRITE_FILE}`);
 
     assertEquals(logs.length, 1);
     const log = logs[0] as { target: string; payload: string };

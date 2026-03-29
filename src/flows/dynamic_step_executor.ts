@@ -63,6 +63,11 @@ const DEFAULT_MAX_ITERATIONS = 10;
  */
 export interface IMcpClient {
   callTool(tool: McpToolName, args: ToolArgs): Promise<string>;
+  getToolDefinitions(tools: McpToolName[]): Array<{
+    name: string;
+    description: string;
+    inputSchema: Record<string, JSONValue>;
+  }>;
 }
 
 /**
@@ -73,7 +78,11 @@ export interface ILlmClient {
     identity: IBlueprintFrontmatter;
     stepObjective: string;
     accumulatedContext: string;
-    availableTools: McpToolName[];
+    availableTools: Array<{
+      name: string;
+      description: string;
+      inputSchema: Record<string, JSONValue>;
+    }>;
     iteration: number;
     maxIterations: number;
   }): Promise<{
@@ -131,12 +140,14 @@ export class DynamicStepExecutor {
     while (iterations < maxIterations) {
       iterations++;
 
+      const toolsMetadata = this.mcpClient.getToolDefinitions(effectiveTools);
+
       // ReAct: model reasons about what tool to call next (or declares done)
       const decision = await this.llmClient.reasonNextAction({
         identity,
         stepObjective: step.name,
         accumulatedContext: context,
-        availableTools: effectiveTools,
+        availableTools: toolsMetadata,
         iteration: iterations,
         maxIterations,
       });

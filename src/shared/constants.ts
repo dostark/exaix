@@ -1142,6 +1142,8 @@ export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.LIST_DIRECTORY,
   McpToolName.SEARCH_FILES,
   McpToolName.GIT_STATUS,
+  McpToolName.LIST_PLANS,
+  McpToolName.QUERY_JOURNAL,
 ]);
 
 /**
@@ -1157,4 +1159,13 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.CREATE_DIRECTORY,
   McpToolName.GIT_CREATE_BRANCH,
   McpToolName.GIT_COMMIT,
+  McpToolName.RUN_COMMAND,
+  McpToolName.CREATE_REQUEST,
+  McpToolName.APPROVE_PLAN,
 ]);
+
+/**
+ * Total number of registered MCP tools.
+ * Used for test assertions and discovery validation.
+ */
+export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;

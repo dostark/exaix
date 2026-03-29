@@ -8,7 +8,7 @@ topics: ["flows", "tools", "dynamic-execution", "react", "blueprints", "schema",
 ---
 
 > [!NOTE]
-> **Status: ⏳ Pending**
+> **Status: ✅ Complete**
 > This phase adds hybrid dynamic tool execution to Exaix flows. The current plan-and-execute model
 > (ReWOO-style, tools committed during planning) is preserved as the default. A new `execution_mode: "dynamic"`
 > opt-in at the step level allows the model to select tools from a step-scoped `permitted_tools` list at
@@ -41,14 +41,14 @@ remain fully declared and human-approved. Exploratory read operations gain genui
 
 ## Goals
 
-**Phase 56 Status:** ✅ 6 of 7 tasks complete (Task 4 deferred to Phase 58)
+**Phase 56 Status:** ✅ All tasks complete (Task 4 implemented in Phase 58)
 
 - [x] Add `StepExecutionMode` enum: `declared` | `dynamic`
 - [x] Add `permitted_tools` and `execution_mode` fields to `FlowStepSchema`
 - [x] Add `permitted_tools` field to `BlueprintFrontmatterSchema`
 - [x] Add `READ_ONLY_TOOLS` and `WRITE_TOOLS` classification sets to `src/shared/constants.ts`
 - [x] Implement `DynamicStepExecutor` in `src/flows/dynamic_step_executor.ts`
-- [ ] Update `FlowRunner` to dispatch dynamic vs. declared steps correctly **(deferred to Phase 58)**
+- [x] Update `FlowRunner` to dispatch dynamic vs. declared steps correctly **(implemented in Phase 58)**
 - [x] Update `FlowLoader` to validate that dynamic steps do not list write tools in `permitted_tools`
 - [x] Add `exactl flow validate` warnings for dynamic steps referencing write tools
 - [x] Write unit tests for `DynamicStepExecutor` and schema validation
@@ -374,7 +374,8 @@ Accepts `mcpClient`, `llmClient`, `activityJournal` dependencies
 
 ### Task 4: Update `FlowRunner` to Dispatch by Execution Mode
 
-**Status:** ⏸️ Deferred to Phase 58 — Requires MCP/LLM client integration
+**Status:** ✅ Implemented in Phase 58
+
 
 **File:** `src/flows/flow_runner.ts`
 
@@ -711,11 +712,11 @@ The audit trail is *richer* in dynamic mode — the journal captures what the mo
 
 ### Functional Requirements
 
-- [x] `execution_mode: "dynamic"` steps execute via `DynamicStepExecutor` ReAct loop — **✅ IMPLEMENTED** (DynamicStepExecutor complete; FlowRunner integration deferred to Phase 58)
+- [x] `execution_mode: "dynamic"` steps execute via `DynamicStepExecutor` ReAct loop — **✅ IMPLEMENTED** (Implemented in Phase 58)
 - [x] `execution_mode: "declared"` steps (and steps with no `execution_mode`) execute via existing path — **✅ VERIFIED** (zero behavioral change; no modifications to existing execution path)
 - [x] Write tools cannot appear in `permitted_tools` for dynamic steps — **✅ VERIFIED** (blocked at load time by FlowLoader.validateDynamicStepTools() and at runtime by DynamicStepExecutor.resolvePermittedTools())
-- [ ] Step `permitted_tools` must be a subset of identity blueprint `permitted_tools` — **⏸️ DEFERRED** (requires BlueprintLoader integration; tracked in Phase 58)
-- [ ] Every tool call in a dynamic step is journaled with `traceId` — **⏸️ DEFERRED** (requires ActivityJournal implementation in Phase 58)
+- [x] Step `permitted_tools` must be a subset of identity blueprint `permitted_tools` — **✅ VERIFIED** (Verified via integration test in Phase 58)
+- [x] Every tool call in a dynamic step is journaled with `traceId` — **✅ VERIFIED** (Implemented via ActivityJournal in Phase 58)
 - [x] `maxIterations` cap prevents runaway loops — **✅ IMPLEMENTED** (DynamicStepExecutor enforces max 10 iterations or step.timeout)
 
 ### Quality Requirements

@@ -860,6 +860,11 @@ export enum McpToolName {
   GIT_CREATE_BRANCH = "git_create_branch",
   GIT_COMMIT = "git_commit",
   GIT_STATUS = "git_status",
+  // Domain tools
+  CREATE_REQUEST = "exaix_create_request",
+  LIST_PLANS = "exaix_list_plans",
+  APPROVE_PLAN = "exaix_approve_plan",
+  QUERY_JOURNAL = "exaix_query_journal",
 }
 
 /**
@@ -1222,6 +1227,14 @@ export enum DaemonAction {
   START = "start",
   STOP = "stop",
   RESTART = "restart",
+}
+
+/**
+ * ReAct reasoning loop action types
+ */
+export enum ReActActionType {
+  TOOL_CALL = "tool_call",
+  COMPLETE = "complete",
 }
 
 /**

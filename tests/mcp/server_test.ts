@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { McpToolName, McpTransportType } from "../../src/shared/enums.ts";
+import { TOTAL_MCP_TOOLS } from "../../src/shared/constants.ts";
 import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup.ts";
 
 /**
@@ -75,19 +76,19 @@ Deno.test("MCP Server: handles tools/list request", async () => {
     assertExists(result.tools);
     assertEquals(Array.isArray(result.tools), true);
 
-    // Phase 4 + Phase 25: Should have 10 tools
-    assertEquals(result.tools.length, 10);
+    // Phase 4 + Phase 25: Should have consistent tool count
+    assertEquals(result.tools.length, TOTAL_MCP_TOOLS);
     const toolNames = result.tools.map((t: { name: string }) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));
     assert(toolNames.includes(McpToolName.LIST_DIRECTORY));
-    assert(toolNames.includes("git_create_branch"));
-    assert(toolNames.includes("git_commit"));
-    assert(toolNames.includes("git_status"));
-    assert(toolNames.includes("exaix_create_request"));
-    assert(toolNames.includes("exaix_list_plans"));
-    assert(toolNames.includes("exaix_approve_plan"));
-    assert(toolNames.includes("exaix_query_journal"));
+    assert(toolNames.includes(McpToolName.GIT_CREATE_BRANCH));
+    assert(toolNames.includes(McpToolName.GIT_COMMIT));
+    assert(toolNames.includes(McpToolName.GIT_STATUS));
+    assert(toolNames.includes(McpToolName.CREATE_REQUEST));
+    assert(toolNames.includes(McpToolName.LIST_PLANS));
+    assert(toolNames.includes(McpToolName.APPROVE_PLAN));
+    assert(toolNames.includes(McpToolName.QUERY_JOURNAL));
   } finally {
     await ctx.cleanup();
   }

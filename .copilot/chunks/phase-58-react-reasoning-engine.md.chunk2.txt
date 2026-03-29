@@ -1,9 +1,12 @@
-- **Supervised execution** — LLM proposes tool calls, system validates against permitted_tools before execution
-- **Auditability first** — every reasoning step and tool call is journaled with trace ID
-- **Portal-scoped tools** — dynamic steps operate within portal bounds, respecting existing security
-- **Graceful degradation** — if LLM reasoning fails, step returns context accumulated so far
-- **Token-efficient** — reasoning prompts include only necessary context, not full conversation history
-
----
-
-## Goals
+```typescript
+/**
+ * MCP client interface for tool execution
+ */
+export interface IMcpClient {
+  callTool(tool: McpToolName, args: ToolArgs): Promise<string>;
+  getToolDefinitions(tools: McpToolName[]): Array<{
+    name: string;
+    description: string;
+    inputSchema: Record<string, JSONValue>;
+  }>;
+}

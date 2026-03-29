@@ -23,6 +23,7 @@ import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
 import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
 import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
 import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
+import type { IToolRegistry } from "../shared/interfaces/i_tool_registry.ts";
 import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
@@ -34,6 +35,7 @@ export interface ICliApplicationContext {
   git: IGitService;
   display: IDisplayService;
   config: IConfigService;
+  toolRegistry?: IToolRegistry;
   memory?: IMemoryService;
   memoryBank?: IMemoryBankService;
   extractor?: IMemoryExtractorService;
@@ -63,4 +65,5 @@ export type {
   IPortalService,
   IRequestService,
   ISkillsService,
+  IToolRegistry,
 };

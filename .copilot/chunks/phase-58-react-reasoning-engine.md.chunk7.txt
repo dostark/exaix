@@ -1,16 +1,8 @@
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     ReAct Loop                              │
-│                                                             │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────┐ │
-│  │ Reason   │───▶│ Act      │───▶│ Observe  │───▶│ Done │ │
-│  │ (LLM)    │    │ (MCP)    │    │ (Result) │    │ ?    │ │
-│  └──────────┘    └──────────┘    └──────────┘    └──┬───┘ │
-│       ▲                                              │     │
-│       │              No                              │     │
-│       └──────────────────────────────────────────────┘     │
-│                           Yes                               │
-└─────────────────────────────────────────────────────────────┘
-```
+- **Runtime Supervision**: `DynamicStepExecutor` enforces that only `READ_ONLY_TOOLS` can be called in dynamic mode.
+- **Permission Boundaries**: Tools are further restricted to the `permitted_tools` list defined in the blueprint or step.
+- **Full Traceability**: Every iteration of the ReAct loop is logged with the same `traceId` as the parent flow run.
+- **Cost Control**: `maxIterations` (default: 10) prevents infinite loops and excessive token expenditure.
 
-### Reasoning Prompt Structure
+---
+
+## Success Verification

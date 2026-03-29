@@ -18,33 +18,7 @@ import { MiddlewarePipeline } from "./middleware/pipeline.ts";
 import { IServiceContext } from "./common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../helpers/path_security.ts";
 import { JSONValue } from "../shared/types/json.ts";
-
-export interface IToolParameterSchema {
-  type: string;
-  description?: string;
-  enum?: string[];
-  items?: IToolParameterSchema;
-  properties?: Record<string, IToolParameterSchema>;
-  required?: string[];
-}
-
-export interface IToolSchema {
-  type: "object";
-  properties: Record<string, IToolParameterSchema>;
-  required?: string[];
-}
-
-export interface ITool {
-  name: string;
-  description: string;
-  parameters: IToolSchema;
-}
-
-export interface IToolResult {
-  success: boolean;
-  data?: JSONValue;
-  error?: string;
-}
+import { ITool, IToolRegistry, IToolResult } from "../shared/interfaces/i_tool_registry.ts";
 
 export interface IToolRegistryConfig {
   config: Config;
@@ -266,7 +240,7 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
 // ToolRegistry Implementation
 // ============================================================================
 
-export class ToolRegistry {
+export class ToolRegistry implements IToolRegistry {
   private config: Config;
   private db?: DatabaseService;
   private traceId?: string;

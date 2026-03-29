@@ -6,15 +6,19 @@
  */
 
 import { join } from "@std/path";
-import { McpTransportType, PortalOperation } from "../../../src/shared/enums.ts";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists } from "@std/assert";
+import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+
+import { McpTransportType, PortalOperation } from "../../../src/shared/enums.ts";
 import { MCPServer } from "../../../src/mcp/server.ts";
-import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import { ToolRegistry } from "../../../src/services/tool_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+
+import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import type { JSONValue } from "../../../src/shared/types/json.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 
 export interface IToolPermissionOptions {
@@ -53,7 +57,6 @@ export interface IToolPermissionTestContext {
   cleanup: () => Promise<void>;
 }
 
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
 export { setupGitRepo };
 
 /**
@@ -114,12 +117,14 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
  * Helper to create ICliApplicationContext from test env
  */
 function createTestContext(config: any, db: any): ICliApplicationContext {
+  const stubConfig = createStubConfig(config);
   return {
-    config: createStubConfig(config),
+    config: stubConfig,
     db,
     git: createStubGit(),
     provider: createStubProvider(),
     display: createStubDisplay(),
+    toolRegistry: new ToolRegistry({ config, db }),
   };
 }
 

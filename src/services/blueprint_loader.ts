@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
-import { DataFormat } from "../shared/enums.ts";
+import { DataFormat, McpToolName } from "../shared/enums.ts";
 import { JSONValue } from "../shared/types/json.ts";
 import { DEFAULT_BLUEPRINT_VERSION } from "../shared/constants.ts";
 
@@ -119,6 +119,11 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Default skills to apply */
   default_skills: z.array(z.string()).optional(),
+
+  // === Phase 58 Dynamic Execution Extension ===
+
+  /** Tools the agent is permitted to use in DYNAMIC execution mode */
+  permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
 });
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
