@@ -8,7 +8,7 @@
  */
 
 import { IModelProvider } from "./types.ts";
-import { CostTracker } from "../services/cost_tracker.ts";
+import { CostTracker } from "../services/cost/cost_tracker.ts";
 import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,

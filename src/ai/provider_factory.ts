@@ -13,9 +13,9 @@ import { Config } from "../shared/schemas/config.ts";
 import { AiConfig, getDefaultModels } from "../shared/schemas/ai_config.ts";
 import { LlamaProvider } from "./providers/llama_provider.ts";
 import { InputValidator } from "../shared/schemas/input_validation.ts";
-import { CostTracker } from "../services/cost_tracker.ts";
-import { DatabaseService } from "../services/db.ts";
-import { createAPIRetryPolicy, RetryPolicy } from "../services/retry_policy.ts";
+import { CostTracker } from "../services/cost/cost_tracker.ts";
+import { DatabaseService } from "../services/core/db.ts";
+import { createAPIRetryPolicy, RetryPolicy } from "../services/core/retry_policy.ts";
 import { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";
 import { GoogleProviderFactory } from "./factories/google_factory.ts";
@@ -27,7 +27,7 @@ import { RateLimitedProvider } from "./rate_limited_provider.ts";
 import { ConfigSource, MockStrategy, PricingTier, ProviderType } from "../shared/enums.ts";
 import { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
-import type { EventLogger } from "../services/event_logger.ts";
+import type { EventLogger } from "../services/core/event_logger.ts";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
 

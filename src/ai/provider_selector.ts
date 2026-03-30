@@ -9,7 +9,7 @@
 
 import { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
-import { CostTracker } from "../services/cost_tracker.ts";
+import { CostTracker } from "../services/cost/cost_tracker.ts";
 import { HealthCheckService } from "../services/health_check_service.ts";
 import { Config } from "../shared/schemas/config.ts";
 import { getValidatedEnvOverrides, isCIMode, isTestMode } from "../config/env_schema.ts";

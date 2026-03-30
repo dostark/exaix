@@ -14,6 +14,7 @@ topics: ["scenario-framework", "testing", "dynamic-execution", "react", "mcp-too
 > in realistic end-to-end workflows.
 >
 > **Prerequisites:**
+
 > - Phase 56 (Dynamic Tool Selection) — provides `execution_mode`, `permitted_tools`, `DynamicStepExecutor`
 > - Phase 57 (New MCP Tools) — provides `patch_file`, `delete_file`, `move_file`, `create_directory`, `run_command`, `search_files`
 > - Phase 58 (ReAct Reasoning Engine) — provides `LlmClient`, `McpClient`, `ActivityJournal`, FlowRunner integration
@@ -21,6 +22,7 @@ topics: ["scenario-framework", "testing", "dynamic-execution", "react", "mcp-too
 ## Executive Summary
 
 The scenario framework currently has 5 scenarios in the `agent_flows` pack, covering:
+
 - Request analysis smoke tests
 - Portal knowledge snapshot
 - Quality gate clarification
@@ -30,7 +32,7 @@ The scenario framework currently has 5 scenarios in the `agent_flows` pack, cove
 **This phase adds 12 new scenarios** organized into 3 new scenario packs:
 
 | Pack | Scenarios | Focus |
-|------|-----------|-------|
+| ------ | ----------- | ------- |
 | `dynamic_execution` | 4 | Dynamic tool selection, ReAct loops, permission boundaries |
 | `mcp_tools_extended` | 5 | New MCP tool handlers in realistic workflows |
 | `integration_e2e` | 3 | End-to-end flows combining all new features |
@@ -66,12 +68,14 @@ The scenario framework currently has 5 scenarios in the `agent_flows` pack, cove
 **Purpose:** Validate basic dynamic tool selection with read-only tools.
 
 **Workflow:**
+
 1. Mount a sample codebase portal
-2. Execute a dynamic step to explore the codebase structure
-3. Verify that the model used `read_file`, `list_directory`, and `search_files` appropriately
-4. Verify Activity Journal contains all tool calls with trace IDs
+
+1.
+1.
 
 **Scenario YAML:**
+
 ```yaml
 schema_version: "1.0.0"
 id: "dynamic-exploration-smoke"
@@ -120,6 +124,7 @@ steps:
 ```
 
 **Request Fixture (`explore_codebase.md`):**
+
 ```markdown
 ---
 trace_id: "explore-{{timestamp}}"
@@ -133,14 +138,16 @@ created_by: "scenario-framework"
 # Explore Codebase Structure
 
 Please explore the mounted `sample-ts-project` portal and provide a summary of:
+
 1. The main entry points
-2. Key modules and their responsibilities
-3. Any configuration files present
+
+1.
 
 Use the available tools to explore the codebase efficiently.
 ```
 
 **Flow Fixture (`explore.flow.yaml`):**
+
 ```yaml
 # @schema-version: 1.0.0
 ---
@@ -162,6 +169,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] Flow executes without errors
 - [ ] At least 3 tool calls are logged in the Activity Journal
 - [ ] All tool calls have the same trace ID
@@ -175,11 +183,13 @@ steps:
 **Purpose:** Validate that dynamic steps cannot use write tools.
 
 **Workflow:**
+
 1. Create a flow with a dynamic step that incorrectly lists `write_file` in `permitted_tools`
-2. Run `exactl flow validate` to verify it produces a warning
-3. Attempt to execute the flow and verify it fails gracefully
+
+1.
 
 **Scenario YAML:**
+
 ```yaml
 schema_version: "1.0.0"
 id: "dynamic-permission-boundary"
@@ -209,6 +219,7 @@ steps:
 ```
 
 **Flow Fixture (`invalid-write.flow.yaml`):**
+
 ```yaml
 # @schema-version: 1.0.0
 ---
@@ -228,6 +239,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] `exactl flow validate` produces a warning about write tools in dynamic mode
 - [ ] Flow execution fails gracefully with descriptive error
 - [ ] No files are modified
@@ -239,12 +251,14 @@ steps:
 **Purpose:** Validate ReAct reasoning loop with multiple iterations.
 
 **Workflow:**
+
 1. Create a dynamic step that requires multiple tool calls to complete
-2. Execute with a real LLM provider (or recorded mock)
-3. Verify that the model iteratively selects tools based on observations
-4. Verify all reasoning steps are logged
+
+1.
+1.
 
 **Scenario YAML:**
+
 ```yaml
 schema_version: "1.0.0"
 id: "react-reasoning-loop"
@@ -281,6 +295,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] ReAct loop completes within max_iterations (10)
 - [ ] At least 3 iterations are logged
 - [ ] At least 2 different tools are used
@@ -293,11 +308,13 @@ steps:
 **Purpose:** Validate that dynamic steps respect timeout configuration.
 
 **Workflow:**
+
 1. Create a dynamic step with a short timeout (5 seconds)
-2. Use a mock LLM that delays responses
-3. Verify the step terminates gracefully after timeout
+
+1.
 
 **Scenario YAML:**
+
 ```yaml
 schema_version: "1.0.0"
 id: "dynamic-step-timeout"
@@ -320,6 +337,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] Step terminates within 2x the configured timeout
 - [ ] Error message indicates timeout/max iterations
 - [ ] Partial results are logged
@@ -333,12 +351,14 @@ steps:
 **Purpose:** Validate `patch_file` tool for targeted code refactoring.
 
 **Workflow:**
+
 1. Create a sample TypeScript file with a function to rename
-2. Execute a flow that uses `patch_file` to rename the function
-3. Verify the file was modified correctly
-4. Verify no other content was changed
+
+1.
+1.
 
 **Scenario YAML:**
+
 ```yaml
 schema_version: "1.0.0"
 id: "patch-file-refactor"
@@ -379,6 +399,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] Function is renamed correctly
 - [ ] No other content is modified
 - [ ] File structure is preserved
@@ -390,10 +411,11 @@ steps:
 **Purpose:** Validate `delete_file` tool for removing dead code.
 
 **Workflow:**
+
 1. Create a portal with deprecated files
-2. Execute a flow that identifies and deletes deprecated files
-3. Verify files are deleted
-4. Verify remaining files are untouched
+
+1.
+1.
 
 ---
 
@@ -402,10 +424,11 @@ steps:
 **Purpose:** Validate `move_file` tool for codebase restructuring.
 
 **Workflow:**
+
 1. Create a portal with files in incorrect locations
-2. Execute a flow that moves files to correct locations
-3. Verify files are moved correctly
-4. Verify directory structure is updated
+
+1.
+1.
 
 ---
 
@@ -414,10 +437,11 @@ steps:
 **Purpose:** Validate `search_files` tool for codebase discovery.
 
 **Workflow:**
+
 1. Create a portal with various file types
-2. Execute a flow that searches for specific patterns
-3. Verify correct files are found
-4. Verify search results are portal-relative paths
+
+1.
+1.
 
 ---
 
@@ -426,10 +450,11 @@ steps:
 **Purpose:** Validate `run_command` tool for build verification.
 
 **Workflow:**
+
 1. Create a portal with a buildable project
-2. Execute a flow that runs build commands
-3. Verify build succeeds
-4. Verify build output is captured
+
+1.
+1.
 
 ---
 
@@ -440,10 +465,11 @@ steps:
 **Purpose:** End-to-end test combining dynamic exploration + targeted patches.
 
 **Workflow:**
+
 1. Dynamic step: Explore codebase to find refactoring opportunities
-2. Declared step: Human approves refactoring plan
-3. Dynamic step: Execute patches using `patch_file`
-4. Declared step: Run build verification with `run_command`
+
+1.
+1.
 
 ---
 
@@ -452,10 +478,11 @@ steps:
 **Purpose:** End-to-end test validating full Activity Journal auditability.
 
 **Workflow:**
+
 1. Execute a multi-step flow with mixed execution modes
-2. Query Activity Journal for all tool calls
-3. Verify trace ID correlation across steps
-4. Verify journal entries include all required fields
+
+1.
+1.
 
 ---
 
@@ -464,10 +491,11 @@ steps:
 **Purpose:** End-to-end security validation of permission boundaries.
 
 **Workflow:**
+
 1. Create flows with various permission boundary violations
-2. Execute and verify all violations are caught
-3. Verify no unauthorized tool calls are executed
-4. Verify security events are logged
+
+1.
+1.
 
 ---
 
@@ -476,6 +504,7 @@ steps:
 ### Task 1: Scenario Fixtures
 
 **Files to create:**
+
 - `fixtures/requests/dynamic_execution/*.md` (4 request templates)
 - `fixtures/requests/mcp_tools/*.md` (5 request templates)
 - `fixtures/flows/dynamic_execution/*.yaml` (4 flow definitions)
@@ -490,6 +519,7 @@ steps:
 ### Task 2: Scenario Definitions
 
 **Files to create:**
+
 - `scenarios/dynamic_execution/*.yaml` (4 scenarios)
 - `scenarios/mcp_tools_extended/*.yaml` (5 scenarios)
 - `scenarios/integration_e2e/*.yaml` (3 scenarios)
@@ -501,6 +531,7 @@ steps:
 ### Task 3: Framework Extensions
 
 **Files to modify:**
+
 - `tests/scenario_framework/schema/step_schema.ts` — add flow execution step type
 - `tests/scenario_framework/runner/executor.ts` — add flow execution handler
 - `tests/scenario_framework/runner/assertions.ts` — add journal query assertions
@@ -513,6 +544,7 @@ steps:
 ### Task 4: Framework Tests
 
 **Files to create:**
+
 - `tests/scenario_framework/tests/unit/dynamic_execution_test.ts`
 - `tests/scenario_framework/tests/unit/mcp_tools_assertions_test.ts`
 - `tests/scenario_framework/tests/integration/journal_query_test.ts`
@@ -524,6 +556,7 @@ steps:
 ### Task 5: Documentation
 
 **Files to update:**
+
 - `tests/scenario_framework/README.md` — add new scenario packs
 - `tests/scenario_framework/VALIDATION_GUIDE.md` — add dynamic execution examples
 - `.copilot/docs/documentation.md` — index new scenarios
@@ -561,7 +594,7 @@ steps:
 ## Implementation Timeline
 
 | Task | Description | Duration | Dependencies |
-|------|-------------|----------|--------------|
+| ------ | ------------- | ---------- | -------------- |
 | **Task 1** | Create scenario fixtures | 2 days | None |
 | **Task 2** | Create scenario definitions | 2 days | Task 1 |
 | **Task 3** | Extend framework schema and executor | 1.5 days | None |

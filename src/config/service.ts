@@ -13,7 +13,7 @@ import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { Config, ConfigSchema } from "../shared/schemas/config.ts";
 import { PortalExecutionStrategy } from "../shared/enums.ts";
-import { logInfo } from "../services/structured_logger.ts";
+import { logInfo } from "../services/logger/structured_logger.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
 
 export class ConfigService {

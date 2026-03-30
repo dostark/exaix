@@ -2079,6 +2079,235 @@ step:
 
 ---
 
+## MCP Tool Handlers Architecture
+
+Exaix includes an extensible MCP tool handler system that enables agents to perform file operations, directory management, and system commands within portal boundaries. All tools enforce security boundaries and log executions to the Activity Journal.
+
+### Tool Handler Categories
+
+| Category | Tools | Purpose |
+| ----------------- | --------------------------------------------------------------------- | ------------------------------------ |
+| **Read-Only** | `read_file`, `list_directory`, `search_files` | Exploration and analysis |
+| **Write Tools** | `write_file`, `patch_file`, `delete_file`, `move_file` | File mutations |
+| **Directory Tools** | `create_directory` | Directory management |
+| **Command Tools** | `run_command` | System command execution |
+
+### Tool Handler Pattern
+
+All tool handlers follow a consistent pattern:
+
+```mermaid
+classDiagram
+    class ToolHandler {
+        +execute(args): Promise~MCPToolResponse~
+        +getToolDefinition(): ToolDefinition
+        +validatePortalExists(portal): string
+        +validatePermission(portal, identity, operation): void
+        +resolvePortalPath(portal, path): string
+        +logToolExecution(tool, portal, identity, metadata): void
+    }
+
+    class PatchFileTool
+    class DeleteFileTool
+    class MoveFileTool
+    class CreateDirectoryTool
+    class RunCommandTool
+    class SearchFilesTool
+
+    ToolHandler <|-- PatchFileTool
+    ToolHandler <|-- DeleteFileTool
+    ToolHandler <|-- MoveFileTool
+    ToolHandler <|-- CreateDirectoryTool
+    ToolHandler <|-- RunCommandTool
+    ToolHandler <|-- SearchFilesTool
+```
+
+### Patch File Strategy
+
+The `patch_file` tool uses **exact string replacement** for targeted edits:
+
+**Arguments:**
+
+- `portal` — Portal name
+- `path` — File path within portal
+- `search` — Exact string to find (must match exactly once)
+- `replace` — Replacement string (may be empty for deletion)
+- `identity_id` — Identity for permission checks
+
+**Validation rules:**
+
+- If `search` appears 0 times → Error (agent must reconsider)
+- If `search` appears 2+ times → Error with count (agent must be more specific)
+- If `search` appears exactly 1 time → Apply replacement
+
+### Security Boundaries
+
+All tools enforce portal-scoped operations:
+
+1. **Portal existence check** — Tool validates portal is mounted
+2. **Permission validation** — Appropriate `PortalOperation` required
+3. **Path traversal prevention** — Path resolver blocks escape attempts
+4. **Activity Journal logging** — Every execution logged with trace ID
+
+---
+
+## ReAct Reasoning Engine
+
+Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow step execution. This enables LLM-driven tool selection within declared permission boundaries while maintaining full auditability.
+
+### Dynamic vs Declared Execution Modes
+
+| Mode | Description | Use Case |
+| ----------------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| **Declared** 🟢 | Tools committed during planning phase (ReWOO-style) | Standard execution with full human approval |
+| **Dynamic** 🔵 | Agent selects tools at runtime from permitted set | Exploratory tasks, codebase analysis |
+
+### ReAct Loop Architecture
+
+```mermaid
+graph TB
+    subgraph DynamicStep["Dynamic Step Execution"]
+        Start[Step Objective]
+        LoadBP[Load Identity Blueprint]
+        InitClients[Init MCP Client + LLM Client]
+        Reason[LLM Reasons Next Action]
+        Decide{Decision}
+        ToolCall[Call Tool via MCP Client]
+        Observe[Observe Result]
+        Journal[Log to Activity Journal]
+        Done[Step Complete]
+    end
+
+    subgraph Boundaries["Permission Boundaries"]
+        PermitTools[permitted_tools from Blueprint]
+        ReadOnlyCheck[Read-Only Tools Only]
+        MaxIter[maxIterations limit]
+    end
+
+    Start --> LoadBP
+    LoadBP --> InitClients
+    InitClients --> Reason
+
+    Reason --> Decide
+    Decide -->|tool_call| ToolCall
+    Decide -->|complete| Done
+
+    ToolCall --> ReadOnlyCheck
+    ReadOnlyCheck -->|valid| Journal
+    ReadOnlyCheck -->|invalid| Reason
+
+    Journal --> Observe
+    Observe --> MaxIter
+    MaxIter -->|more iterations| Reason
+    MaxIter -->|max reached| Done
+
+    PermitTools -.-> Reason
+    PermitTools -.-> ReadOnlyCheck
+
+    classDef dynamic fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef boundary fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    class Start,LoadBP,InitClients,Reason,Decide,ToolCall,Observe,Journal,Done dynamic
+    class PermitTools,ReadOnlyCheck,MaxIter boundary
+```
+
+### Core Interfaces
+
+**MCP Client:**
+
+- Executes tools by name with validated arguments
+- Returns tool definitions with schemas for LLM consumption
+
+**LLM Client:**
+
+- Prompts LLM to reason about next action in ReAct loop
+- Parses JSON responses with tool selection or completion decision
+- Includes full tool schemas in prompts for accuracy
+
+**Activity Journal:**
+
+- Logs every reasoning step and tool call
+- Correlates entries by trace ID for audit trails
+- Integrates with Event Logger for persistence
+
+### Component Responsibilities
+
+| Component | Responsibility |
+| --------------------- | ------------------------------------------ |
+| MCP Client | Wraps MCP tool handlers for dynamic execution |
+| LLM Client | ReAct reasoning prompt and response parsing |
+| Activity Journal | Audit logging via Event Logger |
+| Dynamic Step Executor | ReAct loop orchestration |
+| Flow Runner | Execution mode dispatch (declared vs dynamic) |
+
+### Security and Auditability
+
+| Feature | Implementation |
+| ------------------------- | -------------------------------------------------------------------- |
+| **Runtime Supervision** | Dynamic executor enforces read-only tools in dynamic mode |
+| **Permission Boundaries** | Tools restricted to permitted set from blueprint/step |
+| **Full Traceability** | Every ReAct iteration logged with same trace ID as parent flow |
+| **Cost Control** | Iteration limit prevents infinite loops and excessive token use |
+
+### Blueprint Schema Extension
+
+Blueprints can declare permitted tools for dynamic execution:
+
+```yaml
+---
+identity_id: researcher
+name: Researcher
+model: gpt-4o
+permitted_tools:
+  - read_file
+  - list_directory
+  - search_files
+---
+```
+
+### Flow Step Configuration
+
+Flow steps opt into dynamic execution mode:
+
+```yaml
+# Flow step with dynamic execution
+steps:
+  - id: explore
+    name: Explore codebase structure
+    identity: researcher
+    execution_mode: dynamic  # Opt-in for ReAct
+    permitted_tools:
+      - read_file
+      - list_directory
+    input:
+      source: request
+    timeout: 60000  # Timeout in milliseconds
+```
+
+---
+
+## Scenario Framework Extension
+
+The scenario framework provides comprehensive end-to-end testing for Exaix features including dynamic tool selection, ReAct reasoning, and extended MCP tool handlers.
+
+### Scenario Packs
+
+| Pack | Scenarios | Focus |
+| -------------------------- | --------- | -------------------------------------------------------------- |
+| `dynamic_execution` | 4 | Dynamic tool selection, ReAct loops, permission boundaries |
+| `mcp_tools_extended` | 5 | New MCP tool handlers in realistic workflows |
+| `integration_e2e` | 3 | End-to-end flows combining all new features |
+
+### Execution Modes
+
+| Mode | Description | Use Case |
+| --------------------- | ------------------------------------------------ | ---------------------------------------- |
+| `auto` | Runs all steps non-interactively | CI and regression testing |
+| `step` | Pauses after every step | Debugging and development |
+| `manual-checkpoint` | Pauses only at marked steps | Human-in-the-loop validation |
+
+---
+
 ## Developer Tooling Architecture
 
 Exaix includes repository tooling under `scripts/` to keep development workflows deterministic.

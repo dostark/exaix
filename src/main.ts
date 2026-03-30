@@ -10,13 +10,13 @@
  */
 import { ConfigService } from "./config/service.ts";
 import { DaemonStatus, LogLevel } from "./shared/enums.ts";
-import { FileWatcher } from "./services/watcher.ts";
-import { DatabaseService } from "./services/db.ts";
+import { FileWatcher } from "./services/utils/watcher.ts";
+import { DatabaseService } from "./services/core/db.ts";
 import { ProviderFactory } from "./ai/provider_factory.ts";
-import { RequestProcessor } from "./services/request_processor.ts";
-import { ReviewRegistry } from "./services/review_registry.ts";
-import { EventLogger } from "./services/event_logger.ts";
-import { ExecutionLoop } from "./services/execution_loop.ts";
+import { RequestProcessor } from "./services/request/request_processor.ts";
+import { ReviewRegistry } from "./services/artifact/review_registry.ts";
+import { EventLogger } from "./services/core/event_logger.ts";
+import { ExecutionLoop } from "./services/agent/execution_loop.ts";
 import { createConfigReloadHandler } from "./config/config_reload_handler.ts";
 import {
   ConsoleOutput,
@@ -25,8 +25,8 @@ import {
   type ILogOutput,
   initializeGlobalLogger,
   logInfo,
-} from "./services/structured_logger.ts";
-import { GracefulShutdown } from "./services/graceful_shutdown.ts";
+} from "./services/logger/structured_logger.ts";
+import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { LogMetadata, toSafeJson } from "./shared/types/json.ts";

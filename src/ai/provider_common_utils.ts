@@ -6,7 +6,7 @@
  * @dependencies [event_logger, common, providers, types, constants]
  * @related-files [src/ai/providers.ts]
  */
-import { EventLogger } from "../services/event_logger.ts";
+import { EventLogger } from "../services/core/event_logger.ts";
 import { AuthenticationError, ConnectionError, ModelProviderError, RateLimitError } from "./providers/common.ts";
 import type { IModelOptions } from "./types.ts";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS } from "../shared/constants.ts";

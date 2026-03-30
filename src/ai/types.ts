@@ -7,7 +7,7 @@
  * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
  */
 import { ConfigSource, MockStrategy, ProviderType } from "../shared/enums.ts";
-import type { EventLogger } from "../services/event_logger.ts";
+import type { EventLogger } from "../services/core/event_logger.ts";
 
 /**
  * Options for model generation requests.
