@@ -8,9 +8,9 @@ topics: ["scenario-framework", "testing", "dynamic-execution", "react", "mcp-too
 ---
 
 > [!NOTE]
-> **Status: ⏳ Pending**
+> **Status: ✅ Complete**
 > This phase extends the scenario framework to validate all features introduced in Phases 56, 57, and 58.
-> New scenarios will test dynamic tool selection, ReAct reasoning, and the six new MCP tool handlers
+> New scenarios test dynamic tool selection, ReAct reasoning, and the six new MCP tool handlers
 > in realistic end-to-end workflows.
 >
 > **Prerequisites:**
@@ -48,15 +48,15 @@ The scenario framework currently has 5 scenarios in the `agent_flows` pack, cove
 
 ## Goals
 
-- [ ] Create `dynamic_execution` scenario pack with 4 scenarios
-- [ ] Create `mcp_tools_extended` scenario pack with 5 scenarios
-- [ ] Create `integration_e2e` scenario pack with 3 scenarios
-- [ ] Add shared fixtures for new scenarios (request templates, sample portals)
-- [ ] Extend scenario schema to support flow execution steps
-- [ ] Add assertions for Activity Journal validation
-- [ ] Write framework tests for new step types and criteria
-- [ ] Update scenario framework documentation with new features
-- [ ] Add CI profile for extended scenarios (`ci-extended-dynamic`)
+- [x] Create `dynamic_execution` scenario pack with 4 scenarios
+- [x] Create `mcp_tools_extended` scenario pack with 5 scenarios
+- [x] Create `integration_e2e` scenario pack with 3 scenarios
+- [x] Add shared fixtures for new scenarios (request templates, sample portals)
+- [x] Extend scenario schema to support flow execution steps
+- [x] Add assertions for Activity Journal validation
+- [x] Write framework tests for new step types and criteria
+- [x] Update scenario framework documentation with new features
+- [x] Add CI profile for extended scenarios (`ci-extended-dynamic`)
 
 ---
 
