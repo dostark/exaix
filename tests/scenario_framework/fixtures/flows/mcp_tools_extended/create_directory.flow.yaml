@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "create-directory-structure"
+name: "Create Directory Structure"
+description: "Use create_directory tool to create nested directories"
+version: "1.0.0"
+output:
+  from: step
+  step: create
+  format: markdown
+steps:
+  - id: "create"
+    name: "Create directory structure using create_directory"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - create_directory
+    input:
+      source: "request"
+    timeout: 30000

@@ -1,0 +1,62 @@
+schema_version: "1.0.0"
+id: "patch-file-refactor"
+title: "Patch file tool performs targeted refactoring"
+pack: "mcp_tools_extended"
+tags: ["patch_file", "refactoring", "write-tools"]
+request_fixture: "fixtures/requests/mcp_tools_extended/patch_file_refactor.md"
+mode_support: ["auto", "manual-checkpoint"]
+portals: []
+flow_fixture: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
+steps:
+  - id: "setup-test-file"
+    type: "shell"
+    name: "Create test file with old function name"
+    command: "mkdir"
+    args: ["-p", "/tmp/sample-project/src"]
+    input_criteria: []
+    output_criteria:
+      - id: "dir-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-project/src"
+
+  - id: "write-initial-file"
+    type: "shell"
+    name: "Write initial file content"
+    command: "sh"
+    args:
+      - "-c"
+      - "echo 'export function oldFunctionName() { return true; }' > /tmp/sample-project/src/main.ts"
+    input_criteria: []
+    output_criteria: []
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run patch file flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    input_criteria:
+      - id: "flow-file-exists"
+        kind: "file-found"
+        path_pattern: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
+    output_criteria:
+      - id: "flow-execution-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-patch"
+    type: "shell"
+    name: "Verify function was renamed"
+    command: "grep"
+    args: ["-c", "newFunctionName", "/tmp/sample-project/src/main.ts"]
+    output_criteria:
+      - id: "function-renamed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test files"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []

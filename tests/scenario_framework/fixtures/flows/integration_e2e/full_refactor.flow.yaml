@@ -1,0 +1,47 @@
+# @schema-version: 1.0.0
+---
+id: "full-refactor-workflow"
+name: "Full Refactoring Workflow"
+description: "End-to-end refactoring combining dynamic exploration and declared patches"
+version: "1.0.0"
+output:
+  from: step
+  step: summary
+  format: markdown
+steps:
+  - id: "explore"
+    name: "Explore codebase to identify refactoring targets"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 60000
+
+  - id: "refactor"
+    name: "Apply refactoring patches"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - patch_file
+    depends_on:
+      - explore
+    input:
+      source: "step"
+      step: explore
+    timeout: 60000
+
+  - id: "summary"
+    name: "Generate summary of changes"
+    identity: "researcher"
+    execution_mode: "declared"
+    tools:
+      - read_file
+    depends_on:
+      - refactor
+    input:
+      source: "request"
+    timeout: 30000

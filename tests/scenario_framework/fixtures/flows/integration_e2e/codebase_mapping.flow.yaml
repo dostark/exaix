@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+---
+id: "codebase-mapping-journal"
+name: "Codebase Mapping with Journal Verification"
+description: "Map codebase with full Activity Journal audit trail"
+version: "1.0.0"
+output:
+  from: step
+  step: map
+  format: markdown
+steps:
+  - id: "map"
+    name: "Map codebase structure with full logging"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 120000

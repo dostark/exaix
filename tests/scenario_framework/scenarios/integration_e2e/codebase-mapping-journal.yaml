@@ -1,0 +1,73 @@
+schema_version: "1.0.0"
+id: "codebase-mapping-journal"
+title: "Codebase mapping with full Activity Journal audit trail"
+pack: "integration_e2e"
+tags: ["e2e", "dynamic", "journal", "audit", "traceability"]
+request_fixture: "fixtures/requests/integration_e2e/codebase_mapping_journal.md"
+mode_support: ["auto", "manual-checkpoint"]
+portals:
+  - alias: "sample-project"
+    source_path: "/tmp/sample-project"
+flow_fixture: "fixtures/flows/integration_e2e/codebase_mapping.flow.yaml"
+steps:
+  - id: "setup-project"
+    type: "shell"
+    name: "Create sample project with multiple files"
+    command: "sh"
+    args:
+      - "-c"
+      - "mkdir -p /tmp/sample-project/src/utils /tmp/sample-project/src/services && touch /tmp/sample-project/src/main.ts /tmp/sample-project/src/utils/helper.ts /tmp/sample-project/src/services/api.ts"
+    input_criteria: []
+    output_criteria:
+      - id: "project-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-project"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run codebase mapping flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "flow-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-journal-entries"
+    type: "exactl"
+    name: "Verify all tool calls are journaled with trace ID"
+    command: "journal"
+    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
+    output_criteria:
+      - id: "multiple-events"
+        kind: "json-query"
+        query: "length"
+        min: 3
+      - id: "all-have-trace-id"
+        kind: "json-query"
+        query: ".[].trace_id"
+        not_empty: true
+      - id: "tool-calls-present"
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
+
+  - id: "verify-output"
+    type: "wait-for-file"
+    name: "Wait for flow run output"
+    args: ["**/flow_run_*.json"]
+    timeout_sec: 180
+    input_criteria: []
+    output_criteria:
+      - id: "dynamic-step-completed"
+        kind: "json-query"
+        query: ".steps[?@.execution_mode=='dynamic'].completed"
+        equals: true
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test project"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []

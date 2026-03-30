@@ -1,0 +1,53 @@
+schema_version: "1.0.0"
+id: "search-files-discovery"
+title: "Search files tool finds files by glob pattern"
+pack: "mcp_tools_extended"
+tags: ["search_files", "discovery", "read-tools"]
+request_fixture: "fixtures/requests/mcp_tools_extended/search_files_discovery.md"
+mode_support: ["auto"]
+portals: []
+flow_fixture: "fixtures/flows/mcp_tools_extended/search_files.flow.yaml"
+steps:
+  - id: "setup-test-files"
+    type: "shell"
+    name: "Create test files with various extensions"
+    command: "sh"
+    args:
+      - "-c"
+      - "mkdir -p /tmp/sample-project/src && touch /tmp/sample-project/src/test1.test.ts /tmp/sample-project/src/test2.test.ts /tmp/sample-project/src/main.ts"
+    input_criteria: []
+    output_criteria:
+      - id: "test-files-created"
+        kind: "file-found"
+        path_pattern: "/tmp/sample-project/src/*.ts"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run search files flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "flow-execution-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-search"
+    type: "exactl"
+    name: "Verify search results contain test files"
+    command: "sh"
+    args:
+      - "-c"
+      - "echo '$FLOW_OUTPUT' | grep -c '.test.ts' || true"
+    output_criteria:
+      - id: "test-files-found"
+        kind: "text-contains"
+        path: "/dev/stdin"
+        contains: ".test.ts"
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test directory"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []

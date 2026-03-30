@@ -1,0 +1,50 @@
+schema_version: "1.0.0"
+id: "move-file-restructure"
+title: "Move file tool relocates files correctly"
+pack: "mcp_tools_extended"
+tags: ["move_file", "restructure", "write-tools"]
+request_fixture: "fixtures/requests/mcp_tools_extended/move_file_restructure.md"
+mode_support: ["auto", "manual-checkpoint"]
+portals: []
+flow_fixture: "fixtures/flows/mcp_tools_extended/move_file.flow.yaml"
+steps:
+  - id: "setup-test-file"
+    type: "shell"
+    name: "Create test file and destination directory"
+    command: "sh"
+    args:
+      - "-c"
+      - "mkdir -p /tmp/sample-project/src/helpers && echo 'utility' > /tmp/sample-project/src/utils.ts"
+    input_criteria: []
+    output_criteria:
+      - id: "file-created"
+        kind: "file-found"
+        path_pattern: "/tmp/sample-project/src/utils.ts"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run move file flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "flow-execution-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-move"
+    type: "shell"
+    name: "Verify file was moved to new location"
+    command: "test"
+    args: ["-f", "/tmp/sample-project/src/helpers/utils.ts"]
+    output_criteria:
+      - id: "file-moved"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test directory"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []

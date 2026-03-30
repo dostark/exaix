@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "move-file-restructure"
+name: "Move File Restructure"
+description: "Use move_file tool to relocate files"
+version: "1.0.0"
+output:
+  from: step
+  step: move
+  format: markdown
+steps:
+  - id: "move"
+    name: "Move file to new location using move_file"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - move_file
+    input:
+      source: "request"
+    timeout: 30000

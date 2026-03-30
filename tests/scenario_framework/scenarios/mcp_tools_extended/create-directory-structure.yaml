@@ -1,0 +1,58 @@
+schema_version: "1.0.0"
+id: "create-directory-structure"
+title: "Create directory tool creates nested directories"
+pack: "mcp_tools_extended"
+tags: ["create_directory", "setup", "write-tools"]
+request_fixture: "fixtures/requests/mcp_tools_extended/create_directory_structure.md"
+mode_support: ["auto"]
+portals: []
+flow_fixture: "fixtures/flows/mcp_tools_extended/create_directory.flow.yaml"
+steps:
+  - id: "setup-base-dir"
+    type: "shell"
+    name: "Create base project directory"
+    command: "mkdir"
+    args: ["-p", "/tmp/sample-project/src"]
+    input_criteria: []
+    output_criteria:
+      - id: "base-dir-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-project/src"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run create directory flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "flow-execution-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-directories"
+    type: "shell"
+    name: "Verify all directories were created"
+    command: "test"
+    args: ["-d", "/tmp/sample-project/src/modules/new-feature/components"]
+    output_criteria:
+      - id: "nested-dirs-created"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-idempotent"
+    type: "shell"
+    name: "Verify operation is idempotent"
+    command: "mkdir"
+    args: ["-p", "/tmp/sample-project/src/modules/new-feature/components"]
+    output_criteria:
+      - id: "idempotent-success"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test directory"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []

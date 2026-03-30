@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "patch-file-refactor"
+name: "Patch File Refactoring"
+description: "Use patch_file tool to refactor function names"
+version: "1.0.0"
+output:
+  from: step
+  step: refactor
+  format: markdown
+steps:
+  - id: "refactor"
+    name: "Refactor function name using patch_file"
+    identity: "senior-coder"
+    execution_mode: "declared"
+    tools:
+      - patch_file
+    input:
+      source: "request"
+    timeout: 60000

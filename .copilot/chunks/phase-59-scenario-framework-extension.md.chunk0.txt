@@ -5,7 +5,6 @@
 > in realistic end-to-end workflows.
 >
 > **Prerequisites:**
-
 > - Phase 56 (Dynamic Tool Selection) — provides `execution_mode`, `permitted_tools`, `DynamicStepExecutor`
 > - Phase 57 (New MCP Tools) — provides `patch_file`, `delete_file`, `move_file`, `create_directory`, `run_command`, `search_files`
 > - Phase 58 (ReAct Reasoning Engine) — provides `LlmClient`, `McpClient`, `ActivityJournal`, FlowRunner integration

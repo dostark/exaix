@@ -1,0 +1,45 @@
+schema_version: "1.0.0"
+id: "permission-escalation-prevention"
+title: "Permission escalation prevention security test"
+pack: "integration_e2e"
+tags: ["e2e", "security", "permission-boundary", "negative-test"]
+request_fixture: "fixtures/requests/integration_e2e/permission_escalation_prevention.md"
+mode_support: ["auto"]
+portals: []
+flow_fixture: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
+steps:
+  - id: "validate-flow"
+    type: "exactl"
+    name: "Validate flow with invalid configuration"
+    command: "flow"
+    args: ["validate", "$FLOW_FIXTURE"]
+    input_criteria:
+      - id: "flow-file-exists"
+        kind: "file-found"
+        path_pattern: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
+    output_criteria:
+      - id: "validation-failed"
+        kind: "command-output-contains"
+        contains: ["write_file", "not allowed", "dynamic"]
+
+  - id: "execute-flow-expect-failure"
+    type: "exactl"
+    name: "Execute flow expecting security rejection"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    expect_failure: true
+    output_criteria:
+      - id: "execution-blocked"
+        kind: "command-output-contains"
+        contains: ["write tool", "dynamic mode", "not permitted", "security"]
+
+  - id: "verify-journal-security-event"
+    type: "exactl"
+    name: "Verify security event was logged"
+    command: "journal"
+    args: ["query", "--format", "json"]
+    output_criteria:
+      - id: "security-event-logged"
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["security.validation_failed"]

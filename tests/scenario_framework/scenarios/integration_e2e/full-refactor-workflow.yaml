@@ -1,0 +1,69 @@
+schema_version: "1.0.0"
+id: "full-refactor-workflow"
+title: "End-to-end refactoring workflow with dynamic and declared steps"
+pack: "integration_e2e"
+tags: ["e2e", "dynamic", "patch_file", "integration"]
+request_fixture: "fixtures/requests/integration_e2e/full_refactor_workflow.md"
+mode_support: ["manual-checkpoint"]
+portals:
+  - alias: "sample-project"
+    source_path: "/tmp/sample-project"
+flow_fixture: "fixtures/flows/integration_e2e/full_refactor.flow.yaml"
+steps:
+  - id: "setup-project"
+    type: "shell"
+    name: "Create sample project structure"
+    command: "sh"
+    args:
+      - "-c"
+      - "mkdir -p /tmp/sample-project/src && echo 'export function oldName() { return 1; }' > /tmp/sample-project/src/main.ts"
+    input_criteria: []
+    output_criteria:
+      - id: "project-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-project"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run full refactoring workflow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    checkpoint: true
+    output_criteria:
+      - id: "flow-completed"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-journal"
+    type: "exactl"
+    name: "Verify Activity Journal contains all tool calls"
+    command: "journal"
+    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
+    output_criteria:
+      - id: "exploration-logged"
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
+      - id: "patch-logged"
+        kind: "json-query"
+        query: ".[].action_type"
+        contains: ["mcp.tool.patch_file"]
+
+  - id: "verify-refactor"
+    type: "shell"
+    name: "Verify function was renamed"
+    command: "grep"
+    args: ["-c", "oldName", "/tmp/sample-project/src/main.ts"]
+    expect_failure: true
+    output_criteria:
+      - id: "refactor-applied"
+        kind: "command-exit-code"
+        equals: 1
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up test project"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-project"]
+    input_criteria: []
+    output_criteria: []
