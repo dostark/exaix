@@ -330,7 +330,7 @@ Handlers are registered directly in the `MCPServer` constructor:
 
 ---
 
-**Task 10: Tests**
+## Task 10: Tests
 
 **File:** `tests/mcp/handlers/run_command_tool_test.ts` (new)
 **✅ IMPLEMENTED** — Part of `tests/mcp/tools_test.ts` and `tests/mcp/server_test.ts` integration.
@@ -355,7 +355,7 @@ Handlers are registered directly in the `MCPServer` constructor:
 - [x] All existing MCP handler tests continue to pass (no regressions)
 - [x] Tool count verified as 16 (12 core + 4 domain)
 
-***
+---
 
 ## Risks and Mitigations
 
@@ -367,7 +367,7 @@ Handlers are registered directly in the `MCPServer` constructor:
 | **R4:** `create_directory` used outside portal bounds | Low | Low | `resolvePortalPath` enforces portal bounds; traversal throws |
 | **R5:** `delete*directory` requested via `delete*file` | Low | Medium | Handler checks `stat.isFile` and throws descriptive error with guidance |
 
-***
+---
 
 ## Update: `WRITE_TOOLS` Constant (Phase 55 Alignment)
 
@@ -404,7 +404,7 @@ export const READ*ONLY*TOOLS: ReadonlySet<McpToolName> = new Set([
 ]);
 ```
 
-***
+---
 
 ## Future Enhancements
 
@@ -420,8 +420,9 @@ export const READ*ONLY*TOOLS: ReadonlySet<McpToolName> = new Set([
 **Recommended implementation sequence when the time comes:**
 
 1. Define `scripts` section in `PortalConfig` schema.
-2. Implement `RunScriptTool` handler.
-3. Update `LlmClient` to prefer `run_script` for lifecycle operations.
+1. Implement `RunScriptTool` handler.
+1. Update `LlmClient` to prefer `run_script` for lifecycle operations.
+
 ### `delete_directory`
 
 **Capability:** Recursively remove a directory and all its contents from a portal.
@@ -437,7 +438,7 @@ portion of a portal codebase.
 - The portal should ideally have an active git tracking state (at least one committed file in the target directory) so deletion is recoverable from history
 - May benefit from a gate step in the review workflow before execution is permitted
 
-***
+---
 
 ## Success Criteria
 
@@ -466,7 +467,7 @@ portion of a portal codebase.
 - [x] `McpToolName` enum contains all six new names
 - [x] `READ_ONLY_TOOLS` and `WRITE_TOOLS` constants updated
 
-***
+---
 
 ## Implementation Timeline
 
@@ -485,14 +486,14 @@ portion of a portal codebase.
 
 **Estimated Total:** 6 days
 
-***
+---
 
 ## Related Work
 
 - **Phase 55:** Hybrid Dynamic Tool Selection — defines `WRITE*TOOLS` / `READ*ONLY*TOOLS` constants and `permitted*tools` step enforcement; updated by this phase to reflect accurate tool inventory
 - **Phase 53:** Identity rename — `agent_id` field naming conventions used by all tool handlers remain unchanged per Phase 53 decision
 
-***
+---
 
 ## References
 

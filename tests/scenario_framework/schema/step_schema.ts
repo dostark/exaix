@@ -42,6 +42,7 @@ export enum CriterionKind {
   JSON_PATH_EXISTS = "json-path-exists",
   JSON_PATH_EQUALS = "json-path-equals",
   JSON_PATH_EQUALS_ANY = "json-path-equals-any",
+  JSON_QUERY = "json-query",
   FRONTMATTER_FIELD_EXISTS = "frontmatter-field-exists",
   FRONTMATTER_FIELD_EQUALS = "frontmatter-field-equals",
   JOURNAL_EVENT_EXISTS = "journal-event-exists",
@@ -53,6 +54,7 @@ export enum CriterionKind {
   VERSION_EQUALS = "version-equals",
   VERSION_GTE = "version-gte",
   VERSION_LTE = "version-lte",
+  DIR_EXISTS = "dir-exists",
 }
 
 export enum CriterionPhase {
@@ -131,6 +133,22 @@ const JsonPathEqualsAnyCriterionSchema = BaseCriterionSchema.extend({
   target_file: NON_EMPTY_STRING.optional(),
 }).strict();
 
+const JsonQueryCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.JSON_QUERY),
+  query: NON_EMPTY_STRING,
+  equals: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+  contains: z.array(z.string()).min(1).optional(),
+  not_empty: z.boolean().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  target_file: NON_EMPTY_STRING.optional(),
+}).strict();
+
+const DirExistsCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.DIR_EXISTS),
+  path: NON_EMPTY_STRING,
+}).strict();
+
 const FrontmatterFieldExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.FRONTMATTER_FIELD_EXISTS),
   field: NON_EMPTY_STRING,
@@ -204,6 +222,8 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   JsonPathExistsCriterionSchema,
   JsonPathEqualsCriterionSchema,
   JsonPathEqualsAnyCriterionSchema,
+  JsonQueryCriterionSchema,
+  DirExistsCriterionSchema,
   FrontmatterFieldExistsCriterionSchema,
   FrontmatterFieldEqualsCriterionSchema,
   JournalEventExistsCriterionSchema,

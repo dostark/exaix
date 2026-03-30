@@ -15,3 +15,10 @@
 ### Scenario 1.1: `dynamic-exploration-smoke`
 
 **Purpose:** Validate basic dynamic tool selection with read-only tools.
+
+**Workflow:**
+
+1. Mount a sample codebase portal
+
+1.
+1.

@@ -1,5 +1,1 @@
-**Workflow:**
-1. Mount a sample codebase portal
-2. Execute a dynamic step to explore the codebase structure
-3. Verify that the model used `read_file`, `list_directory`, and `search_files` appropriately
-4. Verify Activity Journal contains all tool calls with trace IDs
+**Scenario YAML:**

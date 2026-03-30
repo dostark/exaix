@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+---
+id: "timeout-test"
+name: "Dynamic Step Timeout Test"
+description: "Test that dynamic steps respect timeout configuration"
+version: "1.0.0"
+output:
+  from: step
+  step: timeout-step
+  format: markdown
+steps:
+  - id: "timeout-step"
+    name: "Step with short timeout"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 5000 # 5 second timeout - should trigger max iterations

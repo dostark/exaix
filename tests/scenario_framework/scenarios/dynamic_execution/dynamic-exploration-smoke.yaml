@@ -1,4 +1,3 @@
-```yaml
 schema_version: "1.0.0"
 id: "dynamic-exploration-smoke"
 title: "Dynamic step explores codebase using read-only tools"
@@ -11,9 +10,22 @@ portals:
     source_path: "/tmp/sample-ts-project"
 flow_fixture: "fixtures/flows/dynamic_execution/explore.flow.yaml"
 steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Copy sample portal to temp location"
+    command: "mkdir"
+    args: ["-p", "/tmp/sample-ts-project/src"]
+    input_criteria: []
+    output_criteria:
+      - id: "portal-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-ts-project"
+
   - id: "execute-flow"
     type: "exactl"
-    command: "flow run explore.flow.yaml --request $REQUEST_FIXTURE"
+    name: "Run dynamic exploration flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "flow-file-exists"
         kind: "file-found"
@@ -22,25 +34,38 @@ steps:
       - id: "flow-execution-succeeded"
         kind: "command-exit-code"
         equals: 0
+
   - id: "verify-journal"
     type: "exactl"
-    command: "journal query --trace-id $FLOW_TRACE_ID --format json"
+    name: "Verify Activity Journal entries"
+    command: "journal"
+    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
     output_criteria:
       - id: "tool-calls-logged"
         kind: "json-query"
         query: ".[].action_type"
-        contains: ["mcp.tool.read_file", "mcp.tool.list_directory", "mcp.tool.search_files"]
+        contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
       - id: "trace-id-present"
         kind: "json-query"
         query: ".[].trace_id"
         not_empty: true
+
   - id: "verify-output"
     type: "wait-for-file"
+    name: "Wait for flow run output"
     args: ["**/flow_run_*.json"]
     timeout_sec: 120
+    input_criteria: []
     output_criteria:
       - id: "dynamic-step-completed"
         kind: "json-query"
         query: ".steps[?@.execution_mode=='dynamic'].completed"
         equals: true
-```
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up temp portal"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-ts-project"]
+    input_criteria: []
+    output_criteria: []

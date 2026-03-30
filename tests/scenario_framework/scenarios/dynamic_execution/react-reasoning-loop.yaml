@@ -1,0 +1,68 @@
+schema_version: "1.0.0"
+id: "react-reasoning-loop"
+title: "ReAct loop executes multiple iterations to complete objective"
+pack: "dynamic_execution"
+tags: ["react", "dynamic", "provider-live"]
+request_fixture: "fixtures/requests/dynamic_execution/find_and_summarize.md"
+mode_support: ["manual-checkpoint"]
+portals:
+  - alias: "sample-ts-project"
+    source_path: "/tmp/sample-ts-project"
+flow_fixture: "fixtures/flows/dynamic_execution/find_and_summarize.flow.yaml"
+steps:
+  - id: "setup-portal"
+    type: "shell"
+    name: "Create temp portal directory"
+    command: "mkdir"
+    args: ["-p", "/tmp/sample-ts-project/src"]
+    input_criteria: []
+    output_criteria:
+      - id: "portal-created"
+        kind: "dir-exists"
+        path: "/tmp/sample-ts-project"
+
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run ReAct reasoning flow"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    checkpoint: true
+    output_criteria:
+      - id: "flow-succeeded"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "verify-iterations"
+    type: "exactl"
+    name: "Verify multiple ReAct iterations"
+    command: "journal"
+    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--action", "dynamic_step_event", "--format", "json"]
+    output_criteria:
+      - id: "multiple-iterations"
+        kind: "json-query"
+        query: "length"
+        min: 3
+      - id: "tool-calls-logged"
+        kind: "json-query"
+        query: ".[].tool_name"
+        unique_count_min: 2
+
+  - id: "verify-output"
+    type: "wait-for-file"
+    name: "Wait for flow run output"
+    args: ["**/flow_run_*.json"]
+    timeout_sec: 180
+    input_criteria: []
+    output_criteria:
+      - id: "dynamic-step-completed"
+        kind: "json-query"
+        query: ".steps[?@.execution_mode=='dynamic'].completed"
+        equals: true
+
+  - id: "cleanup"
+    type: "shell"
+    name: "Clean up temp portal"
+    command: "rm"
+    args: ["-rf", "/tmp/sample-ts-project"]
+    input_criteria: []
+    output_criteria: []

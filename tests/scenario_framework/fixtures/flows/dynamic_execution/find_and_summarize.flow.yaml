@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+---
+id: "find-and-summarize"
+name: "Find and Summarize Exports"
+description: "Multi-step analysis using ReAct reasoning to find all exported functions"
+version: "1.0.0"
+output:
+  from: step
+  step: analyze
+  format: markdown
+steps:
+  - id: "analyze"
+    name: "Analyze codebase and summarize exports"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 120000

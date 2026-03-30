@@ -20,6 +20,7 @@ import {
   type ICriterionResult,
   type IScenarioStep,
 } from "../schema/step_schema.ts";
+import type { JSONValue } from "../../../src/shared/types/json.ts";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
@@ -72,6 +73,8 @@ type ITextContainsCriterion = Extract<ICriterion, { kind: CriterionKind.TEXT_CON
 type IJsonPathExistsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EXISTS }>;
 type IJsonPathEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS }>;
 type IJsonPathEqualsAnyCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_PATH_EQUALS_ANY }>;
+type IJsonQueryCriterion = Extract<ICriterion, { kind: CriterionKind.JSON_QUERY }>;
+type IDirExistsCriterion = Extract<ICriterion, { kind: CriterionKind.DIR_EXISTS }>;
 type IFrontmatterFieldExistsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EXISTS }>;
 type IFrontmatterFieldEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.FRONTMATTER_FIELD_EQUALS }>;
 type IJournalEventExistsCriterion = Extract<ICriterion, { kind: CriterionKind.JOURNAL_EVENT_EXISTS }>;
@@ -106,6 +109,10 @@ export async function evaluateCriterion(
       return await evaluateJsonPathEqualsCriterion(options);
     case CriterionKind.JSON_PATH_EQUALS_ANY:
       return await evaluateJsonPathEqualsAnyCriterion(options);
+    case CriterionKind.JSON_QUERY:
+      return await evaluateJsonQueryCriterion(options);
+    case CriterionKind.DIR_EXISTS:
+      return await evaluateDirExistsCriterion(options);
     case CriterionKind.FRONTMATTER_FIELD_EXISTS:
       return await evaluateFrontmatterFieldExistsCriterion(options);
     case CriterionKind.FRONTMATTER_FIELD_EQUALS:
@@ -942,6 +949,121 @@ async function evaluateVersionLteCriterion(
     observed_value: observedVersion,
     expected_value: `<= ${criterion.version}`,
   };
+}
+
+function evaluateJsonQueryCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IJsonQueryCriterion;
+  // For JSON query, we evaluate against the stdout of the command (e.g., journal query output)
+  const outputData = options.executionResult?.stdout || "{}";
+
+  try {
+    const data = JSON.parse(outputData);
+
+    // Execute the query using a simple JSON path evaluation
+    const queryParts = criterion.query.split(".");
+    let result: unknown = data;
+
+    for (const part of queryParts) {
+      if (part === "[]" || part === "[*]") {
+        result = Array.isArray(result) ? result : [result];
+      } else if (part.startsWith("[") && part.endsWith("]")) {
+        const index = parseInt(part.slice(1, -1), 10);
+        result = Array.isArray(result) ? result[index] : undefined;
+      } else {
+        result = (result as Record<string, JSONValue>)?.[part];
+      }
+    }
+
+    let passed = true;
+    let message = `JSON query "${criterion.query}" succeeded`;
+
+    if (criterion.equals !== undefined) {
+      passed = JSON.stringify(result) === JSON.stringify(criterion.equals);
+      message = passed
+        ? `JSON query "${criterion.query}" equals ${JSON.stringify(criterion.equals)}`
+        : `JSON query "${criterion.query}" returned ${JSON.stringify(result)}, expected ${
+          JSON.stringify(criterion.equals)
+        }`;
+    } else if (criterion.contains) {
+      const resultStr = JSON.stringify(result);
+      passed = criterion.contains.every((v) => resultStr.includes(v));
+      message = passed
+        ? `JSON query "${criterion.query}" contains all specified values`
+        : `JSON query "${criterion.query}" result does not contain all specified values`;
+    } else if (criterion.not_empty) {
+      passed = result !== undefined && result !== null && result !== "";
+      message = passed
+        ? `JSON query "${criterion.query}" returned non-empty value`
+        : `JSON query "${criterion.query}" returned empty value`;
+    } else if (criterion.min !== undefined) {
+      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
+      passed = length >= criterion.min;
+      message = passed
+        ? `JSON query "${criterion.query}" returned ${length} items (>= ${criterion.min})`
+        : `JSON query "${criterion.query}" returned ${length} items, expected >= ${criterion.min}`;
+    } else if (criterion.max !== undefined) {
+      const length = Array.isArray(result) ? result.length : typeof result === "string" ? result.length : 0;
+      passed = length <= criterion.max;
+      message = passed
+        ? `JSON query "${criterion.query}" returned ${length} items (<= ${criterion.max})`
+        : `JSON query "${criterion.query}" returned ${length} items, expected <= ${criterion.max}`;
+    }
+
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.JSON_QUERY,
+      phase: options.phase,
+      status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      message,
+      evidence_refs: [],
+      observed_value: result,
+      expected_value: criterion.equals ?? criterion.contains ?? criterion.not_empty ?? criterion.min ?? criterion.max,
+    });
+  } catch (_error) {
+    return Promise.resolve({
+      criterion_id: criterion.id,
+      kind: CriterionKind.JSON_QUERY,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: `Failed to evaluate JSON query`,
+      evidence_refs: [],
+    });
+  }
+}
+
+async function evaluateDirExistsCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as IDirExistsCriterion;
+
+  try {
+    const dirPath = resolve(options.workspaceRoot, criterion.path);
+    const stat = await Deno.stat(dirPath);
+    const passed = stat.isDirectory;
+
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.DIR_EXISTS,
+      phase: options.phase,
+      status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      message: passed ? `Directory exists: ${criterion.path}` : `Path exists but is not a directory: ${criterion.path}`,
+      evidence_refs: [criterion.path],
+      observed_value: stat.isDirectory,
+      expected_value: true,
+    };
+  } catch (_error) {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.DIR_EXISTS,
+      phase: options.phase,
+      status: CriterionStatus.FAILED,
+      message: `Directory does not exist: ${criterion.path}`,
+      evidence_refs: [],
+      expected_value: true,
+    };
+  }
 }
 
 function compareVersions(a: string, b: string): number {

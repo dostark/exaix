@@ -1,0 +1,31 @@
+schema_version: "1.0.0"
+id: "dynamic-step-timeout"
+title: "Dynamic steps respect timeout configuration"
+pack: "dynamic_execution"
+tags: ["timeout", "dynamic", "error-handling"]
+request_fixture: "fixtures/requests/dynamic_execution/timeout_test.md"
+mode_support: ["auto"]
+portals: []
+flow_fixture: "fixtures/flows/dynamic_execution/timeout.flow.yaml"
+steps:
+  - id: "execute-flow"
+    type: "exactl"
+    name: "Run flow with short timeout"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    expect_failure: true
+    output_criteria:
+      - id: "timeout-error"
+        kind: "command-output-contains"
+        contains: ["timeout", "max iterations"]
+
+  - id: "verify-partial-logging"
+    type: "exactl"
+    name: "Verify partial results logged before timeout"
+    command: "journal"
+    args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
+    output_criteria:
+      - id: "some-events-logged"
+        kind: "json-query"
+        query: "length"
+        min: 1

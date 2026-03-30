@@ -1,4 +1,3 @@
-**Flow Fixture (`explore.flow.yaml`):**
 ```yaml
 # @schema-version: 1.0.0
 ---
@@ -20,6 +19,7 @@ steps:
 ```
 
 **Success Criteria:**
+
 - [ ] Flow executes without errors
 - [ ] At least 3 tool calls are logged in the Activity Journal
 - [ ] All tool calls have the same trace ID
@@ -29,3 +29,7 @@ steps:
 ---
 
 ### Scenario 1.2: `dynamic-permission-boundary`
+
+**Purpose:** Validate that dynamic steps cannot use write tools.
+
+**Workflow:**

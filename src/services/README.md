@@ -19,7 +19,7 @@ grep -r "from.*services/" src/
 
 ## Directory Structure
 
-```
+```text
 src/services/
 ├── core/                   # Core infrastructure services
 │   ├── db.ts                         # Database service with SQLite

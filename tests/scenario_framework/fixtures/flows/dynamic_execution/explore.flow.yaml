@@ -1,0 +1,22 @@
+# @schema-version: 1.0.0
+---
+id: "explore-codebase"
+name: "Explore Codebase Structure"
+description: "Dynamic exploration of codebase using read-only tools"
+version: "1.0.0"
+output:
+  from: step
+  step: explore
+  format: markdown
+steps:
+  - id: "explore"
+    name: "Explore and analyze codebase structure"
+    identity: "researcher"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - list_directory
+      - search_files
+    input:
+      source: "request"
+    timeout: 60000

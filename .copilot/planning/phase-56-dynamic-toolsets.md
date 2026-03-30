@@ -376,7 +376,6 @@ Accepts `mcpClient`, `llmClient`, `activityJournal` dependencies
 
 **Status:** ✅ Implemented in Phase 58
 
-
 **File:** `src/flows/flow_runner.ts`
 
 **Summary:** FlowRunner integration requires client implementations that don't exist yet.

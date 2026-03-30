@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "invalid-write-attempt"
+name: "Invalid Write Tool in Dynamic Mode"
+description: "Test flow that intentionally includes write_file in dynamic mode permitted_tools"
+version: "1.0.0"
+output:
+  from: step
+  step: write-attempt
+  format: markdown
+steps:
+  - id: "write-attempt"
+    name: "Attempt to write file in dynamic mode"
+    identity: "senior-coder"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - read_file
+      - write_file # This should be rejected - write tools not allowed in dynamic mode
+    input:
+      source: "request"

@@ -1,0 +1,34 @@
+schema_version: "1.0.0"
+id: "dynamic-permission-boundary"
+title: "Dynamic steps reject write tools in permitted_tools"
+pack: "dynamic_execution"
+tags: ["security", "dynamic", "validation"]
+request_fixture: "fixtures/requests/dynamic_execution/write_attempt.md"
+mode_support: ["auto"]
+portals: []
+flow_fixture: "fixtures/flows/dynamic_execution/invalid_write.flow.yaml"
+steps:
+  - id: "validate-flow"
+    type: "exactl"
+    name: "Validate flow with write tool in dynamic mode"
+    command: "flow"
+    args: ["validate", "$FLOW_FIXTURE"]
+    input_criteria:
+      - id: "flow-file-exists"
+        kind: "file-found"
+        path_pattern: "fixtures/flows/dynamic_execution/invalid_write.flow.yaml"
+    output_criteria:
+      - id: "validation-warning"
+        kind: "command-output-contains"
+        contains: ["write_file", "not allowed", "dynamic"]
+
+  - id: "execute-flow-expect-failure"
+    type: "exactl"
+    name: "Execute flow expecting failure"
+    command: "flow"
+    args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
+    expect_failure: true
+    output_criteria:
+      - id: "execution-blocked"
+        kind: "command-output-contains"
+        contains: ["write tool", "dynamic mode", "not permitted"]
