@@ -74,6 +74,14 @@ Deno.test("[ScenarioFrameworkContract] accepts a valid scenario document", () =>
   assertEquals(result.steps[0].output_criteria[0].kind, "command-exit-code");
 });
 
+interface IJsonCriterionTest {
+  unique_count_min?: number;
+}
+interface IOutputContainsCriterionTest {
+  kind: string;
+  contains?: string[];
+}
+
 Deno.test("[ScenarioFrameworkContract] accepts a scenario with extended fields (flow_fixture, boolean checkpoint, expect_failure, unique_count_min)", () => {
   const result = ScenarioSchema.parse({
     schema_version: SCHEMA_VERSION,
@@ -113,9 +121,9 @@ Deno.test("[ScenarioFrameworkContract] accepts a scenario with extended fields (
   assertEquals(result.flow_fixture, "fixtures/flows/shared/test.flow.yaml");
   assertEquals(result.steps[0].checkpoint, true);
   assertEquals(result.steps[0].expect_failure, true);
-  const jsonQueryCriterion = result.steps[0].output_criteria[0] as Record<string, unknown>;
+  const jsonQueryCriterion = result.steps[0].output_criteria[0] as IJsonCriterionTest;
   assertEquals(jsonQueryCriterion.unique_count_min, 5);
-  const commandOutputCriterion = result.steps[0].output_criteria[1] as Record<string, unknown>;
+  const commandOutputCriterion = result.steps[0].output_criteria[1] as IOutputContainsCriterionTest;
   assertEquals(commandOutputCriterion.kind, "command-output-contains");
   assertEquals(commandOutputCriterion.contains, ["success", "completed"]);
 });

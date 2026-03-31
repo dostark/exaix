@@ -134,6 +134,25 @@ Deno.test("[ScenarioFrameworkExecutionModes] manual-checkpoint mode pauses only 
   assertEquals(result.reviewBundle?.checkpointId, "review-here");
 });
 
+Deno.test("[ScenarioFrameworkExecutionModes] manual-checkpoint mode supports boolean checkpoint indicators", async () => {
+  const executedStepIds: string[] = [];
+  const steps = [
+    createStep("step-1", { checkpoint: true }),
+  ];
+
+  const result = await runScenarioInMode({
+    scenarioId: "boolean-checkpoint",
+    steps,
+    mode: ScenarioExecutionMode.MANUAL_CHECKPOINT,
+    executeStep: createStepExecutor(executedStepIds),
+  });
+
+  assertEquals(["step-1"], executedStepIds);
+  assertEquals(result.status, "paused");
+  assertEquals(result.pauseReason, "checkpoint");
+  assertEquals(result.reviewBundle?.checkpointId, true);
+});
+
 Deno.test("[ScenarioFrameworkExecutionModes] auto mode halts the scenario on the first failed step and records the manifest outcome", async () => {
   const executedStepIds: string[] = [];
   const steps = [createStep("step-1"), createStep("step-2"), createStep("step-3")];
