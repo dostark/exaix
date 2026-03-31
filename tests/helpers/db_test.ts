@@ -1,6 +1,6 @@
 /**
  * @module DatabaseServiceTest
- * @path tests/db_test.ts
+ * @path tests/helpers/db_test.ts
  * @description Tests for DatabaseService activity journal storage functionality.
  */
 

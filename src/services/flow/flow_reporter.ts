@@ -1,10 +1,9 @@
 /**
  * @module FlowReporter
- * @path src/services/flow_reporter.ts
+ * @path src/services/flow/flow_reporter.ts
  * @description Generates comprehensive reports for flow executions, analyzing multi-agent orchestration results.
  * @architectural-layer Services
- * @dependencies [Path, Config, DatabaseService, FlowRunner, FlowSchema, Constants]
- * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
+ * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 
 import { join } from "@std/path";

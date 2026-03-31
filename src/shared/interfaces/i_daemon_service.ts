@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_daemon_service.ts
  * @description Module for IdaemonService.
  * @architectural-layer Shared
- * @dependencies [Enums, DaemonTypes]
- * @related-files [src/shared/types/daemon.ts]
+ * * @related-files [src/shared/types/daemon.ts]
  */
 import { DaemonStatus } from "../enums.ts";
 

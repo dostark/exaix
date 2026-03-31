@@ -3,8 +3,7 @@
  * @path src/helpers/text.ts
  * @description Text processing utilities including keyword extraction and stop-word filtering.
  * @architectural-layer Helpers
- * @dependencies []
- * @related-files [src/services/memory_bank.ts]
+ * * @related-files [src/services/memory_bank.ts]
  */
 export const STOP_WORDS = new Set([
   "the",

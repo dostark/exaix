@@ -3,8 +3,7 @@
  * @path src/services/adapters/request_adapter.ts
  * @description Module for RequestAdapter.
  * @architectural-layer Services
- * @dependencies [IRequestService, RequestCommands]
- * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
+ * * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
  */
 
 import { IRequestService } from "../../shared/interfaces/i_request_service.ts";

@@ -3,8 +3,7 @@
  * @path src/tui/log_stream.ts
  * @description Manager for real-time log streaming to the TUI, featuring buffering, filtering, and connection management.
  * @architectural-layer TUI
- * @dependencies [structured_logger, structured_log_service]
- * @related-files [src/tui/structured_log_viewer.ts]
+ * * @related-files [src/tui/structured_log_viewer.ts]
  */
 
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";

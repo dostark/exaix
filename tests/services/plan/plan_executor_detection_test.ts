@@ -1,6 +1,6 @@
 /**
  * @module PlanExecutorDetectionTest
- * @path tests/plan_executor_detection_test.ts
+ * @path tests/services/plan/plan_executor_detection_test.ts
  * @description Verifies the logic for detecting executable plans, ensuring that the system
  * correctly identifies structured task blocks within larger agent responses.
  */

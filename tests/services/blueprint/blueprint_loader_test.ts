@@ -1,6 +1,6 @@
 /**
  * @module BlueprintLoaderTest
- * @path tests/services/blueprint_loader_test.ts
+ * @path tests/services/blueprint/blueprint_loader_test.ts
  * @description Verifies the BlueprintLoader's ability to parse agent definitions from YAML
  * frontmatter, ensuring correct schema validation and default value application.
  */

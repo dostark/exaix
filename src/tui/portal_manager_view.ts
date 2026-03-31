@@ -3,8 +3,7 @@
  * @path src/tui/portal_manager_view.ts
  * @description TUI view for managing portals (environment symlinks), supporting status visualization, opening/closing, and removal.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { type IPortalDetails, type IPortalInfo, type IVerificationResult } from "../shared/types/portal.ts";

@@ -5,8 +5,7 @@
  * per-step failure classification for input validation, command execution, and
  * output validation.
  * @architectural-layer Test
- * @dependencies [@std/path, @std/yaml, step_schema, step_executor]
- * @related-files [tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
+ * * @related-files [tests/scenario_framework/runner/evidence_collector.ts, tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
  */
 
 import { globToRegExp, isAbsolute, relative, resolve } from "@std/path";

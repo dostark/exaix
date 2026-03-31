@@ -1,6 +1,6 @@
 /**
  * @module PortalPermissionsTest
- * @path tests/services/portal_permissions_test.ts
+ * @path tests/services/portal/portal_permissions_test.ts
  * @description Verifies the capability-based security model for portals, ensuring strict
  * enforcement of agent whitelisting and protection against unauthorized tool access.
  */

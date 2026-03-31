@@ -4,9 +4,11 @@
  * Enforces architectural standards:
  * 1. Every .ts file in src/ must have a standardized @module header.
  * 2. Every .ts file in src/ must be "grounded" by ARCHITECTURE.md (directly or transitively).
+ * 3. @path in header must match the actual file path.
+ * 4. Dependencies are automated from imports (manual @dependencies is deprecated).
  */
 
-import { join, relative } from "@std/path";
+import { join, relative, resolve } from "@std/path";
 import { walk } from "@std/fs";
 
 const ROOT = Deno.cwd();
@@ -92,12 +94,22 @@ async function validate() {
     const isTest = testFiles.has(relPath);
 
     if (!info.moduleName) missingFields.push("@module");
-    if (!info.path) missingFields.push("@path");
+    if (!info.path) {
+      missingFields.push("@path");
+    } else {
+      // Normalize both paths for comparison
+      const normalizedHeaderPath = info.path.replace(/^\/+/, "").replace(/\/+$/, "");
+      const normalizedRelPath = relPath.replace(/^\/+/, "").replace(/\/+$/, "");
+      if (normalizedHeaderPath !== normalizedRelPath) {
+        console.error(`❌ Path mismatch in ${relPath}: header says '${info.path}', but actual path is '${relPath}'`);
+        headerFailures++;
+      }
+    }
     if (!info.description) missingFields.push("@description");
 
     if (!isTest) {
       if (!info.layer) missingFields.push("@architectural-layer");
-      if (!info.dependenciesProvided) missingFields.push("@dependencies");
+      // @dependencies is now automated from imports
       if (!info.relatedFilesProvided) missingFields.push("@related-files");
     }
 
@@ -126,9 +138,39 @@ async function validate() {
 
     const links = [...info.dependencies, ...info.relatedFiles];
     for (const link of links) {
-      const resolvedPath = srcFiles.has(link) ? link : moduleNameToPath.get(link);
+      // Try to resolve the link. It could be a project path, a module name, or a relative import path.
+      let resolvedPath = srcFiles.has(link) ? link : moduleNameToPath.get(link);
 
-      if (resolvedPath && srcFiles.has(resolvedPath) && !fullyGrounded.has(resolvedPath)) {
+      // If not resolved yet, it might be a relative import path from the current file
+      if (!resolvedPath && (link.startsWith(".") || link.startsWith("@/"))) {
+        let absolutePath: string;
+        if (link.startsWith("@/")) {
+          absolutePath = join(ROOT, link.substring(2));
+        } else {
+          const currentDir = join(ROOT, current, "..");
+          absolutePath = resolve(currentDir, link);
+        }
+
+        // Try with various extensions
+        const candidates = [
+          absolutePath,
+          absolutePath + ".ts",
+          absolutePath + ".tsx",
+          join(absolutePath, "mod.ts"),
+          join(absolutePath, "index.ts"),
+        ];
+        for (const candidate of candidates) {
+          const relCandidate = relative(ROOT, candidate);
+          if (srcFiles.has(relCandidate) || testFiles.has(relCandidate)) {
+            resolvedPath = relCandidate;
+            break;
+          }
+        }
+      }
+
+      if (
+        resolvedPath && (srcFiles.has(resolvedPath) || testFiles.has(resolvedPath)) && !fullyGrounded.has(resolvedPath)
+      ) {
         fullyGrounded.add(resolvedPath);
         queue.push(resolvedPath);
       }
@@ -165,32 +207,46 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
     isGrounded: false,
   };
 
+  // 1. Parse standard header fields
   const headerMatch = content.match(/\/\*\*([\s\S]*?)\*\//);
-  if (!headerMatch) return info;
+  if (headerMatch) {
+    const header = headerMatch[1];
 
-  const header = headerMatch[1];
+    const moduleMatch = header.match(/@module\s+([^\n]+)/);
+    const pathMatch = header.match(/@path\s+([^\n]+)/);
+    const architecturalLayer = header.match(/@architectural-layer\s+([^\n]+)/);
+    const description = header.match(/@description\s+([^\n]+)/);
 
-  const moduleMatch = header.match(/@module\s+([^\n]+)/);
-  const pathMatch = header.match(/@path\s+([^\n]+)/);
-  const architecturalLayer = header.match(/@architectural-layer\s+([^\n]+)/);
-  const description = header.match(/@description\s+([^\n]+)/);
+    if (moduleMatch) info.moduleName = moduleMatch[1].trim();
+    if (pathMatch) info.path = pathMatch[1].trim();
+    if (architecturalLayer) info.layer = architecturalLayer[1].trim();
+    if (description) info.description = description[1].trim();
 
-  if (moduleMatch) info.moduleName = moduleMatch[1].trim();
-  if (pathMatch) info.path = pathMatch[1].trim();
-  if (architecturalLayer) info.layer = architecturalLayer[1].trim();
-  if (description) info.description = description[1].trim();
+    // Parse array @related-files
+    const relatedMatch = header.match(/@related-files\s+\[(.*?)\]/);
+    if (relatedMatch) {
+      info.relatedFilesProvided = true;
+      info.relatedFiles = relatedMatch[1].split(",").map((s) => s.trim().replace(/^['"]|['"]$/g, "")).filter((s) => s);
+    }
 
-  // Parse arrays like [file1.ts, file2.ts]
-  const depsMatch = header.match(/@dependencies\s+\[(.*?)\]/);
-  if (depsMatch) {
-    info.dependenciesProvided = true;
-    info.dependencies = depsMatch[1].split(",").map((s) => s.trim()).filter((s) => s);
+    // Manual @dependencies (deprecated but still supported)
+    const depsMatch = header.match(/@dependencies\s+\[(.*?)\]/);
+    if (depsMatch) {
+      info.dependenciesProvided = true;
+      const deps = depsMatch[1].split(",").map((s) => s.trim().replace(/^['"]|['"]$/g, "")).filter((s) => s);
+      info.dependencies.push(...deps);
+    }
   }
 
-  const relatedMatch = header.match(/@related-files\s+\[(.*?)\]/);
-  if (relatedMatch) {
-    info.relatedFilesProvided = true;
-    info.relatedFiles = relatedMatch[1].split(",").map((s) => s.trim()).filter((s) => s);
+  // 2. Automatically extract dependencies from imports
+  const importRegex = /import\s+.*?\s+from\s+["']([^"']+)["']/g;
+  let match;
+  while ((match = importRegex.exec(content)) !== null) {
+    const importPath = match[1];
+    // Only care about relative imports, alias imports, or src subpaths
+    if (importPath.startsWith(".") || importPath.startsWith("@/") || importPath.startsWith("src/")) {
+      info.dependencies.push(importPath);
+    }
   }
 
   return info;

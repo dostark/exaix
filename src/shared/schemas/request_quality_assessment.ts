@@ -6,8 +6,7 @@
  * service (Phase 47). Captures quality score, issue categories, enrichment
  * suggestions, and assessment metadata.
  * @architectural-layer Shared
- * @dependencies [zod]
- * @related-files [src/shared/schemas/mod.ts, src/services/quality_gate/request_quality_gate.ts]
+ * * @related-files [src/shared/schemas/mod.ts, src/services/quality_gate/request_quality_gate.ts]
  */
 
 import { z } from "zod";

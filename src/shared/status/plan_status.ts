@@ -3,8 +3,7 @@
  * @path src/shared/status/plan_status.ts
  * @description Shared type definitions and coercion utilities for execution plan statuses.
  * @architectural-layer Shared
- * @dependencies []
- * @related-files [src/shared/status/request_status.ts]
+ * * @related-files [src/shared/status/request_status.ts]
  */
 export const PlanStatus = {
   REVIEW: "review",

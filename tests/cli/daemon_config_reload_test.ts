@@ -1,6 +1,6 @@
 /**
  * @module DaemonConfigReloadTest
- * @path tests/daemon_config_reload_test.ts
+ * @path tests/cli/daemon_config_reload_test.ts
  * @description Verifies that the background daemon correctly handles configuration
  * changes without requiring a full service restart.
  */

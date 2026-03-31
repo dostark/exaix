@@ -3,8 +3,7 @@
  * @path src/services/adapters/daemon_adapter.ts
  * @description Module for DaemonAdapter.
  * @architectural-layer Services
- * @dependencies [IDaemonService, DaemonCommands]
- * @related-files [src/cli/commands/daemon_commands.ts, src/shared/interfaces/i_daemon_service.ts]
+ * * @related-files [src/cli/commands/daemon_commands.ts, src/shared/interfaces/i_daemon_service.ts]
  */
 
 import { DaemonCommands } from "../../cli/commands/daemon_commands.ts";

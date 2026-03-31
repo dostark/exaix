@@ -8,8 +8,7 @@
  * and caps output at DEFAULT_SYMBOL_MAP_LIMIT.
  * Falls back to empty array on subprocess failure or timeout.
  * @architectural-layer Services
- * @dependencies [src/shared/constants.ts, src/shared/schemas/portal_knowledge.ts]
- * @related-files [src/services/portal_knowledge/architecture_inferrer.ts, src/services/portal_knowledge/key_file_identifier.ts]
+ * * @related-files [src/services/portal_knowledge/architecture_inferrer.ts, src/services/portal_knowledge/key_file_identifier.ts]
  */
 
 import type { ISymbolEntry } from "../../shared/schemas/portal_knowledge.ts";

@@ -1,6 +1,6 @@
 /**
  * @module RequestRouterContextTest
- * @path tests/services/request_router_context_test.ts
+ * @path tests/services/request/request_router_context_test.ts
  * @description Verifies the RequestRouter's ability to maintain and propagate execution context
  * across routed requests, ensuring consistent trace and security boundaries.
  */

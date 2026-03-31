@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/git_status_tool.ts
  * @description MCP tool handler for checking git status in a portal.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, GitService]
- * @related-files [src/mcp/tool_handler.ts, src/services/core/git_service.ts]
+ * * @related-files [src/mcp/tool_handler.ts, src/services/core/git_service.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse } from "../../shared/schemas/mcp.ts";

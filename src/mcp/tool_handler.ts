@@ -3,8 +3,7 @@
  * @path src/mcp/tool_handler.ts
  * @description Base class for all MCP tool handlers, providing common validation, security, and logging.
  * @architectural-layer MCP
- * @dependencies [Path, Config, DatabaseService, PortalPermissionsService, PortalOperation]
- * @related-files [src/services/portal_permissions.ts, src/mcp/handlers/read_file_tool.ts, src/mcp/handlers/write_file_tool.ts]
+ * * @related-files [src/services/portal_permissions.ts, src/mcp/handlers/read_file_tool.ts, src/mcp/handlers/write_file_tool.ts]
  */
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "../shared/schemas/config.ts";

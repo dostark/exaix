@@ -1,6 +1,6 @@
 /**
  * @module RequestProcessorQualityGateTest
- * @path tests/services/request_processor_quality_gate_test.ts
+ * @path tests/services/request/request_processor_quality_gate_test.ts
  * @description Verifies that RequestProcessor integrates with RequestQualityGate
  * to assess, enrich, and route requests before analysis and agent execution.
  * @related-files [src/services/request_processor.ts, src/services/quality_gate/request_quality_gate.ts]

@@ -3,8 +3,7 @@
  * @path src/tui/analytics/performance_analyzer.ts
  * @description Calculates performance statistics (latencies, error rates) from log entries to monitor system health.
  * @architectural-layer TUI
- * @dependencies [structured_logger, analytics/types]
- * @related-files [src/tui/structured_log_viewer.ts]
+ * * @related-files [src/tui/structured_log_viewer.ts]
  */
 
 import { LogLevel } from "../../shared/enums.ts";

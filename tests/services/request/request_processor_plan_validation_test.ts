@@ -1,6 +1,6 @@
 /**
  * @module PlanValidationRequestTest
- * @path tests/request_processor_plan_validation_test.ts
+ * @path tests/services/request/request_processor_plan_validation_test.ts
  * @description Verifies the RequestProcessor's resilience when handling invalid plans,
  * ensuring rejected content is captured for debugging without breaking the execution loop.
  */

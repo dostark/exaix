@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_archive_service.ts
  * @description Interface for execution archive services.
  * @architectural-layer Shared
- * @dependencies [memory_status]
- * @related-files [src/services/adapters/archive_adapter.ts, src/cli/cli_context.ts]
+ * * @related-files [src/services/adapters/archive_adapter.ts, src/cli/cli_context.ts]
  */
 
 import type { MemoryStatusType } from "../status/memory_status.ts";

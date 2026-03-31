@@ -1,6 +1,6 @@
 /**
  * @module JournalVerificationTest
- * @path tests/verification_journal_cmd.ts
+ * @path tests/cli/verification_journal_cmd.ts
  * @description Verifies the journal verification command, ensuring correct aggregation
  * and validation of past activities recorded in the persistent journal.
  */

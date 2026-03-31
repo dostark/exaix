@@ -1,6 +1,6 @@
 /**
  * @module PortalContextGroundingTest
- * @path tests/portal_context_grounding_test.ts
+ * @path tests/services/portal/portal_context_grounding_test.ts
  * @description Verifies that the RequestProcessor correctly injects portal-specific
  * context, such as file lists and repository structure, into agent prompts.
  */

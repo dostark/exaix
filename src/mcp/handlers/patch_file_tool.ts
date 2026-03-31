@@ -4,8 +4,7 @@
  * @description MCP tool handler for applying targeted string replacements to portal files.
  * Preferred over write_file for code edits — produces minimal, auditable changes.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, PatchFileToolArgsSchema, Path, FS]
- * @related-files [src/mcp/tool_handler.ts, src/mcp/handlers/write_file_tool.ts]
+ * * @related-files [src/mcp/tool_handler.ts, src/mcp/handlers/write_file_tool.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, PatchFileToolArgsSchema } from "../../shared/schemas/mcp.ts";

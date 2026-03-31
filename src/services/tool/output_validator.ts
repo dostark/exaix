@@ -1,6 +1,6 @@
 /**
  * @module OutputValidator
- * @path src/services/output_validator.ts
+ * @path src/services/tool/output_validator.ts
  * @description Ensures structured agent output conforms to specified schemas.
  *
  * Features:
@@ -11,8 +11,7 @@
  * - Validation metrics tracking
  *
  * @architectural-layer Services
- * @dependencies [Zod, PlanSchema, JSONRepair]
- * @related-files [src/services/agent_runner.ts, src/services/json_repair.ts]
+ * * @related-files [src/services/agent_runner.ts, src/services/json_repair.ts]
  */
 
 import { z, ZodError, ZodType, ZodTypeDef } from "zod";

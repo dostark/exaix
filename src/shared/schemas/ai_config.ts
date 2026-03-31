@@ -1,11 +1,10 @@
 /**
  * @module AIConfig
- * @path src/config/ai_config.ts
+ * @path src/shared/schemas/ai_config.ts
  * @description AI provider configuration schemas and validation. Defines Zod schemas for
  * validating provider settings, retry policies, timeouts, and model configurations.
  * @architectural-layer Configuration
- * @dependencies [zod, src/ai/provider_registry.ts, src/enums.ts, src/config/constants.ts]
- * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
+ * * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
 import { ProviderRegistry } from "../../ai/provider_registry.ts";
@@ -141,9 +140,7 @@ function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<str
  * @module AIConfigSchema
  * @path src/config/ai_config.ts
  * @description Defines the Zod schema for AI provider configuration, including model selection, retry strategies, and mock provider settings.
- * @architectural-layer Config
- * @dependencies [zod, provider_registry, enums, constants]
- * @related-files [src/config/schema.ts, src/ai/provider_factory.ts]
+ * @architectural-layer Config * @related-files [src/config/schema.ts, src/ai/provider_factory.ts]
  */
 
 /**

@@ -3,8 +3,7 @@
  * @path src/tui/memory_view/tree_builder.ts
  * @description Tree builder and renderer for Memory View, responsible for building the hierarchical memory structure and rendering it to TUI lines.
  * @architectural-layer TUI
- * @dependencies [Spinner, Enums, MemoryTuiScope, Constants]
- * @related-files [src/tui/memory_view/memory_scope.ts]
+ * * @related-files [src/tui/memory_view/memory_scope.ts]
  */
 
 import { renderSpinnerFrame } from "../helpers/spinner.ts";

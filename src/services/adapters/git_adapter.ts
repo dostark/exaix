@@ -3,8 +3,7 @@
  * @path src/services/adapters/git_adapter.ts
  * @description Provides adapter for Git operations to satisfy architectural boundary requirements.
  * @architectural-layer Services/Adapters
- * @dependencies [IGitService, GitService]
- * @related-files [src/services/core/git_service.ts, src/cli/commands/review_commands.ts]
+ * * @related-files [src/services/core/git_service.ts, src/cli/commands/review_commands.ts]
  */
 
 import { GitService } from "../core/git_service.ts";

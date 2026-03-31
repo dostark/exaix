@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_agent_service.ts
  * @description Module for IagentService.
  * @architectural-layer Shared
- * @dependencies [Enums, AgentTypes]
- * @related-files [src/shared/types/agent.ts]
+ * * @related-files [src/shared/types/agent.ts]
  */
 
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../types/agent.ts";

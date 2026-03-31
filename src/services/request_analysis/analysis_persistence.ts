@@ -6,8 +6,7 @@
  * uses the write-to-temp-then-rename pattern to ensure crash-safe writes.
  * Validates loaded JSON against `RequestAnalysisSchema` before returning.
  * @architectural-layer Services
- * @dependencies [src/shared/schemas/request_analysis.ts]
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
+ * * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
 import { type IRequestAnalysis, RequestAnalysisSchema } from "../../shared/schemas/request_analysis.ts";

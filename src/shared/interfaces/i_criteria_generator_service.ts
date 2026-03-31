@@ -4,8 +4,7 @@
  * @description Service interface for dynamically generating EvaluationCriterion
  * objects from a structured request analysis, enabling goal-aligned evaluation.
  * @architectural-layer Shared
- * @dependencies [src/shared/schemas/request_analysis.ts, src/flows/evaluation_criteria.ts]
- * @related-files [src/services/criteria_generator.ts, src/shared/interfaces/mod.ts]
+ * * @related-files [src/services/criteria_generator.ts, src/shared/interfaces/mod.ts]
  */
 
 import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";

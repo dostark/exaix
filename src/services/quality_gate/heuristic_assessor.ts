@@ -6,8 +6,7 @@
  * acceptance criteria keywords, structure) without any LLM or network calls.
  * Suitable for use in sandboxed mode.
  * @architectural-layer Services
- * @dependencies [src/shared/schemas/request_quality_assessment.ts, src/shared/constants.ts, src/shared/enums.ts]
- * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/constants.ts]
+ * * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/constants.ts]
  */
 
 import {

@@ -1,11 +1,10 @@
 /**
  * @module TuiServiceFactory
- * @path src/services/tui_service_factory.ts
+ * @path src/services/utils/tui_service_factory.ts
  * @description Factory for creating service instances used by the TUI dashboard.
  * This module bridges the core services with the TUI interface layer.
  * @architectural-layer Services
- * @dependencies [Service Adapters, CLI Commands, Core Services]
- * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
+ * * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
  */
 
 import { join } from "@std/path";

@@ -1,6 +1,6 @@
 /**
  * @module MemoryUpdateProposalSchemaTest
- * @path tests/services/memory_extractor_test.ts
+ * @path tests/services/memory/memory_extractor_test.ts
  * @description Validates the data schema for agent-suggested memory updates, ensuring strict
  * enforcement of proposal structure, learning categories, and scope definitions.
  */

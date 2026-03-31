@@ -1,11 +1,10 @@
 /**
  * @module ToolRegistry
- * @path src/services/tool_registry.ts
+ * @path src/services/tool/tool_registry.ts
  * @description Central registry for available tools. Maps abstract tool names (e.g., 'read_file')
  * to concrete implementations with security validation and logging.
  * @architectural-layer Services
- * @dependencies [ConfigSchema, DatabaseService, PathResolver, MiddlewarePipeline]
- * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
+ * * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
  */
 import { ConfigSchema } from "../../shared/schemas/config.ts";
 import { join, resolve } from "@std/path";

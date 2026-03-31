@@ -3,8 +3,7 @@
  * @path src/tui/analytics/types.ts
  * @description Core type definitions for the TUI analytics system, including trace analysis and performance metrics.
  * @architectural-layer TUI
- * @dependencies []
- * @related-files [src/tui/analytics/correlation_analyzer.ts, src/tui/analytics/trace_analyzer.ts]
+ * * @related-files [src/tui/analytics/correlation_analyzer.ts, src/tui/analytics/trace_analyzer.ts]
  */
 
 export interface ITimeRange {

@@ -1,6 +1,6 @@
 /**
  * @module BuildAgentsIndexTest
- * @path tests/build_agents_index_test.ts
+ * @path tests/agents/build_agents_index_test.ts
  * @description Verifies the logic for generating the agent registry index, ensuring
  * that all discovered agent metadata is correctly aggregated for runtime lookups.
  */

@@ -3,8 +3,7 @@
  * @path src/flows/judge_evaluator.ts
  * @description Orchestrates judge agent invocation and result parsing for output quality evaluation, including JSON repair and heuristic recovery.
  * @architectural-layer Flows
- * @dependencies [evaluation_criteria, gate_evaluator]
- * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
+ * * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
  */
 
 import { buildEvaluationPrompt, EvaluationCriterion, EvaluationResult } from "./evaluation_criteria.ts";

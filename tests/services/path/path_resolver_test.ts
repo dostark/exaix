@@ -1,6 +1,6 @@
 /**
  * @module PathResolverTest
- * @path tests/path_resolver_test.ts
+ * @path tests/services/path/path_resolver_test.ts
  * @description Verifies the core PathResolver logic, ensuring correct resolution of
  * portal alias paths and strict prevention of path traversal security attacks.
  */

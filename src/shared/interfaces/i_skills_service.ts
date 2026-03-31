@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_skills_service.ts
  * @description Module for IskillsService.
  * @architectural-layer Shared
- * @dependencies [Enums, SkillTypes]
- * @related-files [src/shared/types/skill.ts]
+ * * @related-files [src/shared/types/skill.ts]
  */
 
 import { MemoryBankSource, SkillStatus } from "../enums.ts";

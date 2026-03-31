@@ -1,6 +1,6 @@
 /**
  * @module StructuredLoggerRegressionTest
- * @path tests/services/structured_logger_regression_test.ts
+ * @path tests/services/structured/structured_logger_regression_test.ts
  * @description Regression tests for the StructuredLogger, verifying automatic creation
  * of missing log directories and resilient file output management.
  */

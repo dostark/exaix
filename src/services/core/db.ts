@@ -4,8 +4,7 @@
  * @description Provides persistent storage for the Activity Journal and system state using SQLite.
  * Implements batched writes, transactions with retries, and circuit breaker protection.
  * @architectural-layer Services
- * @dependencies [SQLite, Config, CircuitBreaker, DatabaseConnectionPool]
- * @related-files [src/services/event_logger.ts, src/services/database_connection_pool.ts]
+ * * @related-files [src/services/event_logger.ts, src/services/database_connection_pool.ts]
  */
 import { z } from "zod";
 import { Database } from "@db/sqlite";

@@ -1,6 +1,6 @@
 /**
  * @module MockLLMProviderTest
- * @path tests/mock_llm_provider_test.ts
+ * @path tests/ai/mock_llm_provider_test.ts
  * @description Verifies the MockLLMProvider service, ensuring correct implementation
  * of the model provider interface and stable response delivery for testing.
  */

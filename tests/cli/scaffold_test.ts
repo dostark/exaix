@@ -1,6 +1,6 @@
 /**
  * @module ProjectScaffoldTest
- * @path tests/scaffold_test.ts
+ * @path tests/cli/scaffold_test.ts
  * @description Verifies the logic of the project initialization script, ensuring correct
  * creation of the required directory structure, config templates, and baseline assets.
  */

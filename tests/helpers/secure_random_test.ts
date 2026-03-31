@@ -1,6 +1,6 @@
 /**
  * @module SecureRandomTest
- * @path tests/utils/secure_random_test.ts
+ * @path tests/helpers/secure_random_test.ts
  * @description Verifies the project's secure random utilities, ensuring
  * cryptographically strong generation of bytes, strings, and unique identifiers.
  */

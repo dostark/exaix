@@ -1,6 +1,6 @@
 /**
  * @module ManifestVerificationTest
- * @path tests/scripts_verify_manifest_test.ts
+ * @path tests/scripts/scripts_verify_manifest_test.ts
  * @description Verifies the integrity of the project manifest, ensuring that the
  * runtime manifest correctly matches the declared state in the repository.
  */

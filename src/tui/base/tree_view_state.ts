@@ -3,8 +3,7 @@
  * @path src/tui/base/tree_view_state.ts
  * @description Common state interfaces and factory functions for tree-based TUI views.
  * @architectural-layer TUI
- * @dependencies [dialog_base, tree_view, constants]
- * @related-files [src/tui/base/base_tree_view.ts]
+ * * @related-files [src/tui/base/base_tree_view.ts]
  */
 
 import type { DialogBase } from "../helpers/dialog_base.ts";

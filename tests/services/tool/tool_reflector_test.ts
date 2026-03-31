@@ -1,6 +1,6 @@
 /**
  * @module ToolReflectorSchemaTest
- * @path tests/services/tool_reflector_test.ts
+ * @path tests/services/tool/tool_reflector_test.ts
  * @description Validates the data schema for agent-led tool reflection, ensuring structured
  * capture of technical debt, suggested improvements, and tool execution confidence.
  */

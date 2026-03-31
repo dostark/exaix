@@ -1,6 +1,6 @@
 /**
  * @module ComplexityFallbackTest
- * @path tests/complexity_fallback_test.ts
+ * @path tests/services/parser/complexity_fallback_test.ts
  * @description Verifies the model selection logic based on task complexity, ensuring
  * that the system falls back to more capable models for non-trivial requests.
  */

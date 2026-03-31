@@ -1,6 +1,6 @@
 /**
  * @module INotificationService
- * @path src/services/notification.ts
+ * @path src/services/notification/notification.ts
  * @description Manages user notifications for memory updates.
  *
  * Key responsibilities:
@@ -9,8 +9,7 @@
  * - Notification lifecycle management with soft-deletes
  *
  * @architectural-layer Services
- * @dependencies [Config, DatabaseService, IMemoryUpdateProposal, IMemoryNotification]
- * @related-files [src/services/db.ts, src/services/memory_bank/index.builder.ts, src/shared/types/notification.ts]
+ * * @related-files [src/services/db.ts, src/services/memory_bank/index.builder.ts, src/shared/types/notification.ts]
  */
 
 import type { Config } from "../../shared/schemas/config.ts";

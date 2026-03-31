@@ -3,8 +3,7 @@
  * @path src/cli/formatters/journal_formatter.ts
  * @description Provides formatting and rendering logic for IActivity Journal records in the CLI, supporting table, text, and JSON outputs.
  * @architectural-layer CLI
- * @dependencies [table, colors, db_schema]
- * @related-files [src/cli/commands/journal.ts]
+ * * @related-files [src/cli/commands/journal.ts]
  */
 
 import { Table } from "@cliffy/table";

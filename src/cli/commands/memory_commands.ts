@@ -3,8 +3,7 @@
  * @path src/cli/commands/memory_commands.ts
  * @description Provides CLI commands for interacting with Memory Banks, including list, search, project, execution, and proposal management.
  * @architectural-layer CLI
- * @dependencies [fs, path, memory_bank, memory_extractor, memory_embedding, enums, skills, memory_bank_schema, cli_config, memory_formatter, memory_types]
- * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
+ * * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
  */
 
 import { exists } from "@std/fs";

@@ -3,8 +3,7 @@
  * @path src/shared/types/agent.ts
  * @description Module for Agent.
  * @architectural-layer Shared
- * @dependencies [Enums, Status]
- * @related-files [src/shared/interfaces/i_agent_service.ts]
+ * * @related-files [src/shared/interfaces/i_agent_service.ts]
  */
 
 import type { AgentStatusType } from "../status/agent_status.ts";

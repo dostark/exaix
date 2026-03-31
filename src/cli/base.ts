@@ -3,8 +3,7 @@
  * @path src/cli/base.ts
  * @description Provides the abstract base class for all CLI command handlers, offering shared utilities for configuration, database access, user identity, and YAML frontmatter processing.
  * @architectural-layer CLI
- * @dependencies [config_schema, db_schema, event_logger]
- * @related-files [src/cli/exactl.ts]
+ * * @related-files [src/cli/exactl.ts]
  */
 
 import type {

@@ -3,8 +3,7 @@
  * @path src/tui/tui_helpers/layout_persistence.ts
  * @description Utilities for saving, restoring, and resetting TUI dashboard layouts to/from local storage.
  * @architectural-layer TUI
- * @dependencies [constants]
- * @related-files [src/tui/tui_dashboard.ts]
+ * * @related-files [src/tui/tui_dashboard.ts]
  */
 
 import { MessageType } from "../../shared/enums.ts";

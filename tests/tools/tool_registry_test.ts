@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryTest
- * @path tests/tool_registry_test.ts
+ * @path tests/tools/tool_registry_test.ts
  * @description Verifies the dynamic registration of tools via JSON schemas,
  * ensuring execution sandboxing and strict prevention of path traversal attacks.
  */

@@ -3,8 +3,7 @@
  * @path src/cli/init.ts
  * @description Handles CLI service initialization, including configuration loading, database connection, and model provider setup, with specific handling for test modes.
  * @architectural-layer CLI
- * @dependencies [config_service, git_service, event_logger, provider_factory, constants, config_schema, db_schema, ai_types]
- * @related-files [src/cli/main.ts, src/cli/exactl.ts]
+ * * @related-files [src/cli/main.ts, src/cli/exactl.ts]
  */
 
 import { join } from "@std/path";

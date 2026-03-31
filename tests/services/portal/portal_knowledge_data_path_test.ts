@@ -1,6 +1,6 @@
 /**
  * @module PortalKnowledgeDataPathTest
- * @path tests/services/portal_knowledge_data_path_test.ts
+ * @path tests/services/portal/portal_knowledge_data_path_test.ts
  * @description Tests for the PortalService.getKnowledge() method that loads
  * IPortalKnowledge from knowledge.json via the TUI/CLI data path.
  * @related-files [src/services/portal.ts, src/shared/interfaces/i_portal_service.ts, src/services/portal_knowledge/knowledge_persistence.ts]

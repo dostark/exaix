@@ -1,6 +1,6 @@
 /**
  * @module ExecutionLoop
- * @path src/services/execution_loop.ts
+ * @path src/services/agent/execution_loop.ts
  * @description Core engine for executing agent plans.
  *
  * Responsibilities:
@@ -9,8 +9,7 @@
  * - Coordinate with PlanWriter and WorkflowManager
  *
  * @architectural-layer Services
- * @dependencies [GitService, PlanExecutor, ToolRegistry, BlueprintLoader, ArchiveService, ArtifactRegistry, CodeParser, AuditLogger]
- * @related-files [src/main.ts, src/services/plan_executor.ts]
+ * * @related-files [src/main.ts, src/services/plan_executor.ts]
  */
 
 import { join } from "@std/path";

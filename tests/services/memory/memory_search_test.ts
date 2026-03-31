@@ -1,6 +1,6 @@
 /**
  * @module MemorySearchTest
- * @path tests/services/memory_search_test.ts
+ * @path tests/services/memory/memory_search_test.ts
  * @description Verifies the logic for tag-based memory retrieval, ensuring correctly scoped
  * access to project-specific and global learned patterns via the MemoryBankService.
  */

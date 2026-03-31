@@ -1,6 +1,6 @@
 /**
  * @module ExecutionLoopExtendedTest
- * @path tests/execution_loop_extended_test.ts
+ * @path tests/services/execution/execution_loop_extended_test.ts
  * @description Targeted tests for the core execution loop, verifying multi-step
  * task transitions and state consistency across complex agent workflows.
  */

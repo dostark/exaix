@@ -3,8 +3,7 @@
  * @path src/services/memory/mod.ts
  * @description Barrel export for memory service modules.
  * @architectural-layer Services
- * @dependencies [src/services/memory/*]
- * @related-files [src/services/memory/*.ts]
+ * * @related-files [src/services/memory/*.ts]
  */
 
 export * from "./memory_bank.ts";

@@ -3,8 +3,7 @@
  * @path src/cli/commands/dashboard_commands.ts
  * @description Provides CLI commands for launching the Terminal User Interface (TUI) dashboard.
  * @architectural-layer CLI
- * @dependencies [base_command, tui_dashboard]
- * @related-files [src/tui/tui_dashboard.ts, src/cli/main.ts]
+ * * @related-files [src/tui/tui_dashboard.ts, src/cli/main.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

@@ -3,8 +3,7 @@
  * @path src/shared/types/skill.ts
  * @description Module for Skill.
  * @architectural-layer Shared
- * @dependencies [Enums]
- * @related-files [src/shared/interfaces/i_skills_service.ts]
+ * * @related-files [src/shared/interfaces/i_skills_service.ts]
  */
 
 /**

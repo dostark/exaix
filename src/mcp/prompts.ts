@@ -3,8 +3,7 @@
  * @path src/mcp/prompts.ts
  * @description Provides prompt templates for common Exaix operations, guiding agents through structured workflows.
  * @architectural-layer MCP
- * @dependencies [Config, DatabaseService]
- * @related-files [src/services/db.ts]
+ * * @related-files [src/services/db.ts]
  */
 
 import type { Config } from "../shared/schemas/config.ts";

@@ -3,8 +3,7 @@
  * @path src/shared/types/portal.ts
  * @description Module for Portal.
  * @architectural-layer Shared
- * @dependencies [Enums]
- * @related-files [src/shared/interfaces/i_portal_service.ts]
+ * * @related-files [src/shared/interfaces/i_portal_service.ts]
  */
 
 import type { PortalExecutionStrategy, PortalStatus, VerificationStatus } from "../enums.ts";

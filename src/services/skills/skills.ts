@@ -1,13 +1,12 @@
 /**
  * @module SkillsService
- * @path src/services/skills.ts
+ * @path src/services/skills/skills.ts
  * @description Manages procedural memory (skills).
  *
  * Skills encode domain expertise, procedures, and best practices as reusable
  * instruction modules that agents apply to tasks.
  * @architectural-layer Services
- * @dependencies [DatabaseService, memory_bank_schema, enums, text_utils]
- * @related-files [src/schemas/memory_bank.ts, src/services/agent_runner.ts]
+ * * @related-files [src/schemas/memory_bank.ts, src/services/agent_runner.ts]
  */
 
 import { join } from "@std/path";

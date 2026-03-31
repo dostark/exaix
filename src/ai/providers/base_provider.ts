@@ -3,8 +3,7 @@
  * @path src/ai/providers/base_provider.ts
  * @description Module for BaseProvider.
  * @architectural-layer AI
- * @dependencies [providers, event_logger, common, schema]
- * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
+ * * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
  */
 
 import type { EventLogger } from "../../services/core/event_logger.ts";

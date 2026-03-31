@@ -1,6 +1,6 @@
 /**
  * @module ModelAdapterTest
- * @path tests/model_adapter_test.ts
+ * @path tests/ai/model_adapter_test.ts
  * @description Verifies the ModelAdapter logic, ensuring it correctly wraps various
  * LLM providers and handles response configuration overrides.
  */

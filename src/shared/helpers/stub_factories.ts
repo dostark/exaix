@@ -1,11 +1,10 @@
 /**
  * @module StubFactories
- * @path src/cli/helpers/stub_factories.ts
+ * @path src/shared/helpers/stub_factories.ts
  * @description Shared factory functions for creating stub implementations of
  * core services used in CLI initialization and testing.
  * @architectural-layer CLI
- * @dependencies [i_git_service, i_model_provider]
- * @related-files [src/cli/init.ts, src/services/tui_service_factory.ts, tests/test_helpers.ts]
+ * * @related-files [src/cli/init.ts, src/services/tui_service_factory.ts, tests/test_helpers.ts]
  */
 
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";

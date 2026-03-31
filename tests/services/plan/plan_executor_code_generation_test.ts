@@ -1,6 +1,6 @@
 /**
  * @module PlanExecutorCodeGenTest
- * @path tests/plan_executor_code_generation_test.ts
+ * @path tests/services/plan/plan_executor_code_generation_test.ts
  * @description Verifies the code generation specialized logic within the PlanExecutor,
  * ensuring correct authentication and generation patterns for technical tasks.
  */

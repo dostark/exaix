@@ -1,6 +1,6 @@
 /**
  * @module ReflexiveAgentUnitTest
- * @path tests/services/reflexive_agent_unit_test.ts
+ * @path tests/services/reflexive/reflexive_agent_unit_test.ts
  * @description Verifies the logic of the ReflexiveAgent service, specifically its self-critique decision
  * trees, metric accumulation, and dynamic configuration of specialized review agents.
  */

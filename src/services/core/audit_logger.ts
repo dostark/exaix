@@ -1,10 +1,9 @@
 /**
  * @module AuditLogger
- * @path src/services/audit_logger.ts
+ * @path src/services/core/audit_logger.ts
  * @description specialized audit logger for security-critical operations, providing tamper-evident logging with alerting.
  * @architectural-layer Services
- * @dependencies [DatabaseService, Path, SecurityEnums]
- * @related-files [src/services/db.ts, src/enums.ts]
+ * * @related-files [src/services/db.ts, src/enums.ts]
  */
 
 import type { DatabaseService } from "../core/db.ts";

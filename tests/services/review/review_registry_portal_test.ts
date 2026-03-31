@@ -1,6 +1,6 @@
 /**
  * @module ReviewRegistryPortalTest
- * @path tests/services/review_registry_portal_test.ts
+ * @path tests/services/review/review_registry_portal_test.ts
  * @description Verifies the ReviewRegistry's ability to discover and manage reviewable artifacts
  * across partitioned portal repositories, ensuring correct path mapping and state persistence.
  */

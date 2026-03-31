@@ -1,6 +1,6 @@
 /**
  * @module PortalContextGroundingRegressionTest
- * @path tests/portal_context_grounding_regression_test.ts
+ * @path tests/services/portal/portal_context_grounding_regression_test.ts
  * @description Verifies that the RequestProcessor correctly injects deep portal
  * file structures into the LLM prompt for better agent grounding.
  */

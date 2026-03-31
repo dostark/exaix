@@ -5,8 +5,7 @@
  * persisted runner state handling, and scenario selection filtering used by the
  * scenario framework.
  * @architectural-layer Test
- * @dependencies [config, step_executor, step_schema]
- * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/tests/unit/execution_modes_test.ts]
+ * * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/runner/step_executor.ts, tests/scenario_framework/tests/unit/execution_modes_test.ts]
  */
 
 import {

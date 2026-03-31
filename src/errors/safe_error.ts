@@ -3,8 +3,7 @@
  * @path src/errors/safe_error.ts
  * @description Safe error wrapper that prevents information leakage by providing user-safe messages while securely logging internal details.
  * @architectural-layer Core
- * @dependencies [EventLogger]
- * @related-files [src/services/event_logger.ts]
+ * * @related-files [src/services/event_logger.ts]
  */
 
 import type { EventLogger } from "../services/core/event_logger.ts";

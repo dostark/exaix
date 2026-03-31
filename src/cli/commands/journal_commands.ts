@@ -3,8 +3,7 @@
  * @path src/cli/commands/journal_commands.ts
  * @description Provides CLI access to the IActivity Journal, allowing users to query, filter, and display system activities and agent logs.
  * @architectural-layer CLI
- * @dependencies [base_command, colors, db_schema, journal_formatter]
- * @related-files [src/services/db.ts, src/cli/main.ts]
+ * * @related-files [src/services/db.ts, src/cli/main.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

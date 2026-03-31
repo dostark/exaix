@@ -3,8 +3,7 @@
  * @path src/tui/tui_log_output.ts
  * @description Implementation of StructuredLogger output that feeds entries to the TUI service for real-time display.
  * @architectural-layer TUI
- * @dependencies [structured_logger, structured_log_service]
- * @related-files [src/tui/structured_log_viewer.ts]
+ * * @related-files [src/tui/structured_log_viewer.ts]
  */
 
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";

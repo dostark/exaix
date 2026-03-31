@@ -3,8 +3,7 @@
  * @path src/tui/base/base_tree_view.ts
  * @description Abstract base class for tree-based TUI views, implementing common state management, navigation, and rendering logic.
  * @architectural-layer TUI
- * @dependencies [tree_view, keyboard, spinner, tui_common, dialog_base]
- * @related-files [src/tui/tui_common.ts, src/tui/base/tree_view_state.ts]
+ * * @related-files [src/tui/tui_common.ts, src/tui/base/tree_view_state.ts]
  */
 
 import { KEYS } from "../helpers/keyboard.ts";

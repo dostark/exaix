@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_tool_registry.ts
  * @description Defines the interface for the ToolRegistry service.
  * @architectural-layer Interfaces
- * @dependencies [json.ts]
- * @related-files [src/services/tool_registry.ts]
+ * * @related-files [src/services/tool_registry.ts]
  */
 import { JSONValue } from "../types/json.ts";
 

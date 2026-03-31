@@ -1,6 +1,6 @@
 /**
  * @module ArtifactRegistryTest
- * @path tests/services/artifact_registry_test.ts
+ * @path tests/services/artifact/artifact_registry_test.ts
  * @description Verifies the ArtifactRegistry service, ensuring agent-produced files are
  * correctly indexed in the database and persisted within the Memory/Execution directory.
  */

@@ -7,8 +7,7 @@
  * when the <!-- mission-reported --> sentinel is absent. Never writes
  * references.md or decisions.md (ownership preserved for MissionReporter).
  * @architectural-layer Services
- * @dependencies [src/shared/schemas/portal_knowledge.ts, src/shared/schemas/memory_bank.ts, src/shared/interfaces/i_memory_bank_service.ts]
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/mod.ts]
+ * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/mod.ts]
  */
 
 import { join } from "@std/path";

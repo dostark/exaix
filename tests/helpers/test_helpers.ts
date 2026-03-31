@@ -1,6 +1,6 @@
 /**
  * @module TestHelpersSelfTest
- * @path tests/test_helpers.ts
+ * @path tests/helpers/test_helpers.ts
  * @description Self-tests for the primary test helper repository, ensuring stable delivery
  * of mock files, request factories, and common visual primitives.
  */

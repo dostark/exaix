@@ -1,10 +1,9 @@
 /**
  * @module MarkdownRenderer
- * @path src/helpers/markdown_renderer.ts
+ * @path src/tui/helpers/markdown_renderer.ts
  * @description TUI Markdown renderer for ANSI-styled terminal output with support for headers, code blocks, and badges.
  * @architectural-layer Helpers
- * @dependencies [Enums, Constants]
- * @related-files [src/enums.ts, src/helpers/constants.ts]
+ * * @related-files [src/enums.ts, src/helpers/constants.ts]
  */
 
 import { ConfidenceLevel } from "../../shared/enums.ts";

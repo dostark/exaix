@@ -1,11 +1,10 @@
 /**
  * @module HealthCheckService
- * @path src/services/health_check_service.ts
+ * @path src/services/core/health_check_service.ts
  * @description Orchestrates system-wide health checks, including database connectivity,
  * LLM provider availability, disk space, and memory usage.
  * @architectural-layer Services
- * @dependencies [DatabaseService, LLMProvider, Config, EventLogger]
- * @related-files [src/main.ts, src/services/db.ts]
+ * * @related-files [src/main.ts, src/services/db.ts]
  */
 import type { DatabaseService } from "../core/db.ts";
 import { IModelProvider } from "../../ai/types.ts";

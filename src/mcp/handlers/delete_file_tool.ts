@@ -4,8 +4,7 @@
  * @description MCP tool handler for deleting a single file from a portal.
  * Destructive and irreversible at the filesystem level — git history preserves deleted files.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, DeleteFileToolArgsSchema]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { DeleteFileToolArgsSchema, type MCPToolResponse } from "../../shared/schemas/mcp.ts";

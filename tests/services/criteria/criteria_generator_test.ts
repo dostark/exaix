@@ -1,6 +1,6 @@
 /**
  * @module CriteriaGeneratorTest
- * @path tests/services/criteria_generator_test.ts
+ * @path tests/services/criteria/criteria_generator_test.ts
  * @description Unit tests for the CriteriaGenerator service, which converts
  * RequestAnalysis goals and acceptance criteria into EvaluationCriterion arrays.
  */

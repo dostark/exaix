@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryServiceTest
- * @path tests/services/tool_registry_test.ts
+ * @path tests/services/tool/tool_registry_test.ts
  * @description Verifies the ToolRegistry service, ensuring strict validation of
  * command patterns and argument types while enforcing security boundaries.
  */

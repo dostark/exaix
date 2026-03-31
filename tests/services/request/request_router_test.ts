@@ -1,6 +1,6 @@
 /**
  * @module RequestRouterTest
- * @path tests/services/request_router_test.ts
+ * @path tests/services/request/request_router_test.ts
  * @description Verifies the RequestRouter's orchestration logic, ensuring requests are correctly
  * dispatched to FlowRunner, AgentRunner, or default providers based on metadata.
  */

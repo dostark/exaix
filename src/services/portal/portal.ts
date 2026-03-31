@@ -1,10 +1,9 @@
 /**
  * @module PortalService
- * @path src/services/portal.ts
+ * @path src/services/portal/portal.ts
  * @description Core service for managing external project portals.
  * @architectural-layer Services
- * @dependencies [ConfigService, ContextCardGeneratorService, DisplayService]
- * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
+ * * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
  */
 
 import { join, resolve } from "@std/path";

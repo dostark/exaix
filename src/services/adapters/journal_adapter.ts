@@ -3,8 +3,7 @@
  * @path src/services/adapters/journal_adapter.ts
  * @description Adapter for Journal Service using DatabaseService.
  * @architectural-layer Services
- * @dependencies [IJournalService, DatabaseService]
- * @related-files [src/services/db.ts, src/shared/interfaces/i_journal_service.ts]
+ * * @related-files [src/services/db.ts, src/shared/interfaces/i_journal_service.ts]
  */
 
 import { IJournalService } from "../../shared/interfaces/i_journal_service.ts";

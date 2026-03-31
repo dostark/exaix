@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_log_service.ts
  * @description Module for IlogService.
  * @architectural-layer Shared
- * @dependencies [Enums, LoggingTypes]
- * @related-files [src/shared/types/logging.ts]
+ * * @related-files [src/shared/types/logging.ts]
  */
 
 import type { LogMetadata } from "../types/json.ts";

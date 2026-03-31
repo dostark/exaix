@@ -4,8 +4,7 @@
  * @description Tests for CLI flow validation of dynamic step execution mode,
  * ensuring proper errors for write tools and warnings for missing configurations.
  * @architectural-layer Tests
- * @dependencies [std_assert, shared_enums, shared_schemas_flow]
- * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
+ * * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";

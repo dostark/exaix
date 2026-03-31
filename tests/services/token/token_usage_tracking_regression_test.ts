@@ -1,6 +1,6 @@
 /**
  * @module TokenUsageRegressionTest
- * @path tests/token_usage_tracking_regression_test.ts
+ * @path tests/services/token/token_usage_tracking_regression_test.ts
  * @description Regression tests for the LLM token usage tracking system, ensuring correct
  * mapping of provider-specific usage metrics and estimated cost calculations.
  */

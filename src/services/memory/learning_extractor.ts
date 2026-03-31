@@ -3,8 +3,7 @@
  * @path src/services/memory/learning_extractor.ts
  * @description Analyzes execution memory to automatically extract potential patterns, decisions, and troubleshooting insights.
  * @architectural-layer Services
- * @dependencies [MemoryBankSchemas, Enums]
- * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 import type { IExecutionMemory, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
 import {

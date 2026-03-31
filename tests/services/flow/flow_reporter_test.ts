@@ -1,6 +1,6 @@
 /**
  * @module FlowReporterTest
- * @path tests/services/flow_reporter_test.ts
+ * @path tests/services/flow/flow_reporter_test.ts
  * @description Verifies the FlowReporter service, ensuring step execution results and
  * aggregate workflow metrics are correctly tracked and persisted in the activity journal.
  */

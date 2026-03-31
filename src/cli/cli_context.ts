@@ -3,8 +3,7 @@
  * @path src/cli/cli_context.ts
  * @description Defines the ICliApplicationContext interface used by CLI commands.
  * @architectural-layer CLI
- * @dependencies [shared_interfaces, ai_types]
- * @related-files [src/cli/commands/, src/cli/main.ts]
+ * * @related-files [src/cli/commands/, src/cli/main.ts]
  */
 
 import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";

@@ -3,8 +3,7 @@
  * @path src/tui/skills_manager_view.ts
  * @description Interactive TUI view for managing Skills (agent capabilities), supporting discovery, status filtering, and skill deletion.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/skill_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/skill_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import {

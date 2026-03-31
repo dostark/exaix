@@ -1,10 +1,9 @@
 /**
  * @module Spinner
- * @path src/helpers/spinner.ts
+ * @path src/tui/helpers/spinner.ts
  * @description TUI spinner and animation utilities for asynchronous operations.
  * @architectural-layer Helpers
- * @dependencies [Colors]
- * @related-files [src/helpers/status_bar.ts]
+ * * @related-files [src/helpers/status_bar.ts]
  */
 
 import { colorize, getTheme } from "./colors.ts";

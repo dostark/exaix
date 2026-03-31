@@ -3,8 +3,7 @@
  * @path src/ai/provider_common_utils.ts
  * @description Shared utilities for AI providers, including token mapping, cost calculation, response handling, and retry logic.
  * @architectural-layer AI
- * @dependencies [event_logger, common, providers, types, constants]
- * @related-files [src/ai/providers.ts]
+ * * @related-files [src/ai/providers.ts]
  */
 import { EventLogger } from "../services/core/event_logger.ts";
 import { AuthenticationError, ConnectionError, ModelProviderError, RateLimitError } from "./providers/common.ts";

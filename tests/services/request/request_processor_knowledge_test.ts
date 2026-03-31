@@ -1,6 +1,6 @@
 /**
  * @module RequestProcessorKnowledgeTest
- * @path tests/services/request_processor_knowledge_test.ts
+ * @path tests/services/request/request_processor_knowledge_test.ts
  * @description Tests for RequestProcessor integration with IPortalKnowledgeService:
  * resolves portal knowledge pre-execution, injects a capped Markdown summary into
  * IParsedRequest.context via PORTAL_KNOWLEDGE_KEY, passes knowledge to both agent

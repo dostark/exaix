@@ -1,6 +1,6 @@
 /**
  * @module PlanCommandsRegressionTest
- * @path tests/plan_commands_regression_test.ts
+ * @path tests/cli/plan_commands_regression_test.ts
  * @description Regression tests for plan command logic, ensuring that plan files are
  * correctly discovered across Active, Rejected, and Pending directory hierarchies.
  */

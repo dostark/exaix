@@ -1,10 +1,9 @@
 /**
  * @module ReflexiveAgent
- * @path src/services/reflexive_agent.ts
+ * @path src/services/agent/reflexive_agent.ts
  * @description Implements the reflexive agent loop, enabling self-critique and iterative output improvement before finalization.
  * @architectural-layer Services
- * @dependencies [agent_runner, db, types, constants]
- * @related-files [src/services/agent_runner.ts, src/services/confidence_scorer.ts]
+ * * @related-files [src/services/agent_runner.ts, src/services/confidence_scorer.ts]
  */
 
 import { z } from "zod";

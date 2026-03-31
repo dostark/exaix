@@ -1,6 +1,6 @@
 /**
  * @module ReviewCommandsRegressionTest
- * @path tests/review_commands_regression_test.ts
+ * @path tests/cli/review_commands_regression_test.ts
  * @description Regression tests for review CLI commands, ensuring correct visual display
  * and context aggregation for pending agent plans awaiting review.
  */

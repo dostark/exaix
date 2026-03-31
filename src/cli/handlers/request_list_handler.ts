@@ -3,8 +3,7 @@
  * @path src/cli/handlers/request_list_handler.ts
  * @description Handles listing and filtering agent requests from the workspace inbox, including status coercion and sorting.
  * @architectural-layer CLI
- * @dependencies [path, fs, base_command, request_commands, request_status, request_paths]
- * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
  */
 
 import { join } from "@std/path";

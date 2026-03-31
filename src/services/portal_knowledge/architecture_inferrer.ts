@@ -7,8 +7,7 @@
  * Falls back to empty string on any LLM or validation failure.
  * Only runs in `standard` and `deep` analysis modes — never in `quick`.
  * @architectural-layer Services
- * @dependencies [src/shared/constants.ts, src/ai/types.ts, src/services/tool/output_validator.ts, src/shared/schemas/portal_knowledge.ts]
- * @related-files [src/services/portal_knowledge/pattern_detector.ts, src/services/portal_knowledge/key_file_identifier.ts]
+ * * @related-files [src/services/portal_knowledge/pattern_detector.ts, src/services/portal_knowledge/key_file_identifier.ts]
  */
 
 import { z, ZodType, ZodTypeDef } from "zod";

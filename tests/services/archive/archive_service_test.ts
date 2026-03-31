@@ -1,6 +1,6 @@
 /**
  * @module ArchiveServiceTest
- * @path tests/services/archive_service_test.ts
+ * @path tests/services/archive/archive_service_test.ts
  * @description Unit tests for ArchiveService (src/services/archive_service.ts).
  */
 

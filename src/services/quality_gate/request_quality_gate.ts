@@ -6,8 +6,7 @@
  * quality gate pipeline, delegating to HeuristicAssessor, LlmQualityAssessor,
  * and RequestEnricherLlm based on configuration and score thresholds.
  * @architectural-layer Services
- * @dependencies [src/shared/interfaces/i_request_quality_gate_service.ts, src/services/quality_gate/heuristic_assessor.ts, src/services/quality_gate/llm_assessor.ts, src/services/quality_gate/request_enricher_llm.ts, src/ai/types.ts, src/services/output_validator.ts, src/services/event_logger.ts]
- * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
+ * * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";

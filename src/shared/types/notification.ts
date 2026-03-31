@@ -3,8 +3,7 @@
  * @path src/shared/types/notification.ts
  * @description Module for Notification.
  * @architectural-layer Shared
- * @dependencies [Enums]
- * @related-files [src/shared/interfaces/i_notification_service.ts]
+ * * @related-files [src/shared/interfaces/i_notification_service.ts]
  */
 
 /**

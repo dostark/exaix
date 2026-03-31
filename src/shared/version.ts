@@ -5,8 +5,7 @@
  * Any MINOR or MAJOR bump to WORKSPACE_SCHEMA_VERSION requires workspace migration
  * before the new binary can run against an existing deployed workspace.
  * @architectural-layer Shared
- * @dependencies []
- * @related-files [scripts/check_version.ts, src/shared/schemas/config.ts]
+ * * @related-files [scripts/check_version.ts, src/shared/schemas/config.ts]
  */
 
 /** SemVer of the exactl binary and Exaix daemon. */

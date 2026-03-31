@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/read_file_tool.ts
  * @description Module for ReadFileTool.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, Path]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { JSONValue } from "../../shared/types/json.ts";

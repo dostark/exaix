@@ -1,6 +1,6 @@
 /**
  * @module ContextLoader
- * @path src/services/context_loader.ts
+ * @path src/services/context/context_loader.ts
  * @description Intelligently loads and prioritizes codebase context for LLM execution.
  *
  * Responsibilities:
@@ -9,8 +9,7 @@
  * - Handle portal and workspace directory boundaries
  *
  * @architectural-layer Services
- * @dependencies [DatabaseService, Config]
- * @related-files [src/services/agent_runner.ts]
+ * * @related-files [src/services/agent_runner.ts]
  */
 
 import type { DatabaseService } from "../core/db.ts";

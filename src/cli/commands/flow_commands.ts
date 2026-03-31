@@ -3,8 +3,7 @@
  * @path src/cli/commands/flow_commands.ts
  * @description Provides CLI commands for flow management and execution, including list, show, run, plan, history, and validation.
  * @architectural-layer CLI
- * @dependencies [table, path, flow_loader, shared_interfaces]
- * @related-files [src/flows/flow_loader.ts, src/cli/main.ts]
+ * * @related-files [src/flows/flow_loader.ts, src/cli/main.ts]
  */
 
 import { Table } from "@cliffy/table";

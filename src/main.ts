@@ -5,8 +5,7 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Core System
- * @dependencies [ConfigService, DatabaseService, FileWatcher, RequestProcessor, ExecutionLoop, GracefulShutdown]
- * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
+ * * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
  */
 import { ConfigService } from "./config/service.ts";
 import { DaemonStatus, LogLevel } from "./shared/enums.ts";

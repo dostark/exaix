@@ -1,13 +1,12 @@
 /**
  * @module ReflexiveAgentEnhancedPromptTest
- * @path tests/services/reflexive_agent_enhanced_prompt_test.ts
+ * @path tests/services/reflexive/reflexive_agent_enhanced_prompt_test.ts
  * @description Tests for buildEnhancedCritiquePrompt() extraction and the
  * MAX_CRITIQUE_REQUIREMENTS cap (Phase 49, Step 2).
  * Tests complementary to reflexive_agent_criteria_test.ts — covers only
  * behaviors not already tested there (cap logic, no-goals analysis, etc.).
  * @architectural-layer Tests
- * @dependencies [src/services/reflexive_agent.ts, src/shared/constants.ts]
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { assertEquals, assertExists } from "@std/assert";

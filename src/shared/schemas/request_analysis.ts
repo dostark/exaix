@@ -7,8 +7,7 @@
  * criteria, ambiguities, and actionability metadata extracted from raw request
  * text.
  * @architectural-layer Shared
- * @dependencies [zod]
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/schemas/mod.ts]
+ * * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/schemas/mod.ts]
  */
 
 import { z } from "zod";

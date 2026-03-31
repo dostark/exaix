@@ -1,6 +1,6 @@
 /**
  * @module ProviderAuthRegressionTest
- * @path tests/provider_auth_regression_test.ts
+ * @path tests/ai/provider_auth_regression_test.ts
  * @description Regression tests for LLM provider authentication, ensuring stable loading
  * of API keys from environment variables across different provider factories.
  */

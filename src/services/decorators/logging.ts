@@ -3,8 +3,7 @@
  * @path src/services/decorators/logging.ts
  * @description Method decorator for automated execution logging.
  * @architectural-layer Services
- * @dependencies [EventLogger]
- * @related-files [src/services/core/event_logger.ts]
+ * * @related-files [src/services/core/event_logger.ts]
  */
 import { EventLogger } from "../core/event_logger.ts";
 import { toSafeJson } from "../../shared/types/json.ts";

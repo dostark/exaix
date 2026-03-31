@@ -1,6 +1,6 @@
 /**
  * @module LoggingDecoratorTest
- * @path tests/services/logging_decorator_test.ts
+ * @path tests/services/ai/logging_decorator_test.ts
  * @description Verifies the AOP-style logging decorators, ensuring method execution, arguments,
  * and return values are transparently captured by the StructuredLogger.
  */

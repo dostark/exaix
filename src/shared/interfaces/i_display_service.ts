@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_display_service.ts
  * @description Interface for CLI/TUI display services (wrapping EventLogger).
  * @architectural-layer Shared
- * @dependencies [json]
- * @related-files [src/services/adapters/display_adapter.ts, src/cli/cli_context.ts, src/cli/commands/blueprint_commands.ts]
+ * * @related-files [src/services/adapters/display_adapter.ts, src/cli/cli_context.ts, src/cli/commands/blueprint_commands.ts]
  */
 
 import type { LogMetadata } from "../types/json.ts";

@@ -3,8 +3,7 @@
  * @path src/tui/tui_dashboard_mocks.ts
  * @description Mock implementations of core services (Portal, Plan, Log, Daemon, Request, Agent, Memory, Skills) for TUI dashboard testing and TDD.
  * @architectural-layer TUI
- * @dependencies [enums, AgentStatus, MemoryStatus, RequestStatus]
- * @related-files [src/tui/dashboard_view.ts]
+ * * @related-files [src/tui/dashboard_view.ts]
  */
 import {
   ActivityType,

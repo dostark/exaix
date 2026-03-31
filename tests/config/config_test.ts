@@ -1,6 +1,6 @@
 /**
  * @module ConfigSchemaTest
- * @path tests/config_test.ts
+ * @path tests/config/config_test.ts
  * @description Validates the system's global configuration schema, ensuring robust parsing of
  * JSON/YAML settings, default value application, and strict validation of sensitive provider keys.
  */

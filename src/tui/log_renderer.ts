@@ -3,8 +3,7 @@
  * @path src/tui/log_renderer.ts
  * @description Enhanced log visualization utilities for the TUI, providing colored output, rich context badges, and performance metrics formatting.
  * @architectural-layer TUI
- * @dependencies [constants, colors, structured_logger]
- * @related-files [src/tui/monitor_view.ts, src/tui/structured_log_viewer.ts]
+ * * @related-files [src/tui/monitor_view.ts, src/tui/structured_log_viewer.ts]
  */
 
 import {

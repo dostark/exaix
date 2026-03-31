@@ -1,12 +1,11 @@
 /**
  * @module RequestProcessorMemoryTest
- * @path tests/services/request_processor_memory_test.ts
+ * @path tests/services/request/request_processor_memory_test.ts
  * @description Tests for SessionMemoryService injection into RequestProcessor.
  * Verifies that enhanceRequest() is called before analysis and that the result
  * is stored on IParsedRequest.context (Phase 49, Step 5).
  * @architectural-layer Tests
- * @dependencies [src/services/request/request_processor.ts, src/services/memory/session_memory.ts]
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";

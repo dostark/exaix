@@ -3,8 +3,7 @@
  * @path src/cli/commands/request_commands.ts
  * @description Provides CLI commands for creating and managing agent requests, serving as the primary interface for human-to-agent communication.
  * @architectural-layer CLI
- * @dependencies [base_command, enums, request_status, request_create_handler, request_list_handler, request_show_handler]
- * @related-files [src/schemas/request.ts, src/cli/main.ts]
+ * * @related-files [src/schemas/request.ts, src/cli/main.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

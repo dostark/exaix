@@ -1,6 +1,6 @@
 /**
  * @module OutputValidatorTest
- * @path tests/services/output_validator_test.ts
+ * @path tests/services/ai/output_validator_test.ts
  * @description Verifies the logic for parsing and validating agent-produced XML/Markdown outputs,
  * ensuring structural tags like <thought> and <content> are correctly extracted.
  */

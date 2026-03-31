@@ -4,8 +4,7 @@
  * @description Implements Step 7 scenario-pack discovery and
  * selection for framework-owned scenario definitions and CI-safe subsets.
  * @architectural-layer Test
- * @dependencies [@std/fs, @std/path, scenario_loader, scenario_schema]
- * @related-files [tests/scenario_framework/runner/scenario_loader.ts, tests/scenario_framework/tests/unit/agent_flows_pack_test.ts]
+ * * @related-files [tests/scenario_framework/runner/scenario_loader.ts, tests/scenario_framework/tests/unit/agent_flows_pack_test.ts]
  */
 
 import { walk } from "@std/fs";

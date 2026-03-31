@@ -3,8 +3,7 @@
  * @path src/ai/providers/google_provider.ts
  * @description IModelProvider implementation for Google Gemini models, utilizing the Google Generative AI API.
  * @architectural-layer AI
- * @dependencies [providers, provider_common_utils, constants, base_provider]
- * @related-files [src/ai/factories/google_factory.ts]
+ * * @related-files [src/ai/factories/google_factory.ts]
  */
 import { IModelOptions } from "../types.ts";
 import {

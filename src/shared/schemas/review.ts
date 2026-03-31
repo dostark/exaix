@@ -3,8 +3,7 @@
  * @path src/shared/schemas/review.ts
  * @description Defines the structure for code reviews created by agents, including branch metadata, commit SHAs, and rejection reasons.
  * @architectural-layer Schemas
- * @dependencies [zod, review_status]
- * @related-files [src/cli/review_commands.ts]
+ * * @related-files [src/cli/review_commands.ts]
  */
 
 import { z } from "zod";

@@ -3,8 +3,7 @@
  * @path src/flows/condition_evaluator.ts
  * @description Evaluates dynamic step conditions using safe JavaScript execution against a context of previous results and request metadata.
  * @architectural-layer Flows
- * @dependencies [flow, flow_runner]
- * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
+ * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 
 import { IFlow, IFlowStep } from "../shared/schemas/flow.ts";

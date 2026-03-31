@@ -3,8 +3,7 @@
  * @path src/cli/helpers/request_enricher.ts
  * @description Utility to enrich metadata with full request information from the database or workspace.
  * @architectural-layer CLI
- * @dependencies [RequestCommands, EnvConfig]
- * @related-files [src/cli/request_commands.ts]
+ * * @related-files [src/cli/request_commands.ts]
  */
 import { RequestCommands } from "../commands/request_commands.ts";
 import { isTestMode } from "../../config/env_schema.ts";

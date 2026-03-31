@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_config_service.ts
  * @description Module for IconfigService.
  * @architectural-layer Shared
- * @dependencies [ConfigSchema]
- * @related-files [src/shared/schemas/config.ts]
+ * * @related-files [src/shared/schemas/config.ts]
  */
 
 import type { Config } from "../schemas/config.ts";

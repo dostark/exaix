@@ -3,8 +3,7 @@
  * @path src/services/memory_bank/index_builder.ts
  * @description Utilities for building and writing indices for files, patterns, and tags in the memory bank.
  * @architectural-layer Services
- * @dependencies [Path, MemoryBankSchemas, MemoryStatus]
- * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 
 import { join } from "@std/path";

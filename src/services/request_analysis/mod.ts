@@ -4,8 +4,7 @@
  * @description Barrel export for the request analysis service module.
  * Exports the main orchestrator, strategy classes, and the heuristic analysis function.
  * @architectural-layer Services
- * @dependencies [src/services/request_analysis/*]
- * @related-files [src/services/request_analysis/*.ts, src/services/request_processor.ts]
+ * * @related-files [src/services/request_analysis/*.ts, src/services/request_processor.ts]
  */
 
 export { analyzeHeuristic } from "./heuristic_analyzer.ts";

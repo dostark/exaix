@@ -4,8 +4,7 @@
  * @description Implements Step 5 evidence copy helpers and run
  * manifest persistence with a deterministic output path.
  * @architectural-layer Test
- * @dependencies [@std/path, step_schema]
- * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
+ * * @related-files [tests/scenario_framework/runner/assertions.ts, tests/scenario_framework/tests/unit/assertions_evidence_test.ts]
  */
 
 import { dirname, isAbsolute, resolve } from "@std/path";

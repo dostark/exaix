@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_request_service.ts
  * @description Module for IrequestService.
  * @architectural-layer Shared
- * @dependencies [Enums, RequestTypes]
- * @related-files [src/shared/types/request.ts]
+ * * @related-files [src/shared/types/request.ts]
  */
 
 import type { RequestStatusType } from "../status/request_status.ts";

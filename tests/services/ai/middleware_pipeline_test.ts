@@ -1,6 +1,6 @@
 /**
  * @module MiddlewarePipelineTest
- * @path tests/services/middleware_pipeline_test.ts
+ * @path tests/services/ai/middleware_pipeline_test.ts
  * @description Verifies the logic for the asynchronous middleware execution pipeline, ensuring
  * correct Onion-model execution order and graceful short-circuiting.
  */

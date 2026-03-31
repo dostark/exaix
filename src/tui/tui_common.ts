@@ -3,8 +3,7 @@
  * @path src/tui/tui_common.ts
  * @description Shared TUI session utilities, base classes, and state management patterns used across all dashboard views.
  * @architectural-layer TUI
- * @dependencies [colors, spinner, status_bar, keyboard]
- * @related-files [src/tui/base/base_tree_view.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/tui/base/base_tree_view.ts, src/tui/tui_dashboard.ts]
  */
 
 import { getTheme, type ITuiTheme } from "./helpers/colors.ts";

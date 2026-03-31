@@ -1,6 +1,6 @@
 /**
  * @module RequestCommonTest
- * @path tests/services/request_common_test.ts
+ * @path tests/services/request/request_common_test.ts
  * @description Verifies shared request processing utilities, ensuring stable blueprint
  * loading logic, path resolution for agents, and basic state initialization.
  */

@@ -1,6 +1,6 @@
 /**
  * @module AgentContextInjectionTest
- * @path tests/inject_agent_context_test.ts
+ * @path tests/agents/inject_agent_context_test.ts
  * @description Verifies the logic for injecting agent-specific context markers into
  * prompts, ensuring that agent personas and limitations are respected.
  */

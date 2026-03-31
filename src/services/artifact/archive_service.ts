@@ -1,10 +1,9 @@
 /**
  * @module ArchiveService
- * @path src/services/archive_service.ts
+ * @path src/services/artifact/archive_service.ts
  * @description Manages persistence of execution plans and metadata for long-term storage.
  * @architectural-layer Services
- * @dependencies [Path, FS, Zod, ArchiveStatus]
- * @related-files [src/services/execution_loop.ts, src/enums.ts]
+ * * @related-files [src/services/execution_loop.ts, src/enums.ts]
  */
 import { join } from "@std/path";
 import { exists } from "@std/fs";

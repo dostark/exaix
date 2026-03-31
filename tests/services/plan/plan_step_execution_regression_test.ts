@@ -1,6 +1,6 @@
 /**
  * @module PlanStepExecutionRegressionTest
- * @path tests/plan_step_execution_regression_test.ts
+ * @path tests/services/plan/plan_step_execution_regression_test.ts
  * @description Regression tests for the core execution loop, ensuring reliable detection
  * and processing of structured plan steps while rejecting malformed content.
  */

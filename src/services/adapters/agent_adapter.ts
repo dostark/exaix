@@ -3,8 +3,7 @@
  * @path src/services/adapters/agent_adapter.ts
  * @description Module for AgentAdapter.
  * @architectural-layer Services
- * @dependencies [IAgentService, BaseCommand]
- * @related-files [src/services/agent_manager.ts, src/shared/interfaces/i_agent_service.ts]
+ * * @related-files [src/services/agent_manager.ts, src/shared/interfaces/i_agent_service.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../../cli/base.ts";

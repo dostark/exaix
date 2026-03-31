@@ -1,11 +1,10 @@
 /**
  * @module FileWatcher
- * @path src/services/watcher.ts
+ * @path src/services/utils/watcher.ts
  * @description Monitors the workspace for file system events (new requests, approved plans).
  * Implements debouncing and stability verification to ensure files are fully written before processing.
  * @architectural-layer Services
- * @dependencies [Config, DatabaseService, EventLogger]
- * @related-files [src/main.ts, src/services/request_processor.ts]
+ * * @related-files [src/main.ts, src/services/request_processor.ts]
  */
 import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";

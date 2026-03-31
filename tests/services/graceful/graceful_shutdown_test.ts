@@ -1,6 +1,6 @@
 /**
  * @module GracefulShutdownTest
- * @path tests/services/graceful_shutdown_test.ts
+ * @path tests/services/graceful/graceful_shutdown_test.ts
  * @description Verifies the process termination logic, ensuring registered cleanup tasks
  * are executed in correct LIFO order to prevent resource leaks and database corruption.
  */

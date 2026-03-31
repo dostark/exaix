@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/mod.ts
  * @description Barrel export for shared service interfaces.
  * @architectural-layer Shared
- * @dependencies [src/shared/interfaces/*]
- * @related-files [src/shared/interfaces/*.ts]
+ * * @related-files [src/shared/interfaces/*.ts]
  */
 
 export * from "./i_agent_service.ts";

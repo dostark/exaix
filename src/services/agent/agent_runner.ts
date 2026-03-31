@@ -1,6 +1,6 @@
 /**
  * @module AgentRunner
- * @path src/services/agent_runner.ts
+ * @path src/services/agent/agent_runner.ts
  * @description Core orchestrator for agent logic.
  *
  * Features:
@@ -10,8 +10,7 @@
  * - Handle agent feedback loops
  *
  * @architectural-layer Services
- * @dependencies [DatabaseService, LLMProvider, OutputValidator, SkillsService, AgentExecutor, AgentCapabilities]
- * @related-files [src/services/request_processor.ts, src/services/blueprint_loader.ts]
+ * * @related-files [src/services/request_processor.ts, src/services/blueprint_loader.ts]
  */
 
 import { IModelProvider } from "../../ai/types.ts";

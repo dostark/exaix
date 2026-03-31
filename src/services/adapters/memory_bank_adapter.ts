@@ -3,8 +3,7 @@
  * @path src/services/adapters/memory_bank_adapter.ts
  * @description Adapter for MemoryBankService that satisfies the IMemoryBankService interface.
  * @architectural-layer Services/Adapters
- * @dependencies [memory_bank_service, shared_interfaces, enums]
- * @related-files [src/services/memory_bank.ts, src/shared/interfaces/i_memory_bank_service.ts]
+ * * @related-files [src/services/memory_bank.ts, src/shared/interfaces/i_memory_bank_service.ts]
  */
 
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";

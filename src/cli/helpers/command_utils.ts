@@ -3,8 +3,7 @@
  * @path src/cli/helpers/command_utils.ts
  * @description Shared helper functions for CLI commands, including validation error formatting and UI prompts.
  * @architectural-layer CLI
- * @dependencies [ValidationResult]
- * @related-files [src/cli/base/command.ts]
+ * * @related-files [src/cli/base/command.ts]
  */
 
 import { ValidationResult } from "../base/command.ts";

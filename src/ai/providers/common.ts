@@ -3,8 +3,7 @@
  * @path src/ai/providers/common.ts
  * @description Common error classes, retry logic, and result interfaces shared across LLM providers.
  * @architectural-layer AI
- * @dependencies []
- * @related-files [src/ai/providers/base_provider.ts, src/ai/provider_common_utils.ts]
+ * * @related-files [src/ai/providers/base_provider.ts, src/ai/provider_common_utils.ts]
  */
 
 /**

@@ -3,8 +3,7 @@
  * @path src/services/adapters/memory_embedding_adapter.ts
  * @description Adapter for MemoryEmbeddingService that satisfies the IMemoryEmbeddingService interface.
  * @architectural-layer Services/Adapters
- * @dependencies [memory_embedding_service, shared_interfaces]
- * @related-files [src/services/memory_embedding.ts, src/shared/interfaces/i_memory_embedding_service.ts]
+ * * @related-files [src/services/memory_embedding.ts, src/shared/interfaces/i_memory_embedding_service.ts]
  */
 
 import type { IMemoryEmbeddingService } from "../../shared/interfaces/i_memory_embedding_service.ts";

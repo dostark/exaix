@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorTest
- * @path tests/services/agent_executor_test.ts
+ * @path tests/services/agent/agent_executor_test.ts
  * @description Verifies the AgentExecutor service, ensuring stable blueprint loading,
  * security sandboxing, activity logging, and protection against prompt injection.
  */

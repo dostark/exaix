@@ -1,6 +1,6 @@
 /**
  * @module BlueprintMultilineArrayTest
- * @path tests/blueprint_multiline_array_regression_test.ts
+ * @path tests/blueprints/blueprint_multiline_array_regression_test.ts
  * @description Regression tests for blueprint parsing, specifically ensuring that
  * complex multiline arrays in frontmatter are correctly serialized and deserialized.
  */

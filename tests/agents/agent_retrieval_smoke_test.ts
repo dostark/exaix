@@ -1,6 +1,6 @@
 /**
  * @module AgentRetrievalSmokeTest
- * @path tests/agent_retrieval_smoke_test.ts
+ * @path tests/agents/agent_retrieval_smoke_test.ts
  * @description Smoke tests for agent discovery and context injection, ensuring that
  * configured LLM agents are correctly identified and loaded at runtime.
  */

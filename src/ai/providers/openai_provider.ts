@@ -3,8 +3,7 @@
  * @path src/ai/providers/openai_provider.ts
  * @description IModelProvider implementation for OpenAI GPT models and compatible APIs.
  * @architectural-layer AI
- * @dependencies [providers, provider_common_utils, constants, base_provider]
- * @related-files [src/ai/factories/openai_factory.ts]
+ * * @related-files [src/ai/factories/openai_factory.ts]
  */
 import { IModelOptions } from "../types.ts";
 import {

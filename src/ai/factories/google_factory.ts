@@ -3,8 +3,7 @@
  * @path src/ai/factories/google_factory.ts
  * @description Factory for creating Google Gemini provider instances, managing authentication via Google API keys.
  * @architectural-layer AI
- * @dependencies [abstract_provider_factory, types, google_provider, constants]
- * @related-files [src/ai/providers/google_provider.ts]
+ * * @related-files [src/ai/providers/google_provider.ts]
  */
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
 import { IModelProvider, IResolvedProviderOptions } from "../types.ts";

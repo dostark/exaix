@@ -1,6 +1,6 @@
 /**
  * @module PlanExecutorParsingTest
- * @path tests/plan_executor_parsing_test.ts
+ * @path tests/services/plan/plan_executor_parsing_test.ts
  * @description Verifies the parsing logic for agent execution plans, ensuring correct
  * extraction of tool sequences and argument structures.
  */

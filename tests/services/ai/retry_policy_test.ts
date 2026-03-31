@@ -1,6 +1,6 @@
 /**
  * @module RetryPolicyTest
- * @path tests/services/retry_policy_test.ts
+ * @path tests/services/ai/retry_policy_test.ts
  * @description Verifies the resilience logic for AI provider calls, ensuring correct
  * exponential backoff, retryable error classification, and maximum attempt enforcement.
  */

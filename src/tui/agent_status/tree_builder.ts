@@ -3,8 +3,7 @@
  * @path src/tui/agent_status/tree_builder.ts
  * @description Tree builder utilities for Agent Status View, supporting flat and grouped (by status or model) tree constructions.
  * @architectural-layer TUI
- * @dependencies [tree_view, constants]
- * @related-files [src/tui/agent_status_view.ts]
+ * * @related-files [src/tui/agent_status_view.ts]
  */
 
 import { createGroupNode, createNode, type ITreeNode } from "../helpers/tree_view.ts";

@@ -1,10 +1,9 @@
 /**
  * @module MemoryExtractor
- * @path src/services/memory_extractor.ts
+ * @path src/services/memory/memory_extractor.ts
  * @description Analyzes execution results to extract learnings and patterns, managing the lifecycle of pending memory update proposals.
  * @architectural-layer Services
- * @dependencies [path, fs, schema, db, memory_bank, memory_status, enums]
- * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
+ * * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
 import { join } from "@std/path";

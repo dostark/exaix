@@ -1,11 +1,10 @@
 /**
  * @module BlueprintLoader
- * @path src/services/blueprint_loader.ts
+ * @path src/services/blueprint/blueprint_loader.ts
  * @description Unified service for loading and validating agent blueprints.
  * Handles YAML frontmatter parsing, schema validation, and blueprint resolution.
  * @architectural-layer Services
- * @dependencies [Zod, YAML, Config]
- * @related-files [src/services/agent_runner.ts, src/services/request_processor.ts]
+ * * @related-files [src/services/agent_runner.ts, src/services/request_processor.ts]
  */
 
 import { join } from "@std/path";

@@ -1,6 +1,6 @@
 /**
  * @module PlanAdapterTest
- * @path tests/plan_adapter_test.ts
+ * @path tests/services/plan/plan_adapter_test.ts
  * @description Verifies the PlanAdapter, ensuring that generated agent plans are
  * correctly validated against the tool registry and sanitized of markdown artifacts.
  */

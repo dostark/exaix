@@ -3,8 +3,7 @@
  * @path src/shared/status/request_status.ts
  * @description Shared type definitions and utility functions for Request lifecycle states.
  * @architectural-layer Shared
- * @dependencies []
- * @related-files [src/shared/status/plan_status.ts]
+ * * @related-files [src/shared/status/plan_status.ts]
  */
 export const RequestStatus = {
   PENDING: "pending",

@@ -7,8 +7,7 @@
  * the primary language, and detects monorepo vs. single-project structure.
  * Pure function module — zero LLM / network dependencies, sandboxed-safe.
  * @architectural-layer Services
- * @dependencies [src/shared/constants.ts, src/shared/schemas/portal_knowledge.ts]
- * @related-files [src/services/portal_knowledge/config_parser.ts, src/shared/schemas/portal_knowledge.ts]
+ * * @related-files [src/services/portal_knowledge/config_parser.ts, src/shared/schemas/portal_knowledge.ts]
  */
 
 import { join } from "@std/path";

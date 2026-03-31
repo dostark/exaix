@@ -3,8 +3,7 @@
  * @path src/services/plan/mod.ts
  * @description Barrel export for planning service modules.
  * @architectural-layer Services
- * @dependencies [src/services/plan/*]
- * @related-files [src/services/plan/*.ts]
+ * * @related-files [src/services/plan/*.ts]
  */
 
 export * from "./plan.ts";

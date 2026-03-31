@@ -6,8 +6,7 @@
  * IRequestSpecification objects. Supports up to `maxRounds` rounds before
  * finalizing with a best-effort specification.
  * @architectural-layer Services
- * @dependencies [src/shared/schemas/clarification_session.ts, src/shared/schemas/request_specification.ts, src/services/quality_gate/heuristic_assessor.ts, src/ai/types.ts, src/services/output_validator.ts]
- * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
+ * * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
  */
 
 import { z } from "zod";

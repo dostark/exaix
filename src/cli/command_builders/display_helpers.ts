@@ -3,8 +3,7 @@
  * @path src/cli/command_builders/display_helpers.ts
  * @description Shared display helper utilities for plan and request CLI action builders.
  * @architectural-layer CLI
- * @dependencies [json]
- * @related-files [src/cli/command_builders/plan_actions.ts, src/cli/command_builders/request_actions.ts]
+ * * @related-files [src/cli/command_builders/plan_actions.ts, src/cli/command_builders/request_actions.ts]
  */
 
 import type { JSONObject } from "../../shared/types/json.ts";

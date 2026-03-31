@@ -3,8 +3,7 @@
  * @path src/helpers/secure_random.ts
  * @description Cryptographically secure random number and string generation utilities.
  * @architectural-layer Helpers
- * @dependencies []
- * @related-files [src/services/request_processor.ts]
+ * * @related-files [src/services/request_processor.ts]
  */
 
 export class SecureRandom {

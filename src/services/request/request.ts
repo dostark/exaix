@@ -1,10 +1,9 @@
 /**
  * @module RequestService
- * @path src/services/request_service.ts
+ * @path src/services/request/request.ts
  * @description Core service for managing agent requests.
  * @architectural-layer Services
- * @dependencies [DisplayService, ConfigService]
- * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
+ * * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
  */
 
 import { join } from "@std/path";

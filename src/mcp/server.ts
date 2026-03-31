@@ -3,8 +3,7 @@
  * @path src/mcp/server.ts
  * @description core MCP server implementation, handling JSON-RPC transport, tool registration, and security orchestration.
  * @architectural-layer MCP
- * @dependencies [schema, mcp, tools, domain_tools, resources, prompts, structured_logger]
- * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
+ * * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
  */
 import type { Config } from "../shared/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";

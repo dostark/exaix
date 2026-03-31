@@ -1,10 +1,9 @@
 /**
  * @module KeyboardManager
- * @path src/helpers/keyboard.ts
+ * @path src/tui/helpers/keyboard.ts
  * @description TUI keyboard handling utilities for consistent key management and binding.
  * @architectural-layer Helpers
- * @dependencies []
- * @related-files [src/helpers/tree_view.ts]
+ * * @related-files [src/helpers/tree_view.ts]
  */
 
 import { KeyModifier } from "../../shared/enums.ts";

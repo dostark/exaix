@@ -4,8 +4,7 @@
  * @description Tests for structured expectation fields (acceptance_criteria,
  * expected_outcomes, scope) added to IRequestFrontmatter (Phase 49, Step 8).
  * @architectural-layer Tests
- * @dependencies [src/services/request_processing/types.ts]
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";

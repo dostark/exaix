@@ -1,11 +1,10 @@
 /**
  * @module ReviewRegistry
- * @path src/services/review_registry.ts
+ * @path src/services/artifact/review_registry.ts
  * @description Manages the lifecycle of agent-created reviews, including registration,
  * status updates, and diff generation for approval workflows.
  * @architectural-layer Services
- * @dependencies [DatabaseService, EventLogger, ReviewSchema]
- * @related-files [src/services/execution_loop.ts, src/services/db.ts]
+ * * @related-files [src/services/execution_loop.ts, src/services/db.ts]
  */
 
 import type { DatabaseService, SqliteParam } from "../core/db.ts";

@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_portal_service.ts
  * @description Module for IportalService.
  * @architectural-layer Shared
- * @dependencies [Enums, PortalTypes]
- * @related-files [src/shared/types/portal.ts]
+ * * @related-files [src/shared/types/portal.ts]
  */
 
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "../enums.ts";

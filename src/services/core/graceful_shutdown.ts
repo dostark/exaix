@@ -1,10 +1,9 @@
 /**
  * @module GracefulShutdown
- * @path src/services/graceful_shutdown.ts
+ * @path src/services/core/graceful_shutdown.ts
  * @description Module for GracefulShutdown.
  * @architectural-layer Services
- * @dependencies [StructuredLogger]
- * @related-files [src/main.ts, src/services/structured_logger.ts]
+ * * @related-files [src/main.ts, src/services/structured_logger.ts]
  */
 
 import type { IStructuredLogger } from "../logger/structured_logger.ts";

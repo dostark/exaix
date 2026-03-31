@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_plan_service.ts
  * @description Module for IplanService.
  * @architectural-layer Shared
- * @dependencies [Enums, PlanTypes]
- * @related-files [src/shared/types/plan.ts]
+ * * @related-files [src/shared/types/plan.ts]
  */
 
 import type { PlanStatusType } from "../status/plan_status.ts";

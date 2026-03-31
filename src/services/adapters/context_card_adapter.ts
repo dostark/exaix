@@ -3,8 +3,7 @@
  * @path src/services/adapters/context_card_adapter.ts
  * @description Adapter for ContextCardGenerator that satisfies the IContextCardGeneratorService interface.
  * @architectural-layer Services/Adapters
- * @dependencies [context_card_generator, shared_interfaces]
- * @related-files [src/services/context_card_generator.ts, src/shared/interfaces/i_context_card_generator_service.ts]
+ * * @related-files [src/services/context_card_generator.ts, src/shared/interfaces/i_context_card_generator_service.ts]
  */
 
 import type {

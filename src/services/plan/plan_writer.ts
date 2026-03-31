@@ -1,6 +1,6 @@
 /**
  * @module PlanWriter
- * @path src/services/plan_writer.ts
+ * @path src/services/plan/plan_writer.ts
  * @description Formats agent execution results into structured plans.
  *
  * Notes:
@@ -9,8 +9,7 @@
  * - Converts validated plan to markdown for storage
  *
  * @architectural-layer Services
- * @dependencies [DatabaseService, PlanAdapter, MiddlewarePipeline]
- * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
+ * * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
  */
 
 import type { DatabaseService } from "../core/db.ts";

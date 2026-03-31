@@ -1,6 +1,6 @@
 /**
  * @module SubjectPropagationTest
- * @path tests/services/subject_propagation_test.ts
+ * @path tests/services/subject/subject_propagation_test.ts
  * @description Integration tests for subject propagation from Request to Plan.
  */
 

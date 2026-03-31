@@ -3,8 +3,7 @@
  * @path src/services/adapters/memory_extractor_adapter.ts
  * @description Adapter for MemoryExtractorService that satisfies the IMemoryExtractorService interface.
  * @architectural-layer Services/Adapters
- * @dependencies [memory_extractor_service, shared_interfaces]
- * @related-files [src/services/memory_extractor.ts, src/shared/interfaces/i_memory_extractor_service.ts]
+ * * @related-files [src/services/memory_extractor.ts, src/shared/interfaces/i_memory_extractor_service.ts]
  */
 
 import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";

@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/write_file_tool.ts
  * @description MCP tool handler for writing files to a portal with security validation and path safety.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, Path, FS]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, WriteFileToolArgsSchema } from "../../shared/schemas/mcp.ts";

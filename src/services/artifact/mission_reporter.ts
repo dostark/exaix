@@ -1,6 +1,6 @@
 /**
  * @module MissionReporter
- * @path src/services/mission_reporter.ts
+ * @path src/services/artifact/mission_reporter.ts
  * @description Generates comprehensive mission reports and updates Memory Banks.
  *
  * Responsibilities:
@@ -9,8 +9,7 @@
  * - Format results for terminal and web presentation
  *
  * @architectural-layer Services
- * @dependencies [Config, DatabaseService, MemoryBankService]
- * @related-files [src/services/execution_loop.ts, src/services/memory_bank.ts]
+ * * @related-files [src/services/execution_loop.ts, src/services/memory_bank.ts]
  */
 // Removed unused imports
 // import { basename, join, relative } from "@std/path";

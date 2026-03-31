@@ -1,6 +1,6 @@
 /**
  * @module SkillsServiceTest
- * @path tests/services/skills_test.ts
+ * @path tests/services/skills/skills_test.ts
  * @description Verifies the SkillsService, ensuring correct discovery, indexing, and
  * lifecycle management of dynamic agent capabilities from the Skills directory.
  */

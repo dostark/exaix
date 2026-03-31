@@ -5,8 +5,7 @@
  * (Phase 46), which performs deep codebase analysis of mounted portals and
  * persists structured knowledge in Memory/Projects/{portal}/.
  * @architectural-layer Shared
- * @dependencies [src/shared/schemas/portal_knowledge.ts]
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/shared/interfaces/mod.ts]
+ * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/shared/interfaces/mod.ts]
  */
 
 import type { IPortalKnowledge } from "../schemas/portal_knowledge.ts";

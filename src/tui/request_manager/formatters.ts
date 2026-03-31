@@ -3,8 +3,7 @@
  * @path src/tui/request_manager/formatters.ts
  * @description Formatting utilities for the Request Manager View, converting request metadata and content into stylized TUI panels.
  * @architectural-layer TUI
- * @dependencies [constants]
- * @related-files [src/tui/request_manager_view.ts]
+ * * @related-files [src/tui/request_manager_view.ts]
  */
 
 import {

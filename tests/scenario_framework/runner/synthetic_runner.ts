@@ -5,8 +5,7 @@
  * integration tests by composing the existing loader, step
  * execution, criterion evaluation, mode control, and manifest persistence.
  * @architectural-layer Test
- * @dependencies [scenario_loader, step_executor, assertions, evidence_collector, modes, step_schema]
- * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
+ * * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";

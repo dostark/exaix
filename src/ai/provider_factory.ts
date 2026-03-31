@@ -4,8 +4,7 @@
  * @description Factory pattern implementation for instantiating LLM providers.
  * Handles configuration resolution, fallback chains, and provider initialization.
  * @architectural-layer AI Layer
- * @dependencies [ProviderRegistry, ConfigService, DatabaseService, CostTracker]
- * @related-files [src/ai/provider_registry.ts, src/ai/providers.ts]
+ * * @related-files [src/ai/provider_registry.ts, src/ai/providers.ts]
  */
 
 import * as DEFAULTS from "../shared/constants.ts";

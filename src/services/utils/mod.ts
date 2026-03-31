@@ -3,8 +3,7 @@
  * @path src/services/utils/mod.ts
  * @description Barrel export for utility service modules.
  * @architectural-layer Services
- * @dependencies [src/services/utils/*]
- * @related-files [src/services/utils/*.ts]
+ * * @related-files [src/services/utils/*.ts]
  */
 
 export * from "./json_repair.ts";

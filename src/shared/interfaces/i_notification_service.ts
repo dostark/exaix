@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_notification_service.ts
  * @description Module for InotificationService.
  * @architectural-layer Shared
- * @dependencies [Enums, NotificationTypes]
- * @related-files [src/shared/types/notification.ts]
+ * * @related-files [src/shared/types/notification.ts]
  */
 
 import type { IMemoryUpdateProposal } from "../schemas/memory_bank.ts";

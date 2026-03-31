@@ -3,8 +3,7 @@
  * @path src/tui/structured_log_service.ts
  * @description Service layer for StructuredLogger TUI integration, enabling real-time log streaming, querying, and correlation tracking.
  * @architectural-layer TUI
- * @dependencies [structured_logger, structured_log_viewer]
- * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
+ * * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
  */
 
 import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";

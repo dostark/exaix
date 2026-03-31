@@ -1,6 +1,6 @@
 /**
  * @module GitSecurityRegressionTest
- * @path tests/git_security_regression_test.ts
+ * @path tests/security/git_security_regression_test.ts
  * @description Regression tests for Git operations security, ensuring that agent-triggered
  * git commands are strictly confined to authorized repository boundaries.
  */

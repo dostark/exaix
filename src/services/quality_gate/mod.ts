@@ -5,8 +5,7 @@
  * single import point for the RequestQualityGate orchestrator and its supporting
  * assessors, enricher, and persistence helpers.
  * @architectural-layer Services
- * @dependencies [src/services/quality_gate/request_quality_gate.ts, src/services/quality_gate/heuristic_assessor.ts, src/services/quality_gate/llm_assessor.ts, src/services/quality_gate/request_enricher_llm.ts]
- * @related-files [src/shared/interfaces/i_request_quality_gate_service.ts]
+ * * @related-files [src/shared/interfaces/i_request_quality_gate_service.ts]
  */
 
 export { buildQualityGateConfig, RequestQualityGate } from "./request_quality_gate.ts";

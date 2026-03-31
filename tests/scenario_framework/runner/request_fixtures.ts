@@ -5,8 +5,7 @@
  * tree and validates that scenario definitions reference fixture files instead
  * of embedding prompt bodies inline.
  * @architectural-layer Test
- * @dependencies [@std/path, scenario_schema]
- * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/request_fixture_loader_test.ts, tests/scenario_framework/README.md]
+ * * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/request_fixture_loader_test.ts, tests/scenario_framework/README.md]
  */
 
 import { extname, isAbsolute, resolve } from "@std/path";

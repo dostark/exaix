@@ -1,10 +1,9 @@
 /**
  * @module CodeParser
- * @path src/services/contex/code_parser.ts
+ * @path src/services/context/code_parser.ts
  * @description Parses LLM responses to extract file changes for plan execution, validating path safety.
  * @architectural-layer Services
- * @dependencies [Path]
- * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
+ * * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
  */
 
 import { join, normalize } from "@std/path";

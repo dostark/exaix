@@ -1,6 +1,6 @@
 /**
  * @module PlanAdapter
- * @path src/services/plan_adapter.ts
+ * @path src/services/plan/plan_adapter.ts
  * @description JSON validation and markdown conversion for LLM plans.
  *
  * Responsibilities:
@@ -9,8 +9,7 @@
  * 3. Provide structured error reporting for validation failures
  *
  * @architectural-layer Services
- * @dependencies [Zod, PlanSchema]
- * @related-files [src/services/plan_writer.ts, src/services/tool/output_validator.ts]
+ * * @related-files [src/services/plan_writer.ts, src/services/tool/output_validator.ts]
  */
 
 import { Plan, PlanSchema } from "../../shared/schemas/plan_schema.ts";

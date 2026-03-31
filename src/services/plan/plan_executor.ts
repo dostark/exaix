@@ -1,11 +1,10 @@
 /**
  * @module PlanExecutor
- * @path src/services/plan_executor.ts
+ * @path src/services/plan/plan_executor.ts
  * @description Orchestrates the Step-by-Step execution of approved plans.
  * Managing the ReAct loop: prompting LLM for actions, executing tools, and committing results.
  * @architectural-layer Services
- * @dependencies [ToolRegistry, GitService, EventLogger, DatabaseService]
- * @related-files [src/services/tool_registry.ts, src/services/execution_loop.ts]
+ * * @related-files [src/services/tool_registry.ts, src/services/execution_loop.ts]
  */
 
 import { parse as parseToml } from "@std/toml";

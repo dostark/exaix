@@ -3,8 +3,7 @@
  * @path src/tui/monitor_view.ts
  * @description TUI log monitoring view with advanced filtering, grouping, and bookmarking capabilities for real-time log analysis.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/monitor_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/monitor_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { BaseTreeView } from "./base/base_tree_view.ts";

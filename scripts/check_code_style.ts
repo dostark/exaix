@@ -398,8 +398,16 @@ async function checkFile(path: string) {
     );
     if (convertWarnings) errorCount++;
     else warnCount++;
-  } else if (firstImportLineNum !== -1 && firstImportLineNum < firstContentLineNum) {
-    // This is unlikely given how headerFound is set, but good as a guard
+  } else if (!path.includes("scripts/")) {
+    // Basic verification of header tags for non-script files
+    const headerLines = lines.slice(0, 10).join("\n");
+    const tags = ["@module", "@path", "@description"];
+    for (const tag of tags) {
+      if (!headerLines.includes(tag)) {
+        console.log(`ERROR [module-header-tag] ${path}:1 – Header is missing mandatory '${tag}' tag.`);
+        errorCount++;
+      }
+    }
   }
   // Check order: Interfaces/Types after all Imports
   if (firstImportLineNum !== -1 && firstInterfaceLineNum !== -1 && firstInterfaceLineNum < lastImportLineNum) {

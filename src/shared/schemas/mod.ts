@@ -3,8 +3,7 @@
  * @path src/shared/schemas/mod.ts
  * @description Barrel export for shared schema modules.
  * @architectural-layer Shared
- * @dependencies [src/shared/schemas/*]
- * @related-files [src/shared/schemas/*.ts]
+ * * @related-files [src/shared/schemas/*.ts]
  */
 
 export * from "./agent_executor.ts";

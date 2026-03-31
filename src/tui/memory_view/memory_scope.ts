@@ -3,8 +3,7 @@
  * @path src/tui/memory_view/memory_scope.ts
  * @description Canonical, type-safe Memory View scope identifiers and utility functions for scope coercion.
  * @architectural-layer TUI
- * @dependencies []
- * @related-files [src/tui/memory_view/key_handlers.ts]
+ * * @related-files [src/tui/memory_view/key_handlers.ts]
  */
 
 export const MemoryTuiScope = {

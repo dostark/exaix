@@ -4,8 +4,7 @@
  * @description Production key handler for the TUI dashboard, wiring pane
  * management, layout persistence, and notification dispatch to keyboard events.
  * @architectural-layer TUI
- * @dependencies [pane_manager, keyboard, enums]
- * @related-files [src/tui/tui_helpers/handle_key.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/tui/tui_helpers/handle_key.ts, src/tui/tui_dashboard.ts]
  */
 import { MessageType, SplitDirection } from "../../shared/enums.ts";
 import type { IDashboardViewState, IPane, ITuiView } from "../tui_dashboard.ts";

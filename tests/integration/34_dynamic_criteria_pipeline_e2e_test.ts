@@ -6,8 +6,7 @@
  * across the pipeline: FlowRunner -> GateEvaluator -> CriteriaGenerator ->
  * ReflexiveAgent -> ConfidenceScorer (Phase 48, Step 12).
  * @architectural-layer Tests
- * @dependencies [GateEvaluator, CriteriaGenerator, ReflexiveAgent, ConfidenceScorer, FlowRunner]
- * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
+ * * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
  */
 import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
 import { assert, assertEquals, assertGreater, assertStringIncludes } from "@std/assert";

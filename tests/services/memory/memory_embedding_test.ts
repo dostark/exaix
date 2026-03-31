@@ -1,6 +1,6 @@
 /**
  * @module MemoryEmbeddingTest
- * @path tests/services/memory_embedding_test.ts
+ * @path tests/services/memory/memory_embedding_test.ts
  * @description Verifies the core cosine similarity algorithm for RAG-based search, validating
  * correct comparisons for identical, orthogonal, and opposing embedding vectors.
  */

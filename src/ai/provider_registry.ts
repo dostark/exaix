@@ -3,8 +3,7 @@
  * @path src/ai/provider_registry.ts
  * @description central registry for all LLM provider factories, managing provider discovery, metadata, and selection logic.
  * @architectural-layer AI
- * @dependencies [enums, abstract_provider_factory, mock_factory, ollama_factory, llama_factory, anthropic_factory, openai_factory, google_factory]
- * @related-files [src/ai/providers.ts, src/services/agent_runner.ts]
+ * * @related-files [src/ai/providers.ts, src/services/agent_runner.ts]
  */
 import { PricingTier, PriorityLevel, ProviderCostTier } from "../shared/enums.ts";
 import { IProviderFactory } from "./factories/abstract_provider_factory.ts";

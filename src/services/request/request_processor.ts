@@ -1,11 +1,10 @@
 /**
  * @module RequestProcessor
- * @path src/services/request_processor.ts
+ * @path src/services/request/request_processor.ts
  * @description Validates incoming request files, determines routing strategies (Agent vs Flow),
  * and generates execution plans. Acts as the primary entry point for the "Request Processing" phase.
  * @architectural-layer Services
- * @dependencies [DatabaseService, PlanWriter, AgentRunner, BlueprintLoader, ProviderRegistry, RequestStatus, RequestParser, StatusManager, RequestProcessingTypes]
- * @related-files [src/services/request_router.ts, src/services/agent_runner.ts, src/services/plan_writer.ts, src/services/request_processing/request_parser.ts, src/services/request_processing/status_manager.ts]
+ * * @related-files [src/services/request_router.ts, src/services/agent_runner.ts, src/services/plan_writer.ts, src/services/request_processing/request_parser.ts, src/services/request_processing/status_manager.ts]
  */
 
 import { basename, dirname, join } from "@std/path";

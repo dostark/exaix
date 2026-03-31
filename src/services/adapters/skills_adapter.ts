@@ -3,8 +3,7 @@
  * @path src/services/adapters/skills_adapter.ts
  * @description Adapter for SkillsService that satisfies the ISkillsService interface.
  * @architectural-layer Services/Adapters
- * @dependencies [shared_interfaces, skills_service]
- * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
+ * * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
 
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import type { SkillsService } from "../skills/skills.ts";

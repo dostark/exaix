@@ -3,8 +3,7 @@
  * @path src/ai/providers/anthropic_provider.ts
  * @description IModelProvider implementation for Anthropic Claude models, supporting specialized headers and message formats.
  * @architectural-layer AI
- * @dependencies [providers, provider_common_utils, constants, base_provider]
- * @related-files [src/ai/factories/anthropic_factory.ts]
+ * * @related-files [src/ai/factories/anthropic_factory.ts]
  */
 import { IModelOptions } from "../types.ts";
 import {

@@ -1,6 +1,6 @@
 /**
  * @module DatabaseSetupTest
- * @path tests/setup_db_test.ts
+ * @path tests/helpers/setup_db_test.ts
  * @description Verifies the database initialization logic, ensuring that the primary journal
  * and activity tables are correctly created during project bootstrap.
  */

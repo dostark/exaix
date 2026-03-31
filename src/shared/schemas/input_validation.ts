@@ -1,10 +1,9 @@
 /**
  * @module InputValidationSchema
- * @path src/schemas/input_validation.ts
+ * @path src/shared/schemas/input_validation.ts
  * @description Defines Zod validation schemas and sanitization utilities for user requests, agent IDs, and other CLI inputs to prevent injection and path traversal.
  * @architectural-layer Schemas
- * @dependencies [zod, enums, constants]
- * @related-files [src/cli/request_commands.ts, src/cli/blueprint_commands.ts]
+ * * @related-files [src/cli/request_commands.ts, src/cli/blueprint_commands.ts]
  */
 
 import { z } from "zod";

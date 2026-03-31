@@ -3,8 +3,7 @@
  * @path src/ai/factories/llama_factory.ts
  * @description Factory for creating Llama (local/Ollama-style) provider instances.
  * @architectural-layer AI
- * @dependencies [abstract_provider_factory, types, llama_provider]
- * @related-files [src/ai/providers/llama_provider.ts]
+ * * @related-files [src/ai/providers/llama_provider.ts]
  */
 import { AbstractProviderFactory } from "./abstract_provider_factory.ts";
 import { IModelProvider, IResolvedProviderOptions } from "../types.ts";

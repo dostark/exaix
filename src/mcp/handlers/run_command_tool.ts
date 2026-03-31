@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/run_command_tool.ts
  * @description MCP tool handler for executing whitelisted commands in a portal.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, ToolRegistry]
- * @related-files [src/mcp/tool_handler.ts, src/services/tool_registry.ts]
+ * * @related-files [src/mcp/tool_handler.ts, src/services/tool_registry.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, RunCommandToolArgsSchema } from "../../shared/schemas/mcp.ts";

@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_database_service.ts
  * @description Module for IdatabaseService.
  * @architectural-layer Shared
- * @dependencies [Enums, DatabaseTypes]
- * @related-files [src/shared/types/database.ts]
+ * * @related-files [src/shared/types/database.ts]
  */
 
 import type { JSONValue } from "../types/json.ts";

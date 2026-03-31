@@ -1,6 +1,6 @@
 /**
  * @module ContextCardTest
- * @path tests/context_card_test.ts
+ * @path tests/services/context/context_card_test.ts
  * @description Verifies the generation and discovery of portal "Context Cards",
  * ensuring that core portal identity and mission are correctly summarized.
  */

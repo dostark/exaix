@@ -4,8 +4,7 @@
  * @description Provides CLI validation for flow dynamic step execution mode,
  * outputting errors for write tools and warnings for missing configurations.
  * @architectural-layer CLI
- * @dependencies [shared_constants, shared_enums, shared_schemas_flow]
- * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
+ * * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
  */
 
 import { READ_ONLY_TOOLS, WRITE_TOOLS } from "../shared/constants.ts";

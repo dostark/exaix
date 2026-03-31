@@ -1,11 +1,10 @@
 /**
  * @module StructuredPlanParser
- * @path src/services/structured_plan_parser.ts
+ * @path src/services/plan/structured_plan_parser.ts
  * @description Shared utility for detecting and parsing structured plans from markdown content,
  * specifically extracting execution steps and metadata.
  * @architectural-layer Services
- * @dependencies []
- * @related-files [src/services/execution_loop.ts, src/services/plan_writer.ts]
+ * * @related-files [src/services/execution_loop.ts, src/services/plan_writer.ts]
  */
 
 export interface IStructuredPlanFrontmatter {

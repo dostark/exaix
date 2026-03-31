@@ -1,6 +1,6 @@
 /**
  * @module DatabaseMigrationTest
- * @path tests/migrate_db_test.ts
+ * @path tests/migrations/migrate_db_test.ts
  * @description Verifies the database migration engine, ensuring correct delivery and
  * rollback of schema updates for the persistent journal.
  */

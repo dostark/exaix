@@ -1,11 +1,10 @@
 /**
  * @module RequestCommon
- * @path src/services/request_common.ts
+ * @path src/services/request/request_common.ts
  * @description Provides common utility functions for loading agent blueprints
  * and building parsed request objects.
  * @architectural-layer Services
- * @dependencies [Blueprint, Path]
- * @related-files [src/services/request_processor.ts, src/services/agent_runner.ts, src/shared/schemas/request_analysis.ts]
+ * * @related-files [src/services/request_processor.ts, src/services/agent_runner.ts, src/shared/schemas/request_analysis.ts]
  */
 import { join } from "@std/path";
 import { exists } from "@std/fs";

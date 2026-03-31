@@ -1,6 +1,6 @@
 /**
  * @module ExecutionLoopPortalRegressionTest
- * @path tests/execution_loop_portal_regression_test.ts
+ * @path tests/services/execution/execution_loop_portal_regression_test.ts
  * @description Regression tests for the execution loop, ensuring correct handling
  * of portal-specific tool calls and cross-portal file access.
  */

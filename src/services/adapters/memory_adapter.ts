@@ -3,8 +3,7 @@
  * @path src/services/adapters/memory_adapter.ts
  * @description Adapter implementing IMemoryService by delegating to MemoryBankService and MemoryExtractorService.
  * @architectural-layer Services
- * @dependencies [IMemoryService, MemoryBankService, MemoryExtractorService]
- * @related-files [src/services/memory_bank.ts, src/services/memory_extractor.ts, src/shared/interfaces/i_memory_service.ts]
+ * * @related-files [src/services/memory_bank.ts, src/services/memory_extractor.ts, src/shared/interfaces/i_memory_service.ts]
  */
 
 import { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";

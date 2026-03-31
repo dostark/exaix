@@ -3,8 +3,7 @@
  * @path src/services/request_processing/types.ts
  * @description Type definitions for request processing, including frontmatter and parsed file structures.
  * @architectural-layer Services
- * @dependencies [RequestStatus]
- * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
+ * * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
  */
 import type { RequestStatusType } from "../../shared/status/request_status.ts";
 

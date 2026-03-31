@@ -1,6 +1,6 @@
 /**
  * @module RequestRouter
- * @path src/services/request_router.ts
+ * @path src/services/request/request_router.ts
  * @description Determines whether to route a request to FlowRunner or AgentRunner
  * based on the request schema (flow vs agent fields).
  *
@@ -8,8 +8,7 @@
  * transition between orchestrated flows and individual agent executions.
  *
  * @architectural-layer Services
- * @dependencies [FlowRunner, AgentRunner, BlueprintLoader, IWorkspaceExecutionContext, FlowValidator]
- * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
+ * * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
  */
 import { type IFlowResult, type IFlowRunner } from "../../flows/flow_runner.ts";
 import {

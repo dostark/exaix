@@ -5,8 +5,7 @@
  * which extracts structured intent, requirements, and constraints from raw
  * request text before agent execution.
  * @architectural-layer Shared
- * @dependencies [src/shared/schemas/request_analysis.ts]
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/interfaces/mod.ts]
+ * * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/interfaces/mod.ts]
  */
 
 import type { IRequestAnalysis } from "../schemas/request_analysis.ts";

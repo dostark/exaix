@@ -3,8 +3,7 @@
  * @path src/services/common/types.ts
  * @description Shared type definitions for services, including ILogEvent and IServiceContext.
  * @architectural-layer Services
- * @dependencies [LogLevel, ActorType, AgentKind]
- * @related-files [src/services/event_logger.ts, src/services/structured_logger.ts]
+ * * @related-files [src/services/event_logger.ts, src/services/structured_logger.ts]
  */
 import { ActorType, AgentKind, LogLevel } from "../../shared/enums.ts";
 import { JSONValue } from "../../shared/types/json.ts";

@@ -1,6 +1,6 @@
 /**
  * @module DBJournalTest
- * @path tests/services/db_journal_test.ts
+ * @path tests/services/database/db_journal_test.ts
  * @description Specialized tests for DatabaseService's activity journaling, verifying complex
  * query filters (trace_id, identity_id, action_type), sort ordering, and asynchronous flush behavior.
  */

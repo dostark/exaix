@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/list_directory_tool.ts
  * @description MCP tool handler for listing directory contents in a portal with security validation.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, Path, FS]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "../../shared/schemas/mcp.ts";

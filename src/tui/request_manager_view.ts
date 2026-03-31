@@ -3,8 +3,7 @@
  * @path src/tui/request_manager_view.ts
  * @description TUI view for managing user requests, featuring tree-based navigation, status/priority grouping, and request creation.
  * @architectural-layer TUI
- * @dependencies [TuiSessionBase, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/request_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/request_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { KEYS } from "./helpers/keyboard.ts";

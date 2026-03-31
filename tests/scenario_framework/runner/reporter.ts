@@ -5,7 +5,6 @@
  * detailed execution results (stdout/stderr) and specific criterion failure
  * messages with observed vs expected values.
  * @architectural-layer Test
- * @dependencies [step_schema, assertions]
  */
 
 import { CriterionStatus } from "../schema/step_schema.ts";

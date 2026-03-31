@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_memory_bank_service.ts
  * @description Module for ImemoryBankService.
  * @architectural-layer Shared
- * @dependencies [Enums, MemorySchemas]
- * @related-files [src/shared/schemas/memory_bank.ts]
+ * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 
 import { MemoryType } from "../enums.ts";

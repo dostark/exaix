@@ -1,6 +1,6 @@
 /**
  * @module StatusManagerErrorTest
- * @path tests/status_manager_error_test.ts
+ * @path tests/services/status/status_manager_error_test.ts
  * @description Regression tests for the StatusManager's error reporting, ensuring that
  * plan and request failures are accurately captured in file frontmatter.
  */

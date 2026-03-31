@@ -1,6 +1,6 @@
 /**
  * @module PortalCliWiringRegressionTest
- * @path tests/portal_cli_wiring_regression_test.ts
+ * @path tests/cli/portal_cli_wiring_regression_test.ts
  * @description Regression test to ensure portal analyze and portal knowledge
  * commands are correctly wired in the Cliffy command tree.
  */

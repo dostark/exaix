@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_memory_extractor_service.ts
  * @description Interface for memory extraction and update proposal management.
  * @architectural-layer Shared
- * @dependencies [memory_bank]
- * @related-files [src/services/adapters/memory_extractor_adapter.ts, src/cli/cli_context.ts]
+ * * @related-files [src/services/adapters/memory_extractor_adapter.ts, src/cli/cli_context.ts]
  */
 
 import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "../schemas/memory_bank.ts";

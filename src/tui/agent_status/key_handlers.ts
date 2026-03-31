@@ -3,8 +3,7 @@
  * @path src/tui/agent_status/key_handlers.ts
  * @description Key handler utilities for Agent Status View, managing navigation, expansion, and view mode switching.
  * @architectural-layer TUI
- * @dependencies [keyboard]
- * @related-files [src/tui/agent_status_view.ts]
+ * * @related-files [src/tui/agent_status_view.ts]
  */
 
 import { KEYS } from "../helpers/keyboard.ts";

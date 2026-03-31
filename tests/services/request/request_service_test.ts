@@ -1,6 +1,6 @@
 /**
  * @module RequestServiceTest
- * @path tests/services/request_service_test.ts
+ * @path tests/services/request/request_service_test.ts
  * @description Unit tests for the core RequestService (src/services/request.ts).
  */
 

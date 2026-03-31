@@ -1,6 +1,6 @@
 /**
  * @module PlanWriterTest
- * @path tests/plan_writer_test.ts
+ * @path tests/services/plan/plan_writer_test.ts
  * @description Verifies the PlanWriter service, ensuring that agent-generated task
  * descriptions are correctly persisted with stable frontmatter and sequential identifiers.
  */

@@ -3,8 +3,7 @@
  * @path src/flows/gate_evaluator.ts
  * @description Implements quality gates for flow steps, orchestrating judge invocations and pass/fail/retry logic based on criteria.
  * @architectural-layer Flows
- * @dependencies [zod, evaluation_criteria, flow_runner, enums]
- * @related-files [src/flows/flow_runner.ts, src/flows/evaluation_criteria.ts]
+ * * @related-files [src/flows/flow_runner.ts, src/flows/evaluation_criteria.ts]
  */
 
 import { z } from "zod";

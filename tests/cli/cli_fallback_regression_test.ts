@@ -1,6 +1,6 @@
 /**
  * @module CLIFallbackRegressionTest
- * @path tests/cli_fallback_regression_test.ts
+ * @path tests/cli/cli_fallback_regression_test.ts
  * @description Regression tests for CLI argument parsing, ensuring that the system
  * correctly falls back to interactive modes when required parameters are missing.
  */

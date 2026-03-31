@@ -1,10 +1,9 @@
 /**
  * @module PlanService
- * @path src/services/plan.ts
+ * @path src/services/plan/plan.ts
  * @description Core service for managing AI execution plans.
  * @architectural-layer Services
- * @dependencies [DatabaseService, DisplayService, ConfigService]
- * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
+ * * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
  */
 
 import { join } from "@std/path";

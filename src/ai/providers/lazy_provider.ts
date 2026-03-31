@@ -3,8 +3,7 @@
  * @path src/ai/providers/lazy_provider.ts
  * @description Defers provider initialization until first use to optimize startup time and avoid unnecessary early API/auth checks.
  * @architectural-layer AI
- * @dependencies [types, abstract_provider_factory]
- * @related-files [src/ai/provider_registry.ts]
+ * * @related-files [src/ai/provider_registry.ts]
  */
 import { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { IProviderFactory } from "../factories/abstract_provider_factory.ts";

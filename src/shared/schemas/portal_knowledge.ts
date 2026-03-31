@@ -6,8 +6,7 @@
  * Captures architecture, layers, key files, conventions, dependencies, and
  * symbol maps extracted from deep codebase analysis of mounted portals.
  * @architectural-layer Shared
- * @dependencies [zod]
- * @related-files [src/services/portal_knowledge/directory_analyzer.ts, src/shared/schemas/mod.ts]
+ * * @related-files [src/services/portal_knowledge/directory_analyzer.ts, src/shared/schemas/mod.ts]
  */
 
 import { z } from "zod";

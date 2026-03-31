@@ -4,8 +4,7 @@
  * @description MCP tool handler for moving or renaming a file within a portal.
  * Used for rename/restructure tasks. Both source and destination must be within portal bounds.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, MoveFileToolArgsSchema, Path, FS]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { dirname } from "@std/path";
 import { ToolHandler } from "../tool_handler.ts";

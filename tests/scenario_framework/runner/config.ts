@@ -4,8 +4,7 @@
  * @description Defines runtime configuration, scenario selection precedence,
  * and portal lifecycle planning helpers for the scenario framework.
  * @architectural-layer Test
- * @dependencies [zod]
- * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts, tests/scenario_framework/README.md]
+ * * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts, tests/scenario_framework/README.md]
  */
 
 import { resolve } from "@std/path";

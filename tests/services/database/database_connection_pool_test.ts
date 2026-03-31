@@ -1,6 +1,6 @@
 /**
  * @module DatabaseConnectionPoolTest
- * @path tests/services/database_connection_pool_test.ts
+ * @path tests/services/database/database_connection_pool_test.ts
  * @description Verifies the resource management logic for the SQLite connection pool, ensuring
  * efficient reuse of handles and strict enforcement of concurrency limits.
  */

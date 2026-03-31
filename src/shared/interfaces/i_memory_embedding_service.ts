@@ -3,8 +3,7 @@
  * @path src/shared/interfaces/i_memory_embedding_service.ts
  * @description Module for ImemoryEmbeddingService.
  * @architectural-layer Shared
- * @dependencies [MemorySchemas]
- * @related-files [src/shared/schemas/memory_bank.ts]
+ * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 
 import type { ILearning } from "../schemas/memory_bank.ts";

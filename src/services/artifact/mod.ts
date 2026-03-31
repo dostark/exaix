@@ -3,8 +3,7 @@
  * @path src/services/artifact/mod.ts
  * @description Barrel export for artifact and review service modules.
  * @architectural-layer Services
- * @dependencies [src/services/artifact/*]
- * @related-files [src/services/artifact/*.ts]
+ * * @related-files [src/services/artifact/*.ts]
  */
 
 export * from "./artifact_registry.ts";

@@ -3,8 +3,7 @@
  * @path src/tui/memory_panels/index.ts
  * @description Reusable panel components for the TUI Memory View, providing visualization for project, global, execution, and search results.
  * @architectural-layer TUI
- * @dependencies [memory_bank_schema, colors, constants]
- * @related-files [src/tui/memory_view/index.ts]
+ * * @related-files [src/tui/memory_view/index.ts]
  */
 
 import type {

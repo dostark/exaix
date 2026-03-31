@@ -1,6 +1,6 @@
 /**
  * @module MissionReporterTest
- * @path tests/mission_reporter_test.ts
+ * @path tests/services/mission/mission_reporter_test.ts
  * @description Verifies the MissionReporter service, ensuring that post-execution summaries
  * and lessons learned are correctly formatted and persisted as execution memory records.
  */

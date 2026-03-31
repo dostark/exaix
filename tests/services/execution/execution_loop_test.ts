@@ -1,6 +1,6 @@
 /**
  * @module ExecutionLoopTest
- * @path tests/execution_loop_test.ts
+ * @path tests/services/execution/execution_loop_test.ts
  * @description Verifies the primary identity execution loop, ensuring robust orchestration
  * of planning, execution, and confirmation phases for user requests.
  */

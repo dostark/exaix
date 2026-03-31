@@ -3,8 +3,7 @@
  * @path src/tui/daemon_control_view.ts
  * @description Interactive TUI view for managing the Exaix daemon, featuring status visualization, log tailing, and configuration viewing.
  * @architectural-layer TUI
- * @dependencies [TuiSessionBase, spinner, help_renderer, dialog_base, keyboard, enums, KeyBindingsBase, constants, tui.config]
- * @related-files [src/services/daemon_service.ts, src/cli/daemon_commands.ts]
+ * * @related-files [src/services/daemon_service.ts, src/cli/daemon_commands.ts]
  */
 
 import { TuiSessionBase } from "./tui_common.ts";

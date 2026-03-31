@@ -3,8 +3,7 @@
  * @path src/mcp/domain_tools.ts
  * @description Exposes domain-specific Exaix operations (requests, plans, journal) as strictly typed MCP tools.
  * @architectural-layer MCP
- * @dependencies [mcp, tools, request_commands, plan_commands, plan_status]
- * @related-files [src/mcp/server.ts, src/cli/request_commands.ts, src/cli/plan_commands.ts]
+ * * @related-files [src/mcp/server.ts, src/cli/request_commands.ts, src/cli/plan_commands.ts]
  */
 import {
   ApprovePlanToolArgsSchema,

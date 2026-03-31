@@ -1,6 +1,6 @@
 /**
  * @module EventLoggerTest
- * @path tests/event_logger_test.ts
+ * @path tests/services/event/event_logger_test.ts
  * @description Verifies the EventLogger service, ensuring that high-level system
  * lifecycle events are correctly captured and routed to the persistent journal.
  */

@@ -3,8 +3,7 @@
  * @path src/mcp/mcp_client.ts
  * @description Wrapper around existing MCP tool execution, providing the IMcpClient interface.
  * @architectural-layer MCP
- * @dependencies [tools, tool_handler.ts, dynamic_step_executor.ts]
- * @related-files [src/mcp/tool_handler.ts, src/flows/dynamic_step_executor.ts]
+ * * @related-files [src/mcp/tool_handler.ts, src/flows/dynamic_step_executor.ts]
  */
 import { IMcpClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import { McpToolName } from "../shared/enums.ts";

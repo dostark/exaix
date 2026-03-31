@@ -1,6 +1,6 @@
 /**
  * @module FileWatcherTest
- * @path tests/watcher_test.ts
+ * @path tests/services/watcher/watcher_test.ts
  * @description Specialized tests for the file system watcher, verifying event debouncing,
  * stability checks for partial writes, and resilient handling of temporary file locks.
  */

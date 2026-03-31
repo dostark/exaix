@@ -9,8 +9,7 @@
  * bullet count, file count, phase keywords), ambiguity signals (hedging language,
  * question marks, vague pronoun phrases), and task type from leading verbs.
  * @architectural-layer Services
- * @dependencies [src/shared/schemas/request_analysis.ts, src/shared/constants.ts]
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
+ * * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
 import {

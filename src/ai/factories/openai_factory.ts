@@ -3,8 +3,7 @@
  * @path src/ai/factories/openai_factory.ts
  * @description Factory for creating OpenAI provider instances, supporting custom base URLs for compatible APIs.
  * @architectural-layer AI
- * @dependencies [abstract_provider_factory, types, openai_provider]
- * @related-files [src/ai/providers/openai_provider.ts]
+ * * @related-files [src/ai/providers/openai_provider.ts]
  */
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
 import { IModelProvider, IResolvedProviderOptions } from "../types.ts";

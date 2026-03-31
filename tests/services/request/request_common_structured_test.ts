@@ -1,12 +1,11 @@
 /**
  * @module RequestCommonStructuredTest
- * @path tests/services/request_common_structured_test.ts
+ * @path tests/services/request/request_common_structured_test.ts
  * @description Tests for structured expectations (acceptance_criteria,
  * expected_outcomes, scope) propagation in buildParsedRequest().
  * Phase 49, Step 10.
  * @architectural-layer Tests
- * @dependencies [src/services/request/request_common.ts]
- * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals } from "@std/assert";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";

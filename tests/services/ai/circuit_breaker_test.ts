@@ -1,6 +1,6 @@
 /**
  * @module CircuitBreakerTest
- * @path tests/services/circuit_breaker_test.ts
+ * @path tests/services/ai/circuit_breaker_test.ts
  * @description Tests for the CircuitBreaker resilience pattern, verifying state transitions
  * (Closed -> Open -> Half-Open) based on error thresholds and recovery timeouts.
  */

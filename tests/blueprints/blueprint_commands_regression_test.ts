@@ -1,6 +1,6 @@
 /**
  * @module BlueprintCommandsRegressionTest
- * @path tests/blueprint_commands_regression_test.ts
+ * @path tests/blueprints/blueprint_commands_regression_test.ts
  * @description Regression tests for blueprint CLI commands, ensuring correct
  * application and discovery of project blueprints within the workspace.
  */

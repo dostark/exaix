@@ -1,6 +1,6 @@
 /**
  * @module ReviewRegistryTest
- * @path tests/services/review_registry_test.ts
+ * @path tests/services/review/review_registry_test.ts
  * @description Verifies the core ReviewRegistry service, ensuring stable registration and lifecycle
  * tracking for agent execution plans awaiting human or automated review.
  */

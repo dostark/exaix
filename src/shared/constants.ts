@@ -3,8 +3,7 @@
  * @path src/shared/constants.ts
  * @description Centralized registry of system-wide constants shared between Core and TUI.
  * @architectural-layer Shared
- * @dependencies [enums]
- * @related-files [src/shared/enums.ts, src/config/schema.ts]
+ * * @related-files [src/shared/enums.ts, src/config/schema.ts]
  */
 
 import { LogLevel, McpToolName, McpTransportType, MockStrategy, ProviderCostTier, ProviderType } from "./enums.ts";

@@ -10,8 +10,7 @@
  * - Diff generation and status checks
  *
  * @architectural-layer Services
- * @dependencies [Config, DatabaseService, SecureRandom]
- * @related-files [src/services/plan_executor.ts]
+ * * @related-files [src/services/plan_executor.ts]
  */
 
 import type { Config } from "../../shared/schemas/config.ts";

@@ -3,8 +3,7 @@
  * @path src/ai/types.ts
  * @description Core type definitions for the AI layer, including model options, provider interfaces, and result structures.
  * @architectural-layer AI
- * @dependencies [enums, event_logger]
- * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
+ * * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
  */
 import { ConfigSource, MockStrategy, ProviderType } from "../shared/enums.ts";
 import type { EventLogger } from "../services/core/event_logger.ts";

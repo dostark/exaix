@@ -1,6 +1,6 @@
 /**
  * @module ConfidenceScorerAlignmentTest
- * @path tests/services/confidence_scorer_alignment_test.ts
+ * @path tests/services/confidence/confidence_scorer_alignment_test.ts
  * @description Tests that ConfidenceScorer factors in goal-alignment data from a
  * ReflexiveAgent critique (Phase 48, Step 9).
  */

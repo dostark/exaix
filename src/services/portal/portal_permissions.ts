@@ -1,10 +1,9 @@
 /**
  * @module PortalPermissionsService
- * @path src/services/portal_permissions.ts
+ * @path src/services/portal/portal_permissions.ts
  * @description Validates agent access to portals based on whitelist, operations, and security modes.
  * @architectural-layer Services
- * @dependencies [PortalSchemas, AuditLogger, Enums]
- * @related-files [src/schemas/portal_permissions.ts, src/services/audit_logger.ts]
+ * * @related-files [src/schemas/portal_permissions.ts, src/services/audit_logger.ts]
  */
 
 import type {

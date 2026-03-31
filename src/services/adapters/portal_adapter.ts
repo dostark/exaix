@@ -3,8 +3,7 @@
  * @path src/services/adapters/portal_adapter.ts
  * @description Module for PortalAdapter.
  * @architectural-layer Services
- * @dependencies [IPortalService, PortalCommands]
- * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
+ * * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
  */
 
 import { PortalService } from "../portal/portal.ts";

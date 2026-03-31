@@ -3,8 +3,7 @@
  * @path src/tui/plan_reviewer_view.ts
  * @description Interactive TUI view for reviewing and approving/rejecting execution plans, featuring side-by-side diff visualization.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, PlanService, PlanStatus, Dialogs, HelpRenderer, Enums]
- * @related-files [src/services/plan_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/plan_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { type IPlanDetails, type IPlanMetadata } from "../shared/types/plan.ts";

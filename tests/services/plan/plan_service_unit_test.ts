@@ -1,6 +1,6 @@
 /**
  * @module PlanServiceUnitTest
- * @path tests/services/plan_service_unit_test.ts
+ * @path tests/services/plan/plan_service_unit_test.ts
  * @description Unit tests for the PlanService (src/services/plan/plan.ts).
  */
 

@@ -1,10 +1,9 @@
 /**
  * @module ArtifactRegistry
- * @path src/services/artifact_registry.ts
+ * @path src/services/artifact/artifact_registry.ts
  * @description Manages analysis artifacts produced by agents, storing them as markdown files with frontmatter.
  * @architectural-layer Services
- * @dependencies [Path, YAML, DatabaseService, ArtifactSchemas, ReviewStatus]
- * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
+ * * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
  */
 
 import { join } from "@std/path";

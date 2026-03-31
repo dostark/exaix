@@ -1,10 +1,9 @@
 /**
  * @module ContextCardGenerator
- * @path src/services/context_card_generator.ts
+ * @path src/services/context/context_card_generator.ts
  * @description Generates and updates portal context cards in the memory bank, preserving user notes.
  * @architectural-layer Services
- * @dependencies [Path, FS, DatabaseService, Config]
- * @related-files [src/services/memory_bank.ts, src/services/db.ts]
+ * * @related-files [src/services/memory_bank.ts, src/services/db.ts]
  */
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";

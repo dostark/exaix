@@ -3,8 +3,7 @@
  * @path src/tui/agent_status_view.ts
  * @description TUI view for monitoring agent status, health, and logs, featuring tree-based navigation and real-time updates.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/agent_manager.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/agent_manager.ts, src/tui/tui_dashboard.ts]
  */
 
 import { TuiSessionBase } from "./tui_common.ts";

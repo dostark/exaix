@@ -3,8 +3,7 @@
  * @path src/flows/feedback_loop.ts
  * @description Implements the Reflexion pattern for iterative improvement of agent outputs based on judge feedback and target quality scores.
  * @architectural-layer Flows
- * @dependencies [zod, evaluation_criteria, gate_evaluator, constants, enums]
- * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
+ * * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
  */
 
 import { z } from "zod";

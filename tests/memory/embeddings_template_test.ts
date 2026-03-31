@@ -1,6 +1,6 @@
 /**
  * @module EmbeddingsTemplateTest
- * @path tests/embeddings_template_test.ts
+ * @path tests/memory/embeddings_template_test.ts
  * @description Verifies the logic for generating embeddings prompts, ensuring that
  * content templates are correctly populated for vectorization.
  */

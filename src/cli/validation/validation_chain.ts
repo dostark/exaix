@@ -3,8 +3,7 @@
  * @path src/cli/validation/validation_chain.ts
  * @description Provides a chainable validation utility for CLI command arguments, allowing multiple rules and error aggregation.
  * @architectural-layer CLI
- * @dependencies [base_command]
- * @related-files [src/cli/handlers/request_create_handler.ts]
+ * * @related-files [src/cli/handlers/request_create_handler.ts]
  */
 
 import { ValidationResult } from "../base/command.ts";

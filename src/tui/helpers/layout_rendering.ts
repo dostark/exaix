@@ -1,10 +1,9 @@
 /**
  * @module LayoutRendering
- * @path src/helpers/layout_rendering.ts
+ * @path src/tui/helpers/layout_rendering.ts
  * @description Shared layout rendering utilities for TUI preset lists and indicators.
  * @architectural-layer Helpers
- * @dependencies [Colors]
- * @related-files [src/helpers/layout_manager.ts]
+ * * @related-files [src/helpers/layout_manager.ts]
  */
 import { colorize, type ITuiTheme } from "./colors.ts";
 

@@ -1,6 +1,6 @@
 /**
  * @module RequestProcessorAnalysisTest
- * @path tests/services/request_processor_analysis_test.ts
+ * @path tests/services/request/request_processor_analysis_test.ts
  * @description Verifies that RequestProcessor integrates with RequestAnalyzer to
  * produce structured IRequestAnalysis, enriches IParsedRequest fields, persists
  * analysis as a sibling JSON file, and handles analyzer failures gracefully.

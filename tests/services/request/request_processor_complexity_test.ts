@@ -1,6 +1,6 @@
 /**
  * @module RequestProcessorComplexityTest
- * @path tests/services/request_processor_complexity_test.ts
+ * @path tests/services/request/request_processor_complexity_test.ts
  * @description Verifies that RequestProcessor's classifyTaskComplexity method
  * uses structured analysis (Phase 45), content heuristics, and agent-ID fallbacks
  * correctly to categorize task complexity.

@@ -3,8 +3,7 @@
  * @path src/shared/types/mod.ts
  * @description Barrel export for shared type modules.
  * @architectural-layer Shared
- * @dependencies [src/shared/types/*]
- * @related-files [src/shared/types/*.ts]
+ * * @related-files [src/shared/types/*.ts]
  */
 
 export * from "./agent.ts";

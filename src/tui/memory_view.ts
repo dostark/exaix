@@ -3,8 +3,7 @@
  * @path src/tui/memory_view.ts
  * @description TUI view for interacting with memory banks, supporting search, filtering, and review of pending memory proposals.
  * @architectural-layer TUI
- * @dependencies [BaseTreeView, tree_view, dialog_base, help_renderer, keyboard, enums, constants]
- * @related-files [src/services/memory_service.ts, src/tui/tui_dashboard.ts]
+ * * @related-files [src/services/memory_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { TuiSessionBase } from "./tui_common.ts";

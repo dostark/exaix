@@ -3,8 +3,7 @@
  * @path src/services/adapters/log_adapter.ts
  * @description Adapter implementing ILogService for TUI by wrapping StructuredLogger.
  * @architectural-layer Services
- * @dependencies [ILogService, StructuredLogger]
- * @related-files [src/services/structured_logger.ts, src/tui/structured_log_service.ts]
+ * * @related-files [src/services/structured_logger.ts, src/tui/structured_log_service.ts]
  */
 
 import { ILogService } from "../../shared/interfaces/i_log_service.ts";

@@ -3,8 +3,7 @@
  * @path src/shared/types/logging.ts
  * @description Module for Logging.
  * @architectural-layer Shared
- * @dependencies [Enums]
- * @related-files [src/shared/interfaces/i_log_service.ts]
+ * * @related-files [src/shared/interfaces/i_log_service.ts]
  */
 
 import type { LogLevel } from "../enums.ts";

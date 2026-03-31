@@ -4,8 +4,7 @@
  * @description MCP tool handler for creating a directory tree within a portal.
  * Low-risk altering operation — creates parent directories recursively.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, CreateDirectoryToolArgsSchema]
- * @related-files [src/mcp/tool_handler.ts]
+ * * @related-files [src/mcp/tool_handler.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { CreateDirectoryToolArgsSchema, type MCPToolResponse } from "../../shared/schemas/mcp.ts";

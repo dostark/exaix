@@ -1,6 +1,6 @@
 /**
  * @module CodeParserTest
- * @path tests/code_parser_test.ts
+ * @path tests/services/code/code_parser_test.ts
  * @description Verifies the specialized code parsing logic, ensuring that source code
  * symbols and structure are correctly extracted for agent context grounding.
  */

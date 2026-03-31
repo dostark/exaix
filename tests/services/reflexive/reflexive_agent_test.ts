@@ -1,6 +1,6 @@
 /**
  * @module ReflexiveAgentSchemaTest
- * @path tests/services/reflexive_agent_test.ts
+ * @path tests/services/reflexive/reflexive_agent_test.ts
  * @description Validates the data schema for reflexive agent critiques, ensuring robust enforcement
  * of quality metrics, confidence levels, and technical debt reporting.
  */

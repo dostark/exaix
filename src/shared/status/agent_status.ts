@@ -1,10 +1,9 @@
 /**
  * @module AgentStatusModule
- * @path src/tui/agent_status/base.ts
+ * @path src/shared/status/agent_status.ts
  * @description Canonical, type-safe agent status values and utility functions for status coercion and validation.
  * @architectural-layer TUI
- * @dependencies []
- * @related-files [src/tui/agent_status_view.ts]
+ * * @related-files [src/tui/agent_status_view.ts]
  */
 
 import { MessageType } from "../../shared/enums.ts";

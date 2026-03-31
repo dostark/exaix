@@ -1,6 +1,6 @@
 /**
  * @module MockExecutionPatternRegressionTest
- * @path tests/mock_execution_pattern_regression_test.ts
+ * @path tests/services/mock/mock_execution_pattern_regression_test.ts
  * @description Regression tests for the MockLLMProvider, ensuring consistent generation
  * of planning and execution responses based on structured prompt patterns.
  */

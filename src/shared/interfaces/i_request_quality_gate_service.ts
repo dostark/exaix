@@ -5,8 +5,7 @@
  * which evaluates incoming request quality, auto-enriches underspecified
  * requests, and manages the multi-turn clarification Q&A loop (Phase 47).
  * @architectural-layer Shared
- * @dependencies [src/shared/schemas/request_quality_assessment.ts, src/shared/schemas/clarification_session.ts]
- * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/interfaces/mod.ts]
+ * * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/interfaces/mod.ts]
  */
 
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "../schemas/request_quality_assessment.ts";

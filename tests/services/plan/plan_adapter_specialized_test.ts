@@ -1,6 +1,6 @@
 /**
  * @module PlanAdapterSpecializedTest
- * @path tests/services/plan_adapter_specialized_test.ts
+ * @path tests/services/plan/plan_adapter_specialized_test.ts
  * @description Targeted tests for PlanAdapter's Markdown rendering engine, verifying the correct generation
  * of security audit sections, tool analysis blocks, and QA verification criteria.
  */

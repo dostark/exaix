@@ -1,6 +1,6 @@
 /**
  * @module MemoryEmbeddingCoverageTest
- * @path tests/services/memory_embedding_coverage_test.ts
+ * @path tests/services/memory/memory_embedding_coverage_test.ts
  * @description Negative testing and edge-case coverage for vector similarity calculations,
  * ensuring robust handling of zero vectors and dimension mismatches in RAG operations.
  */

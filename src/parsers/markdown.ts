@@ -3,8 +3,7 @@
  * @path src/parsers/markdown.ts
  * @description Extracts and validates YAML frontmatter from markdown files, ensuring compliance with RequestSchema.
  * @architectural-layer Parsers
- * @dependencies [yaml, request, db]
- * @related-files [src/schemas/request.ts, src/services/request/request_processor.ts]
+ * * @related-files [src/schemas/request.ts, src/services/request/request_processor.ts]
  */
 import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "../shared/schemas/request.ts";

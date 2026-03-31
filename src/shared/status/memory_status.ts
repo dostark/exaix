@@ -3,8 +3,7 @@
  * @path src/shared/status/memory_status.ts
  * @description Shared type definitions and coercion utilities for memory record statuses.
  * @architectural-layer Shared
- * @dependencies [Enums]
- * @related-files [src/shared/schemas/memory_bank.ts]
+ * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 import { MemoryRecordStatus } from "../enums.ts";
 export const MemoryStatus = {

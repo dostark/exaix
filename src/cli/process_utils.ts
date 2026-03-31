@@ -3,8 +3,7 @@
  * @path src/cli/process_utils.ts
  * @description Provides standalone CLI process helpers for Unix-like environments, such as PID liveness checks using signal sending.
  * @architectural-layer CLI
- * @dependencies []
- * @related-files [src/cli/daemon_commands.ts]
+ * * @related-files [src/cli/daemon_commands.ts]
  */
 
 /**

@@ -5,8 +5,7 @@
  * criteria) into EvaluationCriterion arrays suitable for quality gate evaluation.
  * Implements ICriteriaGeneratorService for dependency injection.
  * @architectural-layer Services
- * @dependencies [evaluation_criteria, i_criteria_generator_service, request_analysis, constants]
- * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
+ * * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
  */
 
 import { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";

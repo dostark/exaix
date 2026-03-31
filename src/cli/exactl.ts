@@ -3,8 +3,7 @@
  * @path src/cli/exactl.ts
  * @description Main entry point for the Exaix CLI (exactl). Orchestrates all commands, subcommands, and service initializations.
  * @architectural-layer CLI
- * @dependencies [Command, PlanCommands, RequestCommands, ReviewCommands, GitCommands, DaemonCommands, PortalCommands, BlueprintCommands, FlowCommands, DashboardCommands, MemoryCommands, JournalCommands, McpCommands]
- * @related-files [src/cli/init.ts, src/cli/cli.config.ts]
+ * * @related-files [src/cli/init.ts, src/cli/cli.config.ts]
  */
 
 import { Command } from "@cliffy/command";

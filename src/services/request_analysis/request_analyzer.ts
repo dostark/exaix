@@ -11,8 +11,7 @@
  * never lost. Activity is logged to the database journal when a `db` instance
  * is provided.
  * @architectural-layer Services
- * @dependencies [src/services/request_analysis/heuristic_analyzer.ts, src/services/request_analysis/llm_analyzer.ts, src/shared/schemas/request_analysis.ts, src/shared/interfaces/i_request_analyzer_service.ts, src/shared/interfaces/i_database_service.ts]
- * @related-files [src/services/request_analysis/mod.ts, src/services/request_processor.ts]
+ * * @related-files [src/services/request_analysis/mod.ts, src/services/request_processor.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";

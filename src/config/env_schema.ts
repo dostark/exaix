@@ -3,8 +3,7 @@
  * @path src/config/env_schema.ts
  * @description Provides Zod validation for environment variable overrides (EXA_LLM_*), allowing runtime configuration of AI providers and test modes.
  * @architectural-layer Config
- * @dependencies [zod, enums, ai_config, constants]
- * @related-files [src/config/service.ts]
+ * * @related-files [src/config/service.ts]
  */
 
 import { z } from "zod";

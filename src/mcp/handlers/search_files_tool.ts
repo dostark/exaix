@@ -3,8 +3,7 @@
  * @path src/mcp/handlers/search_files_tool.ts
  * @description MCP tool handler for searching files using glob patterns in a portal.
  * @architectural-layer MCP
- * @dependencies [ToolHandler, ToolRegistry]
- * @related-files [src/mcp/tool_handler.ts, src/services/tool_registry.ts]
+ * * @related-files [src/mcp/tool_handler.ts, src/services/tool_registry.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, SearchFilesToolArgsSchema } from "../../shared/schemas/mcp.ts";

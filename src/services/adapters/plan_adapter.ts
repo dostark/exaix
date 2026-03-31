@@ -3,8 +3,7 @@
  * @path src/services/adapters/plan_adapter.ts
  * @description Module for PlanAdapter.
  * @architectural-layer Services
- * @dependencies [IPlanService, PlanCommands]
- * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
+ * * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
  */
 
 import { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
