@@ -263,7 +263,7 @@ export class AgentRunner implements IAgentRunner {
     const result = this.parseResponse(rawResponse);
 
     // Log successful execution
-    this.logExecutionCompletion(
+    this.logExecutionCompletion({
       result,
       rawResponse,
       retryResult,
@@ -272,7 +272,7 @@ export class AgentRunner implements IAgentRunner {
       traceId,
       duration,
       skillsApplied,
-    );
+    });
 
     return {
       ...result,
@@ -433,16 +433,26 @@ export class AgentRunner implements IAgentRunner {
   /**
    * Log successful execution completion
    */
-  private logExecutionCompletion(
-    result: { thought: string; content: string },
-    rawResponse: string,
-    retryResult: IRetryResult<string>,
-    requestId: string | undefined,
-    identityId: string,
-    traceId: string | undefined,
-    duration: number,
-    skillsApplied: string[],
-  ): void {
+  private logExecutionCompletion(args: {
+    result: { thought: string; content: string };
+    rawResponse: string;
+    retryResult: IRetryResult<string>;
+    requestId: string | undefined;
+    identityId: string;
+    traceId: string | undefined;
+    duration: number;
+    skillsApplied: string[];
+  }): void {
+    const {
+      result,
+      rawResponse,
+      retryResult,
+      requestId,
+      identityId,
+      traceId,
+      duration,
+      skillsApplied,
+    } = args;
     this.logActivity(
       "agent",
       "agent.execution_completed",

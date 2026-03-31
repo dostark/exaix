@@ -362,6 +362,17 @@ location changes.
 
 ---
 
+## 10. Function & Method Complexity
+
+- **Parameter Limit:** Functions and methods **must not** exceed **7 parameters**.
+- If a method requires 8 or more parameters, it **must** be refactored to use:
+  - A structured **Parameter Object** (a dedicated interface for the arguments).
+  - A shared context object (like `IApplicationContext`).
+  - Smaller, more focused methods.
+- This rule applies to constructors, regular functions, and class methods alike. Refactoring into a parameter object improves readability, maintainability, and makes it easier to add optional parameters in the future.
+
+---
+
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/source/exaix.md`) and **are not** repeated here unless they

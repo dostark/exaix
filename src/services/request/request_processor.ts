@@ -9,7 +9,7 @@
 
 import { basename, dirname, join } from "@std/path";
 import { IModelProvider } from "../../ai/types.ts";
-import type { DatabaseService } from "../core/db.ts";
+import { DatabaseService } from "../core/db.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import {
   AgentRunner,
@@ -57,7 +57,7 @@ import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
-import { IRequestAnalyzerService } from "../../shared/interfaces/i_request_analyzer_service.ts";
+import { IRequestAnalyzerConfig, IRequestAnalyzerService } from "../../shared/interfaces/i_request_analyzer_service.ts";
 import { RequestKind, TaskComplexity } from "../../shared/enums.ts";
 
 import { AnalysisMode } from "../../shared/types/request.ts";
@@ -90,6 +90,14 @@ export interface IRequestProcessorConfig {
   blueprintsPath: string;
   includeReasoning: boolean;
   context?: IApplicationContext;
+
+  // Optional overrides (primarily for testing)
+  testProvider?: IModelProvider;
+  costTracker?: CostTracker;
+  testAnalyzer?: IRequestAnalyzerService;
+  portalKnowledgeService?: IPortalKnowledgeService;
+  testQualityGate?: IRequestQualityGateService;
+  sessionMemory?: SessionMemoryService;
 }
 
 // ============================================================================
@@ -108,21 +116,27 @@ export class RequestProcessor {
   private readonly statusManager: StatusManager;
   private readonly analyzer: IRequestAnalyzerService;
   private readonly qualityGate?: IRequestQualityGateService;
+  private readonly config: Config;
+  private readonly db: DatabaseService;
+  private readonly portalKnowledgeService?: IPortalKnowledgeService;
+  private readonly sessionMemory?: SessionMemoryService;
+  private readonly testProvider?: IModelProvider;
 
-  constructor(
-    private readonly config: Config,
-    private readonly db: DatabaseService,
-    private readonly processorConfig: IRequestProcessorConfig,
-    private readonly testProvider?: IModelProvider,
-    costTracker?: CostTracker,
-    testAnalyzer?: IRequestAnalyzerService,
-    private readonly portalKnowledgeService?: IPortalKnowledgeService,
-    testQualityGate?: IRequestQualityGateService,
-    private readonly sessionMemory?: SessionMemoryService,
-  ) {
+  constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
+    if (!ctx) {
+      throw new Error("RequestProcessor requires IApplicationContext.");
+    }
+    this.config = ctx.config.get();
+
+    if (ctx.db instanceof DatabaseService) {
+      this.db = ctx.db;
+    } else {
+      throw new Error("Application context database is not a DatabaseService");
+    }
+
     // Initialize services
-    this.costTracker = costTracker ?? new CostTracker(this.db, this.config);
+    this.costTracker = processorConfig.costTracker ?? new CostTracker(this.db, this.config);
     const healthChecker = new HealthCheckService(DEFAULT_MCP_VERSION, this.config);
     this.providerSelector = new ProviderSelector(
       ProviderRegistry,
@@ -139,37 +153,44 @@ export class RequestProcessor {
       });
     }
 
-    this.plansDir = join(this.config.system.root, this.config.paths.workspace, "Plans");
+    this.plansDir = join(processorConfig.workspacePath, "Plans");
     this.planWriter = new PlanWriter({
       plansDirectory: this.plansDir,
+      db: this.db,
       includeReasoning: processorConfig.includeReasoning,
       generateWikiLinks: true,
       runtimeRoot: join(this.config.system.root, this.config.paths.runtime),
-      db: this.db,
     });
 
-    this.flowValidator = null; // Temporary for testing
+    const _flowsDir = join(this.config.system.root, this.config.paths.flows);
+    if (ctx.flowValidator instanceof FlowValidatorImpl) {
+      this.flowValidator = ctx.flowValidator;
+    } else {
+      this.flowValidator = null;
+    }
 
-    this.ioBreaker = new CircuitBreaker({
-      failureThreshold: 3,
-      resetTimeout: 60_000,
-      halfOpenSuccessThreshold: 2,
-    });
-
-    // Initialize extracted components
     this.requestParser = new RequestParser(this.logger);
     this.statusManager = new StatusManager(this.logger);
-    this.analyzer = testAnalyzer ?? new RequestAnalyzer({
-      mode: (config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode,
-      actionabilityThreshold: config.request_analysis?.actionability_threshold,
-      inferAcceptanceCriteria: config.request_analysis?.infer_acceptance_criteria,
-    });
 
-    // Wire QualityGate with Provider and OutputValidator (Phase 51)
-    const qgConfig = buildQualityGateConfig(config.quality_gate ?? {});
+    const analyzerConfig: IRequestAnalyzerConfig = {
+      mode: (this.config.request_analysis?.mode ?? DEFAULT_ANALYZER_MODE) as AnalysisMode,
+      actionabilityThreshold: this.config.request_analysis?.actionability_threshold,
+      inferAcceptanceCriteria: this.config.request_analysis?.infer_acceptance_criteria,
+    };
+    this.analyzer = processorConfig.testAnalyzer ?? new RequestAnalyzer(
+      analyzerConfig,
+      this.testProvider,
+      new OutputValidator(),
+      this.db,
+    );
 
-    this.qualityGate = testQualityGate;
+    this.portalKnowledgeService = processorConfig.portalKnowledgeService ?? ctx?.portalKnowledge;
+    this.sessionMemory = processorConfig.sessionMemory;
+    this.testProvider = processorConfig.testProvider;
+
+    this.qualityGate = processorConfig.testQualityGate;
     if (!this.qualityGate) {
+      const qgConfig = buildQualityGateConfig(this.config.quality_gate ?? {});
       this.qualityGate = new RequestQualityGate(
         qgConfig,
         this.testProvider,
@@ -177,6 +198,12 @@ export class RequestProcessor {
         this.logger,
       );
     }
+
+    this.ioBreaker = new CircuitBreaker({
+      failureThreshold: 3,
+      resetTimeout: 30000,
+      halfOpenSuccessThreshold: 2,
+    });
   }
 
   @LogMethod(new EventLogger({ prefix: "[RequestProcessor]" }), "request.process")

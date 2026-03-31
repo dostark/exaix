@@ -150,17 +150,13 @@ if (import.meta.main) {
     await ensureDir(activePath);
 
     // Initialize Request Processor
-    const requestProcessor = new RequestProcessor(
-      config,
-      dbService,
-      {
-        workspacePath: join(config.system.root, config.paths.workspace),
-        requestsDir: requestsPath,
-        blueprintsPath: join(config.system.root, config.paths.blueprints, "Identities"),
-        includeReasoning: true,
-        context, // Support unified DI
-      },
-    );
+    const requestProcessor = new RequestProcessor({
+      workspacePath: join(config.system.root, config.paths.workspace),
+      requestsDir: requestsPath,
+      blueprintsPath: join(config.system.root, config.paths.blueprints, "Identities"),
+      includeReasoning: true,
+      context, // Support unified DI
+    });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {
       requestsDir: requestsPath,

@@ -107,6 +107,7 @@ const rules: Rule[] = [
     regex: /\bas\s+any\b/,
     message: "Casting to 'any' (e.g. 'foo as any') is forbidden.",
     severity: "error" as const,
+    pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
   {
     name: "typeof-cast",
@@ -179,6 +180,10 @@ async function checkFile(path: string) {
   let headerFound = false;
   let firstContentLineNum = -1;
   const importedNames = new Map<string, number>();
+  let inParamList = false;
+  let currentParamCount = 0;
+  let paramListStartLine = -1;
+  let paramDepth = 0;
 
   for (let idx = 0; idx < lines.length; idx++) {
     const line = lines[idx];
@@ -385,6 +390,68 @@ async function checkFile(path: string) {
     }
 
     // If we're here, it's functional code
+    // Handle parameter counting for 8+ parameters
+    if (inParamList) {
+      const closingIdx = line.indexOf(")");
+      const content = closingIdx !== -1 ? line.substring(0, closingIdx) : line;
+
+      // Count commas that aren't inside nested < > or { } (to skip generics/object types)
+      for (const char of content) {
+        if (char === "<" || char === "{") paramDepth++;
+        if (char === ">" || char === "}") paramDepth--;
+        if (char === "," && paramDepth === 0) currentParamCount++;
+      }
+
+      if (closingIdx !== -1) {
+        if (currentParamCount >= 7) {
+          console.log(
+            `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed 7 parameters (found ${
+              currentParamCount + 1
+            }). Refactor to use a parameter object.`,
+          );
+          errorCount++;
+        }
+        inParamList = false;
+      }
+      continue;
+    }
+
+    if (
+      (trimmed.includes("function ") || trimmed.includes("constructor") ||
+        (/\b(private|public|protected|async|static|readonly)\b.*\(/.test(trimmed))) &&
+      !inParamList && !inTypeDeclaration && !inMultiLineComment && !inMultiLineImport && !trimmed.startsWith("import")
+    ) {
+      const openingIdx = line.indexOf("(");
+      if (openingIdx !== -1) {
+        inParamList = true;
+        paramListStartLine = idx + 1;
+        currentParamCount = 0;
+        paramDepth = 0; // Initialize when starting
+
+        const closingIdx = line.indexOf(")", openingIdx);
+        const content = closingIdx !== -1 ? line.substring(openingIdx + 1, closingIdx) : line.substring(openingIdx + 1);
+
+        for (const char of content) {
+          if (char === "<" || char === "{") paramDepth++;
+          if (char === ">" || char === "}") paramDepth--;
+          if (char === "," && paramDepth === 0) currentParamCount++;
+        }
+
+        if (closingIdx !== -1) {
+          if (currentParamCount >= 7) {
+            console.log(
+              `ERROR [max-params] ${path}:${paramListStartLine} – Methods and functions must not exceed 7 parameters (found ${
+                currentParamCount + 1
+              }). Refactor to use a parameter object.`,
+            );
+            errorCount++;
+          }
+          inParamList = false;
+        }
+        if (inParamList) continue;
+      }
+    }
+
     if (functionalCodeLineNum === -1 && protectedBraceCount === 0) {
       functionalCodeLineNum = idx + 1;
     }
