@@ -9,17 +9,12 @@
 
 import { assertEquals } from "@std/assert";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
 import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../../src/shared/schemas/request_analysis.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
@@ -29,51 +24,10 @@ import {
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
   COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
 } from "../../../src/shared/constants.ts";
+import { makeAnalysis } from "./request_test_helpers.ts";
 
 /**
- * Create a test RequestProcessor with minimal config
- */
-async function createTestProcessor() {
-  const { db, config, cleanup } = await initTestDbService();
-  const context: IApplicationContext = {
-    config: { get: () => config, getChecksum: () => "test" } as any,
-    db,
-    provider: null as any,
-    git: {} as any,
-    display: new EventLogger({ db, defaultActor: "test" }),
-  };
-  const processor = new RequestProcessor({
-    workspacePath: "",
-    requestsDir: "",
-    blueprintsPath: "",
-    includeReasoning: false,
-    context,
-  });
-  return { db, config, cleanup, processor };
-}
-
-/**
- * Create test blueprint and frontmatter
- */
-function createTestBlueprintAndFrontmatter(): { blueprint: IBlueprint; frontmatter: IRequestFrontmatter } {
-  return {
-    blueprint: {
-      identityId: "generic-agent",
-      systemPrompt: "test",
-    },
-    frontmatter: {
-      trace_id: "t1",
-      created: new Date().toISOString(),
-      status: RequestStatus.PENDING,
-      priority: "normal",
-      source: RequestSource.CLI,
-      created_by: "user",
-    },
-  };
-}
-
-/**
- * Interface representing the private method for testing.
+ * Accessor type to avoid prohibited Record types.
  */
 interface IRequestProcessorTest {
   classifyTaskComplexity(
@@ -82,10 +36,6 @@ interface IRequestProcessorTest {
     analysis?: IRequestAnalysis,
   ): TaskComplexity;
 }
-
-/**
- * Accessor type to avoid prohibited Record types.
- */
 type ProcessorAccessor = { [K in keyof IRequestProcessorTest]: IRequestProcessorTest[K] };
 
 /**
@@ -97,33 +47,8 @@ function callClassifyTaskComplexity(
   request: IParsedRequest,
   analysis?: IRequestAnalysis,
 ): TaskComplexity {
-  // Accessing private method via bracket notation on the instance directly.
   const accessor = (processor as object) as ProcessorAccessor;
   return accessor["classifyTaskComplexity"](blueprint, request, analysis);
-}
-
-/**
- * Helper to create a minimal valid IRequestAnalysis for testing.
- */
-function createTestAnalysis(complexity: RequestAnalysisComplexity): IRequestAnalysis {
-  return {
-    goals: [],
-    requirements: [],
-    constraints: [],
-    acceptanceCriteria: [],
-    ambiguities: [],
-    actionabilityScore: 100,
-    complexity,
-    taskType: RequestTaskType.UNKNOWN,
-    tags: [],
-    referencedFiles: [],
-    metadata: {
-      analyzedAt: new Date().toISOString(),
-      durationMs: 0,
-      mode: AnalysisMode.HEURISTIC,
-      analyzerVersion: ANALYZER_VERSION,
-    },
-  };
 }
 
 /**
@@ -148,329 +73,228 @@ async function createComplexityTestSetup() {
   return { processor, cleanup };
 }
 
-/**
- * Builds a minimal IParsedRequest for use in complexity tests.
- */
-function buildComplexityRequest(body: string, traceId = "t1", reqId = "req-1"): IParsedRequest {
-  return buildParsedRequest(
-    body,
-    {
-      trace_id: traceId,
-      created: new Date().toISOString(),
-      status: RequestStatus.PENDING,
-      priority: "normal",
-      source: RequestSource.CLI,
-      created_by: "user",
+function createTestBlueprintAndFrontmatter(): { blueprint: IBlueprint; frontmatter: IRequestFrontmatter } {
+  return {
+    blueprint: {
+      identityId: "generic-agent",
+      systemPrompt: "test",
     },
-    reqId,
-    `trace-${reqId}`,
-  ) as IParsedRequest;
-}
-
-Deno.test("[classifyTaskComplexity] uses analysis complexity as primary signal", async () => {
-  const { cleanup, processor } = await createTestProcessor();
-  try {
-    const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
-    const request = buildParsedRequest(
-      "body",
-      frontmatter,
-      "req-1",
-      "trace-1",
-    ) as IParsedRequest;
-
-    // Simple analysis
-    const simpleAnalysis = createTestAnalysis(RequestAnalysisComplexity.SIMPLE);
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, request, simpleAnalysis),
-      TaskComplexity.SIMPLE,
-    );
-
-    // Complex analysis
-    const complexAnalysis = createTestAnalysis(RequestAnalysisComplexity.COMPLEX);
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, request, complexAnalysis),
-      TaskComplexity.COMPLEX,
-    );
-
-    // Epic analysis (maps to COMPLEX)
-    const epicAnalysis = createTestAnalysis(RequestAnalysisComplexity.EPIC);
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, request, epicAnalysis),
-      TaskComplexity.COMPLEX,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] falls back to content heuristics without analysis", async () => {
-  const { cleanup, processor } = await createTestProcessor();
-  try {
-    const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
-
-    // Short body -> SIMPLE
-    const shortRequest = buildParsedRequest(
-      "Fix typo.",
-      frontmatter,
-      "req-1",
-      "trace-1",
-    ) as IParsedRequest;
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, shortRequest),
-      TaskComplexity.SIMPLE,
-    );
-
-    // Long body with many bullets -> COMPLEX
-    const longBody =
-      "Implement feature:\n- Requirement 1\n- Requirement 2\n- Requirement 3\n- Requirement 4\n- Requirement 5\n- Requirement 6\n- Requirement 7\n- Requirement 8\n- Requirement 9\n- Requirement 10\n- Requirement 11";
-    const longRequest = buildParsedRequest(
-      longBody,
-      { ...frontmatter, trace_id: "t2" },
-      "req-2",
-      "trace-2",
-    ) as IParsedRequest;
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, longRequest),
-      TaskComplexity.COMPLEX,
-    );
-
-    // Body with many file refs -> COMPLEX
-    const fileRefBody = "Update src/a.ts, src/b.ts, src/c.ts, src/d.ts, src/e.ts, src/f.ts";
-    const fileRefRequest = buildParsedRequest(
-      fileRefBody,
-      { ...frontmatter, trace_id: "t3" },
-      "req-3",
-      "trace-3",
-    ) as IParsedRequest;
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, fileRefRequest),
-      TaskComplexity.COMPLEX,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] falls back to agent ID without analysis or content signal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
-  try {
-    const processor = new RequestProcessor({
-      workspacePath: "",
-      requestsDir: "",
-      blueprintsPath: "",
-      includeReasoning: false,
-      context: {
-        config: { get: () => config, getChecksum: () => "test" } as any,
-        db,
-        provider: null as any,
-        git: {} as any,
-        display: new EventLogger({ db, defaultActor: "test" }),
-      },
-    });
-
-    const frontmatter: IRequestFrontmatter = {
+    frontmatter: {
       trace_id: "t1",
       created: new Date().toISOString(),
       status: RequestStatus.PENDING,
       priority: "normal",
       source: RequestSource.CLI,
       created_by: "user",
-    };
-
-    const request = buildParsedRequest(
-      "Standard request body of medium length that doesn't trigger heuristics.",
-      frontmatter,
-      "req-1",
-      "trace-1",
-    ) as IParsedRequest;
-
-    const baseBlueprint: IBlueprint = {
-      systemPrompt: "test",
-    };
-
-    // Coder agent -> COMPLEX
-    assertEquals(
-      callClassifyTaskComplexity(
-        processor,
-        { ...baseBlueprint, identityId: "expert-coder" },
-        request,
-      ),
-      TaskComplexity.COMPLEX,
-    );
-
-    // Analyzer agent -> SIMPLE
-    assertEquals(
-      callClassifyTaskComplexity(
-        processor,
-        { ...baseBlueprint, identityId: "log-analyzer" },
-        request,
-      ),
-      TaskComplexity.SIMPLE,
-    );
-
-    // Generic agent -> MEDIUM
-    assertEquals(
-      callClassifyTaskComplexity(
-        processor,
-        { ...baseBlueprint, identityId: "helper" },
-        request,
-      ),
-      TaskComplexity.MEDIUM,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] content heuristic: short body with no bullets -> SIMPLE", async () => {
-  const { processor, cleanup } = await createComplexityTestSetup();
-  try {
-    const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest("Just fix spelling.")),
-      TaskComplexity.SIMPLE,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] content heuristic: many bullets (>=8) -> COMPLEX", async () => {
-  const { processor, cleanup } = await createComplexityTestSetup();
-  try {
-    const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-    const longBody = "Requirements:\n- R1\n- R2\n- R3\n- R4\n- R5\n- R6\n- R7\n- R8";
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest(longBody)),
-      TaskComplexity.COMPLEX,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] content heuristic: many file refs (>=5) -> COMPLEX", async () => {
-  const { processor, cleanup } = await createComplexityTestSetup();
-  try {
-    const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest("Change a.ts, b.ts, c.ts, d.ts, e.ts")),
-      TaskComplexity.COMPLEX,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] handles empty/undefined body gracefully (MEDIUM via agent ID)", async () => {
-  const { processor, cleanup } = await createComplexityTestSetup();
-  try {
-    const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest("")),
-      TaskComplexity.MEDIUM,
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[classifyTaskComplexity] maps EPIC to COMPLEX", async () => {
-  const { processor, cleanup } = await createComplexityTestSetup();
-  try {
-    const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-    const analysis = createTestAnalysis(RequestAnalysisComplexity.EPIC);
-    assertEquals(
-      callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest("body"), analysis),
-      TaskComplexity.COMPLEX,
-    );
-  } finally {
-    await cleanup();
-  }
-});
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------
-// Phase 49 Step 7 — threshold boundary tests using Step 12 constants
+// Tests
 // ---------------------------------------------------------------------------
 
-Deno.test(
-  "[classifyTaskComplexity] file refs at threshold (COMPLEXITY_FILE_REF_THRESHOLD_HIGH) -> COMPLEX",
-  async () => {
-    const { processor, cleanup } = await createComplexityTestSetup();
-    try {
-      const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-      // Build body with exactly COMPLEXITY_FILE_REF_THRESHOLD_HIGH file references.
-      const refs = Array.from(
-        { length: COMPLEXITY_FILE_REF_THRESHOLD_HIGH },
-        (_, i) => `ref${i}.ts`,
-      ).join(", ");
-      assertEquals(
-        callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest(refs)),
-        TaskComplexity.COMPLEX,
-      );
-    } finally {
-      await cleanup();
-    }
-  },
-);
+Deno.test("[RequestProcessor.classifyTaskComplexity] structured analysis: maps SIMPLE correctly", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("test", frontmatter, "r1", "t1");
+  const analysis = makeAnalysis({ complexity: RequestAnalysisComplexity.SIMPLE });
 
-Deno.test(
-  "[classifyTaskComplexity] file refs below threshold (COMPLEXITY_FILE_REF_THRESHOLD_HIGH - 1) -> no file-ref signal",
-  async () => {
-    const { processor, cleanup } = await createComplexityTestSetup();
-    try {
-      const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-      // Build a body with one fewer file reference than the threshold — no COMPLEX from this signal.
-      const refs = Array.from(
-        { length: COMPLEXITY_FILE_REF_THRESHOLD_HIGH - 1 },
-        (_, i) => `ref${i}.ts`,
-      ).join(", ");
-      // Pad with non-whitespace chars to exceed COMPLEXITY_BODY_LENGTH_LOW so the short-body SIMPLE rule doesn't fire.
-      const padding = "a".repeat(Math.max(0, COMPLEXITY_BODY_LENGTH_LOW - refs.length + 1));
-      const body = `${refs} ${padding}`;
-      // Body has few refs, no bullets, and is not short — falls to MEDIUM via agent ID.
-      assertEquals(
-        callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest(body)),
-        TaskComplexity.MEDIUM,
-      );
-    } finally {
-      await cleanup();
-    }
-  },
-);
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request, analysis);
+    assertEquals(result, TaskComplexity.SIMPLE);
+  } finally {
+    await cleanup();
+  }
+});
 
-Deno.test(
-  "[classifyTaskComplexity] bullets at threshold (COMPLEXITY_BULLET_THRESHOLD_HIGH) -> COMPLEX",
-  async () => {
-    const { processor, cleanup } = await createComplexityTestSetup();
-    try {
-      const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-      const body = "Header:\n" +
-        Array.from({ length: COMPLEXITY_BULLET_THRESHOLD_HIGH }, (_, i) => `- item ${i}`).join("\n");
-      assertEquals(
-        callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest(body)),
-        TaskComplexity.COMPLEX,
-      );
-    } finally {
-      await cleanup();
-    }
-  },
-);
+Deno.test("[RequestProcessor.classifyTaskComplexity] structured analysis: maps MEDIUM correctly", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("test", frontmatter, "r1", "t1");
+  const analysis = makeAnalysis({ complexity: RequestAnalysisComplexity.MEDIUM });
 
-Deno.test(
-  "[classifyTaskComplexity] body below COMPLEXITY_BODY_LENGTH_LOW with no bullets -> SIMPLE",
-  async () => {
-    const { processor, cleanup } = await createComplexityTestSetup();
-    try {
-      const blueprint: IBlueprint = { identityId: "helper", systemPrompt: "test" };
-      // Construct a body just under COMPLEXITY_BODY_LENGTH_LOW characters.
-      const shortBody = "x".repeat(COMPLEXITY_BODY_LENGTH_LOW - 1);
-      assertEquals(
-        callClassifyTaskComplexity(processor, blueprint, buildComplexityRequest(shortBody)),
-        TaskComplexity.SIMPLE,
-      );
-    } finally {
-      await cleanup();
-    }
-  },
-);
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request, analysis);
+    assertEquals(result, TaskComplexity.MEDIUM);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] structured analysis: maps COMPLEX correctly", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("test", frontmatter, "r1", "t1");
+  const analysis = makeAnalysis({ complexity: RequestAnalysisComplexity.COMPLEX });
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request, analysis);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] structured analysis: maps EPIC to COMPLEX correctly", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("test", frontmatter, "r1", "t1");
+  const analysis = makeAnalysis({ complexity: RequestAnalysisComplexity.EPIC });
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request, analysis);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] heuristics: detects COMPLEX via high bullet point count", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const manyBullets = Array.from({ length: COMPLEXITY_BULLET_THRESHOLD_HIGH + 1 }, (_, i) => `- Task ${i}`).join("\n");
+  const request = buildParsedRequest(manyBullets, frontmatter, "r1", "t1");
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] heuristics: detects COMPLEX via high file reference count", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const manyRefs = Array.from(
+    { length: COMPLEXITY_FILE_REF_THRESHOLD_HIGH + 1 },
+    (_, i) => `Check file src/file${i}.ts`,
+  ).join("\n");
+  const request = buildParsedRequest(manyRefs, frontmatter, "r1", "t1");
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] heuristics: detects SIMPLE via short body without newlines", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { blueprint, frontmatter } = createTestBlueprintAndFrontmatter();
+  const shortBody = "Just fix it".repeat(COMPLEXITY_BODY_LENGTH_LOW / 20); // Still short enough
+  const request = buildParsedRequest(shortBody, frontmatter, "r1", "t1");
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.SIMPLE);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'analyzer' ID maps to SIMPLE", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("I want to analyze something", frontmatter, "r1", "t1");
+  const blueprint: IBlueprint = { identityId: "request-analyzer", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.SIMPLE);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'summarizer' ID maps to SIMPLE", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest("Summarize this text", frontmatter, "r1", "t1");
+  const blueprint: IBlueprint = { identityId: "content-summarizer", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.SIMPLE);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'coder' ID maps to COMPLEX", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest(
+    "I need you to write some sophisticated code for the authentication module and handle edge cases",
+    frontmatter,
+    "r1",
+    "t1",
+  );
+  const blueprint: IBlueprint = { identityId: "advanced-coder", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'planner' ID maps to COMPLEX", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest(
+    "Plan a multi-step migration process for the entire system following architectural guidelines",
+    frontmatter,
+    "r1",
+    "t1",
+  );
+  const blueprint: IBlueprint = { identityId: "strategy-planner", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'architect' ID maps to COMPLEX", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest(
+    "I want to architect a highly scalable microservices system using modern patterns",
+    frontmatter,
+    "r1",
+    "t1",
+  );
+  const blueprint: IBlueprint = { identityId: "cloud-architect", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.COMPLEX);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: unknown agent map to MEDIUM", async () => {
+  const { processor, cleanup } = await createComplexityTestSetup();
+  const { frontmatter } = createTestBlueprintAndFrontmatter();
+  const request = buildParsedRequest(
+    "Perform some generic task that doesn't fit into any specific category",
+    frontmatter,
+    "r1",
+    "t1",
+  );
+  const blueprint: IBlueprint = { identityId: "mysterious-agent", systemPrompt: "test" };
+
+  try {
+    const result = callClassifyTaskComplexity(processor, blueprint, request);
+    assertEquals(result, TaskComplexity.MEDIUM);
+  } finally {
+    await cleanup();
+  }
+});

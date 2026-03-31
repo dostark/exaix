@@ -15,23 +15,28 @@ import { deployFrameworkToDirectory, planFrameworkDeployment } from "../../scrip
 import { planPortalMount, PortalLifecycleAction, resolveRuntimeConfigForExecution } from "../../runner/config.ts";
 import { ScenarioExecutionMode } from "../../schema/step_schema.ts";
 
+async function setupDeploymentFiles(tempRoot: string) {
+  const sourceFrameworkRoot = join(tempRoot, "repo/tests/scenario_framework");
+  const destinationRoot = join(tempRoot, "external-tools");
+
+  await Deno.mkdir(join(sourceFrameworkRoot, "runner"), { recursive: true });
+  await Deno.mkdir(join(sourceFrameworkRoot, "fixtures/requests/shared"), {
+    recursive: true,
+  });
+  await Deno.writeTextFile(join(sourceFrameworkRoot, "README.md"), "# Scenario Framework\n");
+  await Deno.writeTextFile(join(sourceFrameworkRoot, "runner/config.ts"), "export const ok = true;\n");
+  await Deno.writeTextFile(
+    join(sourceFrameworkRoot, "fixtures/requests/shared/request.md"),
+    "# Request\n",
+  );
+  return { sourceFrameworkRoot, destinationRoot };
+}
+
 Deno.test("[ScenarioFrameworkDeployment] deployment planner rewrites framework paths relative to the external destination correctly", async () => {
   const tempRoot = await Deno.makeTempDir({ prefix: "scenario-framework-deploy-" });
 
   try {
-    const sourceFrameworkRoot = join(tempRoot, "repo/tests/scenario_framework");
-    const destinationRoot = join(tempRoot, "external-tools");
-
-    await Deno.mkdir(join(sourceFrameworkRoot, "runner"), { recursive: true });
-    await Deno.mkdir(join(sourceFrameworkRoot, "fixtures/requests/shared"), {
-      recursive: true,
-    });
-    await Deno.writeTextFile(join(sourceFrameworkRoot, "README.md"), "# Scenario Framework\n");
-    await Deno.writeTextFile(join(sourceFrameworkRoot, "runner/config.ts"), "export const ok = true;\n");
-    await Deno.writeTextFile(
-      join(sourceFrameworkRoot, "fixtures/requests/shared/request.md"),
-      "# Request\n",
-    );
+    const { sourceFrameworkRoot, destinationRoot } = await setupDeploymentFiles(tempRoot);
 
     const plan = await planFrameworkDeployment({
       sourceFrameworkRoot,
@@ -101,19 +106,7 @@ Deno.test("[ScenarioFrameworkDeployment] deployment manifest records copied fram
   const tempRoot = await Deno.makeTempDir({ prefix: "scenario-framework-deploy-" });
 
   try {
-    const sourceFrameworkRoot = join(tempRoot, "repo/tests/scenario_framework");
-    const destinationRoot = join(tempRoot, "external-tools");
-
-    await Deno.mkdir(join(sourceFrameworkRoot, "runner"), { recursive: true });
-    await Deno.mkdir(join(sourceFrameworkRoot, "fixtures/requests/shared"), {
-      recursive: true,
-    });
-    await Deno.writeTextFile(join(sourceFrameworkRoot, "README.md"), "# Scenario Framework\n");
-    await Deno.writeTextFile(join(sourceFrameworkRoot, "runner/config.ts"), "export const ok = true;\n");
-    await Deno.writeTextFile(
-      join(sourceFrameworkRoot, "fixtures/requests/shared/request.md"),
-      "# Request\n",
-    );
+    const { sourceFrameworkRoot, destinationRoot } = await setupDeploymentFiles(tempRoot);
 
     const deployment = await deployFrameworkToDirectory({
       sourceFrameworkRoot,

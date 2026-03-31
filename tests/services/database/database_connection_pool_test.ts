@@ -10,43 +10,60 @@ import { DatabaseConnectionPool } from "../../../src/services/core/database_conn
 import { createMockConfig } from "../../helpers/config.ts";
 
 /**
- * Tests for DatabaseConnectionPool
+ * Helpers for DatabaseConnectionPool tests
  */
 
-Deno.test("DatabaseConnectionPool: initializes with configuration", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
-    const config = createMockConfig(tempDir);
-    const pool = new DatabaseConnectionPool({
-      minConnections: 2,
-      maxConnections: 10,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 5000,
-    }, config);
-
-    // Pool should be initialized but empty
-    assertEquals(pool.getPoolSize(), 0);
-    assertEquals(pool.getAvailableCount(), 0);
-    assertEquals(pool.getWaitingCount(), 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("DatabaseConnectionPool: acquires connection from available pool", async () => {
+async function withPoolTest(
+  configOptions: any,
+  testFn: (ctx: {
+    pool: DatabaseConnectionPool;
+    config: any;
+    tempDir: string;
+  }) => Promise<void>,
+) {
   const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
   try {
     const config = createMockConfig(tempDir);
     // Create runtime directory for database
     await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
 
-    const pool = new DatabaseConnectionPool({
-      minConnections: 0,
-      maxConnections: 5,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 5000,
-    }, config);
+    const pool = new DatabaseConnectionPool(configOptions, config);
+    try {
+      await testFn({ pool, config, tempDir });
+    } finally {
+      await pool.destroy();
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+}
 
+/**
+ * Tests for DatabaseConnectionPool
+ */
+
+Deno.test("DatabaseConnectionPool: initializes with configuration", async () => {
+  await withPoolTest({
+    minConnections: 2,
+    maxConnections: 10,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 5000,
+  }, async ({ pool }) => {
+    await Promise.resolve();
+    // Pool should be initialized but empty
+    assertEquals(pool.getPoolSize(), 0);
+    assertEquals(pool.getAvailableCount(), 0);
+    assertEquals(pool.getWaitingCount(), 0);
+  });
+});
+
+Deno.test("DatabaseConnectionPool: acquires connection from available pool", async () => {
+  await withPoolTest({
+    minConnections: 0,
+    maxConnections: 5,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 5000,
+  }, async ({ pool }) => {
     // Acquire first connection (should create new)
     const conn1 = await pool.acquire();
     assertEquals(pool.getPoolSize(), 1);
@@ -62,27 +79,16 @@ Deno.test("DatabaseConnectionPool: acquires connection from available pool", asy
     assertEquals(conn1, conn2); // Should be same connection
     assertEquals(pool.getPoolSize(), 1);
     assertEquals(pool.getAvailableCount(), 0);
-
-    await pool.destroy();
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("DatabaseConnectionPool: creates new connections up to max limit", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
-    const config = createMockConfig(tempDir);
-    // Create runtime directory for database
-    await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
-
-    const pool = new DatabaseConnectionPool({
-      minConnections: 0,
-      maxConnections: 3,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 5000,
-    }, config);
-
+  await withPoolTest({
+    minConnections: 0,
+    maxConnections: 3,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 5000,
+  }, async ({ pool }) => {
     // Acquire multiple connections
     const conn1 = await pool.acquire();
     const conn2 = await pool.acquire();
@@ -98,27 +104,16 @@ Deno.test("DatabaseConnectionPool: creates new connections up to max limit", asy
 
     assertEquals(pool.getPoolSize(), 3);
     assertEquals(pool.getAvailableCount(), 3);
-
-    await pool.destroy();
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("DatabaseConnectionPool: destroys all connections", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
-    const config = createMockConfig(tempDir);
-    // Create runtime directory for database
-    await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
-
-    const pool = new DatabaseConnectionPool({
-      minConnections: 0,
-      maxConnections: 3,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 5000,
-    }, config);
-
+  await withPoolTest({
+    minConnections: 0,
+    maxConnections: 3,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 5000,
+  }, async ({ pool }) => {
     // Create some connections
     const _conn1 = await pool.acquire();
     const _conn2 = await pool.acquire();
@@ -130,25 +125,16 @@ Deno.test("DatabaseConnectionPool: destroys all connections", async () => {
 
     assertEquals(pool.getPoolSize(), 0);
     assertEquals(pool.getAvailableCount(), 0);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("DatabaseConnectionPool: queues requests when at max capacity", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
-    const config = createMockConfig(tempDir);
-    // Create runtime directory for database
-    await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
-
-    const pool = new DatabaseConnectionPool({
-      minConnections: 0,
-      maxConnections: 2,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 5000,
-    }, config);
-
+  await withPoolTest({
+    minConnections: 0,
+    maxConnections: 2,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 5000,
+  }, async ({ pool }) => {
     // Fill the pool
     const _conn1 = await pool.acquire();
     const _conn2 = await pool.acquire();
@@ -165,27 +151,16 @@ Deno.test("DatabaseConnectionPool: queues requests when at max capacity", async 
 
     assertEquals(pool.getWaitingCount(), 0);
     assertEquals(pool.getAvailableCount(), 0);
-
-    await pool.destroy();
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("DatabaseConnectionPool: times out queued requests", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "pool-test-" });
-  try {
-    const config = createMockConfig(tempDir);
-    // Create runtime directory for database
-    await Deno.mkdir(`${tempDir}/${config.paths.runtime}`, { recursive: true });
-
-    const pool = new DatabaseConnectionPool({
-      minConnections: 0,
-      maxConnections: 1,
-      idleTimeoutMs: 30000,
-      acquireTimeoutMs: 100, // Short timeout for testing
-    }, config);
-
+  await withPoolTest({
+    minConnections: 0,
+    maxConnections: 1,
+    idleTimeoutMs: 30000,
+    acquireTimeoutMs: 100, // Short timeout for testing
+  }, async ({ pool }) => {
     // Fill the pool
     const _conn1 = await pool.acquire();
 
@@ -197,9 +172,5 @@ Deno.test("DatabaseConnectionPool: times out queued requests", async () => {
     );
 
     assertEquals(pool.getWaitingCount(), 0);
-
-    await pool.destroy();
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

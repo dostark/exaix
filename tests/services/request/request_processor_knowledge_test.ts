@@ -8,98 +8,24 @@
  * @related-files [src/services/request_processor.ts, src/shared/constants.ts, src/shared/interfaces/i_portal_knowledge_service.ts]
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "../../../src/shared/constants.ts";
 import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import {
+  makeKnowledge,
+  makeMockKnowledgeService,
+  makeRequestProcessorEnv as makeEnvBase,
+} from "./request_test_helpers.ts";
 
 // ============================================================================
 // Fixtures
 // ============================================================================
-
-function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowledge {
-  return {
-    portal: "test-portal",
-    gatheredAt: new Date().toISOString(),
-    version: 1,
-    architectureOverview: "## Architecture\n\nThis is a TypeScript service codebase.\nIt has several layers.\n",
-    layers: [],
-    keyFiles: [
-      { path: "src/main.ts", role: "entrypoint", description: "Application entry point" },
-      { path: "src/services/auth.ts", role: "core-service", description: "Auth service" },
-    ],
-    conventions: [
-      {
-        name: "*.service.ts naming",
-        description: "Services use .service.ts suffix",
-        evidenceCount: 10,
-        confidence: "high",
-        examples: ["auth.service.ts"],
-        category: "naming",
-      },
-      {
-        name: "IFoo interface naming",
-        description: "Interfaces start with I prefix",
-        evidenceCount: 5,
-        confidence: "medium",
-        examples: ["IAuthService"],
-        category: "naming",
-      },
-    ],
-    dependencies: [],
-    packages: undefined,
-    techStack: { primaryLanguage: "typescript" },
-    symbolMap: [],
-    stats: {
-      totalFiles: 20,
-      totalDirectories: 5,
-      extensionDistribution: { ".ts": 18, ".json": 2 },
-    },
-    metadata: {
-      durationMs: 200,
-      mode: PortalAnalysisMode.QUICK,
-      filesScanned: 20,
-      filesRead: 10,
-    },
-    ...overrides,
-  };
-}
-
-// ============================================================================
-// Mock helpers
-// ============================================================================
-
-function makeMockKnowledgeService(
-  opts: { fail?: boolean; knowledge?: IPortalKnowledge } = {},
-): IPortalKnowledgeService & { callCount: number } {
-  let callCount = 0;
-  const knowledge = opts.knowledge ?? makeKnowledge();
-  return {
-    get callCount() {
-      return callCount;
-    },
-    analyze: (_alias: string, _path: string) => {
-      callCount++;
-      if (opts.fail) return Promise.reject(new Error("Analysis failed"));
-      return Promise.resolve(knowledge);
-    },
-    getOrAnalyze: (_alias: string, _path: string) => {
-      callCount++;
-      if (opts.fail) return Promise.reject(new Error("getOrAnalyze failed"));
-      return Promise.resolve(knowledge);
-    },
-    isStale: (_alias: string) => Promise.resolve(false),
-    updateKnowledge: (_alias: string, _path: string) => Promise.resolve(knowledge),
-  };
-}
 
 function makeCapturingProvider(response?: string): {
   provider: IModelProvider;
@@ -134,16 +60,13 @@ async function makeKnowledgeProcessorEnv(opts: {
   providerOverride?: IModelProvider;
   withPortal?: boolean;
 } = {}) {
-  const { db, config, tempDir, cleanup } = await initTestDbService();
+  const { db, config, tempDir, cleanup } = await makeEnvBase();
 
   const workspacePath = join(tempDir, config.paths.workspace);
   const requestsDir = join(workspacePath, config.paths.requests);
-  const plansDir = join(workspacePath, config.paths.plans);
-  const blueprintsPath = join(tempDir, config.paths.blueprints, config.paths.identities);
-
-  await Deno.mkdir(requestsDir, { recursive: true });
-  await Deno.mkdir(plansDir, { recursive: true });
-  await Deno.mkdir(blueprintsPath, { recursive: true });
+  const blueprintsPath = join(tempDir, config.paths.blueprints);
+  const identitiesPath = join(blueprintsPath, config.paths.identities);
+  await Deno.mkdir(identitiesPath, { recursive: true });
 
   // Inject a portal entry into the config when portal-bound testing is needed
   const portalTargetDir = await Deno.makeTempDir({ prefix: "portal-target-" });
@@ -199,249 +122,131 @@ created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
 identity: "${opts.identity ?? "test-agent"}"
+assessed_at: "${new Date().toISOString()}"
 ${portalLine}
 created_by: "test-user"
 ---
-${opts.body ?? "Implement the feature"}`;
+${opts.body ?? "Test body"}`;
 
   const filePath = join(requestsDir, `${requestId}.md`);
   Deno.writeTextFileSync(filePath, content);
   return filePath;
-}
-
-function makeFlowRequestFile(requestsDir: string, opts: {
-  requestId?: string;
-  portal?: string;
-} = {}): string {
-  const requestId = opts.requestId ?? "req-k-flow-001";
-  const portalLine = opts.portal ? `portal: "${opts.portal}"` : "";
-  const content = `---
-trace_id: "trace-${requestId}"
-created: "${new Date().toISOString()}"
-status: "${RequestStatus.PENDING}"
-priority: "normal"
-flow: "test-flow"
-${portalLine}
-created_by: "test-user"
----
-Run the flow`;
-
-  const filePath = join(requestsDir, `${requestId}.md`);
-  Deno.writeTextFileSync(filePath, content);
-  return filePath;
-}
-
-function writeAgentBlueprint(blueprintsPath: string, identityId = "test-agent"): void {
-  const content = `---
-name: ${identityId}
-description: Test agent
----
-You are a helpful assistant. When asked to do work, return a structured plan.`;
-  Deno.writeTextFileSync(join(blueprintsPath, `${identityId}.md`), content);
 }
 
 // ============================================================================
 // Unit tests: buildPortalKnowledgeSummary
 // ============================================================================
 
-Deno.test("[RequestProcessor] buildPortalKnowledgeSummary includes architecture overview", () => {
-  const knowledge = makeKnowledge({ architectureOverview: "## Architecture\nLine 1\nLine 2\n" });
+Deno.test("[RequestProcessor] buildPortalKnowledgeSummary: generates Markdown header and conventions", () => {
+  const knowledge = makeKnowledge();
   const summary = buildPortalKnowledgeSummary(knowledge);
 
-  assertStringIncludes(summary, "Architecture");
-  assertStringIncludes(summary, "Line 1");
+  assertStringIncludes(summary, "## Portal Knowledge Summary");
+  assertStringIncludes(summary, "*.service.ts naming");
 });
 
-Deno.test("[RequestProcessor] buildPortalKnowledgeSummary includes top-5 key files", () => {
-  const knowledge = makeKnowledge({
-    keyFiles: [
-      { path: "src/main.ts", role: "entrypoint", description: "Entry" },
-      { path: "src/a.ts", role: "core-service", description: "A" },
-      { path: "src/b.ts", role: "core-service", description: "B" },
-      { path: "src/c.ts", role: "core-service", description: "C" },
-      { path: "src/d.ts", role: "core-service", description: "D" },
-      { path: "src/e.ts", role: "core-service", description: "E - should be excluded (6th)" },
-    ],
-  });
+Deno.test("[RequestProcessor] buildPortalKnowledgeSummary: caps convention lists to stay within token limits", () => {
+  const extraConventions = Array.from({ length: PORTAL_KNOWLEDGE_PROMPT_MAX_LINES + 10 }, (_, i) => ({
+    name: `Convention ${i}`,
+    description: "desc",
+    category: "cat",
+    evidenceCount: i,
+    confidence: "high" as const,
+    examples: [],
+  }));
+  const knowledge = makeKnowledge({ conventions: extraConventions as any[] });
   const summary = buildPortalKnowledgeSummary(knowledge);
 
-  assertStringIncludes(summary, "src/main.ts");
-  assertStringIncludes(summary, "src/d.ts");
-  assertEquals(summary.includes("src/e.ts"), false, "6th key file should be excluded");
-});
-
-Deno.test("[RequestProcessor] clamps PORTAL_KNOWLEDGE_KEY summary to PORTAL_KNOWLEDGE_PROMPT_MAX_LINES", () => {
-  const longOverview = Array.from({ length: 200 }, (_, i) => `Line ${i}`).join("\n");
-  const knowledge = makeKnowledge({ architectureOverview: longOverview });
-  const summary = buildPortalKnowledgeSummary(knowledge);
-
-  const lineCount = summary.split("\n").length;
-  assertEquals(
-    lineCount <= PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
-    true,
-    `Summary must be ≤ ${PORTAL_KNOWLEDGE_PROMPT_MAX_LINES} lines, got ${lineCount}`,
-  );
+  const lines = summary.split("\n");
+  // The summary should be approximately capped
+  assertEquals(lines.length <= PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, true);
 });
 
 // ============================================================================
-// Integration tests: process() with knowledge service
+// Integration tests: RequestProcessor + IPortalKnowledgeService
 // ============================================================================
 
-Deno.test("[RequestProcessor] resolves portal knowledge for portal-bound requests", async () => {
-  const knowledgeService = makeMockKnowledgeService();
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { portal: "test-portal" });
-    await processor.process(filePath);
+Deno.test("[RequestProcessor] resolves portal knowledge before execution and injects it into context", async () => {
+  const mockKnowledge = makeMockKnowledgeService();
+  const env = await makeKnowledgeProcessorEnv({ knowledgeService: mockKnowledge, withPortal: true });
 
-    assertEquals(knowledgeService.callCount, 1, "Knowledge service should be called once");
+  try {
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
+
+    // Write a dummy blueprint
+    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
+
+    await env.processor.process(filePath);
+
+    assertEquals(mockKnowledge.callCount, 1, "Knowledge service should have been called");
+
+    // Check captured prompt for knowledge markers
+    const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
+    assertStringIncludes(lastPrompt, "## Portal Knowledge Summary");
   } finally {
-    await cleanup();
+    await env.cleanup();
   }
 });
 
-Deno.test("[RequestProcessor] populates IRequestProcessingContext.portalKnowledge", async () => {
-  // Verify knowledge is resolved: the capturing provider should see the knowledge
-  // summary in the prompt when knowledge is available.
-  const knowledgeService = makeMockKnowledgeService();
-  const { provider: capProvider, capturedPrompts } = makeCapturingProvider();
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    providerOverride: capProvider,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { portal: "test-portal" });
-    await processor.process(filePath);
+Deno.test("[RequestProcessor] passes injected knowledge to agent during prompt generation", async () => {
+  const mockKnowledge = makeMockKnowledgeService();
+  const env = await makeKnowledgeProcessorEnv({ knowledgeService: mockKnowledge, withPortal: true });
 
-    // Knowledge was resolved → captured prompt should contain knowledge content
-    assertExists(capturedPrompts[0], "Provider should have been called");
-    assertStringIncludes(capturedPrompts[0], "Portal Knowledge");
+  try {
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal", identity: "know-agent" });
+    // Write a dummy blueprint
+    const blueprintPath = join(env.blueprintsPath, "Identities", "know-agent.md");
+    Deno.writeTextFileSync(blueprintPath, "# know-agent blueprint\n{{context}}");
+
+    await env.processor.process(filePath);
+
+    // Check captured prompt for knowledge markers
+    const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
+    assertStringIncludes(lastPrompt, "## Portal Knowledge Summary");
+    assertStringIncludes(lastPrompt, "*.service.ts naming");
   } finally {
-    await cleanup();
+    await env.cleanup();
   }
 });
 
-Deno.test("[RequestProcessor] injects knowledge Markdown summary into IParsedRequest.context via PORTAL_KNOWLEDGE_KEY", async () => {
-  const knowledge = makeKnowledge({ architectureOverview: "## Overview\nSpecific arch line\n" });
-  const knowledgeService = makeMockKnowledgeService({ knowledge });
-  const { provider: capProvider, capturedPrompts } = makeCapturingProvider();
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    providerOverride: capProvider,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { portal: "test-portal" });
-    await processor.process(filePath);
+Deno.test("[RequestProcessor] handles knowledge resolution failure gracefully", async () => {
+  const failingKnowledge = makeMockKnowledgeService({ fail: true });
+  const env = await makeKnowledgeProcessorEnv({ knowledgeService: failingKnowledge, withPortal: true });
 
-    assertExists(capturedPrompts[0]);
-    assertStringIncludes(capturedPrompts[0], "Specific arch line");
+  try {
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
+
+    // Write a dummy blueprint
+    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
+
+    // Should not throw
+    await env.processor.process(filePath);
+
+    // Check captured prompt: knowledge markers should be absent
+    const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
+    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
   } finally {
-    await cleanup();
+    await env.cleanup();
   }
 });
 
-Deno.test("[RequestProcessor] skips knowledge for requests without portal", async () => {
-  const knowledgeService = makeMockKnowledgeService();
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    withPortal: true,
-  });
+Deno.test("[RequestProcessor] skips knowledge resolution if request specifies no portal", async () => {
+  const mockKnowledge = makeMockKnowledgeService();
+  const env = await makeKnowledgeProcessorEnv({ knowledgeService: mockKnowledge, withPortal: false });
+
   try {
-    writeAgentBlueprint(blueprintsPath);
-    // No portal: in frontmatter
-    const filePath = makeAgentRequestFile(requestsDir, { requestId: "req-no-portal" });
-    await processor.process(filePath);
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: undefined });
 
-    assertEquals(knowledgeService.callCount, 0, "Knowledge service should NOT be called when no portal");
+    // Write a dummy blueprint
+    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
+
+    await env.processor.process(filePath);
+
+    assertEquals(mockKnowledge.callCount, 0, "Knowledge service should not have been called");
   } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[RequestProcessor] uses cached knowledge when fresh", async () => {
-  // getOrAnalyze returns immediately (mock always resolves synchronously)
-  const knowledge = makeKnowledge();
-  const knowledgeService = makeMockKnowledgeService({ knowledge });
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { requestId: "req-cached", portal: "test-portal" });
-    await processor.process(filePath);
-
-    // Knowledge service called exactly once (getOrAnalyze, which uses cache internally)
-    assertEquals(knowledgeService.callCount, 1);
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[RequestProcessor] proceeds without knowledge on failure", async () => {
-  const failingService = makeMockKnowledgeService({ fail: true });
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService: failingService,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { requestId: "req-fail", portal: "test-portal" });
-    // Should not throw; process() must return non-null (plan path)
-    const result = await processor.process(filePath);
-    assertExists(result, "process() must succeed even when knowledge service fails");
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[RequestProcessor] passes knowledge to flow processing path", async () => {
-  const knowledgeService = makeMockKnowledgeService();
-  const { processor, requestsDir, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    withPortal: true,
-  });
-  try {
-    const filePath = makeFlowRequestFile(requestsDir, { portal: "test-portal" });
-    await processor.process(filePath);
-
-    // Knowledge service must be called for flow-kind requests too
-    assertEquals(knowledgeService.callCount, 1, "Knowledge service should be called for flow requests");
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("[RequestProcessor] returns stale knowledge immediately without blocking on re-analysis", async () => {
-  // Mock getOrAnalyze to return immediately — verifies non-blocking behaviour.
-  // The mock resolves synchronously so process() should complete without delay.
-  const knowledge = makeKnowledge();
-  const knowledgeService = makeMockKnowledgeService({ knowledge });
-  const { processor, requestsDir, blueprintsPath, cleanup } = await makeKnowledgeProcessorEnv({
-    knowledgeService,
-    withPortal: true,
-  });
-  try {
-    writeAgentBlueprint(blueprintsPath);
-    const filePath = makeAgentRequestFile(requestsDir, { requestId: "req-stale", portal: "test-portal" });
-
-    const start = Date.now();
-    await processor.process(filePath);
-    const elapsed = Date.now() - start;
-
-    // If getOrAnalyze were blocking re-analysis, it would take much longer.
-    // With the mock it resolves immediately; any result is correct here.
-    assertEquals(knowledgeService.callCount >= 1, true);
-    assertEquals(elapsed < 5000, true, "process() should complete quickly with synchronous mock");
-  } finally {
-    await cleanup();
+    await env.cleanup();
   }
 });

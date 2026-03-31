@@ -11,7 +11,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { loadAnalysis } from "../../../src/services/request_analysis/mod.ts";
@@ -21,131 +21,28 @@ import type {
 } from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
 import {
   type IRequestAnalysis,
-  RequestAnalysisComplexity,
+  RequestAnalysisComplexity as _RequestAnalysisComplexity,
   RequestTaskType,
 } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { type IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService as _initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import {
+  makeAgentRequestFileSync as makeAgentRequestFile,
+  makeAnalysis,
+  makeBlueprintFileSync as _makeBlueprintFile,
+  makeFakeAnalyzer,
+  makeFlowRequestFileSync as makeFlowRequestFile,
+  makeRequestProcessorEnv,
+  makeThrowingAnalyzer,
+} from "./request_test_helpers.ts";
 
 // ============================================================================
-// Helpers
+// Tests
 // ============================================================================
-
-function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
-  return {
-    goals: [{ description: "test goal", explicit: true, priority: 1 }],
-    requirements: [{ description: "must pass tests", confidence: 0.9, type: "functional", explicit: true }],
-    constraints: [],
-    acceptanceCriteria: ["all green"],
-    ambiguities: [],
-    actionabilityScore: 80,
-    complexity: RequestAnalysisComplexity.SIMPLE,
-    taskType: RequestTaskType.UNKNOWN,
-    tags: [],
-    referencedFiles: [],
-    metadata: {
-      analyzedAt: new Date().toISOString(),
-      durationMs: 42,
-      mode: AnalysisMode.HEURISTIC,
-      analyzerVersion: ANALYZER_VERSION,
-    },
-    ...overrides,
-  };
-}
-
-function makeFakeAnalyzer(analysis: IRequestAnalysis): IRequestAnalyzerService {
-  return {
-    analyze: (_text: string, _ctx?: IRequestAnalysisContext) => Promise.resolve(analysis),
-    analyzeQuick: (_text: string) => analysis,
-  };
-}
-
-function makeThrowingAnalyzer(): IRequestAnalyzerService {
-  return {
-    analyze: (_text: string, _ctx?: IRequestAnalysisContext) => Promise.reject(new Error("Analyzer exploded")),
-    analyzeQuick: (_text: string): Partial<IRequestAnalysis> => ({
-      taskType: undefined,
-      tags: undefined,
-      referencedFiles: undefined,
-    }),
-  };
-}
-
-async function makeRequestProcessorEnv() {
-  const { db, config, tempDir, cleanup } = await initTestDbService();
-
-  const workspacePath = join(tempDir, config.paths.workspace);
-  const requestsDir = join(workspacePath, config.paths.requests);
-  const plansDir = join(workspacePath, config.paths.plans);
-  const blueprintsPath = join(tempDir, config.paths.blueprints, config.paths.identities);
-
-  await Deno.mkdir(requestsDir, { recursive: true });
-  await Deno.mkdir(plansDir, { recursive: true });
-  await Deno.mkdir(blueprintsPath, { recursive: true });
-
-  const processorConfig = {
-    workspacePath,
-    requestsDir,
-    blueprintsPath,
-    includeReasoning: false,
-  };
-
-  return { db, config, tempDir, cleanup, workspacePath, requestsDir, blueprintsPath, processorConfig };
-}
-
-function makeAgentRequestFile(requestsDir: string, options: {
-  requestId?: string;
-  body?: string;
-  identity?: string;
-} = {}): string {
-  const requestId = options.requestId ?? "req-001";
-  const body = options.body ?? "Fix the login bug in the auth module";
-  const identity = options.identity ?? "nonexistent-agent";
-  const filePath = join(requestsDir, `${requestId}.md`);
-
-  const content = `---
-trace_id: "trace-${requestId}"
-created: "${new Date().toISOString()}"
-status: "${RequestStatus.PENDING}"
-priority: "normal"
-identity: "${identity}"
-source: RequestSource.CLI
-created_by: "test-user"
----
-${body}`;
-
-  Deno.writeTextFileSync(filePath, content);
-  return filePath;
-}
-
-function makeFlowRequestFile(requestsDir: string, options: {
-  requestId?: string;
-  body?: string;
-  flow?: string;
-} = {}): string {
-  const requestId = options.requestId ?? "req-flow-001";
-  const body = options.body ?? "Run the deployment flow";
-  const flow = options.flow ?? "deploy-flow";
-  const filePath = join(requestsDir, `${requestId}.md`);
-
-  const content = `---
-trace_id: "trace-${requestId}"
-created: "${new Date().toISOString()}"
-status: "${RequestStatus.PENDING}"
-priority: "normal"
-flow: "${flow}"
-source: RequestSource.CLI
-created_by: "test-user"
----
-${body}`;
-
-  Deno.writeTextFileSync(filePath, content);
-  return filePath;
-}
 
 // ============================================================================
 // Unit tests: applyAnalysisToRequest
@@ -387,7 +284,7 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { identity: "test-agent" });
     // Write a dummy blueprint
-    await Deno.writeTextFile(join(env.blueprintsPath, "test-agent.md"), "Test prompt");
+    await Deno.writeTextFile(join(env.blueprintsPath, "Identities", "test-agent.md"), "Test prompt");
 
     const mockProvider = createMockProvider([
       '<thought>Analyze</thought><content>{"subject": "Fixed security bug", "description": "Fix bug", "steps": [{"step": 1, "title": "Check code", "description": "Verify security issue"}]}</content>',

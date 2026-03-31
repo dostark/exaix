@@ -11,13 +11,52 @@ import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+interface IEventLoggerTestCtx {
+  db: any;
+  logger: EventLogger;
+  logs: string[];
+  restoreConsole: () => void;
+}
+
+async function withEventLoggerTest(
+  testFn: (ctx: IEventLoggerTestCtx) => Promise<void>,
+  loggerOptions: any = { prefix: "[Test]" },
+) {
+  const { db, cleanup } = await initTestDbService();
+  const logs: string[] = [];
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  const captureLogs = (...args: Array<unknown>) => logs.push(args.join(" "));
+  console.log = captureLogs;
+  console.warn = captureLogs;
+  console.error = captureLogs;
+
+  const restoreConsole = () => {
+    console.log = originalLog;
+    console.warn = originalWarn;
+    console.error = originalError;
+  };
+
+  try {
+    const logger = new EventLogger({ db, ...loggerOptions });
+    await testFn({ db, logger, logs, restoreConsole });
+  } finally {
+    restoreConsole();
+    await cleanup();
+  }
+}
+
+// ============================================================================
 // Basic Logging Tests
 // ============================================================================
 
 Deno.test("EventLogger: should write event to IActivity Journal", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const logger = new EventLogger({ db, prefix: "[Test]" });
+  await withEventLoggerTest(async ({ db, logger }) => {
     const traceId = crypto.randomUUID();
 
     await logger.log({
@@ -37,58 +76,36 @@ Deno.test("EventLogger: should write event to IActivity Journal", async () => {
     assertEquals(activities[0].target, "/path/to/file");
     assertEquals(activities[0].actor, "system");
     assertEquals(JSON.parse(activities[0].payload).key, "value");
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("EventLogger: should print formatted message to console", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db, prefix: "[Test]" });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("config.loaded", "exa.config.toml", { checksum: "abc123" });
 
-    // Restore console.log
-    console.log = originalLog;
+    // Restore console.log to check output
+    restoreConsole();
 
     // Check console output contains expected elements
     assertEquals(logs.length >= 1, true);
     assertStringIncludes(logs[0], "config.loaded");
-  } finally {
-    console.log = originalLog;
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("EventLogger: should include payload values in console output", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db, prefix: "[Test]" });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("daemon.started", "main", {
       provider: "ollama",
       model: "codellama:13b",
     });
 
-    console.log = originalLog;
+    restoreConsole();
 
     // Check that payload values appear in output
     const fullOutput = logs.join("\n");
     assertStringIncludes(fullOutput, "provider");
     assertStringIncludes(fullOutput, "ollama");
-  } finally {
-    console.log = originalLog;
-    await cleanup();
-  }
+  });
 });
 
 // ============================================================================
@@ -96,28 +113,13 @@ Deno.test("EventLogger: should include payload values in console output", async 
 // ============================================================================
 
 Deno.test("EventLogger: should respect minLevel configuration", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  const originalWarn = console.warn;
-  const originalError = console.error;
-
-  console.log = (...args: string[]) => logs.push(`log: ${args.join(" ")}`);
-  console.warn = (...args: string[]) => logs.push(`warn: ${args.join(" ")}`);
-  console.error = (...args: string[]) => logs.push(`error: ${args.join(" ")}`);
-
-  try {
-    // Set minLevel to warn - should suppress info and debug
-    const logger = new EventLogger({ db, minLevel: LogLevel.WARN });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.debug("debug.message", "target", {});
     await logger.info("info.message", "target", {});
     await logger.warn("warn.message", "target", {});
     await logger.error("error.message", "target", {});
 
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
+    restoreConsole();
 
     // Only warn and error should appear
     const fullOutput = logs.join("\n");
@@ -125,36 +127,17 @@ Deno.test("EventLogger: should respect minLevel configuration", async () => {
     assertEquals(fullOutput.includes("info.message"), false);
     assertStringIncludes(fullOutput, "warn.message");
     assertStringIncludes(fullOutput, "error.message");
-  } finally {
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
-    await cleanup();
-  }
+  }, { minLevel: LogLevel.WARN });
 });
 
 Deno.test("EventLogger: should use appropriate icons for each level", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  const originalWarn = console.warn;
-  const originalError = console.error;
-
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-  console.warn = (...args: string[]) => logs.push(args.join(" "));
-  console.error = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db, minLevel: LogLevel.DEBUG });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("test.info", "target", {});
     await logger.warn("test.warn", "target", {});
     await logger.error("test.error", "target", {});
     await logger.debug("test.debug", "target", {});
 
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
+    restoreConsole();
 
     // Check for appropriate icons
     const fullOutput = logs.join("\n");
@@ -162,12 +145,7 @@ Deno.test("EventLogger: should use appropriate icons for each level", async () =
     assertStringIncludes(fullOutput, "⚠️"); // warn
     assertStringIncludes(fullOutput, "❌"); // error
     assertStringIncludes(fullOutput, "🔍"); // debug
-  } finally {
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
-    await cleanup();
-  }
+  }, { minLevel: LogLevel.DEBUG });
 });
 
 // ============================================================================
@@ -175,8 +153,7 @@ Deno.test("EventLogger: should use appropriate icons for each level", async () =
 // ============================================================================
 
 Deno.test("EventLogger: child should inherit parent defaults", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
+  await withEventLoggerTest(async ({ db, logger: _logger }) => {
     const parentTraceId = crypto.randomUUID();
     const parent = new EventLogger({
       db,
@@ -196,14 +173,11 @@ Deno.test("EventLogger: child should inherit parent defaults", async () => {
     const activities = db.getActivitiesByTrace(parentTraceId);
     assertEquals(activities.length, 1);
     assertEquals(activities[0].actor, "identity:processor");
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("EventLogger: child should override parent defaults when specified", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
+  await withEventLoggerTest(async ({ db, logger: _logger }) => {
     const traceId = crypto.randomUUID();
     const parent = new EventLogger({
       db,
@@ -223,9 +197,7 @@ Deno.test("EventLogger: child should override parent defaults when specified", a
     const activities = db.getActivitiesByTrace(traceId);
     assertEquals(activities.length, 1);
     assertEquals(activities[0].actor, "identity:watcher");
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 // ============================================================================
@@ -275,33 +247,18 @@ Deno.test("EventLogger: should fallback to console-only when DB unavailable", as
 });
 
 Deno.test("EventLogger: should not throw when DB write fails", async () => {
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    const logger = new EventLogger({ db });
-
+  await withEventLoggerTest(async ({ db, logger, logs, restoreConsole }) => {
     // Close database to simulate failure
     await db.close();
 
     // This should not throw, just fallback to console
-    const logs: string[] = [];
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    console.log = (...args: string[]) => logs.push(args.join(" "));
-    console.warn = (...args: string[]) => logs.push(args.join(" "));
+    await logger.info("test.after_close", "target", {});
 
-    try {
-      await logger.info("test.after_close", "target", {});
-    } finally {
-      console.log = originalLog;
-      console.warn = originalWarn;
-    }
+    restoreConsole();
 
     // Should have logged something (either the message or a warning)
     assertEquals(logs.length >= 1, true);
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 // ============================================================================
@@ -309,53 +266,33 @@ Deno.test("EventLogger: should not throw when DB write fails", async () => {
 // ============================================================================
 
 Deno.test("EventLogger: should format timestamps consistently", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db, showTimestamp: true });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("test.event", "target", {});
 
-    console.log = originalLog;
+    restoreConsole();
 
     // Check for ISO-like timestamp format in output
     const fullOutput = logs.join("\n");
     // Timestamp should be present (HH:MM:SS format or ISO)
     assertMatch(fullOutput, /\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}/);
-  } finally {
-    console.log = originalLog;
-    await cleanup();
-  }
+  }, { showTimestamp: true });
 });
 
 Deno.test("EventLogger: should indent multi-line payloads", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("test.event", "target", {
       key1: "value1",
       key2: "value2",
       key3: "value3",
     });
 
-    console.log = originalLog;
+    restoreConsole();
 
     // Check that payload lines are indented
     const fullOutput = logs.join("\n");
     assertStringIncludes(fullOutput, "key1");
     assertStringIncludes(fullOutput, "value1");
-  } finally {
-    console.log = originalLog;
-    await cleanup();
-  }
+  });
 });
 
 // ============================================================================
@@ -363,29 +300,19 @@ Deno.test("EventLogger: should indent multi-line payloads", async () => {
 // ============================================================================
 
 Deno.test("EventLogger: should allow custom icons in log events", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  console.log = (...args: string[]) => logs.push(args.join(" "));
-
-  try {
-    const logger = new EventLogger({ db });
-
+  await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.log({
       action: "config.loaded",
       target: "exa.config.toml",
       payload: {},
-      icon: "🚀",
+      icon: "rocket",
       level: LogLevel.INFO,
     });
 
-    console.log = originalLog;
+    restoreConsole();
 
-    assertStringIncludes(logs.join("\n"), "🚀");
-  } finally {
-    console.log = originalLog;
-    await cleanup();
-  }
+    assertStringIncludes(logs.join("\n"), "rocket");
+  });
 });
 
 // ============================================================================
@@ -393,19 +320,8 @@ Deno.test("EventLogger: should allow custom icons in log events", async () => {
 // ============================================================================
 
 Deno.test("EventLogger: full integration with database and console", async () => {
-  const { db, cleanup } = await initTestDbService();
-  const logs: string[] = [];
-  const originalLog = console.log;
-  const originalWarn = console.warn;
-  const originalError = console.error;
-
-  console.log = (...args: string[]) => logs.push(`log: ${args.join(" ")}`);
-  console.warn = (...args: string[]) => logs.push(`warn: ${args.join(" ")}`);
-  console.error = (...args: string[]) => logs.push(`error: ${args.join(" ")}`);
-
-  try {
+  await withEventLoggerTest(async ({ db, logger, logs, restoreConsole }) => {
     const traceId = crypto.randomUUID();
-    const logger = new EventLogger({ db, prefix: "[Exaix]" });
 
     // Create child logger for a service
     const serviceLogger = logger.child({
@@ -425,20 +341,12 @@ Deno.test("EventLogger: full integration with database and console", async () =>
     const activities = db.getActivitiesByTrace(traceId);
     assertEquals(activities.length, 4);
 
-    // Verify console output
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
+    restoreConsole();
 
     const fullOutput = logs.join("\n");
     assertStringIncludes(fullOutput, "daemon.starting");
     assertStringIncludes(fullOutput, "config.loaded");
     assertStringIncludes(fullOutput, "context.truncated");
     assertStringIncludes(fullOutput, "provider.failed");
-  } finally {
-    console.log = originalLog;
-    console.warn = originalWarn;
-    console.error = originalError;
-    await cleanup();
-  }
+  }, { prefix: "[Exaix]" });
 });

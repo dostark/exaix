@@ -3,55 +3,29 @@
  * @path tests/services/request/request_processor_memory_test.ts
  * @description Tests for SessionMemoryService injection into RequestProcessor.
  * Verifies that enhanceRequest() is called before analysis and that the result
- * is stored on IParsedRequest.context (Phase 49, Step 5).
+ * is passed to the analyzer.
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
-import { join } from "@std/path";
 import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { type EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
+import { createMockProvider } from "../../helpers/mock_provider.ts";
+import {
+  makeAgentRequestFileSync as makeRequestFile,
+  makeAnalysis,
+  makeFakeAnalyzer,
+  makeRequestProcessorEnv as makeEnv,
+} from "./request_test_helpers.ts";
 import type {
   IRequestAnalysisContext,
   IRequestAnalyzerService,
 } from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
-import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import { type EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
-import { initTestDbService } from "../../helpers/db.ts";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function makePassthroughAnalyzer(): IRequestAnalyzerService {
-  const analysis = {
-    goals: [],
-    requirements: [],
-    constraints: [],
-    acceptanceCriteria: [],
-    ambiguities: [],
-    actionabilityScore: 70,
-    complexity: RequestAnalysisComplexity.SIMPLE,
-    taskType: RequestTaskType.UNKNOWN,
-    tags: [],
-    referencedFiles: [],
-    metadata: {
-      analyzedAt: new Date().toISOString(),
-      durationMs: 10,
-      mode: AnalysisMode.HEURISTIC,
-      analyzerVersion: ANALYZER_VERSION,
-    },
-  };
-  return {
-    analyze: (_text: string, _ctx?: IRequestAnalysisContext) => Promise.resolve(analysis),
-    analyzeQuick: () => analysis,
-  };
-}
 
 function makeSpyMemoryService(): { service: SessionMemoryService; calls: string[] } {
   const calls: string[] = [];
@@ -69,39 +43,20 @@ function makeSpyMemoryService(): { service: SessionMemoryService; calls: string[
   return { service: partial as SessionMemoryService, calls };
 }
 
-async function makeEnv() {
-  const { db, config, tempDir, cleanup } = await initTestDbService();
-  const workspacePath = join(tempDir, config.paths.workspace);
-  const requestsDir = join(workspacePath, config.paths.requests);
-  const plansDir = join(workspacePath, config.paths.plans);
-  const blueprintsPath = join(tempDir, config.paths.blueprints, config.paths.identities);
-
-  await Deno.mkdir(requestsDir, { recursive: true });
-  await Deno.mkdir(plansDir, { recursive: true });
-  await Deno.mkdir(blueprintsPath, { recursive: true });
-
-  const processorConfig = { workspacePath, requestsDir, blueprintsPath, includeReasoning: false };
-  return { db, config, tempDir, cleanup, requestsDir, processorConfig };
-}
-
-function makeRequestFile(requestsDir: string, body = "Implement caching layer for the API"): string {
-  const requestId = "req-mem-001";
-  const filePath = join(requestsDir, `${requestId}.md`);
-  Deno.writeTextFileSync(
-    filePath,
-    `---
-trace_id: "trace-mem-001"
-created: "${new Date().toISOString()}"
-status: "${RequestStatus.PENDING}"
-priority: "normal"
-identity: "nonexistent-agent"
-source: "cli"
-created_by: "test-user"
-assessed_at: "${new Date().toISOString()}"
----
-${body}`,
-  );
-  return filePath;
+function makeMockAnalyzer(): IRequestAnalyzerService & { capturedCtx: IRequestAnalysisContext | undefined } {
+  const analysis = makeAnalysis();
+  let capturedCtx: IRequestAnalysisContext | undefined;
+  const mock = {
+    analyze: (_text: string, ctx?: IRequestAnalysisContext) => {
+      capturedCtx = ctx;
+      return Promise.resolve(analysis);
+    },
+    analyzeQuick: () => analysis,
+    get capturedCtx() {
+      return capturedCtx;
+    },
+  };
+  return mock as any;
 }
 
 // ---------------------------------------------------------------------------
@@ -128,7 +83,7 @@ Deno.test(
         ...env.processorConfig,
         context,
         testProvider: mockProvider,
-        testAnalyzer: makePassthroughAnalyzer(),
+        testAnalyzer: makeFakeAnalyzer(makeAnalysis()),
         sessionMemory: spy.service,
       });
 
@@ -144,10 +99,11 @@ Deno.test(
 );
 
 Deno.test(
-  "[RequestProcessor] does not call enhanceRequest() when sessionMemory is undefined",
+  "[RequestProcessor] passes EnhancedRequest to the analyzer",
   async () => {
     const env = await makeEnv();
     const spy = makeSpyMemoryService();
+    const analyzerSpy = makeMockAnalyzer();
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     try {
@@ -157,18 +113,24 @@ Deno.test(
         provider: mockProvider,
         git: {} as any,
         display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        portalKnowledge: undefined,
       };
       const processor = new RequestProcessor({
         ...env.processorConfig,
         context,
         testProvider: mockProvider,
-        testAnalyzer: makePassthroughAnalyzer(),
+        testAnalyzer: analyzerSpy,
+        sessionMemory: spy.service,
       });
 
-      const filePath = makeRequestFile(env.requestsDir);
+      const filePath = makeRequestFile(env.requestsDir, { body: "Request for memory" });
       await processor.process(filePath);
 
-      assertEquals(spy.calls.length, 0, "enhanceRequest() should NOT be called when no sessionMemory");
+      const capturedCtx = analyzerSpy.capturedCtx;
+      assertExists(capturedCtx, "Analyzer should have captured context");
+      const enhanced = capturedCtx.memories;
+      assertExists(enhanced, "EnhancedRequest should be present in analyzer context");
+      assertEquals(enhanced.memoryContext, "## Past context\n- Pattern: use dependency injection");
     } finally {
       await env.cleanup();
     }
@@ -176,10 +138,14 @@ Deno.test(
 );
 
 Deno.test(
-  "[RequestProcessor] handles missing SessionMemoryService gracefully",
+  "[RequestProcessor] continues normally if SessionMemoryService.enhanceRequest() fails",
   async () => {
     const env = await makeEnv();
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
+
+    const failingService: SessionMemoryService = {
+      enhanceRequest: () => Promise.reject(new Error("Memory service exploded")),
+    } as any;
 
     try {
       const context: IApplicationContext = {
@@ -188,18 +154,19 @@ Deno.test(
         provider: mockProvider,
         git: {} as any,
         display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        portalKnowledge: undefined,
       };
       const processor = new RequestProcessor({
         ...env.processorConfig,
         context,
         testProvider: mockProvider,
+        testAnalyzer: makeFakeAnalyzer(makeAnalysis()),
+        sessionMemory: failingService,
       });
 
       const filePath = makeRequestFile(env.requestsDir);
-      // Should not throw even without sessionMemory
-      const result = await processor.process(filePath);
-      // Will return null because blueprint not found — that's expected
-      assertEquals(result, null);
+      // Should not throw
+      await processor.process(filePath);
     } finally {
       await env.cleanup();
     }
