@@ -7,7 +7,7 @@
  * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
  */
 import type { Config } from "../shared/schemas/config.ts";
-import type { IDatabaseService } from "../services/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import { MCPConfigSchema, type MCPTool } from "../shared/schemas/mcp.ts";
 import { JSONValue } from "../shared/types/json.ts";
@@ -28,7 +28,7 @@ import { SearchFilesTool } from "./handlers/search_files_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
-import { logInfo } from "../services/structured_logger.ts";
+import { logInfo } from "../services/logger/structured_logger.ts";
 
 /**
  * MCP Server Implementation

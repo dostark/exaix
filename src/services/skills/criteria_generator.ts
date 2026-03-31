@@ -1,6 +1,6 @@
 /**
  * @module CriteriaGenerator
- * @path src/services/criteria_generator.ts
+ * @path src/services/skills/criteria_generator.ts
  * @description Converts structured RequestAnalysis output (goals and acceptance
  * criteria) into EvaluationCriterion arrays suitable for quality gate evaluation.
  * Implements ICriteriaGeneratorService for dependency injection.
@@ -9,7 +9,7 @@
  * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
  */
 
-import { EvaluationCriterion } from "../flows/evaluation_criteria.ts";
+import { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "../../shared/enums.ts";
 import { ICriteriaGeneratorService } from "../../shared/interfaces/i_criteria_generator_service.ts";
 import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";

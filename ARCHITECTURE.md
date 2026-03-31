@@ -1835,7 +1835,7 @@ graph LR
 | **Config Service**       | Load and validate exa.config.toml                 | `src/config/service.ts`                             | 🟢 All   |
 | **Workspace Execution**  | Agent environment and path resolution             | `src/services/workspace_execution_context.ts`       | 🟢 All   |
 | **Database Service**     | Edition-tiered journal operations                 | `src/services/db.ts`                                | 🟢 All   |
-| **Git Service**          | Git operations with trace metadata                | `src/services/git_service.ts`                       | 🟢 All   |
+| **Git Service**          | Git operations with trace metadata                | `src/services/core/git_service.ts`                       | 🟢 All   |
 | **Provider Factory**     | Create LLM provider instances                     | `src/ai/provider_factory.ts`                        | 🟢 All   |
 | **Context Loader**       | Load context for agent execution                  | `src/services/context_loader.ts`                    | 🟢 All   |
 | **Portal Commands**      | Manage external project access                    | `src/cli/portal_commands.ts`                        | 🟢 All   |

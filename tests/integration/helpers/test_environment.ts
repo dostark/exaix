@@ -17,7 +17,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
-import { DatabaseService } from "../../../src/services/db.ts";
+import { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
@@ -28,8 +28,8 @@ import {
   MockStrategy,
   PortalOperation,
 } from "../../../src/shared/enums.ts";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
-import { ExecutionLoop } from "../../../src/services/execution_loop.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import {
   getBlueprintsIdentitiesDir,
   getMemoryDir,

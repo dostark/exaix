@@ -6,10 +6,10 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { EventLogger } from "../../src/services/event_logger.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import type { IDatabaseService } from "../../src/services/db.ts";
+import type { IDatabaseService } from "../../src/services/core/db.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";

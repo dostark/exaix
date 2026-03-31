@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { WorkspaceExecutionContextBuilder } from "../../src/services/workspace_execution_context.ts";
+import { WorkspaceExecutionContextBuilder } from "../../src/services/portal/workspace_execution_context.ts";
 import type { IPortalPermissions } from "../../src/shared/schemas/portal_permissions.ts";
 import { PortalOperation } from "../../src/shared/enums.ts";
 import { initTestDbService } from "../helpers/db.ts";

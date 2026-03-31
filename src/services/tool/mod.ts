@@ -9,4 +9,4 @@
 
 export * from "./tool_registry.ts";
 export * from "./tool_reflector.ts";
-export * from "./output_validator.ts";
+export type { IToolCall as OutputValidationToolCall } from "./output_validator.ts";

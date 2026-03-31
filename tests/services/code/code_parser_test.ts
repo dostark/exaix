@@ -14,7 +14,7 @@ import {
   type IFileChange,
   parseCodeGeneration,
   validateFilePath,
-} from "../../../src/services/code_parser.ts";
+} from "../../../src/services/context/code_parser.ts";
 
 Deno.test("Code Parser - parseCodeGeneration()", async (t) => {
   const portalRoot = "/home/user/projects/MyApp";

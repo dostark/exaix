@@ -13,7 +13,7 @@ import { EvaluationCategory } from "../../src/shared/enums.ts";
 
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
-import { RequestProcessor } from "../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { getTestModel } from "../ai/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";

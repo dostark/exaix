@@ -8,11 +8,11 @@
 import { join } from "@std/path";
 import { ConfigService } from "../../../src/config/service.ts";
 import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
-import { ContextCardGenerator } from "../../../src/services/context_card_generator.ts";
+import { ContextCardGenerator } from "../../../src/services/context/context_card_generator.ts";
 import { ContextCardAdapter } from "../../../src/services/adapters/context_card_adapter.ts";
-import { RequestService } from "../../../src/services/request.ts";
+import { RequestService } from "../../../src/services/request/request.ts";
 import { RequestAdapter } from "../../../src/services/adapters/request_adapter.ts";
-import { PortalService } from "../../../src/services/portal.ts";
+import { PortalService } from "../../../src/services/portal/portal.ts";
 import { PortalAdapter } from "../../../src/services/adapters/portal_adapter.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";

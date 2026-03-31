@@ -8,7 +8,7 @@
 import type { ILearning, IPattern } from "../../../src/shared/schemas/memory_bank.ts";
 import { IExecutionMemory, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
 import type { IDecision } from "../../../src/shared/schemas/memory_bank.ts";
-import { MemoryBankService } from "../../../src/services/memory_bank.ts";
+import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import {

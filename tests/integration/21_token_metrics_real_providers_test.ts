@@ -7,7 +7,7 @@
 
 import { assert, assertExists } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { EventLogger } from "../../src/services/event_logger.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
 import { AnthropicProvider } from "../../src/ai/providers/anthropic_provider.ts";

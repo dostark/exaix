@@ -20,9 +20,9 @@ import type { Config } from "../../src/shared/schemas/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
 import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";
-import { CostTracker } from "../../src/services/cost_tracker.ts";
+import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
 import { ProviderSelector } from "../../src/ai/provider_selector.ts";
-import { HealthCheckService } from "../../src/services/health_check_service.ts";
+import { HealthCheckService } from "../../src/services/core/health_check_service.ts";
 
 async function withEnv<T>(vars: Record<string, string | undefined>, fn: () => Promise<T> | T): Promise<T> {
   const previous: Record<string, string | undefined> = {};

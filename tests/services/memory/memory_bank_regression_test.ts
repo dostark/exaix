@@ -13,7 +13,7 @@ import {
   searchByKeyword,
   searchByTags,
   searchMemoryAdvanced,
-} from "../../../src/services/memory_search.ts";
+} from "../../../src/services/memory/memory_search.ts";
 import { IExecutionMemory, type IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
 import { createTestLearning } from "../helpers/memory_test_helpers.ts";
 import {

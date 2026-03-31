@@ -10,7 +10,7 @@ import { McpToolName } from "../../src/shared/enums.ts";
 
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 Deno.test("Integration: Concurrent Requests - Multiple requests in parallel", async (t) => {
   const env = await TestEnvironment.create();

@@ -5,7 +5,7 @@
  * of mock files, request factories, and common visual primitives.
  */
 
-import type { IDatabaseService } from "../../src/services/db.ts";
+import type { IDatabaseService } from "../../src/services/core/db.ts";
 import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
 import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";

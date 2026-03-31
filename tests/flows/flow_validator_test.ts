@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
-import { FlowValidatorImpl } from "../../src/services/flow_validator.ts";
+import { FlowValidatorImpl } from "../../src/services/flow/flow_validator.ts";
 
 // Utility: create isolated temp dir for each test
 async function setupTestDir() {

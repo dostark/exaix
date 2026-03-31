@@ -11,8 +11,8 @@
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IOutputValidator } from "../output_validator.ts";
-import type { IEventLogger } from "../event_logger.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
+import type { IEventLogger } from "../core/event_logger.ts";
 import type {
   IRequestQualityAssessment,
   IRequestQualityIssue,

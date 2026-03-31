@@ -9,7 +9,7 @@
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { PortalService } from "../../../src/services/portal.ts";
+import { PortalService } from "../../../src/services/portal/portal.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";

@@ -8,10 +8,10 @@
 import { assert, assertEquals } from "@std/assert";
 import { FlowStepType, MemoryOperation, PortalOperation } from "../../src/shared/enums.ts";
 import { join } from "@std/path";
-import { GitService } from "../../src/services/git_service.ts";
+import { GitService } from "../../src/services/core/git_service.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
-import type { DatabaseService as DatabaseService } from "../../src/services/db.ts";
+import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 
 /**

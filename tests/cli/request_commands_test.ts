@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
-import { DatabaseService as DatabaseService } from "../../src/services/db.ts";
+import { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";

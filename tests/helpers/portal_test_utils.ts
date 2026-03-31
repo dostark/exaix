@@ -11,14 +11,14 @@ import { ensureDir } from "@std/fs";
 import { setupGitRepo } from "./git_test_helper.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import { PortalExecutionStrategy, PortalOperation } from "../../src/shared/enums.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
-import { EventLogger } from "../../src/services/event_logger.ts";
-import { ReviewRegistry } from "../../src/services/review_registry.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { IReviewStatus, ReviewStatus } from "../../src/reviews/review_status.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
-import type { DatabaseService } from "../../src/services/db.ts";
+import type { DatabaseService } from "../../src/services/core/db.ts";
 
 export interface IPortalTestSetup {
   portalAlias: string;

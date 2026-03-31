@@ -11,7 +11,7 @@ import {
   createLLMRetryPolicy,
   createRetryPolicy,
   RetryPolicy,
-} from "../../../src/services/retry_policy.ts";
+} from "../../../src/services/core/retry_policy.ts";
 
 // ============================================================================
 // RetryPolicy.execute() Tests

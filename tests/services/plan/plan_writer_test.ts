@@ -8,8 +8,8 @@
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assert, assertStringIncludes } from "@std/assert";
 
-import { PlanWriter } from "../../../src/services/plan_writer.ts";
-import type { IPlanWriterConfig, IRequestMetadata } from "../../../src/services/plan_writer.ts";
+import { PlanWriter } from "../../../src/services/plan/plan_writer.ts";
+import type { IPlanWriterConfig, IRequestMetadata } from "../../../src/services/plan/plan_writer.ts";
 
 interface IAgentExecutionResult {
   thought: string;

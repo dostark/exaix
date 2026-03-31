@@ -6,12 +6,12 @@
  * `RequestAnalysisSchema` via `IOutputValidator`. Falls back to a minimal
  * safe `IRequestAnalysis` on any failure so callers never receive an exception.
  * @architectural-layer Services
- * @dependencies [src/ai/types.ts, src/services/output_validator.ts, src/shared/schemas/request_analysis.ts]
+ * @dependencies [src/ai/types.ts, src/services/tool/output_validator.ts, src/shared/schemas/request_analysis.ts]
  * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IOutputValidator } from "../output_validator.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   type IRequestAnalysis,
   RequestAnalysisComplexity,

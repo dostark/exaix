@@ -7,7 +7,7 @@
  * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
 
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import type { SkillsService } from "../skills.ts";
+import type { SkillsService } from "../skills/skills.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "../../shared/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
 import { MemoryBankSource, SkillStatus } from "../../shared/enums.ts";

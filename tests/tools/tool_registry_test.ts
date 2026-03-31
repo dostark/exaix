@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus, McpToolName } from "../../src/shared/enums.ts";
 import { join } from "@std/path";
-import { ToolRegistry } from "../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createToolRegistryTestContext } from "../helpers/tool_registry_test_helper.ts";

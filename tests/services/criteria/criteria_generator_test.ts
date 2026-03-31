@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { EvaluationCategory } from "../../../src/shared/enums.ts";
-import { CriteriaGenerator } from "../../../src/services/criteria_generator.ts";
+import { CriteriaGenerator } from "../../../src/services/skills/criteria_generator.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import {
   type IRequestAnalysis,

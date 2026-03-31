@@ -5,19 +5,18 @@
  * core service logic in isolation.
  */
 
-import { type IFlowValidator, RequestRouter } from "../../src/services/request_router.ts";
+import { type IFlowValidator, RequestRouter } from "../../src/services/request/request_router.ts";
 import type { IFlowResult, IFlowRunner } from "../../src/flows/flow_runner.ts";
 import type {
   IAgentExecutionResult,
   IAgentRunner,
   IBlueprint,
   IParsedRequest,
-} from "../../src/services/agent_runner.ts";
+} from "../../src/services/agent/agent_runner.ts";
 import type { IFlow } from "../../src/shared/schemas/flow.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
-import { IEventLogger } from "../../src/services/event_logger.ts";
 import { ILogEvent } from "../../src/services/common/types.ts";
-import { EventLogger } from "../../src/services/event_logger.ts";
+import { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
 import type { JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
 import { LogLevel } from "../../src/shared/enums.ts";

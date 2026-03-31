@@ -1,13 +1,13 @@
 /**
  * @module PlanServiceUnitTest
  * @path tests/services/plan_service_unit_test.ts
- * @description Unit tests for the PlanService (src/services/plan.ts).
+ * @description Unit tests for the PlanService (src/services/plan/plan.ts).
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { PlanService } from "../../../src/services/plan.ts";
+import { PlanService } from "../../../src/services/plan/plan.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "../../helpers/test_helpers.ts";

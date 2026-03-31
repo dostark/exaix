@@ -7,13 +7,12 @@
 
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { AgentExecutor } from "../../../src/services/agent_executor.ts";
-import type { IBlueprint } from "../../../src/services/agent_executor.ts";
+import { AgentExecutor, type IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
-import { PathResolver } from "../../../src/services/path_resolver.ts";
-import { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
+import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
@@ -56,7 +55,7 @@ describe("AgentExecutor Capability Differentiation", () => {
 
   describe("requiresGitTracking", () => {
     it("returns false for read-only agents without write capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "code-analyst",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -69,7 +68,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns true for agents with write_file capability", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "feature-developer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -82,7 +81,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns true for agents with git_commit capability", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "commit-agent",
         model: "gpt-4o-mini",
         provider: PROVIDER_OPENAI,
@@ -95,7 +94,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns true for agents with git_create_branch capability", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "branch-agent",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -108,7 +107,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns true for agents with multiple write capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "full-developer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -121,7 +120,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns false for agents with only read capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "analyzer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -134,7 +133,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns false for agents with empty capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "minimal-agent",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -147,7 +146,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("is case-sensitive for capability names", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "case-test",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -162,7 +161,7 @@ describe("AgentExecutor Capability Differentiation", () => {
 
   describe("isReadOnlyAgent", () => {
     it("returns true for agents without write capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "reader",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
@@ -175,7 +174,7 @@ describe("AgentExecutor Capability Differentiation", () => {
     });
 
     it("returns false for agents with write capabilities", () => {
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "writer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,

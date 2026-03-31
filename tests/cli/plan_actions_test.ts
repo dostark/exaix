@@ -16,7 +16,7 @@ import {
   type IPlanActionContext,
 } from "../../src/cli/command_builders/plan_actions.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
-import { EventLogger } from "../../src/services/event_logger.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
 

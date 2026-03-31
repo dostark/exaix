@@ -7,7 +7,7 @@
 
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { MockStrategy } from "../../../src/shared/enums.ts";

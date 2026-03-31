@@ -18,11 +18,11 @@ import {
 } from "../../shared/constants.ts";
 import { HealthCheckVerdict, HealthStatus } from "../../shared/enums.ts";
 import { EventLogger } from "../core/event_logger.ts";
-import { LogMethod } from "./decorators/logging.ts";
+import { LogMethod } from "../decorators/logging.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "../../shared/constants.ts";
-import { MiddlewarePipeline } from "./middleware/pipeline.ts";
-import type { IServiceContext } from "../../shared/types/common.ts";
+import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import type { IServiceContext } from "../common/types.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 
 /**

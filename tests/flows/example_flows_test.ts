@@ -16,8 +16,8 @@ import { EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } f
 import { initTestDbService } from "../helpers/db.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
-import type { IAgentExecutionResult } from "../../src/services/agent_runner.ts";
-import type { DatabaseService } from "../../src/services/db.ts";
+import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { DatabaseService } from "../../src/services/core/db.ts";
 import { JSONValue } from "../../src/shared/types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 

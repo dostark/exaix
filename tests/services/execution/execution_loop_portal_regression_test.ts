@@ -7,11 +7,11 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { ExecutionLoop } from "../../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { ReviewRegistry } from "../../../src/services/review_registry.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
+import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
 

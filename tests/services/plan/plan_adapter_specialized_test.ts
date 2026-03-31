@@ -6,7 +6,7 @@
  */
 
 import { assertStringIncludes } from "@std/assert";
-import { PlanAdapter } from "../../../src/services/plan_adapter.ts";
+import { PlanAdapter } from "../../../src/services/plan/plan_adapter.ts";
 import { Plan } from "../../../src/shared/schemas/plan_schema.ts";
 
 Deno.test("PlanAdapter.toMarkdown - renders security section", () => {

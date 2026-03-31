@@ -6,7 +6,7 @@
  */
 
 import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
-import { CostTracker } from "../../../src/services/cost_tracker.ts";
+import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import {
   COST_RATE_ANTHROPIC,

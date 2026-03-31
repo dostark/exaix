@@ -17,14 +17,14 @@ import {
   PortalStatus,
   VerificationStatus,
 } from "../../../src/shared/enums.ts";
-import type { PortalService } from "../../../src/services/portal.ts";
+import type { PortalService } from "../../../src/services/portal/portal.ts";
 import { MemoryServiceAdapter } from "../../../src/services/adapters/memory_adapter.ts";
-import type { MemoryBankService } from "../../../src/services/memory_bank.ts";
-import type { MemoryExtractorService } from "../../../src/services/memory_extractor.ts";
+import type { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import type { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { ArchiveAdapter } from "../../../src/services/adapters/archive_adapter.ts";
-import type { ArchiveEntry, ArchiveService } from "../../../src/services/archive_service.ts";
+import type { ArchiveEntry, ArchiveService } from "../../../src/services/artifact/archive_service.ts";
 import { FlowValidatorAdapter } from "../../../src/services/adapters/flow_validator_adapter.ts";
-import type { FlowValidatorImpl } from "../../../src/services/flow_validator.ts";
+import type { FlowValidatorImpl } from "../../../src/services/flow/flow_validator.ts";
 import type { IFlow } from "../../../src/shared/schemas/flow.ts";
 import { DaemonServiceAdapter } from "../../../src/services/adapters/daemon_adapter.ts";
 import type { DaemonCommands } from "../../../src/cli/commands/daemon_commands.ts";

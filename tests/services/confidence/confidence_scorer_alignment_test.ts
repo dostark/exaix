@@ -7,8 +7,8 @@
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
 import { ConfidenceAssessmentLevel, CritiqueQuality } from "../../../src/shared/enums.ts";
-import { createConfidenceScorer } from "../../../src/services/confidence_scorer.ts";
-import type { ICritique } from "../../../src/services/reflexive_agent.ts";
+import { createConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
+import type { ICritique } from "../../../src/services/agent/reflexive_agent.ts";
 import { EXISTING_SCORE_CONFIDENCE_WEIGHT, GOAL_ALIGNMENT_CONFIDENCE_WEIGHT } from "../../../src/shared/constants.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 

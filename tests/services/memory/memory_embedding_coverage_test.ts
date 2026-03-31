@@ -5,17 +5,16 @@
  * ensuring robust handling of zero vectors and dimension mismatches in RAG operations.
  */
 import { ensureDir } from "@std/fs";
-import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
-
 import { assert } from "@std/assert";
-import { assertAlmostEquals, assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
+import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
+import { assertAlmostEquals, assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
 import {
   cosineSimilarity,
   generateMockEmbedding,
   MemoryEmbeddingService,
-} from "../../../src/services/memory_embedding.ts";
+} from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { ILearning } from "../../../src/shared/schemas/memory_bank.ts";
 import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../../src/shared/enums.ts";

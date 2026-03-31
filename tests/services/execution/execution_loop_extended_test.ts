@@ -4,12 +4,10 @@
  * @description Targeted tests for the core execution loop, verifying multi-step
  * task transitions and state consistency across complex agent workflows.
  */
-import { assert, assertEquals, assertExists } from "@std/assert";
-
-import { MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
-
 import { join } from "@std/path";
-import { ExecutionLoop } from "../../../src/services/execution_loop.ts";
+import { assert, assertEquals, assertExists } from "@std/assert";
+import { MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
+import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";

@@ -1,4 +1,3 @@
-#!/usr/bin/env -S deno run --allow-all --no-check
 /**
  * @module ExaCtl
  * @path src/cli/exactl.ts
@@ -33,7 +32,7 @@ import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
 import { ICliApplicationContext } from "./cli_context.ts";
-import { GitService } from "../services/git_service.ts";
+import { GitService } from "../services/core/git_service.ts";
 import { OutputFormat } from "./memory_types.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
 

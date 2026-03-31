@@ -7,7 +7,7 @@
  * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
  */
 
-import type { EventLogger } from "../../services/event_logger.ts";
+import type { EventLogger } from "../../services/core/event_logger.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import { withRetry } from "./common.ts";

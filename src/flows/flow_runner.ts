@@ -4,17 +4,17 @@
  * @description Core orchestrator for multi-agent flow execution.
  * @architectural-layer Flows
  * @dependencies [FlowSchema, DependencyResolver, AgentRunner, ConditionEvaluator, Transforms, DatabaseService, FlowReporter]
- * @related-files [src/flows/flow_loader.ts, src/services/request_router.ts, src/services/flow_reporter.ts]
+ * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
  */
 
 import { IFlow, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
 import { join } from "@std/path";
 import { DependencyResolver } from "./dependency_resolver.ts";
-import { IAgentExecutionResult } from "../services/agent_runner.ts";
+import { IAgentExecutionResult } from "../services/agent/agent_runner.ts";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
 import { jsonExtract, JSONValue } from "../shared/types/json.ts";
-import type { IDatabaseService } from "../services/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
 import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
@@ -27,7 +27,7 @@ import { McpClient } from "../mcp/mcp_client.ts";
 import { LlmClient } from "../ai/llm_client.ts";
 import { ToolHandler } from "../mcp/tool_handler.ts";
 import { Config } from "../shared/schemas/config.ts";
-import { BlueprintLoader } from "../services/blueprint_loader.ts";
+import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { IDisplayService } from "../shared/interfaces/i_display_service.ts";
 
 export interface IFlowRunner {

@@ -8,7 +8,7 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { GitService } from "../../../src/services/git_service.ts";
+import { GitService } from "../../../src/services/core/git_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { GitTestHelper, setupGitRepo } from "../../helpers/git_test_helper.ts";

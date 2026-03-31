@@ -15,7 +15,7 @@ import {
   DEFAULT_WATCHER_STABILITY_BACKOFF_MS,
   DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS,
 } from "../../shared/constants.ts";
-import { delay } from "../helpers/async_utils.ts";
+import { delay } from "../../helpers/async_utils.ts";
 
 /**
  * Event emitted when a stable file is detected

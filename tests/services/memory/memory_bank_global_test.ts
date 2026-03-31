@@ -9,7 +9,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { EvaluationCategory, MemoryReferenceType } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { MemoryBankService } from "../../../src/services/memory_bank.ts";
+import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import {
   GlobalMemorySchema,

@@ -6,9 +6,9 @@
  * @dependencies [FlowLoader, DependencyResolver, RequestRouter]
  * @related-files [src/flows/flow_loader.ts, src/services/request_router.ts]
  */
-import { FlowLoader } from "../flows/flow_loader.ts";
-import { DependencyResolver } from "../flows/dependency_resolver.ts";
-import type { IFlowValidator } from "./request_router.ts";
+import { FlowLoader } from "../../flows/flow_loader.ts";
+import { DependencyResolver } from "../../flows/dependency_resolver.ts";
+import type { IFlowValidator } from "../request/request_router.ts";
 import type { IFlow, IFlowStep } from "../../shared/schemas/flow.ts";
 
 /**

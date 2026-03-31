@@ -9,16 +9,16 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
-import { CostTracker } from "../../../src/services/cost_tracker.ts";
-import { PlanValidationError } from "../../../src/services/plan_adapter.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
+import { PlanValidationError } from "../../../src/services/plan/plan_adapter.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "../../helpers/paths_helper.ts";
 import { RequestShowHandler } from "../../../src/cli/handlers/request_show_handler.ts";
 import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
-import type { EventLogger } from "../../../src/services/event_logger.ts";
+import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 

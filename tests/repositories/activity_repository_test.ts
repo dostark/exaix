@@ -10,7 +10,7 @@ import { MemoryBankSource } from "../../src/shared/enums.ts";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "../../src/repositories/activity_repository.ts";
 import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
-import type { DatabaseService } from "../../src/services/db.ts";
+import type { DatabaseService } from "../../src/services/core/db.ts";
 import { createStubDb } from "../helpers/test_helpers.ts";
 
 // Mock IActivity entity for testing

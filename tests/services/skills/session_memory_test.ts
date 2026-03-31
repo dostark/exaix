@@ -11,9 +11,9 @@ import {
   createSessionMemoryService,
   type Insight,
   SessionMemoryService,
-} from "../../../src/services/session_memory.ts";
+} from "../../../src/services/memory/session_memory.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory_embedding.ts";
+import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import type {
   IActivitySummary,
   IDecision,

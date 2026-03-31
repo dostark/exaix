@@ -6,8 +6,8 @@
 
 import { assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
-import { DatabaseService } from "../../../src/services/db.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { DatabaseService } from "../../../src/services/core/db.ts";
 import { IModelProvider } from "../../../src/ai/types.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";

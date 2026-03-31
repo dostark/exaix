@@ -7,14 +7,13 @@
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueQuality, CritiqueSeverity } from "../../../src/shared/enums.ts";
-
 import { IModelProvider } from "../../../src/ai/types.ts";
 import {
   createCodeReviewReflexiveAgent,
   createHighQualityReflexiveAgent,
   createReflexiveAgent,
   CritiqueSchema,
-} from "../../../src/services/reflexive_agent.ts";
+} from "../../../src/services/agent/reflexive_agent.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 
 function makeXMLResponse(thought: string, content: string): string {

@@ -17,7 +17,7 @@ import {
   initializeHealthChecks,
   LLMProviderHealthCheck,
   MemoryHealthCheck,
-} from "../../../src/services/health_check_service.ts";
+} from "../../../src/services/core/health_check_service.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 

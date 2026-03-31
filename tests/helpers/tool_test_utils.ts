@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { ToolRegistry } from "../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { join } from "@std/path";

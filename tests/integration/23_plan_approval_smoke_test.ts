@@ -9,7 +9,7 @@ import { assert } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
 
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 Deno.test("Smoke: Plan approval concurrency", async () => {
   const env = await TestEnvironment.create();

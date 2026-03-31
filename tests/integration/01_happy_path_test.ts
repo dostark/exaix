@@ -9,9 +9,9 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { ExecutionStatus, McpToolName, MemoryBankSource, PortalOperation } from "../../src/shared/enums.ts";
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
-import { MissionReporter } from "../../src/services/mission_reporter.ts";
-import { MemoryBankService } from "../../src/services/memory_bank.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { MissionReporter } from "../../src/services/artifact/mission_reporter.ts";
+import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 
 Deno.test("Integration: Happy Path - Request to Report", async (t) => {
   const env = await TestEnvironment.create();

@@ -11,7 +11,10 @@
  */
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { assertEquals, assertExists } from "@std/assert";
-import { createReflexiveAgent, ReflexiveAgent as _ReflexiveAgent } from "../../../src/services/reflexive_agent.ts";
+import {
+  createReflexiveAgent,
+  ReflexiveAgent as _ReflexiveAgent,
+} from "../../../src/services/agent/reflexive_agent.ts";
 import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
@@ -20,7 +23,7 @@ import type {
   IAgentRunner,
   IBlueprint,
   IParsedRequest,
-} from "../../../src/services/agent_runner.ts";
+} from "../../../src/services/agent/agent_runner.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { MAX_CRITIQUE_REQUIREMENTS } from "../../../src/shared/constants.ts";
 

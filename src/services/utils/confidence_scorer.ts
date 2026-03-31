@@ -4,14 +4,14 @@
  * @description Evaluates agent outputs to extract confidence scores and reasoning, flagging low-confidence results for human review.
  * @architectural-layer Services
  * @dependencies [providers, db, agent_runner, output_validator, enums, constants]
- * @related-files [src/services/agent_runner.ts, src/services/reflexive_agent.ts]
+ * @related-files [src/services/agent/agent_runner.ts, src/services/agent/reflexive_agent.ts]
  */
 
 import { z } from "zod";
 import { IModelProvider } from "../../ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { AgentRunner, type IBlueprint, type IParsedRequest } from "./agent_runner.ts";
-import { createOutputValidator, OutputValidator } from "./output_validator.ts";
+import { AgentRunner, type IBlueprint, type IParsedRequest } from "../agent/agent_runner.ts";
+import { createOutputValidator, OutputValidator } from "../tool/output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";
 import { ConfidenceAssessmentLevel, FactorImpact } from "../../shared/enums.ts";
 
@@ -76,7 +76,7 @@ import {
   EXISTING_SCORE_CONFIDENCE_WEIGHT,
   GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
 } from "../../shared/constants.ts";
-import type { ICritique } from "./reflexive_agent.ts";
+import type { ICritique } from "../agent/reflexive_agent.ts";
 
 // ============================================================================
 // Confidence Schema

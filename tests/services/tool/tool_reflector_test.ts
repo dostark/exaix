@@ -17,7 +17,7 @@ import {
   IToolCall,
   IToolResult,
   ToolReflectionSchema,
-} from "../../../src/services/tool_reflector.ts";
+} from "../../../src/services/tool/tool_reflector.ts";
 import { JSONValue } from "../../../src/shared/types/json.ts";
 
 // ============================================================================

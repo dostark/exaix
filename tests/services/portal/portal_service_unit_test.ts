@@ -11,7 +11,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import { PortalService } from "../../../src/services/portal.ts";
+import { PortalService } from "../../../src/services/portal/portal.ts";
 import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "../../../src/shared/enums.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";

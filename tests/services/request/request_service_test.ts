@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { RequestService } from "../../../src/services/request.ts";
+import { RequestService } from "../../../src/services/request/request.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestPriority, RequestSource } from "../../../src/shared/enums.ts";
 import { createMockConfig } from "../../helpers/config.ts";

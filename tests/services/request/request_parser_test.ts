@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import type { EventLogger } from "../../../src/services/event_logger.ts";
+import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import {
   TEST_LOG_ACTION_FILE_NOT_FOUND,
   TEST_LOG_ACTION_FRONTMATTER_INVALID,

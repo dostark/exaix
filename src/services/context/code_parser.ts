@@ -1,6 +1,6 @@
 /**
  * @module CodeParser
- * @path src/services/code_parser.ts
+ * @path src/services/contex/code_parser.ts
  * @description Parses LLM responses to extract file changes for plan execution, validating path safety.
  * @architectural-layer Services
  * @dependencies [Path]

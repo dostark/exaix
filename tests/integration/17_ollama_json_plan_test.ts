@@ -8,9 +8,9 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { OllamaProvider } from "../../src/ai/providers.ts";
-import { AgentRunner } from "../../src/services/agent_runner.ts";
-import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "../../src/services/plan_writer.ts";
-import { PlanAdapter } from "../../src/services/plan_adapter.ts";
+import { AgentRunner } from "../../src/services/agent/agent_runner.ts";
+import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "../../src/services/plan/plan_writer.ts";
+import { PlanAdapter } from "../../src/services/plan/plan_adapter.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { getWorkspacePlansDir } from "../helpers/paths_helper.ts";
 

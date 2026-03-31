@@ -12,7 +12,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { FlowInputSource, MemoryOperation, RequestSource } from "../../src/shared/enums.ts";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ArtifactRegistry } from "../../src/services/artifact_registry.ts";
+import { ArtifactRegistry } from "../../src/services/artifact/artifact_registry.ts";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 
 // Helper to run exactl command in a given workspace

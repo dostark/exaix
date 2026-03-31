@@ -7,10 +7,9 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "../../src/ai/providers.ts";
-import { AgentRunner } from "../../src/services/agent_runner.ts";
-import type { IBlueprint, IParsedRequest } from "../../src/services/agent_runner.ts";
+import { AgentRunner, IBlueprint, IParsedRequest } from "../../src/services/agent/agent_runner.ts";
 import { PORTAL_CONTEXT_KEY } from "../../src/shared/constants.ts";
-import { buildPortalContextBlock } from "../../src/services/prompt_context.ts";
+import { buildPortalContextBlock } from "../../src/services/context/prompt_context.ts";
 import { ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
 import { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
 import type { ISkill, ISkillMatch } from "../../src/shared/schemas/memory_bank.ts";

@@ -12,7 +12,7 @@ import { MCPServer } from "../../src/mcp/server.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { join } from "@std/path";
 import type { Config } from "../../src/shared/schemas/config.ts";
-import type { IDatabaseService } from "../../src/services/db.ts";
+import type { IDatabaseService } from "../../src/services/core/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 

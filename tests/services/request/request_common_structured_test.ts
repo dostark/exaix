@@ -5,11 +5,11 @@
  * expected_outcomes, scope) propagation in buildParsedRequest().
  * Phase 49, Step 10.
  * @architectural-layer Tests
- * @dependencies [src/services/request_common.ts]
+ * @dependencies [src/services/request/request_common.ts]
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals } from "@std/assert";
-import { buildParsedRequest } from "../../../src/services/request_common.ts";
+import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 
 const BASE_FRONTMATTER = {

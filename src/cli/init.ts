@@ -9,29 +9,29 @@
 
 import { join } from "@std/path";
 import { ConfigService } from "../config/service.ts";
-import { GitService } from "../services/git_service.ts";
-import { EventLogger } from "../services/event_logger.ts";
+import { GitService } from "../services/core/git_service.ts";
+import { EventLogger } from "../services/core/event_logger.ts";
 import { ProviderFactory } from "../ai/provider_factory.ts";
 import { FlowLoader } from "../flows/flow_loader.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
 import type { Config } from "../shared/schemas/config.ts";
-import { DatabaseService, IDatabaseService } from "../services/db.ts";
-import { ToolRegistry } from "../services/tool_registry.ts";
+import { DatabaseService, IDatabaseService } from "../services/core/db.ts";
+import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
 
 // Concrete services for adapters
-import { MemoryBankService } from "../services/memory_bank.ts";
-import { MemoryExtractorService } from "../services/memory_extractor.ts";
-import { MemoryEmbeddingService } from "../services/memory_embedding.ts";
-import { SkillsService } from "../services/skills.ts";
-import { ArchiveService } from "../services/archive_service.ts";
-import { FlowValidatorImpl } from "../services/flow_validator.ts";
-import { ContextCardGenerator } from "../services/context_card_generator.ts";
-import { PortalService } from "../services/portal.ts";
-import { RequestService } from "../services/request.ts";
-import { PlanService } from "../services/plan.ts";
+import { MemoryBankService } from "../services/memory/memory_bank.ts";
+import { MemoryExtractorService } from "../services/memory/memory_extractor.ts";
+import { MemoryEmbeddingService } from "../services/memory/memory_embedding.ts";
+import { SkillsService } from "../services/skills/skills.ts";
+import { ArchiveService } from "../services/artifact/archive_service.ts";
+import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
+import { ContextCardGenerator } from "../services/context/context_card_generator.ts";
+import { PortalService } from "../services/portal/portal.ts";
+import { RequestService } from "../services/request/request.ts";
+import { PlanService } from "../services/plan/plan.ts";
 import { PortalKnowledgeService } from "../services/portal_knowledge/portal_knowledge_service.ts";
 
 // Adapters
@@ -49,7 +49,7 @@ import {
   RequestAdapter,
   SkillsAdapter,
 } from "../services/adapters/mod.ts";
-import { OutputValidator } from "../services/output_validator.ts";
+import { OutputValidator } from "../services/tool/output_validator.ts";
 
 export interface IServiceContext extends ICliApplicationContext {
   success: boolean;

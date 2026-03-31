@@ -9,10 +9,10 @@ import { assert, assertEquals } from "@std/assert";
 import { LearningCategory, McpToolName, PortalOperation } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
 
-import { ToolRegistry } from "../../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { ConfigSchema } from "../../../src/shared/schemas/config.ts";
-import { DatabaseService as DatabaseService } from "../../../src/services/db.ts";
+import { DatabaseService as DatabaseService } from "../../../src/services/core/db.ts";
 
 // Mock dependencies
 const mockConfig = ConfigSchema.parse({

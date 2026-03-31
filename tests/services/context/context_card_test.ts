@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { ContextCardGenerator } from "../../../src/services/context_card_generator.ts";
+import { ContextCardGenerator } from "../../../src/services/context/context_card_generator.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";

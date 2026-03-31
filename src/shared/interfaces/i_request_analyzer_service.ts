@@ -11,7 +11,7 @@
 
 import type { IRequestAnalysis } from "../schemas/request_analysis.ts";
 import { AnalysisMode } from "../types/request.ts";
-import type { EnhancedRequest } from "../../services/session_memory.ts";
+import type { EnhancedRequest } from "../../services/memory/session_memory.ts";
 
 /**
  * Configuration for the RequestAnalyzer service.

@@ -4,7 +4,7 @@
  * @description Analyzes execution results to extract learnings and patterns, managing the lifecycle of pending memory update proposals.
  * @architectural-layer Services
  * @dependencies [path, fs, schema, db, memory_bank, memory_status, enums]
- * @related-files [src/services/memory_bank.ts, src/services/db.ts]
+ * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
 import { join } from "@std/path";
@@ -23,7 +23,7 @@ import type {
 import { MemoryUpdateProposalSchema } from "../../shared/schemas/memory_bank.ts";
 import { MemoryOperation, MemoryReferenceType, MemoryScope } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
-import { LearningExtractor } from "./memory/learning_extractor.ts";
+import { LearningExtractor } from "../memory/learning_extractor.ts";
 import { JSONValue, toSafeJson } from "../../shared/types/json.ts";
 
 /**

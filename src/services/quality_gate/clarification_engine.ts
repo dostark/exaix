@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IOutputValidator } from "../output_validator.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   ClarificationQuestionSchema,
   ClarificationSessionStatus,

@@ -20,14 +20,14 @@ import {
   type IBlueprint,
   type IParsedRequest,
 } from "./agent_runner.ts";
-import { createOutputValidator, type IOutputValidator } from "./output_validator.ts";
+import { createOutputValidator, type IOutputValidator } from "../tool/output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
-import { LogMethod } from "./decorators/logging.ts";
+import { LogMethod } from "../decorators/logging.ts";
 import { EventLogger } from "../core/event_logger.ts";
-import { MiddlewarePipeline } from "./middleware/pipeline.ts";
-import type { IServiceContext } from "../../shared/types/common.ts";
-import { RequirementFulfillmentSchema } from "../flows/evaluation_criteria.ts";
+import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import type { IServiceContext } from "../common/types.ts";
+import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
 import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import { MAX_CRITIQUE_REQUIREMENTS } from "../../shared/constants.ts";
 

@@ -7,7 +7,7 @@
  * @related-files [src/services/event_logger.ts]
  */
 
-import type { EventLogger } from "../services/event_logger.ts";
+import type { EventLogger } from "../services/core/event_logger.ts";
 
 /**
  * Safe error that prevents information leakage

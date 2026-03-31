@@ -10,7 +10,7 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request_processor.ts";
+import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "../../../src/shared/constants.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";

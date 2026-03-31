@@ -12,11 +12,11 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { PathResolver } from "./path_resolver.ts";
+import { PathResolver } from "../portal/path_resolver.ts";
 import { ActivityActor, LogLevel } from "../../shared/enums.ts";
-import { MiddlewarePipeline } from "./middleware/pipeline.ts";
-import { IServiceContext } from "../../shared/types/common.ts";
-import { PathAccessError, PathSecurity, PathTraversalError } from "../helpers/path_security.ts";
+import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import { IServiceContext } from "../common/types.ts";
+import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 import { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
 

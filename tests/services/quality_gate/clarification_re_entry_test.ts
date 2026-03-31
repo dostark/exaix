@@ -7,7 +7,7 @@
  * Directly covers Phase 47 Gap §1 (skip semantics) and Gap §2 (re-entry mechanism).
  * @architectural-layer Services
  * @dependencies [src/services/quality_gate/clarification_persistence.ts, src/services/request_processor.ts]
- * @related-files [src/services/quality_gate/clarification_persistence.ts, src/services/request_processor.ts, src/services/request_processing/types.ts]
+ * @related-files [src/services/quality_gate/clarification_persistence.ts, src/services/request/request_processor.ts, src/services/request_processing/types.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -19,7 +19,7 @@ import {
 import type { IRequestSpecification } from "../../../src/shared/schemas/request_specification.ts";
 import { finalizeAndWritePending } from "../../../src/services/quality_gate/clarification_persistence.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { QualityGateMode, RequestSource } from "../../../src/shared/enums.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import type { IRequestQualityIssue } from "../../../src/shared/schemas/request_quality_assessment.ts";

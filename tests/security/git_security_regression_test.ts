@@ -8,10 +8,10 @@
 import { assert, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createGitTestContext, GitTestHelper } from "../helpers/git_test_helper.ts";
-import { IPlanContext, PlanExecutor } from "../../src/services/plan_executor.ts";
+import { IPlanContext, PlanExecutor } from "../../src/services/plan/plan_executor.ts";
 import { MockProvider } from "../../src/ai/providers.ts";
-import { GitService } from "../../src/services/git_service.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
+import { GitService } from "../../src/services/core/git_service.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");

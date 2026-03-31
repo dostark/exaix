@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createReflexiveAgent, CritiqueSchema } from "../../../src/services/reflexive_agent.ts";
+import { createReflexiveAgent, CritiqueSchema } from "../../../src/services/agent/reflexive_agent.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import {
   IRequestAnalysis,
@@ -15,7 +15,12 @@ import {
   RequestTaskType,
 } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../../../src/services/agent_runner.ts";
+import {
+  IAgentExecutionResult,
+  IAgentRunner,
+  IBlueprint,
+  IParsedRequest,
+} from "../../../src/services/agent/agent_runner.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 
 const SAMPLE_ANALYSIS: IRequestAnalysis = {

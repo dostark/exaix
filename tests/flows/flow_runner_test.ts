@@ -15,10 +15,10 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { IFlow, IFlowInput, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
-import { IAgentExecutionResult } from "../../src/services/agent_runner.ts";
+import { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import { DEFAULT_FLOW_VERSION, PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "../../src/shared/constants.ts";
 import { JSONValue } from "../../src/shared/types/json.ts";
-import { ActivityRecord, SqliteParam } from "../../src/services/db.ts";
+import { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
 import { IJournalFilterOptions } from "../../src/shared/types/database.ts";
 
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */

@@ -1,6 +1,6 @@
 /**
  * @module IWorkspaceExecutionContext
- * @path src/services/workspace_execution_context.ts
+ * @path src/services/portal/workspace_execution_context.ts
  * @description Defines the environment for agent operations, including working
  * directories, repository paths, and security boundaries.
  *

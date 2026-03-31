@@ -6,8 +6,8 @@
  */
 
 import { join } from "@std/path";
-import { ToolRegistry } from "../../src/services/tool_registry.ts";
-import type { DatabaseService as DatabaseService } from "../../src/services/db.ts";
+import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { getMemoryProjectsDir } from "./paths_helper.ts";

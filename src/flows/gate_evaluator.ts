@@ -19,7 +19,7 @@ import {
 import { IStepResult } from "./flow_runner.ts";
 import { FlowGateAction, FlowGateOnFail } from "../shared/enums.ts";
 import { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
-import { CriteriaGenerator } from "../services/criteria_generator.ts";
+import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
 import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 
 /**

@@ -8,7 +8,7 @@
  */
 import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
-import type { EventLogger } from "../event_logger.ts";
+import type { EventLogger } from "../core/event_logger.ts";
 import type { IRequestFrontmatter, ParsedRequestFile } from "./types.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
 

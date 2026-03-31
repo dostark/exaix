@@ -7,7 +7,7 @@
  * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
  */
 
-import { PortalService } from "../portal.ts";
+import { PortalService } from "../portal/portal.ts";
 import { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
 import { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
 import { PortalAnalysisMode, PortalExecutionStrategy } from "../../shared/enums.ts";

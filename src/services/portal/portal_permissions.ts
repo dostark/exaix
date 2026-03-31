@@ -15,7 +15,7 @@ import type {
   IPortalSecurityConfig,
   IRBACPermissionCheckResult,
 } from "../../shared/schemas/portal_permissions.ts";
-import { AuditLogger } from "./audit_logger.ts";
+import { AuditLogger } from "../core/audit_logger.ts";
 import {
   PermissionAction,
   PortalOperation,

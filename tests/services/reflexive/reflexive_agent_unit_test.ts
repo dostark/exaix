@@ -11,16 +11,16 @@ import {
   createCodeReviewReflexiveAgent,
   type ICritique,
   ReflexiveAgent,
-} from "../../../src/services/reflexive_agent.ts";
-import type { IAgentExecutionResult, IBlueprint, IParsedRequest } from "../../../src/services/agent_runner.ts";
+} from "../../../src/services/agent/reflexive_agent.ts";
+import type { IAgentExecutionResult, IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
 import { IModelProvider } from "../../../src/ai/types.ts";
-import type { IAgentRunner } from "../../../src/services/agent_runner.ts";
+import type { IAgentRunner } from "../../../src/services/agent/agent_runner.ts";
 import {
   type IOutputValidator,
   type IValidationMetrics,
   type IValidationResult,
   OutputValidator,
-} from "../../../src/services/output_validator.ts";
+} from "../../../src/services/tool/output_validator.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 

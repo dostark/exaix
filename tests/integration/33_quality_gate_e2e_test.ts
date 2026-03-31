@@ -14,11 +14,11 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { basename } from "@std/path";
-import { RequestProcessor } from "../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
 import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
 import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
-import { createOutputValidator } from "../../src/services/output_validator.ts";
+import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,

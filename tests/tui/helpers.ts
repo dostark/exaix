@@ -26,7 +26,7 @@ import type {
   IPortalInfo,
   IVerificationResult as _IVerificationResult,
 } from "../../src/shared/types/portal.ts";
-import { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/db.ts";
+import { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
 import { IActivityRecord, IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import {
   ISkillSummary,

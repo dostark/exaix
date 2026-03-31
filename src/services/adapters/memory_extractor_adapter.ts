@@ -8,7 +8,7 @@
  */
 
 import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
-import type { MemoryExtractorService } from "../memory_extractor.ts";
+import type { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
 
 export class MemoryExtractorAdapter implements IMemoryExtractorService {

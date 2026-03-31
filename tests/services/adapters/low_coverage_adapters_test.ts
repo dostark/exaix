@@ -16,8 +16,8 @@ import { LogLevel, RequestPriority, RequestSource } from "../../../src/shared/en
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
 import type { IStructuredLogEntry } from "../../../src/shared/types/logging.ts";
-import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/structured_logger.ts";
-import type { EventLogger } from "../../../src/services/event_logger.ts";
+import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/logger/structured_logger.ts";
+import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../../helpers/test_helpers.ts";
 

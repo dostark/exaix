@@ -6,7 +6,7 @@
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
-import { FlowValidatorImpl } from "../../src/services/flow_validator.ts";
+import { FlowValidatorImpl } from "../../src/services/flow/flow_validator.ts";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
 import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
 

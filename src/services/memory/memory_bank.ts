@@ -43,9 +43,9 @@ import type {
   IReference,
 } from "../../shared/schemas/memory_bank.ts";
 
-import { parseDecisions, parsePatterns } from "./memory_bank/parsers.ts";
-import { formatExecutionSummary } from "./memory_bank/formatters.ts";
-import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "./memory_bank/index_builder.ts";
+import { parseDecisions, parsePatterns } from "../memory_bank/parsers.ts";
+import { formatExecutionSummary } from "../memory_bank/formatters.ts";
+import { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } from "../memory_bank/index_builder.ts";
 import type { IMemoryEmbeddingService } from "../../shared/interfaces/i_memory_embedding_service.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 

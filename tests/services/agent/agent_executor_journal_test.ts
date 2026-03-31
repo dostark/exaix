@@ -5,13 +5,13 @@
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { AgentExecutor } from "../../../src/services/agent_executor.ts";
-import type { EventLogger } from "../../../src/services/event_logger.ts";
+import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
+import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
 import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
-import type { DatabaseService } from "../../../src/services/db.ts";
-import type { PathResolver } from "../../../src/services/path_resolver.ts";
-import type { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
+import type { DatabaseService } from "../../../src/services/core/db.ts";
+import type { PathResolver } from "../../../src/services/portal/path_resolver.ts";
+import type { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IChangesetResult } from "../../../src/shared/schemas/agent_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 

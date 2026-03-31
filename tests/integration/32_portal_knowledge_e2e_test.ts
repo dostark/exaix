@@ -18,8 +18,8 @@ import { MockStrategy, PortalAnalysisMode } from "../../src/shared/enums.ts";
 import { PortalKnowledgeService } from "../../src/services/portal_knowledge/portal_knowledge_service.ts";
 import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symbol_extractor.ts";
 import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";
-import { MemoryBankService } from "../../src/services/memory_bank.ts";
-import { RequestProcessor } from "../../src/services/request_processor.ts";
+import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
+import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
 import type {
   IPortalKnowledgeConfig,

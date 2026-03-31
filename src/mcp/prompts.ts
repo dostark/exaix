@@ -8,7 +8,7 @@
  */
 
 import type { Config } from "../shared/schemas/config.ts";
-import type { IDatabaseService } from "../services/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
 import { MessageRole } from "../shared/enums.ts";
 
 // ============================================================================

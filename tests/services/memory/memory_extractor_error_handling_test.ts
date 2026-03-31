@@ -7,10 +7,10 @@
 
 import { assertEquals } from "@std/assert";
 
-import { MemoryExtractorService } from "../../../src/services/memory_extractor.ts";
+import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../../src/shared/enums.ts";
-import type { IDatabaseService } from "../../../src/services/db.ts";
+import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IExecutionMemory, IProposalLearning } from "../../../src/shared/schemas/memory_bank.ts";
 

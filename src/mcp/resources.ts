@@ -10,7 +10,7 @@
 import { relative } from "@std/path";
 import { walk } from "@std/fs";
 import type { Config } from "../shared/schemas/config.ts";
-import type { IDatabaseService } from "../services/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
 
 // ============================================================================
 // Types

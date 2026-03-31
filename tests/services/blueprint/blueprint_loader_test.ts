@@ -14,7 +14,7 @@ import {
   BlueprintLoadError,
   createBlueprintLoader,
   loadBlueprint,
-} from "../../../src/services/blueprint_loader.ts";
+} from "../../../src/services/blueprint/blueprint_loader.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
 

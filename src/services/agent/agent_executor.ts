@@ -14,12 +14,12 @@ import { z } from "zod";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import type { EventLogger } from "../core/event_logger.ts";
-import type { PathResolver } from "./path_resolver.ts";
-import type { PortalPermissionsService } from "./portal_permissions.ts";
+import type { PathResolver } from "../portal/path_resolver.ts";
+import type { PortalPermissionsService } from "../portal/portal_permissions.ts";
 import { IModelProvider } from "../../ai/types.ts";
-import { SafeError } from "../errors/safe_error.ts";
-import { SafeSubprocess, SubprocessTimeoutError } from "../helpers/subprocess.ts";
-import type { IWorkspaceExecutionContext } from "./workspace_execution_context.ts";
+import { SafeError } from "../../errors/safe_error.ts";
+import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
+import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
 import {
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
@@ -41,13 +41,13 @@ import {
 } from "../../shared/schemas/agent_executor.ts";
 import { ActorType, AgentExecutionErrorType, AgentKind, LogLevel, SecurityMode } from "../../shared/enums.ts";
 import { InputValidator } from "../../shared/schemas/input_validation.ts";
-import { buildPortalContextBlock } from "./prompt_context.ts";
+import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 
 /**
  * Agent blueprint loaded from file
  */
-export interface IBlueprint {
+export interface IAgentFileBlueprint {
   name: string;
   model: string;
   provider: string;
@@ -191,7 +191,7 @@ export class AgentExecutor {
    * @param blueprint - Agent blueprint with capabilities
    * @returns true if agent has write capabilities requiring git tracking
    */
-  requiresGitTracking(blueprint: IBlueprint): boolean {
+  requiresGitTracking(blueprint: IAgentFileBlueprint): boolean {
     return requiresGitTracking(blueprint.capabilities);
   }
 
@@ -202,14 +202,14 @@ export class AgentExecutor {
    * @param blueprint - Agent blueprint with capabilities
    * @returns true if agent has no write capabilities
    */
-  isReadOnlyAgent(blueprint: IBlueprint): boolean {
+  isReadOnlyAgent(blueprint: IAgentFileBlueprint): boolean {
     return isReadOnlyAgentCapabilities(blueprint.capabilities);
   }
 
   /**
    * Load agent blueprint from file with security validation
    */
-  async loadBlueprint(rawAgentName: string): Promise<IBlueprint> {
+  async loadBlueprint(rawAgentName: string): Promise<IAgentFileBlueprint> {
     // ✓ Validate agent name to prevent path traversal
     const agentName = InputValidator.validateBlueprintName(rawAgentName);
 
@@ -421,7 +421,7 @@ export class AgentExecutor {
    * Build execution prompt for LLM agent
    */
   public buildExecutionPrompt(
-    blueprint: IBlueprint,
+    blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
     options: IAgentExecutionOptions,
   ): string {

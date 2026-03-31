@@ -19,7 +19,7 @@ import {
   logInfo,
   resetGlobalLogger,
   StructuredLogger,
-} from "../../../src/services/structured_logger.ts";
+} from "../../../src/services/logger/structured_logger.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 // Removed db.ts IIStructuredLogEntry import as it conflicts with structured_logger IStructuredLogEntry
 

@@ -9,8 +9,8 @@ import { ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts"
 import { MemoryBankAdapter } from "../../../src/services/adapters/memory_bank_adapter.ts";
 import { MemoryExtractorAdapter } from "../../../src/services/adapters/memory_extractor_adapter.ts";
 import { ConfigService } from "../../../src/config/service.ts";
-import { MemoryBankService } from "../../../src/services/memory_bank.ts";
-import { MemoryExtractorService } from "../../../src/services/memory_extractor.ts";
+import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { MemoryType, PortalExecutionStrategy } from "../../../src/shared/enums.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 

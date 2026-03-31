@@ -14,7 +14,7 @@ import {
   type IRequestActionContext,
 } from "../../src/cli/command_builders/request_actions.ts";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
-import { EventLogger, type IEventLoggerConfig } from "../../src/services/event_logger.ts";
+import { EventLogger, type IEventLoggerConfig } from "../../src/services/core/event_logger.ts";
 
 import { LogLevel } from "../../src/shared/enums.ts";
 

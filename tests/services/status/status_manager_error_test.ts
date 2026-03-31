@@ -12,7 +12,7 @@ import { parse } from "@std/yaml";
 import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 function parseFrontmatter(content: string): JSONObject {

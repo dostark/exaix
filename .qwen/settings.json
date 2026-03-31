@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(deno *)",
+      "Bash(realpath *)",
+      "Bash(grep *)",
+      "Bash(rm *)",
+      "Bash(find *)",
+      "Bash(mv *)",
+      "Bash(do *)",
+      "Bash(done)"
+    ]
+  },
+  "$version": 3
+}

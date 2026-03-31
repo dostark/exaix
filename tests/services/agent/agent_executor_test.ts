@@ -16,8 +16,12 @@ import {
 } from "@std/assert";
 import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
-import { AgentExecutionError, AgentExecutor, type IBlueprint } from "../../../src/services/agent_executor.ts";
-import type { IWorkspaceExecutionContext } from "../../../src/services/workspace_execution_context.ts";
+import {
+  AgentExecutionError,
+  AgentExecutor,
+  type IAgentFileBlueprint,
+} from "../../../src/services/agent/agent_executor.ts";
+import type { IWorkspaceExecutionContext } from "../../../src/services/portal/workspace_execution_context.ts";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "../../../src/errors/safe_error.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
@@ -25,9 +29,9 @@ import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
-import { PathResolver } from "../../../src/services/path_resolver.ts";
-import { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
+import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 
@@ -1057,7 +1061,7 @@ Deno.test({
         permissions,
       );
 
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
         model: "gpt-4o-mini",
         provider: PROVIDER_OPENAI,
@@ -1110,7 +1114,7 @@ Deno.test({
         permissions,
       );
 
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
         model: "gpt-4o-mini",
         provider: PROVIDER_OPENAI,
@@ -1163,7 +1167,7 @@ Deno.test({
         permissions,
       );
 
-      const blueprint: IBlueprint = {
+      const blueprint: IAgentFileBlueprint = {
         name: "test-agent",
         model: "gpt-4o-mini",
         provider: PROVIDER_OPENAI,

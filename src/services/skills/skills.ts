@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
-import { extractKeywords } from "../helpers/text.ts";
+import { extractKeywords } from "../../helpers/text.ts";
 import { DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
 import {
   type ISkill,

@@ -7,7 +7,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { PathResolver } from "../../src/services/path_resolver.ts";
+import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { createMockConfig } from "../helpers/config.ts";
 
 Deno.test("PathResolver: resolves user-defined portal", async () => {

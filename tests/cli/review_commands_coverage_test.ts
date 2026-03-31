@@ -9,7 +9,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
-import { DatabaseService } from "../../src/services/db.ts";
+import { DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 

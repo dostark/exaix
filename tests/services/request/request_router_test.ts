@@ -7,7 +7,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { RequestKind } from "../../../src/shared/enums.ts";
-import { RoutingError } from "../../../src/services/request_router.ts";
+import { RoutingError } from "../../../src/services/request/request_router.ts";
 import { createRouterTestContext, sampleRouterRequest } from "../helpers.ts";
 
 // Test-specific helpers are provided by tests/services/helpers.ts

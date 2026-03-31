@@ -6,9 +6,8 @@
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
-import { FlowStepType } from "../../../src/shared/enums.ts";
-
 import { join } from "@std/path";
+import { FlowStepType } from "../../../src/shared/enums.ts";
 import {
   GitCorruptionError,
   GitError,
@@ -16,7 +15,7 @@ import {
   GitNothingToCommitError,
   GitRepositoryError,
   GitService,
-} from "../../../src/services/git_service.ts";
+} from "../../../src/services/core/git_service.ts";
 import { DEFAULT_GIT_EXIT_CODE_FATAL } from "../../../src/shared/constants.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";

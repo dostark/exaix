@@ -12,7 +12,7 @@ import { setupGitRepo } from "../../helpers/git_test_helper.ts";
 
 import { McpTransportType, PortalOperation } from "../../../src/shared/enums.ts";
 import { MCPServer } from "../../../src/mcp/server.ts";
-import { ToolRegistry } from "../../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";

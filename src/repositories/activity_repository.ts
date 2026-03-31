@@ -7,7 +7,7 @@
  * @related-files [src/services/db.ts, src/services/event_logger.ts]
  */
 
-import type { ActivityRecord, IDatabaseService } from "../services/db.ts";
+import type { ActivityRecord, IDatabaseService } from "../services/core/db.ts";
 import { JSONValue } from "../shared/types/json.ts";
 
 /**

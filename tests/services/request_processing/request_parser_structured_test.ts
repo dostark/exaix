@@ -10,7 +10,7 @@
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";
-import type { EventLogger } from "../../../src/services/event_logger.ts";
+import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 // ---------------------------------------------------------------------------

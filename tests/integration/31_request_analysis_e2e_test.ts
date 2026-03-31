@@ -13,7 +13,7 @@
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { loadAnalysis } from "../../src/services/request_analysis/mod.ts";
 import { RequestAnalysisSchema } from "../../src/shared/schemas/request_analysis.ts";

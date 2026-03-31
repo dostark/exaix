@@ -4,9 +4,9 @@
  * @description Method decorator for automated execution logging.
  * @architectural-layer Services
  * @dependencies [EventLogger]
- * @related-files [src/services/event_logger.ts]
+ * @related-files [src/services/core/event_logger.ts]
  */
-import { EventLogger } from "../event_logger.ts";
+import { EventLogger } from "../core/event_logger.ts";
 import { toSafeJson } from "../../shared/types/json.ts";
 export function LogMethod(logger: EventLogger, action?: string) {
   return function <This, Args extends unknown[], Return>(

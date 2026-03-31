@@ -6,7 +6,7 @@
  */
 
 import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
-import type { MemoryBankService } from "../../src/services/memory_bank.ts";
+import type { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { MemoryReferenceType } from "../../src/shared/enums.ts";
 
 /**

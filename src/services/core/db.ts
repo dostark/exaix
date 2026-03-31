@@ -1,6 +1,6 @@
 /**
  * @module DatabaseService
- * @path src/services/db.ts
+ * @path src/services/core/db.ts
  * @description Provides persistent storage for the Activity Journal and system state using SQLite.
  * Implements batched writes, transactions with retries, and circuit breaker protection.
  * @architectural-layer Services

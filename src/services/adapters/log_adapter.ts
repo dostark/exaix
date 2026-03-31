@@ -8,7 +8,7 @@
  */
 
 import { ILogService } from "../../shared/interfaces/i_log_service.ts";
-import { FileOutput, ObservableOutput, StructuredLogger } from "../structured_logger.ts";
+import { FileOutput, ObservableOutput, StructuredLogger } from "../logger/structured_logger.ts";
 import type { IStructuredLogEntry, LogQueryOptions } from "../../shared/types/logging.ts";
 import { join } from "@std/path";
 

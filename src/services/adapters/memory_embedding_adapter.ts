@@ -8,7 +8,7 @@
  */
 
 import type { IMemoryEmbeddingService } from "../../shared/interfaces/i_memory_embedding_service.ts";
-import type { MemoryEmbeddingService } from "../memory_embedding.ts";
+import type { MemoryEmbeddingService } from "../memory/memory_embedding.ts";
 import type { ILearning } from "../../shared/schemas/memory_bank.ts";
 import type { IEmbeddingSearchResult } from "../../shared/types/memory.ts";
 

@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { buildParsedRequest, loadBlueprint } from "../../../src/services/request_common.ts";
+import { buildParsedRequest, loadBlueprint } from "../../../src/services/request/request_common.ts";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
 
 Deno.test("loadBlueprint: returns null when blueprint does not exist", async () => {

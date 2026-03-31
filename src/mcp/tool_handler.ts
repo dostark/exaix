@@ -8,10 +8,10 @@
  */
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "../shared/schemas/config.ts";
-import type { IDatabaseService } from "../services/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import { type MCPToolResponse } from "../shared/schemas/mcp.ts";
-import { PortalPermissionsService } from "../services/portal_permissions.ts";
+import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import { PortalOperation } from "../shared/enums.ts";
 import { JSONValue, LogMetadata, toSafeJson } from "../shared/types/json.ts";
 

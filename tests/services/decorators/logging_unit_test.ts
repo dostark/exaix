@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { LogMethod } from "../../../src/services/decorators/logging.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
 interface MockPayload {
   args?: unknown;

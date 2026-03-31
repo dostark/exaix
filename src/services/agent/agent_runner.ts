@@ -25,11 +25,11 @@ import {
   type IRetryPolicyConfig,
   type IRetryResult,
 } from "../core/retry_policy.ts";
-import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "./output_validator.ts";
+import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import { extractKeywords } from "../helpers/text.ts";
+import { extractKeywords } from "../../helpers/text.ts";
 import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "../../shared/constants.ts";
-import { PlanAdapter } from "./plan_adapter.ts";
+import { PlanAdapter } from "../plan/plan_adapter.ts";
 
 /**
  * Blueprint defines the agent's persona and system instructions

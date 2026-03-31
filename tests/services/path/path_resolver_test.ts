@@ -7,10 +7,10 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryReferenceType } from "../../../src/shared/enums.ts";
-import type { ActivityRecord } from "../../../src/services/db.ts";
+import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { join } from "@std/path";
-import { PathResolver } from "../../../src/services/path_resolver.ts";
+import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 
 /**

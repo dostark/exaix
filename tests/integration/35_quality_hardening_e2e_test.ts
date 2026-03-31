@@ -15,14 +15,14 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { CritiqueQuality } from "../../src/shared/enums.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
-import { createReflexiveAgent } from "../../src/services/reflexive_agent.ts";
+import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";
-import { buildParsedRequest } from "../../src/services/request_common.ts";
-import { createOutputValidator } from "../../src/services/output_validator.ts";
+import { buildParsedRequest } from "../../src/services/request/request_common.ts";
+import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
-import type { EnhancedRequest } from "../../src/services/session_memory.ts";
+import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IRequestAnalysis } from "../../src/shared/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";

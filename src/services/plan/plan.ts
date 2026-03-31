@@ -14,7 +14,7 @@ import { PlanStatus, type PlanStatusType } from "../../shared/status/plan_status
 import { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
 import { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import { IConfigService } from "../../shared/interfaces/i_config_service.ts";
-import { IDatabaseService } from "../services/db.ts";
+import { IDatabaseService } from "../../services/core/db.ts";
 
 export class PlanService {
   private workspacePlansDir: string;

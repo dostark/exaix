@@ -9,7 +9,7 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { Spy, spy } from "@std/testing/mock";
 import { RateLimitedProvider, RateLimitError } from "../../src/ai/rate_limited_provider.ts";
 import { IModelProvider } from "../../src/ai/types.ts";
-import { CostTracker } from "../../src/services/cost_tracker.ts";
+import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
 import { PROVIDER_OPENAI } from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
 

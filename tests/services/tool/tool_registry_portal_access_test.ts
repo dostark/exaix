@@ -7,7 +7,7 @@
 
 import { assertEquals } from "https://deno.land/std@0.201.0/testing/asserts.ts";
 import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { ToolRegistry } from "../../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 

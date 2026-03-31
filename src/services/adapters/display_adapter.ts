@@ -6,7 +6,7 @@
  * @related-files [src/shared/interfaces/i_display_service.ts, src/tui/] */
 
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import type { EventLogger } from "../event_logger.ts";
+import type { EventLogger } from "../core/event_logger.ts";
 import type { LogMetadata } from "../../shared/types/json.ts";
 
 export class DisplayAdapter implements IDisplayService {

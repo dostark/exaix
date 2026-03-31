@@ -9,9 +9,9 @@
  *
  * @architectural-layer Services
  * @dependencies [FlowRunner, AgentRunner, BlueprintLoader, IWorkspaceExecutionContext, FlowValidator]
- * @related-files [src/services/request_processor.ts, src/flows/flow_runner.ts, src/services/flow_validator.ts]
+ * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
  */
-import { type IFlowResult, type IFlowRunner } from "../flows/flow_runner.ts";
+import { type IFlowResult, type IFlowRunner } from "../../flows/flow_runner.ts";
 import {
   type IAgentExecutionResult,
   type IAgentRunner,
@@ -20,7 +20,7 @@ import {
 } from "../agent/agent_runner.ts";
 import { EventLogger } from "../core/event_logger.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
-import { IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "./workspace_execution_context.ts";
+import { IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "../portal/workspace_execution_context.ts";
 import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";

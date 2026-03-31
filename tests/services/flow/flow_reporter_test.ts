@@ -10,7 +10,7 @@ import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts"
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow_reporter.ts";
+import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow/flow_reporter.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IFlow, IFlowInput } from "../../../src/shared/schemas/flow.ts";

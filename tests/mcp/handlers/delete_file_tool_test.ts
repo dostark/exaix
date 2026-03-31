@@ -8,7 +8,7 @@ import { DeleteFileTool } from "../../../src/mcp/handlers/delete_file_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
 import { PortalOperation } from "../../../src/shared/enums.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
-import { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
+import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { join } from "@std/path";
 
 Deno.test("DeleteFileTool: deletes an existing file", async () => {

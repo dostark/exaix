@@ -1,6 +1,6 @@
 /**
  * @module EventLogger
- * @path src/services/event_logger.ts
+ * @path src/services/core/event_logger.ts
  * @description Unified logging service that writes to both console and IActivity Journal.
  * Supports child loggers, structured payloads, and consistent log levels across the system.
  * @architectural-layer Services
@@ -11,7 +11,7 @@
 import type { IDatabaseService } from "../core/db.ts";
 import type { ActivityRepository } from "../../repositories/activity_repository.ts";
 import { LogLevel } from "../../shared/enums.ts";
-import { Actor, ILogEvent } from "../../shared/types/common.ts";
+import { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
 import { JSONValue, LogMetadata, toSafeJson } from "../../shared/types/json.ts";
 

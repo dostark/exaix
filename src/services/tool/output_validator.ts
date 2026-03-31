@@ -18,7 +18,7 @@
 import { z, ZodError, ZodType, ZodTypeDef } from "zod";
 import { PlanSchema, PlanStepSchema } from "../../shared/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "../../shared/enums.ts";
-import { repairJSON } from "./json_repair.ts";
+import { repairJSON } from "../utils/json_repair.ts";
 import { describeSchema } from "../../shared/schemas/schema_describer.ts";
 import { JSONValue, JSONValueSchema } from "../../shared/types/json.ts";
 

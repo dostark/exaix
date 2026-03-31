@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.201.0/testing/asserts.ts";
 import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { ToolRegistry } from "../../../src/services/tool_registry.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 
 Deno.test("ToolRegistry should include allowed roots in access denied error", async () => {

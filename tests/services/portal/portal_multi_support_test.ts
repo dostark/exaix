@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { PortalPermissionsService } from "../../../src/services/portal_permissions.ts";
+import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 import { PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
 

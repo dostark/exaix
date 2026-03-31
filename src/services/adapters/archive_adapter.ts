@@ -4,10 +4,10 @@
  * @description Adapter for ArchiveService that satisfies the IArchiveService interface.
  * @architectural-layer Services/Adapters
  * @dependencies [shared_interfaces, archive_service]
- * @related-files [src/shared/interfaces/i_archive_service.ts, src/services/archive.ts] */
+ * @related-files [src/shared/interfaces/i_archive_service.ts, src/services/artifcat/archive_service.ts] */
 
 import type { IArchiveEntry, IArchiveService } from "../../shared/interfaces/i_archive_service.ts";
-import type { ArchiveService } from "../archive_service.ts";
+import type { ArchiveService } from "../artifact/archive_service.ts";
 
 export class ArchiveAdapter implements IArchiveService {
   constructor(private inner: ArchiveService) {}

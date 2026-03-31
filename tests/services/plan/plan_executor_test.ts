@@ -12,7 +12,7 @@ import {
   PortalOperation as _PortalOperation,
 } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
-import { type IPlanContext, PlanExecutor } from "../../../src/services/plan_executor.ts";
+import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { MockProvider } from "../../../src/ai/providers.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
 

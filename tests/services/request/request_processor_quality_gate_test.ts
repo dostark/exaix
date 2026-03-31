@@ -8,7 +8,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import {
   type IRequestQualityAssessment,

@@ -11,7 +11,7 @@ import { ReviewStatus } from "../../../src/reviews/review_status.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../../src/config/paths.ts";
-import { ExecutionLoop } from "../../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
@@ -24,7 +24,7 @@ import {
 } from "../../helpers/paths_helper.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { IModelProvider } from "../../../src/ai/types.ts";
-import type { ActivityRecord } from "../../../src/services/db.ts";
+import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { EXECUTION_REPORT_FILENAME } from "../../../src/shared/constants.ts";
 
 /**

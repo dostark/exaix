@@ -7,11 +7,11 @@
 
 import type { Config } from "../../src/shared/schemas/config.ts";
 import { MemoryCommands } from "../../src/cli/commands/memory_commands.ts";
-import { MemoryBankService } from "../../src/services/memory_bank.ts";
-import { MemoryExtractorService } from "../../src/services/memory_extractor.ts";
-import { MemoryEmbeddingService } from "../../src/services/memory_embedding.ts";
-import { SkillsService } from "../../src/services/skills.ts";
-import { DatabaseService as DatabaseService } from "../../src/services/db.ts";
+import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
+import { MemoryExtractorService } from "../../src/services/memory/memory_extractor.ts";
+import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
+import { SkillsService } from "../../src/services/skills/skills.ts";
+import { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import {
   MemoryBankAdapter,
   MemoryEmbeddingAdapter,

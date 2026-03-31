@@ -16,8 +16,8 @@
 import type { DatabaseService } from "../core/db.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
-import { MiddlewarePipeline } from "./middleware/pipeline.ts";
-import type { IServiceContext } from "../../shared/types/common.ts";
+import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import type { IServiceContext } from "../common/types.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 

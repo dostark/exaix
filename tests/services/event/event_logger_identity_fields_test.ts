@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { EventLogger } from "../../../src/services/event_logger.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ActivityRepository, LogActivityRequest } from "../../../src/repositories/activity_repository.ts";
 import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
 

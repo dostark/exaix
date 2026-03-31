@@ -6,12 +6,12 @@
  * validates the response against RequestQualityAssessmentSchema. Falls back to
  * the heuristic assessor when the LLM fails or returns an invalid response.
  * @architectural-layer Services
- * @dependencies [src/ai/types.ts, src/services/output_validator.ts, src/shared/schemas/request_quality_assessment.ts, src/services/quality_gate/heuristic_assessor.ts]
+ * @dependencies [src/ai/types.ts, src/services/tool/output_validator.ts, src/shared/schemas/request_quality_assessment.ts, src/services/quality_gate/heuristic_assessor.ts]
  * @related-files [src/services/quality_gate/heuristic_assessor.ts, src/services/quality_gate/request_quality_gate.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IOutputValidator } from "../output_validator.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   type IRequestQualityAssessment,
   RequestQualityAssessmentSchema,

@@ -7,9 +7,9 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { ContextLoader } from "../../../src/services/context_loader.ts";
-import type { ContextLoadResult, IContextConfig } from "../../../src/services/context_loader.ts";
-import type { ActivityRecord } from "../../../src/services/db.ts";
+import { ContextLoader } from "../../../src/services/context/context_loader.ts";
+import type { ContextLoadResult, IContextConfig } from "../../../src/services/context/context_loader.ts";
+import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 
 // ============================================================================

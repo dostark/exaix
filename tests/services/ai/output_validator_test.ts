@@ -8,7 +8,11 @@
 import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { CritiqueSeverity, EvaluationVerdict, McpToolName } from "../../../src/shared/enums.ts";
 import { z } from "zod";
-import { createOutputValidator, createPlanValidator, OutputValidator } from "../../../src/services/output_validator.ts";
+import {
+  createOutputValidator,
+  createPlanValidator,
+  OutputValidator,
+} from "../../../src/services/tool/output_validator.ts";
 
 // ============================================================================
 // XML Tag Parsing Tests

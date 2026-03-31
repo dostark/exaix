@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { HealthCheckService } from "../../../src/services/health_check_service.ts";
+import { HealthCheckService } from "../../../src/services/core/health_check_service.ts";
 import { HealthCheckVerdict, HealthStatus } from "../../../src/shared/enums.ts";
 import { DEFAULT_MCP_VERSION } from "../../../src/shared/constants.ts";
 

@@ -13,7 +13,7 @@ import {
   type IArchitectureValidator,
 } from "../../../src/services/portal_knowledge/architecture_inferrer.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IValidationResult } from "../../../src/services/output_validator.ts";
+import type { IValidationResult } from "../../../src/services/tool/output_validator.ts";
 import type { ICodeConvention, IFileSignificance } from "../../../src/shared/schemas/portal_knowledge.ts";
 import {
   ARCHITECTURE_INFERRER_MAX_FILE_TOKENS,

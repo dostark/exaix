@@ -9,7 +9,7 @@ import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
-import { DatabaseService } from "../../src/services/db.ts";
+import { DatabaseService } from "../../src/services/core/db.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

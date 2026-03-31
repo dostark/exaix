@@ -4,13 +4,13 @@
  * @description Verifies that RequestProcessor's classifyTaskComplexity method
  * uses structured analysis (Phase 45), content heuristics, and agent-ID fallbacks
  * correctly to categorize task complexity.
- * @related-files [src/services/request_processor.ts, src/shared/schemas/request_analysis.ts, src/shared/enums.ts]
+ * @related-files [src/services/request/request_processor.ts, src/shared/schemas/request_analysis.ts, src/shared/enums.ts]
  */
 
 import { assertEquals } from "@std/assert";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
-import { buildParsedRequest } from "../../../src/services/request_common.ts";
+import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
 import {
   type IRequestAnalysis,
@@ -20,7 +20,7 @@ import {
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { IBlueprint, IParsedRequest } from "../../../src/services/agent_runner.ts";
+import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
 import {
   COMPLEXITY_BODY_LENGTH_LOW,

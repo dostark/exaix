@@ -8,7 +8,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { MockProvider } from "../../../src/ai/providers.ts";
-import { createOutputValidator } from "../../../src/services/output_validator.ts";
+import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";

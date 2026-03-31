@@ -5,7 +5,7 @@
  */
 
 import { Database } from "@db/sqlite";
-import { DatabaseService } from "../../src/services/db.ts";
+import { DatabaseService } from "../../src/services/core/db.ts";
 import { createMockConfig } from "./config.ts";
 import { join } from "@std/path";
 import { REVIEW_STATUS_VALUES } from "../../src/reviews/review_status.ts";

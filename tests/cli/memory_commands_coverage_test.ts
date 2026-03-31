@@ -15,8 +15,8 @@ import {
   UIOutputFormat,
 } from "../../src/shared/enums.ts";
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { MemoryEmbeddingService } from "../../src/services/memory_embedding.ts";
-import { SkillsService } from "../../src/services/skills.ts";
+import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
+import { SkillsService } from "../../src/services/skills/skills.ts";
 import { TestEnvironmentFactory } from "../fixtures/test_environment_factory.ts";
 import { ExecutionMemoryBuilder, LearningBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
 import {

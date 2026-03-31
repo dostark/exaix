@@ -5,12 +5,12 @@
  * Verifies that enhanceRequest() is called before analysis and that the result
  * is stored on IParsedRequest.context (Phase 49, Step 5).
  * @architectural-layer Tests
- * @dependencies [src/services/request_processor.ts, src/services/session_memory.ts]
+ * @dependencies [src/services/request/request_processor.ts, src/services/memory/session_memory.ts]
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type {
   IRequestAnalysisContext,
   IRequestAnalyzerService,
@@ -18,7 +18,7 @@ import type {
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import { type EnhancedRequest, SessionMemoryService } from "../../../src/services/session_memory.ts";
+import { type EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";

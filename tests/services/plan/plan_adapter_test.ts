@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { PlanAdapter } from "../../../src/services/plan_adapter.ts";
+import { PlanAdapter } from "../../../src/services/plan/plan_adapter.ts";
 
 Deno.test("PlanAdapter: Plan validation fails for unsupported tool names", () => {
   const adapter = new PlanAdapter();

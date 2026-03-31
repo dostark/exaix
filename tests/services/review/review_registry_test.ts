@@ -10,8 +10,8 @@ import { MemoryBankSource } from "../../../src/shared/enums.ts";
 import { ReviewStatus } from "../../../src/reviews/review_status.ts";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { ReviewRegistry } from "../../../src/services/review_registry.ts";
-import { EventLogger } from "../../../src/services/event_logger.ts";
+import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IRegisterReviewInput } from "../../../src/shared/schemas/review.ts";
 

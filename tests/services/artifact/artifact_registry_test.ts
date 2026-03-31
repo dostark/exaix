@@ -6,9 +6,9 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { DatabaseService } from "../../../src/services/db.ts";
+import { DatabaseService } from "../../../src/services/core/db.ts";
 import { join } from "@std/path";
-import { ArtifactRegistry } from "../../../src/services/artifact_registry.ts";
+import { ArtifactRegistry } from "../../../src/services/artifact/artifact_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { ReviewStatus } from "../../../src/reviews/review_status.ts";
 

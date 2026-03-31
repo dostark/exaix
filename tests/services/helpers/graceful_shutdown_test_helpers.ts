@@ -6,7 +6,7 @@
  */
 
 import { Spy, spy } from "@std/testing/mock";
-import type { IStructuredLogger } from "../../../src/services/structured_logger.ts";
+import type { IStructuredLogger } from "../../../src/services/logger/structured_logger.ts";
 
 /**
  * Interface that combines IStructuredLogger with Spies for testing

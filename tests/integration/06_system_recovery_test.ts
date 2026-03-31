@@ -10,7 +10,7 @@ import { FlowStepType, McpToolName, MemoryOperation, PortalOperation } from "../
 
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 // Mock RecoveryService for testing (actual service not yet implemented)
 class RecoveryService {

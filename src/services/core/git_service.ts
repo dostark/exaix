@@ -1,6 +1,6 @@
 /**
  * @module GitService
- * @path src/services/git_service.ts
+ * @path src/services/core/git_service.ts
  * @description Orchestrates Git operations with trace metadata.
  *
  * Features:
@@ -33,7 +33,7 @@ import {
   DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
 } from "../../shared/constants.ts";
-import { SecureRandom } from "../helpers/secure_random.ts";
+import { SecureRandom } from "../../helpers/secure_random.ts";
 import { ActivityActor } from "../../shared/enums.ts";
 
 export type {

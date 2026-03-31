@@ -11,7 +11,7 @@ import type {
   IContextCardGeneratorService,
   IPortalInfo,
 } from "../../shared/interfaces/i_context_card_generator_service.ts";
-import type { ContextCardGenerator } from "../context_card_generator.ts";
+import type { ContextCardGenerator } from "../context/context_card_generator.ts";
 
 export class ContextCardAdapter implements IContextCardGeneratorService {
   constructor(private inner: ContextCardGenerator) {}

@@ -6,11 +6,10 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../src/shared/enums.ts";
-
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { EventLogger } from "../../src/services/event_logger.ts";
+import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../src/shared/enums.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { initTestDbService } from "../helpers/db.ts";
 
 interface ActivityRow {

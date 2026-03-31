@@ -10,11 +10,11 @@
  *
  * @architectural-layer Services
  * @dependencies [Zod, PlanSchema]
- * @related-files [src/services/plan_writer.ts, src/services/output_validator.ts]
+ * @related-files [src/services/plan_writer.ts, src/services/tool/output_validator.ts]
  */
 
 import { Plan, PlanSchema } from "../../shared/schemas/plan_schema.ts";
-import { createOutputValidator, OutputValidator } from "./output_validator.ts";
+import { createOutputValidator, OutputValidator } from "../tool/output_validator.ts";
 import { describeSchema } from "../../shared/schemas/schema_describer.ts";
 import { JSONValue, toSafeJson } from "../../shared/types/json.ts";
 

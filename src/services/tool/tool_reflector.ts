@@ -4,14 +4,14 @@
  * @description Orchestrates tool execution with automated reflection, evaluation, and retry logic to improve agent reliability.
  * @architectural-layer Services
  * @dependencies [providers, agent_runner, db, types, constants]
- * @related-files [src/services/agent_runner.ts, src/mcp/server.ts]
+ * @related-files [src/services/agent/agent_runner.ts, src/mcp/server.ts]
  */
 
 import { z } from "zod";
 import { IModelProvider } from "../../ai/types.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import { AgentRunner } from "./agent_runner.ts";
-import type { IBlueprint, IParsedRequest } from "./agent_runner.ts";
+import { AgentRunner } from "../agent/agent_runner.ts";
+import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator } from "./output_validator.ts";
 import type { IOutputValidator } from "./output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";

@@ -4,14 +4,14 @@
  * @description Verifies that RequestProcessor integrates with RequestAnalyzer to
  * produce structured IRequestAnalysis, enriches IParsedRequest fields, persists
  * analysis as a sibling JSON file, and handles analyzer failures gracefully.
- * @related-files [src/services/request_processor.ts, src/services/request_common.ts, src/services/request_analysis/mod.ts, src/shared/schemas/request_analysis.ts]
+ * @related-files [src/services/request/request_processor.ts, src/services/request/request_common.ts, src/services/request_analysis/mod.ts, src/shared/schemas/request_analysis.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
-import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request_common.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { loadAnalysis } from "../../../src/services/request_analysis/mod.ts";
 import type {
   IRequestAnalysisContext,

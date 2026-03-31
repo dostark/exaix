@@ -8,11 +8,11 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { ConfigService } from "../../../src/config/service.ts";
-import { DatabaseService } from "../../../src/services/db.ts";
-import { PlanExecutor } from "../../../src/services/plan_executor.ts";
+import { DatabaseService } from "../../../src/services/core/db.ts";
+import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { ProviderFactory } from "../../../src/ai/provider_factory.ts";
-import { initializeGlobalLogger } from "../../../src/services/structured_logger.ts";
-import { ExecutionLoop } from "../../../src/services/execution_loop.ts";
+import { initializeGlobalLogger } from "../../../src/services/logger/structured_logger.ts";
+import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { LogLevel, ProviderType } from "../../../src/shared/enums.ts";
 
 /**

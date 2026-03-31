@@ -16,7 +16,7 @@
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IOutputValidator } from "../output_validator.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type {
   IRequestAnalysisContext,

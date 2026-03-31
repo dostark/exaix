@@ -14,7 +14,7 @@ import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus, Verification
 import { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
 import { ExaPathDefaults, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
 import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
-import { loadKnowledge, saveKnowledge } from "./portal_knowledge/knowledge_persistence.ts";
+import { loadKnowledge, saveKnowledge } from "../portal_knowledge/knowledge_persistence.ts";
 import { IPortalKnowledgeConfig, IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
 import { IContextCardGeneratorService } from "../../shared/interfaces/i_context_card_generator_service.ts";
 import { IConfigService } from "../../shared/interfaces/i_config_service.ts";

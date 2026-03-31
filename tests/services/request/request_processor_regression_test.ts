@@ -4,11 +4,15 @@
  * @description Regression test for request processor provider selection issues.
  */
 
-import { RequestProcessor } from "../../../src/services/request_processor.ts";
-import { DatabaseService } from "../../../src/services/db.ts";
+import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { DatabaseService } from "../../../src/services/core/db.ts";
 import { ConfigService } from "../../../src/config/service.ts";
 import { join } from "@std/path";
-import { ConsoleOutput, initializeGlobalLogger, resetGlobalLogger } from "../../../src/services/structured_logger.ts";
+import {
+  ConsoleOutput,
+  initializeGlobalLogger,
+  resetGlobalLogger,
+} from "../../../src/services/logger/structured_logger.ts";
 import { REPO_ROOT } from "../../helpers/repo_root.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";

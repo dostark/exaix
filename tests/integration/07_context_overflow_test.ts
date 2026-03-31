@@ -7,11 +7,11 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
-import { ExecutionLoop } from "../../src/services/execution_loop.ts";
+import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ContextLoader } from "../../src/services/context_loader.ts";
+import { ContextLoader } from "../../src/services/context/context_loader.ts";
 
 Deno.test("Integration: Context Overflow - Large file references", async (t) => {
   const env = await TestEnvironment.create();
