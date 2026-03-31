@@ -7,7 +7,7 @@
  */
 
 import { buildEvaluationPrompt, EvaluationCriterion, EvaluationResult } from "./evaluation_criteria.ts";
-import { JudgeInvoker } from "./gate_evaluator.ts";
+import { IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
 
 /**
  * Context object for agent requests
@@ -62,7 +62,7 @@ export interface AgentRunner {
  * - Parsing and validating JSON responses
  * - Recovering from malformed JSON
  */
-export class JudgeEvaluator implements JudgeInvoker {
+export class JudgeEvaluator implements IJudgeInvoker {
   constructor(private agentRunner: AgentRunner) {}
 
   /**

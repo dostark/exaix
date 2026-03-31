@@ -9,8 +9,10 @@
 import { z } from "zod";
 import { EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
 import { FlowGateOnFail } from "../shared/enums.ts";
-import { GateEvaluator, IGateResult } from "./gate_evaluator.ts";
+import { GateEvaluator } from "./gate_evaluator.ts";
+import { IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../shared/constants.ts";
+import { CriterionResult } from "./evaluation_criteria.ts";
 
 /**
  * Context data for agent requests
@@ -257,7 +259,7 @@ export class FeedbackLoop {
       parts.push("Criterion Scores:");
       for (
         const [name, result] of Object.entries(
-          gateResult.evaluation.criteriaScores,
+          gateResult.evaluation.criteriaScores as Record<string, CriterionResult>,
         )
       ) {
         const status = result.passed ? ICON_SUCCESS : ICON_FAILURE;
