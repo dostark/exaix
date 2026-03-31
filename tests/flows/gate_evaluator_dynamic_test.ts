@@ -6,7 +6,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { GateConfig, GateEvaluator, JudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { type GateConfig, GateEvaluator } from "../../src/flows/gate_evaluator.ts";
+import { type IJudgeInvoker as JudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
 import {
   IRequestAnalysis,

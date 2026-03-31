@@ -7,7 +7,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "../../src/shared/enums.ts";
-import { GateConfig, GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { type IGateConfig as GateConfig } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { IStepResult } from "../../src/flows/flow_runner.ts";
 

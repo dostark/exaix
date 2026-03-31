@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 
 import { CRITERIA, EvaluationResult as _EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
-import { JudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { createJudgeEvaluator, JudgeEvaluator } from "../../src/flows/judge_evaluator.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 
@@ -425,7 +425,7 @@ Deno.test("JudgeEvaluator: returns default evaluation for unparseable response",
 
 Deno.test("JudgeEvaluator: implements JudgeInvoker interface", async () => {
   const mockRunner = new MockAgentRunner();
-  const evaluator: JudgeInvoker = new JudgeEvaluator(mockRunner);
+  const evaluator: IJudgeInvoker = new JudgeEvaluator(mockRunner);
 
   const response = JSON.stringify({
     overallScore: 0.9,

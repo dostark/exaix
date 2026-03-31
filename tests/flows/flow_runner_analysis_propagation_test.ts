@@ -15,7 +15,8 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
-import { type GateConfig, GateEvaluator, type IGateResult, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { type IGateConfig as GateConfig, type IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";

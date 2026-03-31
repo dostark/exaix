@@ -17,6 +17,10 @@ import {
   SimpleImprovementAgent,
 } from "../../src/flows/feedback_loop.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import {
+  type IGateConfig as _GateConfig,
+  type IGateResult as _IGateResult,
+} from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CRITERIA } from "../../src/flows/evaluation_criteria.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 
