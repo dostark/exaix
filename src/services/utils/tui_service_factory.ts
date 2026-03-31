@@ -8,33 +8,28 @@
  * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
  */
 
-import { PlanCommands } from "../cli/commands/plan_commands.ts";
-import { RequestCommands } from "../cli/commands/request_commands.ts";
-import { DaemonCommands } from "../cli/commands/daemon_commands.ts";
-
-import { PortalAdapter } from "./adapters/portal_adapter.ts";
-import { PlanAdapter } from "./adapters/plan_adapter.ts";
-import { RequestAdapter } from "./adapters/request_adapter.ts";
-import { DaemonServiceAdapter } from "./adapters/daemon_adapter.ts";
-import { AgentServiceAdapter } from "./adapters/agent_adapter.ts";
-import { MemoryServiceAdapter } from "./adapters/memory_adapter.ts";
-import { JournalServiceAdapter } from "./adapters/journal_adapter.ts";
-import { LogServiceAdapter } from "./adapters/log_adapter.ts";
-import { ContextCardAdapter } from "./adapters/context_card_adapter.ts";
-
+import { join } from "@std/path";
+import { PlanCommands } from "../../cli/commands/plan_commands.ts";
+import { RequestCommands } from "../../cli/commands/request_commands.ts";
+import { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
+import { PortalAdapter } from "../adapters/portal_adapter.ts";
+import { PlanAdapter } from "../adapters/plan_adapter.ts";
+import { RequestAdapter } from "../adapters/request_adapter.ts";
+import { DaemonServiceAdapter } from "../adapters/daemon_adapter.ts";
+import { AgentServiceAdapter } from "../adapters/agent_adapter.ts";
+import { MemoryServiceAdapter } from "../adapters/memory_adapter.ts";
+import { JournalServiceAdapter } from "../adapters/journal_adapter.ts";
+import { LogServiceAdapter } from "../adapters/log_adapter.ts";
+import { ContextCardAdapter } from "../adapters/context_card_adapter.ts";
 import { getGlobalLogger } from "../logger/structured_logger.ts";
 import { EventLogger } from "../core/event_logger.ts";
-import { DisplayAdapter } from "./adapters/display_adapter.ts";
-import { ContextCardGenerator } from "./context_card_generator.ts";
-import { PortalService } from "./portal.ts";
-
+import { DisplayAdapter } from "../adapters/display_adapter.ts";
+import { ContextCardGenerator } from "../context/context_card_generator.ts";
+import { PortalService } from "../portal/portal.ts";
 import { createGitServiceStub } from "../../shared/helpers/stub_factories.ts";
-
 import { MemoryBankService } from "../memory/memory_bank.ts";
-import { MemoryExtractorService } from "./memory_extractor.ts";
-import { SkillsService } from "./skills.ts";
-
-import { join } from "@std/path";
+import { MemoryExtractorService } from "../memory/memory_extractor.ts";
+import { SkillsService } from "../skills/skills.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
 import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
@@ -48,7 +43,7 @@ import type { ILogService } from "../../shared/interfaces/i_log_service.ts";
 import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
-import type { ICliApplicationContext } from "../cli/cli_context.ts";
+import type { ICliApplicationContext } from "../../cli/cli_context.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 
 /**

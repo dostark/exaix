@@ -74,6 +74,52 @@ Deno.test("[ScenarioFrameworkContract] accepts a valid scenario document", () =>
   assertEquals(result.steps[0].output_criteria[0].kind, "command-exit-code");
 });
 
+Deno.test("[ScenarioFrameworkContract] accepts a scenario with extended fields (flow_fixture, boolean checkpoint, expect_failure, unique_count_min)", () => {
+  const result = ScenarioSchema.parse({
+    schema_version: SCHEMA_VERSION,
+    id: "extended-fields-test",
+    title: "Extended fields test",
+    pack: "framework_test",
+    tags: ["test"],
+    request_fixture: "fixtures/requests/shared/request.md",
+    flow_fixture: "fixtures/flows/shared/test.flow.yaml",
+    mode_support: ["auto"],
+    portals: [],
+    steps: [
+      {
+        id: "step-1",
+        type: "shell",
+        command: "echo ok",
+        checkpoint: true,
+        expect_failure: true,
+        input_criteria: [],
+        output_criteria: [
+          {
+            id: "unique-items",
+            kind: "json-query",
+            query: "items",
+            unique_count_min: 5,
+          },
+          {
+            id: "output-contains",
+            kind: "command-output-contains",
+            contains: ["success", "completed"],
+          },
+        ],
+      },
+    ],
+  });
+
+  assertEquals(result.flow_fixture, "fixtures/flows/shared/test.flow.yaml");
+  assertEquals(result.steps[0].checkpoint, true);
+  assertEquals(result.steps[0].expect_failure, true);
+  const jsonQueryCriterion = result.steps[0].output_criteria[0] as Record<string, unknown>;
+  assertEquals(jsonQueryCriterion.unique_count_min, 5);
+  const commandOutputCriterion = result.steps[0].output_criteria[1] as Record<string, unknown>;
+  assertEquals(commandOutputCriterion.kind, "command-output-contains");
+  assertEquals(commandOutputCriterion.contains, ["success", "completed"]);
+});
+
 Deno.test("[ScenarioFrameworkContract] rejects scenarios missing required metadata", () => {
   assertThrows(
     () => {
