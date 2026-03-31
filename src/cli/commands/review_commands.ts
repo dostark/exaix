@@ -22,6 +22,7 @@ import type { IReviewStatus } from "../../reviews/review_status.ts";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "../../shared/schemas/artifact.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import { ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "../../shared/enums.ts";
+import { createGitService } from "../../services/adapters/git_adapter.ts";
 
 export interface IReviewMetadata {
   type?: ReviewType;
@@ -375,8 +376,7 @@ export class ReviewCommands extends BaseCommand {
     repoPath: string,
     traceId: string,
   ): Promise<Pick<IGitService, "runGitCommand">> {
-    const { GitService } = await import("../../services/git_service.ts");
-    const portalGitService = new GitService({
+    const portalGitService = createGitService({
       config: this.config,
       db: this.db,
       repoPath,
