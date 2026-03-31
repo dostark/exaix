@@ -21,12 +21,12 @@ function createTestRequestService(root: string, overrides?: {
   const display = createStubDisplay();
   const userIdentity = overrides?.userIdentity ?? "tester";
 
-  return new RequestService(
+  return new RequestService({
     config,
     configService,
     display,
-    () => Promise.resolve(userIdentity),
-  );
+    userIdentityGetter: () => Promise.resolve(userIdentity),
+  });
 }
 
 Deno.test("RequestService.create: creates a request file with correct frontmatter", async () => {

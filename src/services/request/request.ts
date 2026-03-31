@@ -22,21 +22,42 @@ import { JSONValue } from "../../shared/types/json.ts";
 import { IModelProvider } from "../../ai/types.ts";
 import { IOutputValidator } from "../tool/output_validator.ts";
 
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+
+export interface IRequestServiceConfig {
+  config: Config;
+  configService: IConfigService;
+  display: IDisplayService;
+  userIdentityGetter: () => Promise<string>;
+  provider?: IModelProvider;
+  validator?: IOutputValidator;
+  db?: IDatabaseService;
+  context?: IApplicationContext;
+}
+
 export class RequestService {
   private requestsDir: string;
+  private config: Config;
+  private configService: IConfigService;
+  private display: IDisplayService;
+  private userIdentityGetter: () => Promise<string>;
+  private provider?: IModelProvider;
+  private validator?: IOutputValidator;
+  private db?: IDatabaseService;
 
-  constructor(
-    private config: Config,
-    private configService: IConfigService,
-    private display: IDisplayService,
-    private userIdentityGetter: () => Promise<string>,
-    private provider?: IModelProvider,
-    private validator?: IOutputValidator,
-    private db?: IDatabaseService,
-  ) {
-    const root = config.system.root!;
-    const workspace = config.paths.workspace!;
-    this.requestsDir = join(root, workspace, config.paths.requests!);
+  constructor(options: IRequestServiceConfig) {
+    const ctx = options.context;
+    this.configService = ctx?.config || options.configService;
+    this.config = ctx?.config.get() || options.config;
+    this.display = ctx?.display || options.display;
+    this.userIdentityGetter = options.userIdentityGetter;
+    this.provider = ctx?.provider || options.provider;
+    this.validator = options.validator;
+    this.db = ctx?.db || options.db;
+
+    const root = this.config.system.root!;
+    const workspace = this.config.paths.workspace!;
+    this.requestsDir = join(root, workspace, this.config.paths.requests!);
   }
 
   private parseFrontmatter(raw: string): Record<string, string> {

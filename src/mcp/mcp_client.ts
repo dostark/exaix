@@ -8,14 +8,14 @@
 import { IMcpClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import { McpToolName } from "../shared/enums.ts";
 import { ToolHandler } from "./tool_handler.ts";
-import { ICliApplicationContext } from "../cli/cli_context.ts";
-import { JSONValue } from "../shared/types/json.ts";
+import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 
 export class McpClient implements IMcpClient {
   private readonly tools = new Map<string, ToolHandler>();
 
   constructor(
-    private readonly context: ICliApplicationContext,
+    private readonly context: IApplicationContext,
     handlers: ToolHandler[],
   ) {
     for (const handler of handlers) {

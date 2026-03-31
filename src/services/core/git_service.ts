@@ -43,12 +43,15 @@ export type {
   IWorktreeInfo,
 } from "../../shared/interfaces/i_git_service.ts";
 
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+
 export interface IGitServiceConfig {
   config: Config;
   db?: IDatabaseService;
   traceId?: string;
   identityId?: string;
   repoPath?: string;
+  context?: IApplicationContext;
 }
 
 // ============================================================================
@@ -120,11 +123,12 @@ export class GitService implements IGitService {
   private repoPath: string;
 
   constructor(options: IGitServiceConfig) {
-    this.config = options.config;
-    this.db = options.db;
+    const ctx = options.context;
+    this.config = ctx?.config.get() || options.config;
+    this.db = ctx?.db || options.db;
     this.traceId = options.traceId;
     this.identityId = options.identityId;
-    this.repoPath = options.repoPath || options.config.system.root;
+    this.repoPath = options.repoPath || this.config.system.root;
   }
 
   /**

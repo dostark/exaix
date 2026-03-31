@@ -9,7 +9,6 @@
 
 import { parse as parseToml } from "@std/toml";
 import type { Config } from "../../shared/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
 import { IModelProvider } from "../../ai/types.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
 import { GitNothingToCommitError, GitService, type IGitService } from "../core/git_service.ts";
@@ -22,6 +21,8 @@ import {
   EXECUTION_REPORT_TEMPERATURE,
   EXECUTION_REPORT_TOOL_OUTPUT_MAX_CHARS,
 } from "../../shared/constants.ts";
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 
 export interface IPlanStep {
   number: number;
@@ -45,6 +46,7 @@ export interface IPlanExecutionResult {
 export interface IPlanExecutorOptions {
   enableGit?: boolean;
   generateReport?: boolean;
+  context?: IApplicationContext;
 }
 
 export interface IPlanActionReport {
@@ -67,16 +69,21 @@ export class PlanExecutor {
   private logger: EventLogger;
   private enableGit: boolean;
   private generateReport: boolean;
+  private config: Config;
+  private db: IDatabaseService;
 
   constructor(
-    private config: Config,
+    config: Config,
     private llmProvider: IModelProvider,
-    private db: DatabaseService,
+    db: IDatabaseService,
     private repoPath: string,
     options: IPlanExecutorOptions = {},
   ) {
+    const ctx = options.context;
+    this.config = ctx?.config.get() || config;
+    this.db = ctx?.db || db;
     this.logger = new EventLogger({
-      db,
+      db: this.db,
       defaultActor: "system",
     });
     this.enableGit = options.enableGit ?? true;

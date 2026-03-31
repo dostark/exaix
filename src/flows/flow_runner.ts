@@ -18,7 +18,6 @@ import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { GateConfig, GateEvaluator, IGateResult } from "./gate_evaluator.ts";
 import { FlowStepType, StepExecutionMode } from "../shared/enums.ts";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "../journal/activity_journal.ts";
@@ -27,24 +26,20 @@ import { LlmClient } from "../ai/llm_client.ts";
 import { ToolHandler } from "../mcp/tool_handler.ts";
 import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
-import { IDisplayService } from "../shared/interfaces/i_display_service.ts";
+import { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
+import { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 
+/**
+ * Interface for agent executors (AgentRunner or similar)
+ */
+export interface IAgentExecutor {
+  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
+}
+
+/**
+ * Interface for the flow runner service
+ */
 export interface IFlowRunner {
-  /**
-   * Execute a flow with the given request.
-   *
-   * @param flow - The flow definition to execute.
-   * @param request - Execution request details.
-   * @param request.userPrompt - The user's input prompt.
-   * @param request.traceId - Optional trace identifier for observability.
-   * @param request.requestId - Optional request identifier.
-   * @param request.requestAnalysis - Optional structured analysis of the request
-   *   (Phase 45 output). When provided, gate steps with `includeRequestCriteria`
-   *   enabled will generate dynamic evaluation criteria from this analysis.
-   *   If omitted but a gate step has `includeRequestCriteria: true`, a debug
-   *   warning is logged and the gate falls back to static criteria only.
-   * @param request.portalKnowledge - Optional portal knowledge context.
-   */
   execute(
     flow: IFlow,
     request: {
@@ -55,6 +50,33 @@ export interface IFlowRunner {
       portalKnowledge?: IPortalKnowledge;
     },
   ): Promise<IFlowResult>;
+}
+
+/**
+ * Request details for a single step execution
+ */
+export interface IFlowStepRequest {
+  userPrompt: string;
+  context: Record<string, JSONValue>;
+  traceId?: string;
+  requestId?: string;
+  /** Skills to apply for this step execution (Phase 17) */
+  skills?: string[];
+  /** Structured request analysis from Step 11 */
+  requestAnalysis?: IRequestAnalysis;
+}
+
+/**
+ * Configuration for FlowRunner
+ */
+export interface IFlowRunnerConfig {
+  agentExecutor: IAgentExecutor;
+  eventLogger: IFlowEventLogger;
+  context?: IApplicationContext;
+  db?: IDatabaseService;
+  gateEvaluator?: IGateEvaluator;
+  config?: Config;
+  mcpHandlers?: ToolHandler[];
 }
 
 /**
@@ -108,34 +130,6 @@ export interface IFlowResult {
     token_model?: string;
     token_cost_usd?: number;
   };
-}
-
-/**
- * Interface for executing individual agent steps
- */
-export interface IAgentExecutor {
-  run(identityId: string, request: IFlowStepRequest): Promise<IAgentExecutionResult>;
-}
-
-/**
- * Request format for flow step execution
- */
-export interface IFlowStepRequest {
-  userPrompt: string;
-  context?: IFlowStepContext;
-  traceId?: string;
-  requestId?: string;
-  /** Skills to apply for this step execution (Phase 17) */
-  skills?: string[];
-  /** Structured request analysis from Step 11 */
-  requestAnalysis?: IRequestAnalysis;
-}
-
-/**
- * Context data for flow step requests
- */
-export interface IFlowStepContext {
-  [key: string]: string | number | boolean | string[] | null | undefined;
 }
 
 /**
@@ -216,7 +210,7 @@ const BUILT_IN_TRANSFORM_HANDLERS: Record<string, BuiltInTransformHandler> = {
  * Convert an IGateEvaluate (YAML-facing gate config) to a GateConfig (evaluator
  * input), preserving all fields including `includeRequestCriteria`.
  */
-export function toGateConfig(evaluate: IGateEvaluate): GateConfig {
+export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
   return {
     identity: evaluate.identity,
     criteria: evaluate.criteria,
@@ -234,31 +228,31 @@ export function toGateConfig(evaluate: IGateEvaluate): GateConfig {
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   private dynamicStepExecutor?: DynamicStepExecutor;
+  private agentExecutor: IAgentExecutor;
+  private eventLogger: IFlowEventLogger;
+  private db?: IDatabaseService;
+  private gateEvaluator?: IGateEvaluator;
+  private config?: Config;
 
   constructor(
-    private agentExecutor: IAgentExecutor,
-    private eventLogger: IFlowEventLogger,
-    private db?: IDatabaseService, // Optional for token aggregation
-    private gateEvaluator?: GateEvaluator,
-    private config?: Config,
-    private mcpHandlers?: ToolHandler[],
+    private readonly options: IFlowRunnerConfig,
   ) {
     this.conditionEvaluator = new ConditionEvaluator();
+    this.agentExecutor = options.agentExecutor;
+    this.eventLogger = options.eventLogger;
+    this.db = options.context?.db || options.db;
+    this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
+    this.config = options.context?.config.get() || options.config;
 
-    if (config && mcpHandlers && eventLogger) {
-      const activityJournal = new ActivityJournal(eventLogger);
-      // Build a minimal ICliApplicationContext for McpClient without forbidden casts.
-      // McpClient only uses context.config and context.db; the remaining fields
-      // (provider, display, git) are required by the interface but never exercised
-      // by McpClient, so we satisfy them with proper no-op implementations.
-      const noopDisplay: IDisplayService = {
-        info: () => Promise.resolve(),
-        warn: () => Promise.resolve(),
-        error: () => Promise.resolve(),
-        debug: () => Promise.resolve(),
-        fatal: () => Promise.resolve(),
-      };
-      const mcpClient = new McpClient({
+    const config = this.config;
+    const db = this.db;
+    const mcpHandlers = options.mcpHandlers;
+
+    if (config && mcpHandlers && this.eventLogger) {
+      const activityJournal = new ActivityJournal(this.eventLogger);
+
+      // Use existing context if available, otherwise build a minimal one for McpClient
+      const context = options.context || {
         config: {
           get: () => config,
           getAll: () => config,
@@ -272,9 +266,17 @@ export class FlowRunner implements IFlowRunner {
         },
         db: db!,
         provider: createProviderStub(),
-        display: noopDisplay,
+        display: {
+          info: () => Promise.resolve(),
+          warn: () => Promise.resolve(),
+          error: () => Promise.resolve(),
+          debug: () => Promise.resolve(),
+          fatal: () => Promise.resolve(),
+        },
         git: createGitServiceStub(),
-      }, mcpHandlers);
+      } as IApplicationContext;
+
+      const mcpClient = new McpClient(context, mcpHandlers);
       const llmClient = new LlmClient(config);
       this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
     }
@@ -804,7 +806,7 @@ export class FlowRunner implements IFlowRunner {
 
     const gateConfig = toGateConfig(step.evaluate);
     const effectiveInclude = gateConfig.includeRequestCriteria || flow.settings?.includeRequestCriteria;
-    const effectiveGateConfig: GateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
+    const effectiveGateConfig: IGateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
 
     if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
       await this.eventLogger.log("flow.gate.criteria.no_analysis", {

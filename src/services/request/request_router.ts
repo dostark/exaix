@@ -63,19 +63,41 @@ export interface IFlowValidator {
   validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
 }
 
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+
+export interface IRequestRouterConfig {
+  flowRunner: IFlowRunner;
+  agentRunner: IAgentRunner;
+  flowValidator: IFlowValidator;
+  eventLogger: EventLogger;
+  defaultAgentId: string;
+  blueprintsPath: string;
+  config: Config;
+  context?: IApplicationContext;
+}
+
 /**
  * RequestRouter handles routing decisions for incoming requests
  */
 export class RequestRouter {
-  constructor(
-    private flowRunner: IFlowRunner,
-    private agentRunner: IAgentRunner,
-    private flowValidator: IFlowValidator,
-    private eventLogger: EventLogger,
-    private defaultAgentId: string,
-    private blueprintsPath: string,
-    private config: Config,
-  ) {}
+  private flowRunner: IFlowRunner;
+  private agentRunner: IAgentRunner;
+  private flowValidator: IFlowValidator;
+  private eventLogger: EventLogger;
+  private defaultAgentId: string;
+  private blueprintsPath: string;
+  private config: Config;
+
+  constructor(options: IRequestRouterConfig) {
+    const ctx = options.context;
+    this.flowRunner = options.flowRunner;
+    this.agentRunner = options.agentRunner;
+    this.flowValidator = options.flowValidator;
+    this.eventLogger = options.eventLogger;
+    this.defaultAgentId = options.defaultAgentId;
+    this.blueprintsPath = options.blueprintsPath;
+    this.config = ctx?.config.get() || options.config;
+  }
 
   /**
    * Build execution context based on request portal parameter

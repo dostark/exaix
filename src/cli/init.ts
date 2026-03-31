@@ -168,6 +168,15 @@ export async function initializeServices(
       db: dbLocal as DatabaseService, // ToolRegistry expects concrete DatabaseService
     });
 
+    const context: ICliApplicationContext = {
+      db: dbLocal,
+      git: gitLocal,
+      provider: providerLocal,
+      display: displayAdapter,
+      config: configAdapter,
+      toolRegistry,
+    };
+
     const portals = new PortalService(
       cfg,
       configAdapter,
@@ -176,37 +185,34 @@ export async function initializeServices(
       portalKnowledge,
       portalKnowledgeConfig,
     );
-    const requests = new RequestService(
-      cfg,
-      configAdapter,
-      displayAdapter,
+
+    const requests = new RequestService({
+      context,
       userIdentityGetter,
-      providerLocal,
-      validatorLocal,
-      dbLocal,
-    );
+      validator: validatorLocal,
+      config: cfg,
+      configService: cfgService,
+      display: displayAdapter,
+    });
+
     const plans = new PlanService(cfg, configAdapter, dbLocal, displayAdapter, userIdentityGetter);
+
+    context.requests = new RequestAdapter(requests);
+    context.portals = new PortalAdapter(portals);
+    context.plans = new PlanAdapter(plans);
+    context.memoryBank = new MemoryBankAdapter(memoryBank);
+    context.extractor = new MemoryExtractorAdapter(extractor);
+    context.embeddings = new MemoryEmbeddingAdapter(embedding);
+    context.skills = new SkillsAdapter(skills);
+    context.archive = new ArchiveAdapter(archive);
+    context.flowValidator = new FlowValidatorAdapter(flowValidator);
+    context.contextCards = new ContextCardAdapter(contextCards);
+    context.portalKnowledge = portalKnowledge;
 
     return {
       success: true,
-      db: dbLocal,
-      git: gitLocal,
-      provider: providerLocal,
-      display: displayAdapter,
-      config: configAdapter,
-      toolRegistry: toolRegistry,
-      memoryBank: new MemoryBankAdapter(memoryBank),
-      extractor: new MemoryExtractorAdapter(extractor),
-      embeddings: new MemoryEmbeddingAdapter(embedding),
-      skills: new SkillsAdapter(skills),
-      archive: new ArchiveAdapter(archive),
-      flowValidator: new FlowValidatorAdapter(flowValidator),
-      contextCards: new ContextCardAdapter(contextCards),
-      portals: new PortalAdapter(portals),
-      requests: new RequestAdapter(requests),
-      plans: new PlanAdapter(plans),
-      portalKnowledge: portalKnowledge,
-      portalKnowledgeConfig: portalKnowledgeConfig,
+      ...context,
+      portalKnowledgeConfig,
     };
   } catch (err) {
     // Fallback minimal stubs (same as runtime fallback)

@@ -172,15 +172,15 @@ export function createTestRequestRouter(
     private mockBlueprints: Map<string, IBlueprint> = new Map();
 
     constructor() {
-      super(
+      super({
         flowRunner,
         agentRunner,
         flowValidator,
-        logger as Partial<EventLogger> as EventLogger,
-        defaultAgent,
+        eventLogger: logger as Partial<EventLogger> as EventLogger,
+        defaultAgentId: defaultAgent,
         blueprintsPath,
         config,
-      );
+      });
       this.mockBlueprints.set("senior-coder", { identityId: "senior-coder", systemPrompt: "Senior Coder" });
       this.mockBlueprints.set("default-agent", { identityId: "default-agent", systemPrompt: "Default Agent" });
     }

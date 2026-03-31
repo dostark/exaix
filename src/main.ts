@@ -29,6 +29,8 @@ import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { LogMetadata, toSafeJson } from "./shared/types/json.ts";
+import { GitService } from "./services/core/git_service.ts";
+import { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -124,6 +126,21 @@ if (import.meta.main) {
       named_model: defaultModelName,
     });
 
+    // Initialize Git orchestration service
+    const gitService = new GitService({
+      config,
+      db: dbService,
+    });
+
+    // Create central application context
+    const context: IApplicationContext = {
+      config: configService,
+      db: dbService,
+      provider: llmProvider,
+      git: gitService,
+      display: logger,
+    };
+
     // Ensure required directories exist
     const requestsPath = join(config.system.root, config.paths.workspace, "Requests");
     const plansPath = join(config.system.root, config.paths.workspace, "Plans");
@@ -138,11 +155,11 @@ if (import.meta.main) {
       dbService,
       {
         workspacePath: join(config.system.root, config.paths.workspace),
-        requestsDir: join(config.system.root, config.paths.workspace, "Requests"),
+        requestsDir: requestsPath,
         blueprintsPath: join(config.system.root, config.paths.blueprints, "Identities"),
         includeReasoning: true,
+        context, // Support unified DI
       },
-      // Note: testProvider parameter removed - provider selection handled by ProviderSelector
     );
 
     await logger.info("request_processor.initialized", "RequestProcessor", {
@@ -182,6 +199,7 @@ if (import.meta.main) {
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     const executionLoop = new ExecutionLoop({
+      context, // Preferred unified DI
       config,
       db: dbService,
       identityId: "daemon",

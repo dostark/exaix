@@ -7,7 +7,7 @@
  * * @related-files [src/services/execution_loop.ts, src/services/db.ts]
  */
 
-import type { DatabaseService, SqliteParam } from "../core/db.ts";
+import type { IDatabaseService, SqliteParam } from "../core/db.ts";
 import type { EventLogger } from "../core/event_logger.ts";
 import {
   type IRegisterReviewInput,
@@ -20,7 +20,7 @@ import { type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts
 
 export class ReviewRegistry {
   constructor(
-    private db: DatabaseService,
+    private db: IDatabaseService,
     private logger: EventLogger,
   ) {}
 

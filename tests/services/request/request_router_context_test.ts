@@ -67,15 +67,15 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
     const mockFlowValidator = createMockFlowValidator();
 
     // Create RequestRouter instance
-    router = new RequestRouter(
-      mockFlowRunner,
-      mockAgentRunner,
-      mockFlowValidator,
-      logger,
-      "default-agent",
-      join(tempDir, "Blueprints"),
+    router = new RequestRouter({
+      flowRunner: mockFlowRunner,
+      agentRunner: mockAgentRunner,
+      flowValidator: mockFlowValidator,
+      eventLogger: logger,
+      defaultAgentId: "default-agent",
+      blueprintsPath: join(tempDir, "Blueprints"),
       config,
-    );
+    });
   });
 
   afterEach(async () => {

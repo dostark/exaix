@@ -100,7 +100,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const capturing = new CapturingGateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentEventLogger(), undefined, capturing);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentEventLogger(),
+      gateEvaluator: capturing,
+    });
     // Flow has flow-level true; step has no explicit setting (defaults to false)
     const flow = makeGateFlow(undefined, true);
 
@@ -118,7 +122,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const capturing = new CapturingGateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentEventLogger(), undefined, capturing);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentEventLogger(),
+      gateEvaluator: capturing,
+    });
     // Step explicitly sets true; flow has no setting (defaults false)
     const flow = makeGateFlow(true, false);
 
@@ -135,7 +143,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const capturing = new CapturingGateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentEventLogger(), undefined, capturing);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentEventLogger(),
+      gateEvaluator: capturing,
+    });
     // Neither flow nor step sets includeRequestCriteria → both default to false
     const flow = makeGateFlow(undefined, undefined);
 

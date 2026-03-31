@@ -10,7 +10,6 @@ import { ConfigSchema } from "../../shared/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { ActivityActor, LogLevel } from "../../shared/enums.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
@@ -18,13 +17,17 @@ import { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 import { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
+import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IToolRegistryConfig {
   config: Config;
-  db?: DatabaseService;
+  db?: IDatabaseService;
   traceId?: string;
   identityId?: string;
   baseDir?: string;
+  context?: IApplicationContext;
 }
 
 interface IToolContext extends IServiceContext {
@@ -75,6 +78,7 @@ const ALLOWED_COMMANDS = new Set([
   "npm",
   "node",
   "deno",
+  "exoctl",
 ]);
 
 // ============================================================================
@@ -115,6 +119,7 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
     case "npm":
     case "node":
     case "deno":
+    case "exoctl":
       return validateRuntimeArguments(command, args);
     case "ls":
       return validateLsArguments(args);
@@ -178,11 +183,11 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
 }
 
 /**
- * Validate runtime command arguments (npm, node, deno)
+ * Validate runtime command arguments (npm, node, deno, exoctl)
  */
 function validateRuntimeArguments(runtime: string, args: string[]): { valid: boolean; reason?: string } {
   // Only allow specific safe subcommands
-  const safeSubcommands = ["--version", "--help", "version", "info"];
+  const safeSubcommands = ["--version", "--help", "version", "info", "test", "lint", "fmt", "check", "status"];
 
   if (args.length === 0) return { valid: true }; // Allow bare command
 
@@ -241,7 +246,7 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
 
 export class ToolRegistry implements IToolRegistry {
   private config: Config;
-  private db?: DatabaseService;
+  private db?: IDatabaseService;
   private traceId?: string;
   private identityId?: string;
   private pathResolver: PathResolver;
@@ -251,18 +256,21 @@ export class ToolRegistry implements IToolRegistry {
   private executors: Map<string, (params: Record<string, JSONValue>) => Promise<IToolResult>> = new Map();
 
   constructor(options?: IToolRegistryConfig) {
-    // Use ConfigSchema to parse and apply all defaults automatically
-    this.config = options?.config || ConfigSchema.parse({
+    const ctx = options?.context;
+    // Use Config from context if available, otherwise from options or default.
+    this.config = ctx?.config.get() || options?.config || ConfigSchema.parse({
       system: { root: Deno.cwd(), log_level: LogLevel.INFO },
-      paths: {}, // Will use schema defaults
-      database: {}, // Will use schema defaults
-      watcher: {}, // Will use schema defaults
-      agents: {}, // Will use schema defaults including max_iterations
-      models: {}, // Will use schema defaults
+      paths: {},
+      database: {},
+      watcher: {},
+      agents: {},
+      models: {},
       portals: [],
-      mcp: {}, // Will use schema defaults
+      mcp: {},
     });
-    this.db = options?.db;
+
+    this.db = ctx?.db || options?.db;
+
     this.traceId = options?.traceId ?? "tool-registry";
     this.identityId = options?.identityId ?? "system";
     // Default baseDir to system root if not provided. Resolve it to ensure absolute path.

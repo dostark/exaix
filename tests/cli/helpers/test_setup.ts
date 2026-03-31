@@ -188,7 +188,12 @@ export async function createCliTestContext(options?: { createDirs?: string[] }) 
   const contextCards = new ContextCardAdapter(new ContextCardGenerator(config));
   const display = createStubDisplay(db);
   const requests = new RequestAdapter(
-    new RequestService(config, configService, display, () => Promise.resolve("tester")),
+    new RequestService({
+      config,
+      configService,
+      display,
+      userIdentityGetter: () => Promise.resolve("tester"),
+    }),
   );
 
   const context: ICliApplicationContext = {

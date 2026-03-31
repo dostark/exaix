@@ -20,38 +20,7 @@ import { FlowGateAction, FlowGateOnFail } from "../shared/enums.ts";
 import { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
 import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
 import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
-
-/**
- * Result of gate evaluation
- */
-export interface IGateResult {
-  /** Whether the gate passed */
-  passed: boolean;
-  /** Overall score from evaluation */
-  score: number;
-  /** Full evaluation result */
-  evaluation: EvaluationResult;
-  /** Number of attempts made */
-  attempts: number;
-  /** Action taken based on result */
-  action: FlowGateAction;
-  /** Duration of evaluation in ms */
-  evaluationDurationMs: number;
-  /** Any error that occurred */
-  error?: string;
-}
-
-/**
- * Interface for invoking judge agent
- */
-export interface JudgeInvoker {
-  evaluate(
-    identityId: string,
-    content: string,
-    criteria: EvaluationCriterion[],
-    context?: string,
-  ): Promise<EvaluationResult>;
-}
+import { IGateConfig, IGateEvaluator, IGateResult, IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
 
 /**
  * Gate configuration schema
@@ -76,9 +45,9 @@ export type GateConfig = z.infer<typeof GateConfigSchema>;
 /**
  * GateEvaluator class for quality gate evaluation
  */
-export class GateEvaluator {
+export class GateEvaluator implements IGateEvaluator {
   constructor(
-    private judgeInvoker: JudgeInvoker,
+    private judgeInvoker: IJudgeInvoker,
     private criteriaGenerator: ICriteriaGeneratorService = new CriteriaGenerator(),
   ) {}
 
@@ -92,7 +61,7 @@ export class GateEvaluator {
    * @param requestAnalysis - Optional analysis used to generate dynamic criteria
    */
   async evaluate(
-    config: GateConfig,
+    config: IGateConfig,
     contentToEvaluate: string,
     context?: string,
     previousAttempts: number = 0,
@@ -286,7 +255,7 @@ export class GateEvaluator {
 /**
  * Mock judge invoker for testing
  */
-export class MockJudgeInvoker implements JudgeInvoker {
+export class MockJudgeInvoker implements IJudgeInvoker {
   private mockResults: Map<string, EvaluationResult> = new Map();
   private defaultScore: number = 0.85;
 

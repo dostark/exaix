@@ -149,12 +149,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const capturingEvaluator = new CapturingGateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(
-      new StubAgentExecutor(),
-      new TrackingEventLogger(),
-      undefined,
-      capturingEvaluator,
-    );
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new TrackingEventLogger(),
+      gateEvaluator: capturingEvaluator,
+    });
     const flow = makeGateFlow();
 
     await runner.execute(flow, {
@@ -180,12 +179,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const capturingEvaluator = new CapturingGateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(
-      new StubAgentExecutor(),
-      new TrackingEventLogger(),
-      undefined,
-      capturingEvaluator,
-    );
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new TrackingEventLogger(),
+      gateEvaluator: capturingEvaluator,
+    });
     const flow = makeGateFlow();
 
     const result = await runner.execute(flow, {
@@ -208,12 +206,11 @@ Deno.test(
     mockJudge.setDefaultScore(0.9);
     const gateEvaluator = new GateEvaluator(mockJudge);
 
-    const runner = new FlowRunner(
-      new StubAgentExecutor(),
-      new TrackingEventLogger(),
-      undefined,
-      gateEvaluator,
-    );
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new TrackingEventLogger(),
+      gateEvaluator: gateEvaluator,
+    });
     const flow = makeGateFlow();
 
     // Execute WITHOUT any requestAnalysis

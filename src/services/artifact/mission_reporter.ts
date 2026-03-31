@@ -11,10 +11,8 @@
  * @architectural-layer Services
  * * @related-files [src/services/execution_loop.ts, src/services/memory_bank.ts]
  */
-// Removed unused imports
-// import { basename, join, relative } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
+import { IDatabaseService } from "../core/db.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
 import { ExecutionStatus } from "../../shared/enums.ts";
@@ -111,13 +109,13 @@ export class MissionReporter {
   private config: Config;
   private reportConfig: ReportConfig;
   private memoryBank: MemoryBankService;
-  private db?: DatabaseService;
+  private db?: IDatabaseService;
 
   constructor(
     config: Config,
     reportConfig: ReportConfig,
     memoryBank: MemoryBankService,
-    db?: DatabaseService,
+    db?: IDatabaseService,
   ) {
     this.config = config;
     this.reportConfig = reportConfig;

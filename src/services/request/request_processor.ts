@@ -82,11 +82,14 @@ export interface IRequestProcessingContext extends IServiceContext {
   memoryContext?: EnhancedRequest;
 }
 
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+
 export interface IRequestProcessorConfig {
   workspacePath: string;
   requestsDir: string;
   blueprintsPath: string;
   includeReasoning: boolean;
+  context?: IApplicationContext;
 }
 
 // ============================================================================
@@ -117,27 +120,32 @@ export class RequestProcessor {
     testQualityGate?: IRequestQualityGateService,
     private readonly sessionMemory?: SessionMemoryService,
   ) {
+    const ctx = processorConfig.context;
     // Initialize services
-    this.costTracker = costTracker ?? new CostTracker(db, config);
-    const healthChecker = new HealthCheckService(DEFAULT_MCP_VERSION, config);
+    this.costTracker = costTracker ?? new CostTracker(this.db, this.config);
+    const healthChecker = new HealthCheckService(DEFAULT_MCP_VERSION, this.config);
     this.providerSelector = new ProviderSelector(
       ProviderRegistry,
       this.costTracker,
       healthChecker,
     );
 
-    this.logger = new EventLogger({
-      db,
-      defaultActor: "agent:request-processor",
-    });
+    if (ctx?.display instanceof EventLogger) {
+      this.logger = ctx.display;
+    } else {
+      this.logger = new EventLogger({
+        db: this.db,
+        defaultActor: "agent:request-processor",
+      });
+    }
 
-    this.plansDir = join(config.system.root, config.paths.workspace, "Plans");
+    this.plansDir = join(this.config.system.root, this.config.paths.workspace, "Plans");
     this.planWriter = new PlanWriter({
       plansDirectory: this.plansDir,
       includeReasoning: processorConfig.includeReasoning,
       generateWikiLinks: true,
-      runtimeRoot: join(config.system.root, config.paths.runtime),
-      db,
+      runtimeRoot: join(this.config.system.root, this.config.paths.runtime),
+      db: this.db,
     });
 
     this.flowValidator = null; // Temporary for testing

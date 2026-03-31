@@ -15,7 +15,8 @@
 
 import { IModelProvider } from "../../ai/types.ts";
 import { JSONValue, toSafeJson } from "../../shared/types/json.ts";
-import type { IDatabaseService } from "../core/db.ts";
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import {
   createLLMRetryPolicy,
   createRetryPolicy,
@@ -24,6 +25,7 @@ import {
   type IRetryPolicyConfig,
   type IRetryResult,
 } from "../core/retry_policy.ts";
+
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
@@ -133,6 +135,9 @@ export interface IAgentRunnerConfig {
 
   /** Optional: Disable automatic skill matching */
   disableSkills?: boolean;
+
+  /** Optional: Application context for service resolution */
+  context?: IApplicationContext;
 }
 
 /**
@@ -177,13 +182,21 @@ export class AgentRunner implements IAgentRunner {
   private disableSkills: boolean;
   private planAdapter: PlanAdapter;
 
+  private modelProvider: IModelProvider;
+
   constructor(
-    private readonly modelProvider: IModelProvider,
+    modelProvider?: IModelProvider,
     config?: IAgentRunnerConfig,
   ) {
-    this.db = config?.db;
+    const ctx = config?.context;
+    const provider = modelProvider || ctx?.provider;
+    if (!provider) {
+      throw new Error("AgentRunner requires a model provider");
+    }
+    this.modelProvider = provider;
+    this.db = ctx?.db || config?.db;
     this.disableRetry = config?.disableRetry ?? false;
-    this.skillsService = config?.skillsService;
+    this.skillsService = ctx?.skills || config?.skillsService;
     this.disableSkills = config?.disableSkills ?? false;
     this.retryPolicy = config?.retryPolicyInstance ||
       (config?.retryPolicy ? createRetryPolicy(config.retryPolicy) : createLLMRetryPolicy());

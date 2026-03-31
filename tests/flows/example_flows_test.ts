@@ -70,7 +70,7 @@ describe("Example Flows - Step 7.9", {
     };
 
     // Create FlowRunner instance
-    _flowRunner = new FlowRunner(mockAgentExecutor, mockEventLogger);
+    _flowRunner = new FlowRunner({ agentExecutor: mockAgentExecutor, eventLogger: mockEventLogger });
   });
 
   afterEach(async () => {

@@ -17,7 +17,8 @@ import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import type { Config } from "../../shared/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
+import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import { IModelProvider } from "../../ai/types.ts";
 import { GitService, type IGitService } from "../core/git_service.ts";
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
@@ -42,10 +43,11 @@ import { JSONValue } from "../../shared/types/json.ts";
 
 export interface IExecutionLoopConfig {
   config: Config;
-  db?: DatabaseService;
+  db?: IDatabaseService;
   identityId: string;
   llmProvider?: IModelProvider;
   reviewRegistry?: ReviewRegistry;
+  context?: IApplicationContext;
 }
 
 export interface IExecutionResult {
@@ -85,30 +87,30 @@ export interface IExecuteOptions {
 
 export class ExecutionLoop {
   private config: Config;
-  private db?: DatabaseService;
+  private db?: IDatabaseService;
   private identityId: string;
   private plansDir: string;
   private leases = new Map<string, ITaskLease>();
   private blueprintLoader: BlueprintLoader;
-
-  constructor(
-    { config, db, identityId, llmProvider, reviewRegistry }: IExecutionLoopConfig & {
-      reviewRegistry?: ReviewRegistry;
-    },
-  ) {
-    this.config = config;
-    this.db = db;
-    this.identityId = identityId;
-    this.llmProvider = llmProvider;
-    this.reviewRegistry = reviewRegistry;
-    this.plansDir = join(config.system.root, config.paths.workspace, config.paths.active);
-    this.blueprintLoader = new BlueprintLoader({
-      blueprintsPath: join(config.system.root, config.paths.blueprints, config.paths.identities),
-    });
-  }
-
+  private context?: IApplicationContext;
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
+
+  constructor(
+    config: IExecutionLoopConfig,
+  ) {
+    const ctx = config.context;
+    this.config = ctx?.config.get() || config.config;
+    this.db = ctx?.db || config.db;
+    this.identityId = config.identityId;
+    this.llmProvider = ctx?.provider || config.llmProvider;
+    this.reviewRegistry = config.reviewRegistry;
+    this.context = ctx;
+    this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
+    this.blueprintLoader = new BlueprintLoader({
+      blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
+    });
+  }
 
   private async isReadOnlyAgentId(identityId: string | undefined): Promise<boolean> {
     if (!identityId) return false;
@@ -273,6 +275,7 @@ export class ExecutionLoop {
       traceId,
       identityId: this.identityId,
       repoPath,
+      context: this.context,
     });
   }
 
@@ -637,6 +640,7 @@ export class ExecutionLoop {
       traceId,
       identityId: this.identityId,
       baseDir: executionRoot,
+      context: this.context,
     });
 
     let actionIndex = 0;
@@ -697,7 +701,7 @@ export class ExecutionLoop {
       this.llmProvider,
       this.db,
       executionRoot,
-      options,
+      { ...options, context: this.context },
     );
 
     // Create plan context

@@ -132,7 +132,7 @@ Deno.test("[FlowRunner] dispatches gate steps to GateEvaluator", async () => {
 
   const agentExecutor = new TrackingAgentExecutor();
   const logger = new TrackingEventLogger();
-  const runner = new FlowRunner(agentExecutor, logger, undefined, gateEvaluator);
+  const runner = new FlowRunner({ agentExecutor, eventLogger: logger, gateEvaluator });
   const flow = makeGateFlow();
 
   const result = await runner.execute(flow, { userPrompt: "Evaluate this" });
@@ -146,7 +146,7 @@ Deno.test("[FlowRunner] non-gate steps use agentExecutor", async () => {
   const agentExecutor = new TrackingAgentExecutor();
   const logger = new TrackingEventLogger();
 
-  const runner = new FlowRunner(agentExecutor, logger);
+  const runner = new FlowRunner({ agentExecutor, eventLogger: logger });
   const flow = makeAgentFlow();
 
   await runner.execute(flow, { userPrompt: "Do something" });
@@ -158,7 +158,7 @@ Deno.test("[FlowRunner] requestAnalysis forwarded to IFlowStepRequest", async ()
   const agentExecutor = new TrackingAgentExecutor();
   const logger = new TrackingEventLogger();
 
-  const runner = new FlowRunner(agentExecutor, logger);
+  const runner = new FlowRunner({ agentExecutor, eventLogger: logger });
   const flow = makeAgentFlow();
   const analysis = makeAnalysis();
 
@@ -174,7 +174,7 @@ Deno.test("[FlowRunner] gate dispatch preserves includeRequestCriteria from step
 
   const agentExecutor = new TrackingAgentExecutor();
   const logger = new TrackingEventLogger();
-  const runner = new FlowRunner(agentExecutor, logger, undefined, gateEvaluator);
+  const runner = new FlowRunner({ agentExecutor, eventLogger: logger, gateEvaluator });
 
   // includeRequestCriteria=true in step config — gate should run without error
   const flow = makeGateFlow(true);
@@ -191,7 +191,7 @@ Deno.test("[FlowRunner] logs warning when includeRequestCriteria=true but no ana
 
   const agentExecutor = new TrackingAgentExecutor();
   const logger = new TrackingEventLogger();
-  const runner = new FlowRunner(agentExecutor, logger, undefined, gateEvaluator);
+  const runner = new FlowRunner({ agentExecutor, eventLogger: logger, gateEvaluator });
 
   // Flow with includeRequestCriteria=true but no requestAnalysis provided
   const flow = makeGateFlow(true);

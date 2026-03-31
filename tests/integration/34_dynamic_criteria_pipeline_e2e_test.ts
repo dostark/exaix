@@ -210,7 +210,11 @@ Deno.test(
       },
     };
     const evaluator = new GateEvaluator(capturing, criteriaGenerator);
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentLogger(), undefined, evaluator);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentLogger(),
+      gateEvaluator: evaluator,
+    });
 
     const analysis = makeAnalysisWithGoals();
     const flow = makeGateFlowWithCriteria(true);
@@ -290,7 +294,11 @@ Deno.test(
     const capturing = new CapturingJudgeInvoker();
     capturing.setDefaultScore(0.9);
     const evaluator = new GateEvaluator(capturing, new CriteriaGenerator());
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentLogger(), undefined, evaluator);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentLogger(),
+      gateEvaluator: evaluator,
+    });
 
     const analysis = makeAnalysisNoGoals();
     const flow = makeGateFlowWithCriteria(true);
@@ -311,7 +319,11 @@ Deno.test(
     const capturing = new CapturingJudgeInvoker();
     capturing.setDefaultScore(0.9);
     const evaluator = new GateEvaluator(capturing, new CriteriaGenerator());
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentLogger(), undefined, evaluator);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentLogger(),
+      gateEvaluator: evaluator,
+    });
 
     const analysis = makeAnalysisWithGoals();
     // Flow-level includeRequestCriteria: true; step has no explicit flag
@@ -356,7 +368,11 @@ Deno.test(
     const capturing = new CapturingJudgeInvoker();
     capturing.setDefaultScore(0.9);
     const evaluator = new GateEvaluator(capturing, new CriteriaGenerator());
-    const runner = new FlowRunner(new StubAgentExecutor(), new SilentLogger(), undefined, evaluator);
+    const runner = new FlowRunner({
+      agentExecutor: new StubAgentExecutor(),
+      eventLogger: new SilentLogger(),
+      gateEvaluator: evaluator,
+    });
 
     const flow = makeGateFlowWithCriteria(true);
 
