@@ -55,6 +55,7 @@ export enum CriterionKind {
   VERSION_GTE = "version-gte",
   VERSION_LTE = "version-lte",
   DIR_EXISTS = "dir-exists",
+  COMMAND_OUTPUT_CONTAINS = "command-output-contains",
 }
 
 export enum CriterionPhase {
@@ -141,6 +142,7 @@ const JsonQueryCriterionSchema = BaseCriterionSchema.extend({
   not_empty: z.boolean().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
+  unique_count_min: z.number().optional(),
   target_file: NON_EMPTY_STRING.optional(),
 }).strict();
 
@@ -172,6 +174,11 @@ const JournalEventExistsCriterionSchema = BaseCriterionSchema.extend({
 const CommandExitCodeCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.COMMAND_EXIT_CODE),
   equals: z.number().int(),
+}).strict();
+
+const CommandOutputContainsCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.COMMAND_OUTPUT_CONTAINS),
+  contains: z.array(z.string()).min(1),
 }).strict();
 
 const StatusEqualsCriterionSchema = BaseCriterionSchema.extend({
@@ -235,6 +242,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   VersionEqualsCriterionSchema,
   VersionGteCriterionSchema,
   VersionLteCriterionSchema,
+  CommandOutputContainsCriterionSchema,
 ]);
 
 export type ICriterion = z.infer<typeof CriterionSchema>;
@@ -260,9 +268,10 @@ export const ScenarioStepSchema = z.object({
   args: z.array(z.string()).optional(),
   env: z.record(z.string(), z.string()).optional(),
   timeout_sec: z.number().int().positive().optional(),
-  checkpoint: NON_EMPTY_STRING.optional(),
+  checkpoint: z.union([NON_EMPTY_STRING, z.boolean()]).optional(),
   instructions: NON_EMPTY_STRING.optional(),
   continue_on_failure: z.boolean().default(false),
+  expect_failure: z.boolean().optional(),
   artifact_refs: z.array(z.string().min(1)).optional(),
   file_pattern: z.string().min(1).optional(),
   input_criteria: z.array(CriterionSchema).optional().default([]),

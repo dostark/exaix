@@ -86,6 +86,7 @@ type ITextMatchesCriterion = Extract<ICriterion, { kind: CriterionKind.TEXT_MATC
 type IVersionEqualsCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_EQUALS }>;
 type IVersionGteCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_GTE }>;
 type IVersionLteCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_LTE }>;
+type ICommandOutputContainsCriterion = Extract<ICriterion, { kind: CriterionKind.COMMAND_OUTPUT_CONTAINS }>;
 
 interface IKeyValueDocument {
   [key: string]: unknown;
@@ -135,6 +136,8 @@ export async function evaluateCriterion(
       return await evaluateVersionGteCriterion(options);
     case CriterionKind.VERSION_LTE:
       return await evaluateVersionLteCriterion(options);
+    case CriterionKind.COMMAND_OUTPUT_CONTAINS:
+      return evaluateCommandOutputContainsCriterion(options);
   }
 }
 
@@ -1009,6 +1012,17 @@ function evaluateJsonQueryCriterion(
       message = passed
         ? `JSON query "${criterion.query}" returned ${length} items (<= ${criterion.max})`
         : `JSON query "${criterion.query}" returned ${length} items, expected <= ${criterion.max}`;
+    } else if (criterion.unique_count_min !== undefined) {
+      if (!Array.isArray(result)) {
+        passed = false;
+        message = `JSON query "${criterion.query}" must return an array for unique_count_min check`;
+      } else {
+        const uniqueValues = new Set(result.map((v) => JSON.stringify(v)));
+        passed = uniqueValues.size >= criterion.unique_count_min;
+        message = passed
+          ? `JSON query "${criterion.query}" returned ${uniqueValues.size} unique items (>= ${criterion.unique_count_min})`
+          : `JSON query "${criterion.query}" returned ${uniqueValues.size} unique items, expected >= ${criterion.unique_count_min}`;
+      }
     }
 
     return Promise.resolve({
@@ -1019,7 +1033,8 @@ function evaluateJsonQueryCriterion(
       message,
       evidence_refs: [],
       observed_value: result,
-      expected_value: criterion.equals ?? criterion.contains ?? criterion.not_empty ?? criterion.min ?? criterion.max,
+      expected_value: criterion.equals ?? criterion.contains ?? criterion.not_empty ?? criterion.min ?? criterion.max ??
+        criterion.unique_count_min,
     });
   } catch (_error) {
     return Promise.resolve({
@@ -1064,6 +1079,31 @@ async function evaluateDirExistsCriterion(
       expected_value: true,
     };
   }
+}
+
+function evaluateCommandOutputContainsCriterion(
+  options: IEvaluateCriterionOptions,
+): ICriterionResult {
+  const criterion = options.criterion as ICommandOutputContainsCriterion;
+  const stdout = options.executionResult?.stdout ?? "";
+  const stderr = options.executionResult?.stderr ?? "";
+  const combined = stdout + stderr;
+
+  const missing = criterion.contains.filter((sub) => !combined.includes(sub));
+  const passed = missing.length === 0;
+
+  return {
+    criterion_id: criterion.id,
+    kind: CriterionKind.COMMAND_OUTPUT_CONTAINS,
+    phase: options.phase,
+    status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+    message: passed
+      ? `Command output contains all expected patterns`
+      : `Command output missing patterns: ${missing.join(", ")}`,
+    evidence_refs: [],
+    observed_value: combined,
+    expected_value: criterion.contains,
+  };
 }
 
 function compareVersions(a: string, b: string): number {

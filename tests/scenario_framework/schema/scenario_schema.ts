@@ -25,6 +25,7 @@ export const ScenarioSchema = z.object({
   pack: NON_EMPTY_STRING,
   tags: z.array(z.string().min(1)),
   request_fixture: NON_EMPTY_STRING,
+  flow_fixture: NON_EMPTY_STRING.optional(),
   mode_support: z.array(z.nativeEnum(ScenarioExecutionMode)).min(1),
   portals: z.array(PortalMountSchema),
   steps: z.array(ScenarioStepSchema).min(1),

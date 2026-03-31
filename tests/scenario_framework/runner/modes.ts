@@ -39,7 +39,7 @@ export interface IExecuteStepCallbackArgs {
 }
 
 export interface IReviewBundle {
-  checkpointId: string;
+  checkpointId: string | boolean;
   stepId: string;
   executedStepIds: string[];
 }
@@ -105,7 +105,10 @@ export async function runScenarioInMode(
 
     executedStepIds.push(step.id);
 
-    if (executionResult.exitCode !== 0) {
+    const expectFailure = step.expect_failure ?? false;
+    const isFailed = expectFailure ? executionResult.exitCode === 0 : executionResult.exitCode !== 0;
+
+    if (isFailed) {
       return {
         status: "failed",
         nextStepIndex: stepIndex,
