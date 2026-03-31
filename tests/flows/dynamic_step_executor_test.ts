@@ -4,16 +4,23 @@
  * @description Verifies DynamicStepExecutor ReAct-style dynamic tool selection for Phase 56.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
-import type { IFlowStep } from "../../src/shared/schemas/flow.ts";
-import type { IBlueprintFrontmatter } from "../../src/shared/schemas/blueprint.ts";
-import type { JournalEntry, ToolArgs } from "../../src/flows/dynamic_step_executor.ts";
+import { FlowStepSchema } from "../../src/shared/schemas/flow.ts";
+import { BlueprintFrontmatterSchema } from "../../src/shared/schemas/blueprint.ts";
+import {
+  DynamicStepExecutor,
+  type IActivityJournal,
+  type ILlmClient,
+  type IMcpClient,
+  type JournalEntry,
+  type ToolArgs,
+} from "../../src/flows/dynamic_step_executor.ts";
 
 /**
  * Mock implementations for dependencies
  */
-class MockMcpClient {
+class MockMcpClient implements IMcpClient {
   private callHistory: Array<{ tool: McpToolName; args: ToolArgs }> = [];
   private responses: Map<string, string> = new Map();
 
@@ -30,18 +37,36 @@ class MockMcpClient {
     return Promise.resolve(this.responses.get(tool) ?? `Result from ${tool}`);
   }
 
+  getToolDefinitions(tools: McpToolName[]) {
+    return tools.map((t) => ({
+      name: t,
+      description: `Description of ${t}`,
+      inputSchema: { type: "object" as const, properties: {} },
+    }));
+  }
+
   reset() {
     this.callHistory = [];
     this.responses.clear();
   }
 }
 
-class MockLlmClient {
-  private decisions: Array<{ done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string }> = [];
+class MockLlmClient implements ILlmClient {
+  private decisions: Array<{
+    done: boolean;
+    tool?: McpToolName;
+    args?: ToolArgs;
+    output?: string;
+  }> = [];
   private decisionIndex = 0;
 
   setDecisions(
-    decisions: Array<{ done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string }>,
+    decisions: Array<{
+      done: boolean;
+      tool?: McpToolName;
+      args?: ToolArgs;
+      output?: string;
+    }>,
   ) {
     this.decisions = decisions;
     this.decisionIndex = 0;
@@ -63,7 +88,7 @@ class MockLlmClient {
   }
 }
 
-class MockActivityJournal {
+class MockActivityJournal implements IActivityJournal {
   private entries: Array<JournalEntry> = [];
 
   getEntries() {
@@ -82,96 +107,187 @@ class MockActivityJournal {
 
 /**
  * Tests for Phase 56 Step 3: DynamicStepExecutor
- *
- * Success Criteria:
- * - DynamicStepExecutor executes ReAct loop until model declares done
- * - DynamicStepExecutor returns completed: false when max iterations reached
- * - DynamicStepExecutor throws if model selects tool outside permitted_tools
- * - All tool calls are journaled with correct traceId
- * - Write tools in identity are filtered at runtime
  */
 
-// Note: Full implementation tests deferred until IMcpClient, ILlmClient, IActivityJournal
-// interfaces are available. This test file provides the test structure.
-
-Deno.test("DynamicStepExecutor: constructor accepts dependencies", () => {
-  // This test verifies the constructor signature
+Deno.test("DynamicStepExecutor: successful execution with tool calls", async () => {
   const mcpClient = new MockMcpClient();
   const llmClient = new MockLlmClient();
   const journal = new MockActivityJournal();
+  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
 
-  // Constructor should accept these dependencies
-  // Full implementation in Task 3
-  assertEquals(typeof mcpClient.callTool, "function");
-  assertEquals(typeof llmClient.reasonNextAction, "function");
-  assertEquals(typeof journal.log, "function");
-});
-
-Deno.test("DynamicStepExecutor: throws when called on non-dynamic step", () => {
-  // This test will be implemented when DynamicStepExecutor is complete
-  const step: IFlowStep = {
-    id: "test-step",
-    name: "Test Step",
-    identity: "senior-coder",
-    execution_mode: StepExecutionMode.DECLARED, // Not DYNAMIC
-  } as IFlowStep;
-
-  // Should throw when execution_mode is not DYNAMIC
-  assertEquals(step.execution_mode, StepExecutionMode.DECLARED);
-});
-
-Deno.test("DynamicStepExecutor: resolves permitted tools from step and identity", () => {
-  // This test verifies tool resolution logic
-  const _identity: IBlueprintFrontmatter = {
+  const identity = BlueprintFrontmatterSchema.parse({
     identity_id: "senior-coder",
     name: "Senior Coder",
-    model: "anthropic:claude-opus-4-5",
+    model: "anthropic:claude-3-opus",
     created: new Date().toISOString(),
     created_by: "test",
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
-  } as IBlueprintFrontmatter;
-
-  const step: IFlowStep = {
-    id: "test-step",
-    name: "Test Step",
-    identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
-    permitted_tools: [McpToolName.READ_FILE], // Narrow from identity
-  } as IFlowStep;
-
-  // Step tools should be subset of identity tools
-  assertEquals(step.permitted_tools, [McpToolName.READ_FILE]);
-});
-
-Deno.test("DynamicStepExecutor: filters write tools at runtime", () => {
-  // This test verifies runtime write-tool filtering
-  const identity: IBlueprintFrontmatter = {
-    identity_id: "senior-coder",
-    name: "Senior Coder",
-    model: "anthropic:claude-opus-4-5",
-    created: new Date().toISOString(),
-    created_by: "test",
-    // Identity should not have write tools for dynamic mode
-    permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
-  } as IBlueprintFrontmatter;
-
-  // Write tools should be filtered out
-  assertEquals(identity.permitted_tools?.includes(McpToolName.WRITE_FILE), false);
-});
-
-Deno.test("DynamicStepExecutor: journals tool calls with traceId", async () => {
-  // This test verifies journal integration
-  const journal = new MockActivityJournal();
-  const traceId = "test-trace-123";
-
-  // Journal should be called with traceId for each tool call
-  await journal.log({
-    traceId,
-    event: "dynamic_tool_call",
-    tool: McpToolName.READ_FILE,
   });
 
+  const step = FlowStepSchema.parse({
+    id: "step-1",
+    name: "Search for bugs",
+    identity: "senior-coder",
+    execution_mode: StepExecutionMode.DYNAMIC,
+    permitted_tools: [McpToolName.READ_FILE],
+  });
+
+  llmClient.setDecisions([
+    { done: false, tool: McpToolName.READ_FILE, args: { path: "main.ts" } },
+    { done: true, output: "No bugs found" },
+  ]);
+  mcpClient.setResponse(McpToolName.READ_FILE, "console.log('hello');");
+
+  const result = await executor.execute(step, identity, "Find bugs in main.ts", {
+    traceId: "trace-1",
+  });
+
+  assertEquals(result.completed, true);
+  assertEquals(result.output, "No bugs found");
+  assertEquals(result.toolCallsLog.length, 1);
+  assertEquals(result.toolCallsLog[0].tool, McpToolName.READ_FILE);
+  assertEquals(result.iterations, 2);
+
   const entries = journal.getEntries();
-  assertEquals(entries.length, 1);
-  assertEquals(entries[0].traceId, traceId);
+  assertEquals(entries.some((e) => e.event === "dynamic_tool_call"), true);
+  assertEquals(entries.some((e) => e.event === "dynamic_step_completed"), true);
+});
+
+Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
+  const mcpClient = new MockMcpClient();
+  const llmClient = new MockLlmClient();
+  const journal = new MockActivityJournal();
+  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+
+  const identity = BlueprintFrontmatterSchema.parse({
+    identity_id: "senior-coder",
+    name: "Senior Coder",
+    model: "anthropic:claude-3-opus",
+    created: new Date().toISOString(),
+    created_by: "test",
+    permitted_tools: [McpToolName.READ_FILE],
+  });
+
+  const step = FlowStepSchema.parse({
+    id: "step-1",
+    name: "Infinite loop",
+    identity: "senior-coder",
+    execution_mode: StepExecutionMode.DYNAMIC,
+    timeout: 2000, // This will set maxIterations to 2 (Math.min(10, 2000/1000))
+  });
+
+  llmClient.setDecisions([
+    { done: false, tool: McpToolName.READ_FILE, args: { path: "1.ts" } },
+    { done: false, tool: McpToolName.READ_FILE, args: { path: "2.ts" } },
+    { done: false, tool: McpToolName.READ_FILE, args: { path: "3.ts" } },
+  ]);
+
+  const result = await executor.execute(step, identity, "Go", { traceId: "trace-2" });
+
+  assertEquals(result.completed, false);
+  assertEquals(result.iterations, 2);
+  assertEquals(result.toolCallsLog.length, 2);
+  assertEquals(
+    journal.getEntries().some((e) => e.event === "dynamic_step_max_iterations_reached"),
+    true,
+  );
+});
+
+Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", async () => {
+  const mcpClient = new MockMcpClient();
+  const llmClient = new MockLlmClient();
+  const journal = new MockActivityJournal();
+  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+
+  const identity = BlueprintFrontmatterSchema.parse({
+    identity_id: "senior-coder",
+    name: "Senior Coder",
+    model: "anthropic:claude-3-opus",
+    created: new Date().toISOString(),
+    created_by: "test",
+    permitted_tools: [McpToolName.READ_FILE],
+  });
+
+  const step = FlowStepSchema.parse({
+    id: "step-1",
+    name: "Illegal tool",
+    identity: "senior-coder",
+    execution_mode: StepExecutionMode.DYNAMIC,
+    permitted_tools: [McpToolName.READ_FILE],
+  });
+
+  llmClient.setDecisions([
+    { done: false, tool: McpToolName.WRITE_FILE, args: { path: "hack.ts", content: "..." } },
+  ]);
+
+  try {
+    await executor.execute(step, identity, "Write something", { traceId: "trace-3" });
+    assertEquals(true, false, "Should have thrown");
+  } catch (error) {
+    assertStringIncludes((error as Error).message, "which is not in permitted_tools");
+  }
+});
+
+Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", async () => {
+  const mcpClient = new MockMcpClient();
+  const llmClient = new MockLlmClient();
+  const journal = new MockActivityJournal();
+  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
+
+  const identity = BlueprintFrontmatterSchema.parse({
+    identity_id: "senior-coder",
+    name: "Senior Coder",
+    model: "anthropic:claude-3-opus",
+    created: new Date().toISOString(),
+    created_by: "test",
+    permitted_tools: [McpToolName.READ_FILE, McpToolName.WRITE_FILE], // WRITE is not read-only
+  });
+
+  const step = FlowStepSchema.parse({
+    id: "step-1",
+    name: "Filtered tool",
+    identity: "senior-coder",
+    execution_mode: StepExecutionMode.DYNAMIC,
+  });
+
+  llmClient.setDecisions([
+    { done: false, tool: McpToolName.WRITE_FILE, args: {} },
+  ]);
+
+  try {
+    await executor.execute(step, identity, "Write", { traceId: "trace-4" });
+    assertEquals(true, false, "Should have thrown because WRITE was filtered out");
+  } catch (error) {
+    assertStringIncludes((error as Error).message, "not in permitted_tools");
+  }
+});
+
+Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
+  const mockMcp = new MockMcpClient();
+  const mockLlm = new MockLlmClient();
+  const mockJournal = new MockActivityJournal();
+  const executor = new DynamicStepExecutor(mockMcp, mockLlm, mockJournal);
+  const step = FlowStepSchema.parse({
+    id: "id",
+    name: "Standard",
+    identity: "senior-coder",
+    execution_mode: StepExecutionMode.DECLARED,
+  });
+
+  const identity = BlueprintFrontmatterSchema.parse({
+    identity_id: "senior-coder",
+    name: "Senior Coder",
+    model: "anthropic:claude-3-opus",
+    created: new Date().toISOString(),
+    created_by: "test",
+  });
+
+  try {
+    await executor.execute(step, identity, "", {
+      traceId: "t",
+    });
+    assertEquals(true, false, "Should have thrown");
+  } catch (error) {
+    assertStringIncludes((error as Error).message, "not in dynamic mode");
+  }
 });
