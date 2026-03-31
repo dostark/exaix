@@ -20,6 +20,8 @@ import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symb
 import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";
 import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
+import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
 import type {
   IPortalKnowledgeConfig,
@@ -305,20 +307,24 @@ Deno.test(
       };
 
       const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
-      const processor = new RequestProcessor(
-        configWithPortal,
-        env.db,
-        {
-          workspacePath: join(env.tempDir, "Workspace"),
-          requestsDir: join(env.tempDir, "Workspace", "Requests"),
-          blueprintsPath: join(env.tempDir, "Blueprints", "Identities"),
-          includeReasoning: false,
-        },
+      const context: IApplicationContext = {
+        config: { get: () => configWithPortal, getChecksum: () => "test" } as any,
+        db: env.db,
         provider,
-        undefined,
-        undefined,
-        spyService,
-      );
+        git: {} as any,
+        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        portalKnowledge: spyService,
+      };
+
+      const processor = new RequestProcessor({
+        workspacePath: join(env.tempDir, "Workspace"),
+        requestsDir: join(env.tempDir, "Workspace", "Requests"),
+        blueprintsPath: join(env.tempDir, "Blueprints", "Identities"),
+        includeReasoning: false,
+        context,
+        testProvider: provider,
+        portalKnowledgeService: spyService,
+      });
 
       const { filePath } = await env.createRequest(
         "Analyze the portal codebase",

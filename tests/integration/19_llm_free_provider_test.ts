@@ -17,6 +17,8 @@ import { RequestProcessor } from "../../src/services/request/request_processor.t
 import { getTestModel } from "../ai/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";
+import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 
 const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test(
@@ -62,17 +64,22 @@ Always respond with:
       const provider = await ModelFactory.create(model, { apiKey, baseUrl: DEFAULT_OPENAI_BASE_URL });
 
       // Create RequestProcessor using real provider
-      const processor = new RequestProcessor(
-        env.config,
-        env.db,
-        {
-          workspacePath: getWorkspaceDir(`${env.tempDir}`),
-          requestsDir: getWorkspaceRequestsDir(`${env.tempDir}`),
-          blueprintsPath: `${env.tempDir}/Blueprints/Identities`,
-          includeReasoning: true,
-        },
-        provider, // Test provider override
-      );
+      const context: IApplicationContext = {
+        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        db: env.db,
+        provider,
+        git: {} as any,
+        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      };
+
+      const processor = new RequestProcessor({
+        workspacePath: getWorkspaceDir(`${env.tempDir}`),
+        requestsDir: getWorkspaceRequestsDir(`${env.tempDir}`),
+        blueprintsPath: `${env.tempDir}/Blueprints/Identities`,
+        includeReasoning: true,
+        context,
+        testProvider: provider,
+      });
 
       // End-to-end: create request and process
       const requestResult = await env.createRequest(

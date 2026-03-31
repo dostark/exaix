@@ -12,6 +12,8 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "../../../src/shared/constants.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
@@ -159,15 +161,21 @@ async function makeKnowledgeProcessorEnv(opts: {
   const { provider, capturedPrompts } = makeCapturingProvider();
   const activeProvider = opts.providerOverride ?? provider;
 
-  const processor = new RequestProcessor(
-    config,
+  const context: IApplicationContext = {
+    config: { get: () => config, getChecksum: () => "test" } as any,
     db,
-    processorConfig,
-    activeProvider,
-    undefined,
-    undefined,
-    opts.knowledgeService,
-  );
+    provider: activeProvider,
+    git: {} as any,
+    display: new EventLogger({ db, defaultActor: "test" }),
+    portalKnowledge: opts.knowledgeService,
+  };
+
+  const processor = new RequestProcessor({
+    ...processorConfig,
+    context,
+    testProvider: activeProvider,
+    portalKnowledgeService: opts.knowledgeService,
+  });
 
   const fullCleanup = async () => {
     await cleanup();

@@ -25,6 +25,10 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import {
+  type IGateConfig as _GateConfig,
+  type IGateResult as _IGateResult,
+} from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { type EvaluationCriterion, type EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
 import { type ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";

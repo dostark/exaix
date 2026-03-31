@@ -25,6 +25,8 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
 // ============================================================================
 // Test Utilities
@@ -144,8 +146,21 @@ describe("RequestProcessor", () => {
       strengths: ["fast", "reliable", "deterministic"],
     });
 
-    createProcessor = (provider?: IModelProvider) =>
-      new RequestProcessor(config, db, processorConfig, provider, costTracker);
+    createProcessor = (provider?: IModelProvider) => {
+      const context: IApplicationContext = {
+        config: { get: () => config, getChecksum: () => "test" } as any,
+        db,
+        provider: provider || (null as any),
+        git: {} as any,
+        display: new EventLogger({ db, defaultActor: "test" }),
+      };
+      return new RequestProcessor({
+        ...processorConfig,
+        context,
+        testProvider: provider,
+        costTracker,
+      });
+    };
   });
 
   afterEach(async () => {

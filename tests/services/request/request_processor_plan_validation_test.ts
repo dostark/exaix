@@ -9,6 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import { PlanValidationError } from "../../../src/services/plan/plan_adapter.ts";
@@ -18,7 +19,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "../../helpers/paths_helper.ts";
 import { RequestShowHandler } from "../../../src/cli/handlers/request_show_handler.ts";
 import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
-import type { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 
@@ -49,18 +50,22 @@ async function setupPlanValidationEnv(requestContentTemplate: string) {
   const requestContent = requestContentTemplate.replace("{traceId}", traceId);
   await Deno.writeTextFile(requestPath, requestContent);
 
-  const processor = new RequestProcessor(
-    config,
+  const context: IApplicationContext = {
+    config: { get: () => config, getChecksum: () => "test" } as any,
     db,
-    {
-      workspacePath: join(tempDir, config.paths.workspace),
-      requestsDir: getWorkspaceRequestsDir(tempDir),
-      blueprintsPath: join(tempDir, config.paths.blueprints, "Identities"),
-      includeReasoning: false,
-    },
-    undefined,
+    provider: null as any,
+    git: {} as any,
+    display: new EventLogger({ db, defaultActor: "test" }),
+  };
+
+  const processor = new RequestProcessor({
+    workspacePath: join(tempDir, config.paths.workspace),
+    requestsDir: getWorkspaceRequestsDir(tempDir),
+    blueprintsPath: join(tempDir, config.paths.blueprints, "Identities"),
+    includeReasoning: false,
+    context,
     costTracker,
-  );
+  });
 
   return {
     tempDir,

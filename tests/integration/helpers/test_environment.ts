@@ -29,6 +29,8 @@ import {
   PortalOperation,
 } from "../../../src/shared/enums.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import {
   getBlueprintsIdentitiesDir,
@@ -751,18 +753,23 @@ Always respond with valid JSON containing a plan with actionable steps.`;
       { recordings: options?.recordings ?? [] },
     );
 
-    const processor = new RequestProcessor(
-      this.config,
-      this.db,
-      {
-        workspacePath: join(this.tempDir, "Workspace"),
-        requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
-        blueprintsPath: options?.blueprintsPath ??
-          join(this.tempDir, "Blueprints", "Identities"),
-        includeReasoning: options?.includeReasoning ?? true,
-      },
-      provider, // Test provider override
-    );
+    const context: IApplicationContext = {
+      config: { get: () => this.config, getChecksum: () => "test" } as any,
+      db: this.db,
+      provider,
+      git: {} as any,
+      display: new EventLogger({ db: this.db, defaultActor: "test" }),
+    };
+
+    const processor = new RequestProcessor({
+      workspacePath: join(this.tempDir, "Workspace"),
+      requestsDir: options?.requestsDir ?? getWorkspaceRequestsDir(this.tempDir),
+      blueprintsPath: options?.blueprintsPath ??
+        join(this.tempDir, "Blueprints", "Identities"),
+      includeReasoning: options?.includeReasoning ?? true,
+      context,
+      testProvider: provider,
+    });
 
     return { provider, processor };
   }

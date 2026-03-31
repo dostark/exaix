@@ -9,6 +9,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request/request_common.ts";
@@ -231,14 +233,20 @@ Deno.test("[RequestProcessor] runs analysis before agent execution", async () =>
     const filePath = makeAgentRequestFile(env.requestsDir);
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      mockProvider,
-      undefined,
-      fakeAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testAnalyzer: fakeAnalyzer,
+    });
 
     // Processing will fail (no blueprint), but analysis should run first
     await processor.process(filePath);
@@ -265,14 +273,20 @@ Deno.test("[RequestProcessor] persists analysis as _analysis.json", async () => 
     const filePath = makeAgentRequestFile(env.requestsDir);
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      mockProvider,
-      undefined,
-      fakeAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testAnalyzer: fakeAnalyzer,
+    });
 
     await processor.process(filePath);
 
@@ -295,14 +309,20 @@ Deno.test("[RequestProcessor] handles analyzer failure gracefully (continues wit
     const filePath = makeAgentRequestFile(env.requestsDir);
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      mockProvider,
-      undefined,
-      throwingAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testAnalyzer: throwingAnalyzer,
+    });
 
     // Should not throw even though analyzer explodes
     const result = await processor.process(filePath);
@@ -327,14 +347,20 @@ Deno.test("[RequestProcessor] passes analysis to flow processing path", async ()
     const filePath = makeFlowRequestFile(env.requestsDir);
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      mockProvider,
-      undefined,
-      fakeAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testAnalyzer: fakeAnalyzer,
+    });
 
     await processor.process(filePath);
 
@@ -367,14 +393,20 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
       '<thought>Analyze</thought><content>{"subject": "Fixed security bug", "description": "Fix bug", "steps": [{"step": 1, "title": "Check code", "description": "Verify security issue"}]}</content>',
     ]);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      mockProvider,
-      undefined,
-      fakeAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testAnalyzer: fakeAnalyzer,
+    });
 
     const planPath = await processor.process(filePath);
     assertExists(planPath, "Plan should be generated");
@@ -412,14 +444,19 @@ Deno.test("[RequestProcessor] skips analysis if request status is already PLANNE
     const updated = content.replace(`status: "${RequestStatus.PENDING}"`, `status: "${RequestStatus.PLANNED}"`);
     Deno.writeTextFileSync(filePath, updated);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      undefined,
-      undefined,
-      countingAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: null as any,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      portalKnowledge: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testAnalyzer: countingAnalyzer,
+    });
 
     await processor.process(filePath);
 
@@ -456,14 +493,18 @@ Deno.test("[RequestProcessor] skips analysis when request_analysis.enabled is fa
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "enabled-false" });
 
-    const processor = new RequestProcessor(
-      disabledConfig as typeof env.config,
-      env.db,
-      env.processorConfig,
-      undefined,
-      undefined,
-      countingAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => disabledConfig as any, getChecksum: () => "test" },
+      db: env.db,
+      provider: null as any,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    } as any;
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testAnalyzer: countingAnalyzer,
+    });
 
     await processor.process(filePath);
 
@@ -494,14 +535,18 @@ Deno.test("[RequestProcessor] skips persisting analysis when persist_analysis is
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "no-persist" });
 
-    const processor = new RequestProcessor(
-      noPersistConfig as typeof env.config,
-      env.db,
-      env.processorConfig,
-      undefined,
-      undefined,
-      fakeAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => noPersistConfig as any, getChecksum: () => "test" },
+      db: env.db,
+      provider: null as any,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    } as any;
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testAnalyzer: fakeAnalyzer,
+    });
 
     await processor.process(filePath);
 
@@ -540,14 +585,18 @@ Deno.test("[RequestProcessor] uses DEFAULT_ANALYZER_MODE (hybrid) not HEURISTIC 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "default-mode" });
 
-    const processor = new RequestProcessor(
-      hybridConfig,
-      env.db,
-      env.processorConfig,
-      undefined,
-      undefined,
-      capturingAnalyzer,
-    );
+    const context: IApplicationContext = {
+      config: { get: () => hybridConfig as any, getChecksum: () => "test" },
+      db: env.db,
+      provider: null as any,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    } as any;
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testAnalyzer: capturingAnalyzer,
+    });
 
     await processor.process(filePath);
 

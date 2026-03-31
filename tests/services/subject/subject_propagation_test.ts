@@ -11,6 +11,8 @@ import { DatabaseService } from "../../../src/services/core/db.ts";
 import { IModelProvider } from "../../../src/ai/types.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
 interface ISubjectPropagationEnv {
   tempDir: string;
@@ -61,6 +63,7 @@ Follow instructions
       portals: "Portals",
       memory: "Memory",
       runtime: "Runtime",
+      flows: "Flows",
     },
     database: {
       batch_flush_ms: 100,
@@ -121,12 +124,22 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
     };
     const mockProvider = (mockProviderRaw as unknown) as IModelProvider;
 
-    const processor = new RequestProcessor(config, db, {
+    const context: IApplicationContext = {
+      config: { get: () => config, getChecksum: () => "test" } as any,
+      db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db, defaultActor: "test" }),
+    };
+
+    const processor = new RequestProcessor({
       workspacePath: workspaceDir,
       requestsDir: requestsDir,
       blueprintsPath: blueprintsDir,
       includeReasoning: true,
-    }, mockProvider);
+      context,
+      testProvider: mockProvider,
+    });
 
     // 1. Create a request with a fallback subject
     const requestId = "request-123";
@@ -182,12 +195,22 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
     };
     const mockProvider = (_mockProviderRaw as unknown) as IModelProvider;
 
-    const processor = new RequestProcessor(config, db, {
+    const context: IApplicationContext = {
+      config: { get: () => config, getChecksum: () => "test" } as any,
+      db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db, defaultActor: "test" }),
+    };
+
+    const processor = new RequestProcessor({
       workspacePath: workspaceDir,
       requestsDir: requestsDir,
       blueprintsPath: blueprintsDir,
       includeReasoning: true,
-    }, mockProvider);
+      context,
+      testProvider: mockProvider,
+    });
 
     const requestId = "request-456";
     const requestFilePath = join(requestsDir, `${requestId}.md`);

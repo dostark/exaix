@@ -9,6 +9,8 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import {
   type IRequestQualityAssessment,
@@ -144,16 +146,21 @@ Deno.test("[RequestProcessor] quality gate runs before agent execution", async (
     };
 
     const filePath = makeRequestFile(env.requestsDir, "Implement login feature in src/auth.ts");
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      trackingGate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: trackingGate,
+    });
 
     await processor.process(filePath);
     assertEquals(assessCalled, true);
@@ -168,16 +175,21 @@ Deno.test("[RequestProcessor] proceeds for high-quality requests", async () => {
     const gate = makeStubGate(RequestQualityRecommendation.PROCEED);
     const filePath = makeRequestFile(env.requestsDir, "Implement JWT validation in src/auth.ts");
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      gate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: gate,
+    });
 
     // Should not early-return due to gate
     const result = await processor.process(filePath);
@@ -195,16 +207,21 @@ Deno.test("[RequestProcessor] enriches underspecified requests", async () => {
     const gate = makeEnrichingGate(enrichedBody);
     const filePath = makeRequestFile(env.requestsDir, "Create config file", { requestId: "req-enrich-001" });
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      gate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: gate,
+    });
 
     await processor.process(filePath);
     // Processing continues; no early return (enrichment path)
@@ -220,16 +237,21 @@ Deno.test("[RequestProcessor] enters Q&A loop for poor requests", async () => {
     const gate = makeStubGate(RequestQualityRecommendation.NEEDS_CLARIFICATION);
     const filePath = makeRequestFile(env.requestsDir, "fix it", { requestId: "req-clarify-001" });
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      gate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: gate,
+    });
 
     const result = await processor.process(filePath);
 
@@ -254,16 +276,21 @@ Deno.test("[RequestProcessor] preserves original body when enriching", async () 
 
     const filePath = makeRequestFile(env.requestsDir, originalBody, { requestId: "req-preserve-001" });
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      trackingGate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: trackingGate,
+    });
 
     await processor.process(filePath);
     // If we get here without error, enrichment path ran
@@ -279,12 +306,19 @@ Deno.test("[RequestProcessor] handles disabled quality gate", async () => {
     // No gate injected — quality gate should be disabled/skipped
     const filePath = makeRequestFile(env.requestsDir, "Implement login feature", { requestId: "req-disabled-001" });
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+    });
 
     // Should complete without error (gate not wired, no crash)
     const result = await processor.process(filePath);
@@ -311,16 +345,21 @@ Deno.test("[RequestProcessor] gate failure does not block processing", async () 
       { requestId: "req-fail-gate-001" },
     );
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      failingGate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: failingGate,
+    });
 
     // Should not throw — gate failure should be caught gracefully
     const result = await processor.process(filePath);
@@ -361,16 +400,21 @@ Deno.test("[RequestProcessor] passes IRequestSpecification to buildParsedRequest
     // Gate always proceeds (the spec comes from the persisted session, not the gate)
     const gate = makeStubGate(RequestQualityRecommendation.PROCEED);
 
-    const processor = new RequestProcessor(
-      env.config,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-      undefined,
-      undefined,
-      undefined,
-      gate,
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      gateEvaluator: undefined,
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+      testQualityGate: gate,
+    });
 
     // process() will return null (blueprint missing), but specification is stored
     // before the blueprint lookup — we verify via the clarification session existing
@@ -412,12 +456,19 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
       },
     };
 
-    const processor = new RequestProcessor(
-      cfgPatch,
-      env.db,
-      env.processorConfig,
-      createMockProvider(["<content>{}</content>"]),
-    );
+    const mockProvider = createMockProvider(["<content>{}</content>"]);
+    const context: IApplicationContext = {
+      config: { get: () => cfgPatch, getChecksum: () => "test" } as any,
+      db: env.db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    };
+    const processor = new RequestProcessor({
+      ...env.processorConfig,
+      context,
+      testProvider: mockProvider,
+    });
 
     await processor.process(filePath);
 

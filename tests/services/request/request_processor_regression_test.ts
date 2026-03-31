@@ -8,6 +8,8 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { DatabaseService } from "../../../src/services/core/db.ts";
 import { ConfigService } from "../../../src/config/service.ts";
 import { join } from "@std/path";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import {
   ConsoleOutput,
   initializeGlobalLogger,
@@ -95,17 +97,21 @@ created_by: "test-user"
 Test body`;
     await Deno.writeTextFile(requestPath, requestContent);
 
-    const processor = new RequestProcessor(
-      config,
+    const context: IApplicationContext = {
+      config: configService,
       db,
-      {
-        workspacePath,
-        requestsDir,
-        blueprintsPath,
-        includeReasoning: true,
-      },
-      // NO 4th parameter (testProvider) passed here, matching the fix in main.ts
-    );
+      provider: null as any,
+      git: {} as any,
+      display: new EventLogger({ db, defaultActor: "test" }),
+    };
+
+    const processor = new RequestProcessor({
+      workspacePath,
+      requestsDir,
+      blueprintsPath,
+      includeReasoning: true,
+      context,
+    });
 
     // We want to verify that it DOES NOT use test-provider in the journal
     // Since we are in a unit test environment, it might still fail to find a real provider

@@ -9,6 +9,8 @@
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type {
   IRequestAnalysisContext,
@@ -114,17 +116,21 @@ Deno.test(
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     try {
-      const processor = new RequestProcessor(
-        env.config,
-        env.db,
-        env.processorConfig,
-        mockProvider,
-        undefined,
-        makePassthroughAnalyzer(),
-        undefined,
-        undefined,
-        spy.service,
-      );
+      const context: IApplicationContext = {
+        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        db: env.db,
+        provider: mockProvider,
+        git: {} as any,
+        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        portalKnowledge: undefined,
+      };
+      const processor = new RequestProcessor({
+        ...env.processorConfig,
+        context,
+        testProvider: mockProvider,
+        testAnalyzer: makePassthroughAnalyzer(),
+        sessionMemory: spy.service,
+      });
 
       const filePath = makeRequestFile(env.requestsDir);
       await processor.process(filePath);
@@ -145,14 +151,19 @@ Deno.test(
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     try {
-      const processor = new RequestProcessor(
-        env.config,
-        env.db,
-        env.processorConfig,
-        mockProvider,
-        undefined,
-        makePassthroughAnalyzer(),
-      );
+      const context: IApplicationContext = {
+        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        db: env.db,
+        provider: mockProvider,
+        git: {} as any,
+        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      };
+      const processor = new RequestProcessor({
+        ...env.processorConfig,
+        context,
+        testProvider: mockProvider,
+        testAnalyzer: makePassthroughAnalyzer(),
+      });
 
       const filePath = makeRequestFile(env.requestsDir);
       await processor.process(filePath);
@@ -171,12 +182,18 @@ Deno.test(
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     try {
-      const processor = new RequestProcessor(
-        env.config,
-        env.db,
-        env.processorConfig,
-        mockProvider,
-      );
+      const context: IApplicationContext = {
+        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        db: env.db,
+        provider: mockProvider,
+        git: {} as any,
+        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      };
+      const processor = new RequestProcessor({
+        ...env.processorConfig,
+        context,
+        testProvider: mockProvider,
+      });
 
       const filePath = makeRequestFile(env.requestsDir);
       // Should not throw even without sessionMemory

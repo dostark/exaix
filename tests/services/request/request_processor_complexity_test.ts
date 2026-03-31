@@ -12,6 +12,8 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import {
   type IRequestAnalysis,
   RequestAnalysisComplexity,
@@ -33,11 +35,19 @@ import {
  */
 async function createTestProcessor() {
   const { db, config, cleanup } = await initTestDbService();
-  const processor = new RequestProcessor(config, db, {
+  const context: IApplicationContext = {
+    config: { get: () => config, getChecksum: () => "test" } as any,
+    db,
+    provider: null as any,
+    git: {} as any,
+    display: new EventLogger({ db, defaultActor: "test" }),
+  };
+  const processor = new RequestProcessor({
     workspacePath: "",
     requestsDir: "",
     blueprintsPath: "",
     includeReasoning: false,
+    context,
   });
   return { db, config, cleanup, processor };
 }
@@ -121,11 +131,19 @@ function createTestAnalysis(complexity: RequestAnalysisComplexity): IRequestAnal
  */
 async function createComplexityTestSetup() {
   const { db, config, cleanup } = await initTestDbService();
-  const processor = new RequestProcessor(config, db, {
+  const context: IApplicationContext = {
+    config: { get: () => config, getChecksum: () => "test" } as any,
+    db,
+    provider: null as any,
+    git: {} as any,
+    display: new EventLogger({ db, defaultActor: "test" }),
+  };
+  const processor = new RequestProcessor({
     workspacePath: "",
     requestsDir: "",
     blueprintsPath: "",
     includeReasoning: false,
+    context,
   });
   return { processor, cleanup };
 }
@@ -236,11 +254,18 @@ Deno.test("[classifyTaskComplexity] falls back to content heuristics without ana
 Deno.test("[classifyTaskComplexity] falls back to agent ID without analysis or content signal", async () => {
   const { db, config, cleanup } = await initTestDbService();
   try {
-    const processor = new RequestProcessor(config, db, {
+    const processor = new RequestProcessor({
       workspacePath: "",
       requestsDir: "",
       blueprintsPath: "",
       includeReasoning: false,
+      context: {
+        config: { get: () => config, getChecksum: () => "test" } as any,
+        db,
+        provider: null as any,
+        git: {} as any,
+        display: new EventLogger({ db, defaultActor: "test" }),
+      },
     });
 
     const frontmatter: IRequestFrontmatter = {

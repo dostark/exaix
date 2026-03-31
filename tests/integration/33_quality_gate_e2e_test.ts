@@ -17,6 +17,8 @@ import { basename } from "@std/path";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
 import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
+import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import {
@@ -413,20 +415,22 @@ function buildProcessor(
   gate: IRequestQualityGateService,
 ): { processor: RequestProcessor } {
   const provider = env.createMockProvider(MockStrategy.RECORDED);
-  const processor = new RequestProcessor(
-    env.config,
-    env.db,
-    {
-      workspacePath: join(env.tempDir, "Workspace"),
-      requestsDir: join(env.tempDir, "Workspace", "Requests"),
-      blueprintsPath: join(env.tempDir, "Blueprints", "Identities"),
-      includeReasoning: true,
-    },
+  const context: IApplicationContext = {
+    config: { get: () => env.config, getChecksum: () => "test" } as any,
+    db: env.db,
     provider,
-    undefined,
-    undefined,
-    undefined,
-    gate,
-  );
+    git: {} as any,
+    display: new EventLogger({ db: env.db, defaultActor: "test" }),
+  };
+
+  const processor = new RequestProcessor({
+    workspacePath: join(env.tempDir, "Workspace"),
+    requestsDir: join(env.tempDir, "Workspace", "Requests"),
+    blueprintsPath: join(env.tempDir, "Blueprints", "Identities"),
+    includeReasoning: true,
+    context,
+    testProvider: provider,
+    testQualityGate: gate,
+  });
   return { processor };
 }

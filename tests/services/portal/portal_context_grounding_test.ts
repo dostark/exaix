@@ -11,6 +11,8 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { initTestDbService } from "../../helpers/db.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { MockStrategy } from "../../../src/shared/enums.ts";
+import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -50,12 +52,22 @@ You are a code analyst. portal context follows.`,
       ],
     });
 
-    const processor = new RequestProcessor(config, db, {
+    const context: IApplicationContext = {
+      config: { get: () => config, getChecksum: () => "test" } as any,
+      db,
+      provider: mockProvider,
+      git: {} as any,
+      display: new EventLogger({ db, defaultActor: "test" }),
+    };
+
+    const processor = new RequestProcessor({
       workspacePath: join(tempDir, "Workspace"),
       requestsDir: join(tempDir, "Requests"),
       blueprintsPath: blueprintsDir,
       includeReasoning: true,
-    }, mockProvider);
+      context,
+      testProvider: mockProvider,
+    });
 
     // 4. Create request
     const requestPath = join(tempDir, "Requests", "req1.md");
