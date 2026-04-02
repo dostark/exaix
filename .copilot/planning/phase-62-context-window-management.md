@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)"
 short_summary: Introduce a PromptBudgetAllocator service with dynamic reallocation and cost tracking to manage context windows and prevent silent truncation.
-version: 1.2
+version: 1.3
 topics:
   - context-window
   - budgeting
@@ -25,138 +25,111 @@ topics:
 **Phase Dependencies**: Phase 60, Phase 61
 **Blocking Phases**: None
 
-## Executive Summary - The Problem {#problem}
+## Executive Summary
 
-Root cause analysis of **W7** reveals that Exaix lacks a centralized context window manager. Currently, services like `SessionMemoryService` and `SkillsService` use hardcoded character limits that do not scale with different LLM providers. If the sum of these blocks exceeds the LLM's context window, the model silently truncates the prompt. This often leads to the loss of the **Execution Plan** (usually at the end of the prompt), causing the agent to hallucinate or fail entirely.
+Exaix currently suffers from a critical architectural gap (**W7**) where prompt construction relies on hardcoded character limits (e.g., 4000 for Memory, 2000 for Skills). These limits are model-agnostic and frequently cause the **Execution Plan**—which is typically appended at the end of the prompt—to be silently truncated when the combined context exceeds a provider's window. This leads to agent "hallucinations" or complete failures in complex tasks.
 
-Additionally, **W15** highlights a lack of token and cost persistence, making optimization and budget enforcement impossible.
+Furthermore, the lack of a centralized tracking mechanism (**W15**) prevents Exaix from providing cost transparency or enforcing daily budgets. This phase introduces a model-aware `PromptBudgetAllocator` that replaces static limits with a dynamic "waterfall" reallocation strategy, ensuring critical sections like the Plan and Portal Knowledge always receive maximum possible context.
 
-## Executive Summary - The Goal {#goal}
+### **Design Principles**
 
-*   **Centralized Allocation**: Proportional budgeting based on specific model limits.
-*   **Dynamic Reallocation**: Unused budget from low-priority sections (e.g., empty Memory) is "waterfalled" to high-priority sections (Plan, Portal Knowledge).
-*   **Cost Transparency**: Integrated token counting and USD cost estimation in the Activity Journal.
-*   **W15 Integration**: Persist cost/usage data per request for future optimization.
+*   **Model-Awareness over Hardcoding** — Budgets are derived from the actual `max_tokens` of the selected provider.
+*   **Zero Silent Truncation** — The system must calculate and enforce limits *before* the prompt reaches the LLM.
+*   **Waterfall Reallocation** — Unused budget from low-priority sections (e.g., empty Memory) is automatically gifted to high-priority sections (Plan, Portal Knowledge).
+*   **Cost Transparency** — Every request is logged with an estimated USD cost based on token usage.
+
+Current vs. Target Prompt Lifecycle
+---------------------------------
+
+### **Current (W7 Hardcoded)**
+`AgentExecutor.assemblePrompt()
+├── Memory (Hardcoded 4000 chars)
+├── Skills (Hardcoded 2000 chars)
+├── ...
+└── Final Prompt (May overflow -> Silent Truncation of Plan at the end)`
+
+### **Target (Phase 62)**
+`AgentExecutor.assemblePrompt()
+├── BudgetAllocator.allocate(model_id)
+│   ├── 10% Safety Buffer
+│   ├── Base Weights (Plan=35%, Memory=10%, etc.)
+│   └── Waterfall Surplus -> Plan & Portal Knowledge
+├── Services truncate content to provided budgets
+└── Final Prompt (Guaranteed within window + Plan preserved)`
 
 ## Weakness Remediation Mapping Matrix {#matrix}
 
-Each weakness and its remediation is mapped across the three Exaix editions (Solo 🟢 / Team 🔵 / Enterprise 🟣) using the following legend for the fix delivery column:
+Each weakness and its remediation is mapped across the three Exaix editions (Solo 🟢 / Team 🔵 / Enterprise 🟣).
 
-| Symbol | Meaning |
-| :--- | :--- |
-| ✅ Fix applies | Remediation resolves the weakness in this edition |
-| ⚠️ Partial | Weakness is partially mitigated; full fix requires higher edition |
-| ❌ Affected | Weakness present and unmitigated in this edition |
-| 🔵 Upgrade | Full fix only feasible at Team+ tier |
-| 🟣 Upgrade | Full fix only feasible at Enterprise tier |
-| — | Not applicable (feature not present in this edition) |
+| # | Weakness | Solo 🟢 | Team 🔵 | Enterprise 🟣 | Fix Delivery Tier | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **W7** | No global prompt budget coordinator | ❌ Affected | ❌ Affected | ❌ Affected | 🟢 All (Core) | Critical for basic reliability. |
+| **W15** | Missing token/cost persistence | ❌ Affected | ⚠️ Partial | 🟣 Upgrade | 🟢 All (Estimation) | Enterprise adds real-time billing integration. |
 
-### **Priority 0-1 Weaknesses Addressed in Phase 61-62**
+## Implementation Plan
 
-| # | Weakness | Priority | Solo 🟢 | Team 🔵 | Enterprise 🟣 | Fix Delivery Tier | Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **W2** | AgentExecutor stub — LLM describes changes, not executes | P0 | ❌ | ❌ | ❌ | 🟢 All | Core execution correctness (Phase 61). |
-| **W7** | No global prompt budget coordinator | P1 | ❌ | ❌ | ❌ | 🟢 All | Context window overflow affects all (Phase 62). |
-| **W15** | Missing token/cost persistence and estimation | P2 | ❌ | ❌ | ❌ | 🟢 All | Foundational for cost audit (Phase 62). |
+### Step 62.1: Schema & Constants Foundation
+*   **Action**: Define `IPromptBudget` and model-specific context limits.
+*   **Justification**: Establishes the source of truth for all allocation logic.
 
-## Current State Analysis - Key Files & Gaps {#current-state}
+**Success Criteria:**
+* [ ] `src/shared/schemas/prompt_budget.ts` defines `ZPromptBudget`.
+* [ ] `src/shared/constants.ts` includes `MODEL_CONTEXT_WINDOWS` and `MODEL_PRICING_MAP`.
+* [ ] Heuristic 4:1 character-to-token ratio established as safe default.
 
-| File | Current Role | Gap |
-| :--- | :--- | :--- |
-| `src/shared/constants.ts` | Defines `MAX_PROMPT_LENGTH` | Hardcoded; model-agnostic. |
-| `src/services/agent/agent_executor.ts` | Assembles final prompt. | Truncates blindly; no cost logging. |
-| `src/services/memory/session_memory.ts` | Context generation. | Hardcoded `maxContextLength` (4000). |
-| `src/services/skills/skills.ts` | Skill matching. | Hardcoded `skillContextBudget` (2000). |
-| `src/services/mcp/tools.md` | Tool Definitions (Phase 60). | Consumes variable tokens; unbudgeted. |
+**Planned Tests:**
+* **Unit**: `tests/unit/shared/prompt_budget_schema_test.ts` — verify Zod validation.
 
-## Technical Architecture & Detailed Design {#architecture}
+### Step 62.2: PromptBudgetAllocator Implementation
+*   **Action**: Create the centralized service to calculate and reallocate budgets.
+*   **Justification**: The core engine for dynamic context management.
 
-### 1. IPromptBudgetAllocator Interface {#interface}
+**Success Criteria:**
+* [ ] `PromptBudgetAllocator.allocate()` correctly calculates base shares.
+* [ ] `Waterfall` logic successfully shifts surplus from empty Memory/Skills to the **Plan** section.
+* [ ] Token counting logic supports both heuristic and (optional) model-specific BPE.
 
-```typescript
-export interface IPromptBudget {
-  systemPrompt: number;
-  portalKnowledge: number;
-  memory: number;
-  skills: number;
-  toolSchemas: number;
-  plan: number;      // Added for Phase 60/61
-  request: number;
-  total: number;
-  safetyMargin: number; // Heuristic buffer (e.g., 10%)
-}
+**Planned Tests:**
+* **Unit**: `tests/unit/services/prompt_budget_allocator_test.ts` — test allocation with 100% empty memory (surplus transfer).
+* **Unit**: `tests/unit/services/token_counter_test.ts` — verify heuristic accuracy.
 
-export interface IPromptBudgetAllocator {
-  /**
-   * Allocate budgets with "Waterfalling" reallocation logic.
-   * Sections provide their 'desired' usage; unused tokens are reallocated to high-priority sections.
-   */
-  allocate(modelId: string, desiredUsage?: Partial<IPromptBudget>): IPromptBudget;
-  calculateTokens(text: string, modelId: string): number;
-  estimateCost(tokens: number, modelId: string): number;
-}
-```
+### Step 62.3: Context Service Refactoring
+*   **Action**: Update `SessionMemoryService` and `SkillsService` to respect dynamic budgets.
+*   **Justification**: Enforces the allocated limits at the source of context generation.
 
-### 2. Default Allocation Weights & Priority {#weights}
+**Success Criteria:**
+* [ ] `SessionMemoryService.lookupMemories` accepts a token cap.
+* [ ] `SkillsService.matchSkills` respects the provided budget.
+* [ ] Zero occurrences of hardcoded "4000" or "2000" character strings in service code.
 
-| Section | Base Weight | Priority | Reallocation Target? |
+**Planned Tests:**
+* **Integration**: `tests/integration/services/memory_budget_enforcement_test.ts`.
+
+### Step 62.4: Executor Integration & W15 Cost Logging
+*   **Action**: Wire the allocator into `AgentExecutor` and log costs to the Activity Journal.
+*   **Justification**: Completes the loop and provides user-facing cost transparency.
+
+**Success Criteria:**
+* [ ] `AgentExecutor` requests budget before assembling the final prompt.
+* [ ] Activity Journal entries include `usage.tokens` and `usage.cost_usd_estimate`.
+* [ ] `exactl journal` CLI command displays estimated cost per request.
+
+**Planned Tests:**
+* **Functional**: `tests/functional/agent/cost_logging_test.ts`.
+* **End-to-End**: `tests/e2e/context_overflow_recovery_test.ts`.
+
+## Risks & Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
 | :--- | :--- | :--- | :--- |
-| Plan | 35% | **Critical** | **Yes (Primary)** |
-| System Prompt | 15% | High | No |
-| Portal Knowledge | 15% | Medium | **Yes (Secondary)** |
-| Tool Schemas | 10% | High | No |
-| User Request | 10% | High | No |
-| Memory Context | 10% | Medium | No |
-| Skills Context | 5% | Medium | No |
+| **R1: Token Underestimation** | Medium | Medium | Use a conservative 10% "Safety Margin" buffer. |
+| **R2: Performance Overhead** | Low | Low | Use fast heuristic counting; cache pricing maps. |
+| **R3: Plan Truncation** | High | Low | Set Plan priority to "Critical" in the waterfall logic. |
 
-### 3. Logic Flow: The "Waterfall" Reallocation {#logic-flow}
+## Success Metrics
 
-1.  **AgentExecutor** identifies the model (e.g., `gpt-4o`, `claude-3-5-sonnet`).
-2.  **BudgetAllocator** retrieves the raw context window and applies a **10% Safety Margin**.
-3.  Services (Memory, Skills) report their available content size.
-4.  If a service uses less than its allocated budget, the `PromptBudgetAllocator` reallocates the surplus to the **Plan** and **Portal Knowledge** sections.
-5.  Final budgets are passed to services to enforce truncation before assembly.
+* [ ] **0% Plan Loss** — Zero occurrences of execution plan truncation in supported models.
+* [ ] **100% W15 Compliance** — All requests log estimated USD cost to the SQLite journal.
+* [ ] **>90% Utilization** — High-priority sections use >90% of available tokens when needed.
 
-## Implementation Plan {#implementation}
-
-### Step 1: Define Schemas & Constants {#step-1}
-*   **Actions**:
-    *   Create `src/shared/schemas/prompt_budget.ts`.
-    *   Update `src/shared/constants.ts` with `MODEL_CONTEXT_WINDOWS` and `MODEL_COST_PER_1K`.
-*   **Validation**: Zod schema validates budget objects.
-
-### Step 2: Implement PromptBudgetAllocator Service {#step-2}
-*   **Actions**:
-    *   Create `src/services/agent/prompt_budget_allocator.ts`.
-    *   Implement `allocateWithReallocation()` logic.
-    *   Implement heuristic token counter (4 chars/token safety).
-*   **Validation**: Unit tests for allocation with different model windows.
-
-### Step 3: Refactor Context Services {#step-3}
-*   **Actions**:
-    *   Update `SessionMemoryService` and `SkillsService` to accept `IPromptBudget`.
-    *   Refactor `formatMemoryContext` to respect dynamic caps.
-*   **Validation**: Services truncate correctly based on provided budget.
-
-### Step 4: Integrate into AgentExecutor (W15) {#step-4}
-*   **Actions**:
-    *   Update `AgentExecutor.executeStep` to use the allocator.
-    *   Integrate `estimateCost` and log `usage.cost_usd_estimate` to Activity Journal.
-*   **Validation**: Integration test: Verify small window models still produce valid prompts.
-
-## Risks & Mitigations {#risks}
-
-| Risk | Impact | Mitigation Strategy |
-| :--- | :--- | :--- |
-| R1: Over-truncation | Medium | Use 90% "Context Ceiling" and dynamic reallocation. |
-| R2: Token Count Drift | Low | Use conservative 4:1 char ratio; allow per-model overrides. |
-| R3: W15 Cost Lag | Low | Use static pricing map; update via Phase 26 provider flexibility. |
-
-## Success Metrics {#success}
-
-*   **Correctness**: 0 occurrences of plan loss due to context overflow in standard 128k models.
-*   **W15 Compliance**: 100% of Activity Journal entries contain estimated USD cost.
-*   **Efficiency**: >15% increase in Plan context utilization via dynamic reallocation.
-
-**Backward Compatibility**: Default budgets mirror existing hardcoded values for unknown models.
-**Last Updated**: 2026-04-02
+**Agent Instructions**: Follow the implementation steps in sequence. Do not proceed to the next step until all "Planned Tests" for the current step pass with `deno task test`.
