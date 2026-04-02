@@ -81,6 +81,30 @@ docker --version    # Containers
 
 **Last Updated**: March 2026 | **Exaix Version**: 1.0.2
 
+
+## 🤖 Agent Tool Index (MCP) {#agent-tools}
+
+<!-- AGENT_TOOLS_START -->
+## 🤖 Agent Tool Index (MCP) {#agent-tools}
+
+These tools are available to AI agents via the MCP protocol. They are validated, permission-checked, and logged.
+
+| Tool | Description | Handler |
+|------|-------------|---------|
+| `create_directory` | Create a directory (and all required parent directories) within a portal.  | [`src/mcp/handlers/create_directory_tool.ts`](src/mcp/handlers/create_directory_tool.ts) |
+| `delete_file` | Delete a single file from a portal.  | [`src/mcp/handlers/delete_file_tool.ts`](src/mcp/handlers/delete_file_tool.ts) |
+| `git_commit` | Commit changes in a portal git repository | [`src/mcp/handlers/git_commit_tool.ts`](src/mcp/handlers/git_commit_tool.ts) |
+| `git_create_branch` | Create a new git branch in a portal repository | [`src/mcp/handlers/git_create_branch_tool.ts`](src/mcp/handlers/git_create_branch_tool.ts) |
+| `git_status` | Query git repository status in a portal | [`src/mcp/handlers/git_status_tool.ts`](src/mcp/handlers/git_status_tool.ts) |
+| `list_directory` | List files and directories in a portal path | [`src/mcp/handlers/list_directory_tool.ts`](src/mcp/handlers/list_directory_tool.ts) |
+| `move_file` | Move or rename a file within a portal.  | [`src/mcp/handlers/move_file_tool.ts`](src/mcp/handlers/move_file_tool.ts) |
+| `patch_file` | Apply a targeted string replacement to a file in a portal.  | [`src/mcp/handlers/patch_file_tool.ts`](src/mcp/handlers/patch_file_tool.ts) |
+| `read_file` | Read a file from a portal (scoped to allowed portals) | [`src/mcp/handlers/read_file_tool.ts`](src/mcp/handlers/read_file_tool.ts) |
+| `run_command` | Execute a whitelisted shell command in the context of a portal | [`src/mcp/handlers/run_command_tool.ts`](src/mcp/handlers/run_command_tool.ts) |
+| `search_files` | Search for files matching a glob pattern (e.g., '**/*.ts') | [`src/mcp/handlers/search_files_tool.ts`](src/mcp/handlers/search_files_tool.ts) |
+| `write_file` | Write a file to a portal (validated and logged) | [`src/mcp/handlers/write_file_tool.ts`](src/mcp/handlers/write_file_tool.ts) |
+<!-- AGENT_TOOLS_END -->
+
 ---
 
 **Footer — Agent Knowledge Base**
