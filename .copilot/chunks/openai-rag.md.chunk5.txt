@@ -1,4 +1,0 @@
-- ✅ Do inspect before injection when the task is ambiguous.
-- ✅ Do cite the agent docs you used (paths) to reinforce the habit.
-- ✅ Do keep injected context small and relevant.
-- ❌ Don’t proceed if the manifest/chunks look stale; rebuild first.

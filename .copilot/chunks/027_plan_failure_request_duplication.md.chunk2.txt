@@ -1,4 +1,0 @@
-1. **Request Duplication**: The `RequestProcessor` detects the "new" file in `Requests` and attempts to process it as a fresh request. This results in duplicate trace ID entries in `exactl request list`.
-2. **Invalid Request Processing**: Because the plan file doesn't follow the exact primary request schema, it often fails validation or processing, resulting in a `status: failed` entry that conflicts with the original request's `status: planned`.
-3. **UI/UX Confusion**: Approved plans vanish from `exactl plan list` (because they were moved to `Requests`) and reappear in `exactl request list` as failed requests.
-4. **Context Grounding Issues**: The `code-analyst` agent failed because it hallucinated a file (`src/cli/commands/init.ts`) that didn't exist in the portal. This suggests that the portal file summary injected by `RequestProcessor` is too shallow to be reliable for deep codebases.

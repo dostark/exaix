@@ -1,0 +1,9 @@
+## Problem Statement (Detailed)
+The current `AgentExecutor.executeStep` implementation returns a hardcoded commit SHA (`"abc1234567890abcdef"`) and a mock changeset. While the `ExecutionLoop` handles ReAct loops with TOML actions, the `AgentExecutor` path intended for plan-based agent spawning is disconnected from the actual execution engine. This creates a "shadow" execution path that lacks grounding in the physical file system.
+
+## Goals & Success Criteria
+
+### Goal 1: Replace Hardcoded Stubs with Real MCP Execution
+- Replace `provider.generate()` description-only flow with `SafeSubprocess` spawning.
+- Connect spawned agent processes to the Exaix MCP server.
+- Ensure `tool_calls` and `execution_time_ms` are accurately reported from the real process.

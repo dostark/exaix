@@ -1,9 +1,0 @@
-"Before answering, retrieve .copilot/ context using inject_agent_context. Use 2–3 chunks for simple tasks, 4–6 for standard, 8–10 for complex. Cite the docs used by path. Provide diffs first, then verification steps."
-
-## Examples
-
-- Example prompt: "Use inspect_embeddings then inject_agent_context for query: 'refactor plan executor parsing'. Keep response under 900 tokens. Output: file-by-file diff plan + test list. Cite agent doc paths used."
-- Example prompt: "Inject context for 'add unit tests for PathResolver'. Propose 3 failing tests with explicit assertions and helper usage. Then provide minimal code diff to pass them."
-- Example prompt: "Context seems stale: instruct me to rebuild manifest/chunks and embeddings, then re-run injection and continue."
-
-Examples (by level)

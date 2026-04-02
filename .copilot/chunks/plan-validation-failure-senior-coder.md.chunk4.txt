@@ -1,6 +1,0 @@
-1. **Added `CREATE_DIRECTORY` to `McpToolName` enum** in `src/enums.ts`.
-2. **Implemented `createDirectory`** in `src/services/tool_registry.ts` using `Deno.mkdir` with recursive support.
-3. **Updated `senior-coder` blueprint** to explicitly list `create_directory` as a supported tool, ensuring the agent knows it is available and valid.
-4. **Added Regression Tests**:
-   - `tests/plan_validation_repro_test.ts`: Verifies that plans containing `create_directory` now pass validation.
-   - `tests/services/tool_registry_test.ts`: Verifies the runtime functionality of the `create_directory` tool.

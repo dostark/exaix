@@ -1,4 +1,4 @@
-name: Code Quality Gates
+name: "Code Quality Gates"
 
 on:
   push:
@@ -10,52 +10,101 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  quality-check:
+  quality-gate:
+    name: "Quality Dashboard"
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      checks: write
 
     steps:
-      - name: Checkout repository
+      - name: "Checkout repository"
+        id: checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-      - name: Setup Deno
+      - name: "Setup Deno"
+        id: setup-deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          deno-version: "2.x"
 
-      - name: Setup Node.js (for jscpd/complexity-report)
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Cache dependencies
+      - name: "Cache dependencies"
+        if: steps.setup-deno.outcome == 'success'
         run: deno cache src/main.ts tests/**/*.ts || true
 
-      - name: Format Check
-        run: deno fmt --check
+      # --- GATE 0: Commit Message Validation ---
+      - name: "Gate 0: Commit Message"
+        if: always() && steps.checkout.outcome == 'success'
+        run: |
+          git log -1 --pretty=%B > .git/COMMIT_EDITMSG
+          deno task check-commit-msg .git/COMMIT_EDITMSG
 
-      - name: Lint Check
-        run: deno lint
+      # --- GATE 1: Format Check ---
+      - name: "Gate 1: Formatting"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task fmt:check
 
-      - name: Style/Boundary Validation
+      # --- GATE 2: Linting ---
+      - name: "Gate 2: Linting"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task lint
+
+      # --- GATE 3: Style/Boundary Check ---
+      - name: "Gate 3: Style & Boundaries"
+        if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:style
 
-      - name: Code Duplication Check
-        run: deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts --threshold 2.0
+      # --- GATE 4: Docs Drift Check ---
+      - name: "Gate 4: Documentation Drift"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:docs
 
-      - name: Complexity Check
+      # --- GATE 5: Markdown Lint ---
+      - name: "Gate 5: Markdown Linting"
+        if: always() && steps.checkout.outcome == 'success'
         run: |
-          deno run --allow-read --allow-net scripts/measure_complexity.ts --threshold 15 --json > complexity.json
-          deno run --allow-read scripts/check_complexity_breaches.ts
+          STAGED_MD_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '.md$' || true)
+          if [ -n "$STAGED_MD_FILES" ]; then
+            echo "📝 Checking changed markdown files..."
+            echo "$STAGED_MD_FILES" | xargs deno run --allow-read scripts/markdown_lint.ts
+          else
+            echo "✅ No markdown files changed."
+          fi
 
-      - name: Test & Coverage
-        run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
+      # --- GATE 6: Complexity Check ---
+      - name: "Gate 6: Code Complexity"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:complexity
 
-      - name: Build Verification
-        run: deno check src/main.ts
-
-      - name: Architecture Validation
+      # --- GATE 7: Architecture Check ---
+      - name: "Gate 7: Architecture & Grounding"
+        if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:arch
+
+      # --- GATE 8: Agent Documentation Nervous System ---
+      - name: "Gate 8: Agent-Native Documentation"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task docs-agent-validate
+
+      # --- GATE 9: Hallucination Benchmarks ---
+      - name: "Gate 9: Hallucination Benchmarks"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task docs-bench
+
+  tests-and-coverage:
+    name: "Tests & Coverage"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Setup Deno"
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: "Run Test Suite & Verify Coverage"
+        run: deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts

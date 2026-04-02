@@ -1,7 +1,0 @@
-1. Inject context about the error domain
-2. Create/run reproducing test
-3. Show explicit thinking about root cause
-4. Implement targeted fix
-5. Verify fix with tests
-6. Add regression test
-7. Document if needed

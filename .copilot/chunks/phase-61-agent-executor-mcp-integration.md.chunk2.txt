@@ -1,0 +1,18 @@
+### Goal 2: Unified Execution Interface
+- Define `IExecutionStrategy` to abstract different execution methods.
+- Implement `McpAgentStrategy` for subprocess-based MCP execution.
+- Implement `ReActLoopStrategy` (migrating logic from `ExecutionLoop`).
+
+### Goal 3: Security & Auditability (W2/W7/W13)
+- Integrate `auditGitChanges` and `revertUnauthorizedChanges` into the primary execution loop.
+- Ensure all MCP-driven changes are captured in the Activity Journal with correct trace IDs.
+- Implement confidence-based early exit (supporting W12).
+
+## Detailed Architecture Changes
+
+### 1. The IExecutionStrategy Interface
+```typescript
+interface IExecutionStrategy {
+  execute(context: IExecutionContext, options: IAgentExecutionOptions): Promise<IChangesetResult>;
+}
+```

@@ -1,6 +1,0 @@
-## Resolution
-
-The bug was caused by three primary factors:
-1. **Lost Portal Context**: The portal ID was being extracted from the request but wasn't being stored in the plan's YAML frontmatter. As a result, the `ExecutionLoop` defaulted to the Exaix system root for all operations.
-2. **Missing Machine-Readable Actions**: The `PlanAdapter` was converting structured JSON plans into human-readable markdown but was omitting the machine-readable ` ```toml ` blocks required by the `ExecutionLoop`. This caused the loop to find zero actions to perform.
-3. **Missing Changeset Registration**: The `ExecutionLoop` was committing changes to Git (if any) but didn't actually call the `ChangesetRegistry` to record the execution as a new changeset.

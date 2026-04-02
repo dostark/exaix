@@ -1,0 +1,14 @@
+### 2. McpAgentStrategy Implementation
+This strategy will:
+1. Load the Identity Blueprint.
+2. Initialize a `SafeSubprocess` with appropriate `--allow-*` flags.
+3. Establish a JSON-RPC connection over stdio to the MCP server.
+4. Pass the execution plan and context as the initial message.
+5. Monitor for completion and capture the generated changeset.
+
+## Step-by-Step Implementation Plan
+
+### Phase 61.1: Interface Definition & Strategy Refactoring (4hr)
+1. Create `src/services/agent/strategies/mod.ts`.
+2. Define `IExecutionStrategy` and the result schema.
+3. Refactor `AgentExecutor` to accept a strategy instead of hardcoded logic.

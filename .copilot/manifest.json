@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-02T15:27:10.697Z",
+  "generated_at": "2026-04-02T17:37:58.015Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -934,6 +934,21 @@
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk4.txt",
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk5.txt",
         ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk6.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-61-agent-executor-mcp-integration.md",
+      "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk0.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk1.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk2.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk3.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk4.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk5.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk6.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk7.txt"
       ]
     },
     {

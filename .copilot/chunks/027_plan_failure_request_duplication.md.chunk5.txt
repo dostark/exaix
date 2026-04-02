@@ -1,5 +1,0 @@
-3. **`src/services/request_processor.ts`**:
-   The `getPortalFileSummary` method uses a very shallow depth limit (max 100 files, limited subdirectory traversal). For mature codebases, this misses most interior files, forcing agents to rely on prompt-suggested paths which may be hallucinations or outdated.
-
-4. **`src/services/plan_executor.ts` / `execution_loop.ts`**:
-   Execution logs show `plan.md` being used in the project root (`/home/dkasymov/git/Exaix/plan.md`). This indicates a path resolution fallback that bypasses the isolated worktree/workspace structure.

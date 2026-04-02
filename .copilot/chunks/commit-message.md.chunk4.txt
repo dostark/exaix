@@ -1,6 +1,0 @@
-Expected Response Pattern:
-1. Show `git add` command for changed files
-2. Show a single multiline commit command (heredoc or editor flow), not chained `-m` flags
-3. Include summary plus structured body sections (Context/Changes/Validation/References)
-4. List specific changes and testing verification
-```

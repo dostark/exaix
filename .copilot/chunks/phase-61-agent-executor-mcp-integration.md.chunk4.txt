@@ -1,0 +1,16 @@
+### Phase 61.2: MCP Subprocess Integration (6hr)
+1. Implement `McpAgentStrategy`.
+2. Update `SafeSubprocess` to handle long-running MCP sessions with heartbeat (W8).
+3. Wire the real `git log` and `git diff` outputs into the final `IChangesetResult`.
+
+### Phase 61.3: Verification & Scenario Testing (4hr)
+1. Add new scenarios to the `dynamic_execution` pack (extending Phase 59).
+2. Validate that file system changes match the agent's reported changeset.
+3. Verify that unauthorized file access is blocked by the security layer.
+
+## Rollback & Validation
+```bash
+# Revert to description-only mock
+git checkout HEAD~1 src/services/agent/agent_executor.ts
+deno task test # Ensure no regressions in existing flows
+```

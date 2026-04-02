@@ -1,0 +1,4 @@
+# Phase 61: AgentExecutor MCP Integration & Real-World Execution
+
+## Executive Summary
+This phase addresses the critical architectural weakness **W2** identified in `Exaix_Weaknesses.md`. Currently, `AgentExecutor` contains a significant stub where it merely asks an LLM to describe changes rather than executing them. This phase replaces the mock result and LLM-only flow with a robust integration of the Model Context Protocol (MCP), enabling real-world file system operations, git-audited changesets, and unified execution strategies.

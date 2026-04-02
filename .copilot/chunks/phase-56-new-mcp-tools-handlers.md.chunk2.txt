@@ -1,7 +1,0 @@
-> **Not in this phase:** `delete*directory`, `run*command`, `run_script`.
-> `delete_directory` is deferred — recursive deletion is too destructive for the current
-> supervised model without additional confirmation gates.
-
----
-
-## Goals

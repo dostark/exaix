@@ -1,3 +1,0 @@
-5. **Lost Portal Context in Reporting**: Even when a portal is correctly specified, execution summaries and `context.json` in `Memory/Execution/` often list the portal as `unknown`. This suggests a breakdown in metadata propagation within the `ExecutionLoop`.
-
-### Proposed Fix Plan

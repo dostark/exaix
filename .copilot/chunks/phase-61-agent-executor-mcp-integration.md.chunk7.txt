@@ -1,0 +1,2 @@
+---
+**Agent Instructions**: Refer to `.copilot/planning/phase-60-agent-docs.md` for the document structure. Prioritize the P0 correction of the `AgentExecutor` stub.

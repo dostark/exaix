@@ -1,7 +1,0 @@
-1. **Storage Path**: Where is the execution loop actually applying the changes? Is it working in a temporary directory and failing to move them to the portal or create the changeset record?
-2. **Git Integration**: Why does the journal show `git.committed` but no changes are visible in the repo? Is it initializing a new repo in a wrong location?
-3. **Changeset Record Creation**: Why is the changeset not being recorded in the database despite the "successful" execution?
-4. **Execution Loop Logic**: Check `src/services/execution_loop.ts` to see how it handles portals and changeset creation.
-5. **Database Interaction**: Verify if the `changesets` table is being populated.
-
-## Related Files

@@ -1,6 +1,0 @@
-- `src/cli/plan_commands.ts`: Enhanced metadata extraction and request loading
-- `src/cli/exactl.ts`: Updated CLI display formatting
-- `exa.config.toml`: Fixed workspace path configuration
-- `tests/plan_commands_regression_test.ts`: Added regression test
-
-**Testing:** Added comprehensive regression test that verifies plan list and show commands include complete request context information.

@@ -1,5 +1,0 @@
-### 1. `scripts/deploy_workspace.sh`
-- Checks whether `EXA_BIN_PATH` is passed via the environment when generating a deployed workspace copy.
-- If present, it prevents `deno install --global -n exactl` from polluting the user's `$PATH`.
-- Instead, it generates an isolated `sh` script directly into `$EXA_BIN_PATH/exactl`.
-- The shim forces `export EXA_CONFIG_PATH` referencing the destination target config, meaning executing `exactl` from that script naturally anchors its context into that specific sandbox workspace.

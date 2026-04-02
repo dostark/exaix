@@ -1,6 +1,0 @@
-# Support for Independent Exactl Installations via EXA_BIN_PATH
-
-## Description
-This issue tracks code edits intended to allow multiple, independent versions of the `exactl` binary and isolated Exaix configurations to coexist on a single machine. The target goal is to decouple the workspace deployment and the test suites from inherently overwriting the developer's global `exactl` path in `~/.deno/bin/exactl`.
-
-## Changes Proposed

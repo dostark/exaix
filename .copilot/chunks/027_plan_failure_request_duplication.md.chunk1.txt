@@ -1,1 +1,0 @@
-When an AI plan execution fails, the `ExecutionLoop` incorrectly moves the plan file from `Workspace/Active/` back to `Workspace/Requests/`. This directory is strictly reserved for primary user requests. Moving a plan file (e.g., `request-974718fb_plan.md`) into the requests folder triggers several side effects:

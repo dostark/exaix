@@ -1,9 +1,0 @@
-- **Enhanced changeset scanning** in `src/cli/changeset_commands.ts`: Added fallback scanning of `config.portals` array when symlink scanning finds no changesets.
-- **Fixed archive path usage** in `src/services/execution_loop.ts`: Changed from hardcoded "Archive" to `config.paths.archive`.
-- **Added regression test** in `tests/cli/changeset_commands_test.ts`: Ensures changeset list discovers changesets in config-defined portals.
-
-### Verification
-
-- All existing tests pass
-- Manual testing confirms `exactl changeset list` now shows changesets from portal repositories
-- Plan approval and archiving now uses correct configured paths

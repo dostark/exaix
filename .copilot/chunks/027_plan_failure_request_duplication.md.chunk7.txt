@@ -1,6 +1,0 @@
-1. **Immediate**: Modify `ExecutionLoop.handleFailure` to move failed plans to `Workspace/Rejected/` (with a suffix) instead of `Workspace/Requests/`.
-2. **UI Cleanup**: Update `RequestListHandler` to explicitly exclude file patterns ending in `_plan.md`.
-3. **Grounding Improvement**: Increase the robustness of `getPortalFileSummary` in `RequestProcessor`. Use a broader but still performance-conscious listing (e.g., `find -maxdepth 3` type logic).
-4. **Path Sanitization**: Ensure `PlanExecutor` and `ExecutionLoop` strictly use workspace-relative or worktree-relative paths for the execution `plan.md`.
-
-### Related Files

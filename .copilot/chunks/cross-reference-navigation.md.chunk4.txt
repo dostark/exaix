@@ -1,7 +1,0 @@
-1. Open and read [.copilot/cross-reference.md](.copilot/cross-reference.md)
-2. Find the relevant task type or topic
-3. Navigate to Primary Doc(s) listed
-4. Read relevant sections from those docs
-5. Follow the workflow pattern if provided
-6. Execute the task using guidance from retrieved docs
-7. Reference which sections were consulted (e.g., "Following the workflow from cross-reference.md...")

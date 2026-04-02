@@ -1,6 +1,0 @@
-- **Journal**: Shows `execution.started`, `git.init`, `git.branch_created`, `git.committed`, and `execution.completed` successfully.
-- **Changesets**: `exactl changeset list` returns "No changesets found".
-- **Filesystem**: The files specified in the plan (e.g., `src/utils.ts`) are **not** present in `/tmp/test-portal/src/`.
-- **Plan File**: The plan file in `Workspace/Active/` disappears (likely moved or deleted) but doesn't result in a visible changeset.
-
-## Expected Behavior
