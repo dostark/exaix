@@ -36,6 +36,19 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ---
 
+## 🔍 Documentation Discovery Mandate {#discovery-mandate}
+
+Exaix uses an **Agent-Native Documentation Nervous System**. Agents are **MANDATED** to discover context before proposing changes:
+
+1. **Scan Frontmatter**: Always read the first 20 lines of root `.md` files to identify `copilot_knowledge_base: true` and relevant `capabilities`.
+2. **Follow Stable Links**: Use symbol-based links (e.g., `src/file.ts:Symbol`) for precise navigation instead of line numbers.
+3. **Internalize AGENT_LOGIC**: Before modifying a core flow, read the `AGENT_LOGIC` YAML block in `ARCHITECTURE.md` to ensure mental model consistency with other agents.
+4. **Sync Tooling**: Use `deno task docs-sync-schemas` if you modify MCP tool handlers in `src/mcp/handlers/`.
+
+**Rationale**: This reduces context saturation and prevents "Ingestion Blind Spots" by providing machine-readable metadata and stable navigation anchors.
+
+---
+
 ## Quick Reference
 
 | Need                 | Location                                                                 |
@@ -62,10 +75,10 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ```bash
 deno task test              # Run all tests
-deno task test:cov          # Run with coverage
-deno task fmt               # Format code
-deno task lint              # Lint code
-deno task check:docs        # Verify .copilot/manifest.json is fresh
+deno task check:style        # Check code style & boundaries
+deno task docs-agent-validate # Verify documentation nervous system integrity
+deno task docs-bench          # Run hallucination benchmarks
+deno task docs-sync-schemas   # Sync MCP tool schemas to TOOLS.md
 ```
 
 ## Development Workflow
