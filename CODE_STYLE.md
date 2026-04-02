@@ -1,3 +1,16 @@
+---
+title: CODE_STYLE.md
+description: Coding standards and stylistic requirements for Exaix
+agent_priority: mandatory
+copilot_knowledge_base: true
+version: 1.1
+capabilities: [linting_rules, naming_conventions, testing_patterns]
+links:
+  - "src/shared/constants.ts"
+  - "scripts/check_code_style.ts"
+copilot_instructions: .copilot/blueprints/senior-coder.md
+---
+
 # Code Style & Standards
 
 > 🚨 Original documents now point to this file for the authoritative style rules.
@@ -133,16 +146,10 @@ The style checker does not enforce a specific format for named imports. Use your
 
 ```ts
 // Single-line for a few imports
-import { FooService, BarService } from "./services.ts";
+import { BarService, FooService } from "./services.ts";
 
 // Multi-line for many imports (optional, for readability)
-import {
-  FooService,
-  BarService,
-  BazService,
-  QuxService,
-  QuuxService,
-} from "./services.ts";
+import { BarService, BazService, FooService, QuuxService, QuxService } from "./services.ts";
 ```
 
 ### Dynamic Imports
@@ -377,3 +384,12 @@ location changes.
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/source/exaix.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
+
+---
+
+**Footer — Agent Knowledge Base**
+
+- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
+- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
+- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

@@ -1,3 +1,16 @@
+---
+title: CONTRIBUTING.md
+description: Development workflow and contribution guidelines
+agent_priority: medium
+copilot_knowledge_base: true
+version: 1.1
+capabilities: [pr_workflow, workspace_deployment, regression_testing]
+links:
+  - "scripts/deploy_workspace.sh"
+  - "scripts/ci.ts"
+copilot_instructions: .copilot/blueprints/senior-coder.md
+---
+
 # Contributing to Exaix
 
 Thank you for your interest in contributing to Exaix! This guide details the development standards, patterns, and workflows to ensure a high-quality, maintainable codebase.
@@ -137,3 +150,12 @@ Authoritative guidance:
 ## 6. Architecture
 
 For a comprehensive overview of the system architecture, component interactions, and code organization, please refer to [ARCHITECTURE.md](../ARCHITECTURE.md) in the project root. This document is the ground truth for understanding how Exaix works.
+
+---
+
+**Footer — Agent Knowledge Base**
+
+- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
+- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
+- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

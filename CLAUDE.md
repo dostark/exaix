@@ -1,3 +1,16 @@
+---
+title: CLAUDE.md
+description: Agent coordination and task-specific guidance index
+agent_priority: critical
+copilot_knowledge_base: true
+version: 1.1
+capabilities: [task_routing, cross_reference, process_validation]
+links:
+  - ".copilot/manifest.json"
+  - ".copilot/cross-reference.md"
+copilot_instructions: .copilot/blueprints/senior-coder.md
+---
+
 # 🤖 CLAUDE.md — REQUIRED READING FOR ALL AI AGENTS
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
@@ -28,7 +41,7 @@
 | Need                 | Location                                                                 |
 | -------------------- | ------------------------------------------------------------------------ |
 | Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)               |
-| Source patterns      | [.copilot/source/exaix.md](.copilot/source/exaix.md)               |
+| Source patterns      | [.copilot/source/exaix.md](.copilot/source/exaix.md)                     |
 | Testing patterns     | [.copilot/tests/testing.md](.copilot/tests/testing.md)                   |
 | Documentation guide  | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)         |
 | Commit message guide | [.copilot/prompts/commit-message.md](.copilot/prompts/commit-message.md) |
@@ -213,14 +226,14 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 ### When to Consult .copilot/
 
-| Task                  | Consult                                                     |
-| --------------------- | ----------------------------------------------------------- |
-| Writing tests         | `.copilot/tests/testing.md`                                 |
+| Task                  | Consult                                                  |
+| --------------------- | -------------------------------------------------------- |
+| Writing tests         | `.copilot/tests/testing.md`                              |
 | Adding features       | `.copilot/source/exaix.md` + `.copilot/tests/testing.md` |
 | Refactoring           | `.copilot/source/exaix.md`                               |
-| Documentation         | `.copilot/docs/documentation.md`                            |
-| Planning/roadmap      | `.copilot/planning/*.md`                                    |
-| Finding the right doc | `.copilot/cross-reference.md`                               |
+| Documentation         | `.copilot/docs/documentation.md`                         |
+| Planning/roadmap      | `.copilot/planning/*.md`                                 |
+| Finding the right doc | `.copilot/cross-reference.md`                            |
 
 ## Key Patterns & Constraints
 
@@ -329,3 +342,12 @@ These actions are **PROHIBITED**:
 - ❌ **Guessing at patterns** — Always check `.copilot/` docs first
 - ❌ **Introducing magic numbers/strings** — See `CONTRIBUTING.md`
 - ❌ **Placing imports anywhere other than the top of the file** — All imports must be at the top level
+
+---
+
+**Footer — Agent Knowledge Base**
+
+- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
+- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
+- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

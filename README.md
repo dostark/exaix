@@ -1,3 +1,16 @@
+---
+title: README.md
+description: Exaix Orchestration Platform - Overview and Quickstart
+agent_priority: critical
+copilot_knowledge_base: true
+version: 2.1
+capabilities: [system_overview, installation, initial_setup]
+links:
+  - "ARCHITECTURE.md"
+  - "docs/dev/Exaix_Developer_Setup.md"
+copilot_instructions: .copilot/blueprints/senior-coder.md
+---
+
 # Exaix — Auditable Agent Orchestration Platform
 
 [![Deno](https://img.shields.io/badge/runtime-Deno-green.svg)](https://deno.land/)
@@ -8,24 +21,26 @@
 Exaix enables secure, auditable multi-agent workflows with human-in-the-loop supervision — unlike LangChain or CrewAI, it guarantees full reproducibility via persistent SQLite journals and filesystem-based APIs. [cite:3]
 
 ## Why Exaix?
+
 - **Permanent audit trail**: Every agent action (plan, tool call, file change) is journaled immutably.
 - **Human oversight**: Agents propose structured Plans requiring explicit approval before execution.
 - **Files-as-API**: Workspaces use disk files (Requests, Plans, Changesets) for easy CI/integration.
 - **Local-first security**: Deno permissions + optional cloud LLMs keep data on your machine by default. [cite:3]
 
 ## Key Concepts
-| Term | Description |
-|------|-------------|
-| **Request** | User task input triggering agent workflows. |
-| **Plan** | Agent's proposed steps/changes for human review. |
-| **Changeset** | Approved, atomic file modifications from Plans. |
-| **Blueprint** | Reusable agent identity/persona definitions. |
-| **Portal** | Symlink to external project repos for context. |
-| **Memory** | Persistent vector store for agent recall/search. [cite:3][cite:4]
+
+| Term          | Description                                                       |
+| ------------- | ----------------------------------------------------------------- |
+| **Request**   | User task input triggering agent workflows.                       |
+| **Plan**      | Agent's proposed steps/changes for human review.                  |
+| **Changeset** | Approved, atomic file modifications from Plans.                   |
+| **Blueprint** | Reusable agent identity/persona definitions.                      |
+| **Portal**    | Symlink to external project repos for context.                    |
+| **Memory**    | Persistent vector store for agent recall/search. [cite:3][cite:4] |
 
 ## Architecture Overview
 
-```mermaid
+````mermaid
 graph TD
     A[User Request] --> B[Agent Planning]
     B --> C[Human Review/Approve]
@@ -58,10 +73,12 @@ exactl request "Refactor src/cli.ts to use new JournalService"
 
 # 4. Review & approve in dashboard (new tab)
 exactl dashboard
-```
+````
+
 **Full CLI install**: `deno install -A --unstable https://deno.land/x/exactl@latest` [cite:3]
 
 ## Repo Structure
+
 ```
 exaix/
 ├── Blueprints/     # Agent personas/templates
@@ -72,12 +89,15 @@ exaix/
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons
 ```
+
 Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state). [cite:4]
 
 ## LLM Configuration
+
 Exaix auto-selects providers by cost/performance. Edit `exa.config.toml`:
 
 **Basic**:
+
 ```toml
 [ai]
 provider = "ollama"
@@ -85,6 +105,7 @@ model = "llama3.2"
 ```
 
 **Advanced Multi-Provider**:
+
 ```toml
 [models.default] provider = "anthropic" model = "claude-3.5-sonnet"
 [models.fast]   provider = "openai"    model = "gpt-4o-mini"
@@ -94,25 +115,40 @@ model = "llama3.2"
 prefer_free = true
 max_daily_cost_usd = 5.00
 ```
+
 Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDER=ollama exactl request ...` [cite:3]
 
 ## Operator Features
+
 - **TUI Dashboard**: `exactl dashboard` — monitor, review Plans, approve Changesets.
 - **CLI Commands**: `exactl request`, `exactl list`, `exactl apply`, `exactl journal`.
 - **Least-privilege**: Deno sandbox per agent task. [cite:3]
 
 ## Testing & Contributing
+
 ```bash
 deno task test      # Unit tests
 deno task ci        # Full CI: fmt, lint, test, coverage
 ```
+
 See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regression tests mandatory (`[regression]` prefix). [cite:3][cite:4]
 
 ## Documentation
+
 - **Quick Tools**: [TOOLS.md](./TOOLS.md)
 - **User Guide**: [docs/Exaix_User_Guide.md](./docs/Exaix_User_Guide.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md) [cite:4]
 
 ## License
+
 Proprietary © Exaix Development Team. See [LICENSE](./LICENSE). [cite:4]
+
+---
+
+**Footer — Agent Knowledge Base**
+
+- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
+- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
+- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

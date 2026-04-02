@@ -1,3 +1,21 @@
+---
+title: ARCHITECTURE.md
+description: Complete Exaix execution model and component map
+agent_priority: critical
+copilot_knowledge_base: true
+version: 2.1
+capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
+links:
+  - "src/services/request/request_processor.ts:RequestProcessor"
+  - "src/services/agent/agent_runner.ts:AgentRunner"
+  - "src/memory/memory_bank.ts:@region Store"
+  - "tests/services/request/request_processor_test.ts"
+tools_referenced:
+  - write_file: src/mcp/handlers/write_file_tool.ts
+  - git_commit: src/mcp/handlers/git_tool.ts
+copilot_instructions: .copilot/blueprints/senior-coder.md
+---
+
 # Exaix Architecture
 
 **Version:** 2.0.0\
@@ -1835,7 +1853,7 @@ graph LR
 | **Config Service**       | Load and validate exa.config.toml                 | `src/config/service.ts`                             | 🟢 All   |
 | **Workspace Execution**  | Agent environment and path resolution             | `src/services/workspace_execution_context.ts`       | 🟢 All   |
 | **Database Service**     | Edition-tiered journal operations                 | `src/services/db.ts`                                | 🟢 All   |
-| **Git Service**          | Git operations with trace metadata                | `src/services/core/git_service.ts`                       | 🟢 All   |
+| **Git Service**          | Git operations with trace metadata                | `src/services/core/git_service.ts`                  | 🟢 All   |
 | **Provider Factory**     | Create LLM provider instances                     | `src/ai/provider_factory.ts`                        | 🟢 All   |
 | **Context Loader**       | Load context for agent execution                  | `src/services/context_loader.ts`                    | 🟢 All   |
 | **Portal Commands**      | Manage external project access                    | `src/cli/portal_commands.ts`                        | 🟢 All   |
@@ -2085,12 +2103,12 @@ Exaix includes an extensible MCP tool handler system that enables agents to perf
 
 ### Tool Handler Categories
 
-| Category | Tools | Purpose |
-| ----------------- | --------------------------------------------------------------------- | ------------------------------------ |
-| **Read-Only** | `read_file`, `list_directory`, `search_files` | Exploration and analysis |
-| **Write Tools** | `write_file`, `patch_file`, `delete_file`, `move_file` | File mutations |
-| **Directory Tools** | `create_directory` | Directory management |
-| **Command Tools** | `run_command` | System command execution |
+| Category            | Tools                                                  | Purpose                  |
+| ------------------- | ------------------------------------------------------ | ------------------------ |
+| **Read-Only**       | `read_file`, `list_directory`, `search_files`          | Exploration and analysis |
+| **Write Tools**     | `write_file`, `patch_file`, `delete_file`, `move_file` | File mutations           |
+| **Directory Tools** | `create_directory`                                     | Directory management     |
+| **Command Tools**   | `run_command`                                          | System command execution |
 
 ### Tool Handler Pattern
 
@@ -2157,10 +2175,10 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### Dynamic vs Declared Execution Modes
 
-| Mode | Description | Use Case |
-| ----------------- | -------------------------------------------------------------------------- | ------------------------------------------- |
+| Mode            | Description                                         | Use Case                                    |
+| --------------- | --------------------------------------------------- | ------------------------------------------- |
 | **Declared** 🟢 | Tools committed during planning phase (ReWOO-style) | Standard execution with full human approval |
-| **Dynamic** 🔵 | Agent selects tools at runtime from permitted set | Exploratory tasks, codebase analysis |
+| **Dynamic** 🔵  | Agent selects tools at runtime from permitted set   | Exploratory tasks, codebase analysis        |
 
 ### ReAct Loop Architecture
 
@@ -2232,22 +2250,22 @@ graph TB
 
 ### Component Responsibilities
 
-| Component | Responsibility |
-| --------------------- | ------------------------------------------ |
-| MCP Client | Wraps MCP tool handlers for dynamic execution |
-| LLM Client | ReAct reasoning prompt and response parsing |
-| Activity Journal | Audit logging via Event Logger |
-| Dynamic Step Executor | ReAct loop orchestration |
-| Flow Runner | Execution mode dispatch (declared vs dynamic) |
+| Component             | Responsibility                                |
+| --------------------- | --------------------------------------------- |
+| MCP Client            | Wraps MCP tool handlers for dynamic execution |
+| LLM Client            | ReAct reasoning prompt and response parsing   |
+| Activity Journal      | Audit logging via Event Logger                |
+| Dynamic Step Executor | ReAct loop orchestration                      |
+| Flow Runner           | Execution mode dispatch (declared vs dynamic) |
 
 ### Security and Auditability
 
-| Feature | Implementation |
-| ------------------------- | -------------------------------------------------------------------- |
-| **Runtime Supervision** | Dynamic executor enforces read-only tools in dynamic mode |
-| **Permission Boundaries** | Tools restricted to permitted set from blueprint/step |
-| **Full Traceability** | Every ReAct iteration logged with same trace ID as parent flow |
-| **Cost Control** | Iteration limit prevents infinite loops and excessive token use |
+| Feature                   | Implementation                                                  |
+| ------------------------- | --------------------------------------------------------------- |
+| **Runtime Supervision**   | Dynamic executor enforces read-only tools in dynamic mode       |
+| **Permission Boundaries** | Tools restricted to permitted set from blueprint/step           |
+| **Full Traceability**     | Every ReAct iteration logged with same trace ID as parent flow  |
+| **Cost Control**          | Iteration limit prevents infinite loops and excessive token use |
 
 ### Blueprint Schema Extension
 
@@ -2275,13 +2293,13 @@ steps:
   - id: explore
     name: Explore codebase structure
     identity: researcher
-    execution_mode: dynamic  # Opt-in for ReAct
+    execution_mode: dynamic # Opt-in for ReAct
     permitted_tools:
       - read_file
       - list_directory
     input:
       source: request
-    timeout: 60000  # Timeout in milliseconds
+    timeout: 60000 # Timeout in milliseconds
 ```
 
 ---
@@ -2292,19 +2310,19 @@ The scenario framework provides comprehensive end-to-end testing for Exaix featu
 
 ### Scenario Packs
 
-| Pack | Scenarios | Focus |
-| -------------------------- | --------- | -------------------------------------------------------------- |
-| `dynamic_execution` | 4 | Dynamic tool selection, ReAct loops, permission boundaries |
-| `mcp_tools_extended` | 5 | New MCP tool handlers in realistic workflows |
-| `integration_e2e` | 3 | End-to-end flows combining all new features |
+| Pack                 | Scenarios | Focus                                                      |
+| -------------------- | --------- | ---------------------------------------------------------- |
+| `dynamic_execution`  | 4         | Dynamic tool selection, ReAct loops, permission boundaries |
+| `mcp_tools_extended` | 5         | New MCP tool handlers in realistic workflows               |
+| `integration_e2e`    | 3         | End-to-end flows combining all new features                |
 
 ### Execution Modes
 
-| Mode | Description | Use Case |
-| --------------------- | ------------------------------------------------ | ---------------------------------------- |
-| `auto` | Runs all steps non-interactively | CI and regression testing |
-| `step` | Pauses after every step | Debugging and development |
-| `manual-checkpoint` | Pauses only at marked steps | Human-in-the-loop validation |
+| Mode                | Description                      | Use Case                     |
+| ------------------- | -------------------------------- | ---------------------------- |
+| `auto`              | Runs all steps non-interactively | CI and regression testing    |
+| `step`              | Pauses after every step          | Debugging and development    |
+| `manual-checkpoint` | Pauses only at marked steps      | Human-in-the-loop validation |
 
 ---
 
@@ -2401,3 +2419,12 @@ This section provides explicit grounding for core infrastructure modules and hel
 - **[Technical Spec](Exaix_Technical_Spec.md)** - Deep technical details
 - **[White Paper](Exaix_White_paper.md)** - Vision and philosophy
 - **[Building with AI Agents](Building_with_AI_Agents.md)** - Development patterns
+
+---
+
+**Footer — Agent Knowledge Base**
+
+- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
+- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
+- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
