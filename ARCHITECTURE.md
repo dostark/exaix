@@ -275,7 +275,31 @@ The `RequestAnalyzer` performs intent extraction before routing, identifying goa
 
 ---
 
-## Request Processing Flow
+## Request Processing Flow {#request-processing-flow}
+
+<!-- AGENT_LOGIC: {
+  "flow": "Request Processing Loop",
+  "steps": [
+    "CLI/Daemon creates request file in Workspace/Requests",
+    "File Watcher triggers RequestProcessor",
+    "RequestProcessor validates and initializes context",
+    "RequestAnalyzer extracts intent and requirements",
+    "RequestRouter selects Agent or Flow runner",
+    "Agent/Flow Runner generates Plan via AI Provider",
+    "PlanAdapter materializes Plan to Workspace/Plans",
+    "Activity Journal records lifecycle events"
+  ]
+} -->
+
+| Step | Component | Critical Logic Path |
+|------|-----------|----------------------|
+| 1 | `exactl CLI` | `src/cli/commands/request.ts` |
+| 2 | `RequestProcessor` | `src/services/request_processor.ts:RequestProcessor.process()` |
+| 3 | `RequestAnalyzer` | `src/services/request_analysis/request_analyzer.ts` |
+| 4 | `RequestRouter` | `src/services/request_router.ts:RequestRouter.route()` |
+| 5 | `AgentRunner` | `src/services/agent_runner.ts:AgentRunner.execute()` |
+| 6 | `PlanAdapter` | `src/services/plan_adapter.ts:PlanAdapter.write()` |
+
 
 ```mermaid
 sequenceDiagram
@@ -481,7 +505,31 @@ This layer is what keeps file-driven workflows safe and deterministic: request/p
 
 ---
 
-## Plan Execution Flow
+## Plan Execution Flow {#plan-execution-flow}
+
+<!-- AGENT_LOGIC: {
+  "flow": "Plan Execution Loop",
+  "steps": [
+    "PlanWatcher detects approved plan in Workspace/Active",
+    "Daemon initializes PlanExecutor with plan path",
+    "PlanExecutor parses Plan and loads execution context",
+    "ReAct loop starts for each step in the plan",
+    "AI Provider proposes tool actions in structural TOML",
+    "ToolRegistry validates and executes requested tools",
+    "GitService commits atomic changes and generates trace metadata",
+    "Activity Journal persists results for auditing"
+  ]
+} -->
+
+| Step | Component | Critical Logic Path |
+|------|-----------|----------------------|
+| 1 | `PlanWatcher` | `src/services/watcher.ts:PlanWatcher` |
+| 2 | `PlanExecutor` | `src/services/plan_executor.ts:PlanExecutor.execute()` |
+| 3 | `AIProvider` | `src/ai/provider_factory.ts` |
+| 4 | `ToolRegistry` | `src/services/tool_registry.ts:ToolRegistry` |
+| 5 | `GitService` | `src/services/core/git_service.ts` |
+| 6 | `EventLogger` | `src/services/event_logger.ts` |
+
 
 The **Plan Executor** service orchestrates the step-by-step execution of approved plans. It uses a ReAct-style loop to prompt the LLM for actions, executes them via the **Tool Registry**, and commits changes to Git after each step.
 
@@ -920,7 +968,27 @@ For keyboard shortcuts, see [TUI Keyboard Reference](./TUI_Keyboard_Reference.md
 
 ---
 
-## AI Provider Architecture
+## AI Provider Architecture {#ai-provider-architecture}
+
+<!-- AGENT_LOGIC: {
+  "flow": "LLM Provider Lifecycle",
+  "steps": [
+    "ConfigService loads [ai] section from exa.config.toml",
+    "ProviderFactory selects concrete class based on provider name",
+    "Provider instance validates required API keys and base URLs",
+    "Request/Plan services call generate(prompt, params)",
+    "CostTracker records token usage and estimates USD impact",
+    "EventLogger journals generation metrics to Activity Journal"
+  ]
+} -->
+
+| Component | Responsibility | Implementation Path |
+|-----------|----------------|---------------------|
+| `ProviderFactory` | Registry & Instance creation | `src/ai/provider_factory.ts:ProviderFactory` |
+| `BaseProvider` | Common logic & error handling | `src/ai/providers/common/base_provider.ts:BaseProvider` |
+| `CostTracker` | Token & cost validation | `src/services/billing/cost_tracker.ts:CostTracker` |
+| `MockProvider` | Deterministic testing | `src/ai/providers/mock_provider.ts:MockLLMProvider` |
+
 
 Exaix supports multiple LLM providers with **edition-based availability**:
 
@@ -1052,7 +1120,26 @@ graph TB
 
 ---
 
-## Memory Banks Architecture
+## Memory Banks Architecture {#memory-banks-architecture}
+
+<!-- AGENT_LOGIC: {
+  "flow": "Context & Knowledge Retrieval",
+  "steps": [
+    "ContextLoader identifies active portal/project",
+    "RequestProcessor loads Workspace context files (overview, patterns)",
+    "MemoryService loads Global Cross-project learnings",
+    "Analyst/Agent merges Local + Global context into prompt",
+    "PlanExecutor updates memory with new learnings after task completion",
+    "CommitTrace annotates Git log with memory references"
+  ]
+} -->
+
+| Memory Tier | Storage Path | Primary Consumer |
+|-------------|--------------|------------------|
+| **Local** | `Workspace/Memory/Projects/` | `ContextLoader` |
+| **Execution**| `Workspace/Memory/Execution/`| `ActivityJournal` |
+| **Global** | `Workspace/Memory/Global/` | `MemoryService` |
+
 
 The Memory Banks system provides persistent knowledge storage for project context, execution history, and cross-project learnings.
 
@@ -1724,7 +1811,25 @@ stateDiagram-v2
 
 ---
 
-## Activity Journal Flow
+## Activity Journal Flow {#activity-journal-flow}
+
+<!-- AGENT_LOGIC: {
+  "flow": "Event Persistence Cycle",
+  "steps": [
+    "Event source calls EventLogger with traceId and actionData",
+    "EventLogger normalizes event based on IActivityRecord schema",
+    "DatabaseService persists event to project-specific SQLite DB",
+    "Real-time TUI components refresh views based on DB change data",
+    "PortalService aggregates project history for cross-project context"
+  ]
+} -->
+
+| Role | Responsibility | Implementation Path |
+|------|----------------|---------------------|
+| `EventLogger` | Interface for system logging | `src/services/event_logger.ts:EventLogger` |
+| `DBService` | SQLite persistence & migrations | `src/services/db/service.ts:DatabaseService` |
+| `LogSchema` | Activity Record validation | `src/shared/schemas/activity.ts:IActivityRecord` |
+
 
 ```mermaid
 graph LR
