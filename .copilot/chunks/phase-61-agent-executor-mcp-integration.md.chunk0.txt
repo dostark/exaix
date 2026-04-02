@@ -1,4 +1,9 @@
 # Phase 61: AgentExecutor MCP Integration & Real-World Execution
 
 ## Executive Summary
-This phase addresses the critical architectural weakness **W2** identified in `Exaix_Weaknesses.md`. Currently, `AgentExecutor` contains a significant stub where it merely asks an LLM to describe changes rather than executing them. This phase replaces the mock result and LLM-only flow with a robust integration of the Model Context Protocol (MCP), enabling real-world file system operations, git-audited changesets, and unified execution strategies.
+
+Exaix currently suffers from a critical architectural gap (**W2**) where the `AgentExecutor`—intended to be the engine for autonomous plan execution—is effectively a "simulator." It asks an LLM to describe changes rather than executing them using tools. This phase replaces the hardcoded SHAs and LLM-only simulation with a robust **Out-of-Process Execution Model** using the Model Context Protocol (MCP).
+
+By integrating the `SafeSubprocess` lifecycle with the local `ToolRegistry`, Exaix will transition from "descriptive" to "executive" agency. This phase also finalizes the **Identity Migration (W6)** by grounding all blueprint loading in the `Identities/` directory.
+
+### **Design Principles**

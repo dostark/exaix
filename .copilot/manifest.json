@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-02T17:56:41.539Z",
+  "generated_at": "2026-04-02T18:12:55.786Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -938,8 +938,20 @@
     },
     {
       "path": ".copilot/planning/phase-61-agent-executor-mcp-integration.md",
+      "agent": "antigravity",
+      "scope": "dev",
       "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
-      "short_summary": "",
+      "short_summary": "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern.",
+      "version": "1.0",
+      "topics": [
+        "agent-executor",
+        "mcp",
+        "subprocess",
+        "security",
+        "git-audit",
+        "execution-strategy",
+        "identities"
+      ],
       "chunks": [
         ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk0.txt",
         ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk1.txt",

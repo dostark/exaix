@@ -1,7 +1,13 @@
-### 2. Git Audit Complexity
-`auditGitChanges` relies on porcelain output. While robust for simple file additions/modifications, complex git states (unmerged paths, submodules) may require more sophisticated parsing to prevent false negatives in security checks.
+**Success Criteria:**
+- [ ] Subprocess `tool_calls` are intercepted and executed by the parent's `ToolRegistry`.
+- [ ] File system side-effects (write_file, patch_file) are physically committed to the portal worktree.
+- [ ] `IChangesetResult` contains a real `git rev-parse HEAD` SHA after the agent completes its task.
+- [ ] Subprocess output is piped to the `EventLogger` for real-time monitoring.
 
-### 3. Strategy Fragmentation
-As we introduce more `IExecutionStrategy` implementations, maintaining consistency in how they log to the Activity Journal is vital. Divergence in logging formats would break downstream TUI and analytics tools.
+**Planned Tests:**
+- **Integration**: `tests/integration/agent/mcp_real_execution_test.ts` — verify that a spawned agent creates a real commit.
+- **Functional**: `tests/functional/agent/SHA_accuracy_test.ts` — verify that the returned SHA matches the actual git HEAD.
 
-**Conclusion**: Phase 61 moves Exaix from "descriptive" to "executive" agency. It is the bridge to a fully autonomous developer agent while maintaining strict human-in-the-loop auditability.
+---
+
+### Step 61.4: Security Audit & Automatic Revert

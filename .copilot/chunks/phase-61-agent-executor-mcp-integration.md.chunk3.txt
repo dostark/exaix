@@ -1,14 +1,13 @@
-### 2. McpAgentStrategy Implementation
-This strategy will:
-1. Load the Identity Blueprint.
-2. Initialize a `SafeSubprocess` with appropriate `--allow-*` flags.
-3. Establish a JSON-RPC connection over stdio to the MCP server.
-4. Pass the execution plan and context as the initial message.
-5. Monitor for completion and capture the generated changeset.
+**Success Criteria:**
+- [ ] `IExecutionStrategy` interface defined in `src/services/agent/strategies/execution_strategy.ts`.
+- [ ] `AgentExecutor` accepts a strategy registry in its constructor.
+- [ ] `loadBlueprint` logic updated to use `Identities/` directory and `IdentityBlueprint` naming.
+- [ ] Identity-level `permitted_tools` (from Phase 56) are correctly parsed and passed to strategies.
 
-## Step-by-Step Implementation Plan
+**Planned Tests:**
+- **Unit**: `tests/unit/agent/strategy_registry_test.ts` — verify registration of McpAgent and ReActLoop strategies.
+- **Unit**: `tests/unit/agent/blueprint_identity_load_test.ts` — verify correct path resolution for Identities.
 
-### Phase 61.1: Interface Definition & Strategy Refactoring (4hr)
-1. Create `src/services/agent/strategies/mod.ts`.
-2. Define `IExecutionStrategy` and the result schema.
-3. Refactor `AgentExecutor` to accept a strategy instead of hardcoded logic.
+---
+
+### Step 61.2: McpAgentStrategy Subprocess Lifecycle

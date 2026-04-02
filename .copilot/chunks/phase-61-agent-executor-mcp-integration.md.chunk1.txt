@@ -1,9 +1,17 @@
-## Problem Statement (Detailed)
-The current `AgentExecutor.executeStep` implementation returns a hardcoded commit SHA (`"abc1234567890abcdef"`) and a mock changeset. While the `ExecutionLoop` handles ReAct loops with TOML actions, the `AgentExecutor` path intended for plan-based agent spawning is disconnected from the actual execution engine. This creates a "shadow" execution path that lacks grounding in the physical file system.
+- **Grounding over Simulation** — Every commit SHA must be derived from a real `git rev-parse`, not an LLM hallucination.
+- **Isolated Execution** — Agents run in a separate Deno process with restricted permissions (`--allow-read`, `--allow-net`).
+- **Unified Interface** — Both ReAct loops and MCP sub-processes use a shared `IExecutionStrategy` contract.
+- **Security-First Audit** — Automated git porcelain audits verify that every modification matches the agent's authorized scope.
 
-## Goals & Success Criteria
+---
 
-### Goal 1: Replace Hardcoded Stubs with Real MCP Execution
-- Replace `provider.generate()` description-only flow with `SafeSubprocess` spawning.
-- Connect spawned agent processes to the Exaix MCP server.
-- Ensure `tool_calls` and `execution_time_ms` are accurately reported from the real process.
+## Current vs. Target Execution Path
+
+### **Before (W2 Stub)**
+```text
+AgentExecutor.executeStep()
+  ├── Load Blueprint (from deprecated agents/ path)
+  ├── Build Prompt (Simulation-style)
+  ├── provider.generate() (LLM describes files and SHAs)
+  └── Return HARDCODED "abc123456..." SHA
+```

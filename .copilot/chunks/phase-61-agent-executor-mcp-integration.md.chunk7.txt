@@ -1,2 +1,9 @@
----
-**Agent Instructions**: Refer to `.copilot/planning/phase-60-agent-docs.md` for the document structure. Prioritize the P0 correction of the `AgentExecutor` stub.
+- **Action**: Implement git porcelain audit post-execution and automated revert logic.
+- **Justification**: Satisfies **W2/W7/W13**; provides the "safety net" for autonomous execution.
+- **Dependencies**: Step 61.3.
+
+**Success Criteria:**
+- [ ] Audit runs immediately after execution, comparing `git status --porcelain` output against `allowedPaths`.
+- [ ] `revertUnauthorizedChanges` triggers if the audit detects any unauthorized file modification.
+- [ ] Security violations are logged to the `Activity Journal` with `HIGH` severity.
+- [ ] Execution is marked as `FAILED` if isolation is breached.

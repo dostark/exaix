@@ -1,11 +1,11 @@
-## Success Metrics
-| Metric | Baseline | Target |
-|--------|----------|--------|
-| Real SHA Generation | 0% (Hardcoded) | 100% |
-| Tool Call Accuracy | Estimated | 1:1 with Journal |
-| Security Rejection | Manual | Automated via Audit |
+**Planned Tests:**
+- **Integration**: `tests/integration/agent/mcp_handshake_test.ts` — verify RPC initialization between parent and child.
+- **Functional**: `tests/functional/agent/subprocess_isolation_test.ts` — verify that a spawned agent is restricted to authorized directories.
 
-## 📉 Residual Risks & The "Non-Ultimate" Nature of Phase 61
+---
 
-### 1. The Subprocess Lifecycle Risk
-While `SafeSubprocess` provides basic timeouts, a complex agent task might involve multiple recursive tool calls that exceed the top-level timeout. Detecting "stuck" but active processes remains a challenge.
+### Step 61.3: Real-World MCP Tool Bridge
+
+- **Action**: Route subprocess tool calls to the local `ToolRegistry` and capture real SHAs.
+- **Justification**: Resolves the core "hallucination" problem of W2.
+- **Dependencies**: Step 61.2.
