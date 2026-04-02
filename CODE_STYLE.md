@@ -17,7 +17,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ---
 
-## 1. Strict Type Safety
+## 1. Strict Type Safety {#strict-type-safety}
 
 - **Every** variable, parameter, return value, and data structure **must** have an
   explicit type annotation. Never rely on implicit inference to avoid writing a
@@ -79,7 +79,7 @@ checklists (pre‑commit, CI, etc.).
 
 ---
 
-## 2. No Magic Numbers or Strings
+## 2. No Magic Numbers or Strings {#no-magic-values}
 
 - Never hardcode numeric literals or string constants in production or test code
   (timeouts, status values, provider names, etc.).
@@ -101,7 +101,7 @@ Search helpers are provided in the repository to locate inadvertent magic values
 
 ---
 
-## 3. Import Statements
+## 3. Import Statements {#import-statements}
 
 All import declarations **must** appear at the top of the file and **must not** be nested inside any other statement (such as functions, conditionals, or loops). Imports must be top-level only.
 
@@ -241,7 +241,7 @@ export class MyClass {
 
 ---
 
-## 4. Dependency Injection & Interfaces
+## 4. Dependency Injection & Interfaces {#di-and-interfaces}
 
 - **Interface naming:** **All exported interfaces** (injectable or otherwise)
   **must** use the `IInterfaceName` prefix convention (starting with a capital `I`).
@@ -277,7 +277,7 @@ export class PlanExecutor {
 
 ---
 
-## 5. Environment Variables
+## 5. Environment Variables {#env-vars}
 
 Environment‑variable rules were formalised in Phase 28 and are part of the
 style guide:
@@ -296,7 +296,7 @@ runtime bugs.
 
 ---
 
-## 6. Module Structure & Placement
+## 6. Module Structure & Placement {#module-structure}
 
 - **Module Structure Order:** Every module **must** follow this specific structural order:
   1. **Header Comment:** A brief description of the module and the Implementation Plan step it satisfies (warning if missing).
@@ -307,7 +307,7 @@ runtime bugs.
 
 ---
 
-## 7. Module Boundaries & TUI Isolation
+## 7. Module Boundaries & TUI Isolation {#tui-boundaries}
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
 
@@ -332,7 +332,7 @@ Boundary checks run as part of the standard quality gates in pre-commit hooks an
 
 ---
 
-## 8. Module Boundaries & CLI Isolation
+## 8. Module Boundaries & CLI Isolation {#cli-boundaries}
 
 Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
 
@@ -354,7 +354,7 @@ These rules are enforced by `scripts/check_code_style.ts` via:
 
 ---
 
-## 9. Related Documents
+## 9. Related Documents {#related-docs}
 
 This file is the single source for code style. Original sections remain in the
 following documents only as cross‑references:
@@ -369,7 +369,7 @@ location changes.
 
 ---
 
-## 10. Function & Method Complexity
+## 10. Function & Method Complexity {#complexity-rules}
 
 - **Parameter Limit:** Functions and methods **must not** exceed **7 parameters**.
 - If a method requires 8 or more parameters, it **must** be refactored to use:

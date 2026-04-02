@@ -1838,19 +1838,19 @@ graph LR
 | Component                | Responsibility                                    | Key Files                                           | Edition  |
 | ------------------------ | ------------------------------------------------- | --------------------------------------------------- | -------- |
 | **CLI Layer**            | Human interface for system control                | `src/cli/*.ts`                                      | 🟢 All   |
-| **Daemon**               | Background orchestration engine                   | `src/main.ts`                                       | 🟢 All   |
+| **Daemon**               | Background orchestration engine                   | `src/main.ts:Daemon`                                | 🟢 All   |
 | **Request Watcher**      | Detect new requests in Workspace/Requests         | `src/services/watcher.ts`                           | 🟢 All   |
 | **Plan Watcher**         | Detect approved plans                             | `src/services/watcher.ts`                           | 🟢 All   |
-| **Request Processor**    | Parse requests, generate plans                    | `src/services/request_processor.ts`                 | 🟢 All   |
-| **Request Router**       | Route requests to Agent/Flow runners              | `src/services/request_router.ts`                    | 🟢 All   |
+| **Request Processor**    | Parse requests, generate plans                    | `src/services/request_processor.ts:RequestProcessor` | 🟢 All   |
+| **Request Router**       | Route requests to Agent/Flow runners              | `src/services/request_router.ts:RequestRouter`      | 🟢 All   |
 | **Request Analyzer**     | `src/services/request_analysis/`                  | Intent, requirements & complexity extraction        | 🟢 All   |
 | **Request Quality Gate** | Pre-execution quality scoring and Q&A refinement  | `src/services/quality_gate/request_quality_gate.ts` | 🟢 All   |
 | **Clarification Engine** | Multi-turn Q&A loop for request refinement        | `src/services/quality_gate/clarification_engine.ts` | 🟢 All   |
 | **Plan Executor**        | Execute approved plans                            | `src/services/plan_executor.ts`                     | 🟢 All   |
-| **Agent Runner**         | Execute agent logic with LLM                      | `src/services/agent_runner.ts`                      | 🟢 All   |
-| **Flow Runner**          | Execute multi-agent flows                         | `src/flows/flow_runner.ts`                          | 🟢 All   |
-| **Event Logger**         | Write to Activity Journal                         | `src/services/event_logger.ts`                      | 🟢 All   |
-| **Config Service**       | Load and validate exa.config.toml                 | `src/config/service.ts`                             | 🟢 All   |
+| **Agent Runner**         | Execute agent logic with LLM                      | `src/services/agent_runner.ts:AgentRunner`          | 🟢 All   |
+| **Flow Runner**          | Execute multi-agent flows                         | `src/flows/flow_runner.ts:FlowRunner`               | 🟢 All   |
+| **Event Logger**         | Write to Activity Journal                         | `src/services/event_logger.ts:EventLogger`          | 🟢 All   |
+| **Config Service**       | Load and validate exa.config.toml                 | `src/config/service.ts:ConfigService`               | 🟢 All   |
 | **Workspace Execution**  | Agent environment and path resolution             | `src/services/workspace_execution_context.ts`       | 🟢 All   |
 | **Database Service**     | Edition-tiered journal operations                 | `src/services/db.ts`                                | 🟢 All   |
 | **Git Service**          | Git operations with trace metadata                | `src/services/core/git_service.ts`                  | 🟢 All   |
