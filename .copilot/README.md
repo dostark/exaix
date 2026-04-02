@@ -18,6 +18,7 @@ This directory contains short, machine-discoverable instruction documents intend
 - `.copilot/prompts/` — Comprehensive prompt templates for systematic coding workflows (see [prompts/README.md](prompts/README.md))
 - `.copilot/chunks/` — (auto-generated) pre-chunked text files for quick retrieval
 - `.copilot/issues/` — structured bug reports and technical issues (see [issues/README.md](issues/README.md))
+- `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
 
 ## Quick Links for Agents
 
@@ -131,7 +132,6 @@ To verify the manifest is fresh (useful for CI):
 ```bash
 deno run --allow-read scripts/verify_manifest_fresh.ts
 ```
-
 
 ## How to Add a New Agent Doc
 
