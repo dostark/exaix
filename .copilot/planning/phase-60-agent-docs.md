@@ -50,7 +50,7 @@ version: 1.0
 capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
 links:
   - "src/services/reflexive_agent.ts:ReflexiveAgent"  # Symbol-based
-  - "src/memory/memory_bank.ts:@region Store"       # Region anchor
+  - "src/services/memory/memory_bank.ts:MemoryBankService"       # Region anchor
   - "tests/integration/flows_test.ts:ExecutionFlow"  # Test identity
 tools_referenced:
   - write_file: src/mcp/handlers/write_file_tool.ts
@@ -108,11 +108,11 @@ tools:
 # Original Title {#title-anchor}
 
 ## Preserved Section 1 {#section1}
-<!-- SECTION_META: { "capability": "MemoryBank", "files": ["src/memory/memory_bank.ts"] } -->
+<!-- SECTION_META: { "capability": "MemoryBank", "files": ["src/services/memory/memory_bank.ts"] } -->
 [EXISTING TEXT UNTOUCHED]
 
 **Primary Symbols**:
-- [src/memory/memory_bank.ts:VectorStore](src/memory/memory_bank.ts:VectorStore)
+- [src/services/memory/memory_bank.ts:VectorStore](src/services/memory/memory_bank.ts:VectorStore)
 - [tests/memory_test.ts:StorePersistence](tests/memory_test.ts:StorePersistence)
 
 ```mermaid
@@ -170,7 +170,7 @@ flowchart TD
 
 ## Step-by-Step Implementation Plan
 
-### Phase 60.1: Bulk Infrastructure (90min)
+### Phase 60.1: Bulk Infrastructure (90min) [COMPLETED]
 ```bash
 # 1. Audit current content
 git grep -l "Memory\|Plan\|Changeset" *.md > content-inventory.txt
@@ -200,13 +200,13 @@ git add *.md && git commit -m "docs(60.1): inject agent frontmatter + copilot li
 - [ ] No content loss: `git diff HEAD~1 --word-diff | grep -v "^@@" | wc -l ==0`
 - [ ] Lint passes
 
-### Phase 60.2: Precision Linking (2hr)
+### Phase 60.2: Precision Linking (2hr) [COMPLETED]
 ```
 Manual curation per file:
 
 ARCHITECTURE.md:
 sed -i '/Memory Bank/a\\
-**Files**: [src/memory/memory_bank.ts](src/memory/memory_bank.ts#L1)\
+**Files**: [src/services/memory/memory_bank.ts](src/services/memory/memory_bank.ts#L1)\
 [tests/memory_test.ts](tests/memory_test.ts)\
 ' ARCHITECTURE.md
 
@@ -219,7 +219,7 @@ sed -i 's/### \([A-Z]\)/### \1 {#rule-\L\1}/g' CODE_STYLE.md
 - [ ] `git grep "\.ts#L[0-9]" *.md | wc -l >=30`
 - [ ] Backlinks: Every major src/ file mentioned once
 
-### Phase 60.3: Mermaid & Hybrid Logic Nervous System (2hr)
+### Phase 60.3: Mermaid & Hybrid Logic Nervous System (2hr) [COMPLETED]
 ```bash
 # 1. Extract 5 key flows from ARCHITECTURE.md
 # 2. Convert prose → Mermaid blocks
@@ -227,19 +227,19 @@ sed -i 's/### \([A-Z]\)/### \1 {#rule-\L\1}/g' CODE_STYLE.md
 # 4. Insert AGENT_LOGIC YAML comments for strict step validation
 ```
 
-### Phase 60.4: TOOLS.md & Schema Synchronization (1hr)
+### Phase 60.4: TOOLS.md & Schema Synchronization (1hr) [COMPLETED]
 - Create `scripts/sync_tool_schemas.ts`.
 - Extract Zod descriptions from `src/mcp/handlers/*.ts`.
 - Inject into `TOOLS.md` with YAML blocks.
 
-### Phase 60.5: Validation, Benchmarking & Discovery (1.5hr)
+### Phase 60.5: Validation, Benchmarking & Discovery (1.5hr) [COMPLETED]
 - Add `docs-agent-validate` and `docs-bench` tasks to `deno.json`.
 - implement `scripts/validate_doc_links.ts` (Symbol/Region link rot check).
 - implement `tests/docs/hallucination_benchmark_test.ts`.
 - **Discovery**: Update `README.md` and `CLAUDE.md` with the "20-line Header Index" mandate.
 - **Traceability**: Run a script to append `@architectural-link` tags to key services in `src/`.
 
-### Phase 60.6: Sectional TOC & Context Optimization (1hr)
+### Phase 60.6: Sectional TOC & Context Optimization (1hr) [COMPLETED]
 - Manually audit `ARCHITECTURE.md` sections.
 - Insert "Capability -> Source" jump tables at the start of each H2 section.
 - Append the "Agent-Only Compressed Summary" to the global footer.

@@ -69,6 +69,20 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 8. Agent-Native Documentation Nervous System Check
+deno task docs-agent-validate
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Documentation nervous system validation failed (links/symbols)."
+  exit 1
+fi
+
+# 9. Hallucination Benchmarks (Ground Truth)
+deno task docs-bench
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Hallucination benchmarks failed. Verify ground truth consistency."
+  exit 1
+fi
+
 echo "✅ Pre-commit checks passed!\n"
 `;
 
