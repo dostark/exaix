@@ -51,25 +51,6 @@ export async function assertFrontmatterSchemaAndShortSummary(
   }
 }
 
-export async function assertEmbeddingsGenerated(embeddingFiles: string[]): Promise<void> {
-  for (const file of embeddingFiles) {
-    const stat = await Deno.stat(file);
-    assert(stat.isFile, `${file} should exist`);
-
-    const content = await Deno.readTextFile(file);
-    const embeddingData = JSON.parse(content);
-    assert(embeddingData.path, "Embedding file should have path");
-    assert(embeddingData.title, "Embedding file should have title");
-    assert(Array.isArray(embeddingData.vecs), "Embedding file should have vecs array");
-    assert(embeddingData.vecs.length > 0, "Embedding file should have at least 1 vector");
-
-    const firstVec = embeddingData.vecs[0];
-    assert(firstVec.text, "Vector should have text");
-    assert(Array.isArray(firstVec.vector), "Vector should have vector array");
-    assert(firstVec.vector.length === 64, "Vector should be 64-dimensional");
-  }
-}
-
 export async function assertChunksWereGenerated(patterns: string[], chunkDir = ".copilot/chunks"): Promise<void> {
   for (const pattern of patterns) {
     let found = false;

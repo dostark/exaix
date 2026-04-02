@@ -2,7 +2,7 @@
 
 ### "I want to add a new feature"
 
-1. Read [docs/Exaix_Implementation_Plan.md](../docs/Exaix_Implementation_Plan.md) to find or create Implementation Plan step
+1. Read [planning/](planning/) to find or create the relevant Implementation Plan phase.
 
 1.
 1.
@@ -30,13 +30,6 @@
 ### "I want to add security tests"
 
 1. Review [tests/testing.md](tests/testing.md) security section
-
-1.
-1.
-
-### "I want to set up RAG for semantic search"
-
-1. Read [providers/claude-rag.md](providers/claude-rag.md) for workflow
 
 1.
 1.

@@ -23,6 +23,6 @@
 1.
 1.
 
-## Updating Knowledge Base
+## Propagating Learnings to Memory Bank
 
-When an issue is **resolved**, valuable learnings should be propagated to the project's embeddings (`.copilot/embeddings/`) to improve future context retrieval and prevent recurrence.
+When an issue is **resolved**, valuable learnings should be documented to improve future context retrieval and prevent recurrence.

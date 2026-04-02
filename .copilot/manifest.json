@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-31T18:10:26.541Z",
+  "generated_at": "2026-04-02T15:27:10.697Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -222,45 +222,6 @@
         ".copilot/chunks/README.md.chunk5.txt",
         ".copilot/chunks/README.md.chunk6.txt",
         ".copilot/chunks/README.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/rag-context-injection.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "RAG Context Injection Prompt",
-      "short_summary": "Example prompt showing how to use semantic search for context injection.",
-      "version": "0.1",
-      "topics": [
-        "rag",
-        "embeddings",
-        "context-injection",
-        "prompts"
-      ],
-      "chunks": [
-        ".copilot/chunks/rag-context-injection.md.chunk0.txt",
-        ".copilot/chunks/rag-context-injection.md.chunk1.txt",
-        ".copilot/chunks/rag-context-injection.md.chunk2.txt",
-        ".copilot/chunks/rag-context-injection.md.chunk3.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/openai-rag-context-injection.md",
-      "agent": "openai",
-      "scope": "dev",
-      "title": "OpenAI RAG Context Injection (inspect → inject)",
-      "short_summary": "Prompt template for OpenAI agents to inspect embeddings, inject top chunks, then answer with minimal diffs and verification.",
-      "version": "0.1",
-      "topics": [
-        "openai",
-        "rag",
-        "embeddings",
-        "context-injection",
-        "prompts"
-      ],
-      "chunks": [
-        ".copilot/chunks/openai-rag-context-injection.md.chunk0.txt",
-        ".copilot/chunks/openai-rag-context-injection.md.chunk1.txt"
       ]
     },
     {
@@ -1378,29 +1339,6 @@
       ]
     },
     {
-      "path": ".copilot/providers/openai-rag.md",
-      "agent": "openai",
-      "scope": "dev",
-      "title": "OpenAI RAG (Retrieval-Augmented Generation) Usage Guide",
-      "short_summary": "How to retrieve and inject .copilot/ context for OpenAI models using Exaix embeddings and chunk tooling.",
-      "version": "0.1",
-      "topics": [
-        "rag",
-        "embeddings",
-        "context-injection",
-        "semantic-search",
-        "provider-adaptations"
-      ],
-      "chunks": [
-        ".copilot/chunks/openai-rag.md.chunk0.txt",
-        ".copilot/chunks/openai-rag.md.chunk1.txt",
-        ".copilot/chunks/openai-rag.md.chunk2.txt",
-        ".copilot/chunks/openai-rag.md.chunk3.txt",
-        ".copilot/chunks/openai-rag.md.chunk4.txt",
-        ".copilot/chunks/openai-rag.md.chunk5.txt"
-      ]
-    },
-    {
       "path": ".copilot/providers/google-long-context.md",
       "scope": "dev",
       "title": "Gemini Long-Context Reasoning Guide",
@@ -1415,29 +1353,6 @@
       "chunks": [
         ".copilot/chunks/google-long-context.md.chunk0.txt",
         ".copilot/chunks/google-long-context.md.chunk1.txt"
-      ]
-    },
-    {
-      "path": ".copilot/providers/claude-rag.md",
-      "scope": "dev",
-      "title": "Claude RAG (Retrieval-Augmented Generation) Usage Guide",
-      "short_summary": "How to use embeddings infrastructure for semantic search and context injection with Claude.",
-      "version": "0.1",
-      "topics": [
-        "rag",
-        "embeddings",
-        "context-injection",
-        "semantic-search"
-      ],
-      "chunks": [
-        ".copilot/chunks/claude-rag.md.chunk0.txt",
-        ".copilot/chunks/claude-rag.md.chunk1.txt",
-        ".copilot/chunks/claude-rag.md.chunk2.txt",
-        ".copilot/chunks/claude-rag.md.chunk3.txt",
-        ".copilot/chunks/claude-rag.md.chunk4.txt",
-        ".copilot/chunks/claude-rag.md.chunk5.txt",
-        ".copilot/chunks/claude-rag.md.chunk6.txt",
-        ".copilot/chunks/claude-rag.md.chunk7.txt"
       ]
     },
     {

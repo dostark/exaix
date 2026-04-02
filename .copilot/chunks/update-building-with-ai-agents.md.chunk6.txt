@@ -1,15 +1,3 @@
-```bash
-# After any agents/ changes:
-deno run --allow-read --allow-write scripts/build_agents_index.ts
-deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
-deno run --allow-read scripts/validate_agents_docs.ts
-```
-
-**Meta-Insights**:
-
-```markdown
-### The Meta-Learning: Documentation Is a Product
-
 Treating documentation like code revolutionized quality:
 
 - Schema validation (YAML frontmatter with Zod)
@@ -28,3 +16,14 @@ The agents/ folder was updated with the following improvements:
 - Added claude.md version 0.2
 - Created claude-rag.md with RAG workflow
 - Added 8 prompt templates
+
+**Missing Context or "Why"**:
+
+```markdown
+We added prompt templates to agents/prompts/. These include TDD workflow,
+refactoring, and debugging templates.
+```
+
+(Missing: Why were these needed? What problem did they solve? What was the wake-up call?)
+
+**No Before/After Comparison**:

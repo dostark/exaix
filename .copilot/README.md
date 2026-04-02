@@ -132,15 +132,6 @@ To verify the manifest is fresh (useful for CI):
 deno run --allow-read scripts/verify_manifest_fresh.ts
 ```
 
-## Building embeddings
-
-Precompute and import embeddings with `scripts/build_agents_embeddings.ts`. For precomputed embeddings, drop JSON files that follow the example template into `.copilot/embeddings/` and then run:
-
-```bash
-deno run --allow-read --allow-write --unstable scripts/build_agents_embeddings.ts --mode precomputed --dir .copilot/embeddings
-```
-
-See `.copilot/embeddings/example_precomputed_template.json` for a minimal, valid template to create precomputed embedding files.
 
 ## How to Add a New Agent Doc
 
@@ -235,23 +226,7 @@ deno run --allow-read --allow-write scripts/build_agents_index.ts
 
 This updates `.copilot/manifest.json` and regenerates `.copilot/chunks/*.txt` files.
 
-### 5. Build Embeddings (Optional but Recommended)
-
-Generate embeddings for semantic search:
-
-```bash
-deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock --dir .copilot/embeddings
-```
-
-Or use OpenAI embeddings (requires authentication, higher quality):
-
-```bash
-deno run --allow-read --allow-write --allow-net --allow-env scripts/build_agents_embeddings.ts --mode openai --dir .copilot/embeddings
-```
-
-**Mock mode** is recommended for most cases (deterministic, fast, no API costs).
-
-### 6. Validate
+### 5. Validate
 
 Run validation to check schema compliance and safety:
 
@@ -267,7 +242,7 @@ This checks for:
 - Sensitive data patterns (fails if detected)
 - YAML syntax
 
-### 7. Test Retrieval
+### 6. Test Retrieval
 
 Verify your doc is discoverable:
 
@@ -337,7 +312,6 @@ Examples
 
 ```bash
 deno run --allow-read --allow-write scripts/build_agents_index.ts
-deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
 deno run --allow-read scripts/validate_agents_docs.ts
 deno run --allow-read scripts/inject_agent_context.ts --query "security path traversal" --agent claude
 ````
@@ -355,7 +329,6 @@ These files are **not** runtime Blueprints/agents (see `Blueprints/Agents/`). Th
 
 ```bash
 deno run --allow-read --allow-write scripts/build_agents_index.ts
-deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
 deno run --allow-read scripts/validate_agents_docs.ts
 deno run --allow-read scripts/inject_agent_context.ts --query "security path traversal" --agent claude
 ```

@@ -23,10 +23,8 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 | Fix CI failures                               | [tests/testing.md](tests/testing.md) (#CI)                                                 | [source/exaix.md](source/exaix.md)                                                                                                |
 | Security audit                                | [.copilot/tests/testing.md](tests/testing.md) (#Security Tests)                            | [.copilot/source/exaix.md](source/exaix.md) (#System Constraints)                                                                 |
 | Claude-specific guidance                      | [providers/claude.md](providers/claude.md)                                                 | [README.md](README.md)                                                                                                            |
-| RAG/embeddings usage                          | [providers/claude-rag.md](providers/claude-rag.md)                                         | [README.md](README.md) (#Building embeddings)                                                                                     |
 | VS Code Copilot setup                         | [copilot/exaix.md](copilot/exaix.md)                                                       | [README.md](README.md)                                                                                                            |
 | OpenAI integration                            | [providers/openai.md](providers/openai.md)                                                 | [README.md](README.md)                                                                                                            |
-| OpenAI RAG/embeddings usage                   | [providers/openai-rag.md](providers/openai-rag.md)                                         | [providers/openai.md](providers/openai.md)                                                                                        |
 | Google integration                            | [providers/google.md](providers/google.md)                                                 | [README.md](README.md)                                                                                                            |
 | Gemini Long-Context                           | [providers/google-long-context.md](providers/google-long-context.md)                       | [providers/google.md](providers/google.md)                                                                                        |
 | Instruction gaps / self-improvement           | [process/self-improvement.md](process/self-improvement.md)                                 | [prompts/self-improvement-loop.md](prompts/self-improvement-loop.md)                                                              |
@@ -45,9 +43,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`docs`** → [docs/documentation.md](docs/documentation.md)
 - **`patterns`** → [source/exaix.md](source/exaix.md) (Service Pattern, Module Documentation)
 - **`helpers`** → [tests/testing.md](tests/testing.md) (Test Organization, Helpers)
-- **`embeddings`** → [providers/claude-rag.md](providers/claude-rag.md), [README.md](README.md)
-- **`rag`** → [providers/claude-rag.md](providers/claude-rag.md)
-- **`openai`** → [providers/openai.md](providers/openai.md), [providers/openai-rag.md](providers/openai-rag.md)
+- **`openai`** → [providers/openai.md](providers/openai.md)
 - **`prompts`** → [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md)
 - **`commit`** → [prompts/commit-message.md](prompts/commit-message.md), [../Blueprints/Skills/commit-message.skill.md](../Blueprints/Skills/commit-message.skill.md)
 - **`refactoring`** → [source/exaix.md](source/exaix.md), [providers/claude.md](providers/claude.md)
@@ -76,7 +72,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 
 ### "I want to add a new feature"
 
-1. Read [docs/Exaix_Implementation_Plan.md](../docs/Exaix_Implementation_Plan.md) to find or create Implementation Plan step
+1. Read [planning/](planning/) to find or create the relevant Implementation Plan phase.
 
 1.
 1.
@@ -108,19 +104,12 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 1.
 1.
 
-### "I want to set up RAG for semantic search"
-
-1. Read [providers/claude-rag.md](providers/claude-rag.md) for workflow
-
-1.
-1.
 
 ## Provider-Specific Quick Links
 
 ### Claude
 
 - **Main guide**: [providers/claude.md](providers/claude.md)
-- **RAG setup**: [providers/claude-rag.md](providers/claude-rag.md)
 - **System prompts**: TDD, Refactoring, Debugging, Documentation (in claude.md)
 - **Context window**: 200k tokens (4-6 chunks recommended)
 
@@ -133,7 +122,6 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 ### OpenAI
 
 - **Main guide**: [providers/openai.md](providers/openai.md)
-- **RAG guide**: [providers/openai-rag.md](providers/openai-rag.md)
 - **Prompt templates**: See `.copilot/prompts/openai-*.md`
 - **Budgets**: Uses simple/standard/complex output budgets (see openai.md)
 
@@ -176,5 +164,5 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 ## Examples
 
 - Example prompt: "I need to add a security feature. Which docs should I read?" → Answer: Start with [.copilot/tests/testing.md](tests/testing.md) security section and [.copilot/source/exaix.md](source/exaix.md) system constraints.
-- Example prompt: "How do I set up Claude with RAG?" → Answer: Read [providers/claude-rag.md](providers/claude-rag.md) for the complete workflow.
+- Example prompt: "How do I set up Claude effectively?" → Answer: Read [providers/claude.md](providers/claude.md) for optimized prompts and thinking protocols.
 - Example prompt: "What's the TDD workflow?" → Answer: See [source/exaix.md](source/exaix.md) and [tests/testing.md](tests/testing.md) for patterns and helpers.

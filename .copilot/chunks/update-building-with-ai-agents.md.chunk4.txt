@@ -21,6 +21,11 @@ I had just enhanced the agents/ system to make it MORE useful... without using
 
 ```bash
    deno run --allow-read --allow-write scripts/build_agents_index.ts
-   deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
    deno run --allow-read scripts/validate_agents_docs.ts
    ```
+
+## Style Guidelines
+
+### ✅ Do
+
+**Personal and Entertaining**:

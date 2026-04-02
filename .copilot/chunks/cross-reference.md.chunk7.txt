@@ -3,5 +3,5 @@
 ## Examples
 
 - Example prompt: "I need to add a security feature. Which docs should I read?" → Answer: Start with [.copilot/tests/testing.md](tests/testing.md) security section and [.copilot/source/exaix.md](source/exaix.md) system constraints.
-- Example prompt: "How do I set up Claude with RAG?" → Answer: Read [providers/claude-rag.md](providers/claude-rag.md) for the complete workflow.
+- Example prompt: "How do I set up Claude effectively?" → Answer: Read [providers/claude.md](providers/claude.md) for optimized prompts and thinking protocols.
 - Example prompt: "What's the TDD workflow?" → Answer: See [source/exaix.md](source/exaix.md) and [tests/testing.md](tests/testing.md) for patterns and helpers.

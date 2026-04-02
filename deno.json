@@ -41,7 +41,7 @@
     "check:complexity": "deno run --allow-read --allow-net scripts/measure_complexity.ts --threshold 15 --json > complexity.json && deno run --allow-read scripts/check_complexity_breaches.ts && rm complexity.json",
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "compile": "deno compile --allow-all --output exaix src/main.ts",
-    "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && grep -q 'copilot_knowledge_base: true' *.md",
+    "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && deno run -A scripts/validate_cross_reference.ts && grep -q 'copilot_knowledge_base: true' *.md",
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
     "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md"
   },

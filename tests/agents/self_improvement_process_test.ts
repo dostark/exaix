@@ -10,7 +10,6 @@
 import { assert, assertExists } from "@std/assert";
 import {
   assertChunksWereGenerated,
-  assertEmbeddingsGenerated,
   assertFilesExist,
   assertFrontmatterSchemaAndShortSummary,
 } from "../helpers/copilot_assertions.ts";
@@ -108,15 +107,6 @@ Deno.test("Self-improvement loop: verify manifest includes new docs", async () =
   assertExists(processDoc, "process doc should be in manifest");
   assert(Array.isArray(processDoc.chunks), "process doc should have chunks array");
   assert(processDoc.chunks.length > 0, "process doc should have at least 1 chunk");
-});
-
-Deno.test("Self-improvement loop: verify embeddings generated", async () => {
-  const embeddingFiles = [
-    ".copilot/embeddings/self-improvement.md.json",
-    ".copilot/embeddings/self-improvement-loop.md.json",
-  ];
-
-  await assertEmbeddingsGenerated(embeddingFiles);
 });
 
 Deno.test("Self-improvement loop: verify chunks were generated", async () => {

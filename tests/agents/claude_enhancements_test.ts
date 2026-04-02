@@ -2,7 +2,7 @@
  * @module ClaudeEnhancementsTest
  * @path tests/agents/claude_enhancements_test.ts
  * @description Verifies specialized documentation for Anthropic Claude agents,
- * ensuring presence of RAG sections and structural quality.
+ * ensuring structural quality and content completeness.
  */
 
 // Unit tests to verify Step 10.5 Claude enhancements are properly implemented
@@ -17,7 +17,6 @@ Deno.test("Claude enhancements: verify all required files exist", async () => {
   // Verify all enhanced files were created
   const files = [
     ".copilot/providers/claude.md",
-    ".copilot/providers/claude-rag.md",
     ".copilot/cross-reference.md",
     ".copilot/README.md",
   ];
@@ -52,29 +51,6 @@ Deno.test("Claude enhancements: verify all sections exist in claude.md", async (
   assert(pitfallCount >= 8, `Should have at least 8 common pitfalls, found ${pitfallCount}`);
 });
 
-Deno.test("Claude enhancements: verify all sections exist in claude-rag.md", async () => {
-  const ragMd = await Deno.readTextFile(".copilot/providers/claude-rag.md");
-
-  // Verify required sections
-  assert(ragMd.includes("## RAG Workflow"), "Should have RAG Workflow section");
-  assert(ragMd.includes("## Tools"), "Should have Tools section");
-  assert(ragMd.includes("### Inspect Embeddings"), "Should have Inspect Embeddings section");
-  assert(ragMd.includes("### Automatic Context Injection"), "Should have Automatic Context Injection section");
-  assert(ragMd.includes("## Token Budget Strategies"), "Should have Token Budget Strategies section");
-  assert(ragMd.includes("## Semantic Search Quality"), "Should have Semantic Search Quality section");
-  assert(ragMd.includes("## Example: Multi-Step Task with RAG"), "Should have Multi-Step Example section");
-  assert(ragMd.includes("## Best Practices"), "Should have Best Practices section");
-
-  // Verify tool references
-  assert(ragMd.includes("scripts/inspect_embeddings.ts"), "Should reference inspect_embeddings script");
-  assert(ragMd.includes("scripts/inject_agent_context.ts"), "Should reference inject_agent_context script");
-  assert(ragMd.includes("scripts/build_agents_embeddings.ts"), "Should reference build_agents_embeddings script");
-
-  // Verify token budget table or strategy
-  assert(ragMd.includes("200k"), "Should mention Claude's 200k context window");
-  assert(ragMd.includes("4-6 chunks") || ragMd.includes("4-6"), "Should recommend 4-6 chunks");
-});
-
 Deno.test("Claude enhancements: verify cross-reference.md structure", async () => {
   const crossRefMd = await Deno.readTextFile(".copilot/cross-reference.md");
 
@@ -88,13 +64,11 @@ Deno.test("Claude enhancements: verify cross-reference.md structure", async () =
   assert(crossRefMd.includes("Refactor code"), "Should map 'Refactor code' task");
   assert(crossRefMd.includes("Debug"), "Should map debugging tasks");
   assert(crossRefMd.includes("Security"), "Should map security tasks");
-  assert(crossRefMd.includes("RAG"), "Should map RAG/embeddings tasks");
 
   // Verify it links to other docs
   assert(crossRefMd.includes("[tests/testing.md]"), "Should link to testing.md");
   assert(crossRefMd.includes("[source/exaix.md]"), "Should link to exaix.md");
   assert(crossRefMd.includes("[providers/claude.md]"), "Should link to claude.md");
-  assert(crossRefMd.includes("[providers/claude-rag.md]"), "Should link to claude-rag.md");
 });
 
 Deno.test("Claude enhancements: verify README.md has Quick Start Guide", async () => {
@@ -103,14 +77,13 @@ Deno.test("Claude enhancements: verify README.md has Quick Start Guide", async (
   // Verify Quick Start Guide section exists
   assert(readmeMd.includes("How to Add a New Agent Doc"), "Should have 'How to Add a New Agent Doc' section");
 
-  // Verify it includes the 7 steps
+  // Verify it includes the steps (Step 5 Build Embeddings removed)
   assert(readmeMd.includes("1. Create File in Appropriate Subfolder"), "Should have step 1");
   assert(readmeMd.includes("2. Add YAML Frontmatter"), "Should have step 2");
   assert(readmeMd.includes("3. Include Required Sections"), "Should have step 3");
   assert(readmeMd.includes("4. Regenerate Manifest"), "Should have step 4");
-  assert(readmeMd.includes("5. Build Embeddings"), "Should have step 5");
-  assert(readmeMd.includes("6. Validate"), "Should have step 6");
-  assert(readmeMd.includes("7. Test Retrieval"), "Should have step 7");
+  assert(readmeMd.includes("5. Validate"), "Should have step 5");
+  assert(readmeMd.includes("6. Test Retrieval"), "Should have step 6");
 
   // Verify frontmatter template
   assert(readmeMd.includes("identity:"), "Should include frontmatter template with agent field");
@@ -124,7 +97,6 @@ Deno.test("Claude enhancements: verify README.md has Quick Start Guide", async (
 Deno.test("Claude enhancements: verify frontmatter schema compliance", async () => {
   const files = [
     ".copilot/providers/claude.md",
-    ".copilot/providers/claude-rag.md",
     ".copilot/cross-reference.md",
   ];
 
@@ -170,52 +142,18 @@ Deno.test("Claude enhancements: verify manifest includes new docs", async () => 
 
   // Verify new docs are in manifest
   const paths = manifest.docs.map((d: { path: string }) => d.path);
-  assert(paths.includes(".copilot/providers/claude-rag.md"), "Manifest should include claude-rag.md");
   assert(paths.includes(".copilot/cross-reference.md"), "Manifest should include cross-reference.md");
 
   // Verify updated docs have chunks
-  const claudeRagDoc = manifest.docs.find((d: { path: string }) => d.path === ".copilot/providers/claude-rag.md");
-  assertExists(claudeRagDoc, "claude-rag.md should be in manifest");
-  assert(Array.isArray(claudeRagDoc.chunks), "claude-rag.md should have chunks array");
-  assert(claudeRagDoc.chunks.length > 0, "claude-rag.md should have at least 1 chunk");
-
   const crossRefDoc = manifest.docs.find((d: { path: string }) => d.path === ".copilot/cross-reference.md");
   assertExists(crossRefDoc, "cross-reference.md should be in manifest");
   assert(Array.isArray(crossRefDoc.chunks), "cross-reference.md should have chunks array");
   assert(crossRefDoc.chunks.length > 0, "cross-reference.md should have at least 1 chunk");
 });
 
-Deno.test("Claude enhancements: verify embeddings were generated", async () => {
-  // Verify embedding files exist for new docs
-  const embeddingFiles = [
-    ".copilot/embeddings/claude-rag.md.json",
-    ".copilot/embeddings/cross-reference.md.json",
-  ];
-
-  for (const file of embeddingFiles) {
-    const stat = await Deno.stat(file);
-    assert(stat.isFile, `${file} should exist`);
-
-    // Verify embedding file structure
-    const content = await Deno.readTextFile(file);
-    const embeddingData = JSON.parse(content);
-    assert(embeddingData.path, "Embedding file should have 'path' field");
-    assert(embeddingData.title, "Embedding file should have 'title' field");
-    assert(Array.isArray(embeddingData.vecs), "Embedding file should have 'vecs' array");
-    assert(embeddingData.vecs.length > 0, "Embedding file should have at least 1 vector");
-
-    // Verify vector structure
-    const firstVec = embeddingData.vecs[0];
-    assert(firstVec.text, "Vector should have 'text' field");
-    assert(Array.isArray(firstVec.vector), "Vector should have 'vector' array");
-    assert(firstVec.vector.length === 64, "Vector should be 64-dimensional");
-  }
-});
-
 Deno.test("Claude enhancements: verify chunks were generated", async () => {
   // Verify chunk files exist for new docs
   const chunkPatterns = [
-    ".copilot/chunks/claude-rag.md.chunk",
     ".copilot/chunks/cross-reference.md.chunk",
   ];
 
@@ -238,11 +176,6 @@ Deno.test("Claude enhancements: verify context injection works", async () => {
   // This is a functional test of the inject_agent_context script
   // We'll test that it can find the new docs
 
-  // Test RAG query
-  const ragResult = await inject("claude", "RAG embeddings semantic search", 4);
-  assert(ragResult.found, "Should find RAG-related doc");
-  assert(ragResult.path?.includes("claude-rag.md"), "Should return claude-rag.md for RAG query");
-
   // Test cross-reference query
   const crossRefResult = await inject("general", "task mapping quick reference", 4);
   assert(crossRefResult.found, "Should find cross-reference doc");
@@ -262,10 +195,9 @@ Deno.test("Claude enhancements: verify context injection works", async () => {
 });
 
 Deno.test("Claude enhancements: verify no sensitive data in docs", async () => {
-  // Verify that docs don't contain actual secrets (validation should have caught this)
+  // Verify that docs don't contain actual secrets
   const files = [
     ".copilot/providers/claude.md",
-    ".copilot/providers/claude-rag.md",
     ".copilot/cross-reference.md",
   ];
 

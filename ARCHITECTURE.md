@@ -2439,12 +2439,10 @@ Artifacts:
 
 - `.copilot/manifest.json`: index of agent docs with metadata and chunk references
 - `.copilot/chunks/*`: chunked doc text used for retrieval
-- `.copilot/embeddings/*`: embedding vectors (often mocked in CI) used for semantic search
 
 Build/validation scripts:
 
 - `scripts/build_agents_index.ts`: rebuilds `.copilot/manifest.json` and chunks
-- `scripts/build_agents_embeddings.ts`: regenerates embeddings (`--mode mock` for deterministic CI)
 - `scripts/verify_manifest_fresh.ts`: checks manifest/chunks are up to date
 - `scripts/validate_agents_docs.ts`: validates agent-doc frontmatter/schema
 

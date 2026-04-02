@@ -27,3 +27,10 @@ Update context:
 - Focus areas: [agents/ enhancements / CI/CD / testing / etc.]
 
 After writing:
+
+1.
+```
+
+## Example Usage
+
+**User:**

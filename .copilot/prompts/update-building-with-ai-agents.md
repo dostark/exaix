@@ -37,7 +37,6 @@ Update context:
 
 After writing:
 
-1. Rebuild agents infrastructure (build_agents_index.ts, build_agents_embeddings.ts, validate)
 
 1.
 ```
@@ -147,7 +146,6 @@ git log b849adf..HEAD --format="%H" | while read hash; do git show --stat $hash;
 
    ```bash
    deno run --allow-read --allow-write scripts/build_agents_index.ts
-   deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
    deno run --allow-read scripts/validate_agents_docs.ts
    ```
 
@@ -185,7 +183,6 @@ the agents/ system to guide that enhancement. Peak irony.
 ```bash
 # After any agents/ changes:
 deno run --allow-read --allow-write scripts/build_agents_index.ts
-deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
 deno run --allow-read scripts/validate_agents_docs.ts
 ```
 

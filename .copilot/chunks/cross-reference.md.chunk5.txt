@@ -1,5 +1,4 @@
 - **Main guide**: [providers/claude.md](providers/claude.md)
-- **RAG setup**: [providers/claude-rag.md](providers/claude-rag.md)
 - **System prompts**: TDD, Refactoring, Debugging, Documentation (in claude.md)
 - **Context window**: 200k tokens (4-6 chunks recommended)
 
@@ -12,7 +11,6 @@
 ### OpenAI
 
 - **Main guide**: [providers/openai.md](providers/openai.md)
-- **RAG guide**: [providers/openai-rag.md](providers/openai-rag.md)
 - **Prompt templates**: See `.copilot/prompts/openai-*.md`
 - **Budgets**: Uses simple/standard/complex output budgets (see openai.md)
 

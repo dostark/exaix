@@ -1,9 +1,3 @@
-## Style Guidelines
-
-### ✅ Do
-
-**Personal and Entertaining**:
-
 ```markdown
 **The Wake-Up Call**:
 I had just enhanced the agents/ system to make it MORE useful... without using
@@ -28,3 +22,14 @@ the agents/ system to guide that enhancement. Peak irony.
 ## Technical Details with Code**
 
 **The Rebuild Workflow**:
+
+```bash
+# After any agents/ changes:
+deno run --allow-read --allow-write scripts/build_agents_index.ts
+deno run --allow-read scripts/validate_agents_docs.ts
+```
+
+**Meta-Insights**:
+
+```markdown
+### The Meta-Learning: Documentation Is a Product

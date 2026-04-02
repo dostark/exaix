@@ -182,20 +182,19 @@ Common labels to use:
 1.
 1.
 
-## Updating Knowledge Base
+## Propagating Learnings to Memory Bank
 
-When an issue is **resolved**, valuable learnings should be propagated to the project's embeddings (`.copilot/embeddings/`) to improve future context retrieval and prevent recurrence.
+When an issue is **resolved**, valuable learnings should be documented to improve future context retrieval and prevent recurrence.
 
 1. **Identify Learnings**: What was the root cause? specific architectural nuance? "Gotcha"?
-1.
-   - Ensure the relevant issue or documentation file is located within the `.copilot/` directory (e.g., move resolved issues to `.copilot/issues/resolved/`).
-   - Run the embeddings generation script:
-     ```bash
-     deno run --allow-read --allow-write --allow-env scripts/build_agents_embeddings.ts --mode mock
-     ```text
-     *(Use `--mode openai` if configured with `OPENAI_API_KEY`)*
-   - This script scans all `.md` files in `.copilot/` and regenerates the vector index in `.copilot/embeddings/`.
-1.
+2. **Update Agent Docs**: If the learning is a general pattern, add it to `.copilot/source/patterns.md` or `.copilot/tests/testing.md`.
+3. **Save to Memory Bank**: Use the project's memory system to record the insight:
+   - Run `exactl memory global promote` for cross-project patterns.
+   - Run `exactl memory project update` for project-specific findings.
+4. **Regenerate Index**: Update the agent documentation manifest:
+   ```bash
+   deno task check:docs
+   ```
 
 ## Linking to GitHub Issues
 
