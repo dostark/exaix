@@ -1,8 +1,0 @@
-**Goal:** Extend the `exactl request` command to support the `--flow` option, enabling users to create requests that will be routed to multi-agent flows instead of single agents. This addresses the gap where flow-aware request processing exists but cannot be triggered from the CLI.
-
-**Status:** ✅ COMPLETED - All steps implemented and tested, test infrastructure enhanced with timeout protection
-**Timebox:** 2-3 days
-**Entry Criteria:** Phase 7 (Flow Orchestration) complete, request command working
-**Exit Criteria:** `exactl request --flow <flow-id>` creates requests that are properly routed to flows
-
-## References

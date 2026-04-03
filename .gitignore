@@ -61,5 +61,3 @@ exaix
 # Config files
 exa.config.toml
 .qwen/
-.copilot/chunks/
-

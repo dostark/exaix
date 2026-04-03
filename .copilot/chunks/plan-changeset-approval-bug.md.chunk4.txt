@@ -1,3 +1,0 @@
-- All existing tests pass
-- Manual testing confirms `exactl changeset list` now shows changesets from portal repositories
-- Plan approval and archiving now uses correct configured paths

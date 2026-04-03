@@ -1,8 +1,0 @@
-### Service Pattern — Dependency Injection & Interfaces
-
-Exaix enforces an **Interface-first, Constructor Injection** policy for all services.
-
-- **Every injectable service exposes an interface.** `class Foo` → `export interface IFoo`. Consumers depend on `IFoo`, never on `Foo`.
-- **Constructor injection only.** Pass `config`, `db`, `provider`, and peer services via constructors. Module-level singletons and static accessors are prohibited.
-- **Test mocks implement the full interface.** Never use `as any` or object-literals to fake a service.
-- **Prefer narrow interfaces.** Declare only the methods a consumer actually calls. This reduces coupling and makes mocking lighter.

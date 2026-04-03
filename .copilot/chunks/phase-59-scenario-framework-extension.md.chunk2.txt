@@ -1,9 +1,0 @@
-- **Realistic workflows** — scenarios mirror actual user tasks (refactoring, codebase exploration, dependency mapping)
-- **Measurable criteria** — every step has input/output criteria that can be automatically validated
-- **Mode compatibility** — scenarios support `auto` mode for CI and `manual-checkpoint` for debugging
-- **Evidence capture** — all tool calls, journal entries, and artifacts are preserved for audit
-- **Provider flexibility** — scenarios work with mock providers (CI) and real LLMs (manual validation)
-
----
-
-## Goals

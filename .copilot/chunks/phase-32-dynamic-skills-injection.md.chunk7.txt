@@ -1,8 +1,0 @@
-| Layer                  | Component                     | Skills Field                 | Format          |
-| ---------------------- | ----------------------------- | ---------------------------- | --------------- |
-| **CLI**                | `exactl request --skills a,b` | `options.skills`             | `string[]`      |
-| **Request Storage**    | `Workspace/Requests/*.md`     | `frontmatter.skills`         | `string` (JSON) |
-| **Request Processing** | `ParsedRequest`               | `skills`                     | `string[]`      |
-| **Agent Execution**    | `AgentRunner.run()`           | `request.skills`             | `string[]`      |
-| **Plan Storage**       | `Workspace/Active/*.md`       | `frontmatter.skills`         | `string` (JSON) |
-| **Plan Execution**     | `PlanExecutor.execute()`      | `context.frontmatter.skills` | `string` (JSON) |

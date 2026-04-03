@@ -1,5 +1,0 @@
-- Mid-level (standard, ~900 tokens):
- "Using injected context (include doc paths + chunk ids), produce a refactor plan for plan executor parsing. Provide: Files → Plan → Diffs (2–3 minimal diffs) → Verification. Ask up to 2 clarifying questions if needed."
-
-- Senior (complex, ~1500 tokens):
- "Given injected context (chunks 0–7), draft apply_patch-ready diffs for a multi-file change. Requirements: keep diffs minimal, separate by file, and cite which doc paths informed each decision. Finish with a verification checklist and any risks."

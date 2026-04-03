@@ -1,3 +1,0 @@
-### 2. `tests/scenario_framework/runner/main.ts`
-- If integration tests (`run-scenarios`) are executed within an environment carrying `EXA_BIN_PATH`, it avoids dropping to a default `shell` invocation of `"exactl"` which might mistakenly test the user's root development toolset.
-- It explicitly forces the step executor (`exactlExecutable`) to rely on `$EXA_BIN_PATH/exactl`, guaranteeing sandbox test hermeticity.

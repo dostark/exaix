@@ -1,9 +1,0 @@
-## OpenAI provider adaptation notes
-
-```text
-Key points
-- Default model: gpt-4o (128k). If constrained, use gpt-4o-mini for drafting then verify with gpt-4o.
-- Retrieve context before coding: inject 3-6 chunks from .copilot/ with `inject_agent_context.ts --agent openai`.
-- Keep responses within explicit budgets: simple 500 tokens, standard 900, complex 1500; summarize aggressively.
-- Prefer tool-aware answers: propose file + line edits, then show minimal diff or apply_patch-ready snippets.
-- Always cite which doc(s) you used (by path) to reinforce reuse.

@@ -1,7 +1,0 @@
-- The current execution pipeline persists `plan.md` and a summary for read-only agents.
-- If the plan contains analysis content but no executable steps, `PlanExecutor` does not generate a report and the artifact ends up being a wrapped copy of the plan.
-- This is more visible with security analysis requests where the plan already includes the full report.
-- `parseStructuredPlanFromMarkdown()` returns `null` when `## Execution Steps` exists without any `## Step N:` headers, so read-only report generation is skipped entirely.
-- With no structured steps and no TOML actions, `executePlanWork()` returns without producing `analysis.md`, leaving the artifact to embed only `plan.md`.
-
-## Fix Plan

@@ -1,9 +1,0 @@
-1. **Worktrees do not replace branches — they complement them.**
-   - A worktree is an additional checkout of (usually) a branch.
-   - The review/merge model still fundamentally needs a branch (or at least a named ref) to diff, review, and merge.
-   - So the right framing is: _“use per-request worktrees to avoid checkout conflicts while still using feature branches for review.”_
-
-1. **Worktrees add operational complexity.**
-   - You must manage lifecycle: `worktree add`, `worktree remove`, recovery after crashes, and periodic cleanup.
-   - They consume extra disk space and can confuse users if left behind.
-   - Some environments (Windows, restricted filesystems) can make worktree management trickier.

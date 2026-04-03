@@ -1,7 +1,0 @@
-```bash
-exactl request --portal portal-exaix --agent test-engineer "Implement comprehensive tests for Exaix's review registry system. Create: - Unit tests for review tracking and validation in src/services/review_registry.ts - Integration tests for git review operations and workspace synchronization - End-to-end tests for complete review lifecycle (creation, approval, execution) - Mock data and test fixtures for different review scenarios - Test automation setup for CI/CD validation of review integrity Provide specific test implementations that ensure the reliability of the git-based change tracking system."
-exactl request list
-exactl plan list
-```
-
-## Observed Behavior

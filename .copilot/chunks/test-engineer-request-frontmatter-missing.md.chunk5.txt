@@ -1,6 +1,0 @@
-- When the agent output fails PlanSchema validation, `RequestProcessor.handleError()` writes the raw LLM content to `Workspace/Rejected/<requestId>_failed.md`.
-- The saved `_failed.md` file contains no YAML frontmatter because it is raw model output, not a plan document.
-- `exactl plan list` scans `Workspace/Rejected` for any `.md` file and attempts to parse frontmatter for every file.
-- This causes a warning (`No frontmatter found`) and a malformed plan entry, since `_failed.md` does not conform to plan format.
-
-## Fix Plan

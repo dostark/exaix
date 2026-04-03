@@ -1,5 +1,0 @@
-**Purpose:** Reduce code duplication in the project to maintain a healthy codebase and pass CI duplication checks (threshold < 2%).
-
----
-
-## Instructions for Agent

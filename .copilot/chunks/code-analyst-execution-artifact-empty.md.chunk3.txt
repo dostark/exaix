@@ -1,5 +1,0 @@
-- Execute read-only structured plans instead of skipping them, but disable git mutations for read-only runs.
-- Capture tool outputs during plan execution and generate a concise analysis report via the model provider.
-- Persist the analysis report to `Memory/Execution/<trace>/analysis.md` and include it in the read-only review artifact body.
-
-## Files Updated

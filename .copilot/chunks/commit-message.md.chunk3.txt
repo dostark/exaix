@@ -1,5 +1,0 @@
-Expected Response Pattern:
-1. Show `git add` for changed files.
-2. Show a single `git commit` command using heredoc or multiple `-m` flags to ensure the full structured body is included.
-3. Verify all mandatory headers are present and correctly filled.
-```

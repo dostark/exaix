@@ -3,13 +3,14 @@ agent: senior-coder
 scope: dev
 title: "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)"
 short_summary: Introduce a PromptBudgetAllocator service with dynamic reallocation and cost tracking to manage context windows and prevent silent truncation.
-version: 1.3
+version: 1.4
 topics:
   - context-window
   - budgeting
   - llm
   - tokens
   - cost-tracking
+  - loop-history
   - W7
   - W15
 ---
@@ -46,7 +47,7 @@ Current vs. Target Prompt Lifecycle
 ├── Memory (Hardcoded 4000 chars)
 ├── Skills (Hardcoded 2000 chars)
 ├── ...
-└── Final Prompt (May overflow -> Silent Truncation of Plan at the end)`
+└── Final Prompt (May overflow -> Silent Truncation of Plan at the end)"
 
 ### **Target (Phase 62)**
 
@@ -55,7 +56,7 @@ Current vs. Target Prompt Lifecycle
 │   ├── Base Weights (Plan=35%, Memory=10%, etc.)
 │   └── Waterfall Surplus -> Plan & Portal Knowledge
 ├── Services truncate content to provided budgets
-└── Final Prompt (Guaranteed within window + Plan preserved)`
+└── Final Prompt (Guaranteed within window + Plan preserved)"
 
 ## Weakness Remediation Mapping Matrix {#matrix}
 
@@ -75,8 +76,8 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 
 **Success Criteria:**
 
-* [ ] `src/shared/schemas/prompt_budget.ts` defines `ZPromptBudget`.
-* [ ] `src/shared/constants.ts` includes `MODEL_CONTEXT_WINDOWS` and `MODEL_PRICING_MAP`.
+* [ ] `src/shared/schemas/prompt_budget.ts` defines `ZPromptBudget` with a specific `loopHistory` category.
+* [ ] `src/shared/constants.ts` includes `MODEL_CONTEXT_WINDOWS`, `MODEL_PRICING_MAP`, and `SECTION_FLOORS` (minimum reserved tokens for System/Plan).
 * [ ] Heuristic 4:1 character-to-token ratio established as safe default.
 
 **Planned Tests:**
@@ -90,9 +91,9 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 
 **Success Criteria:**
 
-* [ ] `PromptBudgetAllocator.allocate()` correctly calculates base shares.
-* [ ] `Waterfall` logic successfully shifts surplus from empty Memory/Skills to the **Plan** section.
-* [ ] Token counting logic supports both heuristic and (optional) model-specific BPE.
+* [ ] `PromptBudgetAllocator.allocate()` correctly calculates base shares, enforcing `SECTION_FLOORS`.
+* [ ] `Waterfall` logic successfully shifts surplus from empty Memory/Skills/History to the **Plan** and **System** sections.
+* [ ] Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via `transformers.js` or `tiktoken` port).
 
 **Planned Tests:**
 

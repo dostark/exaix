@@ -1,9 +1,0 @@
-- Headers must include version, release date, status, and references
-- Use fenced code blocks with language identifiers
-- Use consistent table formatting
-
-### Cross-Reference Guidelines
-
-Use relative paths for internal links and include file paths when referencing code. Keep documentation changes minimal and tied to Implementation Plan steps.
-
----

@@ -1,7 +1,0 @@
-This issue did not cover the read-only execution artifact gap. After structured execution was added, read-only agents (e.g., `code-analyst`) still produced placeholder artifacts because report output was not persisted or embedded. That follow-up fix is documented in .copilot/issues/code-analyst-execution-artifact-empty.md and includes:
-
-- Executing read-only structured plans while disabling git mutations.
-- Generating an analysis report from tool outputs and writing it to `Memory/Execution/<trace>/analysis.md`.
-- Embedding the analysis report into the review artifact for `exactl review show`.
-
-## Examples

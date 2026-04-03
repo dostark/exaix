@@ -1,9 +1,0 @@
-- Treat `CI` as a truthy flag (`CI=true` on GitHub Actions), not strictly `"1"`.
-  - **Prefer** the shared helpers in `src/config/env_schema.ts` (`isCIMode()`, `isTestMode()`).
-- When CI guard is active, paid LLM providers are intentionally disabled unless explicitly opted in.
-  - Expect mock behavior unless `EXA_TEST_ENABLE_PAID_LLM=1` is set.
-  - Tests that assert provider selection should include a CI-guard branch (e.g., accept `mock-provider` or `CI-protected ...`).
-- Avoid requiring compiled binaries in tests.
-  - If you need to run the CLI from a temp workspace, prefer:
-    - `new Deno.Command(Deno.execPath(), { args: ["run", "--allow-all", "--config", <repo>/deno.json, <repo>/src/cli/exactl.ts, ...] })`
-  - This keeps behavior consistent between local runs and CI without extra build steps.

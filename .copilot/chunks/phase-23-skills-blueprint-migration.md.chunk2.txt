@@ -1,3 +1,0 @@
-The core skills currently located in `Memory/Skills/core/` are fundamentally blueprints - predefined templates for capabilities, patterns, and behaviors. They belong in the `Blueprints/` directory alongside agent and flow blueprints, not in the `Memory/` directory which should contain learned/adapted knowledge.
-
-### Key Problems

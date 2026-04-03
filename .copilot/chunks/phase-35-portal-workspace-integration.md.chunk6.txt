@@ -1,6 +1,0 @@
-1. **Agent Execution Environment**: Agents execute with working directory set to deployed workspace (`~/Exaix`)
-1. **Portal Access**: Portals are symlinked under `~/Exaix/Portals/`, but git operations happen in parent directory
-1. **Git Context**: Git commands inherit the execution directory, creating branches/commits in deployed workspace's repo
-1. **Changeset Tracking**: Changesets compare against deployed workspace's minimal `master` branch, not portal's actual codebase
-
-**File Structure:**

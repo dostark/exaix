@@ -1,6 +1,0 @@
-- **Root Cause**: In `src/main.ts`, the `RequestProcessor` was being instantiated with an `llmProvider` as the 4th argument. In the `RequestProcessor` constructor, the 4th argument is `testProvider`. When `testProvider` is present, `RequestProcessor` bypasses the dynamic `ProviderSelector` and forces the use of that specific provider.
-- **Fix**: Removed the `llmProvider` argument from `RequestProcessor` instantiation in `src/main.ts`. This allows `RequestProcessor` to use the `ProviderSelector` to dynamically choose the best provider based on task complexity.
-- **Commit**: fix(daemon): allow dynamic provider selection in RequestProcessor
-- **Verified**:
-  - Manually verified in a deployed workspace: `provider.selected` now correctly shows `google` (or the configured provider) and plans are generated successfully.
-  - Added regression test: `tests/services/request_processor_regression_test.ts`

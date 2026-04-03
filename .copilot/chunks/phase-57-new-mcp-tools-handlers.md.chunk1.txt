@@ -1,6 +1,0 @@
-Exaix currently has `write_file` as its only file mutation tool. This is insufficient for real software
-engineering tasks: refactoring requires targeted edits (not full rewrites), renaming modules requires
-moving files, and removing dead code requires deletion. This phase implements the minimum viable file
-operation toolset for a coding agent, using the exact same handler pattern as existing tools.
-
-### **Tool Inventory: This Phase**

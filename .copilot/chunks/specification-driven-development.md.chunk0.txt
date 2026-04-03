@@ -1,9 +1,0 @@
-## Specification-Driven Development in Exaix
-
-## Overview
-
-**Specification-Driven Development (SDD)** is an approach to building applications with LLM agents where a structured specification is written *before* code generation begins, and that specification serves as both the execution guide and the evaluation rubric. Rather than iterating on generated code ("generate → fix → regenerate"), SDD iterates on the *specification* until it's well-defined, then generates code from a solid foundation.
-
-Exaix's Phases 45–49 quality pipeline implements an adapted form of SDD optimized for agent orchestration. This document maps the correlation between SDD principles and Exaix's architecture, identifies where Exaix goes beyond vanilla SDD, and notes the remaining gap.
-
----

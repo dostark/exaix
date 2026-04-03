@@ -1,4 +1,0 @@
-- ✅ Do load ALL relevant primary and secondary docs for complex reasoning tasks.
-- ✅ Do use parallel function calling to speed up context gathering.
-- ✅ Do ask for citations (line numbers) to verify grounding in long context.
-- ❌ Don't rely solely on RAG chunks if the task requires holistic architectural understanding.

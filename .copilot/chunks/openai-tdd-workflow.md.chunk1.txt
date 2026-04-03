@@ -1,8 +1,0 @@
-- Example prompt:
-  "Bug: a CLI subcommand returns exit code 0 on failure. Inject agents/ context for 'cli error handling tests'. Propose 2 failing tests, then implement minimal fix."
-
-Do / Don't
-- ✅ Do keep diffs minimal and separated by file.
-- ✅ Do include cleanup/teardown patterns from retrieved docs.
-- ❌ Don’t implement before tests.
-```

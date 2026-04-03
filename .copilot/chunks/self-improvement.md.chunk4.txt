@@ -1,8 +1,0 @@
-- **Missing examples**: no concrete Exaix-specific snippet for the task.
-- **Missing commands**: no “what to run” for verification/build/validation.
-- **Missing invariants**: unclear what behavior must not change.
-- **Missing cross-links**: docs exist but are hard to discover.
-- **Missing provider mapping**: advice exists but doesn’t translate to Claude/OpenAI/Gemini workflow.
-- **Missing tests**: doc changes not guarded; regressions likely.
-
-Do / Don’t

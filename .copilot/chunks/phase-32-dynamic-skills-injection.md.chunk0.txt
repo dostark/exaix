@@ -1,8 +1,0 @@
-**Goal:** Enable users to inject skills at request creation and plan approval time via CLI flags, allowing them to override agent blueprint limitations (e.g., enabling `write_file` for `security-expert`) without modifying blueprints or creating new agents.
-
-**Status:** ✅ COMPLETED - All steps implemented and tested
-**Timebox:** 2-3 days
-**Entry Criteria:** Phase 17 (Skills Architecture) complete, request and plan commands working
-**Exit Criteria:** `exactl request --skills <skills>` and `exactl plan approve <id> --skills <skills>` inject skills into execution context
-
-## References

@@ -1,8 +1,0 @@
-- Clean rename: Complete removal of "changeset" terminology
-- Semantic accuracy: "Review" encompasses both code changes and artifacts
-- Consistent terminology: All docs, tests, and code updated simultaneously
-- No backward compatibility needed: No production deployment exists yet
-
----
-
-## Goals

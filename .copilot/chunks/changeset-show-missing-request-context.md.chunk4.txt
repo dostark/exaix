@@ -1,6 +1,0 @@
-- Changeset list shows request title, plan link, agent, and portal
-- Changeset show displays complete context with links
-- Flow-created changesets include step information
-- Status information is clearly displayed
-- All existing functionality preserved
-- Comprehensive test coverage added

@@ -1,9 +1,0 @@
-- ✅ `--diff` option recognized in help output
-- ✅ `--diff` outputs only the diff content
-- ✅ `-d` (short form) works identically
-- ✅ Default behavior (no --diff) unchanged
-- ✅ Error handling preserved
-
----
-
-```

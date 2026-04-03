@@ -3,16 +3,18 @@ agent: senior-coder
 scope: dev
 title: "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)"
 short_summary: Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.
-version: 1.0
+version: 1.1
 topics:
   - flow-orchestration
   - error-recovery
   - checkpointing
+  - flow-integrity
+  - cost-aware-recovery
   - resilience
   - W13
 ---
 
-# Phase 63: Flow-Level Error Recovery & Checkpointing
+## Phase 63: Flow-Level Error Recovery & Checkpointing
 
 ## Status: 📋 Planning
 
@@ -30,8 +32,8 @@ Exaix currently has **no structured error recovery at the flow level** (**W13**)
 This phase introduces three complementary capabilities to `FlowRunner`:
 
 1. **Step-level `onError` declarations** — YAML-configurable fallback, retry, and compensate actions per step.
-2. **Flow checkpointing** — Serialise completed step results to `Memory/Execution/{trace_id}/checkpoint.json` so a restarted flow skips already-done work.
-3. **Compensating transactions** — An ordered list of rollback tool-calls executed when a step fails with `action: compensate`.
+
+1.
 
 ### **Design Principles**
 
@@ -47,7 +49,7 @@ Current vs. Target Flow Failure Lifecycle
 
 ### **Current (W13 — No Recovery)**
 
-```
+```text
 FlowRunner.run(steps)
 ├── Step 1 (analyze) — ✅ success
 ├── Step 2 (implement) — ✅ success  (files written to worktree)
@@ -57,7 +59,7 @@ FlowRunner.run(steps)
 
 ### **Target (Phase 63)**
 
-```
+```text
 FlowRunner.run(steps)
 ├── Step 1 (analyze)   — ✅ → checkpoint saved
 ├── Step 2 (implement) — ✅ → checkpoint saved
@@ -97,6 +99,7 @@ export const ZFlowStepOnError = z.object({
 
 export const ZFlowCheckpoint = z.object({
   traceId: z.string(),
+  flowContentHash: z.string().describe("Hash of the flow YAML to prevent resume on stale definitions"),
   completedSteps: z.record(z.string(), ZFlowStepResult), // keyed by step id
   savedAt: z.string().datetime(),
 });
@@ -121,8 +124,11 @@ export const ZFlowCheckpoint = z.object({
 
 **Logic** (inside `flow_runner.ts → executeStep()`):
 
-```
+```text
 for attempt in 1..onError.maxRetries:
+  // Phase 62 Integration: Check if retry exceeds cumulative cost budget
+  if (currentFlowCost() > maxFlowBudget) throw BudgetExceededError()
+
   result = await runStep(step)
   if result.ok: break
 
@@ -165,6 +171,11 @@ await checkpointService.save(traceId, completedStepResults);
 
 ```typescript
 const checkpoint = await checkpointService.load(traceId);
+// Step 63.0: Validate integrity
+if (checkpoint.flowContentHash !== currentFlowHash(flow)) {
+  logger.warn("Flow definition changed; invalidating checkpoint.");
+  return runAllSteps(steps);
+}
 const pendingSteps = steps.filter(s => !checkpoint.completedSteps[s.id]);
 ```
 

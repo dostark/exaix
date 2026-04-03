@@ -1,9 +1,0 @@
-Target: Minimum 70% branch coverage on new features. Request an implementation with a coverage target and add tests to cover uncovered branches using `deno test --coverage`.
-
-### Advanced Testing Patterns
-
-- **Refactoring & Duplication**: Use `npx jscpd src tests` to find duplicated test setup code. Extract helpers (e.g., `GitTestHelper`, `ToolRegistryTestHelper`) to keep tests DRY.
-- **Paranoid Security Testing**: Ask agents to write "paranoid" tests: path traversal, command injection, symlink escapes. Whitelists beat blacklists.
-- **Performance Testing**: Don't guess—measure. Ask agents to write benchmarks or load tests to verify async behavior (e.g., batched logging).
-
-### Test Organization and Deduplication

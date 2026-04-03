@@ -1,6 +1,0 @@
-Related templates
-- #plan   — Create or extend a .copilot/planning/ document
-- #step   — Single ad-hoc step (no phase planning doc)
-- #tdd    — General TDD workflow without the planning doc loop
-- #fix    — Fix a bug discovered during implementation
-```

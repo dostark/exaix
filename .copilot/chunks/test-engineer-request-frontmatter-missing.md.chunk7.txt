@@ -1,7 +1,0 @@
-1. **Regression coverage**
-   - Add a test that simulates `PlanValidationError` and asserts the rejected file contains frontmatter and is parseable by `PlanCommands.list()`.
-
-1. **Optional hardening (schema flexibility)**
-   - Relax plan validation to accept agent-specific fields without failing.
-   - Keep strict checks for non-JSON outputs and missing `title`/`description` only.
-   - This reduces false rejections for agents like `test-engineer` while preserving core validation.

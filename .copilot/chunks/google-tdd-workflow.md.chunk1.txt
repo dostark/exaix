@@ -1,9 +1,0 @@
-- Example prompt: "I am adding a new `CredentialManager` service. Propose exhaustive tests that check for injection, path traversal, and concurrent access using `initTestDbService()`."
-- Example prompt: "Draft a test suite for the `ExecutionLoop` that specifically targets race conditions in lease acquisition. Use the provided context to find existing concurrency tests."
-
-Do / Don't
-
-- ✅ Do research `tests/helpers/` for existing utilities before writing new ones.
-- ✅ Do include at least one "paranoid" security test Case.
-- ❌ Don't implement the feature before the user approves the test plan.
-```

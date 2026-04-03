@@ -1,8 +1,0 @@
-Do / Don't
-- ✅ Do write failing test before implementation
-- ✅ Do use test helpers and cleanup patterns
-- ✅ Do verify coverage doesn't drop
-- ✅ Do update Implementation Plan step when complete
-- ❌ Don't implement without tests first
-- ❌ Don't skip context injection for complex components
-```

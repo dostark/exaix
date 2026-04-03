@@ -1,9 +1,0 @@
-1. **Artifact Storage:** Read-only agent outputs stored in `Memory/Execution/<artifact-id>.md`
-1. **Frontmatter Status:** Artifacts include YAML frontmatter with `status` field (pending/approved/rejected)
-1. **Unified Command:** `exactl review` works for both:
-   - Git reviews (write agents in portal repos)
-   - File artifacts (read-only agents in Memory/Execution/)
-1. **Approval Workflow:** `exactl review approve/reject` updates artifact status without git operations
-1. **Phase 36 Completion:** Renamed `exactl changeset` → `exactl review` for semantic clarity (complete)
-
-**Benefits:**

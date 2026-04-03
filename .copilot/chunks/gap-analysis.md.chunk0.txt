@@ -1,9 +1,0 @@
-```text
-Key points
-- Analyse the planning document against the actual source code before writing any implementation
-- Identify gaps that would block implementation: missing type definitions, unresolved ambiguities, broken data-flow chains
-- Classify every gap by severity so the team can triage quickly
-- Output is a prioritised list of gaps with a concrete "To fix:" directive for each one
-
-Canonical prompt (short):
-"Perform a gap analysis on the planning document at {PLANNING_DOC_PATH}. Read the source files it references and report every ambiguity, missing contract, or implementation risk before we start coding."

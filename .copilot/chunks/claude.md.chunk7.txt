@@ -1,6 +1,0 @@
-[Execute tool calls for reading files, then provide implementation]
-
-````text
-## Tool-Use Patterns for Claude
-
-### Parallel Reads (Context Gathering)

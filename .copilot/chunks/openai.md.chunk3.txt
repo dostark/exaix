@@ -1,9 +1,0 @@
-Output format (required)
-- Start with **Files**: list the exact files you will touch.
-- Then **Plan**: 3–6 bullets, include at least one verification step.
-- Then **Diffs**: small, file-scoped patches (apply_patch-ready when possible).
-- End with **Verification**: concrete commands (tests/lint) + any residual risks.
-
-Ask-when-ambiguous rule
-- If requirements are unclear, ask 1–3 clarifying questions before changing code.
-- If .copilot/ context is missing/stale, request rebuild of manifest/chunks/embeddings before proceeding.

@@ -1,9 +1,0 @@
-**Goal:** Support real-world portal workflows where users work on multiple long-lived branches concurrently (e.g., `main`, `release_1`, `release_1.2`, feature branches) by:
-
-1. Allowing a request to specify the **target/base branch** inside a portal.
-1. Supporting two portal-configurable **execution strategies** for write-capable changes:
-
-- **branch** (default): create a feature branch in the portal repo checkout (simple workflows)
-- **worktree** (optional): create a per-request worktree + feature branch (parallel workflows)
-
-1. Making review approval merge into the **request’s target branch** (not “whatever default branch happens to exist”).

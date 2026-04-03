@@ -1,4 +1,0 @@
-- Changesets table exists: ✅
-- Table schema correct: ✅
-- Plan approval creates changeset records: ✅
-- No "no such table: changesets" errors: ✅

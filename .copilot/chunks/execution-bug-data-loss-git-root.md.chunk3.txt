@@ -1,7 +1,0 @@
-- **New Error Types**: Introduced `GitSecurityError` and `GitNothingToCommitError`.
-- **Destructive Command Guards**: `runGitCommand` blocks `git reset --hard` and `git clean -xfd` **everywhere** to prevent data loss.
-- **Branch Protection**: `checkoutBranch` explicitly blocks agents from switching to `main`, `master`, `develop`, etc. (daemon is exempted for legitimate workflows).
-- **Precise Error Reporting**: `commit()` now throws a specific `GitNothingToCommitError` for better lifecycle management.
-- **Simplified Security Model**: Removed overly restrictive system root read-only protection in favor of targeted blocking of truly destructive operations.
-
-### 2. Explicit Repository Scoping (`src/services/plan_executor.ts`)

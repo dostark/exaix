@@ -1,8 +1,0 @@
-- Example prompt:
-  "Runtime error: daemon hangs on --version. Inject agents/ context for 'cli version flag'. Provide diagnosis and minimal fix + regression test."
-
-## Do / Don't
-
-- ✅ Do add a regression test when possible.
-- ✅ Do keep diffs minimal and file-scoped.
-- ❌ Don’t guess without reproducing.

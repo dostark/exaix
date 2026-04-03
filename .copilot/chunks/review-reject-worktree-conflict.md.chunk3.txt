@@ -1,7 +1,0 @@
-None currently available - review cannot be rejected if branch is in use by worktree.
-
-## Priority Justification
-
-Medium priority - affects review rejection workflow when portals are involved, but doesn't break core functionality. Users can manually resolve by removing worktrees first, but this is not user-friendly.
-
-## Resolution (when resolved)

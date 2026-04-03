@@ -1,8 +1,0 @@
-Phase 53 introduced the `Identity` rename for the agent blueprint layer while deliberately
-preserving full backward compatibility: the `--agent` CLI flag, `Blueprints/Agents/` path
-fallback, `agent:` request frontmatter key, and the deprecated `agent?` field in
-`IRequestFrontmatter` and Zod schemas were all kept as aliases with deprecation warnings.
-Phase 53 also introduced `identity` as the replacement for `agent` in `FlowStepSchema` and
-`GateEvaluateSchema`, keeping `agent` as a deprecated optional field to allow a migration window.
-
-This phase removes every one of those shims. After Phase 54:

@@ -1,4 +1,0 @@
-- ✅ Do use a 2M token window to ingestion the whole repo if needed.
-- ✅ Do request line citations to verify reasoning.
-- ❌ Don't skip the synthesis phase for multi-module changes.
-```

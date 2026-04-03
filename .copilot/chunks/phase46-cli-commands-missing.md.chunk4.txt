@@ -1,1 +1,0 @@
-The CLI commands are now correctly wired to their implementations in the source code. Users can now trigger analysis and view gathered knowledge using the local source.

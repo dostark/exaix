@@ -1,9 +1,0 @@
-- **Action**: Implement the `SafeSubprocess` management engine for out-of-process agents.
-- **Justification**: Provides the "Executive" foundation for **W2**.
-- **Dependencies**: Step 61.1.
-
-**Success Criteria:**
-- [ ] `McpAgentStrategy` successfully launches `exaix-agent` as a separate Deno process.
-- [ ] Environment variables and Deno permission flags (--allow-read, etc.) are dynamically built based on SecurityMode.
-- [ ] Parent-Child handshake established via `JSON-RPC` over `stdio`.
-- [ ] Strategy captures subprocess exit codes and translates crashes into `AgentExecutionError`.

@@ -1,9 +1,0 @@
-1. grep_search for "initTestDbService" (get usage count)
-2. Parallel read: tests/helpers/test_utils.ts, tests/db_test.ts (patterns)
-3. Create tests/helpers/db.ts with exported helper
-4. Update 2 representative files as examples
-5. Run tests to verify
-   </thinking>
-
-[then execute the plan with actual tool calls]
-```

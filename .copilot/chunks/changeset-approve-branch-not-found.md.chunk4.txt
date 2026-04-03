@@ -1,7 +1,0 @@
-- **Additional Fix**: Updated regex in `show` method from `request-\d+` to `request-[\w]+` to support alphanumeric request IDs like `request-a300d5a5`.
-
-- **Commit**: Changes applied to `src/cli/changeset_commands.ts`
-
-- **Verified**: Manual testing confirmed `exactl changeset approve request-a300d5a5` now works correctly.
-
-```

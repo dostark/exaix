@@ -1,9 +1,0 @@
-SDD typically applies the same rigor uniformly — every task gets a full spec. Exaix adapts the specification effort to the request:
-
-- **Clear, well-bounded requests** (e.g., "add a `--verbose` flag to `exactl portal list`") skip the Q&A loop entirely — the `RequestQualityGate` scores them above threshold and they proceed directly
-- **Ambiguous requests** (e.g., "make the TUI better") trigger the full refinement loop
-- **Moderate requests** get auto-enriched via LLM without user interaction
-
-This avoids the friction of over-specifying trivial tasks while ensuring complex tasks are well-defined.
-
-### 3. Codebase-Grounded Specifications

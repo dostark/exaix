@@ -1,8 +1,0 @@
-| Problem                        | Impact                                               | Current Location                   |
-| ------------------------------ | ---------------------------------------------------- | ---------------------------------- |
-| **Misplaced Blueprints**       | Core skills are templates, not learned memory        | `Memory/Skills/core/`              |
-| **Conceptual Confusion**       | Skills vs Memory distinction unclear                 | Mixed concerns                     |
-| **Organization Inconsistency** | Skills referenced by blueprints but stored elsewhere | `Blueprints/` references `Memory/` |
-| **Maintenance Burden**         | Related concepts split across directories            | Harder to maintain                 |
-
-### Key Goals

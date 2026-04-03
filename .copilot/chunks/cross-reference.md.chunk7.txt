@@ -1,7 +1,0 @@
-"You are a developer working on Exaix. Before starting work, consult this cross-reference map to find the most relevant agent documentation. Use the task-to-doc mapping table to quickly locate guidance for your specific task type."
-
-## Examples
-
-- Example prompt: "I need to add a security feature. Which docs should I read?" → Answer: Start with [.copilot/tests/testing.md](tests/testing.md) security section and [.copilot/source/exaix.md](source/exaix.md) system constraints.
-- Example prompt: "How do I set up Claude effectively?" → Answer: Read [providers/claude.md](providers/claude.md) for optimized prompts and thinking protocols.
-- Example prompt: "What's the TDD workflow?" → Answer: See [source/exaix.md](source/exaix.md) and [tests/testing.md](tests/testing.md) for patterns and helpers.
