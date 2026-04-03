@@ -153,7 +153,9 @@ const rules: Rule[] = [
     name: "magic-union-type",
     // Match inline union of string literals: "foo" | "bar"
     // Use word boundaries and double quotes to identify string literals
-    regex: /"\w+"\s*\|\s*"\w+"/,
+    // Skip lines that start with 'type ' (named type alias definitions are the
+    // recommended solution, not a violation)
+    regex: /^(?!\s*type\s+).*"\w+"\s*\|\s*"\w+"/,
     message:
       "Avoid magic string unions (e.g., '\"a\" | \"b\"'). Define a TypeScript 'enum' in src/enums.ts or use a shared named union type instead.",
     severity: "error" as const,

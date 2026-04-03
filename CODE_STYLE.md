@@ -96,6 +96,42 @@ checklists (pre‑commit, CI, etc.).
   providers), define a TypeScript `enum` in `src/enums.ts` and reference it.
   Compare against `RequestStatus.PENDING`, never the literal string.
 
+### Automated Enforcement
+
+A dedicated AST-based script (`scripts/check_magic_values.ts`) scans the entire
+codebase using the TypeScript compiler API to detect repeated literals that
+should be extracted into named constants or enums. It is invoked as part of the
+pre-commit gates via `deno task check:magic` (or directly:
+`deno run -A scripts/check_magic_values.ts`).
+
+**Detection thresholds:**
+
+| Scope  | String literals | Number literals |
+| ------ | --------------- | --------------- |
+| Module | > 2 occurrences | > 3 occurrences |
+| Global | > 3 occurrences | > 4 occurrences |
+
+**Whitelisted values (never flagged):**
+
+- Strings: `""`, `" "`, `"\n"`, `"\t"`, `"true"`, `"false"`, `"null"`,
+  `"undefined"`
+- Numbers: `0`, `1`, `-1`, `100`, `1000`
+- Strings shorter than 3 characters that don't start with a lowercase letter
+  (e.g., `"ID"`, `"OK"` are allowed; `"ab"` is not flagged)
+
+**What is skipped (not counted):**
+
+- Property/enum member names (e.g., `{ foo: "bar" }` — `"foo"` is a name, not a
+  value)
+- Import/export paths and module declarations
+- Decorator arguments (framework metadata)
+- JSX attribute values
+- Template literal tokens
+- Type literal strings (e.g., `type Foo = "a" | "b"`)
+
+When a violation is found the script prints the value, kind, occurrence count,
+and file/line location, then exits with code 1.
+
 Search helpers are provided in the repository to locate inadvertent magic values
 (`grep -rEn ...` commands are included in older docs).
 
@@ -346,11 +382,12 @@ Exaix enforces a strict boundary between the CLI command layer and core implemen
   - `src/ai/types.ts` (`IModelProvider` interface only)
 - **CLI helpers ownership rule**: `src/cli/helpers/**` is CLI-owned; modules outside `src/cli/` must not import it.
 
-These rules are enforced by `scripts/check_code_style.ts` via:
+These rules are enforced by:
 
-- `[cli-boundary-services]`
-- `[cli-boundary-config]`
-- `[core-boundary-cli-helpers]`
+- `scripts/check_code_style.ts` — regex-based checks
+  (`[cli-boundary-services]`, `[cli-boundary-config]`, `[core-boundary-cli-helpers]`, etc.)
+- `scripts/check_magic_values.ts` — AST-based magic value detection
+  (`[MODULE]`, `[GLOBAL]` violation tags)
 
 ---
 
@@ -364,7 +401,7 @@ following documents only as cross‑references:
 - [`.copilot/source/exaix.md`](.copilot/source/exaix.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
-When editing those documents in the future, update the link above if this file’s
+When editing those documents in the future, update the link above if this file's
 location changes.
 
 ---

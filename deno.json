@@ -38,6 +38,7 @@
     "check:style": "deno run -A scripts/check_code_style.ts",
     "check:docs": "deno run --allow-all scripts/verify_manifest_fresh.ts",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
+    "check:magic": "deno run -A scripts/check_magic_values.ts",
     "check:complexity": "deno run --allow-read --allow-net scripts/measure_complexity.ts --threshold 15 --json > complexity.json && deno run --allow-read scripts/check_complexity_breaches.ts && rm complexity.json",
     "measure:duplication": "deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts",
     "compile": "deno compile --allow-all --output exaix src/main.ts",
