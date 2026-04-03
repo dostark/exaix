@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-02T18:35:00.541Z",
+  "generated_at": "2026-04-03T08:31:35.001Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -830,6 +830,33 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-62-context-window-management.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
+      "short_summary": "Introduce a PromptBudgetAllocator service with dynamic reallocation and cost tracking to manage context windows and prevent silent truncation.",
+      "version": 1.3,
+      "topics": [
+        "context-window",
+        "budgeting",
+        "llm",
+        "tokens",
+        "cost-tracking",
+        "W7",
+        "W15"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-62-context-window-management.md.chunk0.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk1.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk2.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk3.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk4.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk5.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk6.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-54-remove-agent-alias.md",
       "agent": "claude",
       "scope": "dev",
@@ -1066,6 +1093,31 @@
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk5.txt",
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk6.txt",
         ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-63-flow-error-recovery.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
+      "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
+      "version": 1,
+      "topics": [
+        "flow-orchestration",
+        "error-recovery",
+        "checkpointing",
+        "resilience",
+        "W13"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk0.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk1.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk2.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk3.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk4.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk5.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk6.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk7.txt"
       ]
     },
     {

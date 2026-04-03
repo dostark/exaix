@@ -14,7 +14,7 @@ topics:
   - W15
 ---
 
-# Phase 62: Global Prompt Budget Coordinator
+## Phase 62: Global Prompt Budget Coordinator
 
 ## Status: 📋 Planning
 
@@ -42,14 +42,14 @@ Current vs. Target Prompt Lifecycle
 ---------------------------------
 
 ### **Current (W7 Hardcoded)**
-`AgentExecutor.assemblePrompt()
+
 ├── Memory (Hardcoded 4000 chars)
 ├── Skills (Hardcoded 2000 chars)
 ├── ...
 └── Final Prompt (May overflow -> Silent Truncation of Plan at the end)`
 
 ### **Target (Phase 62)**
-`AgentExecutor.assemblePrompt()
+
 ├── BudgetAllocator.allocate(model_id)
 │   ├── 10% Safety Buffer
 │   ├── Base Weights (Plan=35%, Memory=10%, etc.)
@@ -69,52 +69,64 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 ## Implementation Plan
 
 ### Step 62.1: Schema & Constants Foundation
+
 *   **Action**: Define `IPromptBudget` and model-specific context limits.
 *   **Justification**: Establishes the source of truth for all allocation logic.
 
 **Success Criteria:**
+
 * [ ] `src/shared/schemas/prompt_budget.ts` defines `ZPromptBudget`.
 * [ ] `src/shared/constants.ts` includes `MODEL_CONTEXT_WINDOWS` and `MODEL_PRICING_MAP`.
 * [ ] Heuristic 4:1 character-to-token ratio established as safe default.
 
 **Planned Tests:**
+
 * **Unit**: `tests/unit/shared/prompt_budget_schema_test.ts` — verify Zod validation.
 
 ### Step 62.2: PromptBudgetAllocator Implementation
+
 *   **Action**: Create the centralized service to calculate and reallocate budgets.
 *   **Justification**: The core engine for dynamic context management.
 
 **Success Criteria:**
+
 * [ ] `PromptBudgetAllocator.allocate()` correctly calculates base shares.
 * [ ] `Waterfall` logic successfully shifts surplus from empty Memory/Skills to the **Plan** section.
 * [ ] Token counting logic supports both heuristic and (optional) model-specific BPE.
 
 **Planned Tests:**
+
 * **Unit**: `tests/unit/services/prompt_budget_allocator_test.ts` — test allocation with 100% empty memory (surplus transfer).
 * **Unit**: `tests/unit/services/token_counter_test.ts` — verify heuristic accuracy.
 
 ### Step 62.3: Context Service Refactoring
+
 *   **Action**: Update `SessionMemoryService` and `SkillsService` to respect dynamic budgets.
 *   **Justification**: Enforces the allocated limits at the source of context generation.
 
 **Success Criteria:**
+
 * [ ] `SessionMemoryService.lookupMemories` accepts a token cap.
 * [ ] `SkillsService.matchSkills` respects the provided budget.
 * [ ] Zero occurrences of hardcoded "4000" or "2000" character strings in service code.
 
 **Planned Tests:**
+
 * **Integration**: `tests/integration/services/memory_budget_enforcement_test.ts`.
 
 ### Step 62.4: Executor Integration & W15 Cost Logging
+
 *   **Action**: Wire the allocator into `AgentExecutor` and log costs to the Activity Journal.
 *   **Justification**: Completes the loop and provides user-facing cost transparency.
 
 **Success Criteria:**
+
 * [ ] `AgentExecutor` requests budget before assembling the final prompt.
 * [ ] Activity Journal entries include `usage.tokens` and `usage.cost_usd_estimate`.
 * [ ] `exactl journal` CLI command displays estimated cost per request.
 
 **Planned Tests:**
+
 * **Functional**: `tests/functional/agent/cost_logging_test.ts`.
 * **End-to-End**: `tests/e2e/context_overflow_recovery_test.ts`.
 
