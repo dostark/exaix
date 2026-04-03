@@ -15,6 +15,7 @@ Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
   const processManager = new ProcessManager();
   const mockExecutor = {
     validateReviewResult: (res: any) => res,
+    getRecentActivitiesByTraceId: () => Promise.resolve([]),
   } as any;
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);
@@ -57,6 +58,7 @@ Deno.test("McpAgentStrategy - Parent Context Query", async () => {
   const processManager = new ProcessManager();
   const mockExecutor = {
     validateReviewResult: (res: any) => res,
+    getRecentActivitiesByTraceId: (_traceId: string) => Promise.resolve([]),
   } as any;
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);

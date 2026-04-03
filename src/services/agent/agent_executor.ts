@@ -147,6 +147,28 @@ export class AgentExecutor {
   }
 
   /**
+   * Query recent activities for a given trace ID.
+   * Used by sub-agents via parent_context_query to understand execution context.
+   */
+  public async getRecentActivitiesByTraceId(traceId: string, limit: number = 10): Promise<
+    Array<{ actionType: string; target: string | null; payload: Record<string, JSONValue>; timestamp: string }>
+  > {
+    const records = await this.db.getActivitiesByTraceSafe(traceId);
+    return records.slice(-limit).map((r) => {
+      let payload: Record<string, JSONValue> = {};
+      try {
+        payload = JSON.parse(r.payload);
+      } catch { /* ignore malformed payload */ }
+      return {
+        actionType: r.action_type,
+        target: r.target,
+        payload,
+        timestamp: r.timestamp,
+      };
+    });
+  }
+
+  /**
    * Set execution context for agent operations
    * Changes working directory to context location
    */

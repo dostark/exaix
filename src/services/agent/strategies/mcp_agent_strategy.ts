@@ -52,15 +52,15 @@ export class McpAgentStrategy implements IExecutionStrategy {
     const pid = child.pid;
     this.processManager.track(pid);
 
-    // Start piping stderr to logger (non-blocking)
-    const _stderrPromise = this.pipeStderrToLogger(child, context);
-
     // Create a single line stream for stdout
     const lineStream = child.stdout
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new TextLineStream());
 
     const reader = lineStream.getReader();
+
+    // Start stderr piping concurrently (resolved via Promise.race below)
+    const stderrDone = this.pipeStderrToLogger(child, context);
 
     try {
       // 1. Handshake
@@ -138,13 +138,20 @@ export class McpAgentStrategy implements IExecutionStrategy {
     } finally {
       reader.releaseLock();
       this.processManager.untrack(pid);
-      // Ensure all streams are closed to prevent leaks
-      try {
-        await child.stdout.cancel();
-      } catch { /* ignore */ }
+      // Cancel stderr stream to unblock the piping promise, then wait for it to clean up
       try {
         await child.stderr.cancel();
       } catch { /* ignore */ }
+      let stderrTimerId: number | undefined;
+      try {
+        await Promise.race([
+          stderrDone,
+          new Promise((resolve) => {
+            stderrTimerId = setTimeout(resolve, 1000);
+          }),
+        ]);
+      } catch { /* ignore stderr errors */ }
+      if (stderrTimerId) clearTimeout(stderrTimerId);
     }
   }
 
@@ -194,19 +201,20 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
   }
 
-  private handleQuery(tool: string, _params: any, context: IExecutionContext): Promise<any> {
+  private async handleQuery(tool: string, _params: any, context: IExecutionContext): Promise<any> {
     if (tool === "parent_context_query") {
-      // Provide a simplified view of the parent context/memory
-      return Promise.resolve({
+      // Query real recent activities from the Activity Journal
+      const recentActivities = await this.executor.getRecentActivitiesByTraceId(context.trace_id);
+
+      return {
         trace_id: context.trace_id,
         current_step: context.request,
         portal: context.portal,
-        // In a real implementation, this would query the DB for recent activities or memory banks
-        recent_activities: [],
+        recent_activities: recentActivities,
         memory_banks: [
           { name: "main", path: "@memory/main.md" },
         ],
-      });
+      };
     }
 
     throw new Error(`Execution of unknown query tool: ${tool}`);
