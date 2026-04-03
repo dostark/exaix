@@ -9,6 +9,12 @@ topics: ["agent-executor", "mcp", "subprocess", "security", "git-audit", "execut
 
 ## Phase 61: AgentExecutor MCP Integration & Real-World Execution
 
+## Status: ✅ In Progress
+**Phase Dependencies**: Phase 60
+**Risk Level**: M (Modifies core execution strategy)
+**Blocking Phases**: Phase 62, Phase 63
+
+
 ## Executive Summary
 
 Exaix currently suffers from a critical architectural gap (**W2**) where the `AgentExecutor`—intended to be the engine for autonomous plan execution—is effectively a "simulator." It asks an LLM to describe changes rather than executing them using tools. This phase replaces the hardcoded SHAs and LLM-only simulation with a robust **Out-of-Process Execution Model** using the Model Context Protocol (MCP).
@@ -54,7 +60,7 @@ AgentExecutor.executeStep()
 
 ## Implementation Plan
 
-### Step 61.1: Strategy Pattern & Identity Refactoring
+### Step 61.1: Strategy Pattern & Identity Refactoring (✅ IMPLEMENTED)
 
 - **Action**: Define `IExecutionStrategy` and update `AgentExecutor` to dispatch execution using the strategy pattern.
 - **Justification**: Breaks hardcoded stubs and aligns with the **W6** identity migration.
@@ -62,19 +68,19 @@ AgentExecutor.executeStep()
 
 **Success Criteria:**
 
-- [ ] `IExecutionStrategy` interface defined in `src/services/agent/strategies/execution_strategy.ts`.
-- [ ] `AgentExecutor` accepts a strategy registry in its constructor.
-- [ ] `loadBlueprint` logic updated to use `Identities/` directory and `IdentityBlueprint` naming.
-- [ ] Identity-level `permitted_tools` (from Phase 56) are correctly parsed and passed to strategies.
+- [x] `IExecutionStrategy` interface defined in `src/services/agent/strategies/execution_strategy.ts`.
+- [x] `AgentExecutor` accepts a strategy registry in its constructor.
+- [x] `loadBlueprint` logic updated to use `Identities/` directory and `IdentityBlueprint` naming.
+- [x] Identity-level `permitted_tools` (from Phase 56) are correctly parsed and passed to strategies.
 
 **Planned Tests:**
 
-- **Unit**: `tests/unit/agent/strategy_registry_test.ts` — verify registration of McpAgent and ReActLoop strategies.
-- **Unit**: `tests/unit/agent/blueprint_identity_load_test.ts` — verify correct path resolution for Identities.
+- **Unit**: `tests/agents/strategy_registry_test.ts` — verify registration of McpAgent and ReActLoop strategies.
+- **Unit**: `tests/blueprints/identity_load_test.ts` — verify correct path resolution for Identities.
 
 ---
 
-### Step 61.2: McpAgentStrategy Subprocess Lifecycle & Process Management
+### Step 61.2: McpAgentStrategy Subprocess Lifecycle & Process Management (✅ IMPLEMENTED)
 
 - **Action**: Implement the `SafeSubprocess` management engine for out-of-process agents.
 - **Justification**: Provides the "Executive" foundation for **W2**.
@@ -82,16 +88,16 @@ AgentExecutor.executeStep()
 
 **Success Criteria:**
 
-- [ ] `McpAgentStrategy` successfully launches `exaix-agent` as a separate Deno process.
-- [ ] **ProcessManager** integration ensures all spawned PIDs are tracked and terminated on parent `SIGINT/SIGTERM`.
-- [ ] Environment variables and Deno permission flags (--allow-read, etc.) are dynamically built based on SecurityMode.
-- [ ] Parent-Child handshake established via `JSON-RPC` over `stdio` with a deterministic 30s handshake timeout.
-- [ ] Strategy captures subprocess exit codes and translates crashes into `AgentExecutionError`.
+- [x] `McpAgentStrategy` successfully launches `exaix-agent` as a separate Deno process.
+- [x] **ProcessManager** integration ensures all spawned PIDs are tracked and terminated on parent `SIGINT/SIGTERM`.
+- [x] Environment variables and Deno permission flags (--allow-read, etc.) are dynamically built based on SecurityMode.
+- [x] Parent-Child handshake established via `JSON-RPC` over `stdio` with a deterministic 30s handshake timeout.
+- [x] Strategy captures subprocess exit codes and translates crashes into `AgentExecutionError`.
 
 **Planned Tests:**
 
 - **Integration**: `tests/integration/agent/mcp_handshake_test.ts` — verify RPC initialization between parent and child.
-- **Functional**: `tests/functional/agent/subprocess_isolation_test.ts` — verify that a spawned agent is restricted to authorized directories.
+- **Functional**: `tests/security/subprocess_isolation_test.ts` — verify that a spawned agent is restricted to authorized directories.
 
 ---
 

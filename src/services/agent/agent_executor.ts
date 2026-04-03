@@ -42,6 +42,8 @@ import { ActorType, AgentExecutionErrorType, AgentKind, LogLevel, SecurityMode }
 import { InputValidator } from "../../shared/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { JSONValue } from "../../shared/types/json.ts";
+import { StrategyRegistry } from "./strategies/strategy_registry.ts";
+import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -51,6 +53,7 @@ export interface IAgentFileBlueprint {
   model: string;
   provider: string;
   capabilities: string[];
+  permitted_tools?: string[];
   systemPrompt: string;
 }
 
@@ -86,6 +89,7 @@ const BlueprintSchema = z.object({
     },
   ),
   capabilities: z.array(z.string().max(MAX_NAME_LENGTH)).max(20).default([]),
+  permitted_tools: z.array(z.string().max(MAX_NAME_LENGTH)).max(100).optional(),
 }).strict(); // No extra fields allowed
 
 /**
@@ -102,7 +106,14 @@ export class AgentExecutor {
     private pathResolver: PathResolver,
     private permissions: PortalPermissionsService,
     private provider?: IModelProvider,
-  ) {}
+    private strategyRegistry?: StrategyRegistry,
+  ) {
+    // If no registry provided, create one and register legacy strategy
+    if (!this.strategyRegistry) {
+      this.strategyRegistry = new StrategyRegistry();
+      this.strategyRegistry.register(new LegacyAgentStrategy(this, this.provider));
+    }
+  }
 
   /**
    * Set execution context for agent operations
@@ -253,6 +264,7 @@ export class AgentExecutor {
         model: validatedFrontmatter.model,
         provider: validatedFrontmatter.provider,
         capabilities: validatedFrontmatter.capabilities,
+        permitted_tools: validatedFrontmatter.permitted_tools,
         systemPrompt: sanitizedPrompt,
       };
     } catch (error) {
@@ -333,7 +345,7 @@ export class AgentExecutor {
     const context = InputValidator.validateExecutionContext(rawContext);
     const options: IAgentExecutionOptions = InputValidator.validateAgentExecutionOptions(rawOptions);
 
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     // Validate portal exists
     const portal = this.config.portals?.find((p) => p.alias === options.portal);
@@ -358,48 +370,22 @@ export class AgentExecutor {
       options.portal,
     );
 
+    // Resolve strategy (Phase 61: default to legacy for now, later dynamic based on blueprint)
+    const strategyName = _blueprint.capabilities.includes("mcp") ? "mcp" : "legacy";
+
+    // Pass identity-level permitted_tools to options (Phase 56 bridge)
+    if (_blueprint.permitted_tools) {
+      options.permitted_tools = _blueprint.permitted_tools;
+    }
+
     try {
-      // If provider is available, execute agent with LLM
-      if (this.provider) {
-        const prompt = this.buildExecutionPrompt(_blueprint, context, options);
-        const response = await this.provider.generate(prompt, {
-          temperature: 0.7,
-          max_tokens: 4000,
-        });
-
-        // Parse LLM response to extract review result
-        const result = this.parseAgentResponse(response, context, startTime);
-
-        // Validate result
-        const validated = this.validateReviewResult(result);
-
-        // Log completion
-        await this.logExecutionComplete(
-          context.trace_id,
-          options.identity_id ?? "",
-          validated,
-        );
-
-        return validated;
-      }
-
-      // Fallback: return mock result for tests without provider
-      const result: IChangesetResult = {
-        branch: `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`,
-        commit_sha: "abc1234567890abcdef",
-        files_changed: [],
-        description: context.plan,
-        tool_calls: 0,
-        execution_time_ms: Date.now() - startTime,
-      };
-
-      // Validate result
-      const validated = this.validateReviewResult(result);
+      const strategy = this.strategyRegistry!.resolve(strategyName);
+      const validated = await strategy.execute(_blueprint, context, options);
 
       // Log completion
       await this.logExecutionComplete(
         context.trace_id,
-        options.identity_id ?? "",
+        options.identity_id || "unknown",
         validated,
       );
 
@@ -505,7 +491,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
   /**
    * Parse agent response to extract changeset result
    */
-  private parseAgentResponse(
+  public parseAgentResponse(
     response: string,
     context: IExecutionContext,
     startTime: number,

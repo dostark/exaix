@@ -88,6 +88,32 @@ export class SafeSubprocess {
       throw new SubprocessError(`Subprocess failed: ${command}`, cause);
     }
   }
+
+  /**
+   * Spawn a subprocess without waiting for completion
+   */
+  static spawn(
+    command: string,
+    args: string[],
+    options: ISubprocessOptions = {},
+  ): Deno.ChildProcess {
+    const { cwd, env } = options;
+
+    const cmdOptions: Deno.CommandOptions = {
+      args,
+      cwd,
+      stdout: "piped",
+      stderr: "piped",
+      stdin: "piped",
+    };
+
+    if (env) {
+      cmdOptions.env = env;
+    }
+
+    const cmd = new Deno.Command(command, cmdOptions);
+    return cmd.spawn();
+  }
 }
 
 export class SubprocessError extends Error {

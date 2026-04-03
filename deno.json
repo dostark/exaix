@@ -60,7 +60,9 @@
     "@db/sqlite": "jsr:@db/sqlite@^0.11.0",
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.8",
     "deno-tui": "https://deno.land/x/deno_tui@v1.1.1/mod.ts",
-    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
+    "@std/flags": "jsr:@std/flags@^0.221.0",
+    "@std/streams": "jsr:@std/streams@^0.221.0"
   },
   "exclude": [
     "cov_profile",

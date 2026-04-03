@@ -46,6 +46,9 @@ export const AgentExecutionOptionsSchema = z.object({
   audit_enabled: z.boolean().default(true).describe(
     "Enable post-execution git audit",
   ),
+  permitted_tools: z.array(z.string()).optional().describe(
+    "Custom tool permissions for this execution",
+  ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema
