@@ -636,7 +636,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         files_changed: [],
         description: context.plan,
         tool_calls: 0,
-        execution_time_ms: Date.now() - startTime,
+        execution_time_ms: Math.max(0, Date.now() - startTime),
       };
     }
 
@@ -644,9 +644,9 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       const jsonStr = jsonMatch[1] || jsonMatch[0];
       const parsed = JSON.parse(jsonStr);
 
-      // Ensure execution_time_ms is set
+      // Ensure execution_time_ms is set and non-negative
       if (!parsed.execution_time_ms) {
-        parsed.execution_time_ms = Date.now() - startTime;
+        parsed.execution_time_ms = Math.max(0, Date.now() - startTime);
       }
 
       return parsed as IChangesetResult;
@@ -658,7 +658,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         files_changed: [],
         description: context.plan,
         tool_calls: 0,
-        execution_time_ms: Date.now() - startTime,
+        execution_time_ms: Math.max(0, Date.now() - startTime),
       };
     }
   }
