@@ -47,7 +47,7 @@ Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
   const result = await strategy.execute(blueprint, context, options);
 
   assertEquals(result.branch, "feat/mcp-test");
-  assertEquals(result.commit_sha, "mcp-sha-123");
+  assertEquals(result.commit_sha, "0000000000000000000000000000000000000000");
   assertEquals(result.description, "Simulated MCP success");
 
   processManager.cleanup();
@@ -91,7 +91,7 @@ Deno.test("McpAgentStrategy - Parent Context Query", async () => {
   // The agent_entrypoint is scripted to return successful query result
   // The description will contain the query response stringified.
   assertEquals(result.branch, "feat/mcp-query");
-  assertEquals(result.commit_sha, "query-sha-123");
+  assertEquals(result.commit_sha, "0000000000000000000000000000000000000000");
 
   // Verify that parent context was correctly passed back
   const expectedInfo =

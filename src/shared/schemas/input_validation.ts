@@ -80,8 +80,12 @@ export const UserRequestSchema = z.string()
   )
   .refine((val: string) => !/<img[^>]*>/gis.test(val), "Image tags not allowed")
   .refine(
-    (val: string) => !val.split("").some((char: string) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
-    "Control characters not allowed",
+    (val: string) =>
+      !val.split("").some((char: string) => {
+        const code = char.charCodeAt(0);
+        return (code < 32 && code !== 10 && code !== 13 && code !== 9) || code === 127;
+      }),
+    "Non-whitespace control characters not allowed",
   );
 
 /**
@@ -95,8 +99,12 @@ export const PlanSchema = z.string()
     "Script tags not allowed",
   )
   .refine(
-    (val: string) => !val.split("").some((char: string) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
-    "Control characters not allowed",
+    (val: string) =>
+      !val.split("").some((char: string) => {
+        const code = char.charCodeAt(0);
+        return (code < 32 && code !== 10 && code !== 13 && code !== 9) || code === 127;
+      }),
+    "Non-whitespace control characters not allowed",
   );
 
 /**
@@ -191,7 +199,8 @@ export class InputSanitizer {
   private static removeControlChars(str: string): string {
     return str.split("").filter((char) => {
       const code = char.charCodeAt(0);
-      return code >= 32 && code !== 127; // Keep printable chars, remove control chars and DEL
+      // Keep printable chars, tabs, newlines, and carriage returns; remove other control chars and DEL
+      return (code >= 32 && code !== 127) || code === 9 || code === 10 || code === 13;
     }).join("");
   }
 

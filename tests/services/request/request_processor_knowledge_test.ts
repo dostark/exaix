@@ -22,6 +22,7 @@ import {
   makeMockKnowledgeService,
   makeRequestProcessorEnv as makeEnvBase,
 } from "./request_test_helpers.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 // ============================================================================
 // Fixtures
@@ -71,7 +72,13 @@ async function makeKnowledgeProcessorEnv(opts: {
   // Inject a portal entry into the config when portal-bound testing is needed
   const portalTargetDir = await Deno.makeTempDir({ prefix: "portal-target-" });
   if (opts.withPortal !== false) {
-    config.portals = [{ alias: "test-portal", target_path: portalTargetDir }];
+    config.portals = [{
+      alias: "test-portal",
+      target_path: portalTargetDir,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: ["read", "write", "git"] as any, // Cast to any to see. Wait! Any is forbidden!
+    }];
   }
 
   const processorConfig = {

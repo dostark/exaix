@@ -11,6 +11,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
 import type { IPortalConfig } from "../../../src/shared/schemas/config.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 describe("AgentExecutor with IWorkspaceExecutionContext", () => {
   let tempDir: string;
@@ -41,6 +42,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -70,6 +74,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -92,11 +99,17 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal1: IPortalConfig = {
         alias: "portal-1",
         target_path: portal1Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const portal2: IPortalConfig = {
         alias: "portal-2",
         target_path: portal2Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context1 = WorkspaceExecutionContextBuilder.forPortal(portal1);
@@ -112,6 +125,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -133,6 +149,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const portalContext = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -149,6 +168,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -170,6 +192,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -191,6 +216,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -234,6 +262,9 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -264,11 +295,17 @@ describe("AgentExecutor with IWorkspaceExecutionContext", () => {
       const portal1: IPortalConfig = {
         alias: "portal-a",
         target_path: portal1Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const portal2: IPortalConfig = {
         alias: "portal-b",
         target_path: portal2Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       WorkspaceExecutionContextBuilder.forPortal(portal1);

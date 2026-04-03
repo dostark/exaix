@@ -11,6 +11,7 @@ import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";
 import { SqliteJournalMode } from "../../src/shared/enums.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**
  * Creates a mock configuration for testing.
@@ -26,6 +27,15 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
 
   // Use getDefaultPaths for consistent path defaults
   const pathDefaults = getDefaultPaths(root);
+
+  // Create default workspace portal for tests that need it
+  const defaultPortals = overrides.portals ?? [{
+    alias: "workspace",
+    target_path: root,
+    default_branch: TEST_DEFAULT_BRANCH,
+    identities_allowed: ["*"],
+    operations: [],
+  }];
 
   return ConfigSchema.parse({
     ...overrides,
@@ -80,6 +90,8 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
     // specifically exercise the quality gate pass an explicit testQualityGate
     // stub or patch this field in their own config.
     quality_gate: overrides.quality_gate ?? { enabled: false },
+    // Provide default workspace portal for tests
+    portals: defaultPortals,
   });
 }
 

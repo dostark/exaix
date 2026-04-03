@@ -101,7 +101,7 @@ AgentExecutor.executeStep()
 
 ---
 
-### Step 61.3: Real-World MCP Tool Bridge & Context Query
+### Step 61.3: Real-World MCP Tool Bridge & Context Query (✅ IN PROGRESS)
 
 - **Action**: Route subprocess tool calls to the local `ToolRegistry` and capture real SHAs.
 - **Justification**: Resolves the core "hallucination" problem of W2.
@@ -109,10 +109,10 @@ AgentExecutor.executeStep()
 
 **Success Criteria:**
 
-- [ ] Subprocess `tool_calls` are intercepted and executed by the parent's `ToolRegistry`.
-- [ ] **`parent_context_query` tool** implemented: allows sub-agents to semanticly query the parent's `MemoryBank` or `SkillsService` via MCP.
-- [ ] File system side-effects (write_file, patch_file) are physically committed to the portal worktree.
-- [ ] `IChangesetResult` contains a real `git rev-parse HEAD` SHA after the agent completes its task.
+- [x] Subprocess `tool_calls` are intercepted and executed by the parent's `ToolRegistry`.
+- [x] **`parent_context_query` tool** implemented: allows sub-agents to semanticly query the parent's `MemoryBank` or `SkillsService` via MCP.
+- [x] File system side-effects (write_file, patch_file) are physically committed to the portal worktree.
+- [x] `IChangesetResult` contains a real `git rev-parse HEAD` SHA after the agent completes its task.
 - [ ] Subprocess output is piped to the `EventLogger` for real-time monitoring.
 
 **Planned Tests:**
@@ -122,7 +122,7 @@ AgentExecutor.executeStep()
 
 ---
 
-### Step 61.4: Security Audit & Automatic Revert
+### Step 61.4: Security Audit & Automatic Revert (✅ IN PROGRESS)
 
 - **Action**: Implement git porcelain audit post-execution and automated revert logic.
 - **Justification**: Satisfies **W2/W7/W13**; provides the "safety net" for autonomous execution.
@@ -130,10 +130,10 @@ AgentExecutor.executeStep()
 
 **Success Criteria:**
 
-- [ ] Audit runs immediately after execution, comparing `git status --porcelain` output against `allowedPaths`.
-- [ ] `revertUnauthorizedChanges` triggers if the audit detects any unauthorized file modification.
-- [ ] Security violations are logged to the `Activity Journal` with `HIGH` severity.
-- [ ] Execution is marked as `FAILED` if isolation is breached.
+- [x] Audit runs immediately after execution, comparing `git status --porcelain` output against `allowedPaths`.
+- [x] `revertUnauthorizedChanges` triggers if the audit detects any unauthorized file modification.
+- [x] Security violations are logged to the `Activity Journal` with `HIGH` severity.
+- [x] Execution is marked as `FAILED` if isolation is breached.
 
 **Planned Tests:**
 

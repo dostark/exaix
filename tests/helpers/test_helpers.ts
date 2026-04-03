@@ -13,11 +13,13 @@ import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
 import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
+import type { IPortalPermissions } from "../../src/shared/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "../../src/shared/enums.ts";
 import { JSONObject, type JSONValue, type LogMetadata } from "../../src/shared/types/json.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
-import { LogLevel } from "../../src/shared/enums.ts";
+import { LogLevel, PortalOperation } from "../../src/shared/enums.ts";
 import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";
+import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**
  * Create a fully-typed stub implementation of the DatabaseService used in tests.
@@ -89,7 +91,14 @@ export function createStubConfig(config: Config): IConfigService {
 
   const getConfig = (): Config => ({
     ...config,
-    portals: [...portals],
+    portals: portals.map((p): IPortalPermissions => ({
+      alias: p.alias,
+      target_path: p.target_path,
+      created: p.created,
+      default_branch: p.default_branch ?? TEST_DEFAULT_BRANCH,
+      identities_allowed: p.identities_allowed ?? ["*"],
+      operations: p.operations ?? [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
+    })),
   });
 
   return {
@@ -106,7 +115,9 @@ export function createStubConfig(config: Config): IConfigService {
         alias,
         target_path: targetPath,
         created: new Date().toISOString(),
-        default_branch: options?.defaultBranch,
+        default_branch: options?.defaultBranch || TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         execution_strategy: options?.executionStrategy,
       };
 

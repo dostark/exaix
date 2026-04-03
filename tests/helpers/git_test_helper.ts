@@ -13,6 +13,7 @@ import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
+import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**
  * Git Test Helper
@@ -33,7 +34,7 @@ export interface IGitTestContext {
  * Helper to initialize git repository in a directory
  */
 export async function setupGitRepo(path: string, options: { initialCommit?: boolean; branch?: string } = {}) {
-  const { initialCommit = false, branch = "master" } = options;
+  const { initialCommit = false, branch = TEST_DEFAULT_BRANCH } = options;
 
   // Verify directory exists before running git commands
   try {
@@ -79,12 +80,22 @@ export async function createGitTestContext(prefix: string = "git-test-"): Promis
   const rawTempDir = await Deno.makeTempDir({ prefix });
   const tempDir = await Deno.realPath(rawTempDir);
   const { db, cleanup: dbCleanup } = await initTestDbService();
-  const config = createMockConfig(tempDir);
 
   // Create a separate repo directory so it's not the same as config.system.root
   const rawRepoDir = join(tempDir, "repo");
   await Deno.mkdir(rawRepoDir, { recursive: true });
   const repoDir = await Deno.realPath(rawRepoDir);
+
+  // Initialize config with workspace portal pointing to repoDir
+  const config = createMockConfig(tempDir, {
+    portals: [{
+      alias: "workspace",
+      target_path: repoDir,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [],
+    }],
+  });
 
   const git = new GitService({
     config,

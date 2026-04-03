@@ -18,6 +18,7 @@ import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
   let tempDir: string;
@@ -59,6 +60,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
   });
 
   afterEach(async () => {
+    executor?.dispose();
     try {
       Deno.chdir(originalCwd);
     } catch (_error) {
@@ -74,6 +76,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("accepts IWorkspaceExecutionContext for portal", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -103,6 +106,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("changes working directory to context location", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -118,6 +122,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("restores original working directory when context cleared", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -144,6 +149,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("returns current execution context", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -164,6 +170,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("clears stored context", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -183,6 +190,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
 
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -200,6 +208,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("executes function in portal context", async () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -224,6 +233,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("restores directory even if function throws", async () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -246,6 +256,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("returns function result", async () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [
           PortalOperation.READ,
           PortalOperation.WRITE,
@@ -269,6 +280,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("returns portal git repository when portal context set", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,
@@ -299,6 +311,7 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     it("returns portal allowed paths when portal context set", () => {
       const portal: IPortalPermissions = {
         alias: "test-portal",
+        default_branch: TEST_DEFAULT_BRANCH,
         operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
         identities_allowed: ["*"],
         target_path: portalDir,

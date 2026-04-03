@@ -13,6 +13,7 @@ import { encodeHex } from "@std/encoding/hex";
 import { Config, ConfigSchema } from "../shared/schemas/config.ts";
 import { PortalExecutionStrategy } from "../shared/enums.ts";
 import { logInfo } from "../services/logger/structured_logger.ts";
+import { IPortalConfigEntry } from "../shared/interfaces/i_config_service.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
 
 export class ConfigService {
@@ -193,30 +194,12 @@ stability_check = true
     this.config = this.load();
   }
 
-  public getPortals(): Array<
-    {
-      alias: string;
-      target_path: string;
-      created?: string;
-      default_branch?: string;
-      execution_strategy?: PortalExecutionStrategy;
-    }
-  > {
+  public getPortals(): IPortalConfigEntry[] {
     return this.config.portals || [];
   }
 
-  public getPortal(
-    alias: string,
-  ):
-    | {
-      alias: string;
-      target_path: string;
-      created?: string;
-      default_branch?: string;
-      execution_strategy?: PortalExecutionStrategy;
-    }
-    | undefined {
-    return (this.config.portals || []).find((p: { alias: string }) => p.alias === alias);
+  public getPortal(alias: string): IPortalConfigEntry | undefined {
+    return (this.config.portals || []).find((p: IPortalConfigEntry) => p.alias === alias);
   }
 
   public async updatePortalVerification(_alias: string): Promise<void> {

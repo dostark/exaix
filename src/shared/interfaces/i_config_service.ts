@@ -7,13 +7,15 @@
  */
 
 import type { Config } from "../schemas/config.ts";
-import type { PortalExecutionStrategy } from "../enums.ts";
+import type { PortalExecutionStrategy, PortalOperation } from "../enums.ts";
 
 export interface IPortalConfigEntry {
   alias: string;
   target_path: string;
   created?: string;
   default_branch?: string;
+  identities_allowed?: string[];
+  operations?: PortalOperation[];
   execution_strategy?: PortalExecutionStrategy;
 }
 

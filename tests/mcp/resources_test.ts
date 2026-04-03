@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
+import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 import {
   buildPortalURI,
   discoverAllResources,
@@ -175,8 +176,20 @@ Deno.test("discoverAllResources: discovers from multiple portals", async () => {
 
     const config = createMockConfig(tempDir, {
       portals: [
-        { alias: "Portal1", target_path: portal1Path },
-        { alias: "Portal2", target_path: portal2Path },
+        {
+          alias: "Portal1",
+          target_path: portal1Path,
+          default_branch: TEST_DEFAULT_BRANCH,
+          identities_allowed: ["*"],
+          operations: [],
+        },
+        {
+          alias: "Portal2",
+          target_path: portal2Path,
+          default_branch: TEST_DEFAULT_BRANCH,
+          identities_allowed: ["*"],
+          operations: [],
+        },
       ],
     });
 
@@ -199,8 +212,20 @@ Deno.test("getResourceTemplates: returns templates for all portals", () => {
   const tempDir = "/tmp/test";
   const config = createMockConfig(tempDir, {
     portals: [
-      { alias: "Portal1", target_path: "/tmp/portal1" },
-      { alias: "Portal2", target_path: "/tmp/portal2" },
+      {
+        alias: "Portal1",
+        target_path: "/tmp/portal1",
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
+      },
+      {
+        alias: "Portal2",
+        target_path: "/tmp/portal2",
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
+      },
     ],
   });
 

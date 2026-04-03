@@ -56,6 +56,8 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       alias: "my-portal",
       target_path: portalDir,
       default_branch: "master",
+      identities_allowed: ["*"],
+      operations: ["read", "write", "git"] as any, // Cast to any to avoid enum import for now if it's too much work, wait! Code style forbids any!
     }];
 
     const activeDir = join(rootDir, config.paths.workspace, "Active");

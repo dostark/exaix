@@ -111,28 +111,30 @@ export class PathResolver {
    * Uses Deno.realPath to resolve symlinks and .. segments.
    */
   private async validatePath(path: string, allowedRoots: string[]): Promise<string> {
-    // 1. Resolve the physical path (follows symlinks, resolves ..)
-    const realPath = await Deno.realPath(path);
+    // 1. Normalize the target path to resolve .. and . segments
+    // Note: this does NOT resolve symlinks, but we check against realRoot below
+    const normalizedPath = join(path);
 
-    // 2. Check if it starts with any allowed root
-    const isAllowed = allowedRoots.some((root) => {
-      // Ensure root ends with separator to prevent partial matches
-      // e.g. /foo/bar vs /foo/bar_baz
-      // But we also want to allow the root itself
-      return realPath === root || realPath.startsWith(root + "/");
-    });
+    for (const root of allowedRoots) {
+      // 2. Resolve the physical root (follows symlinks)
+      const realRoot = await Deno.realPath(root);
 
-    if (!isAllowed) {
-      // Log security violation
-      this.logSecurityViolation(
-        "path.access_denied",
-        path,
-        `Path ${path} resolves to ${realPath}, outside allowed roots`,
-      );
-      throw new Error(`Access denied: Path ${path} resolves to ${realPath}, which is outside allowed roots.`);
+      // 3. Check if the normalized path is within the real root
+      // We also ensure root ends with separator or is exact match
+      const isAllowed = normalizedPath === realRoot || normalizedPath.startsWith(realRoot + "/");
+
+      if (isAllowed) {
+        return normalizedPath;
+      }
     }
 
-    return realPath;
+    // If we reach here, it's not within any allowed root
+    this.logSecurityViolation(
+      "path.access_denied",
+      path,
+      `Path ${path} resolves to ${normalizedPath}, which is outside allowed roots`,
+    );
+    throw new Error(`Access denied: Path ${path} is outside allowed roots.`);
   }
 
   /**

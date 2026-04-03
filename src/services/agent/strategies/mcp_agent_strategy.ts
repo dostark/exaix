@@ -12,18 +12,25 @@ import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../
 import { SafeSubprocess } from "../../../helpers/subprocess.ts";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
-import { AgentExecutionErrorType, SecurityMode } from "../../../shared/enums.ts";
+import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "../../../shared/enums.ts";
+
+import {
+  DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS,
+  ENV_AGENT_MODE,
+  ENV_PORTAL_ALIAS,
+  ENV_TRACE_ID,
+} from "../../../shared/constants.ts";
 
 /**
  * MCP execution strategy that spawns a separate Deno process
  */
 export class McpAgentStrategy implements IExecutionStrategy {
-  public readonly name = "mcp";
-  private readonly HANDSHAKE_TIMEOUT_MS = 30000;
+  public readonly name = ExecutionStrategyName.MCP;
+  private readonly HANDSHAKE_TIMEOUT_MS = DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS;
 
   constructor(
     private executor: AgentExecutor,
-    private processManager: ProcessManager,
+    private processManager: ProcessManager = new ProcessManager(),
   ) {}
 
   async execute(
@@ -37,13 +44,16 @@ export class McpAgentStrategy implements IExecutionStrategy {
     // Spawn subprocess
     const child = SafeSubprocess.spawn("deno", args, {
       env: {
-        EXA_AGENT_MODE: "true",
-        EXA_TRACE_ID: context.trace_id,
+        [ENV_AGENT_MODE]: "true",
+        [ENV_TRACE_ID]: context.trace_id,
+        [ENV_PORTAL_ALIAS]: options.portal,
       },
     });
-
     const pid = child.pid;
     this.processManager.track(pid);
+
+    // Start piping stderr to logger (non-blocking)
+    const _stderrPromise = this.pipeStderrToLogger(child, context);
 
     // Create a single line stream for stdout
     const lineStream = child.stdout
@@ -82,6 +92,15 @@ export class McpAgentStrategy implements IExecutionStrategy {
                 result: queryResponse,
               }) + "\n",
             ));
+          } else if (message.type === "call_tool") {
+            const toolResult = await this.handleToolCall(message.tool, message.params);
+            await writer.write(encoder.encode(
+              JSON.stringify({
+                type: "tool_response",
+                id: message.id,
+                result: toolResult,
+              }) + "\n",
+            ));
           }
         } catch (error) {
           console.error(
@@ -110,14 +129,6 @@ export class McpAgentStrategy implements IExecutionStrategy {
 
       return this.executor.validateReviewResult(finalResult);
     } catch (error) {
-      // Capture stderr on error (non-blocking)
-      try {
-        const stderr = await this.readStderr(child);
-        if (stderr) {
-          console.error(`[McpAgentStrategy] Agent stderr: ${stderr}`);
-        }
-      } catch (_e) { /* ignore */ }
-
       this.processManager.untrack(pid);
       try {
         Deno.kill(pid, "SIGKILL");
@@ -148,7 +159,8 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
 
     // Path to entry point
-    args.push("src/services/agent/agent_entrypoint.ts");
+    const entrypoint = Deno.env.get("EXAIX_AGENT_ENTRYPOINT") || "src/services/agent/agent_entrypoint.ts";
+    args.push(entrypoint);
 
     // Agent command flags
     args.push("--handshake");
@@ -200,14 +212,49 @@ export class McpAgentStrategy implements IExecutionStrategy {
     throw new Error(`Execution of unknown query tool: ${tool}`);
   }
 
-  private async readStderr(child: Deno.ChildProcess): Promise<string> {
-    const reader = child.stderr.getReader();
+  private async handleToolCall(toolName: string, params: any): Promise<any> {
+    if (!this.executor.toolRegistry) {
+      throw new Error("ToolRegistry not available in AgentExecutor");
+    }
+
+    // Phase 61 Compatibility Bridge:
+    // If tool specifies 'portal' and 'path', translate to '@Portal/path' for legacy registry tools.
+    // This allows MCP agents to use (portal, path) while ToolRegistry expects alias paths.
+    const enrichedParams = { ...params };
+    if (params.portal && params.path && typeof params.path === "string" && !params.path.startsWith("@")) {
+      enrichedParams.path = `@${params.portal}/${params.path}`;
+    }
+
+    const toolResult = await this.executor.toolRegistry.execute(toolName, enrichedParams);
+    return toolResult;
+  }
+
+  private async pipeStderrToLogger(child: Deno.ChildProcess, context: IExecutionContext): Promise<void> {
+    const reader = child.stderr
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new TextLineStream())
+      .getReader();
+
     try {
-      const { value, done } = await reader.read();
-      if (done) return "";
-      return new TextDecoder().decode(value);
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value.trim()) {
+          await this.executor.logAgentOutput(context.trace_id, value);
+        }
+      }
+    } catch {
+      // Stream error, typically process closed
     } finally {
       reader.releaseLock();
     }
+  }
+
+  /**
+   * Dispose of resources (signal listeners, process manager)
+   * Call this when the strategy is no longer needed
+   */
+  dispose(): void {
+    this.processManager.dispose();
   }
 }

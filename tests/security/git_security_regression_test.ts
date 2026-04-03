@@ -12,6 +12,7 @@ import { IPlanContext, PlanExecutor } from "../../src/services/plan/plan_executo
 import { MockProvider } from "../../src/ai/providers.ts";
 import { GitService } from "../../src/services/core/git_service.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
 Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");
@@ -37,7 +38,7 @@ args = ["reset", "--hard", "HEAD"]
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-security-1",
+      trace_id: "00000000-0000-0000-0000-000000000011",
       request_id: "req-security-1",
       identity: "test-agent",
       frontmatter: {},
@@ -72,6 +73,22 @@ Deno.test("Git Security: blocks checkout to main branch", async () => {
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["*"]
+---
+You are a test agent.
+`,
+    );
+
     const mockResponse = `
 \`\`\`toml
 [[actions]]
@@ -85,7 +102,7 @@ args = ["checkout", "main"]
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-security-2",
+      trace_id: "00000000-0000-0000-0000-000000000012",
       request_id: "req-security-2",
       identity: "test-agent",
       frontmatter: {},
@@ -128,7 +145,9 @@ Deno.test("Git Security: prevents system root taint during Portal execution fail
   config.portals = [{
     alias: "test",
     target_path: portalPath,
-    default_branch: "main",
+    default_branch: TEST_DEFAULT_BRANCH,
+    identities_allowed: ["*"],
+    operations: [],
   }];
 
   const loop = new ExecutionLoop({

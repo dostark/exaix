@@ -48,6 +48,7 @@ describe("AgentExecutor Capability Differentiation", () => {
   });
 
   afterEach(async () => {
+    executor?.dispose();
     if (cleanup) {
       await cleanup();
     }

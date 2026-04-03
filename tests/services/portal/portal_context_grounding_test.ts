@@ -9,8 +9,9 @@ import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
-import { MockStrategy } from "../../../src/shared/enums.ts";
+import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
 import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
@@ -29,6 +30,9 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     config.portals = [{
       alias: "test-portal",
       target_path: portalPath,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
     // 2. Setup agent blueprint

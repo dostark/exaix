@@ -47,7 +47,7 @@ async function main() {
           type: "result",
           result: {
             branch: "feat/mcp-query",
-            commit_sha: "query-sha-123",
+            commit_sha: "0000000000000000000000000000000000000000",
             files_changed: [],
             description: `Query result: ${JSON.stringify(response.result)}`,
             tool_calls: 1,
@@ -64,7 +64,7 @@ async function main() {
     type: "result",
     result: {
       branch: "feat/mcp-test",
-      commit_sha: "mcp-sha-123",
+      commit_sha: "0000000000000000000000000000000000000000",
       files_changed: ["test.ts"],
       description: "Simulated MCP success",
       tool_calls: 0,

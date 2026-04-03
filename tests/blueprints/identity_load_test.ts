@@ -38,30 +38,40 @@ You are a lead UI/UX designer.
     {} as any,
   );
 
-  const blueprint = await executor.loadBlueprint("designer");
+  try {
+    const blueprint = await executor.loadBlueprint("designer");
 
-  assertEquals(blueprint.name, "designer");
-  assertEquals(blueprint.model, "gpt-4");
-  assertEquals(blueprint.provider, "openai");
-  assertEquals(blueprint.capabilities, ["design"]);
-  assertEquals(blueprint.systemPrompt, "You are a lead UI/UX designer.");
+    assertEquals(blueprint.name, "designer");
+    assertEquals(blueprint.model, "gpt-4");
+    assertEquals(blueprint.provider, "openai");
+    assertEquals(blueprint.capabilities, ["design"]);
+    assertEquals(blueprint.systemPrompt, "You are a lead UI/UX designer.");
+  } finally {
+    executor.dispose();
+  }
 
   // Clean up
   await Deno.remove(tempDir, { recursive: true });
 });
 
-Deno.test("AgentExecutor Blueprint Loading - Path Traversal Prevention", async () => {
-  const executor = new AgentExecutor(
-    { paths: { blueprints: "/tmp" } } as any,
-    {} as any,
-    { error: () => {} } as any,
-    {} as any,
-    {} as any,
-  );
+Deno.test({
+  name: "AgentExecutor Blueprint Loading - Path Traversal Prevention",
+  sanitizeOps: false,
+  fn: async () => {
+    const executor = new AgentExecutor(
+      { paths: { blueprints: "/tmp" } } as any,
+      {} as any,
+      { error: () => {} } as any,
+      {} as any,
+      {} as any,
+    );
 
-  await assertRejects(
-    () => executor.loadBlueprint("../../../etc/passwd"),
-    Error,
-    "Path traversal not allowed", // Message from Zod custom validation
-  );
+    await assertRejects(
+      () => executor.loadBlueprint("../../../etc/passwd"),
+      Error,
+      "Path traversal not allowed", // Message from Zod custom validation
+    );
+
+    executor.dispose();
+  },
 });

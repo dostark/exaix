@@ -7,10 +7,9 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { ensureDir } from "@std/fs";
-import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../src/shared/enums.ts";
+import { PortalOperation, SecurityMode } from "../../src/shared/enums.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
-import { initTestDbService } from "../helpers/db.ts";
+import { TestEnvironment } from "./helpers/test_environment.ts";
 
 interface ActivityRow {
   action_type: string;
@@ -19,81 +18,22 @@ interface ActivityRow {
 
 console.log("\n🎯 Integration Test Suite 16: Security Modes - Ready to run\n");
 
-// Test helper to cleanup
-async function cleanup(tempDir: string) {
-  try {
-    await Deno.remove(tempDir, { recursive: true });
-  } catch {
-    // Ignore cleanup errors
-  }
-}
-
-// Test helper to create test portal
-async function createTestPortal(basePath: string, portalName: string) {
-  const portalPath = join(basePath, portalName);
-  await ensureDir(portalPath);
-  await ensureDir(join(portalPath, "src"));
-
-  // Create test files
-  await Deno.writeTextFile(
-    join(portalPath, "README.md"),
-    "# Test Portal\n\nThis is a test portal.",
-  );
-
-  await Deno.writeTextFile(
-    join(portalPath, "src", "main.ts"),
-    "export function hello() { return 'Hello'; }",
-  );
-
-  // Initialize git repo
-  const gitInit = new Deno.Command(PortalOperation.GIT, {
-    args: ["init"],
-    cwd: portalPath,
-    stdout: "null",
-    stderr: "null",
-  });
-  await gitInit.output();
-
-  // Configure git
-  await new Deno.Command(PortalOperation.GIT, {
-    args: ["config", "user.email", "test@example.com"],
-    cwd: portalPath,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-
-  await new Deno.Command(PortalOperation.GIT, {
-    args: ["config", "user.name", "Test User"],
-    cwd: portalPath,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-
-  // Initial commit
-  await new Deno.Command(PortalOperation.GIT, {
-    args: [MemoryOperation.ADD, "."],
-    cwd: portalPath,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-
-  await new Deno.Command(PortalOperation.GIT, {
-    args: ["commit", "-m", "Initial commit"],
-    cwd: portalPath,
-    stdout: "null",
-    stderr: "null",
-  }).output();
-
-  return portalPath;
-}
-
 Deno.test("Integration Test 16.1: Sandboxed Mode - File Access Blocked", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
-  const testDir = await Deno.makeTempDir({ prefix: "test-exa-security-" });
+  const env = await TestEnvironment.create();
 
   try {
-    const portalPath = await createTestPortal(testDir, "SecurePortal");
-    const eventLogger = new EventLogger({ db: dbService });
+    const { portalDir: portalPath } = await env.setupPortal({
+      alias: "SecurePortal",
+    });
+
+    // Seed test files in the newly created portal
+    await Deno.mkdir(join(portalPath, "src"), { recursive: true });
+    await Deno.writeTextFile(
+      join(portalPath, "src", "main.ts"),
+      "export function hello() { return 'Hello'; }",
+    );
+
+    const eventLogger = new EventLogger({ db: env.db });
 
     // Simulate sandboxed mode execution
     const securityMode = SecurityMode.SANDBOXED;
@@ -125,10 +65,10 @@ Deno.test("Integration Test 16.1: Sandboxed Mode - File Access Blocked", async (
       reason: "Path traversal detected",
     }, traceId);
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
     // Verify all security violations were logged
-    const securityEvents = dbService.instance
+    const securityEvents = env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'security.%' ORDER BY timestamp")
       .all(traceId);
 
@@ -157,18 +97,19 @@ Deno.test("Integration Test 16.1: Sandboxed Mode - File Access Blocked", async (
 
     console.log("✅ Sandboxed Mode - File Access Blocked - All checks passed");
   } finally {
-    await cleanup(testDir);
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 
 Deno.test("Integration Test 16.2: Hybrid Mode - Audit Detection", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
-  const testDir = await Deno.makeTempDir({ prefix: "test-exa-security-" });
+  const env = await TestEnvironment.create();
 
   try {
-    const portalPath = await createTestPortal(testDir, "AuditPortal");
-    const eventLogger = new EventLogger({ db: dbService });
+    const { portalDir: portalPath } = await env.setupPortal({
+      alias: "AuditPortal",
+    });
+
+    const eventLogger = new EventLogger({ db: env.db });
 
     const securityMode = SecurityMode.HYBRID;
     const traceId = crypto.randomUUID();
@@ -213,10 +154,10 @@ Deno.test("Integration Test 16.2: Hybrid Mode - Audit Detection", async () => {
       }, traceId);
     }
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
     // Verify audit events were logged
-    const auditEvents = (dbService.instance
+    const auditEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'security.%' ORDER BY timestamp")
       .all(traceId) as unknown) as ActivityRow[];
 
@@ -234,18 +175,19 @@ Deno.test("Integration Test 16.2: Hybrid Mode - Audit Detection", async () => {
 
     console.log("✅ Hybrid Mode - Audit Detection - All checks passed");
   } finally {
-    await cleanup(testDir);
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 
 Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
-  const testDir = await Deno.makeTempDir({ prefix: "test-exa-security-" });
+  const env = await TestEnvironment.create();
 
   try {
-    const _portalPath = await createTestPortal(testDir, "RestrictedPortal");
-    const eventLogger = new EventLogger({ db: dbService });
+    await env.setupPortal({
+      alias: "RestrictedPortal",
+    });
+
+    const eventLogger = new EventLogger({ db: env.db });
 
     const traceId = crypto.randomUUID();
 
@@ -268,9 +210,9 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
       }, traceId);
     }
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
-    const permissionEvents = (dbService.instance
+    const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.agent_not_allowed'")
       .all(traceId) as unknown) as ActivityRow[];
 
@@ -283,26 +225,25 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
 
     console.log("✅ Permission Validation - Agent Not Allowed - All checks passed");
   } finally {
-    await cleanup(testDir);
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 
 Deno.test("Integration Test 16.4: Permission Validation - Operation Not Allowed", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
+  const env = await TestEnvironment.create();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
+    const eventLogger = new EventLogger({ db: env.db });
     const traceId = crypto.randomUUID();
 
     // Simulate portal with restricted operations
     const portalConfig = {
       name: "ReadOnlyPortal",
-      allowed_operations: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY], // No write operations
+      allowed_operations: [PortalOperation.READ, PortalOperation.GIT], // No write operations
     };
 
     // Attempt restricted operation
-    const restrictedOperation = McpToolName.WRITE_FILE;
+    const restrictedOperation = PortalOperation.WRITE;
 
     if (!portalConfig.allowed_operations.includes(restrictedOperation)) {
       eventLogger.error("permission.operation_not_allowed", restrictedOperation, {
@@ -314,9 +255,9 @@ Deno.test("Integration Test 16.4: Permission Validation - Operation Not Allowed"
       }, traceId);
     }
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
-    const permissionEvents = (dbService.instance
+    const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.operation_not_allowed'")
       .all(traceId) as unknown) as ActivityRow[];
 
@@ -329,23 +270,20 @@ Deno.test("Integration Test 16.4: Permission Validation - Operation Not Allowed"
 
     console.log("✅ Permission Validation - Operation Not Allowed - All checks passed");
   } finally {
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 
 Deno.test("Integration Test 16.5: Permission Validation - Portal Not Found", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
-  const testDir = await Deno.makeTempDir({ prefix: "test-exa-security-" });
+  const env = await TestEnvironment.create();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
+    const eventLogger = new EventLogger({ db: env.db });
     const traceId = crypto.randomUUID();
 
     // Attempt to execute on non-existent portal
     const nonExistentPortal = "NonExistentPortal";
-    const portalsPath = join(testDir, "Portals");
-    await ensureDir(portalsPath);
-
+    const portalsPath = join(env.tempDir, "Portals");
     const portalPath = join(portalsPath, nonExistentPortal);
 
     // Check if portal exists
@@ -360,9 +298,9 @@ Deno.test("Integration Test 16.5: Permission Validation - Portal Not Found", asy
       }, traceId);
     }
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
-    const permissionEvents = (dbService.instance
+    const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.portal_not_found'")
       .all(traceId) as unknown) as ActivityRow[];
 
@@ -374,18 +312,30 @@ Deno.test("Integration Test 16.5: Permission Validation - Portal Not Found", asy
 
     console.log("✅ Permission Validation - Portal Not Found - All checks passed");
   } finally {
-    await cleanup(testDir);
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 
 Deno.test("Integration Test 16.6: Hybrid Mode - Read Access Allowed", async () => {
-  const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
-  const testDir = await Deno.makeTempDir({ prefix: "test-exa-security-" });
+  const env = await TestEnvironment.create();
 
   try {
-    const portalPath = await createTestPortal(testDir, "HybridPortal");
-    const eventLogger = new EventLogger({ db: dbService });
+    const { portalDir: portalPath } = await env.setupPortal({
+      alias: "HybridPortal",
+    });
+
+    // Create test files
+    await Deno.writeTextFile(
+      join(portalPath, "README.md"),
+      "# Test Portal\n\nThis is a test portal.",
+    );
+    await Deno.mkdir(join(portalPath, "src"), { recursive: true });
+    await Deno.writeTextFile(
+      join(portalPath, "src", "main.ts"),
+      "export function hello() { return 'Hello'; }",
+    );
+
+    const eventLogger = new EventLogger({ db: env.db });
 
     const securityMode = SecurityMode.HYBRID;
     const traceId = crypto.randomUUID();
@@ -412,9 +362,9 @@ Deno.test("Integration Test 16.6: Hybrid Mode - Read Access Allowed", async () =
       note: "All writes must go through MCP tools even in hybrid mode",
     }, traceId);
 
-    await dbService.waitForFlush();
+    await env.db.waitForFlush();
 
-    const securityEvents = (dbService.instance
+    const securityEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'security.%' ORDER BY timestamp")
       .all(traceId) as unknown) as ActivityRow[];
 
@@ -428,8 +378,7 @@ Deno.test("Integration Test 16.6: Hybrid Mode - Read Access Allowed", async () =
 
     console.log("✅ Hybrid Mode - Read Access Allowed - All checks passed");
   } finally {
-    await cleanup(testDir);
-    await dbCleanup();
+    await env.cleanup();
   }
 });
 

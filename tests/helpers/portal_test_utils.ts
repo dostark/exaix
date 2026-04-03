@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { setupGitRepo } from "./git_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import { PortalExecutionStrategy, PortalOperation } from "../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
@@ -35,7 +36,7 @@ export async function setupPortalTest(
   portalAlias: string = "write-portal",
   options?: { branch?: string; withSrcDir?: boolean },
 ): Promise<IPortalTestSetup> {
-  const { branch = "main", withSrcDir = true } = options || {};
+  const { branch = TEST_DEFAULT_BRANCH, withSrcDir = true } = options || {};
   const portalTargetPath = join(tempDir, "portal-write-target");
 
   if (withSrcDir) {
@@ -120,10 +121,10 @@ export async function setupWorktreePortalRepo(
   targetBranch: string,
 ): Promise<void> {
   await ensureDir(join(portalTargetPath, "src"));
-  await setupGitRepo(portalTargetPath, { initialCommit: true, branch: "main" });
-  await gitStdout(portalTargetPath, ["branch", targetBranch, "main"]);
-  await gitStdout(portalTargetPath, ["checkout", "main"]);
-  assertEquals(await gitStdout(portalTargetPath, ["branch", "--show-current"]), "main");
+  await setupGitRepo(portalTargetPath, { initialCommit: true, branch: TEST_DEFAULT_BRANCH });
+  await gitStdout(portalTargetPath, ["branch", targetBranch, TEST_DEFAULT_BRANCH]);
+  await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
+  assertEquals(await gitStdout(portalTargetPath, ["branch", "--show-current"]), TEST_DEFAULT_BRANCH);
 }
 
 /**

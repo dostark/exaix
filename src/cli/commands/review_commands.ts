@@ -1317,7 +1317,7 @@ export class ReviewCommands extends BaseCommand {
       if (review.worktree_path) {
         await this.cleanupWorktreeReview(portalGitService, review);
       } else {
-        await this.deleteBranchWithWorktreeHandling(portalGitService, review.branch);
+        await this.deleteBranchWithWorktreeHandling(portalGitService, review.branch, repoPath);
       }
 
       // Log rejection with user identity
@@ -1342,7 +1342,9 @@ export class ReviewCommands extends BaseCommand {
   private async deleteBranchWithWorktreeHandling(
     portalGitService: Pick<IGitService, "runGitCommand">,
     branch: string,
+    repoPath: string,
   ): Promise<void> {
+    const defaultBranch = await this.getDefaultBranch(repoPath);
     try {
       await portalGitService.runGitCommand(["branch", "-D", branch]);
       return;
@@ -1357,14 +1359,14 @@ export class ReviewCommands extends BaseCommand {
         const currentBranch = currentBranchResult.output.trim();
 
         if (currentBranch === branch) {
-          await portalGitService.runGitCommand(["checkout", "master"]);
+          await portalGitService.runGitCommand(["checkout", defaultBranch]);
         } else {
           const worktreePath = await this.findWorktreePathForBranch(portalGitService, branch);
           if (worktreePath) {
             const mainWorktreeResult = await portalGitService.runGitCommand(["worktree", "list", "--porcelain"]);
             const mainWorktree = mainWorktreeResult.output.trim().split("\n")[0];
             if (mainWorktree && mainWorktree.includes(worktreePath)) {
-              await portalGitService.runGitCommand(["checkout", "master"]);
+              await portalGitService.runGitCommand(["checkout", defaultBranch]);
             } else {
               await portalGitService.runGitCommand(["worktree", "remove", "--force", worktreePath]);
             }
@@ -1377,7 +1379,7 @@ export class ReviewCommands extends BaseCommand {
         throw new Error(
           `Failed to delete branch: ${errorMessage}\n` +
             `Attempted to resolve checkout/worktree conflict but failed: ${wtErrorMessage}\n` +
-            `Try manually checking out a different branch and then deleting: git checkout master && git branch -D ${branch}`,
+            `Try manually checking out a different branch and then deleting: git checkout ${defaultBranch} && git branch -D ${branch}`,
         );
       }
     }

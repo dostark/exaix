@@ -162,7 +162,8 @@ Deno.test("read_file: read_file appears in tools/list", async () => {
 
     assertExists(response.result);
     const result = response.result as { tools: Array<{ name: string; description: string }> };
-    assertEquals(result.tools.length, TOTAL_MCP_TOOLS);
+    // Note: McpToolName.GIT is reserved but not yet implemented, so expect TOTAL_MCP_TOOLS - 1
+    assertEquals(result.tools.length, TOTAL_MCP_TOOLS - 1);
     const toolNames = result.tools.map((t) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));

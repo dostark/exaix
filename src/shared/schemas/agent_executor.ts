@@ -49,6 +49,9 @@ export const AgentExecutionOptionsSchema = z.object({
   permitted_tools: z.array(z.string()).optional().describe(
     "Custom tool permissions for this execution",
   ),
+  allowed_paths: z.array(z.string()).optional().describe(
+    "Allowed paths for modification (security audit)",
+  ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema

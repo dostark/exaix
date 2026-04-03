@@ -12,6 +12,7 @@ import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { ActivityActor, LogLevel } from "../../shared/enums.ts";
+import { PORTAL_PREFIX_PATTERN } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
@@ -959,10 +960,16 @@ export class ToolRegistry implements IToolRegistry {
 
     // Handle not found errors
     if (error instanceof Deno.errors.NotFound) {
-      const message = context ? `${context} not found` : "Not found";
+      let message = context || "Not found";
+
+      // Strip portal prefix if present for cleaner error messages
+      if (message.includes("@")) {
+        message = message.replace(PORTAL_PREFIX_PATTERN, "");
+      }
+
       return {
         success: false,
-        error: message,
+        error: `${message} not found`,
       };
     }
 

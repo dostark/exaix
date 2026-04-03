@@ -9,6 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { PermissionAction, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 // ============================================================================
 // Test Helpers
@@ -18,6 +19,7 @@ function createTestPortal(overrides: Partial<IPortalPermissions> = {}): IPortalP
   return {
     alias: "TestPortal",
     target_path: "/tmp/test-portal",
+    default_branch: TEST_DEFAULT_BRANCH,
     identities_allowed: ["agent-1", "agent-2"],
     operations: [
       PortalOperation.READ,

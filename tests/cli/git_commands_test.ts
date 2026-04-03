@@ -27,7 +27,7 @@ describe("GitCommands", () => {
     const config = result.configService;
     cleanup = result.cleanup;
 
-    // Initialize git repository (creates master branch with 1 empty commit)
+    // Initialize git repository (creates main branch with 1 empty commit)
     await initGitRepo(tempDir);
 
     // Add project files and commit them
@@ -50,15 +50,15 @@ describe("GitCommands", () => {
     it("should list all branches", async () => {
       // Create additional branches
       await runGitCommand(tempDir, ["checkout", "-b", "feature-1"]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
       await runGitCommand(tempDir, ["checkout", "-b", "feature-2"]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
 
       const branches = await gitCommands.listBranches();
 
       assertEquals(branches.length, 3);
       const branchNames = branches.map((b) => b.name);
-      assertEquals(branchNames.includes("master"), true);
+      assertEquals(branchNames.includes("main"), true);
       assertEquals(branchNames.includes("feature-1"), true);
       assertEquals(branchNames.includes("feature-2"), true);
     });
@@ -70,7 +70,7 @@ describe("GitCommands", () => {
       await runGitCommand(tempDir, [MemoryOperation.ADD, "old.txt"]);
       await runGitCommand(tempDir, ["commit", "-m", "Old commit"]);
 
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
       await delay(100);
 
       await Deno.writeTextFile(join(tempDir, "new.txt"), "new content\n");
@@ -80,7 +80,7 @@ describe("GitCommands", () => {
       const branches = await gitCommands.listBranches();
 
       // Master should be first (most recent commit)
-      assertEquals(branches[0].name, "master");
+      assertEquals(branches[0].name, "main");
     });
 
     it("should extract trace_id from commit messages", async () => {
@@ -94,10 +94,10 @@ describe("GitCommands", () => {
       ]);
 
       const branches = await gitCommands.listBranches();
-      const masterBranch = branches.find((b) => b.name === "master");
+      const mainBranch = branches.find((b) => b.name === "main");
 
-      assertExists(masterBranch);
-      assertEquals(masterBranch.trace_id, traceId);
+      assertExists(mainBranch);
+      assertEquals(mainBranch.trace_id, traceId);
     });
 
     it("should mark current branch", async () => {
@@ -112,11 +112,11 @@ describe("GitCommands", () => {
 
     it("should filter by pattern", async () => {
       await runGitCommand(tempDir, ["checkout", "-b", "feat/feature-1"]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
       await runGitCommand(tempDir, ["checkout", "-b", "feat/feature-2"]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
       await runGitCommand(tempDir, ["checkout", "-b", "bugfix/fix-1"]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
 
       const featBranches = await gitCommands.listBranches("feat/*");
 
@@ -126,21 +126,21 @@ describe("GitCommands", () => {
 
     it("should include branch metadata", async () => {
       const branches = await gitCommands.listBranches();
-      const masterBranch = branches.find((b) => b.name === "master");
+      const mainBranch = branches.find((b) => b.name === "main");
 
-      assertExists(masterBranch);
-      assertExists(masterBranch.last_commit);
-      assertExists(masterBranch.last_commit_date);
-      assertEquals(typeof masterBranch.is_current, "boolean");
+      assertExists(mainBranch);
+      assertExists(mainBranch.last_commit);
+      assertExists(mainBranch.last_commit_date);
+      assertEquals(typeof mainBranch.is_current, "boolean");
     });
   });
 
   describe("showBranch", () => {
     it("should display branch details", async () => {
-      const result = await gitCommands.showBranch("master");
+      const result = await gitCommands.showBranch("main");
 
       assertExists(result.branch);
-      assertEquals(result.branch.name, "master");
+      assertEquals(result.branch.name, "main");
       assertExists(result.commits);
       assertEquals(result.commits.length >= 1, true);
     });
@@ -161,7 +161,7 @@ describe("GitCommands", () => {
         await runGitCommand(tempDir, ["commit", "-m", `Commit ${i}`]);
       }
 
-      const result = await gitCommands.showBranch("master");
+      const result = await gitCommands.showBranch("main");
 
       assertEquals(result.commits.length >= 3, true);
       assertExists(result.commits[0].sha);
@@ -179,7 +179,7 @@ describe("GitCommands", () => {
       await runGitCommand(tempDir, [MemoryOperation.ADD, "traced.txt"]);
       await runGitCommand(tempDir, ["commit", "-m", "Traced commit", "-m", `Trace-Id: ${traceId}`]);
 
-      const result = await gitCommands.showBranch("master");
+      const result = await gitCommands.showBranch("main");
 
       // Verify commits are returned and contain our new commit
       assertEquals(result.commits.length >= 1, true);
@@ -196,7 +196,7 @@ describe("GitCommands", () => {
         await runGitCommand(tempDir, ["commit", "-m", `Commit ${i}`]);
       }
 
-      const result = await gitCommands.showBranch("master");
+      const result = await gitCommands.showBranch("main");
 
       // Should have at most 10 commits
       assertEquals(result.commits.length, 10);
@@ -207,7 +207,7 @@ describe("GitCommands", () => {
     it("should show current branch", async () => {
       const status = await gitCommands.status();
 
-      assertEquals(status.branch, "master");
+      assertEquals(status.branch, "main");
     });
 
     it("should categorize modified files", async () => {
@@ -293,7 +293,7 @@ describe("GitCommands", () => {
     it("should search all branches", async () => {
       const traceId = "def-333-abc-444";
 
-      // Commit on master
+      // Commit on main
       await Deno.writeTextFile(join(tempDir, "main-file.txt"), "main content\n");
       await runGitCommand(tempDir, [MemoryOperation.ADD, "main-file.txt"]);
       await runGitCommand(tempDir, [
@@ -312,7 +312,7 @@ describe("GitCommands", () => {
         `Feature commit\n\nTrace-Id: ${traceId}`,
       ]);
 
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", "main"]);
 
       const commits = await gitCommands.logByTraceId(traceId);
 
@@ -391,7 +391,7 @@ describe("GitCommands", () => {
       await runGitCommand(tempDir, [MemoryOperation.ADD, "feature.txt"]);
       await runGitCommand(tempDir, ["commit", "-m", "Add feature"]);
 
-      const diff = await gitCommands.diff("feature", "master");
+      const diff = await gitCommands.diff("feature", "main");
 
       assertStringIncludes(diff, "feature.txt");
       assertStringIncludes(diff, "+feature content");

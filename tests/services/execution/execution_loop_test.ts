@@ -26,6 +26,7 @@ import { ensureDir } from "@std/fs/ensure-dir";
 import { IModelProvider } from "../../../src/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { EXECUTION_REPORT_FILENAME } from "../../../src/shared/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 /**
  * Tests for Step 4.3: Execution Loop (Resilient)
@@ -281,7 +282,15 @@ path = "analysis-target.txt"
   }
 
   try {
-    const config = createMockConfig(tempDir);
+    const config = createMockConfig(tempDir, {
+      portals: [{
+        alias: "workspace",
+        target_path: tempDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
+      }],
+    });
     const paths = getTestPaths(tempDir);
     await Deno.mkdir(paths.activeDir, { recursive: true });
 

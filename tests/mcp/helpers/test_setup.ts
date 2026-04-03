@@ -9,6 +9,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists } from "@std/assert";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 import { McpTransportType, PortalOperation } from "../../../src/shared/enums.ts";
 import { MCPServer } from "../../../src/mcp/server.ts";
@@ -97,8 +98,9 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
   const portalConfig = {
     alias: portalAlias,
     target_path: portalPath,
-    identities_allowed: permissions.identities_allowed,
-    operations: permissions.operations,
+    default_branch: TEST_DEFAULT_BRANCH,
+    identities_allowed: permissions.identities_allowed ?? ["*"],
+    operations: (permissions.operations ?? []) as PortalOperation[],
   };
 
   const config = createMockConfig(tempDir, {
@@ -182,6 +184,7 @@ export async function initToolPermissionTest(
   const permissions: IPortalPermissions = {
     alias: portalAlias,
     target_path: env.portalPath,
+    default_branch: TEST_DEFAULT_BRANCH,
     identities_allowed: [identityId],
     operations,
   };

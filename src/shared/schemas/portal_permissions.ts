@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { PermissionAction, PortalOperation, SecurityMode } from "../enums.ts";
+import { TEST_DEFAULT_BRANCH } from "../../../tests/helpers/constants.ts";
 
 // ============================================================================
 // Permission Check Interfaces
@@ -125,6 +126,8 @@ export type IPortalSecurityConfig = z.infer<typeof PortalSecurityConfigSchema>;
 export const PortalPermissionsSchema = z.object({
   alias: z.string(),
   target_path: z.string(),
+  description: z.string().optional(),
+  default_branch: z.string().default(TEST_DEFAULT_BRANCH),
   created: z.string().optional(),
 
   // Legacy permission controls (for backward compatibility)
@@ -142,4 +145,5 @@ export const PortalPermissionsSchema = z.object({
   security: PortalSecurityConfigSchema.optional(),
 });
 
-export type IPortalPermissions = z.infer<typeof PortalPermissionsSchema>;
+export type IPortalPermissions = z.output<typeof PortalPermissionsSchema>;
+export type IPortalPermissionsInput = z.input<typeof PortalPermissionsSchema>;

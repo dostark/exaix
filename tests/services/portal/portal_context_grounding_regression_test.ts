@@ -8,7 +8,8 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "../../integration/helpers/test_environment.ts";
 import { join } from "@std/path";
-import { MockStrategy } from "../../../src/shared/enums.ts";
+import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt", async () => {
   const env = await TestEnvironment.create({ initGit: false });
@@ -36,6 +37,9 @@ Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt"
     env.config.portals = [{
       alias: "target-repo",
       target_path: portalPath,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
     // 4. Process request to generate a plan

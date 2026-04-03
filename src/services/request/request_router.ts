@@ -119,6 +119,9 @@ export class RequestRouter {
       const portalPermissions: IPortalConfig = {
         alias: portal.alias,
         target_path: portal.target_path,
+        default_branch: portal.default_branch ?? "main",
+        identities_allowed: portal.identities_allowed ?? ["*"],
+        operations: portal.operations ?? [],
         created: portal.created,
       };
 

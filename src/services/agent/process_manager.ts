@@ -80,4 +80,17 @@ export class ProcessManager {
       }
     }
   }
+
+  /**
+   * Dispose of all resources (signal listeners and active processes)
+   * Call this when the ProcessManager is no longer needed
+   */
+  dispose(): void {
+    // Terminate any active processes
+    this.terminateAll();
+
+    // Remove signal listeners
+    this.cleanup();
+    this.signalHandlers.clear();
+  }
 }

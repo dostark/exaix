@@ -14,7 +14,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
-import type { IPortalConfig } from "../../../src/shared/schemas/config.ts";
+import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 import {
   createMockAgentRunner,
   createMockFlowRunner,
@@ -51,9 +51,12 @@ describe("RequestRouter IWorkspaceExecutionContext Integration", () => {
     const portalConfig = dirs.portalConfig;
 
     // Create mock config
-    const portalConfigRecord: IPortalConfig = {
+    const portalConfigRecord: IPortalPermissions = {
       alias: portalConfig.alias,
       target_path: portalConfig.target_path,
+      default_branch: portalConfig.default_branch,
+      identities_allowed: portalConfig.identities_allowed,
+      operations: portalConfig.operations,
     };
     config = createMockConfig(workspaceDir, {
       portals: [portalConfigRecord],

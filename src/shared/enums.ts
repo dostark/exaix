@@ -782,6 +782,16 @@ export enum AgentExecutionErrorType {
   GIT_ERROR = "git_error",
   SECURITY_VIOLATION = "security_violation",
   EXECUTION_ERROR = "execution_error",
+  CONFIGURATION_ERROR = "configuration_error",
+}
+
+/**
+ * Agent execution strategy names.
+ */
+export enum ExecutionStrategyName {
+  LEGACY = "legacy",
+  REACT = "react",
+  MCP = "mcp",
 }
 
 /**
@@ -864,6 +874,7 @@ export enum McpToolName {
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
+  GIT = "git",
 }
 
 /**

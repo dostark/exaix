@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { McpTransportType } from "../../src/shared/enums.ts";
+import { McpTransportType, PortalOperation } from "../../src/shared/enums.ts";
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -14,6 +14,7 @@ import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { MCPServer } from "../../src/mcp/server.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 
 /**
@@ -26,7 +27,15 @@ import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
  */
 async function createTestServer(portals: Array<{ alias: string; files: Record<string, string> }>) {
   const { db, tempDir, cleanup } = await initTestDbService();
-  const portalConfigs: Array<{ alias: string; target_path: string }> = [];
+  const portalConfigs: Array<
+    {
+      alias: string;
+      target_path: string;
+      default_branch: string;
+      identities_allowed: string[];
+      operations: PortalOperation[];
+    }
+  > = [];
 
   for (const { alias, files } of portals) {
     const portalPath = join(tempDir, alias);
@@ -35,7 +44,13 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
       await ensureDir(join(fullPath, ".."));
       await Deno.writeTextFile(fullPath, content);
     }
-    portalConfigs.push({ alias, target_path: portalPath });
+    portalConfigs.push({
+      alias,
+      target_path: portalPath,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [],
+    });
   }
 
   const config = createMockConfig(tempDir, { portals: portalConfigs });

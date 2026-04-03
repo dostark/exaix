@@ -28,6 +28,7 @@ import { Config } from "../../../src/shared/schemas/config.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
@@ -104,6 +105,9 @@ async function setup() {
     {
       alias: "TestPortal",
       target_path: portalDir,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     },
   ];
   testConfig.watcher = {
@@ -135,6 +139,7 @@ function getServices() {
     {
       alias: "TestPortal",
       target_path: portalDir,
+      default_branch: TEST_DEFAULT_BRANCH,
       identities_allowed: ["test-agent", "ollama-agent"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
       security: {
@@ -871,9 +876,9 @@ Deno.test({
       );
 
       const invalidYaml = `---
-name: invalid
+name: ${"a".repeat(101)}
 model: mock-model
-provider: "" # Should fail validation
+provider: mock
 capabilities: []
 ---
 Test prompt`;
@@ -882,7 +887,7 @@ Test prompt`;
       await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, invalidYaml);
 
-      // Should reject due to invalid provider
+      // Should reject due to name exceeding max length
       await assertRejects(
         () => executor.loadBlueprint("invalid"),
         SafeError,
@@ -1462,9 +1467,9 @@ Deno.test({
       );
       assert(["YAML_PARSE_ERROR", "BLUEPRINT_LOAD_ERROR"].includes((error as SafeError).errorCode));
 
-      // 2. Invalid Schema (extra fields)
+      // 2. Invalid Schema (missing required field: model)
       const badSchemaPath = join(testConfig.paths.blueprints, "Identities", "bad-schema.md");
-      await Deno.writeTextFile(badSchemaPath, "---\nname: test\nmodel: gpt\nprovider: mock\nextra: field\n---\nPrompt");
+      await Deno.writeTextFile(badSchemaPath, "---\nname: test\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
       const error2 = await assertRejects(
         () => executor.loadBlueprint("bad-schema"),
@@ -1598,9 +1603,11 @@ Deno.test({
       const result = await executor.executeStep(context, options);
 
       assertEquals(result.branch, mockResult.branch);
-      assertEquals(result.commit_sha, mockResult.commit_sha);
+      // commit_sha is overwritten by executeStep with real git HEAD SHA
+      assertExists(result.commit_sha);
       assertEquals(result.files_changed, mockResult.files_changed);
-      assertEquals(result.tool_calls, mockResult.tool_calls);
+      // tool_calls is set based on actual TOML actions executed, not from JSON response
+      assertEquals(result.tool_calls, 0);
     } finally {
       await cleanup();
     }
@@ -1823,7 +1830,8 @@ Deno.test({
       // Validates fallback object
       assertStringIncludes(result.branch, "feat/r2-ae5c81f3");
       assertEquals(result.files_changed.length, 0);
-      assertEquals(result.commit_sha, "0000000000000000000000000000000000000000");
+      // commit_sha is overwritten by executeStep with real git HEAD SHA
+      assertExists(result.commit_sha);
     } finally {
       await cleanup();
     }

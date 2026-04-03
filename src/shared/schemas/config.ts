@@ -14,17 +14,22 @@ import { ProviderTypeSchema } from "./ai_config.ts";
 import {
   LogLevel,
   PortalAnalysisMode,
-  PortalExecutionStrategy,
+  PortalOperation,
   ProviderCostTier,
   QualityGateMode,
   SqliteJournalMode,
 } from "../enums.ts";
 import { AnalysisMode } from "../types/request.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "../version.ts";
+import { PortalPermissionsSchema } from "./portal_permissions.ts";
 
 export interface IPortalConfig {
   alias: string;
   target_path: string;
+  description?: string;
+  default_branch?: string;
+  identities_allowed?: string[];
+  operations?: PortalOperation[];
   created?: string;
 }
 
@@ -177,13 +182,7 @@ export const ConfigSchema = z.object({
     timeout_sec: DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
     max_iterations: DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
   }),
-  portals: z.array(z.object({
-    alias: z.string(),
-    target_path: z.string(),
-    created: z.string().optional(),
-    default_branch: z.string().optional(),
-    execution_strategy: z.nativeEnum(PortalExecutionStrategy).optional(),
-  })).default([]),
+  portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */
   ai: AiConfigSchema.optional(),
   /** Named model configurations (default, fast, local, etc.) */

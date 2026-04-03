@@ -68,6 +68,8 @@ Deno.test("AgentExecutor: logExecutionStart writes correct field separation", as
   assertEquals(event.actorType, ActorType.SERVICE);
   // KEY: agentId must differ from identityId
   assertNotEquals(event.agentId, event.identityId);
+
+  executor.dispose();
 });
 
 Deno.test("AgentExecutor: logExecutionComplete writes correct field separation", async () => {
@@ -108,6 +110,8 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
   assertNotEquals(event.agentId, event.identityId);
+
+  executor.dispose();
 });
 
 Deno.test("AgentExecutor: logExecutionError writes correct field separation", async () => {
@@ -146,6 +150,8 @@ Deno.test("AgentExecutor: logExecutionError writes correct field separation", as
   // target should be the identity that failed
   assertEquals(event.target, "test-agent");
   assertNotEquals(event.agentId, event.identityId);
+
+  executor.dispose();
 });
 
 Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint slug", async () => {
@@ -173,4 +179,6 @@ Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint 
   assertNotEquals(event.agentId, "senior-coder");
   assertEquals(event.agentId, "agent-executor");
   assertEquals(event.identityId, "senior-coder");
+
+  executor.dispose();
 });

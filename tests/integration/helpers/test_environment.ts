@@ -47,6 +47,8 @@ import {
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 
 export interface ITestEnvironmentOptions {
   /** Custom config overrides */
@@ -153,7 +155,7 @@ export class TestEnvironment {
     if (options.initGit !== false) {
       await setupGitRepo(tempDir, {
         initialCommit: false, // We'll do a custom commit with gitignore
-        branch: "main",
+        branch: TEST_DEFAULT_BRANCH,
       });
 
       // Create initial commit with .gitignore to prevent collateral damage from git reset --hard
@@ -266,6 +268,42 @@ retry_backoff_base_ms = 1000
 
     const env = new TestEnvironment(tempDir, config, db, cleanup);
     return env;
+  }
+
+  /**
+   * Setup a test portal directory and return its configuration
+   */
+  async setupPortal(options: {
+    alias: string;
+    targetPath?: string;
+    operations?: PortalOperation[];
+    defaultBranch?: string;
+    initialCommit?: boolean;
+    identitiesAllowed?: string[];
+  }): Promise<{ portalDir: string; config: IPortalPermissions }> {
+    const portalDir = options.targetPath ?? join(this.tempDir, options.alias);
+    const operations = options.operations ?? [
+      PortalOperation.READ,
+      PortalOperation.WRITE,
+      PortalOperation.GIT,
+    ];
+    const defaultBranch = options.defaultBranch ?? TEST_DEFAULT_BRANCH;
+
+    await ensureDir(portalDir);
+    await setupGitRepo(portalDir, {
+      initialCommit: options.initialCommit ?? true,
+      branch: defaultBranch,
+    });
+
+    const config: IPortalPermissions = {
+      alias: options.alias,
+      target_path: portalDir,
+      default_branch: defaultBranch,
+      operations,
+      identities_allowed: options.identitiesAllowed ?? ["*"],
+    };
+
+    return { portalDir, config };
   }
 
   /**

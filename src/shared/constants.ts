@@ -101,6 +101,25 @@ export const DEFAULT_AGENT_MODEL = "default";
 export const DEFAULT_AGENT_TIMEOUT_SEC = 60;
 export const DEFAULT_AGENT_MAX_ITERATIONS = 10;
 
+// ReAct loop constants
+export const REACT_THOUGHT_PREFIX = "THOUGHT: ";
+export const REACT_STATUS_COMPLETE = "STATUS: COMPLETE";
+export const REACT_SUMMARY_PREFIX = "SUMMARY: ";
+export const REACT_CALLING_TOOL_PREFIX = "CALLING TOOL: ";
+export const REACT_TOOL_ERROR_PREFIX = "TOOL ERROR: ";
+export const REACT_DEFAULT_TEMPERATURE = 0.1;
+export const REACT_DEFAULT_MAX_TOKENS = 4000;
+
+// General Agent & MCP constants
+export const DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS = 30000;
+export const PORTAL_ALIAS_WORKSPACE = "workspace";
+export const GIT_EMPTY_SHA = "0000000000000000000000000000000000000000";
+
+// Environment variables for MCP agents
+export const ENV_AGENT_MODE = "EXA_AGENT_MODE";
+export const ENV_TRACE_ID = "EXA_TRACE_ID";
+export const ENV_PORTAL_ALIAS = "EXA_PORTAL";
+
 // ============================================================================
 // AI/LLM Provider Defaults
 // ============================================================================
@@ -299,6 +318,7 @@ export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = 8;
 export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = 8;
 export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = 1;
 export const DEFAULT_GIT_EXIT_CODE_FATAL = 128;
+export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS = 2000;
 
 // ============================================================================
 // Rate Limiting Validation Limits
@@ -1161,6 +1181,7 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.RUN_COMMAND,
   McpToolName.CREATE_REQUEST,
   McpToolName.APPROVE_PLAN,
+  McpToolName.GIT, // Reserved for future git command tool (not yet implemented)
 ]);
 
 /**
@@ -1168,3 +1189,32 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
  * Used for test assertions and discovery validation.
  */
 export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
+
+// ============================================================================
+// Agent Execution & Prompting (Phase 61 Cleanup)
+// ============================================================================
+
+/** Prefixes used for plan step execution prompts */
+export const PROMPT_PLAN_STEP_TASK_PREFIX = "CURRENT TASK:\n";
+export const PROMPT_PLAN_STEP_REASONING_PREFIX = "\n\nREASONING:\n";
+
+/** Common system-level git error substrings */
+export const GIT_ERROR_NOTHING_TO_COMMIT = "nothing to commit";
+export const GIT_ERROR_NOT_A_REPO = "not a git repository";
+
+/** Maximum length for sanitized user input in agent prompts */
+export const MAX_USER_INPUT_LENGTH = 10000;
+
+/** Regular expression for extracting TOML blocks from model responses */
+export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
+
+/** Default parameters for legacy agent execution */
+export const LEGACY_EXECUTION_TEMPERATURE = 0.7;
+export const LEGACY_EXECUTION_MAX_TOKENS = 4000;
+
+/** Default parameters for internal report generation */
+export const REPORT_GENERATION_TEMPERATURE = 0.1;
+export const REPORT_GENERATION_MAX_TOKENS = 1000;
+
+/** Regex pattern to match portal-prefixed paths like @portal/file.ts */
+export const PORTAL_PREFIX_PATTERN = /@[a-zA-Z0-9_-]+\//g;

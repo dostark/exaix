@@ -15,6 +15,7 @@ import { join } from "@std/path";
 import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { MockProvider } from "../../../src/ai/providers.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 Deno.test("PlanExecutor: executes plan steps successfully", async () => {
   const { tempDir: _tempDir, repoDir, db, cleanup, config, git } = await createGitTestContext("plan-exec-test-");
@@ -24,6 +25,22 @@ Deno.test("PlanExecutor: executes plan steps successfully", async () => {
     // Setup git repo
     await git.ensureRepository();
     await git.ensureIdentity();
+
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["test.txt"]
+---
+You are a test agent.
+`,
+    );
 
     // Mock LLM response with TOML actions
     const mockResponse = `
@@ -45,11 +62,11 @@ content = "Hello World"
 
     // Prepare plan context
     const context: IPlanContext = {
-      trace_id: "trace-123",
+      trace_id: "00000000-0000-0000-0000-000000000001",
       request_id: "req-123",
       identity: "test-agent",
       frontmatter: {
-        trace_id: "trace-123",
+        trace_id: "00000000-0000-0000-0000-000000000001",
         request_id: "req-123",
       },
       steps: [
@@ -104,6 +121,22 @@ Deno.test("PlanExecutor: handles multiple steps", async () => {
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["step1.txt", "step2.txt"]
+---
+You are a test agent.
+`,
+    );
+
     // Mock LLM response - we need different responses for different steps
     // But MockProvider returns static response.
     // We might need to subclass MockProvider or make it smarter if we want dynamic responses.
@@ -143,7 +176,7 @@ content = "Step 2"
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-456",
+      trace_id: "00000000-0000-0000-0000-000000000002",
       request_id: "req-456",
       identity: "test-agent",
       frontmatter: {},
@@ -174,6 +207,22 @@ Deno.test("PlanExecutor: handles tool execution failure", async () => {
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["fail.txt"]
+---
+You are a test agent.
+`,
+    );
+
     // Mock response with invalid tool usage (e.g. write to root which might be allowed but let's try something that fails)
     // Or just use a non-existent tool? ToolRegistry throws if tool not found?
     // ToolRegistry throws "Unknown tool" if not found.
@@ -189,7 +238,7 @@ foo = "bar"
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-fail",
+      trace_id: "00000000-0000-0000-0000-000000000003",
       request_id: "req-fail",
       identity: "test-agent",
       frontmatter: {},
@@ -219,7 +268,7 @@ Deno.test("PlanExecutor: handles no actions generated", async () => {
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-no-act",
+      trace_id: "00000000-0000-0000-0000-000000000004",
       request_id: "req-no-act",
       identity: "test-agent",
       frontmatter: {},
@@ -255,7 +304,7 @@ path = "bad.txt"
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-bad",
+      trace_id: "00000000-0000-0000-0000-000000000005",
       request_id: "req-bad",
       identity: "test-agent",
       frontmatter: {},
@@ -278,6 +327,22 @@ Deno.test("PlanExecutor: handles tool failure (result.success=false)", async () 
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["non_existent.txt"]
+---
+You are a test agent.
+`,
+    );
+
     // Mock response where tool returns success=false
     const mockResponse = `
 \`\`\`toml
@@ -291,7 +356,7 @@ path = "non_existent.txt"
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-fail-res",
+      trace_id: "00000000-0000-0000-0000-000000000006",
       request_id: "req-fail-res",
       identity: "test-agent",
       frontmatter: {},
@@ -334,7 +399,7 @@ path = "read.txt"
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
 
     const context: IPlanContext = {
-      trace_id: "trace-no-change",
+      trace_id: "00000000-0000-0000-0000-000000000007",
       request_id: "req-no-change",
       identity: "test-agent",
       frontmatter: {},
@@ -353,13 +418,29 @@ path = "read.txt"
 Deno.test("PlanExecutor: handles execution without git", async () => {
   const { tempDir: _tempDir, repoDir, db, cleanup, config } = await createGitTestContext("plan-exec-no-git-");
   try {
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["no-git.txt"]
+---
+You are a test agent.
+`,
+    );
+
     const mockResponse =
       `\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "no-git.txt"\ncontent = "No Git"\n\`\`\``;
     const mockProvider = new MockProvider(mockResponse);
     const executor = new PlanExecutor(config, mockProvider, db, repoDir, { enableGit: false });
 
     const context: IPlanContext = {
-      trace_id: "trace-no-git",
+      trace_id: "00000000-0000-0000-0000-000000000008",
       request_id: "req-no-git",
       identity: "test-agent",
       frontmatter: {},
@@ -383,7 +464,29 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
     await Deno.mkdir(portalDir, { recursive: true });
 
     // Update config to include portal
-    config.portals = [{ alias: "MyPortal", target_path: portalDir }];
+    config.portals = [{
+      alias: "MyPortal",
+      target_path: portalDir,
+      default_branch: TEST_DEFAULT_BRANCH,
+      identities_allowed: ["*"],
+      operations: [_PortalOperation.READ, _PortalOperation.WRITE, _PortalOperation.GIT],
+    }];
+
+    // Create blueprint without mcp capability so Legacy strategy is used
+    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---
+name: test-agent
+model: mock-model
+provider: mock
+capabilities: ["write"]
+allowed_paths: ["portal-file.txt"]
+---
+You are a test agent.
+`,
+    );
 
     const mockResponse =
       `\`\`\`toml\n[[actions]]\ntool = "write_file"\n[actions.params]\npath = "portal-file.txt"\ncontent = "In Portal"\n\`\`\``;
@@ -391,7 +494,7 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
     const executor = new PlanExecutor(config, mockProvider, db, repoDir, { enableGit: false });
 
     const context: IPlanContext = {
-      trace_id: "trace-portal",
+      trace_id: "00000000-0000-0000-0000-000000000009",
       request_id: "req-portal",
       identity: "test-agent",
       frontmatter: { portal: "MyPortal" },
@@ -415,7 +518,7 @@ Deno.test("PlanExecutor: generates execution report", async () => {
     const executor = new PlanExecutor(config, mockProvider, db, repoDir, { generateReport: true, enableGit: false });
 
     const context: IPlanContext = {
-      trace_id: "trace-report",
+      trace_id: "00000000-0000-0000-0000-000000000010",
       request_id: "req-report",
       identity: "test-agent",
       frontmatter: {},

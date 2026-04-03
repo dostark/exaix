@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
 import type { IPortalConfig } from "../../../src/shared/schemas/config.ts";
 import { ensureDir } from "@std/fs";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 describe("WorkspaceExecutionContextBuilder", () => {
   let tempDir: string;
@@ -40,6 +41,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -56,6 +60,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portalWithTrailingSlash: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir + "/",
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portalWithTrailingSlash);
@@ -68,6 +75,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const nonExistentPortal: IPortalConfig = {
         alias: "missing-portal",
         target_path: join(tempDir, "nonexistent"),
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       try {
@@ -82,6 +92,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portalWithoutGit: IPortalConfig = {
         alias: "no-git-portal",
         target_path: tempDir, // temp dir exists but has no .git
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       try {
@@ -99,6 +112,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "symlink-portal",
         target_path: symlinkPath,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const resolved = await WorkspaceExecutionContextBuilder.resolvePortalSymlink(portal);
@@ -160,11 +176,17 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal1: IPortalConfig = {
         alias: "portal-1",
         target_path: portal1Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const portal2: IPortalConfig = {
         alias: "portal-2",
         target_path: portal2Dir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context1 = WorkspaceExecutionContextBuilder.forPortal(portal1);
@@ -181,6 +203,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const portalContext = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -201,6 +226,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -222,6 +250,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
@@ -241,6 +272,9 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal: IPortalConfig = {
         alias: "test-portal",
         target_path: portalDir,
+        default_branch: TEST_DEFAULT_BRANCH,
+        identities_allowed: ["*"],
+        operations: [],
       };
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);

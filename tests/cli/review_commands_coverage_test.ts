@@ -12,6 +12,7 @@ import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
 import { DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
 function cast<T = any>(obj: unknown): T {
   return obj as T;
@@ -61,9 +62,9 @@ describe("ReviewCommands Targeted Coverage", () => {
     });
 
     it("getDefaultBranch: handles missing remote and master fallback", async () => {
-      // Current repo has master from initGitRepo
+      // Current repo has TEST_DEFAULT_BRANCH from initGitRepo
       const branch = await cast(reviewCommands).getDefaultBranch(tempDir);
-      assertEquals(branch, "master");
+      assertEquals(branch, TEST_DEFAULT_BRANCH);
     });
 
     it("getDefaultBranch: handles main fallback", async () => {
@@ -98,7 +99,7 @@ describe("ReviewCommands Targeted Coverage", () => {
       await Deno.writeTextFile(join(tempDir, "git.txt"), "git content");
       await runGitCommand(tempDir, ["add", "git.txt"]);
       await runGitCommand(tempDir, ["commit", "-m", `msg\n\nTrace-Id: ${traceId}`]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
 
       // Create a record in DB for a DIFFERENT branch
       await db.preparedRun(
@@ -140,7 +141,7 @@ describe("ReviewCommands Targeted Coverage", () => {
       await Deno.writeTextFile(join(tempDir, "both.txt"), "content");
       await runGitCommand(tempDir, ["add", "both.txt"]);
       await runGitCommand(tempDir, ["commit", "-m", `msg\n\nTrace-Id: ${traceId}`]);
-      await runGitCommand(tempDir, ["checkout", "master"]);
+      await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
 
       // DB record for SAME branch
       await db.preparedRun(
@@ -196,7 +197,7 @@ branch refs/heads/other
       await runGitCommand(tempDir, ["branch", branch]);
 
       const gitService = await cast(reviewCommands).createPortalGitService(tempDir, "trace-1");
-      await cast(reviewCommands).deleteBranchWithWorktreeHandling(gitService, branch);
+      await cast(reviewCommands).deleteBranchWithWorktreeHandling(gitService, branch, tempDir);
 
       const log = await runGitCommand(tempDir, ["branch", "--list", branch]);
       assertEquals(log.trim(), "");
@@ -232,7 +233,7 @@ branch refs/heads/other
         await assertRejects(
           () => reviewCommands.approve("request-p1"),
           Error,
-          "Must be on 'master' branch",
+          `Must be on '${TEST_DEFAULT_BRANCH}' branch`,
         );
       } finally {
         await Deno.remove(portalDir, { recursive: true });

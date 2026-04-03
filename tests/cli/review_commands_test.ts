@@ -18,6 +18,7 @@ import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
+import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
 describe("ReviewCommands", () => {
   let tempDir: string;
@@ -128,6 +129,9 @@ describe("ReviewCommands", () => {
           portals: [{
             alias: "test-portal",
             target_path: portalDir,
+            default_branch: TEST_DEFAULT_BRANCH,
+            identities_allowed: ["*"],
+            operations: [],
             created: new Date().toISOString(),
           }],
         };
@@ -356,10 +360,10 @@ describe("ReviewCommands", () => {
 
       // Verify branch was merged
       const log = await runGitCommand(tempDir, ["log", "--oneline"]);
-      assertStringIncludes(log, "Merge request-009");
+      assertEquals(log.includes("Merge request-009"), true);
     });
 
-    it("should validate current branch is master", async () => {
+    it(`should validate current branch is ${TEST_DEFAULT_BRANCH}`, async () => {
       await createFeatureBranch(tempDir, "request-010", "def-890-abc");
 
       // Switch to a different branch
@@ -368,7 +372,7 @@ describe("ReviewCommands", () => {
       await assertRejects(
         async () => await reviewCommands.approve("request-010"),
         Error,
-        "Must be on 'master' branch",
+        `Must be on '${TEST_DEFAULT_BRANCH}' branch`,
       );
     });
 
@@ -510,7 +514,7 @@ describe("ReviewCommands", () => {
 
       // Verify we're back on master
       const currentBranch = await runGitCommand(tempDir, ["branch", "--show-current"]);
-      assertEquals(currentBranch.trim(), "master");
+      assertEquals(currentBranch.trim(), TEST_DEFAULT_BRANCH);
 
       // Verify branch was deleted
       const branches = await runGitCommand(tempDir, ["branch", "--list", "feat/*"]);
@@ -598,7 +602,7 @@ describe("ReviewCommands", () => {
 
       // Verify branch was merged in the portal repository
       const branches = await runGitCommand(portalDir, ["branch", "--list"]);
-      assertStringIncludes(branches, "* master"); // Should be on master
+      assertStringIncludes(branches, `* ${TEST_DEFAULT_BRANCH}`); // Should be on main branch
       assertStringIncludes(branches, "feat/request-a300d5a5-a300d5a5"); // Branch should still exist
 
       // Verify merge commit exists
@@ -631,8 +635,8 @@ async function createFeatureBranch(
   // Commit
   await runGitCommand(repoDir, ["commit", "-m", `Add feature for ${requestId}\n\nTrace-Id: ${traceId}`]);
 
-  // Switch back to master
-  await runGitCommand(repoDir, ["checkout", "master"]);
+  // Switch back to default branch
+  await runGitCommand(repoDir, ["checkout", TEST_DEFAULT_BRANCH]);
 }
 
 function delay(ms: number): Promise<void> {
@@ -651,7 +655,7 @@ describe("ReviewCommands - Edge Cases", () => {
     tempDir = result.tempDir;
     cleanup = result.cleanup;
 
-    // Initialize git repository with master branch (like user's repo)
+    // Initialize git repository with default branch (like user's repo)
     await initGitRepo(tempDir);
 
     reviewCommands = new ReviewCommands(result.context);
@@ -664,10 +668,10 @@ describe("ReviewCommands - Edge Cases", () => {
   it("list() should skip branches with invalid naming format", async () => {
     // Create branches with various invalid formats
     await runGitCommand(tempDir, ["checkout", "-b", "feat/invalid"]);
-    await runGitCommand(tempDir, ["checkout", "master"]);
+    await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
 
     await runGitCommand(tempDir, ["checkout", "-b", "feature/not-feat"]);
-    await runGitCommand(tempDir, ["checkout", "master"]);
+    await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
 
     const reviews = await reviewCommands.list();
     assertEquals(reviews.length, 0);
@@ -678,7 +682,7 @@ describe("ReviewCommands - Edge Cases", () => {
     const branchName = "feat/request-003-empty-branch";
     await runGitCommand(tempDir, ["checkout", "-b", branchName]);
     await runGitCommand(tempDir, ["commit", "--allow-empty", "-m", "Empty commit"]);
-    await runGitCommand(tempDir, ["checkout", "master"]);
+    await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
 
     const reviews = await reviewCommands.list();
     assertEquals(reviews.length, 1);
@@ -709,7 +713,7 @@ describe("ReviewCommands - Edge Cases", () => {
     );
   });
 
-  it("approve() should throw error when not on master branch", async () => {
+  it(`should throw error when not on ${TEST_DEFAULT_BRANCH} branch`, async () => {
     await createFeatureBranch(tempDir, "request-010", "def-890-abc");
 
     // Switch to a different branch
@@ -718,11 +722,11 @@ describe("ReviewCommands - Edge Cases", () => {
     await assertRejects(
       async () => await reviewCommands.approve("request-010"),
       Error,
-      "master",
+      TEST_DEFAULT_BRANCH,
     );
 
     // Switch back for cleanup
-    await runGitCommand(tempDir, ["checkout", "master"]);
+    await runGitCommand(tempDir, ["checkout", TEST_DEFAULT_BRANCH]);
   });
 
   it("reject() should throw error when rejection reason is empty", async () => {

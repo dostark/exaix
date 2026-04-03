@@ -12,6 +12,7 @@ import { GitService } from "../../../src/services/core/git_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { GitTestHelper, setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 Deno.test("GitService: pruneWorktrees removes stale worktree metadata", async () => {
   const dbService = await initTestDbService();
@@ -21,12 +22,12 @@ Deno.test("GitService: pruneWorktrees removes stale worktree metadata", async ()
   const worktreeDir = join(tempDir, "worktree-deleted");
 
   await ensureDir(repoDir);
-  await setupGitRepo(repoDir, { initialCommit: true, branch: "master" });
+  await setupGitRepo(repoDir, { initialCommit: true, branch: TEST_DEFAULT_BRANCH });
 
   const helper = new GitTestHelper(repoDir);
 
   // Create a worktree, then delete it manually to leave stale metadata.
-  await helper.runGit(["worktree", "add", "-b", "wt-prune-test", worktreeDir, "master"]);
+  await helper.runGit(["worktree", "add", "-b", "wt-prune-test", worktreeDir, TEST_DEFAULT_BRANCH]);
   await Deno.remove(worktreeDir, { recursive: true });
 
   const before = await helper.runGit(["worktree", "list", "--porcelain"]);
@@ -54,10 +55,10 @@ Deno.test("GitService: listWorktrees returns structured entries", async () => {
   const worktreeDir = join(tempDir, "worktree");
 
   await ensureDir(repoDir);
-  await setupGitRepo(repoDir, { initialCommit: true, branch: "master" });
+  await setupGitRepo(repoDir, { initialCommit: true, branch: TEST_DEFAULT_BRANCH });
 
   const helper = new GitTestHelper(repoDir);
-  await helper.runGit(["worktree", "add", "-b", "wt-list-test", worktreeDir, "master"]);
+  await helper.runGit(["worktree", "add", "-b", "wt-list-test", worktreeDir, TEST_DEFAULT_BRANCH]);
 
   const config = createMockConfig(tempDir);
   const gitService = new GitService({ config, db: dbService.db, repoPath: repoDir });

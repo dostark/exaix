@@ -1,0 +1,254 @@
+/**
+ * @module ReActLoopStrategy
+ * @path src/services/agent/strategies/react_loop_strategy.ts
+ * @description In-process reasoning strategy using the ReAct (Reasoning + Acting) loop.
+ * Executes tasks by prompting an LLM for tool calls and processing results within Exaix.
+ * @architectural-layer Services
+ * @related-files [src/services/agent/agent_executor.ts, src/services/plan/plan_executor.ts]
+ */
+
+import { IExecutionStrategy } from "./execution_strategy.ts";
+import { AgentExecutionError, AgentExecutor, IAgentFileBlueprint } from "../agent_executor.ts";
+import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../../../shared/schemas/agent_executor.ts";
+import { IModelProvider } from "../../../ai/types.ts";
+import { AgentExecutionErrorType, ExecutionStrategyName } from "../../../shared/enums.ts";
+import { parse as parseToml } from "@std/toml";
+import { JSONValue } from "../../../shared/types/json.ts";
+import {
+  DEFAULT_AGENT_MAX_ITERATIONS,
+  REACT_CALLING_TOOL_PREFIX,
+  REACT_DEFAULT_MAX_TOKENS,
+  REACT_DEFAULT_TEMPERATURE,
+  REACT_STATUS_COMPLETE,
+  REACT_SUMMARY_PREFIX,
+  REACT_THOUGHT_PREFIX,
+  REACT_TOOL_ERROR_PREFIX,
+} from "../../../shared/constants.ts";
+
+export interface IReActAction {
+  tool: string;
+  params: Record<string, JSONValue>;
+  description?: string;
+}
+
+/**
+ * Roles for the internal ReAct loop history.
+ */
+enum ReActRole {
+  THOUGHT = "thought",
+  ACTION = "action",
+  RESULT = "result",
+}
+
+/**
+ * ReActLoopStrategy implements in-process agentic execution.
+ * It uses the LLM to generate actions, executes them via ToolRegistry,
+ * and maintains a loop until the task is complete.
+ */
+export class ReActLoopStrategy implements IExecutionStrategy {
+  public readonly name = ExecutionStrategyName.REACT;
+  private readonly MAX_ITERATIONS = DEFAULT_AGENT_MAX_ITERATIONS;
+
+  constructor(
+    private executor: AgentExecutor,
+    private provider?: IModelProvider,
+  ) {}
+
+  async execute(
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    options: IAgentExecutionOptions,
+  ): Promise<IChangesetResult> {
+    if (!this.provider) {
+      throw new AgentExecutionError(
+        "Model provider required for ReAct loop strategy",
+        AgentExecutionErrorType.CONFIGURATION_ERROR,
+      );
+    }
+
+    const startTime = Date.now();
+    const history: Array<{ role: ReActRole; content: string }> = [];
+    let toolCallCount = 0;
+
+    for (let i = 0; i < this.MAX_ITERATIONS; i++) {
+      // 1. Build prompt with history
+      const prompt = this.buildPrompt(blueprint, context, options, history);
+
+      // 2. Generate next step
+      const response = await this.provider.generate(prompt, {
+        temperature: REACT_DEFAULT_TEMPERATURE,
+        max_tokens: REACT_DEFAULT_MAX_TOKENS,
+      });
+
+      // 3. Parse thought and actions
+      const { thought, actions, isComplete } = this.parseResponse(response);
+
+      if (thought) {
+        history.push({ role: ReActRole.THOUGHT, content: thought });
+        await this.executor.logAgentOutput(context.trace_id, `${REACT_THOUGHT_PREFIX}${thought}`);
+      }
+
+      if (isComplete) {
+        // Agent signaled completion
+        const finalResult = this.createFinalResult(response, context, startTime, toolCallCount);
+        return this.executor.validateReviewResult(finalResult);
+      }
+
+      if (actions.length === 0) {
+        throw new AgentExecutionError(
+          "Agent provided no actions and did not signal completion",
+          AgentExecutionErrorType.EXECUTION_ERROR,
+        );
+      }
+
+      // 4. Check tool call limit
+      if (toolCallCount + actions.length > (options.max_tool_calls || 100)) {
+        throw new AgentExecutionError(
+          `Tool call limit exceeded (${options.max_tool_calls})`,
+          AgentExecutionErrorType.TOOL_ERROR,
+        );
+      }
+
+      // 5. Execute actions
+      for (const action of actions) {
+        toolCallCount++;
+        await this.executor.logAgentOutput(context.trace_id, `${REACT_CALLING_TOOL_PREFIX}${action.tool}`);
+
+        const result = await this.executeTool(action, options);
+        history.push({
+          role: ReActRole.RESULT,
+          content: `Tool ${action.tool} result: ${JSON.stringify(result)}`,
+        });
+
+        if (!result.success) {
+          // Let the agent see the error and decide how to proceed
+          await this.executor.logAgentOutput(context.trace_id, `${REACT_TOOL_ERROR_PREFIX}${result.error}`);
+        }
+      }
+    }
+
+    throw new AgentExecutionError(
+      `Reached maximum iterations (${this.MAX_ITERATIONS}) without completing task`,
+      AgentExecutionErrorType.EXECUTION_ERROR,
+    );
+  }
+
+  private async executeTool(action: IReActAction, options: IAgentExecutionOptions): Promise<any> {
+    if (!this.executor.toolRegistry) {
+      throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
+    }
+
+    // Ensure portal isolation via path prefixing (consistent with McpAgentStrategy)
+    const enrichedParams = { ...action.params };
+    if (
+      options.portal && enrichedParams.path && typeof enrichedParams.path === "string" &&
+      !enrichedParams.path.startsWith("@")
+    ) {
+      enrichedParams.path = `@${options.portal}/${enrichedParams.path}`;
+    }
+
+    return await this.executor.toolRegistry.execute(action.tool, enrichedParams);
+  }
+
+  private buildPrompt(
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    options: IAgentExecutionOptions,
+    history: Array<{ role: ReActRole; content: string }>,
+  ): string {
+    const historyText = history.map((h) => `${h.role.toUpperCase()}: ${h.content}`).join("\n\n");
+
+    return `IDENTITY: ${blueprint.name}
+CAPABILITIES: ${blueprint.capabilities.join(", ")}
+
+CONTEXT:
+Portal: ${options.portal}
+Trace ID: ${context.trace_id}
+Request: ${context.request}
+Plan Step: ${context.plan}
+
+${history.length > 0 ? "HISTORY:\n" + historyText + "\n\n" : ""}
+
+INSTRUCTIONS:
+1. Reason about the current state.
+2. If you need more information or need to make changes, output one or more tool calls in TOML format.
+3. If the task is finished, output "${REACT_STATUS_COMPLETE}" and provide a summary of changes.
+4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".
+
+AVAILABLE TOOLS:
+${(options.permitted_tools || ["read_file", "write_file", "run_command", "list_directory", "search_files"]).join(", ")}
+
+FORMAT:
+${REACT_THOUGHT_PREFIX}[Your reasoning]
+\`\`\`toml
+[[actions]]
+tool = "[tool_name]"
+[actions.params]
+[param_name] = [value]
+\`\`\`
+
+OR
+
+${REACT_STATUS_COMPLETE}
+${REACT_SUMMARY_PREFIX}[What was done]
+`;
+  }
+
+  private parseResponse(response: string): { thought?: string; actions: IReActAction[]; isComplete: boolean } {
+    const isComplete = response.includes(REACT_STATUS_COMPLETE);
+
+    // Improved thought parsing to handle both prefix and blocks
+    const thoughtPattern = `${REACT_THOUGHT_PREFIX}\\s*(.*?)(?= \`\`\`toml | ${REACT_STATUS_COMPLETE} | $)`;
+    const thoughtMatch = response.match(new RegExp(thoughtPattern, "s"));
+    const thought = thoughtMatch ? thoughtMatch[1].trim() : undefined;
+
+    const actions: IReActAction[] = [];
+    const codeBlockRegex = /```toml\s*([\s\S]*?)```/g;
+    let match;
+
+    while ((match = codeBlockRegex.exec(response)) !== null) {
+      try {
+        const block = match[1].trim();
+        const parsed = parseToml(block) as {
+          actions?: Array<{ tool: string; params?: Record<string, JSONValue>; description?: string }>;
+        };
+
+        if (parsed.actions && Array.isArray(parsed.actions)) {
+          for (const act of parsed.actions) {
+            if (act.tool) {
+              actions.push({
+                tool: act.tool,
+                params: act.params || {},
+                description: act.description,
+              });
+            }
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    return { thought, actions, isComplete };
+  }
+
+  private createFinalResult(
+    response: string,
+    context: IExecutionContext,
+    startTime: number,
+    toolCallCount: number,
+  ): IChangesetResult {
+    // Try to extract JSON from the response using the executor's parser (Phase 61.2)
+    // This allows the agent to provide a summary JSON at the end of the ReAct loop
+    const jsonResult = this.executor.parseAgentResponse(response, context, startTime);
+
+    // Always merge tool call count from the loop with any manual count in JSON
+    jsonResult.tool_calls = (jsonResult.tool_calls || 0) + toolCallCount;
+
+    // If we have a summary text but no explicit JSON description, use the summary
+    const summaryMatch = response.match(new RegExp(`${REACT_SUMMARY_PREFIX}\\s*(.*)`, "s"));
+    if (summaryMatch && (!jsonResult.description || jsonResult.description === context.plan)) {
+      jsonResult.description = summaryMatch[1].trim();
+    }
+
+    return jsonResult;
+  }
+}
