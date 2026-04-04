@@ -11,6 +11,7 @@ import { colorize, type ITuiTheme } from "../helpers/colors.ts";
 import {
   TUI_DASHBOARD_ICONS,
   TUI_LAYOUT_PRESET_LIST_WIDTH,
+  TUI_SEPARATOR_ROW,
   TUI_VIEW_PICKER_INNER_WIDTH,
 } from "../helpers/constants.ts";
 import { DialogPurpose, LayoutMode } from "../../shared/enums.ts";
@@ -211,7 +212,7 @@ export function renderLayoutPresetDialog(
       colorize("          Layout Presets               ", theme.h1, theme.reset) +
       colorize("│", theme.border, theme.reset),
   );
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
 
   lines.push(
     ...renderLayoutPresetListLines(
@@ -222,7 +223,7 @@ export function renderLayoutPresetDialog(
     ),
   );
 
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
   lines.push(
     colorize("│", theme.border, theme.reset) +
       colorize(" ↑↓ Navigate  Enter Select  Esc Cancel", theme.textDim, theme.reset) +
@@ -316,7 +317,7 @@ export function renderNamedLayoutDialog(
       colorize(` ${title.padEnd(38)} `, theme.h1, theme.reset) +
       colorize("│", theme.border, theme.reset),
   );
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
 
   if (state.mode === LayoutMode.SAVE) {
     // Show input field
@@ -367,7 +368,7 @@ export function renderNamedLayoutDialog(
     );
   }
 
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
 
   const hint = state.mode === LayoutMode.SAVE
     ? " Type name, Enter to save, Esc cancel  "

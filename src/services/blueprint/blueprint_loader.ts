@@ -13,7 +13,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import { DataFormat, McpToolName } from "../../shared/enums.ts";
 import { JSONValue } from "../../shared/types/json.ts";
-import { DEFAULT_BLUEPRINT_VERSION } from "../../shared/constants.ts";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH } from "../../shared/constants.ts";
 
 /**
  * Fully loaded and validated blueprint
@@ -314,7 +314,7 @@ export class BlueprintLoader {
       }
 
       // Fragments are stored in Blueprints/Fragments/ relative to blueprintsPath
-      const fragmentsDir = this.options.blueprintsPath.endsWith("Identities")
+      const fragmentsDir = this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)
         ? join(this.options.blueprintsPath, "..", "Fragments")
         : join(this.options.blueprintsPath, "Fragments");
 
@@ -384,12 +384,12 @@ export class BlueprintLoader {
    */
   private resolvePath(identityId: string): string {
     // If blueprintsPath already ends with 'Identities', use it directly
-    if (this.options.blueprintsPath.endsWith("Identities")) {
+    if (this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)) {
       return join(this.options.blueprintsPath, `${identityId}.md`);
     }
 
     // Otherwise, assume it's the Blueprints root and use Identities subdirectory
-    return join(this.options.blueprintsPath, "Identities", `${identityId}.md`);
+    return join(this.options.blueprintsPath, DEFAULT_IDENTITIES_PATH, `${identityId}.md`);
   }
 
   /**

@@ -283,7 +283,7 @@ export class ProviderFactory {
       timeoutMs = parseInt(envTimeout, 10);
     } else if (merged.timeout_ms) {
       timeoutMs = merged.timeout_ms;
-    } else if (config.ai_timeout && providerType !== "mock") {
+    } else if (config.ai_timeout && providerType !== ProviderType.MOCK) {
       const providerTimeout = config.ai_timeout.providers?.[providerType];
       if (providerTimeout) {
         timeoutMs = providerTimeout;

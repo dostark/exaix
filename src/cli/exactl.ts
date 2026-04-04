@@ -19,11 +19,13 @@ import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
 import { IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import {
+  FlowInputSource,
   MemoryBankSource,
   MemoryScope,
   PortalAnalysisMode,
   PortalExecutionStrategy,
   PortalStatus,
+  RequestKind,
   RequestOperation,
   RequestPriority,
   UIOutputFormat,
@@ -37,7 +39,12 @@ import { ICliApplicationContext } from "./cli_context.ts";
 import { GitService } from "../services/core/git_service.ts";
 import { OutputFormat } from "./memory_types.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../shared/constants.ts";
+import {
+  DAEMON_IDENTITY_ID,
+  DEFAULT_UNKNOWN_ERROR_MESSAGE,
+  GIT_CMD_STATUS,
+  PORTAL_LABEL,
+} from "../shared/constants.ts";
 
 // Extracted action handlers
 import {
@@ -67,6 +74,11 @@ export function isTestMode() {
 const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
 const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
 const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
+const CLI_OPTION_JSON_HELP = "Output in JSON format";
+const DEFAULT_CAPABILITIES_LABEL = "general";
+const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
+const CLI_LIMIT_HELP = "Maximum results";
+const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
 
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -254,7 +266,7 @@ export const __test_command = new Command()
   .description("Exaix CLI - Human interface for agent orchestration")
   // Request commands (PRIMARY INTERFACE)
   .command(
-    "request",
+    FlowInputSource.REQUEST,
     new Command()
       .description("Create requests for Exaix agents or multi-agent flows (PRIMARY INTERFACE)")
       .arguments("[description:string]")
@@ -280,7 +292,7 @@ export const __test_command = new Command()
       )
       .option("-f, --file <file:string>", "Read description from file")
       .option("--dry-run", "Show what would be created without writing")
-      .option("--json", "Output in JSON format")
+      .option("--json", CLI_OPTION_JSON_HELP)
       .option("--analyze", "Trigger immediate intent analysis for the request")
       .option("-e, --engine <engine:string>", "Analysis engine: heuristic, llm, hybrid", {
         default: AnalysisMode.HEURISTIC,
@@ -306,7 +318,7 @@ export const __test_command = new Command()
             "Filter by status (pending, planned, in_progress, completed, failed, cancelled, needs_clarification, refining, enriching)",
           )
           .option("-a, --all", "Include archived and rejected requests")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options) => {
             await handleRequestList({ requestCommands, display }, options as RequestListOptions);
           }),
@@ -327,7 +339,7 @@ export const __test_command = new Command()
             default: AnalysisMode.HEURISTIC,
           })
           .option("--force", "Force fresh analysis even if results are cached")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options: RequestAnalyzeOptions, ...id: string[]) => {
             await handleRequestAnalyze({ requestCommands, display }, id[0], options);
           }),
@@ -582,7 +594,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "status",
+        GIT_CMD_STATUS,
         new Command()
           .description("Show repository status")
           .action(async () => {
@@ -685,7 +697,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "status",
+        GIT_CMD_STATUS,
         new Command()
           .description("Check daemon status")
           .option("--json", "Output as JSON")
@@ -702,7 +714,7 @@ export const __test_command = new Command()
                 }));
                 return;
               }
-              display.info("daemon.status", "daemon", {
+              display.info("daemon.status", DAEMON_IDENTITY_ID, {
                 status: status.running ? "Running ✓" : "Stopped ✗",
                 pid: status.pid ?? null,
                 uptime: status.uptime ?? null,
@@ -737,7 +749,7 @@ export const __test_command = new Command()
   )
   // Portal commands
   .command(
-    "portal",
+    PORTAL_LABEL,
     new Command()
       .description("Manage external project portals")
       .command(
@@ -923,7 +935,7 @@ export const __test_command = new Command()
         "knowledge <alias>",
         new Command()
           .description("Display gathered knowledge for a portal")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options, ...args: string[]) => {
             const alias = args[0];
             try {
@@ -985,25 +997,25 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all agent blueprints")
           .action(async () => {
             try {
               const blueprints = await blueprintCommands.list();
               if (blueprints.length === 0) {
-                display.info("blueprint.list", "blueprints", {
+                display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
                   count: 0,
                   hint:
                     'Create a blueprint with: exactl blueprint create <agent-id> --name "Name" --model "provider:model"',
                 });
                 return;
               }
-              display.info("blueprint.list", "blueprints", { count: blueprints.length });
+              display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
               for (const blueprint of blueprints) {
                 display.info(blueprint.identity_id, blueprint.name, {
                   model: blueprint.model,
-                  capabilities: blueprint.capabilities?.join(", ") || "general",
+                  capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                   created: blueprint.created,
                 });
               }
@@ -1026,7 +1038,7 @@ export const __test_command = new Command()
               display.info("blueprint.show", blueprint.identity_id, {
                 name: blueprint.name,
                 model: blueprint.model,
-                capabilities: blueprint.capabilities?.join(", ") || "general",
+                capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                 version: blueprint.version,
                 created: blueprint.created,
                 created_by: blueprint.created_by,
@@ -1107,14 +1119,14 @@ export const __test_command = new Command()
         new Command().description("Alias for 'list'").action(async () => {
           const blueprints = await blueprintCommands.list();
           if (blueprints.length === 0) {
-            display.info("blueprint.list", "blueprints", { count: 0 });
+            display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: 0 });
             return;
           }
-          display.info("blueprint.list", "blueprints", { count: blueprints.length });
+          display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, { count: blueprints.length });
           for (const blueprint of blueprints) {
             display.info(blueprint.identity_id, blueprint.name, {
               model: blueprint.model,
-              capabilities: blueprint.capabilities?.join(", ") || "general",
+              capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
             });
           }
         }),
@@ -1174,7 +1186,7 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List all identity blueprints")
               .action(async () => {
@@ -1192,7 +1204,7 @@ export const __test_command = new Command()
                   for (const blueprint of blueprints) {
                     display.info(blueprint.identity_id, blueprint.name, {
                       model: blueprint.model,
-                      capabilities: blueprint.capabilities?.join(", ") || "general",
+                      capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                       created: blueprint.created,
                     });
                   }
@@ -1215,7 +1227,7 @@ export const __test_command = new Command()
                   display.info("blueprint.show", blueprint.identity_id, {
                     name: blueprint.name,
                     model: blueprint.model,
-                    capabilities: blueprint.capabilities?.join(", ") || "general",
+                    capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
                     version: blueprint.version,
                     created: blueprint.created,
                     created_by: blueprint.created_by,
@@ -1295,14 +1307,14 @@ export const __test_command = new Command()
   )
   // Flow commands
   .command(
-    "flow",
+    RequestKind.FLOW,
     new Command()
       .description("Manage and execute Exaix flows")
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all available flows")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options) => {
             await flowCommands.listFlows(options);
           }),
@@ -1311,7 +1323,7 @@ export const __test_command = new Command()
         "show <flowId:string>",
         new Command()
           .description("Show details of a specific flow")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options, ...args: string[]) => {
             const flowId = args[0];
             await flowCommands.showFlow(flowId, options);
@@ -1321,7 +1333,7 @@ export const __test_command = new Command()
         "validate <flowId:string>",
         new Command()
           .description("Validate a flow definition")
-          .option("--json", "Output in JSON format")
+          .option("--json", CLI_OPTION_JSON_HELP)
           .action(async (options, ...args: string[]) => {
             const flowId = args[0];
             await flowCommands.validateFlow(flowId, options);
@@ -1340,7 +1352,7 @@ export const __test_command = new Command()
         console.log(result);
       })
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all memory banks with summary")
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -1355,7 +1367,7 @@ export const __test_command = new Command()
           .description("Search across all memory banks")
           .option("-p, --portal <portal:string>", "Filter by portal")
           .option("-t, --tags <tags:string>", "Filter by tags (comma-separated)")
-          .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
+          .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
           .option("-e, --use-embeddings", "Use embedding-based semantic search")
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options, ...args: string[]) => {
@@ -1382,7 +1394,7 @@ export const __test_command = new Command()
             console.log(result);
           })
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List all project memories")
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -1408,7 +1420,7 @@ export const __test_command = new Command()
         new Command()
           .description("Execution history operations")
           .option("-p, --portal <portal:string>", "Filter by portal")
-          .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
+          .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             // Default: list executions
@@ -1420,11 +1432,11 @@ export const __test_command = new Command()
             console.log(result);
           })
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List execution history")
               .option("-p, --portal <portal:string>", "Filter by portal")
-              .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
+              .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.executionList({
@@ -1470,7 +1482,7 @@ export const __test_command = new Command()
             console.log(result);
           })
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List all pending proposals")
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -1533,7 +1545,7 @@ export const __test_command = new Command()
             console.log(result);
           })
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List all skills")
               .option("-c, --category <category:string>", "Filter by category: core, project, learned")
@@ -1563,7 +1575,7 @@ export const __test_command = new Command()
               .description("Match skills for a given request")
               .option("-t, --task-type <taskType:string>", "Task type filter")
               .option("--tags <tags:string>", "Comma-separated tags filter")
-              .option("-l, --limit <limit:number>", "Maximum results", { default: 10 })
+              .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const request = args[0];

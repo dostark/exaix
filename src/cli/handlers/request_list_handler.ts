@@ -17,7 +17,8 @@ import {
   getWorkspaceRequestsDir,
   REQUEST_CORE_FIELDS,
 } from "./request_paths.ts";
-import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
+import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "../../shared/constants.ts";
+import { RequestKind } from "../../shared/enums.ts";
 
 export class RequestListHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -112,7 +113,7 @@ export class RequestListHandler extends BaseCommand {
     entry.identity = identityValue;
     entry.agent = identityValue;
 
-    const optionalKeys = ["portal", "target_branch", "model", "flow", "rejected_path", "subject"];
+    const optionalKeys = [PORTAL_LABEL, "target_branch", "model", RequestKind.FLOW, "rejected_path", "subject"];
     for (const key of optionalKeys) {
       if (frontmatter[key]) entry[key] = String(frontmatter[key]);
     }

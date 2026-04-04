@@ -12,7 +12,7 @@ import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../
 import { SafeSubprocess } from "../../../helpers/subprocess.ts";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
-import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode } from "../../../shared/enums.ts";
+import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode, SystemCommand } from "../../../shared/enums.ts";
 
 import {
   DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS,
@@ -42,7 +42,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
     const args = this.buildAgentArgs(blueprint, options);
 
     // Spawn subprocess
-    const child = SafeSubprocess.spawn("deno", args, {
+    const child = SafeSubprocess.spawn(SystemCommand.DENO, args, {
       env: {
         [ENV_AGENT_MODE]: "true",
         [ENV_TRACE_ID]: context.trace_id,

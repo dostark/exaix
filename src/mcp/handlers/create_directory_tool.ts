@@ -8,7 +8,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { CreateDirectoryToolArgsSchema, type MCPToolResponse } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
@@ -37,7 +37,7 @@ export class CreateDirectoryTool extends ToolHandler {
 
     await Deno.mkdir(absolutePath, { recursive: true });
 
-    this.logToolExecution("create_directory", portal, identity_id, {
+    this.logToolExecution(McpToolName.CREATE_DIRECTORY, portal, identity_id, {
       path,
       success: true,
     });
@@ -54,7 +54,7 @@ export class CreateDirectoryTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "create_directory",
+      name: McpToolName.CREATE_DIRECTORY,
       description: "Create a directory (and all required parent directories) within a portal. " +
         "Idempotent — succeeds silently if the directory already exists.",
       inputSchema: {

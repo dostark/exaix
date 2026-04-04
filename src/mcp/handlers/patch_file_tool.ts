@@ -8,7 +8,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, PatchFileToolArgsSchema } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
@@ -66,7 +66,7 @@ export class PatchFileTool extends ToolHandler {
     const patched = content.replace(search, replace);
     await Deno.writeTextFile(absolutePath, patched);
 
-    this.logToolExecution("patch_file", portal, identity_id, {
+    this.logToolExecution(McpToolName.PATCH_FILE, portal, identity_id, {
       path,
       search_length: search.length,
       replace_length: replace.length,
@@ -87,7 +87,7 @@ export class PatchFileTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "patch_file",
+      name: McpToolName.PATCH_FILE,
       description: "Apply a targeted string replacement to a file in a portal. " +
         "Preferred over write_file for code edits — only the changed section is specified. " +
         "The search string must match exactly once; fails if not found or ambiguous.",

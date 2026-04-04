@@ -11,7 +11,7 @@ import { ensureDir, exists } from "@std/fs";
 import { Config } from "../../shared/schemas/config.ts";
 import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus, VerificationStatus } from "../../shared/enums.ts";
 import { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
-import { DEFAULT_PROJECTS_MEMORY_PATH, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
+import { DEFAULT_PROJECTS_MEMORY_PATH, GIT_CMD_BRANCH, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
 import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
 import { loadKnowledge, saveKnowledge } from "../portal_knowledge/knowledge_persistence.ts";
 import { IPortalKnowledgeConfig, IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
@@ -330,7 +330,7 @@ export class PortalService {
 
     await this.display.info("portal.verified", "portals", {
       portals_checked: results.length,
-      failed: results.filter((r) => r.status === "failed").length,
+      failed: results.filter((r) => r.status === VerificationStatus.FAILED).length,
     });
 
     return results;
@@ -441,7 +441,7 @@ export class PortalService {
   }
 
   private async validateBranchName(branch: string, opts?: { label?: string }): Promise<void> {
-    const label = opts?.label ?? "branch";
+    const label = opts?.label ?? GIT_CMD_BRANCH;
     if (typeof branch !== "string" || branch.trim().length === 0) {
       throw new Error(`Invalid ${label}: must be non-empty string`);
     }

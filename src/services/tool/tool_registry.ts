@@ -12,7 +12,14 @@ import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { ActivityActor, GitBranchName, LogLevel, SystemCommand, ToolName } from "../../shared/enums.ts";
-import { DEFAULT_MCP_IDENTITY_ID, PORTAL_PREFIX_PATTERN } from "../../shared/constants.ts";
+import {
+  BYTES_PER_KB,
+  DEFAULT_MCP_IDENTITY_ID,
+  GIT_CMD_BRANCH,
+  GIT_CMD_REV_PARSE,
+  GIT_CMD_STATUS,
+  PORTAL_PREFIX_PATTERN,
+} from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
@@ -153,7 +160,7 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
     GitBranchName.PROD,
     GitBranchName.PRODUCTION,
   ];
-  if (args.includes("checkout") || args.includes("branch")) {
+  if (args.includes("checkout") || args.includes(GIT_CMD_BRANCH)) {
     if (args.some((arg) => protectedBranches.includes(arg.toLowerCase()))) {
       return {
         valid: false,
@@ -349,8 +356,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("write_file", {
-      name: "write_file",
+    this.tools.set(ToolName.WRITE_FILE, {
+      name: ToolName.WRITE_FILE,
       description: "Write or overwrite a file with content",
       parameters: {
         type: "object",
@@ -383,8 +390,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("search_files", {
-      name: "search_files",
+    this.tools.set(ToolName.SEARCH_FILES, {
+      name: ToolName.SEARCH_FILES,
       description: "Search for files matching a glob pattern",
       parameters: {
         type: "object",
@@ -402,8 +409,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("create_directory", {
-      name: "create_directory",
+    this.tools.set(ToolName.CREATE_DIRECTORY, {
+      name: ToolName.CREATE_DIRECTORY,
       description: "Create a directory (recursively)",
       parameters: {
         type: "object",
@@ -417,8 +424,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("run_command", {
-      name: "run_command",
+    this.tools.set(ToolName.RUN_COMMAND, {
+      name: ToolName.RUN_COMMAND,
       description: "Execute a whitelisted shell command",
       parameters: {
         type: "object",
@@ -437,8 +444,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("fetch_url", {
-      name: "fetch_url",
+    this.tools.set(ToolName.FETCH_URL, {
+      name: ToolName.FETCH_URL,
       description: "Fetch content from a URL (whitelisted domains only)",
       parameters: {
         type: "object",
@@ -457,8 +464,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("grep_search", {
-      name: "grep_search",
+    this.tools.set(ToolName.GREP_SEARCH, {
+      name: ToolName.GREP_SEARCH,
       description: "Search for a string pattern in files (returns line numbers)",
       parameters: {
         type: "object",
@@ -480,8 +487,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("move_file", {
-      name: "move_file",
+    this.tools.set(ToolName.MOVE_FILE, {
+      name: ToolName.MOVE_FILE,
       description: "Move or rename a file",
       parameters: {
         type: "object",
@@ -494,8 +501,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("copy_file", {
-      name: "copy_file",
+    this.tools.set(ToolName.COPY_FILE, {
+      name: ToolName.COPY_FILE,
       description: "Copy a file",
       parameters: {
         type: "object",
@@ -532,7 +539,7 @@ export class ToolRegistry implements IToolRegistry {
           },
           scope: {
             type: "string",
-            enum: ["status", "branch", "diff_summary"],
+            enum: [GIT_CMD_STATUS, GIT_CMD_BRANCH, "diff_summary"],
             description: "Information to retrieve (default: status)",
           },
         },
@@ -565,8 +572,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("patch_file", {
-      name: "patch_file",
+    this.tools.set(ToolName.PATCH_FILE, {
+      name: ToolName.PATCH_FILE,
       description: "Patch a file by replacing strings (sequential search-and-replace)",
       parameters: {
         type: "object",
@@ -1038,7 +1045,7 @@ export class ToolRegistry implements IToolRegistry {
 
         // 5. Size check (rough approximation)
         const contentLength = response.headers.get("content-length");
-        const maxBytes = this.config.tools.fetch_url.max_response_size_kb * 1024;
+        const maxBytes = this.config.tools.fetch_url.max_response_size_kb * BYTES_PER_KB;
 
         if (contentLength && parseInt(contentLength, 10) > maxBytes) {
           return {
@@ -1251,7 +1258,7 @@ export class ToolRegistry implements IToolRegistry {
    */
   private async gitInfo(
     repoPath: string,
-    scope: string = "status",
+    scope: string = GIT_CMD_STATUS,
   ): Promise<IToolResult> {
     try {
       const resolvedPath = await this.resolvePath(repoPath);
@@ -1264,7 +1271,7 @@ export class ToolRegistry implements IToolRegistry {
 
       // Check if it's a git repo
       const checkCmd = new Deno.Command("git", {
-        args: ["rev-parse", "--is-inside-work-tree"],
+        args: [GIT_CMD_REV_PARSE, "--is-inside-work-tree"],
         cwd: resolvedPath,
         stderr: "piped",
       });
@@ -1277,8 +1284,8 @@ export class ToolRegistry implements IToolRegistry {
       let outputParser: (output: string) => JSONValue = (o) => o.trim();
 
       switch (scope) {
-        case "status":
-          args = ["status", "--porcelain"];
+        case GIT_CMD_STATUS:
+          args = [GIT_CMD_STATUS, "--porcelain"];
           outputParser = (output) => {
             const lines = output.split("\n").filter(Boolean);
             return lines.map((line) => {
@@ -1288,8 +1295,8 @@ export class ToolRegistry implements IToolRegistry {
             });
           };
           break;
-        case "branch":
-          args = ["branch", "--show-current"];
+        case GIT_CMD_BRANCH:
+          args = [GIT_CMD_BRANCH, "--show-current"];
           break;
         case "diff_summary":
           args = ["diff", "--stat"];
@@ -1349,12 +1356,7 @@ export class ToolRegistry implements IToolRegistry {
       // Add path
       cmdArgs.push(resolvedPath);
 
-      const cmd = new Deno.Command("deno", {
-        args: cmdArgs,
-        stdout: "piped",
-        stderr: "piped",
-        cwd: this.baseDir, // Run from root, but target resolvedPath
-      });
+      const cmd = new Deno.Command(SystemCommand.DENO, {});
 
       const { code, stdout, stderr } = await cmd.output();
       const output = new TextDecoder().decode(stdout);

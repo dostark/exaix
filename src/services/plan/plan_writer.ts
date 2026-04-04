@@ -12,7 +12,7 @@
  * * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
  */
 
-import { DEFAULT_COST_PRECISION_FACTOR } from "../../shared/constants.ts";
+import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "../../shared/constants.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
@@ -469,7 +469,7 @@ export class PlanWriter {
 
     try {
       await this.config.db.logActivity(
-        "agent",
+        ACTIVITY_ACTOR_AGENT,
         actionType,
         requestId,
         metadata,
@@ -496,7 +496,7 @@ export class PlanWriter {
 
     try {
       await this.config.db.logActivity(
-        "agent",
+        ACTIVITY_ACTOR_AGENT,
         "plan.created",
         metadata.requestId,
         {

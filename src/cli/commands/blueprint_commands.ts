@@ -10,6 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { BaseCommand, ICommandContext } from "../base.ts";
+import { ProviderType } from "../../shared/enums.ts";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";
@@ -586,7 +587,7 @@ export class BlueprintCommands extends BaseCommand {
    */
   private validateModelProvider(model: string): void {
     const [provider] = model.split(":");
-    if (this.config.ai && provider !== "mock") {
+    if (this.config.ai && provider !== ProviderType.MOCK) {
       const configuredProvider = this.config.ai.provider;
       if (provider !== configuredProvider) {
         console.warn(

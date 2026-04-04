@@ -31,7 +31,7 @@ import { join } from "@std/path";
 import { LogMetadata, toSafeJson } from "./shared/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
 import { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
-import { DEFAULT_MCP_IDENTITY_ID } from "./shared/constants.ts";
+import { DAEMON_IDENTITY_ID, DEFAULT_IDENTITIES_PATH, DEFAULT_MCP_IDENTITY_ID } from "./shared/constants.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -154,14 +154,14 @@ if (import.meta.main) {
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
       requestsDir: requestsPath,
-      blueprintsPath: join(config.system.root, config.paths.blueprints, "Identities"),
+      blueprintsPath: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
       includeReasoning: true,
       context, // Support unified DI
     });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {
       requestsDir: requestsPath,
-      blueprints: join(config.system.root, config.paths.blueprints, "Identities"),
+      blueprints: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
     });
 
     // Create child logger for watcher events
@@ -199,7 +199,7 @@ if (import.meta.main) {
       context, // Preferred unified DI
       config,
       db: dbService,
-      identityId: "daemon",
+      identityId: DAEMON_IDENTITY_ID,
       llmProvider,
       reviewRegistry,
     });

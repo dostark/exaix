@@ -13,6 +13,8 @@
 import { join } from "@std/path";
 import {
   DEFAULT_IGNORE_PATTERNS,
+  LANG_JAVASCRIPT,
+  LANG_TYPESCRIPT,
   PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS,
   PORTAL_KNOWLEDGE_PRIORITY_PATTERNS,
 } from "../../shared/constants.ts";
@@ -57,12 +59,12 @@ function isPriority(name: string): boolean {
 /** Map dominant file extension to a language name. */
 function detectPrimaryLanguage(ext: Record<string, number>): string {
   const languageMap: Record<string, string> = {
-    ".ts": "typescript",
-    ".tsx": "typescript",
-    ".js": "javascript",
-    ".jsx": "javascript",
-    ".mjs": "javascript",
-    ".cjs": "javascript",
+    ".ts": LANG_TYPESCRIPT,
+    ".tsx": LANG_TYPESCRIPT,
+    ".js": LANG_JAVASCRIPT,
+    ".jsx": LANG_JAVASCRIPT,
+    ".mjs": LANG_JAVASCRIPT,
+    ".cjs": LANG_JAVASCRIPT,
     ".py": "python",
     ".rs": "rust",
     ".go": "go",
@@ -146,7 +148,7 @@ function detectMonorepoPackages(
     packages.push({
       name: dirName,
       path: packageDir,
-      primaryLanguage: "typescript", // refined later by language detection per subtree
+      primaryLanguage: LANG_TYPESCRIPT, // refined later by language detection per subtree
       layers: [],
       conventions: [],
     });

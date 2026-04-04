@@ -6,6 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 import type { IExecutionMemory, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
+import { LANG_TYPESCRIPT } from "../../shared/constants.ts";
 import {
   ConfidenceLevel,
   ExecutionStatus,
@@ -130,7 +131,7 @@ export class LearningExtractor {
     if (lower.includes("decided") || lower.includes("choice") || lower.includes("chose")) {
       return LearningCategory.DECISION;
     }
-    if (lower.includes("error") || lower.includes("fix") || lower.includes("debug")) {
+    if (lower.includes(ERR_KEYWORD) || lower.includes("fix") || lower.includes("debug")) {
       return LearningCategory.TROUBLESHOOTING;
     }
     return LearningCategory.INSIGHT;
@@ -156,13 +157,13 @@ export class LearningExtractor {
     const lower = content.toLowerCase();
 
     // Language/framework tags
-    if (lower.includes("typescript") || execution.context_files.some((f: string) => f.endsWith(".ts"))) {
-      tags.push("typescript");
+    if (lower.includes(LANG_TYPESCRIPT) || execution.context_files.some((f: string) => f.endsWith(".ts"))) {
+      tags.push(LANG_TYPESCRIPT);
     }
     if (lower.includes("async") || lower.includes("await")) {
       tags.push("async");
     }
-    if (lower.includes("error") || lower.includes("exception")) {
+    if (lower.includes(ERR_KEYWORD) || lower.includes("exception")) {
       tags.push("error-handling");
     }
     if (lower.includes("test")) {
@@ -248,3 +249,5 @@ export class LearningExtractor {
     };
   }
 }
+
+const ERR_KEYWORD = "error";

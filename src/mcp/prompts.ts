@@ -8,7 +8,8 @@
 
 import type { Config } from "../shared/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
-import { MessageRole } from "../shared/enums.ts";
+import { ActivityActor, MessageRole } from "../shared/enums.ts";
+import { PORTAL_LABEL } from "../shared/constants.ts";
 
 // ============================================================================
 // Types
@@ -58,7 +59,7 @@ export function getPrompts(): IMCPPrompt[] {
           required: true,
         },
         {
-          name: "portal",
+          name: PORTAL_LABEL,
           description: "Target portal name where plan will be executed",
           required: true,
         },
@@ -69,7 +70,7 @@ export function getPrompts(): IMCPPrompt[] {
       description: "Create a review for code changes with git integration",
       arguments: [
         {
-          name: "portal",
+          name: PORTAL_LABEL,
           description: "Portal name where changes will be made",
           required: true,
         },
@@ -90,7 +91,7 @@ export function getPrompts(): IMCPPrompt[] {
       description: "Generate a structured commit message for changes in a portal",
       arguments: [
         {
-          name: "portal",
+          name: PORTAL_LABEL,
           description: "Portal name whose changes will be summarized",
           required: true,
         },
@@ -293,7 +294,7 @@ export function generateCommitMessagePrompt(
   db.logActivity(
     "mcp.prompts",
     "mcp.prompts.commit_message",
-    "system",
+    ActivityActor.SYSTEM,
     {
       portal,
     },

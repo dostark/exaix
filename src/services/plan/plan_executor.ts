@@ -16,9 +16,11 @@ import { EventLogger } from "../core/event_logger.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";
-import { ExecutionStatus, SecurityMode } from "../../shared/enums.ts";
+import { ActivityActor, ExecutionStatus, SecurityMode } from "../../shared/enums.ts";
 import {
+  ACTIVITY_ACTOR_AGENT,
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
+  GIT_CMD_REV_PARSE,
   GIT_ERROR_NOTHING_TO_COMMIT,
   PORTAL_ALIAS_WORKSPACE,
   PROMPT_PLAN_STEP_REASONING_PREFIX,
@@ -90,7 +92,7 @@ export class PlanExecutor {
     this.db = ctx?.db || db;
     this.logger = new EventLogger({
       db: this.db,
-      defaultActor: "system",
+      defaultActor: ActivityActor.SYSTEM,
     });
     this.enableGit = options.enableGit ?? true;
     this.generateReport = options.generateReport ?? false;
@@ -246,7 +248,7 @@ export class PlanExecutor {
       actionReports.push({
         stepNumber: step.number,
         stepTitle: step.title,
-        tool: "agent",
+        tool: ACTIVITY_ACTOR_AGENT,
         params: { request: step.content },
         success: true,
         output: result.description,
@@ -323,7 +325,7 @@ export class PlanExecutor {
    */
   private async getPortalHeadSha(path: string): Promise<string | null> {
     try {
-      const result = await SafeSubprocess.run("git", ["rev-parse", "HEAD"], {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
         cwd: path,
         timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
       });

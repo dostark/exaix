@@ -15,6 +15,7 @@ import {
   DEFAULT_WATCHER_STABILITY_BACKOFF_MS,
   DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS,
 } from "../../shared/constants.ts";
+import { ActivityActor } from "../../shared/enums.ts";
 import { delay } from "../../helpers/async_utils.ts";
 
 /**
@@ -57,7 +58,7 @@ export class FileWatcher {
     // Initialize EventLogger
     this.logger = new EventLogger({
       db: options.db,
-      defaultActor: "system",
+      defaultActor: ActivityActor.SYSTEM,
     });
   }
 

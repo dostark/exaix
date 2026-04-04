@@ -8,7 +8,7 @@
 
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
-import { RequestPriority } from "../../shared/enums.ts";
+import { FlowInputSource, RequestPriority } from "../../shared/enums.ts";
 import { isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "../../shared/status/request_status.ts";
 import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
 import { PRIORITY_ICONS } from "../cli.config.ts";
@@ -132,7 +132,7 @@ export async function handleRequestCreate(
 
     // Require description for inline mode
     if (!description) {
-      display.error("cli.error", "request", {
+      display.error("cli.error", FlowInputSource.REQUEST, {
         message: 'Description required. Usage: exactl request "<description>" or use --file',
       });
       Deno.exit(1);
@@ -142,13 +142,13 @@ export async function handleRequestCreate(
     const result = await requestCommands.create(description, createOptions);
 
     if (options.dryRun) {
-      display.info("cli.dry_run", "request", { would_create: result.filename });
+      display.info("cli.dry_run", FlowInputSource.REQUEST, { would_create: result.filename });
       return;
     }
 
     printRequestResult(context, result, !!options.json, false);
   } catch (error) {
-    display.error("cli.error", "request", {
+    display.error("cli.error", FlowInputSource.REQUEST, {
       message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);

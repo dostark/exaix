@@ -34,11 +34,13 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/s
 import { isReadOnlyAgentCapabilities } from "./agent_capabilities.ts";
 import { ArtifactRegistry } from "../artifact/artifact_registry.ts";
 import {
+  ACTIVITY_ACTOR_AGENT,
   DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
   EXECUTION_REPORT_FILENAME,
+  GIT_CMD_WORKTREE,
 } from "../../shared/constants.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 
@@ -152,7 +154,7 @@ export class ExecutionLoop {
     );
     await Deno.mkdir(traceDir, { recursive: true });
 
-    const pointerPath = join(traceDir, "worktree");
+    const pointerPath = join(traceDir, GIT_CMD_WORKTREE);
 
     // Prefer a symlink for discoverability. Fall back to a directory + PATH.txt if
     // symlinks are unavailable in the current environment.
@@ -1201,7 +1203,7 @@ export class ExecutionLoop {
 
     try {
       this.db.logActivity(
-        "agent",
+        ACTIVITY_ACTOR_AGENT,
         actionType,
         null,
         payload,

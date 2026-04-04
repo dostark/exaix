@@ -18,7 +18,7 @@ import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { FlowStepType, StepExecutionMode } from "../shared/enums.ts";
+import { FlowInputSource, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "../journal/activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
@@ -978,7 +978,7 @@ export class FlowRunner implements IFlowRunner {
 
     // Collect input data based on source
     switch (step.input.source) {
-      case "request": {
+      case FlowInputSource.REQUEST: {
         inputData = originalRequest.userPrompt;
         break;
       }

@@ -22,6 +22,7 @@ import {
 } from "../helpers/constants.ts";
 import { renderCategoryBadge, renderConfidence, renderMarkdown } from "../helpers/markdown_renderer.ts";
 import { ConfidenceLevel } from "../../shared/enums.ts";
+import { DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
 import type { IMemoryService, ITreeNode } from "./types.ts";
 
 export class MemoryFormatter {
@@ -121,7 +122,7 @@ export class MemoryFormatter {
       `**Confidence:** ${confidenceBadge}`,
       `**Scope:** ${proposal.target_scope}`,
       proposal.target_project ? `**Project:** ${proposal.target_project}` : "",
-      `**Tags:** ${learning?.tags?.join(", ") ?? "none"}`,
+      `**Tags:** ${learning?.tags?.join(", ") ?? DEFAULT_NONE_VALUE}`,
       "",
       "## Description",
       learning?.description || "",

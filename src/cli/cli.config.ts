@@ -7,11 +7,11 @@
  */
 
 import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "../shared/constants.ts";
-import { RequestPriority } from "../shared/enums.ts";
+import { RequestPriority, UIOutputFormat } from "../shared/enums.ts";
 
 export const MEMORY_COMMAND_DEFAULTS = {
   LIMIT: 20,
-  FORMAT: "table" as const,
+  FORMAT: UIOutputFormat.TABLE,
   PROJECT_PADDING: 10,
   PORTAL_PADDING: 15,
   TITLE_LENGTH: 30,
@@ -39,7 +39,7 @@ export const CLI_DEFAULTS = {
 };
 
 export const CLI_OUTPUT_FORMATS = {
-  TABLE: "table",
-  JSON: "json",
+  TABLE: UIOutputFormat.TABLE,
+  JSON: UIOutputFormat.JSON,
   TEXT: "text",
 };

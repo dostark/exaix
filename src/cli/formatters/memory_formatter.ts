@@ -43,7 +43,10 @@ import {
   CLI_TRUNCATE_ID_SHORT,
   CLI_TRUNCATE_TITLE_MEDIUM,
   CLI_TRUNCATE_TITLE_SHORT,
+  DEFAULT_NONE_VALUE,
 } from "../../shared/constants.ts";
+
+const CLI_BOX_SEPARATOR = "├─────────────────────────────────────────────────────────────┤";
 
 /**
  * Handles formatting of Memory Bank data for CLI output.
@@ -762,13 +765,13 @@ export class MemoryFormatter {
     const lines: string[] = [];
     lines.push("┌─────────────────────────────────────────────────────────────┐");
     lines.push(`│ ISkill: ${skill.name.padEnd(CLI_LAYOUT_BOX_LABEL_WIDTH - 4)} │`);
-    lines.push("├─────────────────────────────────────────────────────────────┤");
+    lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ ISkill ID:   ${skill.skill_id.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Source:     ${skill.source.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Scope:      ${skill.scope.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Version:    ${skill.version.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
     lines.push(`│ Status:     ${skill.status.padEnd(CLI_LAYOUT_BOX_WIDTH_STANDARD)} │`);
-    lines.push("├─────────────────────────────────────────────────────────────┤");
+    lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ Description:                                                │`);
 
     // Wrap description
@@ -786,30 +789,30 @@ export class MemoryFormatter {
       lines.push(`│   ${descLine.padEnd(CLI_LAYOUT_BOX_WIDTH_WIDE)} │`);
     }
 
-    lines.push("├─────────────────────────────────────────────────────────────┤");
+    lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ Triggers:                                                   │`);
     lines.push(
       `│   Keywords:   ${
-        (skill.triggers.keywords?.join(", ") || "none").slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
+        (skill.triggers.keywords?.join(", ") || DEFAULT_NONE_VALUE).slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
           CLI_LAYOUT_BOX_INDENT_WIDTH,
         )
       } │`,
     );
     lines.push(
       `│   Task Types: ${
-        (skill.triggers.task_types?.join(", ") || "none").slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
+        (skill.triggers.task_types?.join(", ") || DEFAULT_NONE_VALUE).slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
           CLI_LAYOUT_BOX_INDENT_WIDTH,
         )
       } │`,
     );
     lines.push(
       `│   Tags:       ${
-        (skill.triggers.tags?.join(", ") || "none").slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
+        (skill.triggers.tags?.join(", ") || DEFAULT_NONE_VALUE).slice(0, CLI_LAYOUT_BOX_INDENT_WIDTH).padEnd(
           CLI_LAYOUT_BOX_INDENT_WIDTH,
         )
       } │`,
     );
-    lines.push("├─────────────────────────────────────────────────────────────┤");
+    lines.push(CLI_BOX_SEPARATOR);
     lines.push(`│ Instructions:                                               │`);
 
     // Show first few lines of instructions
@@ -839,9 +842,9 @@ export class MemoryFormatter {
     lines.push(`## Description\n`);
     lines.push(skill.description + "\n");
     lines.push(`## Triggers\n`);
-    lines.push(`- **Keywords:** ${skill.triggers.keywords?.join(", ") || "none"}`);
-    lines.push(`- **Task Types:** ${skill.triggers.task_types?.join(", ") || "none"}`);
-    lines.push(`- **Tags:** ${skill.triggers.tags?.join(", ") || "none"}\n`);
+    lines.push(`- **Keywords:** ${skill.triggers.keywords?.join(", ") || DEFAULT_NONE_VALUE}`);
+    lines.push(`- **Task Types:** ${skill.triggers.task_types?.join(", ") || DEFAULT_NONE_VALUE}`);
+    lines.push(`- **Tags:** ${skill.triggers.tags?.join(", ") || DEFAULT_NONE_VALUE}\n`);
     lines.push(`## Instructions\n`);
     lines.push("```");
     lines.push(skill.instructions);
@@ -868,7 +871,7 @@ export class MemoryFormatter {
       if (match.matchedTriggers.tags?.length) {
         triggerParts.push(`tag:${match.matchedTriggers.tags.join(",")}`);
       }
-      const triggers = (triggerParts.join(" ") || "none").slice(0, 31).padEnd(31);
+      const triggers = (triggerParts.join(" ") || DEFAULT_NONE_VALUE).slice(0, 31).padEnd(31);
       lines.push(`│ ${id} │ ${confidence} │ ${triggers} │`);
     }
 
@@ -894,7 +897,9 @@ export class MemoryFormatter {
       if (match.matchedTriggers.tags?.length) {
         triggerParts.push(`tags: ${match.matchedTriggers.tags.join(", ")}`);
       }
-      lines.push(`| ${match.skillId} | ${match.confidence.toFixed(2)} | ${triggerParts.join("; ") || "none"} |`);
+      lines.push(
+        `| ${match.skillId} | ${match.confidence.toFixed(2)} | ${triggerParts.join("; ") || DEFAULT_NONE_VALUE} |`,
+      );
     }
 
     lines.push(`\n**Matched:** ${matches.length} skill(s)`);

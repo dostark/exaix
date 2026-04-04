@@ -10,6 +10,7 @@
  */
 
 import { join } from "@std/path";
+import { LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
 import { DependencyCategory, SystemCommand } from "../../shared/enums.ts";
 import type { IDependencyInfo } from "../../shared/schemas/portal_knowledge.ts";
 
@@ -246,7 +247,7 @@ async function parsePackageJson(
   if (framework) result.techStack.framework = framework;
   if (testFramework) result.techStack.testFramework = testFramework;
   if (buildTool) result.techStack.buildTool = buildTool;
-  if (!result.techStack.primaryLanguage) result.techStack.primaryLanguage = "javascript";
+  if (!result.techStack.primaryLanguage) result.techStack.primaryLanguage = LANG_JAVASCRIPT;
 }
 
 async function parseDenoJson(
@@ -303,7 +304,7 @@ async function parseDenoJson(
   if (framework) result.techStack.framework = framework;
   if (testFramework) result.techStack.testFramework = testFramework;
   if (buildTool) result.techStack.buildTool = buildTool;
-  result.techStack.primaryLanguage = "typescript";
+  result.techStack.primaryLanguage = LANG_TYPESCRIPT;
 }
 
 async function parseTsConfig(
@@ -333,7 +334,7 @@ async function parseTsConfig(
 
   result.dependencies = [...(result.dependencies ?? []), entry];
   result.techStack = result.techStack ?? {};
-  if (!result.techStack.primaryLanguage) result.techStack.primaryLanguage = "typescript";
+  if (!result.techStack.primaryLanguage) result.techStack.primaryLanguage = LANG_TYPESCRIPT;
 }
 
 async function parseGitignore(

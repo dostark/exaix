@@ -19,6 +19,7 @@ import {
 
 import { initializeRegistry } from "./provider_factory.ts";
 import {
+  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_OLLAMA_BASE_URL,
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
@@ -250,9 +251,9 @@ export class ModelFactory {
           provider: normalizedType as ProviderType,
           model: (config?.model as string) ?? "default-model",
           baseUrl: config?.baseUrl as string,
-          timeoutMs: (config?.timeoutMs as number) ?? 30000,
+          timeoutMs: (config?.timeoutMs as number) ?? DEFAULT_AI_TIMEOUT_MS,
           apiKey: config?.apiKey as string,
-          id: (config?.id as string) ?? (normalizedType === "mock" ? "mock-provider" : undefined),
+          id: (config?.id as string) ?? (normalizedType === ProviderType.MOCK ? "mock-provider" : undefined),
           mockStrategy: (config?.mockStrategy ?? config?.strategy ?? (config?.response ? "scripted" : undefined)) as
             | MockStrategy
             | undefined,

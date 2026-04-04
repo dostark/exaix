@@ -28,7 +28,10 @@ import {
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
+  DEFAULT_IDENTITIES_PATH,
   DEFAULT_MCP_IDENTITY_ID,
+  GIT_CMD_REV_PARSE,
+  GIT_CMD_STATUS,
   GIT_EMPTY_SHA,
   MAX_NAME_LENGTH,
   MAX_PROMPT_LENGTH,
@@ -56,7 +59,6 @@ import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
-
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
@@ -294,7 +296,7 @@ export class AgentExecutor {
 
     const blueprintPath = join(
       this.config.paths.blueprints,
-      "Identities",
+      DEFAULT_IDENTITIES_PATH,
       `${agentName}.md`,
     );
 
@@ -603,15 +605,15 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
   public sanitizeUserInput(input: string): string {
     return input
       // Remove potential instruction markers
-      .replace(/##\s*(system|instructions|ignore|important)/gi, "[REMOVED]")
+      .replace(/##\s*(system|instructions|ignore|important)/gi, SANITIZED_MARKER)
       // Remove markdown that could break structure
       .replace(/```/g, "~~~")
       // Remove potential prompt injection patterns
-      .replace(/ignore (all )?previous instructions/gi, "[REMOVED]")
-      .replace(/ignore (all )?system prompts?/gi, "[REMOVED]")
-      .replace(/<META>[\s\S]*?<\/META>/gi, "[REMOVED]")
-      .replace(/you are now/gi, "[REMOVED]")
-      .replace(/new instructions?:/gi, "[REMOVED]")
+      .replace(/ignore (all )?previous instructions/gi, SANITIZED_MARKER)
+      .replace(/ignore (all )?system prompts?/gi, SANITIZED_MARKER)
+      .replace(/<META>[\s\S]*?<\/META>/gi, SANITIZED_MARKER)
+      .replace(/you are now/gi, SANITIZED_MARKER)
+      .replace(/new instructions?:/gi, SANITIZED_MARKER)
       // Limit length
       .slice(0, MAX_USER_INPUT_LENGTH);
   }
@@ -701,7 +703,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
   ): Promise<string[]> {
     try {
       // Step 61.4.1: Ensure we are in a git repository before auditing
-      const checkRepo = await SafeSubprocess.run("git", ["rev-parse", "--is-inside-work-tree"], {
+      const checkRepo = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "--is-inside-work-tree"], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
       });
@@ -712,7 +714,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       }
 
       // Get git status with timeout protection
-      const result = await SafeSubprocess.run("git", ["status", "--porcelain"], {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain"], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS, // 10 second timeout for status
       });
@@ -776,7 +778,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
    */
   public async getPortalHeadSha(portalPath: string): Promise<string> {
     try {
-      const result = await SafeSubprocess.run("git", ["rev-parse", "HEAD"], {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS * 2, // Slightly more for HEAD on large repos
       });
@@ -971,7 +973,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
 
     try {
       // 2. Get git status
-      const result = await SafeSubprocess.run("git", ["status", "--porcelain"], {
+      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain"], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
       });
@@ -1248,3 +1250,6 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     });
   }
 }
+
+/** Replacement marker used when sanitizing prompt-injection patterns from user input */
+const SANITIZED_MARKER = "[REMOVED]";

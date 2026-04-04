@@ -17,6 +17,7 @@ import {
   ReviewSchema,
 } from "../../shared/schemas/review.ts";
 import { type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
+import { ACTIVITY_ACTOR_AGENT } from "../../shared/constants.ts";
 
 export class ReviewRegistry {
   constructor(
@@ -127,7 +128,7 @@ export class ReviewRegistry {
       branch,
       repository,
       description: `Review for ${branch}`,
-      created_by: "agent", // TODO: Get from execution context
+      created_by: ACTIVITY_ACTOR_AGENT, // TODO: Get from execution context
       files_changed: 0,
     });
   }

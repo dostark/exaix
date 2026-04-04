@@ -16,9 +16,11 @@ import type { IFileSignificance } from "../../shared/schemas/portal_knowledge.ts
 // Role priority order (lower index = higher significance)
 // ---------------------------------------------------------------------------
 
+const FILE_ROLE_CONFIG = "config" as const;
+
 const ROLE_PRIORITY: IFileSignificance["role"][] = [
   "entrypoint",
-  "config",
+  FILE_ROLE_CONFIG,
   "schema",
   "types",
   "routing",

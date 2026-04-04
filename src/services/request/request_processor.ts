@@ -30,7 +30,9 @@ import {
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
   COMPLEXITY_FILE_REF_PATTERN,
   COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
+  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_ANALYZER_MODE,
+  DEFAULT_IDENTITIES_PATH,
   DEFAULT_MCP_VERSION,
   MEMORY_CONTEXT_KEY,
   PORTAL_CONTEXT_KEY,
@@ -59,7 +61,7 @@ import { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
 import { IRequestAnalyzerConfig, IRequestAnalyzerService } from "../../shared/interfaces/i_request_analyzer_service.ts";
-import { RequestKind, TaskComplexity } from "../../shared/enums.ts";
+import { ProviderType, RequestKind, TaskComplexity } from "../../shared/enums.ts";
 
 import { AnalysisMode } from "../../shared/types/request.ts";
 import type { IRequestQualityGateService } from "../../shared/interfaces/i_request_quality_gate_service.ts";
@@ -202,7 +204,7 @@ export class RequestProcessor {
 
     this.ioBreaker = new CircuitBreaker({
       failureThreshold: 3,
-      resetTimeout: 30000,
+      resetTimeout: DEFAULT_AI_TIMEOUT_MS,
       halfOpenSuccessThreshold: 2,
     });
   }
@@ -642,8 +644,8 @@ export class RequestProcessor {
           taskComplexity,
         );
       } catch (selErr) {
-        traceLogger.warn("provider.selection_failed", String(selErr), { fallback: "mock" });
-        selectedProviderName = "mock";
+        traceLogger.warn("provider.selection_failed", String(selErr), { fallback: ProviderType.MOCK });
+        selectedProviderName = ProviderType.MOCK;
       }
 
       const rawProvider = await ProviderFactory.createByName(
@@ -750,7 +752,7 @@ ${result.content}`,
   ): Promise<ILoadedBlueprint | null> {
     let dir = Deno.cwd();
     while (true) {
-      const candidatePath = join(dir, "Blueprints", "Identities");
+      const candidatePath = join(dir, "Blueprints", DEFAULT_IDENTITIES_PATH);
       try {
         const candidateFile = join(candidatePath, `${identityId}.md`);
         try {
@@ -782,7 +784,7 @@ ${result.content}`,
     traceLogger: EventLogger,
   ): Promise<ILoadedBlueprint | null> {
     // Try the repository root (cwd) directly
-    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", "Identities");
+    const repoIdentitiesPath = join(Deno.cwd(), "Blueprints", DEFAULT_IDENTITIES_PATH);
     const fallbackLoader = new BlueprintLoader({ blueprintsPath: repoIdentitiesPath });
     const loadedBlueprint = await fallbackLoader.load(identityId);
     if (loadedBlueprint) {
@@ -793,7 +795,7 @@ ${result.content}`,
     // Also try locating Blueprints relative to this module (repo root)
     try {
       const repoRoot = join(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
-      const repoModuleIdentities = join(repoRoot, "Blueprints", "Identities");
+      const repoModuleIdentities = join(repoRoot, "Blueprints", DEFAULT_IDENTITIES_PATH);
       const moduleLoader = new BlueprintLoader({ blueprintsPath: repoModuleIdentities });
       const moduleLoaded = await moduleLoader.load(identityId);
       if (moduleLoaded) {

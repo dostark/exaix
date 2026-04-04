@@ -18,6 +18,9 @@ import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../shared/version.t
 
 import type { IDaemonStatus } from "../../shared/types/daemon.ts";
 
+/** Logger actor name for daemon operations */
+const DAEMON_ACTOR = "daemon";
+
 /**
  * Commands for daemon control
  */
@@ -46,12 +49,12 @@ export class DaemonCommands extends BaseCommand {
 
       const status = await this.status();
       if (status.running) {
-        await this.logger.info("daemon.already_running", "daemon", { pid: status.pid ?? null });
+        await this.logger.info("daemon.already_running", DAEMON_ACTOR, { pid: status.pid ?? null });
         console.log("daemon.already_running");
         return;
       }
 
-      await this.logger.info("daemon.starting", "daemon");
+      await this.logger.info("daemon.starting", DAEMON_ACTOR);
 
       // Check if main.ts exists
       if (!await exists(mainScript)) {
@@ -135,12 +138,12 @@ export class DaemonCommands extends BaseCommand {
       const status = await this.status();
 
       if (!status.running) {
-        await this.logger.info("daemon.not_running", "daemon");
+        await this.logger.info("daemon.not_running", DAEMON_ACTOR);
         console.log("daemon.not_running");
         return;
       }
 
-      await this.logger.info("daemon.stopping", "daemon", { pid: status.pid ?? null });
+      await this.logger.info("daemon.stopping", DAEMON_ACTOR, { pid: status.pid ?? null });
 
       try {
         // Send SIGTERM
@@ -164,7 +167,7 @@ export class DaemonCommands extends BaseCommand {
         }
 
         // Force kill if still running
-        await this.logger.warn("daemon.force_stopping", "daemon", { pid: status.pid ?? null });
+        await this.logger.warn("daemon.force_stopping", DAEMON_ACTOR, { pid: status.pid ?? null });
         const forceKillCmd = new this.Command("kill", {
           args: ["-KILL", status.pid!.toString()],
           stdout: "piped",
@@ -195,7 +198,7 @@ export class DaemonCommands extends BaseCommand {
    */
   async restart(): Promise<void> {
     try {
-      await this.logger.info("daemon.restarting", "daemon");
+      await this.logger.info("daemon.restarting", DAEMON_ACTOR);
       const beforeStatus = await this.status();
       await this.stop();
       // Brief pause to ensure port/resources are released
@@ -387,7 +390,7 @@ export class DaemonCommands extends BaseCommand {
   protected async logDaemonActivity(actionType: string, payload: JSONObject): Promise<void> {
     try {
       const actionLogger = await this.getActionLogger();
-      actionLogger.info(actionType, "daemon", {
+      actionLogger.info(actionType, DAEMON_ACTOR, {
         ...payload,
         timestamp: new Date().toISOString(),
         via: "cli",

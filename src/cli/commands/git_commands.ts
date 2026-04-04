@@ -7,6 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
+import { GIT_CMD_BRANCH } from "../../shared/constants.ts";
 
 export interface IBranchInfo {
   name: string;
@@ -43,7 +44,7 @@ export class GitCommands extends BaseCommand {
     const args = [
       "-C",
       workspaceRoot,
-      "branch",
+      GIT_CMD_BRANCH,
       "--format=%(HEAD)|%(refname:short)|%(objectname:short)|%(committerdate:iso-strict)",
       "--sort=-committerdate",
     ];
@@ -154,7 +155,7 @@ export class GitCommands extends BaseCommand {
 
     // Get current branch
     const branchCmd = new Deno.Command("git", {
-      args: ["-C", workspaceRoot, "branch", "--show-current"],
+      args: ["-C", workspaceRoot, GIT_CMD_BRANCH, "--show-current"],
       stdout: "piped",
       stderr: "piped",
     });

@@ -26,6 +26,7 @@ import {
 } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import {
+  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_GLOBAL_MEMORY_PATH,
   DEFAULT_GLOBAL_MEMORY_VERSION,
@@ -169,7 +170,7 @@ export class MemoryBankService implements IMemoryBankService {
         }
 
         // Wait with exponential backoff before retrying
-        const delay = Math.min(timeoutMs * Math.pow(2, attempt), 30000); // Cap at 30 seconds
+        const delay = Math.min(timeoutMs * Math.pow(2, attempt), DEFAULT_AI_TIMEOUT_MS); // Cap at 30 seconds
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -558,7 +559,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     this.logActivity({
       event_type: "memory.global.initialized",
-      target: "global",
+      target: MemoryScope.GLOBAL,
       metadata: { version: "1.0.0" },
     });
   }
@@ -628,7 +629,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     this.logActivity({
       event_type: "memory.global.learning.added",
-      target: "global",
+      target: MemoryScope.GLOBAL,
       metadata: {
         learning_id: learning.id,
         title: learning.title,
@@ -697,7 +698,7 @@ export class MemoryBankService implements IMemoryBankService {
         learning_id: learningId,
         from_type: promotion.type,
         from_name: promotion.name,
-        to_scope: "global",
+        to_scope: MemoryScope.GLOBAL,
       },
     });
 
@@ -776,7 +777,7 @@ export class MemoryBankService implements IMemoryBankService {
       target: targetPortal,
       metadata: {
         learning_id: learningId,
-        from_scope: "global",
+        from_scope: MemoryScope.GLOBAL,
         to_project: targetPortal,
       },
     });

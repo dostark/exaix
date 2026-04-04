@@ -8,7 +8,7 @@
 
 import { colorize, type ITuiTheme } from "./colors.ts";
 import { renderLayoutPresetListLines } from "./layout_rendering.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "./constants.ts";
+import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID, TUI_SEPARATOR_ROW } from "./constants.ts";
 import { ResizeDirection, SplitDirection, TuiViewName } from "../../shared/enums.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 
@@ -750,7 +750,7 @@ export function renderLayoutPresetPicker(
       colorize("          Layout Presets               ", theme.h1, theme.reset) +
       colorize("│", theme.border, theme.reset),
   );
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
 
   lines.push(
     ...renderLayoutPresetListLines(
@@ -761,7 +761,7 @@ export function renderLayoutPresetPicker(
     ),
   );
 
-  lines.push(colorize("├────────────────────────────────────────┤", theme.border, theme.reset));
+  lines.push(colorize(TUI_SEPARATOR_ROW, theme.border, theme.reset));
   lines.push(
     colorize("│", theme.border, theme.reset) +
       colorize(" Enter to apply, Esc to cancel        ", theme.textDim, theme.reset) +

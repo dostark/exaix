@@ -17,7 +17,13 @@ import { DialogStatus, GroupingMode } from "../shared/enums.ts";
 import type { JSONObject } from "../shared/types/json.ts";
 import { IJournalService } from "../shared/interfaces/i_journal_service.ts";
 import { LOG_COLORS, LOG_ICONS, MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { TUI_LAYOUT_NARROW_WIDTH } from "./helpers/constants.ts";
+import {
+  TUI_ACTION_SEARCH,
+  TUI_ELEMENT_ACTION_BUTTONS,
+  TUI_KEY_LABEL_ENTER,
+  TUI_LAYOUT_NARROW_WIDTH,
+} from "./helpers/constants.ts";
+import { TUI_SECTION } from "./helpers/decorations.ts";
 
 export interface ILogEntry {
   id: string;
@@ -434,7 +440,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
   protected override buildTree(items: ILogEntry[] = []): void {
     const logs = items.length > 0 ? items : this.monitorView.getFilteredLogs();
 
-    if (this.logViewExtensions.groupBy === "none") {
+    if (this.logViewExtensions.groupBy === GroupingMode.NONE) {
       // Flat list
       this.state.tree = logs.map((log) => {
         const icon = LOG_ICONS[log.action_type as keyof typeof LOG_ICONS] || LOG_ICONS["default"];
@@ -465,7 +471,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
           children,
         );
       });
-    } else if (this.logViewExtensions.groupBy === "action") {
+    } else if (this.logViewExtensions.groupBy === GroupingMode.ACTION) {
       // Group by action type
       const byAction = new Map<string, ILogEntry[]>();
       for (const log of logs) {
@@ -517,9 +523,9 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
 
   renderDetail(): string[] {
     const lines: string[] = [];
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                      LOG DETAILS                              ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"LOG DETAILS".padStart(37).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
 
     if (this.logViewExtensions.detailContent) {
       const contentLines = this.logViewExtensions.detailContent.split("\n");
@@ -530,7 +536,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       lines.push("║  (No details available)                                        ║");
     }
 
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.BOTTOM);
     lines.push("");
     lines.push("[ESC] Close details");
     return lines;
@@ -550,7 +556,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
       {
         title: "Actions",
         items: [
-          { key: "Enter", description: "View log details" },
+          { key: TUI_KEY_LABEL_ENTER, description: "View log details" },
           { key: "Space", description: "Toggle pause" },
           { key: "b", description: "Bookmark entry" },
           { key: "e", description: "Export logs" },
@@ -599,7 +605,9 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
     const bookmarks = this.logViewExtensions.bookmarkedIds.size > 0
       ? ` [${this.logViewExtensions.bookmarkedIds.size} bookmarked]`
       : "";
-    const grouping = this.logViewExtensions.groupBy !== "none" ? ` [Group: ${this.logViewExtensions.groupBy}]` : "";
+    const grouping = this.logViewExtensions.groupBy !== GroupingMode.NONE
+      ? ` [Group: ${this.logViewExtensions.groupBy}]`
+      : "";
     return `${logs.length} logs${paused}${autoRefresh}${bookmarks}${grouping}`;
   }
 
@@ -726,7 +734,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
   }
 
   showSearchDialog(): void {
-    this.pendingDialogType = "search";
+    this.pendingDialogType = TUI_ACTION_SEARCH;
     this.showInputDialog({
       title: "Search Logs",
       label: "Enter search query:",
@@ -854,7 +862,7 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
 
     const value = result.value as string;
     switch (this.pendingDialogType) {
-      case "search":
+      case TUI_ACTION_SEARCH:
         this.handleSearchResult(value);
         break;
       case "filter-identity":
@@ -1005,6 +1013,6 @@ export class MonitorTuiSession extends BaseTreeView<ILogEntry> {
   }
 
   getFocusableElements(): string[] {
-    return ["log-list", "action-buttons"];
+    return ["log-list", TUI_ELEMENT_ACTION_BUTTONS];
   }
 }

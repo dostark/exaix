@@ -106,6 +106,7 @@ export const DEFAULT_LOG_BUFFER_SIZE = 10000;
 export const DEFAULT_COST_PRECISION_FACTOR = 10000;
 export const DEFAULT_TITLE_PLACEHOLDER = "Untitled";
 export const DEFAULT_NONE_LABEL = "None";
+export const DEFAULT_NONE_VALUE = "none";
 export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
 
 // Agent Validation Limits
@@ -342,6 +343,14 @@ export const DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT = 1;
 export const DEFAULT_GIT_EXIT_CODE_FATAL = 128;
 export const DEFAULT_GIT_REV_PARSE_TIMEOUT_MS = 2000;
 
+/** Git subcommand constants */
+export const GIT_CMD_REV_PARSE = "rev-parse";
+export const GIT_CMD_WORKTREE = "worktree";
+export const GIT_CMD_CONFIG = "config";
+export const GIT_CMD_BRANCH = "branch";
+export const GIT_CMD_STATUS = "status";
+export const GIT_CMD_LIST = "list";
+
 // ============================================================================
 // Rate Limiting Validation Limits
 // ============================================================================
@@ -558,11 +567,20 @@ export const MIN_CONTENT_THRESHOLD = 50;
 /** Default refresh interval for TUI views */
 export const DEFAULT_REFRESH_INTERVAL_MS = 5000;
 
+/** Seconds in one hour, used for time formatting calculations */
+export const SECONDS_PER_HOUR = 3600;
+
+/** Bytes per kilobyte, used for unit conversion calculations */
+export const BYTES_PER_KB = 1024;
+
 /** Timeout for acquiring file locks */
 export const LOCK_ACQUIRE_TIMEOUT_MS = 5000;
 
 /** Timeout for stopping the daemon */
 export const DAEMON_STOP_TIMEOUT_MS = 5000;
+
+/** Identity ID used for the daemon actor in logs and permission checks */
+export const DAEMON_IDENTITY_ID = "daemon";
 
 /** Max delay for database retries */
 export const DB_MAX_RETRY_DELAY_MS = 5000;
@@ -595,6 +613,8 @@ export const MAX_PROMPT_LENGTH = 50000;
 // Prompt Context Defaults
 // ============================================================================
 
+export const PORTAL_LABEL = "portal";
+export const ACTIVITY_ACTOR_AGENT = "agent";
 export const PORTAL_CONTEXT_KEY = "portal_context";
 export const PORTAL_KNOWLEDGE_KEY = "portal_knowledge";
 /** IParsedRequest.context key for memory context injected by SessionMemoryService (Phase 49). */
@@ -1186,6 +1206,7 @@ export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.GIT_STATUS,
   McpToolName.LIST_PLANS,
   McpToolName.QUERY_JOURNAL,
+  McpToolName.FETCH_URL,
 ]);
 
 /**
@@ -1241,3 +1262,7 @@ export const REPORT_GENERATION_MAX_TOKENS = 1000;
 
 /** Regex pattern to match portal-prefixed paths like @portal/file.ts */
 export const PORTAL_PREFIX_PATTERN = /@[a-zA-Z0-9_-]+\//g;
+
+/** Programming language identifiers */
+export const LANG_TYPESCRIPT = "typescript";
+export const LANG_JAVASCRIPT = "javascript";

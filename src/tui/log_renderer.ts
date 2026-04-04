@@ -15,7 +15,7 @@ import {
   TIME_MS_PER_MINUTE,
   TIME_MS_PER_SECOND,
 } from "../shared/constants.ts";
-import { colorize, type ITuiTheme } from "./helpers/colors.ts";
+import { ANSI, colorize, type ITuiTheme } from "./helpers/colors.ts";
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
 import { LogLevel, TuiColorName } from "../shared/enums.ts";
 
@@ -50,44 +50,44 @@ export const DEFAULT_LOG_RENDER_OPTIONS: ILogRenderOptions = {
   maxMessageLength: LOG_RENDERER_MAX_MESSAGE_LENGTH,
   truncateMessages: true,
   theme: {
-    primary: "\x1b[36m", // cyan
-    secondary: "\x1b[34m", // blue
-    accent: "\x1b[35m", // magenta
-    border: "\x1b[90m", // bright black
-    borderActive: "\x1b[36m", // cyan
+    primary: ANSI.cyan,
+    secondary: ANSI.blue,
+    accent: ANSI.magenta,
+    border: ANSI.brightBlack,
+    borderActive: ANSI.cyan,
     text: "",
-    textDim: "\x1b[2m", // dim
-    textBold: "\x1b[1m", // bold
-    success: "\x1b[32m", // green
-    warning: "\x1b[33m", // yellow
-    error: "\x1b[31m", // red
-    info: "\x1b[34m", // blue
-    treeExpanded: "\x1b[36m", // cyan
-    treeCollapsed: "\x1b[90m", // bright black
-    treeLeaf: "\x1b[90m", // bright black
-    treeSelected: "\x1b[7m\x1b[36m", // inverse + cyan
-    h1: "\x1b[1m\x1b[36m", // bold + cyan
-    h2: "\x1b[1m\x1b[34m", // bold + blue
-    h3: "\x1b[1m\x1b[35m", // bold + magenta
-    code: "\x1b[33m", // yellow
-    codeBlock: "\x1b[2m\x1b[33m", // dim + yellow
-    categoryPattern: "\x1b[34m", // blue
-    categoryDecision: "\x1b[32m", // green
-    categoryTroubleshooting: "\x1b[31m", // red
-    categoryInsight: "\x1b[35m", // magenta
-    confidenceHigh: "\x1b[32m", // green
-    confidenceMedium: "\x1b[33m", // yellow
-    confidenceLow: "\x1b[31m", // red
-    statusActive: "\x1b[36m", // cyan
-    statusPending: "\x1b[33m", // yellow
-    statusCompleted: "\x1b[32m", // green
-    statusFailed: "\x1b[31m", // red
-    textInverted: "\x1b[7m",
-    link: "\x1b[4m\x1b[34m",
-    spinner: "\x1b[36m",
-    selection: "\x1b[7m",
-    selectionText: "\x1b[1m",
-    reset: "\x1b[0m",
+    textDim: ANSI.dim,
+    textBold: ANSI.bold,
+    success: ANSI.green,
+    warning: ANSI.yellow,
+    error: ANSI.red,
+    info: ANSI.blue,
+    treeExpanded: ANSI.cyan,
+    treeCollapsed: ANSI.brightBlack,
+    treeLeaf: ANSI.brightBlack,
+    treeSelected: `${ANSI.inverse}${ANSI.cyan}`,
+    h1: `${ANSI.bold}${ANSI.cyan}`,
+    h2: `${ANSI.bold}${ANSI.blue}`,
+    h3: `${ANSI.bold}${ANSI.magenta}`,
+    code: ANSI.yellow,
+    codeBlock: `${ANSI.dim}${ANSI.yellow}`,
+    categoryPattern: ANSI.blue,
+    categoryDecision: ANSI.green,
+    categoryTroubleshooting: ANSI.red,
+    categoryInsight: ANSI.magenta,
+    confidenceHigh: ANSI.green,
+    confidenceMedium: ANSI.yellow,
+    confidenceLow: ANSI.red,
+    statusActive: ANSI.cyan,
+    statusPending: ANSI.yellow,
+    statusCompleted: ANSI.green,
+    statusFailed: ANSI.red,
+    textInverted: ANSI.inverse,
+    link: `${ANSI.underline}${ANSI.blue}`,
+    spinner: ANSI.cyan,
+    selection: ANSI.inverse,
+    selectionText: ANSI.bold,
+    reset: ANSI.reset,
   },
 };
 

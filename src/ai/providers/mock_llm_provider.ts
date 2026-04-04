@@ -11,9 +11,10 @@
  * * @related-files [src/ai/factories/mock_factory.ts, tests/ai/mock_llm_provider_test.ts]
  */
 
-import { MockStrategy } from "../../shared/enums.ts";
+import { MockStrategy, ProviderType } from "../../shared/enums.ts";
 import { IModelOptions, IModelProvider } from "../types.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "../../shared/constants.ts";
+import { ToolName } from "../../shared/enums.ts";
 
 // ============================================================================
 // Types and Interfaces
@@ -380,7 +381,7 @@ export class MockLLMProvider implements IModelProvider {
   /**
    * Record a response for later playback
    */
-  recordResponse(prompt: string, response: string, model: string = "mock"): IRecordedResponse {
+  recordResponse(prompt: string, response: string, model: string = ProviderType.MOCK): IRecordedResponse {
     const recording: IRecordedResponse = {
       promptHash: this.hashPrompt(prompt),
       promptPreview: prompt.substring(0, 100),
@@ -712,13 +713,13 @@ ${
                   step: 3,
                   title: "Implement Code",
                   description: "Write the necessary code changes to implement the feature.",
-                  tools: ["write_file"],
+                  tools: [ToolName.WRITE_FILE],
                 },
                 {
                   step: 4,
                   title: "Write Tests",
                   description: "Add unit tests to verify the implementation works correctly.",
-                  tools: ["write_file"],
+                  tools: [ToolName.WRITE_FILE],
                   dependencies: [3],
                 },
                 {
@@ -757,7 +758,7 @@ ${
                   step: 3,
                   title: "Implement Fix",
                   description: "Apply the necessary correction to resolve the issue.",
-                  tools: ["write_file"],
+                  tools: [ToolName.WRITE_FILE],
                   dependencies: [2],
                 },
                 {
@@ -802,7 +803,7 @@ ${
                   step: 3,
                   title: "Implement",
                   description: "Execute the changes according to the plan.",
-                  tools: ["write_file"],
+                  tools: [ToolName.WRITE_FILE],
                 },
               ],
             })

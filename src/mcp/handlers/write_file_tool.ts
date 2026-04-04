@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, WriteFileToolArgsSchema } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import { dirname } from "@std/path";
 import type { JSONValue } from "../../shared/types/json.ts";
 
@@ -48,7 +48,7 @@ export class WriteFileTool extends ToolHandler {
       await Deno.writeTextFile(absolutePath, content);
 
       // Log successful execution
-      this.logToolExecution("write_file", portal, identity_id, {
+      this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
         path,
         identity_id: identity_id ?? null,
         success: true,
@@ -65,7 +65,7 @@ export class WriteFileTool extends ToolHandler {
       };
     } catch (error) {
       // Log failed execution
-      this.logToolExecution("write_file", portal, identity_id, {
+      this.logToolExecution(McpToolName.WRITE_FILE, portal, identity_id, {
         path,
         identity_id: identity_id ?? null,
         success: false,
@@ -78,7 +78,7 @@ export class WriteFileTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "write_file",
+      name: McpToolName.WRITE_FILE,
       description: "Write a file to a portal (validated and logged)",
       inputSchema: {
         type: "object",

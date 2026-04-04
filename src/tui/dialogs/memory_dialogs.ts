@@ -56,6 +56,8 @@ export type DialogResult<T = unknown> =
 
 export type DialogState = DialogStatus;
 
+const CANCEL_BTN_ID = "cancel-btn";
+
 export class BulkApproveDialog extends DialogBase<IBulkApproveResult> {
   private count: number;
   private progress = 0;
@@ -67,7 +69,7 @@ export class BulkApproveDialog extends DialogBase<IBulkApproveResult> {
   }
 
   getFocusableElements(): string[] {
-    return ["approve-all-btn", "cancel-btn"];
+    return ["approve-all-btn", CANCEL_BTN_ID];
   }
 
   handleKey(key: string): void {
@@ -194,7 +196,7 @@ export class ConfirmApproveDialog extends DialogBase<IApproveDialogResult> {
   }
 
   getFocusableElements(): string[] {
-    return ["approve-btn", "cancel-btn"];
+    return ["approve-btn", CANCEL_BTN_ID];
   }
 
   handleKey(key: string): void {
@@ -258,7 +260,7 @@ export class ConfirmRejectDialog extends DialogBase<IRejectDialogResult> {
   }
 
   getFocusableElements(): string[] {
-    return ["reason-input", "reject-btn", "cancel-btn"];
+    return ["reason-input", "reject-btn", CANCEL_BTN_ID];
   }
 
   handleKey(key: string): void {
@@ -376,7 +378,7 @@ export class AddLearningDialog extends DialogBase<IAddLearningResult> {
       "scope-select",
       "portal-input",
       "save-btn",
-      "cancel-btn",
+      CANCEL_BTN_ID,
     ];
   }
 
@@ -584,7 +586,7 @@ export class PromoteDialog extends DialogBase<IPromoteDialogResult> {
   }
 
   getFocusableElements(): string[] {
-    return ["promote-btn", "cancel-btn"];
+    return ["promote-btn", CANCEL_BTN_ID];
   }
 
   handleKey(key: string): void {

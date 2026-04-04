@@ -7,6 +7,7 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
+import { TUI_ELEMENT_ACTION_BUTTONS } from "./helpers/constants.ts";
 import { TuiNodeType } from "../shared/enums.ts";
 // Redundant import removed
 import { MemoryFormatter } from "./memory_view/formatters.ts";
@@ -651,7 +652,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     if (node.id.startsWith("pending:")) {
       return "[a] Approve  [r] Reject  [A] Approve All  [Enter] View Details";
     }
-    if (node.id === "pending") {
+    if (node.id === MemoryTuiScope.PENDING) {
       return "[A] Approve All  [Enter] Expand";
     }
     if (node.type === TuiNodeType.PROJECT) {
@@ -670,7 +671,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
    * Get focusable elements for accessibility
    */
   getFocusableElements(): string[] {
-    return ["tree-panel", "detail-panel", "search-input", "action-buttons"];
+    return ["tree-panel", "detail-panel", "search-input", TUI_ELEMENT_ACTION_BUTTONS];
   }
 
   /**

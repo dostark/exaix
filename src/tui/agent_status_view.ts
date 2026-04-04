@@ -7,7 +7,7 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
-import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
+import { DEFAULT_IDENTITIES_PATH, DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import type { ITreeNode } from "./helpers/tree_view.ts";
 import {
@@ -28,15 +28,17 @@ import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts"
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { TUI_SECTION } from "./helpers/decorations.ts";
 import {
   TUI_AGENT_HEALTH_ICONS,
   TUI_AGENT_STATUS_ICONS,
+  TUI_KEY_LABEL_ENTER,
   TUI_LAYOUT_NARROW_WIDTH,
   TUI_LIMIT_MEDIUM,
   TUI_LOG_LEVEL_ICONS,
 } from "./helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { DEFAULT_QUERY_LIMIT } from "../shared/constants.ts";
+import { DEFAULT_QUERY_LIMIT, SECONDS_PER_HOUR } from "../shared/constants.ts";
 
 // Extracted utilities
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
@@ -315,8 +317,8 @@ export class AgentStatusView {
 
   /** Format uptime in human-readable format */
   formatUptime(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const hours = Math.floor(seconds / SECONDS_PER_HOUR);
+    const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / 60);
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -367,7 +369,7 @@ export class MinimalAgentServiceMock implements IAgentService {
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
       issues: [],
-      uptime: 3600,
+      uptime: SECONDS_PER_HOUR,
     });
   }
 
@@ -427,7 +429,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   // ===== State Accessors =====
 
   override getViewName(): string {
-    return "Identities";
+    return DEFAULT_IDENTITIES_PATH;
   }
 
   getAgentTree(): ITreeNode[] {
@@ -848,7 +850,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
       {
         title: "Actions",
         items: [
-          { key: "Enter", description: "View agent details" },
+          { key: TUI_KEY_LABEL_ENTER, description: "View agent details" },
           { key: "l", description: "View agent logs" },
           { key: "s", description: "Search agents" },
         ],
@@ -956,9 +958,9 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 
   renderDetail(): string[] {
     const lines: string[] = [];
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                     AGENT DETAILS                             ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"AGENT DETAILS".padStart(38).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
 
     if (this.state.detailContent) {
       const contentLines = this.state.detailContent.split("\n");
@@ -969,7 +971,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
       lines.push("║  (No details available)                                        ║");
     }
 
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.BOTTOM);
     lines.push("");
     lines.push("[ESC] Close details");
     return lines;
@@ -977,9 +979,9 @@ export class AgentStatusTuiSession extends TuiSessionBase {
 
   renderLogs(): string[] {
     const lines: string[] = [];
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                      AGENT LOGS                               ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"AGENT LOGS".padStart(37).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
 
     if (this.state.logContent) {
       const contentLines = this.state.logContent.split("\n");
@@ -990,7 +992,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
       lines.push("║  (No logs available)                                           ║");
     }
 
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.BOTTOM);
     lines.push("");
     lines.push("[ESC] Close logs");
     return lines;

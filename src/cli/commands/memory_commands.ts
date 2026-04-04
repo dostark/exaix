@@ -172,11 +172,11 @@ export class MemoryCommands extends BaseCommand {
     }
 
     switch (format) {
-      case "json":
+      case UIOutputFormat.JSON:
         return JSON.stringify(results, null, 2);
       case "md":
         return this.formatter.formatSearchMarkdown(query, results);
-      case "table":
+      case UIOutputFormat.TABLE:
       default:
         return this.formatter.formatSearchTable(query, results);
     }
@@ -271,11 +271,11 @@ export class MemoryCommands extends BaseCommand {
     );
 
     switch (format) {
-      case "json":
+      case UIOutputFormat.JSON:
         return JSON.stringify(executions, null, 2);
       case "md":
         return this.formatter.formatExecutionListMarkdown(executions);
-      case "table":
+      case UIOutputFormat.TABLE:
       default:
         return this.formatter.formatExecutionListTable(executions);
     }
@@ -659,7 +659,7 @@ export class MemoryCommands extends BaseCommand {
       format?: OutputFormat;
     } = {},
   ): Promise<string> {
-    const format = options.format || "table";
+    const format = options.format || UIOutputFormat.TABLE;
 
     try {
       await this.skills.initialize();
@@ -678,7 +678,7 @@ export class MemoryCommands extends BaseCommand {
       }
 
       switch (format) {
-        case "json":
+        case UIOutputFormat.JSON:
           return JSON.stringify(
             limitedMatches.map((m) => ({
               skillId: m.skillId,
@@ -691,7 +691,7 @@ export class MemoryCommands extends BaseCommand {
 
         case "md":
           return this.formatter.formatSkillMatchMarkdown(limitedMatches);
-        case "table":
+        case UIOutputFormat.TABLE:
         default:
           return this.formatter.formatSkillMatchTable(limitedMatches);
       }
@@ -713,7 +713,7 @@ export class MemoryCommands extends BaseCommand {
     instructions?: string;
     format?: OutputFormat;
   } = {}): Promise<string> {
-    const format = options.format || "table";
+    const format = options.format || UIOutputFormat.TABLE;
 
     try {
       await this.skills.initialize();
@@ -740,12 +740,12 @@ export class MemoryCommands extends BaseCommand {
       );
 
       switch (format) {
-        case "json":
+        case UIOutputFormat.JSON:
           return JSON.stringify(derivedSkill, null, 2);
 
         case "md":
           return this.formatter.formatSkillShowMarkdown(derivedSkill);
-        case "table":
+        case UIOutputFormat.TABLE:
         default:
           return `Derived skill:\n${this.formatter.formatSkillShowTable(derivedSkill)}`;
       }

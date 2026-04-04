@@ -136,7 +136,7 @@ function classifyTaskType(text: string): RequestTaskType {
           return RequestTaskType.BUGFIX;
         case "refactor":
           return RequestTaskType.REFACTOR;
-        case "test":
+        case RequestTaskType.TEST:
           return RequestTaskType.TEST;
         case "docs":
           return RequestTaskType.DOCS;

@@ -30,6 +30,7 @@ import { createOutputValidator, type IOutputValidator, type IValidationMetrics }
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import {
+  ACTIVITY_ACTOR_AGENT,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   PORTAL_CONTEXT_KEY,
@@ -210,7 +211,7 @@ export class AgentRunner implements IAgentRunner {
     // Set up retry logging
     this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => {
       this.logActivity(
-        "agent",
+        ACTIVITY_ACTOR_AGENT,
         "agent.retry_attempt",
         null,
         {
@@ -353,7 +354,7 @@ export class AgentRunner implements IAgentRunner {
     skillsApplied: string[],
   ): void {
     this.logActivity(
-      "agent",
+      ACTIVITY_ACTOR_AGENT,
       "agent.execution_started",
       requestId || null,
       {
@@ -416,7 +417,7 @@ export class AgentRunner implements IAgentRunner {
     duration: number,
   ): never {
     this.logActivity(
-      "agent",
+      ACTIVITY_ACTOR_AGENT,
       "agent.execution_failed",
       requestId || null,
       {
@@ -458,7 +459,7 @@ export class AgentRunner implements IAgentRunner {
       skillsApplied,
     } = args;
     this.logActivity(
-      "agent",
+      ACTIVITY_ACTOR_AGENT,
       "agent.execution_completed",
       requestId || null,
       {

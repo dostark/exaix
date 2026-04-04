@@ -158,7 +158,8 @@ export class FileOutput implements ILogOutput {
   }
 
   private shouldRotate(newLineSize: number): boolean {
-    const maxSize = (this.options.maxSizeMB ?? DEFAULTS.DEFAULT_LOG_MAX_SIZE_MB) * 1024 * 1024;
+    const maxSize = (this.options.maxSizeMB ?? DEFAULTS.DEFAULT_LOG_MAX_SIZE_MB) * DEFAULTS.BYTES_PER_KB *
+      DEFAULTS.BYTES_PER_KB;
     return this.currentFileSize + newLineSize > maxSize;
   }
 
@@ -293,7 +294,7 @@ export class StructuredLogger implements IStructuredLogger {
         ...metadata,
         performance: {
           duration_ms: Math.round(duration),
-          memory_delta_mb: Math.round(memoryDelta / 1024 / 1024 * 100) / 100,
+          memory_delta_mb: Math.round(memoryDelta / DEFAULTS.BYTES_PER_KB / DEFAULTS.BYTES_PER_KB * 100) / 100,
         },
       });
 

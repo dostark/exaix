@@ -7,6 +7,7 @@
  */
 import type { EventLogger } from "../core/event_logger.ts";
 import type { RequestStatusType } from "../../shared/status/request_status.ts";
+import { RequestStatus } from "../../shared/status/request_status.ts";
 
 export class StatusManager {
   constructor(private readonly logger: EventLogger) {}
@@ -28,7 +29,7 @@ export class StatusManager {
       );
 
       // If status is FAILED and we have an error message, add/update error field
-      if (newStatus === "failed" && errorMessage) {
+      if (newStatus === RequestStatus.FAILED && errorMessage) {
         // Check if error field already exists
         if (updatedContent.match(/^error:\s*.+$/m)) {
           // Update existing error field

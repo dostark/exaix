@@ -9,7 +9,7 @@
 import { dirname } from "@std/path";
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, MoveFileToolArgsSchema } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
@@ -80,7 +80,7 @@ export class MoveFileTool extends ToolHandler {
     // Perform the move
     await Deno.rename(absoluteFrom, absoluteTo);
 
-    this.logToolExecution("move_file", portal, identity_id, {
+    this.logToolExecution(McpToolName.MOVE_FILE, portal, identity_id, {
       from,
       to,
       bytes: stat.size,
@@ -99,7 +99,7 @@ export class MoveFileTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "move_file",
+      name: McpToolName.MOVE_FILE,
       description: "Move or rename a file within a portal. " +
         "Both source and destination must be within the portal bounds. " +
         "Destination must not already exist. " +

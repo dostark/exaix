@@ -9,7 +9,7 @@
 import { BaseCommand, type ICommandContext } from "../../cli/base.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { AgentHealth } from "../../shared/enums.ts";
+import { ActivityActor, AgentHealth } from "../../shared/enums.ts";
 import { AgentStatus } from "../../shared/status/agent_status.ts";
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../shared/types/agent.ts";
 import { DEFAULT_AGENT_MODEL } from "../../shared/constants.ts";
@@ -37,7 +37,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
       if (!await exists(this.identitiesDir)) {
         // Return a default system agent if directory doesn't exist
         return [{
-          id: "system",
+          id: ActivityActor.SYSTEM,
           name: "System Agent",
           status: AgentStatus.ACTIVE,
           model: this.config.ai?.model || DEFAULT_AGENT_MODEL,

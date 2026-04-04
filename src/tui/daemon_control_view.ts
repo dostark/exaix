@@ -11,9 +11,18 @@ import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
-import { DaemonAction, DaemonStatus, DialogStatus, MessageType } from "../shared/enums.ts";
+import {
+  DaemonAction,
+  DaemonStatus,
+  DialogStatus,
+  GeneralStatus,
+  MessageType,
+  SystemCommand,
+} from "../shared/enums.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { TUI_DAEMON_STATUS_ICONS, TUI_LAYOUT_MEDIUM_WIDTH } from "./helpers/constants.ts";
+import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } from "./helpers/constants.ts";
+import { ANSI } from "./helpers/colors.ts";
+import { TUI_SECTION } from "./helpers/decorations.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
 
@@ -81,16 +90,16 @@ export const DAEMON_STATUS_ICONS: Record<string, string> = {
 };
 
 export const DAEMON_STATUS_COLORS: Record<string, string> = {
-  [DaemonStatus.RUNNING]: "green",
-  [DaemonStatus.STOPPED]: "red",
-  [DaemonStatus.ERROR]: "yellow",
-  [DaemonStatus.UNKNOWN]: "gray",
+  [DaemonStatus.RUNNING]: ANSI.green,
+  [DaemonStatus.STOPPED]: ANSI.red,
+  [DaemonStatus.ERROR]: ANSI.yellow,
+  [DaemonStatus.UNKNOWN]: ANSI.brightBlack,
 };
 
 export const LOG_LEVEL_COLORS: Record<string, string> = {
-  info: "white",
-  warn: "yellow",
-  error: "red",
+  info: ANSI.white,
+  warn: ANSI.yellow,
+  error: ANSI.red,
 };
 
 // ===== Key Bindings =====
@@ -191,7 +200,7 @@ export class CLIDaemonService implements IDaemonService {
     await this.start();
   }
   async getStatus(): Promise<DaemonStatus> {
-    const cmd = new Deno.Command("deno", {
+    const cmd = new Deno.Command(SystemCommand.DENO, {
       args: ["run", "--allow-all", this.#cliScript, CLI_CMD_DAEMON, CLI_CMD_STATUS],
       stdout: "piped",
       stderr: "null",
@@ -211,7 +220,7 @@ export class CLIDaemonService implements IDaemonService {
     return Promise.resolve([]);
   }
   async #runDaemonCmd(args: string[]): Promise<void> {
-    const cmd = new Deno.Command("deno", {
+    const cmd = new Deno.Command(SystemCommand.DENO, {
       args: ["run", "--allow-all", this.#cliScript, "daemon", ...args],
       stdout: "null",
       stderr: "null",
@@ -461,7 +470,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
       return DaemonStatus.STOPPED;
     }
     // Error variants
-    if (["error", "failed", "crash detected", "crash"].includes(normalized)) {
+    if ([GeneralStatus.ERROR, GeneralStatus.FAILED, "crash detected", "crash"].includes(normalized)) {
       return DaemonStatus.ERROR;
     }
     return DaemonStatus.UNKNOWN;
@@ -478,7 +487,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
       title: "Start Daemon",
       message: "Are you sure you want to start the daemon?",
       confirmText: "Start",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
     });
   }
 
@@ -494,7 +503,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
         "All active operations will be terminated.",
       ],
       confirmText: "Stop",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
       destructive: true,
     });
   }
@@ -507,7 +516,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
         "All active operations will be temporarily interrupted.",
       ],
       confirmText: "Restart",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
       destructive: true,
     });
   }
@@ -756,9 +765,9 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     const statusIcon = DAEMON_STATUS_ICONS[this.state.status] || "❓";
     const statusLabel = this.state.status.charAt(0).toUpperCase() + this.state.status.slice(1);
 
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                    DAEMON STATUS                              ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"DAEMON STATUS".padStart(38).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
     lines.push(`║  Status: ${statusIcon} ${statusLabel.padEnd(TUI_LAYOUT_MEDIUM_WIDTH - 9)} ║`);
 
     if (this.state.lastStatusCheck) {
@@ -790,18 +799,18 @@ export class DaemonControlTuiSession extends TuiSessionBase {
       lines.push("║                                                               ║");
     }
 
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
-    lines.push(`║${UI_STATUS_PANEL_KEYS}      ║`);
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.MIDDLE);
+    lines.push(`║${UI_STATUS_PANEL_KEYS.padEnd(61)}║`);
+    lines.push(TUI_SECTION.BOTTOM);
 
     return lines;
   }
 
   renderLogs(): string[] {
     const lines: string[] = [];
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                      DAEMON LOGS                              ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"DAEMON LOGS".padStart(37).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
 
     if (this.state.logContent.length > 0) {
       for (const log of this.state.logContent.slice(-15)) {
@@ -815,9 +824,9 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     }
 
     if (this.state.errorContent.length > 0) {
-      lines.push("╠═══════════════════════════════════════════════════════════════╣");
-      lines.push("║                       ERRORS                                  ║");
-      lines.push("╠═══════════════════════════════════════════════════════════════╣");
+      lines.push(TUI_SECTION.MIDDLE);
+      lines.push(`║${"ERRORS".padStart(34).padEnd(61)}║`);
+      lines.push(TUI_SECTION.MIDDLE);
       for (const error of this.state.errorContent.slice(-5)) {
         const truncated = error.length > TUI_LAYOUT_MEDIUM_WIDTH + 1
           ? error.substring(0, TUI_LAYOUT_MEDIUM_WIDTH - 2) + "..."
@@ -826,7 +835,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
       }
     }
 
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.BOTTOM);
     lines.push("");
     lines.push(UI_CLOSE_LOGS);
     return lines;
@@ -834,14 +843,14 @@ export class DaemonControlTuiSession extends TuiSessionBase {
 
   renderConfig(): string[] {
     const lines: string[] = [];
-    lines.push("╔═══════════════════════════════════════════════════════════════╗");
-    lines.push("║                    DAEMON CONFIGURATION                       ║");
-    lines.push("╠═══════════════════════════════════════════════════════════════╣");
+    lines.push(TUI_SECTION.TOP);
+    lines.push(`║${"DAEMON CONFIGURATION".padStart(41).padEnd(61)}║`);
+    lines.push(TUI_SECTION.MIDDLE);
     lines.push(`║  Config File: ${UI_CONFIG_FILE.padEnd(TUI_LAYOUT_MEDIUM_WIDTH - 13)} ║`);
-    lines.push("║                                                               ║");
+    lines.push(TUI_SECTION.EMPTY);
     lines.push(`║  ${UI_CONFIG_COMING_SOON.padEnd(TUI_LAYOUT_MEDIUM_WIDTH - 2)} ║`);
-    lines.push("║                                                               ║");
-    lines.push("╚═══════════════════════════════════════════════════════════════╝");
+    lines.push(TUI_SECTION.EMPTY);
+    lines.push(TUI_SECTION.BOTTOM);
     lines.push("");
     lines.push(UI_CLOSE_CONFIG);
     return lines;
@@ -899,6 +908,6 @@ export class LegacyDaemonControlTuiSession extends TuiSessionBase {
   }
 
   getFocusableElements(): string[] {
-    return ["start", "stop", "restart", "logs", "status"];
+    return ["start", "stop", "restart", "logs", CLI_CMD_STATUS];
   }
 }

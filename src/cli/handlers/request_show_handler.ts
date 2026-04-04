@@ -12,9 +12,11 @@ import { BaseCommand, type ICommandContext } from "../base.ts";
 import { type IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import { type IRequestShowResult } from "../../shared/types/request.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
+import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
+import { RequestKind } from "../../shared/enums.ts";
 import { getWorkspaceRequestsDir, REQUEST_CORE_FIELDS } from "./request_paths.ts";
-import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
+import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "../../shared/constants.ts";
 
 export class RequestShowHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -81,7 +83,15 @@ export class RequestShowHandler extends BaseCommand {
     metadata.identity = identityValue;
     metadata.agent = identityValue;
 
-    const optionalKeys = ["portal", "target_branch", "model", "flow", "error", "rejected_path", "subject"];
+    const optionalKeys = [
+      PORTAL_LABEL,
+      "target_branch",
+      "model",
+      RequestKind.FLOW,
+      PlanStatus.ERROR,
+      "rejected_path",
+      "subject",
+    ];
     for (const key of optionalKeys) {
       if (matchingFrontmatter[key]) metadata[key] = String(matchingFrontmatter[key]);
     }

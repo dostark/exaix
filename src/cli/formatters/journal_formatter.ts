@@ -12,6 +12,8 @@ import { IActivityRecord } from "../../shared/types/database.ts";
 import { IJournalFilterOptions } from "../../shared/types/database.ts";
 import { DataFormat, UIOutputFormat } from "../../shared/enums.ts";
 
+const ERR_KEYWORD = "error";
+
 export class JournalFormatter {
   static render(
     activities: IActivityRecord[],
@@ -28,7 +30,7 @@ export class JournalFormatter {
       return;
     }
 
-    if (format === "table") {
+    if (format === UIOutputFormat.TABLE) {
       this.renderTable(activities, filter);
     } else {
       this.renderText(activities, filter);
@@ -136,7 +138,7 @@ export class JournalFormatter {
   }
 
   private static styleAction(action: string): string {
-    if (action.includes("error") || action.includes("fail") || action.includes("reject")) {
+    if (action.includes(ERR_KEYWORD) || action.includes("fail") || action.includes("reject")) {
       return colors.red(action);
     }
     if (action.includes("approve") || action.includes("success")) {

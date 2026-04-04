@@ -6,6 +6,7 @@
  * * @related-files [src/main.ts, src/services/structured_logger.ts]
  */
 
+import { DEFAULT_AI_TIMEOUT_MS } from "../../shared/constants.ts";
 import type { IStructuredLogger } from "../logger/structured_logger.ts";
 
 /**
@@ -31,7 +32,7 @@ export class GracefulShutdown {
    * @param handler - Async function to execute during shutdown
    * @param timeout - Timeout in milliseconds (default: 30000)
    */
-  registerCleanup(name: string, handler: () => Promise<void>, timeout = 30000): void {
+  registerCleanup(name: string, handler: () => Promise<void>, timeout = DEFAULT_AI_TIMEOUT_MS): void {
     this.cleanupTasks.push({ name, handler, timeout });
   }
 
@@ -68,7 +69,7 @@ export class GracefulShutdown {
     });
 
     // Handle uncaught errors
-    globalThis.addEventListener("error", (event) => {
+    globalThis.addEventListener(DOM_ERROR_EVENT, (event) => {
       this.logger.fatal("Uncaught error", event.error as Error);
       this.shutdown(1).catch(() => {
         // If shutdown fails, force exit
@@ -138,3 +139,5 @@ export class GracefulShutdown {
     }
   }
 }
+
+const DOM_ERROR_EVENT = "error";

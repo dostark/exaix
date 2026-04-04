@@ -8,6 +8,7 @@
 
 import { ConfidenceLevel } from "../../shared/enums.ts";
 import { TUI_LAYOUT_FULL_WIDTH } from "./constants.ts";
+import { ANSI } from "./colors.ts";
 
 // ===== Interfaces =====
 
@@ -19,17 +20,17 @@ export interface IRenderOptions {
 // ===== ANSI Styles =====
 
 export const MarkdownStyles = {
-  h1: "\x1b[1;36m", // Bold Cyan
-  h2: "\x1b[1;34m", // Bold Blue
-  h3: "\x1b[1;35m", // Bold Magenta
-  bold: "\x1b[1m", // Bold
-  italic: "\x1b[3m", // Italic
-  code: "\x1b[33m", // Yellow
-  codeBlock: "\x1b[2;33m", // Dim Yellow
-  link: "\x1b[4;34m", // Underline Blue
-  listMarker: "\x1b[36m", // Cyan
-  dim: "\x1b[2m", // Dim
-  reset: "\x1b[0m",
+  h1: `${ANSI.bold}${ANSI.cyan}`, // Bold Cyan
+  h2: `${ANSI.bold}${ANSI.blue}`, // Bold Blue
+  h3: `${ANSI.bold}${ANSI.magenta}`, // Bold Magenta
+  bold: ANSI.bold,
+  italic: ANSI.italic,
+  code: ANSI.yellow,
+  codeBlock: `${ANSI.dim}${ANSI.yellow}`,
+  link: `${ANSI.underline}${ANSI.blue}`,
+  listMarker: ANSI.cyan,
+  dim: ANSI.dim,
+  reset: ANSI.reset,
 };
 
 /**
@@ -139,13 +140,11 @@ function renderInlineStyles(text: string, s: typeof MarkdownStyles): string {
  * Create empty styles for no-color mode
  */
 function emptyStyles(): typeof MarkdownStyles {
-  // Create an object with same keys as MarkdownStyles but empty strings
-  type MarkdownStylesType = typeof MarkdownStyles;
-  const empty: Partial<MarkdownStylesType> = {};
-  for (const key of Object.keys(MarkdownStyles)) {
-    empty[key as keyof MarkdownStylesType] = "";
+  const empty = {} as Record<keyof typeof MarkdownStyles, string>;
+  for (const key of Object.keys(MarkdownStyles) as (keyof typeof MarkdownStyles)[]) {
+    empty[key] = "";
   }
-  return empty as MarkdownStylesType;
+  return empty as typeof MarkdownStyles;
 }
 
 /**
@@ -227,9 +226,9 @@ export function renderConfidence(
     [ConfidenceLevel.LOW]: "●○○",
   };
   const colors: Record<string, string> = {
-    high: "\x1b[32m", // Green
-    medium: "\x1b[33m", // Yellow
-    low: "\x1b[31m", // Red
+    [ConfidenceLevel.HIGH]: ANSI.green,
+    [ConfidenceLevel.MEDIUM]: ANSI.yellow,
+    [ConfidenceLevel.LOW]: ANSI.red,
   };
 
   const icon = icons[confidence] || "○○○";
@@ -247,16 +246,16 @@ export function renderCategoryBadge(
   useColors: boolean = true,
 ): string {
   const colors: Record<string, string> = {
-    pattern: "\x1b[36m", // Cyan
-    "anti-pattern": "\x1b[31m", // Red
-    decision: "\x1b[35m", // Magenta
-    insight: "\x1b[34m", // Blue
-    troubleshooting: "\x1b[33m", // Yellow
+    pattern: ANSI.cyan,
+    "anti-pattern": ANSI.red,
+    decision: ANSI.magenta,
+    insight: ANSI.blue,
+    troubleshooting: ANSI.yellow,
   };
 
-  const color = colors[category] || "\x1b[37m"; // Default white
+  const color = colors[category] || ANSI.white; // Default white
   if (useColors) {
-    return `${color}[${category}]\x1b[0m`;
+    return `${color}[${category}]${ANSI.reset}`;
   }
   return `[${category}]`;
 }

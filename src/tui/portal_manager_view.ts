@@ -31,7 +31,13 @@ import {
   TuiNodeType,
 } from "../shared/enums.ts";
 import { formatKnowledge } from "../shared/formatters/portal_knowledge.ts";
-import { TUI_LAYOUT_NARROW_WIDTH, TUI_PORTAL_ICONS } from "./helpers/constants.ts";
+import {
+  TUI_ELEMENT_ACTION_BUTTONS,
+  TUI_KEY_LABEL_ENTER,
+  TUI_LABEL_CANCEL,
+  TUI_LAYOUT_NARROW_WIDTH,
+  TUI_PORTAL_ICONS,
+} from "./helpers/constants.ts";
 
 // ===== Portal View Extensions =====
 
@@ -225,7 +231,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
     // Select first portal if none selected
     if (!this.state.selectedId && portals.length > 0) {
       const flat = flattenTree(this.state.tree);
-      const firstPortal = flat.find((f) => f.node.type === "portal");
+      const firstPortal = flat.find((f) => f.node.type === TuiNodeType.PORTAL);
       if (firstPortal) {
         this.state.selectedId = firstPortal.node.id;
       } else if (flat.length > 0) {
@@ -260,7 +266,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
   override getSelectedIndex(): number {
     if (!this.state.selectedId) return 0;
     const node = this.getSelectedNode();
-    if (node?.type === "portal" && node.data) {
+    if (node?.type === TuiNodeType.PORTAL && node.data) {
       const idx = this.portals.findIndex((p) => p.alias === (node.data as IPortalInfo).alias);
       return idx >= 0 ? idx : 0;
     }
@@ -341,7 +347,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   private handleActionGuard(): boolean {
     const selected = this.getSelectedNode();
-    if (selected?.type === "portal") return false;
+    if (selected?.type === TuiNodeType.PORTAL) return false;
     this.statusMessage = "Error: No portal selected";
     return true;
   }
@@ -363,7 +369,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   private async executeOpen(): Promise<void> {
     const selected = this.getSelectedNode();
-    if (selected?.type !== "portal" || !selected.data) return;
+    if (selected?.type !== TuiNodeType.PORTAL || !selected.data) return;
     const portal = selected.data;
 
     await this.executeWithLoading(
@@ -375,7 +381,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   private async executeRefresh(): Promise<void> {
     const selected = this.getSelectedNode();
-    if (selected?.type !== "portal" || !selected.data) return;
+    if (selected?.type !== TuiNodeType.PORTAL || !selected.data) return;
     const portal = selected.data;
 
     await this.executeWithLoading(
@@ -387,7 +393,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   private showRemoveConfirmDialog(): void {
     const selected = this.getSelectedNode();
-    if (selected?.type !== "portal" || !selected.data) return;
+    if (selected?.type !== TuiNodeType.PORTAL || !selected.data) return;
     const portal = selected.data;
 
     this.showConfirmDialog({
@@ -395,14 +401,14 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
       message:
         `Are you sure you want to remove "${portal.alias}"?\nThis will delete the symlink but keep the context card.`,
       confirmText: "Remove",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
       destructive: true,
     });
   }
 
   private async executeRemove(): Promise<void> {
     const selected = this.getSelectedNode();
-    if (selected?.type !== "portal" || !selected.data) return;
+    if (selected?.type !== TuiNodeType.PORTAL || !selected.data) return;
     const portal = selected.data;
 
     await this.executeWithLoading(
@@ -417,7 +423,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   private async executeAnalyzeKnowledge(): Promise<void> {
     const selected = this.getSelectedNode();
-    if (selected?.type !== "portal" || !selected.data) return;
+    if (selected?.type !== TuiNodeType.PORTAL || !selected.data) return;
     const portal = selected.data;
 
     await this.executeWithLoading(
@@ -467,7 +473,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
   getSelectedPortalDetails(): IPortalInfo | undefined {
     const selected = this.getSelectedNode();
-    return selected?.type === "portal" ? selected.data : undefined;
+    return selected?.type === TuiNodeType.PORTAL ? selected.data : undefined;
   }
 
   getPortalTree(): ITreeNode<IPortalInfo>[] {
@@ -502,7 +508,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
       {
         title: "Actions",
         items: [
-          { key: "Enter", description: "Open portal" },
+          { key: TUI_KEY_LABEL_ENTER, description: "Open portal" },
           { key: "r", description: "Refresh portal" },
           { key: "d", description: "Remove portal" },
           { key: "R", description: "Refresh view" },
@@ -527,7 +533,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
   }
 
   getFocusableElements(): string[] {
-    return ["portal-list", "action-buttons", "status-bar"];
+    return ["portal-list", TUI_ELEMENT_ACTION_BUTTONS, "status-bar"];
   }
 
   override getKeyBindings(): IKeyBinding<PortalAction, KeyBindingCategory>[] {

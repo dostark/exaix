@@ -48,7 +48,12 @@ import {
   type IRequestShowResult,
 } from "../shared/types/request.ts";
 import { IRequestService } from "../shared/interfaces/i_request_service.ts";
-import { TUI_PRIORITY_ICONS, TUI_STATUS_ICONS } from "./helpers/constants.ts";
+import {
+  TUI_ELEMENT_ACTION_BUTTONS,
+  TUI_KEY_LABEL_ENTER,
+  TUI_PRIORITY_ICONS,
+  TUI_STATUS_ICONS,
+} from "./helpers/constants.ts";
 import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 
 /**
@@ -805,7 +810,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
           { key: "↑/↓", description: "Navigate requests" },
           { key: "Home/End", description: "Jump to first/last" },
           { key: "←/→", description: "Collapse/Expand group" },
-          { key: "Enter", description: "View request details" },
+          { key: TUI_KEY_LABEL_ENTER, description: "View request details" },
         ],
       },
       {
@@ -1010,7 +1015,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   }
 
   getFocusableElements(): string[] {
-    return ["request-list", "action-buttons"];
+    return ["request-list", TUI_ELEMENT_ACTION_BUTTONS];
   }
 }
 
@@ -1048,7 +1053,7 @@ export class LegacyRequestManagerTuiSession {
     if (this.requests.length === 0) return;
 
     switch (key) {
-      case "down":
+      case KEYS.DOWN:
         this.selectedIndex = Math.min(this.selectedIndex + 1, this.requests.length - 1);
         break;
       case "up":

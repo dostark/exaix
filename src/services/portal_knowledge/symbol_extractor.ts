@@ -12,7 +12,8 @@
  */
 
 import type { ISymbolEntry } from "../../shared/schemas/portal_knowledge.ts";
-import { DEFAULT_SYMBOL_MAP_LIMIT } from "../../shared/constants.ts";
+import { SystemCommand } from "../../shared/enums.ts";
+import { DEFAULT_SYMBOL_MAP_LIMIT, LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,7 +92,7 @@ import { DENO_DOC_TIMEOUT_MS } from "../../shared/constants.ts";
 class DenoDocCommandRunner implements IDocCommandRunner {
   async run(entrypoint: string, portalPath: string): Promise<string | null> {
     try {
-      const cmd = new Deno.Command("deno", {
+      const cmd = new Deno.Command(SystemCommand.DENO, {
         args: ["doc", "--json", entrypoint],
         cwd: portalPath,
         stdout: "piped",
@@ -197,7 +198,7 @@ export class SymbolExtractor {
     options: ISymbolExtractorOptions,
   ): Promise<ISymbolEntry[]> {
     const lang = options.primaryLanguage.toLowerCase();
-    if (lang !== "typescript" && lang !== "javascript") return [];
+    if (lang !== LANG_TYPESCRIPT && lang !== LANG_JAVASCRIPT) return [];
 
     const allSymbols: ISymbolEntry[] = [];
 

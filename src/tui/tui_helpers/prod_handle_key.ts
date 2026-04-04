@@ -37,7 +37,7 @@ async function handleMemoryNotificationsKey(
 
   const exitKeys = new Set(["m", "\x1b", "esc"]);
   const navUpKeys = new Set(["\x1b[A", "k", "up"]);
-  const navDownKeys = new Set(["\x1b[B", "j", "down"]);
+  const navDownKeys = new Set(["\x1b[B", "j", KEYS.DOWN]);
 
   // Exit memory notifications mode
   if (exitKeys.has(key)) {

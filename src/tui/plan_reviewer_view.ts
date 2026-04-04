@@ -8,6 +8,7 @@
 
 import { type IPlanDetails, type IPlanMetadata } from "../shared/types/plan.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
+import { TUI_ACTION_SEARCH, TUI_ELEMENT_ACTION_BUTTONS, TUI_LABEL_CANCEL } from "./helpers/constants.ts";
 import { IPlanService } from "../shared/interfaces/i_plan_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { coercePlanStatus, PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
@@ -41,6 +42,8 @@ export interface IDbLike {
 }
 
 // ===== Plan Status Icons =====
+
+const PLAN_NODE_TYPE = "plan" as const;
 
 const PLAN_ICONS: Record<PlanStatusType | "folder", string> = {
   [PlanStatus.REVIEW]: "🔶",
@@ -115,7 +118,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
         description: "Refresh plans",
         category: KeyBindingCategory.ACTIONS,
       },
-      { key: KEYS.SLASH, action: "search", description: "Search plans", category: KeyBindingCategory.ACTIONS },
+      { key: KEYS.SLASH, action: TUI_ACTION_SEARCH, description: "Search plans", category: KeyBindingCategory.ACTIONS },
       { key: KEYS.QUESTION, action: "help", description: "Show help", category: KeyBindingCategory.ACTIONS },
     ];
   }
@@ -301,7 +304,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
   private handleActionGuard(): boolean {
     const selected = this.getSelectedNode();
-    if (selected?.type === "plan") return false;
+    if (selected?.type === PLAN_NODE_TYPE) return false;
     this.statusMessage = "Error: No plan selected";
     return true;
   }
@@ -365,20 +368,20 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
   private showApproveConfirmDialog(): void {
     const selected = this.getSelectedNode();
-    if (!selected || selected.type !== "plan") return;
+    if (!selected || selected.type !== PLAN_NODE_TYPE) return;
     const plan = selected.data as IPlan;
 
     this.showConfirmDialog({
       title: "Approve Plan",
       message: `Approve plan "${plan.subject}"?\nThis action will move the plan to active status.`,
       confirmText: "Approve",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
     });
   }
 
   private async executeApprove(): Promise<void> {
     const selected = this.getSelectedNode();
-    if (!selected || selected.type !== "plan") return;
+    if (!selected || selected.type !== PLAN_NODE_TYPE) return;
     const planId = selected.id;
 
     await this.executeWithLoading(
@@ -393,7 +396,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
   private showRejectDialog(): void {
     const selected = this.getSelectedNode();
-    if (!selected || selected.type !== "plan") return;
+    if (!selected || selected.type !== PLAN_NODE_TYPE) return;
     const plan = selected.data as IPlan;
 
     this.pendingRejectId = plan.id;
@@ -401,7 +404,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
       title: "Reject Plan",
       message: `Reject plan "${plan.subject}"?\nThis action will move the plan to rejected status.`,
       confirmText: "Reject",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
       destructive: true,
     });
   }
@@ -520,7 +523,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
   }
 
   getFocusableElements(): string[] {
-    return ["plan-list", "action-buttons"];
+    return ["plan-list", TUI_ELEMENT_ACTION_BUTTONS];
   }
 }
 
@@ -551,7 +554,7 @@ export class PlanReviewerView {
   }
 
   renderPlanList(plans: IPlan[]): string {
-    return plans.map((p) => `${p.id} ${p.subject} [${p.status || "pending"}]`).join("\n");
+    return plans.map((p) => `${p.id} ${p.subject} [${p.status || PlanStatus.PENDING}]`).join("\n");
   }
 
   renderDiff(diff: string): string {

@@ -18,7 +18,13 @@ import {
 } from "../shared/interfaces/i_log_service.ts";
 import { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
-import { TUI_LAYOUT_FULL_WIDTH, TUI_LIMIT_LOGS_DEFAULT, TUI_LIMIT_LOGS_MAX } from "./helpers/constants.ts";
+import {
+  TUI_ACTION_SEARCH,
+  TUI_KEY_LABEL_ENTER,
+  TUI_LAYOUT_FULL_WIDTH,
+  TUI_LIMIT_LOGS_DEFAULT,
+  TUI_LIMIT_LOGS_MAX,
+} from "./helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import { DialogStatus, LogGroupingMode, LogLevel, MessageType, TuiColorName, TuiNodeType } from "../shared/enums.ts";
 
@@ -708,7 +714,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
 
     const value = result.value as string;
     switch (this.pendingDialogType) {
-      case "search":
+      case TUI_ACTION_SEARCH:
         this.setSearchQuery(value);
         break;
       case "filter-level":
@@ -800,7 +806,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
           label: "Enter search query:",
           defaultValue: this.state.filterText,
         });
-        this.pendingDialogType = "search";
+        this.pendingDialogType = TUI_ACTION_SEARCH;
         return true;
       case KEYS.F:
         // Toggle log level filter dialog would go here
@@ -1051,7 +1057,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
           { key: "↑/↓", description: "Navigate logs" },
           { key: "Home/End", description: "First/Last log" },
           { key: "←/→", description: "Collapse/Expand groups" },
-          { key: "Enter", description: "View log details" },
+          { key: TUI_KEY_LABEL_ENTER, description: "View log details" },
         ],
       },
       {

@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "../constants.ts";
-import { McpToolName } from "../enums.ts";
+import { ActivityActor, McpToolName, TaskType } from "../enums.ts";
 
 // ============================================================================
 // Blueprint Interfaces
@@ -113,9 +113,9 @@ export type IBlueprintFrontmatter = z.infer<typeof BlueprintFrontmatterSchema>;
 /**
  * Agent IDs that cannot be used for custom blueprints
  */
-export const RESERVED_AGENT_IDS = new Set([
-  "system",
-  "test",
+export const RESERVED_AGENT_IDS = new Set<string>([
+  ActivityActor.SYSTEM,
+  TaskType.TEST,
 ]);
 
 /**

@@ -10,6 +10,7 @@ import type { DatabaseService } from "../core/db.ts";
 import { IModelProvider } from "../../ai/types.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import {
+  BYTES_PER_KB,
   DEFAULT_HEALTH_CACHE_TTL_MS,
   DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
   DEFAULT_MEMORY_CRITICAL_PERCENT,
@@ -479,8 +480,8 @@ export class MemoryHealthCheck implements IHealthCheck {
       const usedBytes = usage.heapUsed;
       const totalBytes = usage.heapTotal;
 
-      const usedMB = usedBytes / 1024 / 1024;
-      const totalMB = totalBytes / 1024 / 1024;
+      const usedMB = usedBytes / BYTES_PER_KB / BYTES_PER_KB;
+      const totalMB = totalBytes / BYTES_PER_KB / BYTES_PER_KB;
       const usedPercent = (usedBytes / totalBytes) * 100;
 
       const duration = performance.now() - start;

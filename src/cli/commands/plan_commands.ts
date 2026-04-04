@@ -28,6 +28,8 @@ import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schema
 
 import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
 
+const FIELD_PLAN_ID = "planId";
+
 /**
  * Extract plan metadata from parsed frontmatter
  */
@@ -107,8 +109,8 @@ export class PlanCommands extends BaseCommand {
     try {
       // Validate input
       const validation = new ValidationChain()
-        .addRule("planId", ValidationChain.required())
-        .addRule("planId", ValidationChain.isString())
+        .addRule(FIELD_PLAN_ID, ValidationChain.required())
+        .addRule(FIELD_PLAN_ID, ValidationChain.isString())
         .validate({ planId });
 
       if (!validation.isValid) {
@@ -184,7 +186,7 @@ export class PlanCommands extends BaseCommand {
     try {
       // Validate input
       const validation = new ValidationChain()
-        .addRule("planId", ValidationChain.required())
+        .addRule(FIELD_PLAN_ID, ValidationChain.required())
         .addRule("reason", ValidationChain.required())
         .validate({ planId, reason });
 
@@ -310,7 +312,7 @@ export class PlanCommands extends BaseCommand {
     try {
       // Validate input
       const validation = new ValidationChain()
-        .addRule("planId", ValidationChain.required())
+        .addRule(FIELD_PLAN_ID, ValidationChain.required())
         .addRule(
           "comments",
           (val) => (!Array.isArray(val) || val.length === 0) ? "at least one comment is required" : null,

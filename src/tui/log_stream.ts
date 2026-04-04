@@ -9,6 +9,7 @@
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
 import type { StructuredLoggerService } from "./structured_log_service.ts";
 import type { JSONObject } from "../shared/types/json.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "../shared/constants.ts";
 import { ConnectionStatus } from "../shared/enums.ts";
 
 /**
@@ -202,7 +203,7 @@ export function createLogStreamManager(service: StructuredLoggerService): LogStr
     maxBufferSize: 1000,
     updateInterval: 1000, // 1 second
     enabled: true,
-    cleanupInterval: 30000, // 30 seconds
+    cleanupInterval: DEFAULT_AI_TIMEOUT_MS, // 30 seconds
     maxEntryAge: 300000, // 5 minutes
   };
 

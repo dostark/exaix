@@ -8,6 +8,7 @@
 
 import { KEYS } from "../helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "../helpers/colors.ts";
+import { SECONDS_PER_HOUR } from "../../shared/constants.ts";
 import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";
@@ -27,8 +28,8 @@ export function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 
   if (seconds < 60) return "just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < SECONDS_PER_HOUR) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / SECONDS_PER_HOUR)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
@@ -136,7 +137,7 @@ export async function handleMemoryNotifications(
     case "k":
       updateIndex(-1);
       break;
-    case "down":
+    case KEYS.DOWN:
     case "j":
       updateIndex(1);
       break;

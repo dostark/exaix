@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { RequestPriority, RequestSource } from "../../shared/enums.ts";
+import { RequestKind, RequestPriority, RequestSource } from "../../shared/enums.ts";
 import { RequestStatus } from "../../shared/status/request_status.ts";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
@@ -163,7 +163,7 @@ export class RequestCreateHandler extends BaseCommand {
             : null,
       )
       .addRule(
-        "flow",
+        RequestKind.FLOW,
         (val) =>
           (val && (options.agent || options.identity))
             ? "Cannot specify both 'flow' and 'agent'/'identity'. Use 'flow' for multi-agent workflows or 'identity' for single agent requests."

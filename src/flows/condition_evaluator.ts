@@ -7,6 +7,7 @@
  */
 
 import { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
+import { FlowInputSource, RequestKind } from "../shared/enums.ts";
 import { IStepResult } from "./flow_runner.ts";
 import { JSONValue } from "../shared/types/json.ts";
 
@@ -191,8 +192,8 @@ export class ConditionEvaluator {
     // This is safer than eval() as it creates a new scope
     const fn = new Function(
       "results",
-      "request",
-      "flow",
+      FlowInputSource.REQUEST,
+      RequestKind.FLOW,
       `"use strict"; return (${condition});`,
     );
 
@@ -223,7 +224,7 @@ export class ConditionEvaluator {
 
     try {
       // Try to parse the condition as a function body
-      new Function("results", "request", "flow", `"use strict"; return (${condition});`);
+      new Function("results", FlowInputSource.REQUEST, RequestKind.FLOW, `"use strict"; return (${condition});`);
       return { valid: true };
     } catch (error) {
       return {

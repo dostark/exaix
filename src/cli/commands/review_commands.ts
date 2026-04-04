@@ -27,6 +27,7 @@ import {
   ReviewTypeFilter as ReviewFilterEnum,
 } from "../../shared/enums.ts";
 import { createGitService } from "../../services/adapters/git_adapter.ts";
+import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "../../shared/constants.ts";
 
 export interface IReviewMetadata {
   type?: ReviewType;
@@ -151,7 +152,7 @@ export class ReviewCommands extends BaseCommand {
     for (const branch of commonDefaults) {
       try {
         const checkCmd = new Deno.Command("git", {
-          args: ["rev-parse", "--verify", branch],
+          args: [GIT_CMD_REV_PARSE, "--verify", branch],
           cwd: repoPath,
           stdout: "piped",
           stderr: "piped",
@@ -269,7 +270,7 @@ export class ReviewCommands extends BaseCommand {
       this.config.paths.memory,
       this.config.paths.memoryExecution,
       traceId,
-      "worktree",
+      GIT_CMD_WORKTREE,
     );
   }
 
@@ -297,10 +298,10 @@ export class ReviewCommands extends BaseCommand {
     if (!worktreePath) return;
 
     // 1) Remove worktree checkout to release the branch.
-    await portalGitService.runGitCommand(["worktree", "remove", "--force", worktreePath]);
+    await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath]);
 
     // 2) Delete feature branch.
-    await portalGitService.runGitCommand(["branch", "-D", review.branch]);
+    await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", review.branch]);
 
     // 3) Remove discoverability pointer (avoid dangling symlink/PATH.txt).
     await this.removeExecutionWorktreePointer(review.trace_id);
@@ -322,7 +323,9 @@ export class ReviewCommands extends BaseCommand {
     if (!worktreePath) return;
 
     try {
-      await portalGitService.runGitCommand(["worktree", "remove", "--force", worktreePath], { throwOnError: false });
+      await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath], {
+        throwOnError: false,
+      });
     } catch {
       // Best-effort only
     }
@@ -367,7 +370,7 @@ export class ReviewCommands extends BaseCommand {
 
     for (const repoPath of portalPaths) {
       const checkCmd = new Deno.Command("git", {
-        args: ["rev-parse", "--verify", branchName],
+        args: [GIT_CMD_REV_PARSE, "--verify", branchName],
         cwd: repoPath,
         stdout: "piped",
         stderr: "piped",
@@ -834,7 +837,7 @@ export class ReviewCommands extends BaseCommand {
 
   private async listFeatBranches(repoPath: string): Promise<string[]> {
     const branchesCmd = new Deno.Command("git", {
-      args: ["branch", "--list", "feat/*"],
+      args: [GIT_CMD_BRANCH, "--list", "feat/*"],
       cwd: repoPath,
       stdout: "piped",
       stderr: "piped",
@@ -1009,7 +1012,7 @@ export class ReviewCommands extends BaseCommand {
 
     // Verify branch exists
     const checkCmd = new Deno.Command("git", {
-      args: ["rev-parse", "--verify", fullBranch],
+      args: [GIT_CMD_REV_PARSE, "--verify", fullBranch],
       cwd: repoPath,
       stdout: "piped",
       stderr: "piped",
@@ -1152,7 +1155,7 @@ export class ReviewCommands extends BaseCommand {
 
       // Verify we're on the default branch
       const currentBranchCmd = new Deno.Command("git", {
-        args: ["branch", "--show-current"],
+        args: [GIT_CMD_BRANCH, "--show-current"],
         cwd: repoPath,
         stdout: "piped",
         stderr: "piped",
@@ -1191,7 +1194,7 @@ export class ReviewCommands extends BaseCommand {
       }
 
       // Get merge commit SHA
-      const shaResult = await portalGitService.runGitCommand(["rev-parse", "HEAD"]);
+      const shaResult = await portalGitService.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"]);
       const commitSha = shaResult.output.trim();
 
       // Log approval with user identity
@@ -1356,7 +1359,7 @@ export class ReviewCommands extends BaseCommand {
   ): Promise<void> {
     const defaultBranch = await this.getDefaultBranch(repoPath);
     try {
-      await portalGitService.runGitCommand(["branch", "-D", branch]);
+      await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", branch]);
       return;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1365,7 +1368,7 @@ export class ReviewCommands extends BaseCommand {
       }
 
       try {
-        const currentBranchResult = await portalGitService.runGitCommand(["branch", "--show-current"]);
+        const currentBranchResult = await portalGitService.runGitCommand([GIT_CMD_BRANCH, "--show-current"]);
         const currentBranch = currentBranchResult.output.trim();
 
         if (currentBranch === branch) {
@@ -1373,17 +1376,21 @@ export class ReviewCommands extends BaseCommand {
         } else {
           const worktreePath = await this.findWorktreePathForBranch(portalGitService, branch);
           if (worktreePath) {
-            const mainWorktreeResult = await portalGitService.runGitCommand(["worktree", "list", "--porcelain"]);
+            const mainWorktreeResult = await portalGitService.runGitCommand([
+              GIT_CMD_WORKTREE,
+              GIT_CMD_LIST,
+              "--porcelain",
+            ]);
             const mainWorktree = mainWorktreeResult.output.trim().split("\n")[0];
             if (mainWorktree && mainWorktree.includes(worktreePath)) {
               await portalGitService.runGitCommand(["checkout", defaultBranch]);
             } else {
-              await portalGitService.runGitCommand(["worktree", "remove", "--force", worktreePath]);
+              await portalGitService.runGitCommand([GIT_CMD_WORKTREE, "remove", "--force", worktreePath]);
             }
           }
         }
 
-        await portalGitService.runGitCommand(["branch", "-D", branch]);
+        await portalGitService.runGitCommand([GIT_CMD_BRANCH, "-D", branch]);
       } catch (worktreeError) {
         const wtErrorMessage = worktreeError instanceof Error ? worktreeError.message : String(worktreeError);
         throw new Error(
@@ -1399,7 +1406,7 @@ export class ReviewCommands extends BaseCommand {
     portalGitService: Pick<IGitService, "runGitCommand">,
     branch: string,
   ): Promise<string | null> {
-    const worktreeList = await portalGitService.runGitCommand(["worktree", "list", "--porcelain"]);
+    const worktreeList = await portalGitService.runGitCommand([GIT_CMD_WORKTREE, GIT_CMD_LIST, "--porcelain"]);
     const worktrees = worktreeList.output.trim().split("\n");
 
     for (let i = 0; i < worktrees.length; i++) {

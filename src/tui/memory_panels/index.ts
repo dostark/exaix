@@ -14,6 +14,7 @@ import type {
   IProjectMemory,
 } from "../../shared/schemas/memory_bank.ts";
 import { MemoryScope } from "../../shared/enums.ts";
+import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { ANSI } from "../helpers/colors.ts";
 import {
   TUI_DETAIL_MAX_OVERVIEW_CHARS,
@@ -254,9 +255,9 @@ function renderExecutionHeader(
 function getExecutionStatusPresentation(
   status: IExecutionMemory["status"],
 ): { icon: string; color: string } {
-  if (status === "completed") return { icon: TUI_ICON_SUCCESS, color: "\x1b[32m" };
-  if (status === "failed") return { icon: TUI_ICON_FAILURE, color: "\x1b[31m" };
-  return { icon: "◐", color: "\x1b[33m" };
+  if (status === PlanStatus.COMPLETED) return { icon: TUI_ICON_SUCCESS, color: ANSI.green };
+  if (status === PlanStatus.FAILED) return { icon: TUI_ICON_FAILURE, color: ANSI.red };
+  return { icon: "◐", color: ANSI.yellow };
 }
 
 function renderExecutionDetails(
@@ -328,9 +329,9 @@ export function renderExecutionListPanel(
   for (let i = startIdx; i < endIdx; i++) {
     const exec = executions[i];
     const selected = i === selectedIndex ? ">" : " ";
-    const statusIcon = exec.status === "completed"
+    const statusIcon = exec.status === PlanStatus.COMPLETED
       ? TUI_ICON_SUCCESS
-      : exec.status === "failed"
+      : exec.status === PlanStatus.FAILED
       ? TUI_ICON_FAILURE
       : "◐";
     const summary = exec.summary?.slice(0, 40) ?? "";

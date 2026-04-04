@@ -6,12 +6,14 @@
  * * @related-files [src/tui/memory_view/key_handlers.ts]
  */
 
+import { TUI_ACTION_SEARCH } from "../helpers/constants.ts";
+
 export const MemoryTuiScope = {
   GLOBAL: "global",
   PROJECTS: "projects",
   EXECUTIONS: "executions",
   PENDING: "pending",
-  SEARCH: "search",
+  SEARCH: TUI_ACTION_SEARCH,
 } as const;
 
 export type IMemoryTuiScopeType = typeof MemoryTuiScope[keyof typeof MemoryTuiScope];

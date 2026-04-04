@@ -15,6 +15,7 @@
 
 import { z } from "zod";
 import {
+  DEFAULT_AI_TIMEOUT_MS,
   RETRYABLE_ERROR_TYPES,
   RETRYABLE_HTTP_STATUS_CODES,
   RETRYABLE_MESSAGE_PATTERNS,
@@ -96,7 +97,7 @@ export const RetryPolicyConfigSchema = z.object({
   initialDelayMs: z.number().min(1).max(60000).default(1000),
 
   /** Maximum delay in milliseconds (caps exponential growth) */
-  maxDelayMs: z.number().min(1).max(300000).default(30000),
+  maxDelayMs: z.number().min(1).max(300000).default(DEFAULT_AI_TIMEOUT_MS),
 
   /** Backoff multiplier (2 = double each time) */
   backoffMultiplier: z.number().min(1).max(5).default(2),
@@ -369,7 +370,7 @@ export function createLLMRetryPolicy(): RetryPolicy {
   return new RetryPolicy({
     maxRetries: 3,
     initialDelayMs: 1000,
-    maxDelayMs: 30000,
+    maxDelayMs: DEFAULT_AI_TIMEOUT_MS,
     backoffMultiplier: 2,
     jitterFactor: 0.2,
     temperatureIncrement: 0.1,

@@ -10,6 +10,7 @@
  */
 
 import { z } from "zod";
+import { SystemCommand } from "../enums.ts";
 
 // ============================================================================
 // Sub-schemas
@@ -90,7 +91,7 @@ export type ICodeConvention = z.infer<typeof CodeConventionSchema>;
  */
 export const DependencyInfoSchema = z.object({
   /** Package manager used */
-  packageManager: z.enum(["npm", "deno", "pip", "cargo", "go", "maven", "other"]),
+  packageManager: z.enum(["npm", SystemCommand.DENO, "pip", "cargo", "go", "maven", "other"]),
   /** Config file path (package.json, deno.json, etc.) */
   configFile: z.string().min(1),
   /** Key dependencies (frameworks, major libraries) */

@@ -17,7 +17,7 @@ import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PAT
 import { IDatabaseService } from "../core/db.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
-import { ExecutionStatus } from "../../shared/enums.ts";
+import { ActivityActor, ExecutionStatus } from "../../shared/enums.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 
 // ============================================================================
@@ -266,7 +266,7 @@ export class MissionReporter {
 
     try {
       this.db.logActivity(
-        "system",
+        ActivityActor.SYSTEM,
         activityData.event_type,
         activityData.target,
         activityData.metadata,

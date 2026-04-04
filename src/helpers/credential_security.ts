@@ -9,6 +9,7 @@
 export class SecureCredentialStore {
   private static readonly store = new Map<string, Uint8Array>();
   private static readonly key = crypto.getRandomValues(new Uint8Array(32));
+  private static readonly ALGO = "AES-GCM";
 
   /**
    * Store an encrypted credential
@@ -59,12 +60,12 @@ export class SecureCredentialStore {
     const key = await crypto.subtle.importKey(
       "raw",
       this.key,
-      { name: "AES-GCM" },
+      { name: SecureCredentialStore.ALGO },
       false,
       ["encrypt"],
     );
     const encrypted = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
+      { name: SecureCredentialStore.ALGO, iv },
       key,
       encoder.encode(data),
     );
@@ -84,12 +85,12 @@ export class SecureCredentialStore {
     const key = await crypto.subtle.importKey(
       "raw",
       this.key,
-      { name: "AES-GCM" },
+      { name: SecureCredentialStore.ALGO },
       false,
       ["decrypt"],
     );
     const decrypted = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
+      { name: SecureCredentialStore.ALGO, iv },
       key,
       encrypted,
     );

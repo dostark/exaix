@@ -9,7 +9,7 @@ import { ToolHandler } from "../tool_handler.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import type { MCPToolResponse } from "../../shared/schemas/mcp.ts";
 import { ReadFileToolArgsSchema } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 
 /**
  * ReadFileTool - Reads file content from a portal
@@ -48,7 +48,7 @@ export class ReadFileTool extends ToolHandler {
       }
 
       // Log successful execution
-      this.logToolExecution("read_file", portal, identity_id, {
+      this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
         path,
         identity_id: identity_id ?? null,
         success: true,
@@ -65,7 +65,7 @@ export class ReadFileTool extends ToolHandler {
       };
     } catch (error) {
       // Log failed execution
-      this.logToolExecution("read_file", portal, identity_id, {
+      this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
         path,
         identity_id: identity_id ?? null,
         success: false,
@@ -78,7 +78,7 @@ export class ReadFileTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "read_file",
+      name: McpToolName.READ_FILE,
       description: "Read a file from a portal (scoped to allowed portals)",
       inputSchema: {
         type: "object",

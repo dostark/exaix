@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "../../shared/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
@@ -59,7 +59,7 @@ export class ListDirectoryTool extends ToolHandler {
       const listing = entries.length > 0 ? entries.join("\n") : "(Directory is empty)";
 
       // Log successful execution
-      this.logToolExecution("list_directory", portal, identity_id, {
+      this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, identity_id, {
         path: listPath || "/",
         identity_id: identity_id ?? null,
         success: true,
@@ -76,7 +76,7 @@ export class ListDirectoryTool extends ToolHandler {
       };
     } catch (error) {
       // Log failed execution
-      this.logToolExecution("list_directory", portal, identity_id, {
+      this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, identity_id, {
         path: path || "/",
         identity_id: identity_id ?? null,
         success: false,
@@ -89,7 +89,7 @@ export class ListDirectoryTool extends ToolHandler {
 
   getToolDefinition() {
     return {
-      name: "list_directory",
+      name: McpToolName.LIST_DIRECTORY,
       description: "List files and directories in a portal path",
       inputSchema: {
         type: "object",

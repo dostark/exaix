@@ -24,6 +24,9 @@ import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import {
+  TUI_ACTION_SEARCH,
+  TUI_KEY_LABEL_ENTER,
+  TUI_LABEL_CANCEL,
   TUI_LAYOUT_DIALOG_WIDTH,
   TUI_LAYOUT_MEDIUM_WIDTH,
   TUI_LIMIT_MEDIUM,
@@ -184,7 +187,7 @@ const SKILLS_HELP_SECTIONS: IHelpSection[] = [
       { key: "↑/↓ or j/k", description: "Move up/down" },
       { key: "Home/End", description: "Jump to first/last" },
       { key: "← / →", description: "Collapse/Expand group" },
-      { key: "Enter", description: "View skill details" },
+      { key: TUI_KEY_LABEL_ENTER, description: "View skill details" },
     ],
   },
   {
@@ -550,7 +553,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
       placeholder: "name, ID, or keyword...",
       defaultValue: this.state.filterText,
     });
-    this.pendingDialogType = "search";
+    this.pendingDialogType = TUI_ACTION_SEARCH;
   }
 
   showFilterSourceDialog(): void {
@@ -594,7 +597,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
       title: "Delete Skill",
       message: `Are you sure you want to delete skill "${skill.name}"?`,
       confirmText: "Delete",
-      cancelText: "Cancel",
+      cancelText: TUI_LABEL_CANCEL,
     });
     this.pendingDeleteSkillId = skillId;
     this.pendingDialogType = "delete";
@@ -612,7 +615,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
 
     const value = result.value as string;
     switch (this.pendingDialogType) {
-      case "search":
+      case TUI_ACTION_SEARCH:
         this.handleSearchResult(value);
         break;
       case "filter-source":

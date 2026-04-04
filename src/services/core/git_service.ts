@@ -24,6 +24,7 @@ import type {
   IWorktreeInfo,
 } from "../../shared/interfaces/i_git_service.ts";
 import {
+  DAEMON_IDENTITY_ID,
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
   DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
   DEFAULT_GIT_COMMAND_TIMEOUT_MS,
@@ -31,6 +32,12 @@ import {
   DEFAULT_GIT_MAX_RETRIES,
   DEFAULT_GIT_RETRY_BACKOFF_BASE_MS,
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
+  GIT_CMD_BRANCH,
+  GIT_CMD_CONFIG,
+  GIT_CMD_LIST,
+  GIT_CMD_REV_PARSE,
+  GIT_CMD_STATUS,
+  GIT_CMD_WORKTREE,
 } from "../../shared/constants.ts";
 import { SecureRandom } from "../../helpers/secure_random.ts";
 import { ActivityActor, GitBranchName } from "../../shared/enums.ts";
@@ -183,7 +190,7 @@ export class GitService implements IGitService {
       try {
         await Deno.stat(`${this.repoPath}/.git`);
         // Repository exists; ensure it has at least one commit.
-        const headResult = await this.runGitCommand(["rev-parse", "--verify", "HEAD"], { throwOnError: false });
+        const headResult = await this.runGitCommand([GIT_CMD_REV_PARSE, "--verify", "HEAD"], { throwOnError: false });
         if (headResult.exitCode === 0) {
           this.logActivity("git.check", { status: "exists", duration_ms: Date.now() - startTime });
           return;
@@ -268,8 +275,8 @@ export class GitService implements IGitService {
 
     try {
       // Check if local identity exists
-      const nameResult = await this.runGitCommand(["config", "--local", "user.name"], { throwOnError: false });
-      const emailResult = await this.runGitCommand(["config", "--local", "user.email"], { throwOnError: false });
+      const nameResult = await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.name"], { throwOnError: false });
+      const emailResult = await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.email"], { throwOnError: false });
 
       if (nameResult.output.trim() && emailResult.output.trim()) {
         // Identity already configured
@@ -281,8 +288,8 @@ export class GitService implements IGitService {
       }
 
       // Configure default identity (local to this repo)
-      await this.runGitCommand(["config", "--local", "user.name", "Exaix Bot"]);
-      await this.runGitCommand(["config", "--local", "user.email", "bot@exaix.local"]);
+      await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.name", "Exaix Bot"]);
+      await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.email", "bot@exaix.local"]);
 
       this.logActivity("git.identity_configured", {
         success: true,
@@ -323,7 +330,9 @@ export class GitService implements IGitService {
         try {
           if (i === 0) {
             // First try: check if base name exists
-            const listResult = await this.runGitCommand(["branch", "--list", branchName], { throwOnError: false });
+            const listResult = await this.runGitCommand([GIT_CMD_BRANCH, "--list", branchName], {
+              throwOnError: false,
+            });
             if (listResult.output.trim()) {
               // Branch exists, try with timestamp first
               const timestamp = Date.now().toString(36);
@@ -385,7 +394,7 @@ export class GitService implements IGitService {
 
     try {
       // Check if there are changes to commit
-      const statusResult = await this.runGitCommand(["status", "--porcelain"]);
+      const statusResult = await this.runGitCommand([GIT_CMD_STATUS, "--porcelain"]);
 
       if (!statusResult.output.trim()) {
         throw new GitNothingToCommitError("nothing to commit, working tree clean");
@@ -407,7 +416,7 @@ export class GitService implements IGitService {
       await this.runGitCommand(["commit", "-m", message]);
 
       // Get commit SHA
-      const shaResult = await this.runGitCommand(["rev-parse", "HEAD"]);
+      const shaResult = await this.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"]);
       const sha = shaResult.output.trim();
 
       this.logActivity("git.committed", {
@@ -445,7 +454,8 @@ export class GitService implements IGitService {
       GitBranchName.PRODUCTION,
     ];
     if (
-      !options?.allowProtected && protectedBranches.includes(branchName.toLowerCase()) && this.identityId !== "daemon"
+      !options?.allowProtected && protectedBranches.includes(branchName.toLowerCase()) &&
+      this.identityId !== DAEMON_IDENTITY_ID
     ) {
       throw new GitSecurityError(`Switching to protected branch '${branchName}' is prohibited for agents.`);
     }
@@ -475,7 +485,7 @@ export class GitService implements IGitService {
    * @returns Current branch name
    */
   async getCurrentBranch(): Promise<string> {
-    const result = await this.runGitCommand(["branch", "--show-current"]);
+    const result = await this.runGitCommand([GIT_CMD_BRANCH, "--show-current"]);
     return result.output.trim();
   }
 
@@ -498,7 +508,7 @@ export class GitService implements IGitService {
 
     // If that fails, try "branch --show-current".
     const current = await this.runGitCommand(
-      ["-C", cwd, "branch", "--show-current"],
+      ["-C", cwd, GIT_CMD_BRANCH, "--show-current"],
       { throwOnError: false },
     );
 
@@ -541,7 +551,7 @@ export class GitService implements IGitService {
   async addWorktree(worktreePath: string, baseBranch: string): Promise<void> {
     // Use --force to allow checking out branches that may be in use by other worktrees
     // This is safe because the execution worktree will create its own feature branch
-    await this.runGitCommand(["worktree", "add", worktreePath, baseBranch, "--force"]);
+    await this.runGitCommand([GIT_CMD_WORKTREE, "add", worktreePath, baseBranch, "--force"]);
   }
 
   /**
@@ -550,7 +560,7 @@ export class GitService implements IGitService {
    * This is not used by Phase 37.6 yet, but is helpful for future lifecycle cleanup.
    */
   async removeWorktree(worktreePath: string, options?: { force?: boolean }): Promise<void> {
-    const args = ["worktree", "remove"];
+    const args = [GIT_CMD_WORKTREE, "remove"];
     if (options?.force) args.push("--force");
     args.push(worktreePath);
     await this.runGitCommand(args);
@@ -563,7 +573,7 @@ export class GitService implements IGitService {
    * leaving stale entries under `.git/worktrees`.
    */
   async pruneWorktrees(options?: { dryRun?: boolean; verbose?: boolean; expire?: string }): Promise<string> {
-    const args = ["worktree", "prune"];
+    const args = [GIT_CMD_WORKTREE, "prune"];
     if (options?.dryRun) args.push("--dry-run");
     if (options?.verbose) args.push("--verbose");
     if (options?.expire) args.push("--expire", options.expire);
@@ -576,7 +586,7 @@ export class GitService implements IGitService {
    * List git worktrees for this repository.
    */
   async listWorktrees(): Promise<IWorktreeInfo[]> {
-    const result = await this.runGitCommand(["worktree", "list", "--porcelain"]);
+    const result = await this.runGitCommand([GIT_CMD_WORKTREE, GIT_CMD_LIST, "--porcelain"]);
     return GitService.parseWorktreeListPorcelain(result.output);
   }
 
@@ -768,7 +778,7 @@ export class GitService implements IGitService {
     }
 
     // Common command errors
-    if (command.startsWith("status") && exitCode === DEFAULT_GIT_EXIT_CODE_FATAL) {
+    if (command.startsWith(GIT_CMD_STATUS) && exitCode === DEFAULT_GIT_EXIT_CODE_FATAL) {
       return new GitRepositoryError(`Invalid repository state: ${stderr.trim()}`);
     }
 

@@ -25,7 +25,7 @@ import type { IModelProvider } from "../../ai/types.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import { PortalAnalysisMode } from "../../shared/enums.ts";
-import { DEFAULT_IGNORE_PATTERNS } from "../../shared/constants.ts";
+import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
 
 // ---------------------------------------------------------------------------
 // PortalKnowledgeService
@@ -160,7 +160,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         keyFiles,
         conventions,
         configSummary: configResult.techStack
-          ? `Lang: ${primaryLanguage}, Framework: ${configResult.techStack.framework ?? "none"}`
+          ? `Lang: ${primaryLanguage}, Framework: ${configResult.techStack.framework ?? DEFAULT_NONE_VALUE}`
           : "",
         dependencySummary: (configResult.dependencies ?? [])
           .flatMap((d) => d.keyDependencies)

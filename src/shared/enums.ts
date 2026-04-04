@@ -963,6 +963,7 @@ export enum McpToolName {
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
   GIT = "git",
+  FETCH_URL = "FETCH_URL",
 }
 
 /**

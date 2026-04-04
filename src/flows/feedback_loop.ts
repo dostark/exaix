@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
-import { FlowGateOnFail } from "../shared/enums.ts";
+import { FlowGateOnFail, GeneralStatus } from "../shared/enums.ts";
 import { GateEvaluator } from "./gate_evaluator.ts";
 import { IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../shared/constants.ts";
@@ -219,7 +219,7 @@ export class FeedbackLoop {
           totalIterations: iteration,
           iterations,
           totalDurationMs: performance.now() - startTime,
-          stopReason: "error",
+          stopReason: GeneralStatus.ERROR,
         };
       }
     }

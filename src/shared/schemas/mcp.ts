@@ -33,71 +33,75 @@ export type MCPConfig = z.infer<typeof MCPConfigSchema>;
 // MCP Tool Schemas
 // ============================================================================
 
+const MCP_ERR_PORTAL_REQUIRED = "Portal name required";
+const MCP_ERR_IDENTITY_REQUIRED = "Identity ID required";
+const MCP_ERR_PATH_REQUIRED = "File path required";
+
 export const ReadFileToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
-  path: z.string().min(1, "File path required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const WriteFileToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
-  path: z.string().min(1, "File path required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
   content: z.string(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ListDirectoryToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().optional().default(""),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitCreateBranchToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   branch: z.string().min(1, "Branch name required")
     .regex(/^(feat|fix|docs|chore|refactor|test)\//, "Branch must start with feat/, fix/, docs/, etc."),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitCommitToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   message: z.string().min(1, "Commit message required"),
   files: z.array(z.string()).optional(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitStatusToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const PatchFileToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
-  path: z.string().min(1, "File path required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
   /** Exact string to search for in the file. Must match exactly once. */
   search: z.string().min(1, "Search string required"),
   /** Replacement string. May be empty to delete the matched section. */
   replace: z.string(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const DeleteFileToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
-  path: z.string().min(1, "File path required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  path: z.string().min(1, MCP_ERR_PATH_REQUIRED),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const MoveFileToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   from: z.string().min(1, "Source path required"),
   to: z.string().min(1, "Destination path required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const CreateDirectoryToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   path: z.string().min(1, "Directory path required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const CreateRequestToolArgsSchema = z.object({
@@ -107,37 +111,37 @@ export const CreateRequestToolArgsSchema = z.object({
   /** Identity to assign (Phase 54 canonical field) */
   identity: z.string().default(DEFAULT_AGENT_MODEL),
   context: z.array(z.string()).optional(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ListPlansToolArgsSchema = z.object({
   status: z.enum(PLAN_STATUS_VALUES).optional(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const ApprovePlanToolArgsSchema = z.object({
   plan_id: z.string().min(1, "Plan ID required"),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const QueryJournalToolArgsSchema = z.object({
   trace_id: z.string().optional(),
   limit: z.number().int().positive().default(DEFAULT_QUERY_LIMIT),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const RunCommandToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   command: z.string().min(1, "Command required"),
   args: z.array(z.string()).optional(),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const SearchFilesToolArgsSchema = z.object({
-  portal: z.string().min(1, "Portal name required"),
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   pattern: z.string().min(1, "Pattern required"),
   path: z.string().optional().default(""),
-  identity_id: z.string().min(1, "Identity ID required").default(DEFAULT_MCP_IDENTITY_ID),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 // Union type for all tool arguments

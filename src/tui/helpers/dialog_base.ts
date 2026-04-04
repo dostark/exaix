@@ -11,6 +11,7 @@ import { renderDialogButtons, renderDialogLine, renderDialogTitle, renderEmptyDi
 import {
   TUI_DIALOG_DEFAULT_HEIGHT,
   TUI_DIALOG_INNER_PADDING,
+  TUI_LABEL_CANCEL,
   TUI_LAYOUT_DIALOG_WIDTH,
   TUI_LAYOUT_MEDIUM_WIDTH,
 } from "./constants.ts";
@@ -18,7 +19,7 @@ import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts"
 
 // ===== Dialog Types =====
 
-import { DialogStatus, MemoryScope } from "../../shared/enums.ts";
+import { DialogStatus, MemoryScope, RequestOperation } from "../../shared/enums.ts";
 import { KEYS } from "./keyboard.ts";
 
 export type DialogState = DialogStatus;
@@ -373,7 +374,7 @@ export class InputDialog extends DialogBase<string> {
     const _canConfirm = !this.options.required || this.value.length > 0;
     const buttons = [
       { text: "OK", focused: this.focusIndex === 1 },
-      { text: "Cancel", focused: this.focusIndex === 2 },
+      { text: TUI_LABEL_CANCEL, focused: this.focusIndex === 2 },
     ];
 
     appendDialogFooter(lines, buttons, innerWidth, theme);
@@ -416,7 +417,7 @@ export class SelectDialog<T = string> extends DialogBase<T> {
   }
 
   getFocusableElements(): string[] {
-    return ["list", "confirm", "cancel"];
+    return [RequestOperation.LIST, "confirm", "cancel"];
   }
 
   getSelectedIndex(): number {
@@ -528,7 +529,7 @@ export class SelectDialog<T = string> extends DialogBase<T> {
     // Buttons
     const buttons = [
       { text: "Select", focused: this.focusIndex === 1 },
-      { text: "Cancel", focused: this.focusIndex === 2 },
+      { text: TUI_LABEL_CANCEL, focused: this.focusIndex === 2 },
     ];
 
     appendDialogFooter(lines, buttons, innerWidth, theme);

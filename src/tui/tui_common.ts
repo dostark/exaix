@@ -9,6 +9,7 @@
 import { getTheme, type ITuiTheme } from "./helpers/colors.ts";
 import { createSpinnerState, nextFrame, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import { createStatusBarState, type IStatusBarState, setStatusMessage } from "./helpers/status_bar.ts";
+import { KEYS } from "./helpers/keyboard.ts";
 import type { IKeyBinding, KeyHandler } from "./helpers/keyboard.ts";
 import { MessageType } from "../shared/enums.ts";
 
@@ -138,7 +139,7 @@ export class TuiSessionBase {
   handleNavigationKey(key: string, length: number): boolean {
     if (length === 0) return false;
     switch (key) {
-      case "down":
+      case KEYS.DOWN:
         this.selectedIndex = Math.min(this.selectedIndex + 1, length - 1);
         return true;
       case "up":

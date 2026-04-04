@@ -76,6 +76,10 @@ import { type ISkillMatchRequest } from "../shared/types/skill.ts";
 import { type IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";
 import { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
 import { type IActivityRecord, type IJournalFilterOptions, type SqliteParam } from "../shared/types/database.ts";
+import { SECONDS_PER_HOUR } from "../shared/constants.ts";
+
+/** Default identity ID used across all mock service implementations */
+const MOCK_IDENTITY_ID = "test-agent";
 
 /**
  * MockPortalService
@@ -310,7 +314,7 @@ export class MockRequestService implements IRequestService {
       path: "/mock/request.md",
       status: RequestStatus.PENDING,
       priority: options?.priority ?? RequestPriority.NORMAL,
-      identity: options?.identity ?? "test-agent",
+      identity: options?.identity ?? MOCK_IDENTITY_ID,
       source: source,
       created: new Date().toISOString(),
       created_by: "test-user",
@@ -338,7 +342,7 @@ export class MockRequestService implements IRequestService {
         path: "/mock/request.md",
         status: RequestStatus.PENDING,
         priority: RequestPriority.NORMAL,
-        identity: "test-agent",
+        identity: MOCK_IDENTITY_ID,
         source: "tui" as RequestSource,
         created: new Date().toISOString(),
         created_by: "test-user",
@@ -401,7 +405,7 @@ export class MockAgentService implements IAgentService {
     return Promise.resolve({
       status: AgentHealth.HEALTHY,
       issues: [],
-      uptime: 3600,
+      uptime: SECONDS_PER_HOUR,
     });
   }
 
@@ -458,7 +462,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
       request_id: "request-1",
       portal: GitBranchName.MAIN,
       status: ExecutionStatus.COMPLETED,
-      identity_id: "test-agent",
+      identity_id: MOCK_IDENTITY_ID,
       started_at: new Date().toISOString(),
       summary: "Mock execution",
       steps: [],
@@ -481,7 +485,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
         request_id: "request-1",
         portal: GitBranchName.MAIN,
         status: ExecutionStatus.COMPLETED,
-        identity_id: "test-agent",
+        identity_id: MOCK_IDENTITY_ID,
         started_at: new Date().toISOString(),
         summary: "Mock history item",
         steps: [],
@@ -767,7 +771,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
           tags: [],
         },
         reason: "Testing",
-        identity_id: "test-agent",
+        identity_id: MOCK_IDENTITY_ID,
         status: MemoryRecordStatus.PENDING,
         created_at: new Date().toISOString(),
       },
@@ -793,7 +797,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
         tags: [],
       },
       reason: "Testing",
-      identity_id: "test-agent",
+      identity_id: MOCK_IDENTITY_ID,
       status: MemoryRecordStatus.PENDING,
       created_at: new Date().toISOString(),
     });
