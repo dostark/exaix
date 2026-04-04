@@ -15,10 +15,11 @@ import { ANALYZER_VERSION } from "../constants.ts";
 
 import { TaskComplexity, TaskType } from "../enums.ts";
 
-const RequestAnalysisComplexity = TaskComplexity;
-const RequestTaskType = TaskType;
+export type RequestAnalysisComplexity = TaskComplexity;
+export const RequestAnalysisComplexity = TaskComplexity;
 
-export { RequestAnalysisComplexity, RequestTaskType };
+export type RequestTaskType = TaskType;
+export const RequestTaskType = TaskType;
 
 /**
  * Impact level of an identified ambiguity.

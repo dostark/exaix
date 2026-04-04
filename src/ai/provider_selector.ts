@@ -258,6 +258,7 @@ export class ProviderSelector {
       [TaskComplexity.SIMPLE]: [PricingTier.LOCAL, PricingTier.FREE, PricingTier.LOW],
       [TaskComplexity.MEDIUM]: [PricingTier.LOW, PricingTier.MEDIUM, PricingTier.FREE],
       [TaskComplexity.COMPLEX]: [PricingTier.HIGH, PricingTier.MEDIUM, PricingTier.LOW],
+      [TaskComplexity.EPIC]: [PricingTier.HIGH, PricingTier.MEDIUM, PricingTier.LOW],
     };
 
     const preferred = tierPreference[complexity];

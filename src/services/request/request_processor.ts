@@ -958,6 +958,8 @@ Raw Details: ${args.rawDetails}
       case RequestAnalysisComplexity.COMPLEX:
       case RequestAnalysisComplexity.EPIC:
         return TaskComplexity.COMPLEX;
+      default:
+        return TaskComplexity.MEDIUM;
     }
   }
 
