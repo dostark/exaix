@@ -91,7 +91,11 @@ export class PortalService {
       // Trigger portal knowledge analysis post-mount (fire-and-forget on failure)
       if (this.portalKnowledge && this.portalKnowledgeConfig?.autoAnalyzeOnMount) {
         const sysRoot = this.config.system.root as string;
-        const projectsDir = join(sysRoot, DEFAULT_PROJECTS_MEMORY_PATH);
+        const projectsDir = join(
+          sysRoot,
+          this.config.paths.memory as string,
+          DEFAULT_PROJECTS_MEMORY_PATH,
+        );
         (async () => {
           try {
             const knowledge = await this.portalKnowledge!.analyze(alias, absoluteTarget);
@@ -386,6 +390,7 @@ export class PortalService {
 
     const projectsDir = join(
       this.config.system.root as string,
+      this.config.paths.memory as string,
       DEFAULT_PROJECTS_MEMORY_PATH,
     );
     return loadKnowledge(portalAlias, projectsDir);
@@ -414,7 +419,11 @@ export class PortalService {
 
     // Persist knowledge.json
     const sysRoot = this.config.system.root as string;
-    const projectsDir = join(sysRoot, DEFAULT_PROJECTS_MEMORY_PATH);
+    const projectsDir = join(
+      sysRoot,
+      this.config.paths.memory as string,
+      DEFAULT_PROJECTS_MEMORY_PATH,
+    );
     await saveKnowledge(alias, knowledge, null, projectsDir);
 
     await this.display.info("portal.analyzed", alias, {

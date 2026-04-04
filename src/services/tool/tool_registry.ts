@@ -64,6 +64,7 @@ const ALLOWED_COMMANDS = new Set([
   SystemCommand.NODE,
   SystemCommand.DENO,
   SystemCommand.EXOCTL,
+  SystemCommand.GREP,
 ]);
 
 // ============================================================================
@@ -108,7 +109,7 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
       return validateRuntimeArguments(command, args);
     case SystemCommand.LS:
       return validateLsArguments(args);
-    case "grep":
+    case SystemCommand.GREP:
       return validateGrepArguments(args);
     default:
       // For safe commands, basic validation is sufficient
@@ -217,14 +218,21 @@ function validateLsArguments(args: string[]): { valid: boolean; reason?: string 
  */
 function validateGrepArguments(args: string[]): { valid: boolean; reason?: string } {
   // Allow safe grep options only
-  const allowedGrepOptions = ["-i", "-v", "-n", "-c", "-l", "-r", "-E", "-F"];
+  const allowedGrepOptions = ["-i", "-v", "-n", "-c", "-l", "-r", "-E", "-F", "-e", "-A", "-B", "-C"];
 
   for (const arg of args) {
-    if (arg.startsWith("-") && !allowedGrepOptions.some((opt) => arg.startsWith(opt))) {
-      return {
-        valid: false,
-        reason: `Unsafe grep option not allowed: ${arg}`,
-      };
+    if (arg.startsWith("-")) {
+      // Check if it's a known short option or a known long option (none currently allowed)
+      const isAllowed = allowedGrepOptions.includes(arg) ||
+        (arg.length >= 2 && arg.startsWith("-") && !arg.startsWith("--") &&
+          allowedGrepOptions.includes(arg.substring(0, 2)));
+
+      if (!isAllowed) {
+        return {
+          valid: false,
+          reason: `Unsafe grep option not allowed: ${arg}`,
+        };
+      }
     }
   }
 

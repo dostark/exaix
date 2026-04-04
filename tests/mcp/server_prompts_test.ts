@@ -42,11 +42,12 @@ Deno.test("MCP Server: handles prompts/list request", async () => {
     assertExists(response.result);
     const result = response.result as { prompts: Array<{ name: string; description: string }> };
 
-    assertEquals(result.prompts.length, 2);
+    assertEquals(result.prompts.length, 3);
 
     const promptNames = result.prompts.map((p) => p.name);
     assertEquals(promptNames.includes("execute_plan"), true);
     assertEquals(promptNames.includes("create_review"), true);
+    assertEquals(promptNames.includes("commit_message"), true);
   });
 });
 

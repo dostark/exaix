@@ -24,9 +24,10 @@ import {
 Deno.test("getPrompts: returns all available prompts", () => {
   const prompts = getPrompts();
 
-  assertEquals(prompts.length, 2);
+  assertEquals(prompts.length, 3);
   assertEquals(prompts[0].name, "execute_plan");
   assertEquals(prompts[1].name, "create_review");
+  assertEquals(prompts[2].name, "commit_message");
 });
 
 Deno.test("getPrompt: returns specific prompt by name", () => {
@@ -173,6 +174,31 @@ Deno.test("generateCreateReviewPrompt: logs to IActivity Journal", async () => {
     const payload = JSON.parse(log.payload);
     assertEquals(payload.portal, "TestPortal");
     assertEquals(payload.description, "Test review");
+  } finally {
+    await cleanup();
+  }
+});
+
+// ============================================================================
+// Commit Message Prompt Tests
+// ============================================================================
+
+Deno.test("generateCommitMessagePrompt: generates prompt with commit task details", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const result = generatePrompt("commit_message", { portal: "MyApp" }, createMockConfig("/tmp/test"), db);
+
+    assertExists(result);
+    assertExists(result!.description);
+    assertEquals(result!.messages.length, 1);
+    assertEquals(result!.messages[0].role, MessageRole.USER);
+
+    const text = result!.messages[0].content.text;
+    assertStringIncludes(text, "MyApp");
+    assertStringIncludes(text, "git_status");
+    assertStringIncludes(text, "read_file");
+    assertStringIncludes(text, "what:");
+    assertStringIncludes(text, "rationale:");
   } finally {
     await cleanup();
   }

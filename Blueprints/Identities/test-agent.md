@@ -3,9 +3,6 @@ name: test-agent
 model: mock-model
 provider: mock
 capabilities: ["write"]
-allowed_paths: ["*"]
+allowed_paths: ["portal-file.txt"]
 ---
-
-# Test Agent
-
 You are a test agent.
