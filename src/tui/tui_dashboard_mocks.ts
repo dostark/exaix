@@ -11,6 +11,7 @@ import {
   ConfidenceLevel,
   DaemonStatus,
   ExecutionStatus,
+  GitBranchName,
   LearningCategory,
   LogLevel,
   MemoryBankSource,
@@ -455,7 +456,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve({
       trace_id: traceId,
       request_id: "request-1",
-      portal: "main",
+      portal: GitBranchName.MAIN,
       status: ExecutionStatus.COMPLETED,
       identity_id: "test-agent",
       started_at: new Date().toISOString(),
@@ -478,7 +479,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
       {
         trace_id: "trace-1",
         request_id: "request-1",
-        portal: "main",
+        portal: GitBranchName.MAIN,
         status: ExecutionStatus.COMPLETED,
         identity_id: "test-agent",
         started_at: new Date().toISOString(),
@@ -740,7 +741,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
 
   // TUI-specific methods
   getProjects(): Promise<string[]> {
-    return Promise.resolve(["main", "test"]);
+    return Promise.resolve([GitBranchName.MAIN, "test"]);
   }
 
   search(query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {

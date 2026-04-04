@@ -20,7 +20,7 @@ import { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { TUI_LAYOUT_FULL_WIDTH, TUI_LIMIT_LOGS_DEFAULT, TUI_LIMIT_LOGS_MAX } from "./helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { DialogStatus, LogGroupingMode, LogLevel, MessageType } from "../shared/enums.ts";
+import { DialogStatus, LogGroupingMode, LogLevel, MessageType, TuiColorName, TuiNodeType } from "../shared/enums.ts";
 
 // ===== View State =====
 
@@ -75,11 +75,11 @@ export const STRUCTURED_LOG_ICONS: Record<string, string> = {
 };
 
 export const STRUCTURED_LOG_LEVEL_COLORS: Record<LogLevel, string> = {
-  [LogLevel.DEBUG]: "gray",
-  [LogLevel.INFO]: "blue",
-  [LogLevel.WARN]: "yellow",
-  [LogLevel.ERROR]: "red",
-  [LogLevel.FATAL]: "magenta",
+  [LogLevel.DEBUG]: TuiColorName.GRAY,
+  [LogLevel.INFO]: TuiColorName.BLUE,
+  [LogLevel.WARN]: TuiColorName.YELLOW,
+  [LogLevel.ERROR]: TuiColorName.RED,
+  [LogLevel.FATAL]: TuiColorName.MAGENTA,
 };
 
 // ===== Key Bindings =====
@@ -424,7 +424,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
         const groupNode = createGroupNode<IStructuredLogEntry>(
           groupKey,
           `${this.getGroupIcon(this.logViewExtensions.groupBy)} ${groupKey} (${entries.length})`,
-          "group",
+          TuiNodeType.GROUP,
           childNodes,
           { expanded: true },
         );

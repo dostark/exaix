@@ -22,7 +22,14 @@ import {
   type ITreeNode,
   type TreeRenderOptions,
 } from "./helpers/tree_view.ts";
-import { DialogStatus, PortalAnalysisMode, PortalExecutionStrategy, PortalStatus, TuiIcon } from "../shared/enums.ts";
+import {
+  DialogStatus,
+  PortalAnalysisMode,
+  PortalExecutionStrategy,
+  PortalStatus,
+  TuiIcon,
+  TuiNodeType,
+} from "../shared/enums.ts";
 import { formatKnowledge } from "../shared/formatters/portal_knowledge.ts";
 import { TUI_LAYOUT_NARROW_WIDTH, TUI_PORTAL_ICONS } from "./helpers/constants.ts";
 
@@ -187,7 +194,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
     if (active.length > 0) {
       this.state.tree.push(
-        createGroupNode("active-group", `Active (${active.length})`, "group", active, {
+        createGroupNode("active-group", `Active (${active.length})`, TuiNodeType.GROUP, active, {
           icon: PORTAL_ICONS.active,
           badge: active.length,
           expanded: true,
@@ -197,7 +204,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
     if (broken.length > 0) {
       this.state.tree.push(
-        createGroupNode("broken-group", `Broken (${broken.length})`, "group", broken, {
+        createGroupNode("broken-group", `Broken (${broken.length})`, TuiNodeType.GROUP, broken, {
           icon: PORTAL_ICONS.broken,
           badge: broken.length,
           expanded: true,
@@ -207,7 +214,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
 
     if (inactive.length > 0) {
       this.state.tree.push(
-        createGroupNode("inactive-group", `Inactive (${inactive.length})`, "group", inactive, {
+        createGroupNode("inactive-group", `Inactive (${inactive.length})`, TuiNodeType.GROUP, inactive, {
           icon: PORTAL_ICONS.inactive,
           badge: inactive.length,
           expanded: true,
@@ -345,7 +352,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
       this.statusMessage = "Error: No portal selected";
       return;
     }
-    if (selected.type === "group") {
+    if (selected.type === TuiNodeType.GROUP) {
       this.toggleCurrentNode();
       return;
     }

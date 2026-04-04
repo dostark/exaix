@@ -18,7 +18,7 @@ import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts"
 
 // ===== Dialog Types =====
 
-import { DialogStatus } from "../../shared/enums.ts";
+import { DialogStatus, MemoryScope } from "../../shared/enums.ts";
 import { KEYS } from "./keyboard.ts";
 
 export type DialogState = DialogStatus;
@@ -711,7 +711,7 @@ export function renderProposalInfo(
 
   // Operation and scope
   const operation = proposal.operation || "add";
-  const scope = proposal.target_scope || "global";
+  const scope = proposal.target_scope || MemoryScope.GLOBAL;
   const project = proposal.target_project ? ` (${proposal.target_project})` : "";
 
   lines.push(

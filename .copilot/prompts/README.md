@@ -9,6 +9,8 @@ topics: ["prompts", "templates", "agents", "workflows", "best-practices"]
 
 Welcome to the Exaix prompt template library for coding agents. This collection enables agents to systematically wrap raw user prompts with advanced, context-rich instructions, ensuring clarity, completeness, and best practices for all coding tasks in the Exaix codebase.
 
+These templates are the canonical Exaix workflow prompts. They are distinct from the slash-command wrappers in `../../.github/prompts/`, which exist for GitHub/Copilot editor integrations.
+
 ## How It Works
 
 - **Template Selection:** For each raw user prompt, the agent selects the most suitable template (see aliases below).
@@ -16,7 +18,7 @@ Welcome to the Exaix prompt template library for coding agents. This collection 
 - **Best Practices:** Each template enforces Exaix standards: TDD, regression tests, linting, success criteria, and more.
 - **Aliases:** Use the alias (e.g. `#plan`, `@fix`, `#step`) in your prompt to suggest a template, or let the agent auto-select.
 
-## Why Use Templates?
+## Why Use Templates
 
 - **Consistency:** Ensures all requests are clear, systematic, and actionable.
 - **Completeness:** Reminds agents to include tests, criteria, and validation steps.

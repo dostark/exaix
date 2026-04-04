@@ -16,7 +16,14 @@ import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import { JSONValue } from "../../shared/types/json.ts";
-import { ActivityType, MemoryBankSource, MemoryReferenceType, MemoryScope, MemoryType } from "../../shared/enums.ts";
+import {
+  ActivityActor,
+  ActivityType,
+  MemoryBankSource,
+  MemoryReferenceType,
+  MemoryScope,
+  MemoryType,
+} from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION, LOCK_ACQUIRE_TIMEOUT_MS } from "../../shared/constants.ts";
 import {
@@ -974,7 +981,7 @@ export class MemoryBankService implements IMemoryBankService {
     // Log index rebuild
     this.logActivity({
       event_type: "memory.indices.rebuilt",
-      target: "system",
+      target: ActivityActor.SYSTEM,
       metadata: {
         files_indexed: Object.keys(filesIndex).length,
         patterns_indexed: Object.keys(patternsIndex).length,
@@ -1012,7 +1019,7 @@ export class MemoryBankService implements IMemoryBankService {
     const approvedCount = learnings.filter((l) => l.status === MemoryStatus.APPROVED).length;
     this.logActivity({
       event_type: "memory.embeddings.rebuilt",
-      target: "system",
+      target: ActivityActor.SYSTEM,
       metadata: {
         learnings_embedded: approvedCount,
       },

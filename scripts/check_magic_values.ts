@@ -101,11 +101,29 @@ const globalNumberThreshold = getNumericFlagValue("--global-number-threshold") ?
   GLOBAL_NUMBER_THRESHOLD;
 
 const STRING_WHITELIST = new Set([
-  "", " ", "\n", "\t", "\\n", "\\t",
-  "true", "false", "null", "undefined",
+  "",
+  " ",
+  "\n",
+  "\t",
+  "\\n",
+  "\\t",
+  "true",
+  "false",
+  "null",
+  "undefined",
   // typeof checks — these are structural, not magic values
-  "string", "number", "boolean", "object", "function", "undefined", "symbol", "bigint",
-  "unknown", "any", "never", "void",
+  "string",
+  "number",
+  "boolean",
+  "object",
+  "function",
+  "undefined",
+  "symbol",
+  "bigint",
+  "unknown",
+  "any",
+  "never",
+  "void",
 ]);
 const NUMBER_WHITELIST = new Set([0, 1, -1]);
 
@@ -117,8 +135,7 @@ const SHORT_STRING_MIN_LENGTH = 4;
 
 /** Skip strings that look like constant names or env vars (all uppercase with underscores/digits) */
 const ALL_CAPS_REGEX = /^[A-Z][A-Z0-9_]*$/;
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 const FILE_OR_PATH_REGEX = /[\\/]|\.[A-Za-z0-9]{1,8}$/;
 const CLI_FLAG_REGEX = /^--?[a-z0-9][a-z0-9-]*$/i;
@@ -126,6 +143,18 @@ const MIME_TYPE_REGEX = /^[a-z]+\/[a-z0-9.+-]+$/i;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ID_WITH_NUMERIC_SUFFIX_REGEX = /^[a-z][a-z0-9_-]*[-_][0-9]+$/i;
 const STDIO_PIPE_FIELD_NAMES = new Set(["stdout", "stderr", "stdin"]);
+const STRUCTURAL_METADATA_PROPERTY_NAMES = new Set([
+  "description",
+  "title",
+  "label",
+  "placeholder",
+]);
+const STRUCTURAL_STRING_ARRAY_PROPERTY_NAMES = new Set([
+  "args",
+  "enum",
+  "capabilities",
+  "tags",
+]);
 
 const ROUND_NUMBER_STEP = 50;
 const ROUND_NUMBER_MAX = 1_000;
@@ -261,7 +290,18 @@ function shouldSkip(node: ts.Node): boolean {
         ? maybeRequiredProp.name.text
         : "";
       if (propName === "required") return true;
+      if (STRUCTURAL_STRING_ARRAY_PROPERTY_NAMES.has(propName)) return true;
     }
+  }
+
+  // Skip metadata text fields commonly used in schema and UI definitions.
+  if (ts.isStringLiteral(node) && ts.isPropertyAssignment(parent) && parent.initializer === node) {
+    const propName = ts.isIdentifier(parent.name)
+      ? parent.name.text
+      : ts.isStringLiteral(parent.name)
+      ? parent.name.text
+      : "";
+    if (STRUCTURAL_METADATA_PROPERTY_NAMES.has(propName)) return true;
   }
 
   // Skip enum member names
@@ -570,9 +610,15 @@ async function main(): Promise<void> {
   for (const filePath of tsFiles) {
     const source = await Deno.readTextFile(filePath);
     const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
-    if (isConstantOrEnumFilePath(filePath)) {
+    const isCanonicalDefinitionFile = isConstantOrEnumFilePath(filePath);
+
+    if (isCanonicalDefinitionFile) {
+      // Capture literals from canonical definition files for scoring/reuse hints,
+      // but do not count them as violations in the defining module itself.
       collectReusableLiteralKeys(sourceFile, reusableLiteralKeys, checkNumbers);
+      continue;
     }
+
     collectLiterals(sourceFile, counters, checkNumbers);
   }
 

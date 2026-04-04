@@ -21,6 +21,7 @@ import {
   TUI_DASHBOARD_VIEW_PICKER_WIDTH,
   TUI_LAYOUT_DEFAULT_HEIGHT,
   TUI_LAYOUT_FULL_WIDTH,
+  TUI_MAIN_PANE_ID,
   TUI_TREE_ICONS,
 } from "./helpers/constants.ts";
 import { colorize, getTheme, type ITuiTheme } from "./helpers/colors.ts";
@@ -627,7 +628,7 @@ function createTestDashboard(options: {
 
   // Initialize with single pane
   const initialPane: IPane = {
-    id: "main",
+    id: TUI_MAIN_PANE_ID,
     view: views[0],
     flexX: 0,
     flexY: 0,
@@ -641,7 +642,7 @@ function createTestDashboard(options: {
     maximized: false,
   };
   const panes: IPane[] = [initialPane];
-  const activePaneId = "main";
+  const activePaneId = TUI_MAIN_PANE_ID;
 
   // Initialize state
   const state: IDashboardViewState = createDefaultDashboardState();
@@ -781,7 +782,7 @@ function createTestDashboard(options: {
       // Reset to single pane with PortalManagerView
       panes.length = 0;
       panes.push({
-        id: "main",
+        id: TUI_MAIN_PANE_ID,
         view: views[0],
         flexX: 0,
         flexY: 0,
@@ -794,7 +795,7 @@ function createTestDashboard(options: {
         focused: true,
         maximized: false,
       });
-      this.activePaneId = "main";
+      this.activePaneId = TUI_MAIN_PANE_ID;
       await this.clearNotifications();
       await this.notify("Layout reset to default", MessageType.INFO);
     },
@@ -829,7 +830,7 @@ async function createProductionDashboard(options: {
   }
 
   // Create services using core factory (this is the boundary crossing point)
-  const { createTuiServices } = await import("../../services/tui_service_factory.ts");
+  const { createTuiServices } = await import("../services/utils/tui_service_factory.ts");
   const serviceBundle = createTuiServices({
     config: options.config,
     databaseService: options.databaseService,
@@ -845,7 +846,7 @@ async function createProductionDashboard(options: {
 
   // Initialize with single pane
   const initialPane: IPane = {
-    id: "main",
+    id: TUI_MAIN_PANE_ID,
     view: views[0],
     flexX: 0,
     flexY: 0,
@@ -859,7 +860,7 @@ async function createProductionDashboard(options: {
     maximized: false,
   };
   const panes: IPane[] = [initialPane];
-  let activePaneId = "main";
+  let activePaneId = TUI_MAIN_PANE_ID;
 
   // Initialize state
   const _state: IDashboardViewState = createDefaultDashboardState();

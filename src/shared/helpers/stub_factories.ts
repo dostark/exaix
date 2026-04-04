@@ -9,6 +9,7 @@
 
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import type { IModelProvider } from "../../ai/types.ts";
+import { GitBranchName } from "../../shared/enums.ts";
 
 /**
  * Create a stub IGitService with no-op implementations.
@@ -23,8 +24,8 @@ export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGit
     createBranch: () => Promise.resolve(""),
     commit: () => Promise.resolve(""),
     checkoutBranch: () => Promise.resolve(),
-    getCurrentBranch: () => Promise.resolve("main"),
-    getDefaultBranch: () => Promise.resolve("main"),
+    getCurrentBranch: () => Promise.resolve(GitBranchName.MAIN),
+    getDefaultBranch: () => Promise.resolve(GitBranchName.MAIN),
     addWorktree: () => Promise.resolve(),
     removeWorktree: () => Promise.resolve(),
     pruneWorktrees: () => Promise.resolve(""),

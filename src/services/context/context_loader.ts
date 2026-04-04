@@ -13,6 +13,8 @@
  */
 
 import type { DatabaseService } from "../core/db.ts";
+import { ActivityActor } from "../../shared/enums.ts";
+import { DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
 
 // ============================================================================
 // Types and Interfaces
@@ -372,7 +374,7 @@ export class ContextLoader {
 
     try {
       this.config.db.logActivity(
-        "system",
+        ActivityActor.SYSTEM,
         "context.loaded",
         this.config.requestId || null,
         {
@@ -407,12 +409,12 @@ export class ContextLoader {
 
     try {
       this.config.db.logActivity(
-        "system",
+        ActivityActor.SYSTEM,
         "context.file_load_error",
         filePath,
         {
           error_message: error instanceof Error ? error.message : String(error),
-          error_type: error instanceof Error ? error.name : "Unknown",
+          error_type: error instanceof Error ? error.name : DEFAULT_UNKNOWN_LABEL,
         },
         this.config.traceId,
         this.config.identityId || null,

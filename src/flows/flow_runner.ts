@@ -28,7 +28,7 @@ import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../shared/constants.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE, DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -655,7 +655,7 @@ export class FlowRunner implements IFlowRunner {
       flowRunId,
       flowId: flow.id,
       error: error instanceof Error ? error.message : String(error),
-      errorType: error instanceof Error ? error.constructor.name : "Unknown",
+      errorType: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
       duration,
       stepsAttempted: stepResults.size,
       successfulSteps,
@@ -937,7 +937,7 @@ export class FlowRunner implements IFlowRunner {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorType = error instanceof Error ? error.constructor.name : "Unknown";
+    const errorType = error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL;
 
     this.eventLogger.log("flow.step.failed", {
       flowRunId,
@@ -1149,7 +1149,7 @@ export class FlowRunner implements IFlowRunner {
           flowRunId,
           stepId,
           error: error instanceof Error ? error.message : String(error),
-          errorType: error instanceof Error ? error.constructor.name : "Unknown",
+          errorType: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
           traceId: request.traceId,
           requestId: request.requestId,
         });

@@ -8,6 +8,7 @@
 import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "../shared/schemas/request.ts";
 import type { DatabaseService } from "../services/core/db.ts";
+import { ActivityActor } from "../shared/enums.ts";
 import { JSONValue, toSafeJson } from "../shared/types/json.ts";
 
 /**
@@ -81,7 +82,7 @@ export class FrontmatterParser {
 
     try {
       this.db.logActivity(
-        "system",
+        ActivityActor.SYSTEM,
         actionType,
         payload.file_path as string || null,
         payload,

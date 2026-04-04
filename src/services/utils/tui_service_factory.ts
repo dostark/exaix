@@ -29,6 +29,7 @@ import { createGitServiceStub } from "../../shared/helpers/stub_factories.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import { SkillsService } from "../skills/skills.ts";
+import { GitBranchName } from "../../shared/enums.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
 import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
@@ -114,7 +115,7 @@ export function createTuiServices(
 
   const gitStub = createGitServiceStub({
     getRepository: () => config.system.root,
-    getDefaultBranch: () => Promise.resolve("main"),
+    getDefaultBranch: () => Promise.resolve(GitBranchName.MAIN),
   });
 
   const displayAdapter = new DisplayAdapter(new EventLogger({ prefix: "[TUI]" }));

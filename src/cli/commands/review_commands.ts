@@ -20,7 +20,12 @@ import { isReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import type { IReviewStatus } from "../../reviews/review_status.ts";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "../../shared/schemas/artifact.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
-import { ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "../../shared/enums.ts";
+import {
+  ArtifactSubtype,
+  GitBranchName,
+  ReviewType,
+  ReviewTypeFilter as ReviewFilterEnum,
+} from "../../shared/enums.ts";
 import { createGitService } from "../../services/adapters/git_adapter.ts";
 
 export interface IReviewMetadata {
@@ -137,7 +142,12 @@ export class ReviewCommands extends BaseCommand {
     }
 
     // Fallback: try common default branch names
-    const commonDefaults = ["main", "master", "develop", "development"];
+    const commonDefaults = [
+      GitBranchName.MAIN,
+      GitBranchName.MASTER,
+      GitBranchName.DEVELOP,
+      GitBranchName.DEVELOPMENT,
+    ];
     for (const branch of commonDefaults) {
       try {
         const checkCmd = new Deno.Command("git", {
@@ -156,7 +166,7 @@ export class ReviewCommands extends BaseCommand {
     }
 
     // Ultimate fallback
-    return "main";
+    return GitBranchName.MAIN;
   }
 
   private async getStoredReviewBaseBranch(branch: string): Promise<string | null> {

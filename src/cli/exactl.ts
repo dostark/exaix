@@ -61,6 +61,10 @@ export function isTestMode() {
   return isTestModeImport();
 }
 
+const CLI_OUTPUT_FORMAT_OPTION = "--format <format:string>";
+const CLI_OUTPUT_FORMAT_HELP = "Output format: table, json, md";
+const CLI_OUTPUT_FORMAT_DEFAULT = { default: UIOutputFormat.TABLE };
+
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
 const context = fullContext;
@@ -1326,7 +1330,7 @@ export const __test_command = new Command()
     "memory",
     new Command()
       .description("Manage Memory Banks (project memory, execution history, search)")
-      .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
       .action(async (options) => {
         // Default action: show summary
         const result = await memoryCommands.list(options.format as OutputFormat);
@@ -1336,7 +1340,7 @@ export const __test_command = new Command()
         "list",
         new Command()
           .description("List all memory banks with summary")
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             const result = await memoryCommands.list(options.format as OutputFormat);
             console.log(result);
@@ -1350,7 +1354,7 @@ export const __test_command = new Command()
           .option("-t, --tags <tags:string>", "Filter by tags (comma-separated)")
           .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
           .option("-e, --use-embeddings", "Use embedding-based semantic search")
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options, ...args: string[]) => {
             const query = args[0];
             const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
@@ -1368,7 +1372,7 @@ export const __test_command = new Command()
         "project",
         new Command()
           .description("Project memory operations")
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             // Default: list projects
             const result = await memoryCommands.projectList(options.format as OutputFormat);
@@ -1378,7 +1382,7 @@ export const __test_command = new Command()
             "list",
             new Command()
               .description("List all project memories")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.projectList(options.format as OutputFormat);
                 console.log(result);
@@ -1388,7 +1392,7 @@ export const __test_command = new Command()
             "show <portal:string>",
             new Command()
               .description("Show details of a specific project memory")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const portal = args[0];
                 const result = await memoryCommands.projectShow(portal, options.format as OutputFormat);
@@ -1402,7 +1406,7 @@ export const __test_command = new Command()
           .description("Execution history operations")
           .option("-p, --portal <portal:string>", "Filter by portal")
           .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             // Default: list executions
             const result = await memoryCommands.executionList({
@@ -1418,7 +1422,7 @@ export const __test_command = new Command()
               .description("List execution history")
               .option("-p, --portal <portal:string>", "Filter by portal")
               .option("-l, --limit <limit:number>", "Maximum results", { default: 20 })
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.executionList({
                   portal: options.portal,
@@ -1432,7 +1436,7 @@ export const __test_command = new Command()
             "show <traceId:string>",
             new Command()
               .description("Show details of a specific execution")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const traceId = args[0];
                 const result = await memoryCommands.executionShow(traceId, options.format as OutputFormat);
@@ -1456,7 +1460,7 @@ export const __test_command = new Command()
         "pending",
         new Command()
           .description("Manage pending memory update proposals")
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             // Default: list pending
             const result = await memoryCommands.pendingList(options.format as OutputFormat);
@@ -1466,7 +1470,7 @@ export const __test_command = new Command()
             "list",
             new Command()
               .description("List all pending proposals")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.pendingList(options.format as OutputFormat);
                 console.log(result);
@@ -1476,7 +1480,7 @@ export const __test_command = new Command()
             "show <proposalId:string>",
             new Command()
               .description("Show details of a pending proposal")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const proposalId = args[0];
                 const result = await memoryCommands.pendingShow(proposalId, options.format as OutputFormat);
@@ -1519,7 +1523,7 @@ export const __test_command = new Command()
         "skill",
         new Command()
           .description("Manage procedural skills (Phase 17)")
-          .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+          .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
             // Default: list skills
             const result = await memoryCommands.skillList({ format: options.format as OutputFormat });
@@ -1530,7 +1534,7 @@ export const __test_command = new Command()
             new Command()
               .description("List all skills")
               .option("-c, --category <category:string>", "Filter by category: core, project, learned")
-              .option("--format <format:string>", "Output format: table, json, md", { default: UIOutputFormat.TABLE })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const result = await memoryCommands.skillList({
                   category: options.category as MemoryBankSource | undefined,
@@ -1543,7 +1547,7 @@ export const __test_command = new Command()
             "show <skillId:string>",
             new Command()
               .description("Show details of a specific skill")
-              .option("--format <format:string>", "Output format: table, json, md", { default: "table" })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const skillId = args[0];
                 const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat);
@@ -1557,7 +1561,7 @@ export const __test_command = new Command()
               .option("-t, --task-type <taskType:string>", "Task type filter")
               .option("--tags <tags:string>", "Comma-separated tags filter")
               .option("-l, --limit <limit:number>", "Maximum results", { default: 10 })
-              .option("--format <format:string>", "Output format: table, json, md", { default: "table" })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const request = args[0];
                 const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
@@ -1580,7 +1584,7 @@ export const __test_command = new Command()
               .option("-n, --name <name:string>", "Name for the derived skill", { required: true })
               .option("-d, --description <desc:string>", "Skill description")
               .option("-i, --instructions <instructions:string>", "Skill instructions")
-              .option("--format <format:string>", "Output format: table, json, md", { default: "table" })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
                 const learningIds = options.learningIds
                   ? options.learningIds.split(",").map((id: string) => id.trim())
@@ -1604,7 +1608,7 @@ export const __test_command = new Command()
               .option("-i, --instructions <instructions:string>", "Skill instructions")
               .option("-k, --keywords <keywords:string>", "Comma-separated trigger keywords")
               .option("-t, --task-types <taskTypes:string>", "Comma-separated trigger task types")
-              .option("--format <format:string>", "Output format: table, json, md", { default: "table" })
+              .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options, ...args: string[]) => {
                 const name = args[0];
                 const keywords = options.keywords

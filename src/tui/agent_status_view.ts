@@ -7,6 +7,7 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
+import { DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import type { ITreeNode } from "./helpers/tree_view.ts";
 import {
@@ -22,6 +23,7 @@ import {
   toggleNode,
 } from "./helpers/tree_view.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
+import { TuiColorName } from "../shared/enums.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
@@ -100,12 +102,12 @@ export const LOG_LEVEL_ICONS: Record<string, string> = {
 };
 
 export const AGENT_STATUS_COLORS: Record<string, string> = {
-  [AgentStatus.ACTIVE]: "green",
-  [AgentStatus.INACTIVE]: "yellow",
-  [AgentStatus.ERROR]: "red",
-  healthy: "green",
-  warning: "yellow",
-  critical: "red",
+  [AgentStatus.ACTIVE]: TuiColorName.GREEN,
+  [AgentStatus.INACTIVE]: TuiColorName.YELLOW,
+  [AgentStatus.ERROR]: TuiColorName.RED,
+  healthy: TuiColorName.GREEN,
+  warning: TuiColorName.YELLOW,
+  critical: TuiColorName.RED,
 };
 
 // ===== Key Bindings =====
@@ -495,7 +497,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
       case TuiGroupBy.MODEL:
         return "Model";
       default:
-        return "Unknown";
+        return DEFAULT_UNKNOWN_LABEL;
     }
   }
 

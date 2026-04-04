@@ -9,7 +9,7 @@
 
 import type { IDatabaseService } from "../core/db.ts";
 import type { ActivityRepository } from "../../repositories/activity_repository.ts";
-import { LogLevel } from "../../shared/enums.ts";
+import { ActivityActor, LogLevel } from "../../shared/enums.ts";
 import { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
 import { JSONValue, LogMetadata, toSafeJson } from "../../shared/types/json.ts";
@@ -105,7 +105,7 @@ export class EventLogger implements IEventLogger {
     this.prefix = config.prefix ?? "";
     this.minLevel = config.minLevel ?? LogLevel.INFO;
     this.showTimestamp = config.showTimestamp ?? false;
-    this.defaultActor = config.defaultActor ?? "system";
+    this.defaultActor = config.defaultActor ?? ActivityActor.SYSTEM;
     this.defaults = defaults;
   }
 

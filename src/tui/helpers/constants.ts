@@ -60,6 +60,7 @@ export const TUI_LIMIT_LOGS_DEFAULT = 500;
 export const TUI_PREVIEW_SHORT = 40;
 export const TUI_PREVIEW_MEDIUM = 60;
 export const TUI_SPINNER_FRAMES = 10;
+export const TUI_MAIN_PANE_ID = "main";
 
 // ============================================================================
 // General System Limits and Thresholds

@@ -25,7 +25,7 @@ import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { IRequestFrontmatter } from "../request_processing/types.ts";
 import type { IFlow } from "../../shared/schemas/flow.ts";
-import { RequestKind } from "../../shared/enums.ts";
+import { GitBranchName, RequestKind } from "../../shared/enums.ts";
 
 /**
  * RequestRouter - Routes requests to appropriate execution engine
@@ -119,7 +119,7 @@ export class RequestRouter {
       const portalPermissions: IPortalConfig = {
         alias: portal.alias,
         target_path: portal.target_path,
-        default_branch: portal.default_branch ?? "main",
+        default_branch: portal.default_branch ?? GitBranchName.MAIN,
         identities_allowed: portal.identities_allowed ?? ["*"],
         operations: portal.operations ?? [],
         created: portal.created,

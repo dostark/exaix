@@ -58,7 +58,7 @@ export class TreeManipulationHandler {
   static expandNode(tree: ITreeNode[], selectedId: string | null): ITreeNode[] {
     if (!selectedId) return tree;
     const node = findNode(tree, selectedId);
-    if (node && node.type === "group" && !node.expanded) {
+    if (node && node.type === TuiNodeType.GROUP && !node.expanded) {
       return toggleNode(tree, selectedId);
     }
     return tree;
@@ -70,7 +70,7 @@ export class TreeManipulationHandler {
   static collapseNode(tree: ITreeNode[], selectedId: string | null): ITreeNode[] {
     if (!selectedId) return tree;
     const node = findNode(tree, selectedId);
-    if (node && node.type === "group" && node.expanded) {
+    if (node && node.type === TuiNodeType.GROUP && node.expanded) {
       return toggleNode(tree, selectedId);
     }
     return tree;

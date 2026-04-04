@@ -33,7 +33,7 @@ import {
   DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
 } from "../../shared/constants.ts";
 import { SecureRandom } from "../../helpers/secure_random.ts";
-import { ActivityActor } from "../../shared/enums.ts";
+import { ActivityActor, GitBranchName } from "../../shared/enums.ts";
 
 export type {
   IBranchOptions,
@@ -437,7 +437,13 @@ export class GitService implements IGitService {
 
     // Security Guard: Prevent checkouts to protected branches for agents
     // Exception: allow when explicitly permitted (e.g., for creating feature branches)
-    const protectedBranches = ["main", "master", "develop", "prod", "production"];
+    const protectedBranches: string[] = [
+      GitBranchName.MAIN,
+      GitBranchName.MASTER,
+      GitBranchName.DEVELOP,
+      GitBranchName.PROD,
+      GitBranchName.PRODUCTION,
+    ];
     if (
       !options?.allowProtected && protectedBranches.includes(branchName.toLowerCase()) && this.identityId !== "daemon"
     ) {
@@ -515,15 +521,15 @@ export class GitService implements IGitService {
           .filter(Boolean),
       );
 
-      if (branches.has("main")) return "main";
-      if (branches.has("master")) return "master";
+      if (branches.has(GitBranchName.MAIN)) return GitBranchName.MAIN;
+      if (branches.has(GitBranchName.MASTER)) return GitBranchName.MASTER;
 
       const first = branches.values().next().value as string | undefined;
       if (first) return first;
     }
 
     // Default fallback
-    return "main";
+    return GitBranchName.MAIN;
   }
 
   /**

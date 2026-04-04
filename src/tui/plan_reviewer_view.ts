@@ -7,11 +7,12 @@
  */
 
 import { type IPlanDetails, type IPlanMetadata } from "../shared/types/plan.ts";
+import { DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 import { IPlanService } from "../shared/interfaces/i_plan_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { coercePlanStatus, PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
 import { ConfirmDialog, type DialogBase, InputDialog } from "./helpers/dialog_base.ts";
-import { DialogStatus } from "../shared/enums.ts";
+import { DialogStatus, TuiNodeType } from "../shared/enums.ts";
 import { createGroupNode, createNode, flattenTree, type ITreeNode } from "./helpers/tree_view.ts";
 import type { JSONObject } from "../shared/types/json.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
@@ -195,7 +196,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
     if (pending.length > 0) {
       tree.push(
-        createGroupNode("pending-group", `Pending (${pending.length})`, "group", pending, {
+        createGroupNode("pending-group", `Pending (${pending.length})`, TuiNodeType.GROUP, pending, {
           icon: PLAN_ICONS[PlanStatus.REVIEW],
           badge: pending.length,
           expanded: true,
@@ -205,7 +206,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
     if (approved.length > 0) {
       tree.push(
-        createGroupNode("approved-group", `Approved (${approved.length})`, "group", approved, {
+        createGroupNode("approved-group", `Approved (${approved.length})`, TuiNodeType.GROUP, approved, {
           icon: PLAN_ICONS[PlanStatus.APPROVED],
           badge: approved.length,
           expanded: true,
@@ -215,7 +216,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
     if (rejected.length > 0) {
       tree.push(
-        createGroupNode("rejected-group", `Rejected (${rejected.length})`, "group", rejected, {
+        createGroupNode("rejected-group", `Rejected (${rejected.length})`, TuiNodeType.GROUP, rejected, {
           icon: PLAN_ICONS[PlanStatus.REJECTED],
           badge: rejected.length,
           expanded: true,
@@ -225,7 +226,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
 
     if (unknown.length > 0) {
       tree.push(
-        createGroupNode("other-group", "Other", "group", unknown, {
+        createGroupNode("other-group", "Other", TuiNodeType.GROUP, unknown, {
           icon: PLAN_ICONS.folder,
           badge: unknown.length,
         }),
@@ -340,7 +341,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     const selected = this.getSelectedNode();
     if (!selected) return;
 
-    if (selected.type === "group") {
+    if (selected.type === TuiNodeType.GROUP) {
       selected.expanded = !selected.expanded;
       return;
     }
@@ -602,7 +603,7 @@ export class DbLikePlanServiceAdapter implements IPlanService {
     return {
       metadata: {
         id: planId,
-        subject: p?.subject || "Unknown",
+        subject: p?.subject || DEFAULT_UNKNOWN_LABEL,
         status: p?.status || PlanStatus.PENDING,
         created_at: p?.created_at || new Date().toISOString(),
       },

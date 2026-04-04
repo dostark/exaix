@@ -29,7 +29,12 @@ import {
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE, PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "../../shared/constants.ts";
+import {
+  DEFAULT_UNKNOWN_ERROR_MESSAGE,
+  DEFAULT_UNKNOWN_LABEL,
+  PORTAL_CONTEXT_KEY,
+  PORTAL_KNOWLEDGE_KEY,
+} from "../../shared/constants.ts";
 import { PlanAdapter } from "../plan/plan_adapter.ts";
 
 /**
@@ -419,7 +424,7 @@ export class AgentRunner implements IAgentRunner {
         duration_ms: duration,
         total_attempts: retryResult.totalAttempts,
         retry_history: toSafeJson(retryResult.retryHistory),
-        error_type: retryResult.error?.constructor.name || "Unknown",
+        error_type: retryResult.error?.constructor.name || DEFAULT_UNKNOWN_LABEL,
         error_message: retryResult.error?.message || DEFAULT_UNKNOWN_ERROR_MESSAGE,
       },
       traceId,

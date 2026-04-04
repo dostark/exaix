@@ -19,6 +19,7 @@ import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
+import { ActivityActor } from "../shared/enums.ts";
 
 // Concrete services for adapters
 import { MemoryBankService } from "../services/memory/memory_bank.ts";
@@ -232,7 +233,7 @@ export async function initializeServices(
     }
 
     const displayLocal = new EventLogger({});
-    displayLocal.warn("cli.config_missing", "system", {
+    displayLocal.warn("cli.config_missing", ActivityActor.SYSTEM, {
       message: `Configuration failed to load (${err}). Running in degraded mode (read-only/stub).`,
       hint: "Ensure 'exa.config.toml' exists in current directory or root.",
     });

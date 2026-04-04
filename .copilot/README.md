@@ -18,6 +18,16 @@ This directory contains short, machine-discoverable instruction documents intend
 - `.copilot/prompts/` — Comprehensive prompt templates for systematic coding workflows (see [prompts/README.md](prompts/README.md))
 - `.copilot/chunks/` — (auto-generated) pre-chunked text files for quick retrieval
 - `.copilot/issues/` — structured bug reports and technical issues (see [issues/README.md](issues/README.md))
+
+## Prompt Directory Boundary
+
+There are two prompt directories in this repository, and they are intentionally different:
+
+- `.copilot/prompts/` contains Exaix's agent-facing prompt templates and workflow docs. These are indexed by `scripts/build_agents_index.ts`, validated by `scripts/validate_agents_docs.ts`, and consumed through `.copilot/manifest.json` and `scripts/inject_agent_context.ts`.
+- `.github/prompts/` contains GitHub/Copilot slash-command prompt definitions. These are editor integration artifacts for commands such as `/commit`, and they use a different frontmatter/schema from `.copilot/` docs.
+
+Do not move `.copilot/prompts/` files into `.github/prompts/` or vice versa unless you are also changing the consuming toolchain.
+
 - `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
 
 ## Quick Links for Agents

@@ -6,6 +6,7 @@
  * * @related-files [src/tui/tui_dashboard.ts]
  */
 
+import { TuiColorName } from "../shared/enums.ts";
 import { TUI_LOG_ICONS } from "./helpers/constants.ts";
 
 export const LOG_ICONS: Record<string, string> = {
@@ -25,20 +26,20 @@ export const LOG_ICONS: Record<string, string> = {
 };
 
 export const LOG_COLORS: Record<string, string> = {
-  "request_created": "green",
-  "request.created": "green",
-  "plan_approved": "blue",
-  "plan.approved": "blue",
-  "plan.rejected": "red",
-  "execution_started": "yellow",
-  "execution.started": "yellow",
-  "execution_completed": "green",
-  "execution.completed": "green",
-  "execution_failed": "red",
-  "execution.failed": "red",
-  "error": "red",
-  "unknown": "white",
-  "default": "white",
+  "request_created": TuiColorName.GREEN,
+  "request.created": TuiColorName.GREEN,
+  "plan_approved": TuiColorName.BLUE,
+  "plan.approved": TuiColorName.BLUE,
+  "plan.rejected": TuiColorName.RED,
+  "execution_started": TuiColorName.YELLOW,
+  "execution.started": TuiColorName.YELLOW,
+  "execution_completed": TuiColorName.GREEN,
+  "execution.completed": TuiColorName.GREEN,
+  "execution_failed": TuiColorName.RED,
+  "execution.failed": TuiColorName.RED,
+  "error": TuiColorName.RED,
+  "unknown": TuiColorName.WHITE,
+  "default": TuiColorName.WHITE,
 };
 
 export const MONITOR_REFRESH_INTERVAL_MS = 1000;

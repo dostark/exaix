@@ -12,7 +12,7 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
+import { ActivityActor, MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import { DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
 import {
@@ -76,7 +76,7 @@ export class SkillsService implements ISkillsService {
   // Initialize skills directory structure
   async initialize(): Promise<void> {
     this.skillsDir = join(this.config.memoryDir, "Skills");
-    const globalDir = join(this.skillsDir, "global");
+    const globalDir = join(this.skillsDir, MemoryScope.GLOBAL);
     const coreDir = join(this.skillsDir, "core");
     const learnedDir = join(this.skillsDir, "learned");
     const projectDir = join(this.skillsDir, "project");
@@ -175,7 +175,7 @@ export class SkillsService implements ISkillsService {
     // Determine path
     const fileName = `${newSkill.skill_id}.json`;
     const skillPath = newSkill.scope === MemoryScope.GLOBAL
-      ? join(this.skillsDir!, "global", fileName)
+      ? join(this.skillsDir!, MemoryScope.GLOBAL, fileName)
       : join(this.projectSkillsDir!, fileName);
 
     await this.writeSkillToFile(newSkill, skillPath);
@@ -510,7 +510,7 @@ export class SkillsService implements ISkillsService {
     }
 
     // 2. Check global skills
-    const globalPath = join(this.skillsDir!, "global", `${skillId}.json`);
+    const globalPath = join(this.skillsDir!, MemoryScope.GLOBAL, `${skillId}.json`);
     if (await exists(globalPath)) return globalPath;
 
     return null;
@@ -599,7 +599,7 @@ export class SkillsService implements ISkillsService {
     metadata?: Record<string, JSONValue>;
   }): void {
     this.db.logActivity(
-      "system",
+      ActivityActor.SYSTEM,
       event.event_type,
       event.target,
       toSafeJson(event.metadata || {}) as JSONObject,

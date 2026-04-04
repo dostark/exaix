@@ -12,6 +12,7 @@ import type { DatabaseService } from "../core/db.ts";
 import type { IFlowResult } from "../../flows/flow_runner.ts";
 import type { IFlow } from "../../shared/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../../shared/constants.ts";
+import { ActivityActor } from "../../shared/enums.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 
 // ============================================================================
@@ -306,7 +307,7 @@ export class FlowReporter {
     const fileName = reportPath.split("/").pop() || reportPath;
 
     this.reportConfig.db.logActivity(
-      "system",
+      ActivityActor.SYSTEM,
       "flow.report.generated",
       flow.id,
       {
@@ -332,7 +333,7 @@ export class FlowReporter {
     if (!this.reportConfig.db) return;
 
     this.reportConfig.db.logActivity(
-      "system",
+      ActivityActor.SYSTEM,
       "flow.report.failed",
       flow.id,
       {

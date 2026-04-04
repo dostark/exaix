@@ -8,7 +8,7 @@
 
 import { MessageType } from "../../shared/enums.ts";
 import type { IPane, ITuiView } from "../tui_dashboard.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "../helpers/constants.ts";
+import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
 
 export const getLayoutFile = () => `${Deno.env.get("HOME")}/.exaix/tui_layout.json`;
 
@@ -77,7 +77,7 @@ export async function restoreLayout(
           maximized: p.maximized ?? false,
         });
       }
-      const activePaneId = layout.activePaneId || panes[0]?.id || "main";
+      const activePaneId = layout.activePaneId || panes[0]?.id || TUI_MAIN_PANE_ID;
       addNotification("Layout restored", "SUCCESS");
       return { activePaneId };
     }
@@ -95,7 +95,7 @@ export function resetToDefault(
 ): string {
   panes.length = 0;
   panes.push({
-    id: "main",
+    id: TUI_MAIN_PANE_ID,
     view: views[0],
     flexX: 0,
     flexY: 0,
@@ -109,7 +109,7 @@ export function resetToDefault(
     maximized: false,
   });
   addNotification("Layout reset to default", MessageType.INFO);
-  return "main";
+  return TUI_MAIN_PANE_ID;
 }
 
 export default { getLayoutFile, saveLayout, restoreLayout, resetToDefault };

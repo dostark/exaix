@@ -8,7 +8,7 @@
 
 import { colorize, type ITuiTheme } from "./colors.ts";
 import { renderLayoutPresetListLines } from "./layout_rendering.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "./constants.ts";
+import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "./constants.ts";
 import { ResizeDirection, SplitDirection } from "../../shared/enums.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 
@@ -69,7 +69,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
     icon: "□",
     shortcut: "1",
     create: (width, height, views) => [{
-      id: "main",
+      id: TUI_MAIN_PANE_ID,
       viewName: views[0] || "PortalManagerView",
       x: 0,
       y: 0,
@@ -197,7 +197,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       const mainWidth = Math.floor(width * 0.7);
       return [
         {
-          id: "main",
+          id: TUI_MAIN_PANE_ID,
           viewName: views[0] || "PortalManagerView",
           x: 0,
           y: 0,
@@ -228,7 +228,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       const halfHeight = Math.floor(height / 2);
       return [
         {
-          id: "main",
+          id: TUI_MAIN_PANE_ID,
           viewName: views[0] || "PortalManagerView",
           x: 0,
           y: 0,

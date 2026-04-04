@@ -11,8 +11,8 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
-import { ActivityActor, LogLevel } from "../../shared/enums.ts";
-import { PORTAL_PREFIX_PATTERN } from "../../shared/constants.ts";
+import { ActivityActor, GitBranchName, LogLevel } from "../../shared/enums.ts";
+import { DEFAULT_MCP_IDENTITY_ID, PORTAL_PREFIX_PATTERN } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
@@ -161,7 +161,13 @@ function validateGitArguments(args: string[]): { valid: boolean; reason?: string
   }
 
   // Protect system branches from direct checkout/modification
-  const protectedBranches = ["main", "master", "develop", "prod", "production"];
+  const protectedBranches: string[] = [
+    GitBranchName.MAIN,
+    GitBranchName.MASTER,
+    GitBranchName.DEVELOP,
+    GitBranchName.PROD,
+    GitBranchName.PRODUCTION,
+  ];
   if (args.includes("checkout") || args.includes("branch")) {
     if (args.some((arg) => protectedBranches.includes(arg.toLowerCase()))) {
       return {
@@ -273,7 +279,7 @@ export class ToolRegistry implements IToolRegistry {
     this.db = ctx?.db || options?.db;
 
     this.traceId = options?.traceId ?? "tool-registry";
-    this.identityId = options?.identityId ?? "system";
+    this.identityId = options?.identityId ?? DEFAULT_MCP_IDENTITY_ID;
     // Default baseDir to system root if not provided. Resolve it to ensure absolute path.
     this.baseDir = options?.baseDir ? resolve(options.baseDir) : resolve(this.config.system.root);
 

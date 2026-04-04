@@ -13,6 +13,7 @@
  */
 
 import type { Config } from "../../shared/schemas/config.ts";
+import { MemoryScope } from "../../shared/enums.ts";
 import { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
@@ -73,7 +74,7 @@ export class NotificationService implements INotificationService {
     // Log to IActivity Journal
     this.logActivity({
       event_type: "memory.update.pending",
-      target: proposal.target_project || "global",
+      target: proposal.target_project || MemoryScope.GLOBAL,
       metadata: {
         proposal_id: proposal.id,
         identity_id: proposal.identity_id,

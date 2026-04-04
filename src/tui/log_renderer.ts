@@ -17,7 +17,7 @@ import {
 } from "../shared/constants.ts";
 import { colorize, type ITuiTheme } from "./helpers/colors.ts";
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
-import { LogLevel } from "../shared/enums.ts";
+import { LogLevel, TuiColorName } from "../shared/enums.ts";
 
 /**
  * Log rendering options
@@ -329,17 +329,17 @@ export function renderLogSummary(entries: IStructuredLogEntry[], options: Partia
 function getLevelInfo(level: LogLevel): { icon: string; color: string } {
   switch (level as LogLevel) {
     case LogLevel.FATAL:
-      return { icon: "💥", color: "magenta" };
+      return { icon: "💥", color: TuiColorName.MAGENTA };
     case LogLevel.ERROR:
-      return { icon: "❌", color: "red" };
+      return { icon: "❌", color: TuiColorName.RED };
     case LogLevel.WARN:
-      return { icon: "⚠️", color: "yellow" };
+      return { icon: "⚠️", color: TuiColorName.YELLOW };
     case LogLevel.INFO:
-      return { icon: "ℹ️", color: "blue" };
+      return { icon: "ℹ️", color: TuiColorName.BLUE };
     case LogLevel.DEBUG:
-      return { icon: "🔍", color: "gray" };
+      return { icon: "🔍", color: TuiColorName.GRAY };
     default:
-      return { icon: "📋", color: "white" };
+      return { icon: "📋", color: TuiColorName.WHITE };
   }
 }
 

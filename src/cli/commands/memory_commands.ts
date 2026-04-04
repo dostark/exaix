@@ -488,7 +488,7 @@ export class MemoryCommands extends BaseCommand {
 
       await this.extractor.approvePending(proposalId);
       return `Proposal approved successfully.\nID: ${proposalId}\nTitle: ${proposal.learning.title}\nMerged to: ${
-        proposal.target_project || "global"
+        proposal.target_project || MemoryScope.GLOBAL
       }`;
     } catch (error) {
       return `Error: ${(error as Error).message}`;

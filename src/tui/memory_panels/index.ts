@@ -13,6 +13,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
 } from "../../shared/schemas/memory_bank.ts";
+import { MemoryScope } from "../../shared/enums.ts";
 import { ANSI } from "../helpers/colors.ts";
 import {
   TUI_DETAIL_MAX_OVERVIEW_CHARS,
@@ -382,7 +383,7 @@ export function renderSearchPanel(
     const reset = useColors ? MemoryColors.reset : "";
 
     lines.push(`${selected} ${typeColor}[${result.type}]${reset} ${result.title}`);
-    lines.push(`    Score: ${score} | Portal: ${result.portal ?? "global"}`);
+    lines.push(`    Score: ${score} | Portal: ${result.portal ?? MemoryScope.GLOBAL}`);
   }
 
   if (results.length > limit) {

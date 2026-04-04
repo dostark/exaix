@@ -100,6 +100,18 @@ export enum DataFormat {
 }
 
 /**
+ * Canonical git/default branch names used across services.
+ */
+export enum GitBranchName {
+  MAIN = "main",
+  MASTER = "master",
+  DEVELOP = "develop",
+  DEVELOPMENT = "development",
+  PROD = "prod",
+  PRODUCTION = "production",
+}
+
+/**
  * Memory type classifications.
  */
 export enum MemoryType {
@@ -756,6 +768,19 @@ export enum LogLevel {
   ERROR = "error",
   /** Critical errors requiring immediate attention */
   FATAL = "fatal",
+}
+
+/**
+ * Canonical color tokens used by TUI log/status mappings.
+ */
+export enum TuiColorName {
+  RED = "red",
+  GREEN = "green",
+  YELLOW = "yellow",
+  BLUE = "blue",
+  WHITE = "white",
+  GRAY = "gray",
+  MAGENTA = "magenta",
 }
 
 /**

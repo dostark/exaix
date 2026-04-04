@@ -37,6 +37,7 @@ import {
   RequestOperation,
   RequestPriority,
   RequestSource,
+  TuiNodeType,
 } from "../shared/enums.ts";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 
@@ -421,7 +422,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       return createGroupNode(
         `status-${status}`,
         `${icon} ${status} (${reqs.length})`,
-        "group",
+        TuiNodeType.GROUP,
         reqs.map((r) => this.createRequestNode(r)),
         { expanded: true },
       );
@@ -446,7 +447,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
         return createGroupNode(
           `priority-${priority}`,
           `${icon} ${priority} (${reqs.length})`,
-          "group",
+          TuiNodeType.GROUP,
           reqs.map((r) => this.createRequestNode(r)),
           { expanded: true },
         );
@@ -465,7 +466,7 @@ export class RequestManagerTuiSession extends TuiSessionBase {
       return createGroupNode(
         `identity-${identity}`,
         `👤 ${identity} (${reqs.length})`,
-        "group",
+        TuiNodeType.GROUP,
         reqs.map((r) => this.createRequestNode(r)),
         { expanded: true },
       );

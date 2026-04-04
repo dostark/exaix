@@ -8,6 +8,7 @@
 
 import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";
 import type { IMemoryBankSummary } from "../memory_types.ts";
+import { MemoryScope } from "../../shared/enums.ts";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -620,7 +621,7 @@ export class MemoryFormatter {
       const id = proposal.id.substring(0, CLI_TRUNCATE_ID_LONG);
       const title = proposal.learning.title.substring(0, CLI_TRUNCATE_TITLE_SHORT).padEnd(30);
       const category = proposal.learning.category.padEnd(15);
-      const scope = proposal.target_project || "global";
+      const scope = proposal.target_project || MemoryScope.GLOBAL;
       lines.push(`${id}  ${title}${category}${scope}`);
     }
 
@@ -642,7 +643,7 @@ export class MemoryFormatter {
       const id = proposal.id.substring(0, CLI_TRUNCATE_ID_SHORT) + "...";
       const title = proposal.learning.title.substring(0, 30);
       const category = proposal.learning.category;
-      const scope = proposal.target_project || "global";
+      const scope = proposal.target_project || MemoryScope.GLOBAL;
       const created = proposal.created_at.substring(0, 10);
       lines.push(`| ${id} | ${title} | ${category} | ${scope} | ${created} |`);
     }

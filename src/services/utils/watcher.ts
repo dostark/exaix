@@ -11,6 +11,7 @@ import type { Config } from "../../shared/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { EventLogger } from "../core/event_logger.ts";
 import {
+  DEFAULT_UNKNOWN_LABEL,
   DEFAULT_WATCHER_STABILITY_BACKOFF_MS,
   DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS,
 } from "../../shared/constants.ts";
@@ -123,7 +124,7 @@ export class FileWatcher {
     } catch (error) {
       // Log watcher error
       await this.logger.error("watcher.error", this.watchPath, {
-        error_type: error instanceof Error ? error.constructor.name : "Unknown",
+        error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
       });
 
@@ -233,7 +234,7 @@ export class FileWatcher {
     } catch (error) {
       // Log file processing error
       await this.logger.warn("watcher.file_error", path, {
-        error_type: error instanceof Error ? error.constructor.name : "Unknown",
+        error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
       });
     }

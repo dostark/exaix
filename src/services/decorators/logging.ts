@@ -6,6 +6,7 @@
  * * @related-files [src/services/core/event_logger.ts]
  */
 import { EventLogger } from "../core/event_logger.ts";
+import { DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
 import { toSafeJson } from "../../shared/types/json.ts";
 export function LogMethod(logger: EventLogger, action?: string) {
   return function <This, Args extends unknown[], Return>(
@@ -16,7 +17,7 @@ export function LogMethod(logger: EventLogger, action?: string) {
 
     return async function (this: This, ...args: Args): Promise<Return> {
       const constructor = (this as { constructor?: { name?: string } }).constructor;
-      const className = constructor?.name || "Unknown";
+      const className = constructor?.name || DEFAULT_UNKNOWN_LABEL;
       const actionName = action || `${className}.${methodName}`;
       const startTime = typeof performance !== "undefined" ? performance.now() : Date.now();
 

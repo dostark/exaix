@@ -38,6 +38,7 @@ import { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
 import { IStructuredLogger } from "../../shared/interfaces/i_log_service.ts";
 import { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
 import { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
+import { TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
 import { IRequestService } from "../../shared/interfaces/i_request_service.ts";
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { type Config } from "../../shared/schemas/config.ts";
@@ -184,7 +185,7 @@ export function initDashboardViews(
       if (v.name === "PortalManagerView") {
         v.getFocusableElements = () => ["portal-list", "action-buttons", "status-bar"];
       } else {
-        v.getFocusableElements = () => ["main"];
+        v.getFocusableElements = () => [TUI_MAIN_PANE_ID];
       }
     }
     return v;

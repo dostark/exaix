@@ -14,6 +14,7 @@ import {
   MessageType,
   SkillGroupingMode,
   SkillStatus,
+  TuiNodeType,
 } from "../shared/enums.ts";
 import { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
@@ -443,7 +444,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
           createGroupNode<ISkillSummary>(
             `group-${key}`,
             label,
-            "group",
+            TuiNodeType.GROUP,
             groupSkills.map((s) => this.createSkillNode(s)),
             { expanded: true },
           ),
