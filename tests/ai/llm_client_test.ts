@@ -6,7 +6,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { LlmClient } from "../../src/ai/llm_client.ts";
 import { IBlueprintFrontmatter } from "../../src/shared/schemas/blueprint.ts";
-import { McpToolName } from "../../src/shared/enums.ts";
+import { McpToolName, ToolName } from "../../src/shared/enums.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
 import { IModelProvider } from "../../src/ai/types.ts";
 
@@ -128,7 +128,7 @@ Deno.test("LlmClient - parses code blocks containing JSON", async () => {
   injectMockProvider(
     "```json\n" + JSON.stringify({
       reasoning: "code block",
-      action: { type: "tool_call", tool: "list_directory", args: {} },
+      action: { type: "tool_call", tool: ToolName.LIST_DIRECTORY, args: {} },
     }) + "\n```",
   );
 
@@ -138,7 +138,7 @@ Deno.test("LlmClient - parses code blocks containing JSON", async () => {
     stepObjective: "Test",
     accumulatedContext: "",
     availableTools: [
-      { name: "list_directory", description: "List dir", inputSchema: {} },
+      { name: ToolName.LIST_DIRECTORY, description: "List dir", inputSchema: {} },
     ],
     iteration: 1,
     maxIterations: 10,

@@ -14,7 +14,7 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
-import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
+import { McpToolName, MemoryOperation, PortalOperation, SecurityMode, ToolName } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
 import {
   AgentExecutionError,
@@ -1438,7 +1438,7 @@ Deno.test({
     const { db, logger, pathResolver, permissions } = getServices();
     const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
 
-    const writeBlueprint: any = { capabilities: ["git_commit", "write_file"] };
+    const writeBlueprint: any = { capabilities: ["git_commit", ToolName.WRITE_FILE] };
     const readBlueprint: any = { capabilities: ["file_read", "terminal_read"] };
 
     assertEquals(executor.requiresGitTracking(writeBlueprint), true);

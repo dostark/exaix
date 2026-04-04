@@ -7,7 +7,6 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { McpToolName, McpTransportType } from "../../src/shared/enums.ts";
-import { TOTAL_MCP_TOOLS } from "../../src/shared/constants.ts";
 import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup.ts";
 
 /**
@@ -76,9 +75,11 @@ Deno.test("MCP Server: handles tools/list request", async () => {
     assertExists(result.tools);
     assertEquals(Array.isArray(result.tools), true);
 
-    // Phase 4 + Phase 25: Should have consistent tool count
-    // Note: McpToolName.GIT is reserved but not yet implemented, so expect TOTAL_MCP_TOOLS - 1
-    assertEquals(result.tools.length, TOTAL_MCP_TOOLS - 1);
+    // Registry excludes reserved/unimplemented enum entries.
+    const expectedRegistered = Object.values(McpToolName).filter(
+      (tool) => tool !== McpToolName.GIT && tool !== McpToolName.FETCH_URL,
+    ).length;
+    assertEquals(result.tools.length, expectedRegistered);
     const toolNames = result.tools.map((t: { name: string }) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));

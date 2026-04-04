@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { ToolName } from "../../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry - Relative Path Access in Portal via baseDir", async () => {
   const portalDir = await Deno.makeTempDir({ prefix: "verif-portal-" });
@@ -37,7 +38,7 @@ Deno.test("ToolRegistry - Relative Path Access in Portal via baseDir", async () 
     // Attempt to write a file using a RELATIVE path
     // This simulates an agent saying 'write_file("src/utils.ts", ...)' while inside the portal
     const relativePath = "src/utils.ts";
-    const result = await registry.execute("write_file", {
+    const result = await registry.execute(ToolName.WRITE_FILE, {
       path: relativePath,
       content: "const a = 1;",
     });

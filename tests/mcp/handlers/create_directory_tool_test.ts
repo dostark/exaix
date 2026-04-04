@@ -6,7 +6,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CreateDirectoryTool } from "../../../src/mcp/handlers/create_directory_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
-import { PortalOperation } from "../../../src/shared/enums.ts";
+import { McpToolName, PortalOperation } from "../../../src/shared/enums.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { join } from "@std/path";
@@ -96,7 +96,7 @@ Deno.test("CreateDirectoryTool: getToolDefinition returns correct definition", (
   const handler = new CreateDirectoryTool(context);
   const def = handler.getToolDefinition();
 
-  assertEquals(def.name, "create_directory");
+  assertEquals(def.name, McpToolName.CREATE_DIRECTORY);
   assertEquals(Array.isArray(def.inputSchema.required), true);
   assertStringIncludes(def.inputSchema.required.join(), "portal");
   assertStringIncludes(def.inputSchema.required.join(), "path");

@@ -19,6 +19,7 @@ import {
   setupWorktreePortalRepo,
   withSingleWorktreePortal,
 } from "./helpers/worktree_portal_test_utils.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 async function setupPortalWorktreeExecutionLoop(env: TestEnvironment) {
   const portalAlias = "worktree-portal";
@@ -53,7 +54,7 @@ Deno.test(
         targetBranch,
         actions: [
           {
-            tool: "write_file",
+            tool: ToolName.WRITE_FILE,
             params: {
               path: "src/worktree_A.ts",
               content: `export const A = ${JSON.stringify("A")};\n`,
@@ -71,7 +72,7 @@ Deno.test(
         targetBranch,
         actions: [
           {
-            tool: "write_file",
+            tool: ToolName.WRITE_FILE,
             params: {
               path: "src/worktree_B.ts",
               content: `export const B = ${JSON.stringify("B")};\n`,
@@ -153,7 +154,7 @@ Deno.test(
         targetBranch: badBaseBranch,
         actions: [
           {
-            tool: "write_file",
+            tool: ToolName.WRITE_FILE,
             params: {
               path: "src/should_not_write.ts",
               content: "export const nope = true;\n",

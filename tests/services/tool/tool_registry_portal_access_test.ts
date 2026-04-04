@@ -10,6 +10,7 @@ import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { ToolName } from "../../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry should allow access to portal targets", async () => {
   const portalDir = await Deno.makeTempDir({ prefix: "portal-target-" });
@@ -32,7 +33,7 @@ Deno.test("ToolRegistry should allow access to portal targets", async () => {
     const registry = new ToolRegistry({ config });
 
     // 1. Write to workspace should succeed (baseline)
-    const workspaceRes = await registry.execute("write_file", {
+    const workspaceRes = await registry.execute(ToolName.WRITE_FILE, {
       path: join(workspaceDir, "test.txt"),
       content: "workspace content",
     });
@@ -40,7 +41,7 @@ Deno.test("ToolRegistry should allow access to portal targets", async () => {
 
     // 2. Write to portal target should succeed
     const portalFile = join(portalDir, "portal.txt");
-    const portalRes = await registry.execute("write_file", {
+    const portalRes = await registry.execute(ToolName.WRITE_FILE, {
       path: portalFile,
       content: "portal content",
     });

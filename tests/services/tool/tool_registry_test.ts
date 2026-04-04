@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { LearningCategory, McpToolName, PortalOperation } from "../../../src/shared/enums.ts";
+import { LearningCategory, McpToolName, PortalOperation, ToolName } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
 
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
@@ -216,7 +216,7 @@ async function runToolRegistryTest(fn: (registry: ToolRegistry, tempDir: string)
 Deno.test("ToolRegistry: should create directory", async () => {
   await runToolRegistryTest(async (registry, tempDir) => {
     const testDir = "Workspace/new-dir/nested";
-    const result = await registry.execute("create_directory", { path: testDir });
+    const result = await registry.execute(ToolName.CREATE_DIRECTORY, { path: testDir });
 
     assert(result.success);
     assert((await Deno.stat(join(tempDir, testDir))).isDirectory);
@@ -227,12 +227,12 @@ Deno.test("ToolRegistry: should write and read files", async () => {
   await runToolRegistryTest(async (registry, tempDir) => {
     const filePath = "Workspace/test.txt";
     const content = "Hello World";
-    const writeResult = await registry.execute("write_file", { path: filePath, content });
+    const writeResult = await registry.execute(ToolName.WRITE_FILE, { path: filePath, content });
 
     assert(writeResult.success);
     assertEquals((writeResult.data as { path: string }).path, join(tempDir, filePath));
 
-    const readResult = await registry.execute("read_file", { path: filePath });
+    const readResult = await registry.execute(ToolName.READ_FILE, { path: filePath });
     assert(readResult.success);
     assertEquals((readResult.data as { content: string }).content, content);
   });
@@ -240,11 +240,11 @@ Deno.test("ToolRegistry: should write and read files", async () => {
 
 Deno.test("ToolRegistry: should list directory contents", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    await registry.execute("write_file", { path: "Workspace/file1.txt", content: "1" });
-    await registry.execute("create_directory", { path: "Workspace/subdir" });
-    await registry.execute("write_file", { path: "Workspace/subdir/file2.txt", content: "2" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/file1.txt", content: "1" });
+    await registry.execute(ToolName.CREATE_DIRECTORY, { path: "Workspace/subdir" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/subdir/file2.txt", content: "2" });
 
-    const listResult = await registry.execute("list_directory", { path: "Workspace" });
+    const listResult = await registry.execute(ToolName.LIST_DIRECTORY, { path: "Workspace" });
     assert(listResult.success);
     const entries = (listResult.data as { entries: Array<{ name: string; isDirectory: boolean }> }).entries;
 
@@ -255,13 +255,13 @@ Deno.test("ToolRegistry: should list directory contents", async () => {
 
 Deno.test("ToolRegistry: should search files", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    await registry.execute("create_directory", { path: "Workspace/src" });
+    await registry.execute(ToolName.CREATE_DIRECTORY, { path: "Workspace/src" });
 
-    await registry.execute("write_file", { path: "Workspace/src/main.ts", content: "console.log('main')" });
-    await registry.execute("write_file", { path: "Workspace/src/utils.ts", content: "export const util = 1" });
-    await registry.execute("write_file", { path: "Workspace/readme.md", content: "# Readme" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/src/main.ts", content: "console.log('main')" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/src/utils.ts", content: "export const util = 1" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "Workspace/readme.md", content: "# Readme" });
 
-    const searchResult = await registry.execute("search_files", { path: "Workspace", pattern: "**/*.ts" });
+    const searchResult = await registry.execute(ToolName.SEARCH_FILES, { path: "Workspace", pattern: "**/*.ts" });
     assert(searchResult.success);
     const files = (searchResult.data as { files: string[] }).files;
 
@@ -274,7 +274,7 @@ Deno.test("ToolRegistry: should search files", async () => {
 
 Deno.test("ToolRegistry: should handle missing files gracefully", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    const result = await registry.execute("read_file", { path: "nonexistent.txt" });
+    const result = await registry.execute(ToolName.READ_FILE, { path: "nonexistent.txt" });
     assert(!result.success);
     assert(result.error?.includes("not found") || result.error?.includes("outside allowed roots"));
   });
@@ -282,7 +282,7 @@ Deno.test("ToolRegistry: should handle missing files gracefully", async () => {
 
 Deno.test("ToolRegistry: should prevent path traversal", async () => {
   await runToolRegistryTest(async (registry, _tempDir) => {
-    const result = await registry.execute("read_file", { path: "../secret.txt" });
+    const result = await registry.execute(ToolName.READ_FILE, { path: "../secret.txt" });
     assert(!result.success);
     assert(result.error?.includes("Access denied") || result.error?.includes("outside allowed roots"));
   });

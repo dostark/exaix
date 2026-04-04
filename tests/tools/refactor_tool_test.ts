@@ -8,18 +8,22 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: refactoring tools", async (t) => {
   const tempDir = await Deno.makeTempDir();
   const registry = createToolRegistryForTests(tempDir);
 
-  await t.step("move_file", async (t) => {
+  await t.step(ToolName.MOVE_FILE, async (t) => {
     const src = join(tempDir, "move_src.txt");
     const dest = join(tempDir, "move_dest.txt");
     await Deno.writeTextFile(src, "content");
 
     await t.step("moves file successfully", async () => {
-      const result = await registry.execute("move_file", { source: "move_src.txt", destination: "move_dest.txt" });
+      const result = await registry.execute(ToolName.MOVE_FILE, {
+        source: "move_src.txt",
+        destination: "move_dest.txt",
+      });
       assertEquals(result.success, true);
       assertEquals(await Deno.readTextFile(dest), "content");
       await assertRejects(() => Deno.stat(src));
@@ -28,7 +32,7 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
     await t.step("fails if destination exists and overwrite=false", async () => {
       // dest exists from previous step
       await Deno.writeTextFile(src, "new content");
-      const result = await registry.execute("move_file", {
+      const result = await registry.execute(ToolName.MOVE_FILE, {
         source: "move_src.txt",
         destination: "move_dest.txt",
         overwrite: false,
@@ -38,7 +42,7 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
     });
 
     await t.step("overwrites if overwrite=true", async () => {
-      const result = await registry.execute("move_file", {
+      const result = await registry.execute(ToolName.MOVE_FILE, {
         source: "move_src.txt",
         destination: "move_dest.txt",
         overwrite: true,
@@ -48,20 +52,23 @@ Deno.test("ToolRegistry: refactoring tools", async (t) => {
     });
   });
 
-  await t.step("copy_file", async (t) => {
+  await t.step(ToolName.COPY_FILE, async (t) => {
     const src = join(tempDir, "copy_src.txt");
     const dest = join(tempDir, "copy_dest.txt");
     await Deno.writeTextFile(src, "copy me");
 
     await t.step("copies file successfully", async () => {
-      const result = await registry.execute("copy_file", { source: "copy_src.txt", destination: "copy_dest.txt" });
+      const result = await registry.execute(ToolName.COPY_FILE, {
+        source: "copy_src.txt",
+        destination: "copy_dest.txt",
+      });
       assertEquals(result.success, true);
       assertEquals(await Deno.readTextFile(dest), "copy me");
       assertEquals(await Deno.readTextFile(src), "copy me"); // Source still exists
     });
 
     await t.step("fails if destination exists and overwrite=false", async () => {
-      const result = await registry.execute("copy_file", {
+      const result = await registry.execute(ToolName.COPY_FILE, {
         source: "copy_src.txt",
         destination: "copy_dest.txt",
         overwrite: false,

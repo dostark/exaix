@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { stub } from "@std/testing/mock";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: E2E Workflow", async (t) => {
   const tempDir = await Deno.makeTempDir();
@@ -48,7 +49,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
     assertEquals(files[0].file, "main.ts");
 
     // Search for TODOs
-    const todos = await registry.execute("grep_search", { pattern: "TODO", path: "." });
+    const todos = await registry.execute(ToolName.GREP_SEARCH, { pattern: "TODO", path: "." });
     assertEquals(todos.success, true);
     const matches = todos.data as Array<{ file: string; line: number; content: string }>;
     assertEquals(matches.length, 1);
@@ -65,7 +66,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
     );
 
     try {
-      const docs = await registry.execute("fetch_url", { url: "https://example.com/spec" });
+      const docs = await registry.execute(ToolName.FETCH_URL, { url: "https://example.com/spec" });
       assertEquals(docs.success, true);
       assertEquals((docs.data as { content: string }).content, "Greeting Spec: Use 'Hello World'");
     } finally {
@@ -75,7 +76,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
 
   await t.step("Agent implements feature", async () => {
     // Patch file
-    const patch = await registry.execute("patch_file", {
+    const patch = await registry.execute(ToolName.PATCH_FILE, {
       path: "main.ts",
       patches: [
         { search: 'console.log("...");', replace: 'console.log("Hello World");' },
@@ -99,7 +100,7 @@ Deno.test("ToolRegistry: E2E Workflow", async (t) => {
 
   await t.step("Agent refactors", async () => {
     // Move file
-    const move = await registry.execute("move_file", { source: "main.ts", destination: "src/main.ts" });
+    const move = await registry.execute(ToolName.MOVE_FILE, { source: "main.ts", destination: "src/main.ts" });
     assertEquals(move.success, true);
 
     const stat = await Deno.stat(join(tempDir, "src/main.ts"));

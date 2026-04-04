@@ -8,6 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: grep_search", async (t) => {
   // Setup temp directory with fixtures
@@ -35,7 +36,7 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
   });
 
   await t.step("finds pattern in files", async () => {
-    const result = await registry.execute("grep_search", { pattern: "foo", path: "." });
+    const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "foo", path: "." });
     assertEquals(result.success, true);
     // Should match file1.ts (2 matches if we count literal 'foo' but regex might match differently depending on pattern)
     // grep 'foo' matches 'foo' substring
@@ -57,7 +58,7 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
   });
 
   await t.step("respects exclude_dirs", async () => {
-    const result = await registry.execute("grep_search", { pattern: "hidden", path: "." });
+    const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "hidden", path: "." });
     assertEquals(result.success, true); // grep returns exit code 1 if not found, logic handles it?
     // Wait, implementation says: if (code !== 0 && code !== 1) return error.
     // If no matches (code 1), it returns matches: [].
@@ -70,14 +71,14 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
     // Tool default param is caseSensitive=true, but test wrapper might use default.
     // Let's check logic: args default to caseSensitive=true.
     // Test with explicit parameter.
-    const result = await registry.execute("grep_search", { pattern: "FOO", path: ".", case_sensitive: false });
+    const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "FOO", path: ".", case_sensitive: false });
     assertEquals(result.success, true);
     const matches = result.data as unknown[];
     assertEquals(matches.length > 0, true);
   });
 
   await t.step("case sensitive enforcement", async () => {
-    const result = await registry.execute("grep_search", { pattern: "FOO", path: ".", case_sensitive: true });
+    const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "FOO", path: ".", case_sensitive: true });
     assertEquals(result.success, true);
     const matches = result.data as unknown[];
     assertEquals(matches.length, 0);

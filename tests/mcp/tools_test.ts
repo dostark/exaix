@@ -7,7 +7,6 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
-import { TOTAL_MCP_TOOLS } from "../../src/shared/constants.ts";
 
 import { join } from "@std/path";
 import {
@@ -162,8 +161,10 @@ Deno.test("read_file: read_file appears in tools/list", async () => {
 
     assertExists(response.result);
     const result = response.result as { tools: Array<{ name: string; description: string }> };
-    // Note: McpToolName.GIT is reserved but not yet implemented, so expect TOTAL_MCP_TOOLS - 1
-    assertEquals(result.tools.length, TOTAL_MCP_TOOLS - 1);
+    const expectedRegistered = Object.values(McpToolName).filter(
+      (tool) => tool !== McpToolName.GIT && tool !== McpToolName.FETCH_URL,
+    ).length;
+    assertEquals(result.tools.length, expectedRegistered);
     const toolNames = result.tools.map((t) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));

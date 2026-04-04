@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
-import { ExecutionStrategyName, SecurityMode } from "../../src/shared/enums.ts";
+import { ExecutionStrategyName, SecurityMode, ToolName } from "../../src/shared/enums.ts";
 import { Config } from "../../src/shared/schemas/config.ts";
 import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "../../src/shared/constants.ts";
 
@@ -93,7 +93,7 @@ const mockExecutor = {
   toolRegistry: {
     execute: async (tool: string, params: any) => {
       await Promise.resolve();
-      if (tool === "write_file") {
+      if (tool === ToolName.WRITE_FILE) {
         return { success: true, data: `Wrote ${params.path}` };
       }
       return { success: false, error: "Unknown tool" };

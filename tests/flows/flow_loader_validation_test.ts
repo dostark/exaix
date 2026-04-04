@@ -7,7 +7,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
 import { join } from "@std/path";
-import { McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
+import { McpToolName, StepExecutionMode, ToolName } from "../../src/shared/enums.ts";
 
 /**
  * Tests for Phase 56 Step 2: FlowLoader Validation Layer
@@ -67,7 +67,7 @@ steps:
     // Should fail validation with write tool error
     assertStringIncludes(
       error?.message ?? "",
-      "write_file",
+      ToolName.WRITE_FILE,
       "Error should mention the write tool",
     );
     assertStringIncludes(

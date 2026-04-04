@@ -16,6 +16,7 @@ import { PortalPermissionsService } from "../../../src/services/portal/portal_pe
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
+import { ToolName } from "../../../src/shared/enums.ts";
 
 /**
  * TDD Tests for Agent Capability Differentiation
@@ -60,7 +61,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "code-analyst",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "list_files", "search_code"],
+        capabilities: [ToolName.READ_FILE, "list_files", "search_code"],
         systemPrompt: "Analyze code",
       };
 
@@ -73,7 +74,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "feature-developer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "write_file", "list_files"],
+        capabilities: [ToolName.READ_FILE, ToolName.WRITE_FILE, "list_files"],
         systemPrompt: "Develop features",
       };
 
@@ -86,7 +87,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "commit-agent",
         model: "gpt-4o-mini",
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "git_commit"],
+        capabilities: [ToolName.READ_FILE, "git_commit"],
         systemPrompt: "Commit changes",
       };
 
@@ -99,7 +100,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "branch-agent",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "git_create_branch"],
+        capabilities: [ToolName.READ_FILE, "git_create_branch"],
         systemPrompt: "Create branches",
       };
 
@@ -112,7 +113,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "full-developer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "write_file", "git_commit", "git_create_branch"],
+        capabilities: [ToolName.READ_FILE, ToolName.WRITE_FILE, "git_commit", "git_create_branch"],
         systemPrompt: "Full development",
       };
 
@@ -125,7 +126,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "analyzer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "search_code", "list_files", "grep_search"],
+        capabilities: [ToolName.READ_FILE, "search_code", "list_files", ToolName.GREP_SEARCH],
         systemPrompt: "Analyze and search",
       };
 
@@ -166,7 +167,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "reader",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "list_files"],
+        capabilities: [ToolName.READ_FILE, "list_files"],
         systemPrompt: "Read only",
       };
 
@@ -179,7 +180,7 @@ describe("AgentExecutor Capability Differentiation", () => {
         name: "writer",
         model: TEST_MODEL_OPENAI,
         provider: PROVIDER_OPENAI,
-        capabilities: ["read_file", "write_file"],
+        capabilities: [ToolName.READ_FILE, ToolName.WRITE_FILE],
         systemPrompt: "Read and write",
       };
 

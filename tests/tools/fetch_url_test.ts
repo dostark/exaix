@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { ConfigSchema } from "../../src/shared/schemas/config.ts";
 import { stub } from "@std/testing/mock";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: fetch_url", async (t) => {
   // Mock config with fetch_url enabled
@@ -39,7 +40,7 @@ Deno.test("ToolRegistry: fetch_url", async (t) => {
     const fetchStub = stub(globalThis, "fetch", () => Promise.resolve(new Response("Hello World")));
 
     try {
-      const result = await registry.execute("fetch_url", { url: "https://example.com/docs" });
+      const result = await registry.execute(ToolName.FETCH_URL, { url: "https://example.com/docs" });
       assertEquals(result.success, true);
       assertEquals((result.data as { content: string })?.content, "Hello World");
     } finally {
@@ -48,7 +49,7 @@ Deno.test("ToolRegistry: fetch_url", async (t) => {
   });
 
   await t.step("blocks non-whitelisted domain", async () => {
-    const result = await registry.execute("fetch_url", { url: "https://evil.com/script.js" });
+    const result = await registry.execute(ToolName.FETCH_URL, { url: "https://evil.com/script.js" });
     assertEquals(result.success, false);
     assertEquals(result.error?.includes("not in the allowed whitelist"), true);
   });
@@ -59,7 +60,7 @@ Deno.test("ToolRegistry: fetch_url", async (t) => {
     );
 
     try {
-      const result = await registry.execute("fetch_url", { url: "https://example.com/large" });
+      const result = await registry.execute(ToolName.FETCH_URL, { url: "https://example.com/large" });
       assertEquals(result.success, false);
       assertEquals(result.error?.includes("exceeds maximum allowed size"), true);
     } finally {
@@ -84,13 +85,13 @@ Deno.test("ToolRegistry: fetch_url", async (t) => {
     });
     const disabledRegistry = new ToolRegistry({ config: disabledConfig });
 
-    const result = await disabledRegistry.execute("fetch_url", { url: "https://example.com" });
+    const result = await disabledRegistry.execute(ToolName.FETCH_URL, { url: "https://example.com" });
     assertEquals(result.success, false);
     assertEquals(result.error?.includes("disabled"), true);
   });
 
   await t.step("handles invalid url", async () => {
-    const result = await registry.execute("fetch_url", { url: "not-a-url" });
+    const result = await registry.execute(ToolName.FETCH_URL, { url: "not-a-url" });
     assertEquals(result.success, false);
     assertEquals(result.error, "Invalid URL format");
   });

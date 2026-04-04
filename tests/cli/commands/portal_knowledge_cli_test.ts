@@ -15,7 +15,7 @@ import type {
   IPortalKnowledgeService,
 } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
+import { PortalAnalysisMode, SystemCommand } from "../../../src/shared/enums.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
@@ -45,7 +45,7 @@ function makeKnowledge(alias = "my-portal"): IPortalKnowledge {
     ],
     dependencies: [
       {
-        packageManager: "deno",
+        packageManager: SystemCommand.DENO,
         configFile: "deno.json",
         keyDependencies: [{ name: "@std/assert", purpose: "Assertions" }],
       },

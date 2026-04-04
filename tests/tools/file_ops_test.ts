@@ -7,6 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: core file operations", async (t) => {
   const tempDir = await Deno.makeTempDir();
@@ -17,11 +18,11 @@ Deno.test("ToolRegistry: core file operations", async (t) => {
     const content = "Hello Exaix!";
 
     // Write
-    const writeResult = await registry.execute("write_file", { path: filePath, content });
+    const writeResult = await registry.execute(ToolName.WRITE_FILE, { path: filePath, content });
     assertEquals(writeResult.success, true);
 
     // Read
-    const readResult = await registry.execute("read_file", { path: filePath });
+    const readResult = await registry.execute(ToolName.READ_FILE, { path: filePath });
     assertEquals(readResult.success, true);
     assertEquals((readResult.data as { content: string })?.content, content);
   });
@@ -30,22 +31,22 @@ Deno.test("ToolRegistry: core file operations", async (t) => {
     const dirPath = "nested/dir";
 
     // Create
-    const createResult = await registry.execute("create_directory", { path: dirPath });
+    const createResult = await registry.execute(ToolName.CREATE_DIRECTORY, { path: dirPath });
     assertEquals(createResult.success, true);
 
     // List
-    const listResult = await registry.execute("list_directory", { path: "nested" });
+    const listResult = await registry.execute(ToolName.LIST_DIRECTORY, { path: "nested" });
     assertEquals(listResult.success, true);
     const data = listResult.data as { entries: { name: string; isDirectory: boolean }[] };
     assertEquals(data?.entries.some((e) => e.name === "dir" && e.isDirectory), true);
   });
 
-  await t.step("search_files", async () => {
-    await registry.execute("write_file", { path: "search1.ts", content: "" });
-    await registry.execute("write_file", { path: "search2.ts", content: "" });
-    await registry.execute("write_file", { path: "other.md", content: "" });
+  await t.step(ToolName.SEARCH_FILES, async () => {
+    await registry.execute(ToolName.WRITE_FILE, { path: "search1.ts", content: "" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "search2.ts", content: "" });
+    await registry.execute(ToolName.WRITE_FILE, { path: "other.md", content: "" });
 
-    const result = await registry.execute("search_files", { pattern: "*.ts", path: "." });
+    const result = await registry.execute(ToolName.SEARCH_FILES, { pattern: "*.ts", path: "." });
     assertEquals(result.success, true);
     const data = result.data as { files: string[] };
     assertEquals(data?.files.length >= 2, true);
@@ -55,7 +56,7 @@ Deno.test("ToolRegistry: core file operations", async (t) => {
 
   await t.step("security restrictions", async () => {
     // Rejects outside path
-    const result = await registry.execute("read_file", { path: "../outside.txt" });
+    const result = await registry.execute(ToolName.READ_FILE, { path: "../outside.txt" });
     assertEquals(result.success, false);
     assertEquals(result.error?.includes("Access denied"), true);
   });

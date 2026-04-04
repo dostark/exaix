@@ -9,6 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
+import { ToolName } from "../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry: patch_file", async (t) => {
   const tempDir = await Deno.makeTempDir();
@@ -24,7 +25,7 @@ Deno.test("ToolRegistry: patch_file", async (t) => {
   await Deno.writeTextFile(file, initialContent);
 
   await t.step("applies single patch (first occurrence)", async () => {
-    const result = await registry.execute("patch_file", {
+    const result = await registry.execute(ToolName.PATCH_FILE, {
       path: "test.ts",
       patches: [
         { search: 'console.log("Hello World");', replace: 'console.log("Goodbye World");' },
@@ -42,7 +43,7 @@ Deno.test("ToolRegistry: patch_file", async (t) => {
   });
 
   await t.step("applies multiple patches sequentially", async () => {
-    const result = await registry.execute("patch_file", {
+    const result = await registry.execute(ToolName.PATCH_FILE, {
       path: "test.ts",
       patches: [
         { search: "function hello()", replace: "function bye()" },
@@ -61,7 +62,7 @@ Deno.test("ToolRegistry: patch_file", async (t) => {
   });
 
   await t.step("fails if search string not found", async () => {
-    const result = await registry.execute("patch_file", {
+    const result = await registry.execute(ToolName.PATCH_FILE, {
       path: "test.ts",
       patches: [
         { search: "non-existent", replace: "foo" },

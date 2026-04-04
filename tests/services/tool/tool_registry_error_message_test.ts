@@ -9,6 +9,7 @@ import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.201.
 import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
+import { ToolName } from "../../../src/shared/enums.ts";
 
 Deno.test("ToolRegistry should include allowed roots in access denied error", async () => {
   const workspaceDir = await Deno.makeTempDir({ prefix: "workspace-" });
@@ -26,7 +27,7 @@ Deno.test("ToolRegistry should include allowed roots in access denied error", as
 
     // Try to write to a path outside valid roots
     const outsideFile = join(outsideDir, "test.txt");
-    const result = await registry.execute("write_file", {
+    const result = await registry.execute(ToolName.WRITE_FILE, {
       path: outsideFile,
       content: "content",
     });

@@ -4,6 +4,7 @@
  * @description Mock agent for testing MCP-based agent execution.
  */
 import { TextLineStream } from "@std/streams";
+import { ToolName } from "../../../src/shared/enums.ts";
 
 async function main() {
   console.error("DEBUG: Mock agent started");
@@ -35,7 +36,7 @@ async function main() {
     console.log(JSON.stringify({
       type: "call_tool",
       id: "t1",
-      tool: "write_file",
+      tool: ToolName.WRITE_FILE,
       params: {
         portal: context.portal,
         path: "authorized.txt",
@@ -51,7 +52,7 @@ async function main() {
     console.log(JSON.stringify({
       type: "call_tool",
       id: "t2",
-      tool: "write_file",
+      tool: ToolName.WRITE_FILE,
       params: {
         portal: context.portal,
         path: "unauthorized.txt",

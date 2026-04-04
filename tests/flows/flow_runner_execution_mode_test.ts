@@ -5,8 +5,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowOutputFormat, StepExecutionMode } from "../../src/shared/enums.ts";
-import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
+import { FlowOutputFormat, McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
+import type { IFlow, IFlowStep, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
 
 /**
  * Tests for Phase 56 Step 4: FlowRunner Execution Mode Dispatch
@@ -19,13 +19,13 @@ import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
 
 Deno.test("FlowRunner: step with execution_mode dynamic identified", () => {
   // This test verifies step identification
-  const dynamicStep: IFlowStep = {
+  const dynamicStep: IFlowStepInput = {
     id: "dynamic-step",
     name: "Dynamic exploration",
     identity: "senior-coder",
     execution_mode: StepExecutionMode.DYNAMIC,
-    permitted_tools: ["read_file", "list_directory"],
-  } as IFlowStep;
+    permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
+  };
 
   assertEquals(dynamicStep.execution_mode, StepExecutionMode.DYNAMIC);
 });
@@ -71,14 +71,13 @@ Deno.test("FlowRunner: flow with mixed execution modes", () => {
         name: "Explore codebase",
         identity: "senior-coder",
         execution_mode: StepExecutionMode.DYNAMIC,
-        permitted_tools: ["read_file", "list_directory"],
+        permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
       },
       {
         id: "write",
         name: "Write output",
         identity: "senior-coder",
         execution_mode: StepExecutionMode.DECLARED,
-        tools: ["write_file"],
       },
     ] as IFlowStep[],
   };
@@ -96,13 +95,13 @@ Deno.test("FlowRunner: flow with mixed execution modes", () => {
 
 Deno.test("FlowRunner: dynamic step has permitted_tools", () => {
   // This test verifies dynamic step configuration
-  const dynamicStep: IFlowStep = {
+  const dynamicStep: IFlowStepInput = {
     id: "dynamic-step",
     name: "Explore",
     identity: "senior-coder",
     execution_mode: StepExecutionMode.DYNAMIC,
-    permitted_tools: ["read_file", "list_directory", "search_files"],
-  } as IFlowStep;
+    permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY, McpToolName.SEARCH_FILES],
+  };
 
   assertEquals(dynamicStep.permitted_tools?.length, 3);
 });

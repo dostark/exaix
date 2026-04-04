@@ -11,7 +11,7 @@ import { ensureDir } from "@std/fs";
 import { setupGitRepo } from "./git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
-import { PortalExecutionStrategy, PortalOperation } from "../../src/shared/enums.ts";
+import { PortalExecutionStrategy, PortalOperation, ToolName } from "../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
@@ -278,7 +278,7 @@ export async function createAndRunReviewPlan<TConfig extends Config>(
     portal: params.portalAlias,
     targetBranch: params.targetBranch,
     actions: [{
-      tool: "write_file",
+      tool: ToolName.WRITE_FILE,
       params: { path: params.writePath, content: params.writeContent },
     }],
   });
@@ -352,7 +352,7 @@ export async function createAndRunReviewWorkflow<TConfig extends Config>(
     portal: params.portalAlias,
     targetBranch: params.targetBranch,
     actions: [{
-      tool: "write_file",
+      tool: ToolName.WRITE_FILE,
       params: { path: params.writePath, content: params.writeContent },
     }],
   });

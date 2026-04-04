@@ -12,7 +12,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { PortalManagerTuiSession, renderKnowledgeSection } from "../../src/tui/portal_manager_view.ts";
 import type { IPortalKnowledge } from "../../src/shared/schemas/portal_knowledge.ts";
 import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
-import { PortalStatus } from "../../src/shared/enums.ts";
+import { PortalStatus, SystemCommand } from "../../src/shared/enums.ts";
 import type { IPortalInfo } from "../../src/shared/types/portal.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPortalKnowle
     ],
     dependencies: [
       {
-        packageManager: "deno" as const,
+        packageManager: SystemCommand.DENO,
         configFile: "deno.json",
         keyDependencies: [{ name: "std/path", version: "0.224.0", purpose: "File path utilities" }],
       },
