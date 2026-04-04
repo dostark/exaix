@@ -21,6 +21,7 @@ import { AnalysisMode } from "../../shared/types/request.ts";
 import { JSONValue } from "../../shared/types/json.ts";
 import { IModelProvider } from "../../ai/types.ts";
 import { IOutputValidator } from "../tool/output_validator.ts";
+import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
 
 import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
@@ -78,7 +79,7 @@ export class RequestService {
     if (!trimmedDescription) throw new Error("Description cannot be empty");
 
     const priority = options.priority || RequestPriority.NORMAL;
-    const identity = options.identity || "default";
+    const identity = options.identity || DEFAULT_IDENTITY_ID;
     const portal = options.portal;
 
     const trace_id = crypto.randomUUID();
@@ -197,7 +198,7 @@ export class RequestService {
           filename,
           status: RequestStatus.PENDING,
           priority: RequestPriority.NORMAL,
-          identity: "default",
+          identity: DEFAULT_IDENTITY_ID,
           created: "",
           created_by: "unknown",
           source: RequestSource.CLI,
@@ -215,7 +216,7 @@ export class RequestService {
         filename,
         status: fm.status as RequestStatusType,
         priority: this.parsePriority(fm.priority),
-        identity: fm.identity || "default",
+        identity: fm.identity || DEFAULT_IDENTITY_ID,
         portal: fm.portal,
         created: fm.created || "",
         created_by: fm.created_by || "unknown",
@@ -294,7 +295,7 @@ export class RequestService {
     );
 
     const analysis = await analyzer.analyze(body, {
-      identityId: metadata.identity || "default",
+      identityId: metadata.identity || DEFAULT_IDENTITY_ID,
       priority: metadata.priority,
       requestFilePath: path,
       traceId: metadata.trace_id,
@@ -311,7 +312,7 @@ export class RequestService {
       path,
       status: fm.status as RequestStatusType,
       priority: this.parsePriority(fm.priority),
-      identity: fm.identity || "default",
+      identity: fm.identity || DEFAULT_IDENTITY_ID,
       created: fm.created || "",
       created_by: fm.created_by || "unknown",
       source: this.parseSource(fm.source),

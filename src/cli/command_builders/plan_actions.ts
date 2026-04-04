@@ -11,6 +11,7 @@ import { addTokenFields } from "./display_helpers.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IPlanActionContext {
   planCommands: PlanCommands;
@@ -73,7 +74,7 @@ export async function handlePlanList(
     }
   } catch (error) {
     display.error("cli.error", "plan list", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -121,7 +122,7 @@ export async function handlePlanShow(
     display.info("plan.content", id, { content: content });
   } catch (error) {
     display.error("cli.error", "plan show", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -144,7 +145,7 @@ export async function handlePlanApprove(
     );
   } catch (error) {
     display.error("cli.error", "plan approve", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -164,7 +165,7 @@ export async function handlePlanReject(
     await planCommands.reject(id, reason);
   } catch (error) {
     display.error("cli.error", "plan reject", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -184,7 +185,7 @@ export async function handlePlanRevise(
     await planCommands.revise(id, comments);
   } catch (error) {
     display.error("cli.error", "plan revise", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }

@@ -17,6 +17,7 @@ import {
   getWorkspaceRequestsDir,
   REQUEST_CORE_FIELDS,
 } from "./request_paths.ts";
+import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
 
 export class RequestListHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -107,7 +108,7 @@ export class RequestListHandler extends BaseCommand {
     }
 
     // Ensure reciprocal compatibility between identity and agent
-    const identityValue = String(frontmatter.identity || frontmatter.agent || "default");
+    const identityValue = String(frontmatter.identity || frontmatter.agent || DEFAULT_IDENTITY_ID);
     entry.identity = identityValue;
     entry.agent = identityValue;
 

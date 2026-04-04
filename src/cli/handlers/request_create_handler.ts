@@ -21,6 +21,7 @@ import {
 import { resolveSubject } from "../helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
+import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
 
 const VALID_PRIORITIES: RequestPriority[] = [
   RequestPriority.LOW,
@@ -50,7 +51,7 @@ export class RequestCreateHandler extends BaseCommand {
       if (options.flow) await this.assertFlowExists(options.flow);
 
       // Set defaults
-      const agent = options.identity || options.agent || "default";
+      const agent = options.identity || options.agent || DEFAULT_IDENTITY_ID;
       const portal = options.portal;
 
       // Generate unique trace_id

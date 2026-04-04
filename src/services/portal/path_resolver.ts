@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { JSONValue } from "../../shared/types/json.ts";
+import { DEFAULT_MCP_IDENTITY_ID } from "../../shared/constants.ts";
 
 export interface IPathResolverConfig {
   /** Optional: Database service for activity logging */
@@ -57,7 +58,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log successful resolution
-      this.logActivity("system", "path.resolved", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolved", aliasPath, {
         alias,
         resolved_path: resolvedPath,
         duration_ms: duration,
@@ -68,7 +69,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log resolution failure
-      this.logActivity("system", "path.resolution_failed", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolution_failed", aliasPath, {
         duration_ms: duration,
         error_type: error instanceof Error ? error.constructor.name : "Unknown",
         error_message: error instanceof Error ? error.message : String(error),
@@ -172,7 +173,7 @@ export class PathResolver {
 
     try {
       this.db.logActivity(
-        "system",
+        DEFAULT_MCP_IDENTITY_ID,
         actionType,
         path,
         {

@@ -31,6 +31,7 @@ import { join } from "@std/path";
 import { LogMetadata, toSafeJson } from "./shared/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
 import { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
+import { DEFAULT_MCP_IDENTITY_ID } from "./shared/constants.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -56,7 +57,7 @@ if (import.meta.main) {
     const logger = new EventLogger({
       db: dbService,
       prefix: "",
-      defaultActor: "system",
+      defaultActor: DEFAULT_MCP_IDENTITY_ID,
     });
 
     // Initialize StructuredLogger for audit and performance tracking
@@ -164,7 +165,7 @@ if (import.meta.main) {
     });
 
     // Create child logger for watcher events
-    const watcherLogger = logger.child({ actor: "system" });
+    const watcherLogger = logger.child({ actor: DEFAULT_MCP_IDENTITY_ID });
 
     // Start file watcher for new requests (Workspace/Requests)
     const requestWatcher = new FileWatcher(config, async (event) => {

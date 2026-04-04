@@ -14,6 +14,7 @@ import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.
 import { PRIORITY_ICONS } from "../cli.config.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -87,7 +88,7 @@ export async function handleRequestAnalyze(
     }
   } catch (error) {
     display.error("cli.error", "request analyze", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -147,7 +148,9 @@ export async function handleRequestCreate(
 
     printRequestResult(context, result, !!options.json, false);
   } catch (error) {
-    display.error("cli.error", "request", { message: error instanceof Error ? error.message : "Unknown error" });
+    display.error("cli.error", "request", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
     Deno.exit(1);
   }
 }
@@ -197,7 +200,7 @@ export async function handleRequestList(
     }
   } catch (error) {
     display.error("cli.error", "request list", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -249,7 +252,7 @@ export async function handleRequestShow(
     display.info("request.content", id, { content });
   } catch (error) {
     display.error("cli.error", "request show", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }

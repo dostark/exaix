@@ -20,6 +20,7 @@ import { AnalysisFindingSeverity, AnalysisFindingType } from "../../shared/enums
 import { repairJSON } from "../utils/json_repair.ts";
 import { describeSchema } from "../../shared/schemas/schema_describer.ts";
 import { JSONValue, JSONValueSchema } from "../../shared/types/json.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 /**
  * Supported output format types
@@ -348,7 +349,7 @@ export class OutputValidator implements IOutputValidator {
     if (parsed === undefined) {
       result.errors = [{
         path: [],
-        message: `Invalid JSON: ${parseError?.message || "Unknown error"}`,
+        message: `Invalid JSON: ${parseError?.message || DEFAULT_UNKNOWN_ERROR_MESSAGE}`,
         code: "invalid_json",
       }];
       return result;

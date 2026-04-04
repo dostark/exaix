@@ -28,6 +28,7 @@ import {
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
+  DEFAULT_MCP_IDENTITY_ID,
   GIT_EMPTY_SHA,
   MAX_NAME_LENGTH,
   MAX_PROMPT_LENGTH,
@@ -338,7 +339,7 @@ export class AgentExecutor {
 
       // Final fallback for required fields
       if (!provider) {
-        provider = "system";
+        provider = DEFAULT_MCP_IDENTITY_ID;
       }
 
       // 7. Return validated blueprint
@@ -1180,7 +1181,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     await this.logger.log({
       action: "agent.execution_started",
       target: portal,
-      actor: "system",
+      actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
@@ -1204,7 +1205,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     await this.logger.log({
       action: "agent.execution_completed",
       target: result.branch,
-      actor: "system",
+      actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",
@@ -1232,7 +1233,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     await this.logger.log({
       action: "agent.execution_failed",
       target: identityId,
-      actor: "system",
+      actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
       agentId: "agent-executor",

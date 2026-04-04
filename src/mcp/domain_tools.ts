@@ -18,6 +18,7 @@ import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";
 import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
 import { RequestSource } from "../shared/enums.ts";
+import { DEFAULT_MCP_IDENTITY_ID } from "../shared/constants.ts";
 
 /**
  * Tool for creating new Exaix requests
@@ -39,7 +40,7 @@ export class CreateRequestTool extends ToolHandler {
         RequestSource.MCP,
       );
 
-      this.logToolExecution("create_request", "system", identity_id, {
+      this.logToolExecution("create_request", DEFAULT_MCP_IDENTITY_ID, identity_id, {
         description,
         identity: identityId,
         identity_id,
@@ -58,7 +59,7 @@ export class CreateRequestTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      this.formatError("create_request", "system", identity_id, error, {
+      this.formatError("create_request", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
         description,
         identity_id: identity_id ?? null,
       });
@@ -109,7 +110,7 @@ export class ListPlansTool extends ToolHandler {
 
       const plans = await planCmd.list(filterStatus);
 
-      this.logToolExecution("list_plans", "system", identity_id, {
+      this.logToolExecution("list_plans", DEFAULT_MCP_IDENTITY_ID, identity_id, {
         status: filterStatus,
         identity_id,
         count: plans.length,
@@ -125,7 +126,7 @@ export class ListPlansTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      this.formatError("list_plans", "system", identity_id, error, {
+      this.formatError("list_plans", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
         status: status ?? null,
         identity_id: identity_id ?? null,
       });
@@ -169,7 +170,7 @@ export class ApprovePlanTool extends ToolHandler {
       // We don't check existence separately as approve() handles it (or throws)
       await planCmd.approve(plan_id);
 
-      this.logToolExecution("approve_plan", "system", identity_id, {
+      this.logToolExecution("approve_plan", DEFAULT_MCP_IDENTITY_ID, identity_id, {
         plan_id,
         identity_id,
         success: true,
@@ -184,7 +185,10 @@ export class ApprovePlanTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      this.formatError("approve_plan", "system", identity_id, error, { plan_id, identity_id: identity_id ?? null });
+      this.formatError("approve_plan", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
+        plan_id,
+        identity_id: identity_id ?? null,
+      });
     }
   }
 
@@ -226,7 +230,7 @@ export class QueryJournalTool extends ToolHandler {
         activities = await this.db.getRecentActivity(limit);
       }
 
-      this.logToolExecution("query_journal", "system", identity_id, {
+      this.logToolExecution("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, {
         trace_id: trace_id ?? null,
         limit: limit ?? null,
         identity_id: identity_id ?? null,
@@ -243,7 +247,7 @@ export class QueryJournalTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      this.formatError("query_journal", "system", identity_id, error, {
+      this.formatError("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
         trace_id: trace_id ?? null,
         limit: limit ?? null,
         identity_id: identity_id ?? null,

@@ -14,6 +14,7 @@ import { type IRequestShowResult } from "../../shared/types/request.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
 import { getWorkspaceRequestsDir, REQUEST_CORE_FIELDS } from "./request_paths.ts";
+import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
 
 export class RequestShowHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -76,7 +77,7 @@ export class RequestShowHandler extends BaseCommand {
     }
 
     // Ensure reciprocal compatibility between identity and agent
-    const identityValue = String(matchingFrontmatter.identity || matchingFrontmatter.agent || "default");
+    const identityValue = String(matchingFrontmatter.identity || matchingFrontmatter.agent || DEFAULT_IDENTITY_ID);
     metadata.identity = identityValue;
     metadata.agent = identityValue;
 

@@ -29,7 +29,7 @@ import {
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
-import { PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "../../shared/constants.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE, PORTAL_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "../../shared/constants.ts";
 import { PlanAdapter } from "../plan/plan_adapter.ts";
 
 /**
@@ -37,7 +37,6 @@ import { PlanAdapter } from "../plan/plan_adapter.ts";
  * Initially just a system prompt, can be extended later
  */
 export interface IBlueprint {
-  /** System prompt that defines the agent's behavior and capabilities */
   systemPrompt: string;
 
   /** Optional: Agent identifier for logging */
@@ -421,7 +420,7 @@ export class AgentRunner implements IAgentRunner {
         total_attempts: retryResult.totalAttempts,
         retry_history: toSafeJson(retryResult.retryHistory),
         error_type: retryResult.error?.constructor.name || "Unknown",
-        error_message: retryResult.error?.message || "Unknown error",
+        error_message: retryResult.error?.message || DEFAULT_UNKNOWN_ERROR_MESSAGE,
       },
       traceId,
       identityId,

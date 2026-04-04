@@ -34,6 +34,7 @@ import { ICliApplicationContext } from "./cli_context.ts";
 import { GitService } from "../services/core/git_service.ts";
 import { OutputFormat } from "./memory_types.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../shared/constants.ts";
 
 // Extracted action handlers
 import {
@@ -127,7 +128,7 @@ async function handleReviewListAction(options: { status?: string; type?: string 
     }
   } catch (error) {
     display.error("cli.error", "review list", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -177,7 +178,7 @@ async function handleReviewShowAction(options: { diff?: boolean }, id: string) {
     renderReviewShow(cs, id);
   } catch (error) {
     display.error("cli.error", "review show", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
     });
     Deno.exit(1);
   }
@@ -408,7 +409,7 @@ export const __test_command = new Command()
               await reviewCommands.approve(id);
             } catch (error) {
               display.error("cli.error", "review approve", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -425,7 +426,7 @@ export const __test_command = new Command()
               await reviewCommands.reject(id, options.reason);
             } catch (error) {
               display.error("cli.error", "review reject", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -489,7 +490,7 @@ export const __test_command = new Command()
                   }
                 } catch (error) {
                   display.error("cli.error", "git worktrees list", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -542,7 +543,7 @@ export const __test_command = new Command()
                   });
                 } catch (error) {
                   display.error("cli.error", "git worktrees prune", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -567,7 +568,7 @@ export const __test_command = new Command()
               }
             } catch (error) {
               display.error("cli.error", "git branches", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -592,7 +593,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "git status", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -619,7 +620,7 @@ export const __test_command = new Command()
               }
             } catch (error) {
               display.error("cli.error", "git log", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -640,7 +641,7 @@ export const __test_command = new Command()
               await daemonCommands.start();
             } catch (error) {
               display.error("cli.error", "daemon start", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -655,7 +656,7 @@ export const __test_command = new Command()
               await daemonCommands.stop();
             } catch (error) {
               display.error("cli.error", "daemon stop", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -670,7 +671,7 @@ export const __test_command = new Command()
               await daemonCommands.restart();
             } catch (error) {
               display.error("cli.error", "daemon restart", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -703,7 +704,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "daemon status", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -720,7 +721,7 @@ export const __test_command = new Command()
               await daemonCommands.logs(options.lines, options.follow);
             } catch (error) {
               display.error("cli.error", "daemon logs", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -765,7 +766,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "portal add", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -795,7 +796,7 @@ export const __test_command = new Command()
               }
             } catch (error) {
               display.error("cli.error", "portal list", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -822,7 +823,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "portal show", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -839,7 +840,7 @@ export const __test_command = new Command()
               await portalCommands.remove(alias, { keepCard: options.keepCard });
             } catch (error) {
               display.error("cli.error", "portal remove", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -867,7 +868,7 @@ export const __test_command = new Command()
               display.info("portal.verify.summary", "portals", { healthy, broken });
             } catch (error) {
               display.error("cli.error", "portal verify", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -883,7 +884,7 @@ export const __test_command = new Command()
               await portalCommands.refresh(alias);
             } catch (error) {
               display.error("cli.error", "portal refresh", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -905,7 +906,7 @@ export const __test_command = new Command()
               console.log(summary);
             } catch (error) {
               display.error("cli.error", "portal analyze", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -925,7 +926,7 @@ export const __test_command = new Command()
               console.log(output);
             } catch (error) {
               display.error("cli.error", "portal knowledge", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -970,7 +971,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "blueprint create", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1001,7 +1002,7 @@ export const __test_command = new Command()
               }
             } catch (error) {
               display.error("cli.error", "blueprint list", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1026,7 +1027,7 @@ export const __test_command = new Command()
               });
             } catch (error) {
               display.error("cli.error", "blueprint show", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1054,7 +1055,7 @@ export const __test_command = new Command()
               }
             } catch (error) {
               display.error("cli.error", "blueprint validate", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1070,7 +1071,7 @@ export const __test_command = new Command()
               await blueprintCommands.edit(identityId);
             } catch (error) {
               display.error("cli.error", "blueprint edit", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1088,7 +1089,7 @@ export const __test_command = new Command()
               display.info("blueprint.removed", identityId, { status: "Removed ✓" });
             } catch (error) {
               display.error("cli.error", "blueprint remove", {
-                message: error instanceof Error ? error.message : "Unknown error",
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);
             }
@@ -1159,7 +1160,7 @@ export const __test_command = new Command()
                   });
                 } catch (error) {
                   display.error("cli.error", "blueprint create", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -1190,7 +1191,7 @@ export const __test_command = new Command()
                   }
                 } catch (error) {
                   display.error("cli.error", "blueprint list", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -1215,7 +1216,7 @@ export const __test_command = new Command()
                   });
                 } catch (error) {
                   display.error("cli.error", "blueprint show", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -1243,7 +1244,7 @@ export const __test_command = new Command()
                   }
                 } catch (error) {
                   display.error("cli.error", "blueprint validate", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -1259,7 +1260,7 @@ export const __test_command = new Command()
                   await blueprintCommands.edit(identityId);
                 } catch (error) {
                   display.error("cli.error", "blueprint edit", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }
@@ -1277,7 +1278,7 @@ export const __test_command = new Command()
                   display.info("blueprint.removed", identityId, { status: "Removed ✓" });
                 } catch (error) {
                   display.error("cli.error", "blueprint remove", {
-                    message: error instanceof Error ? error.message : "Unknown error",
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);
                 }

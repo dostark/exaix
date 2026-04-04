@@ -28,6 +28,7 @@ import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
+import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../shared/constants.ts";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -448,10 +449,10 @@ export class FlowRunner implements IFlowRunner {
       const failedStepId = wave[failedStepIndex];
       const failedResult = waveResults[failedStepIndex];
       const errorMessage = failedResult.status === "fulfilled"
-        ? failedResult.value.error || "Unknown error"
+        ? failedResult.value.error || DEFAULT_UNKNOWN_ERROR_MESSAGE
         : (failedResult.status === "rejected" && failedResult.reason instanceof Error
           ? failedResult.reason.message
-          : String((failedResult as PromiseRejectedResult).reason ?? "Unknown error"));
+          : String((failedResult as PromiseRejectedResult).reason ?? DEFAULT_UNKNOWN_ERROR_MESSAGE));
       throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId);
     }
   }
