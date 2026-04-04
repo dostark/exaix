@@ -6,6 +6,7 @@
  * * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
  */
 
+import { DEFAULT_LOG_BUFFER_SIZE } from "../shared/constants.ts";
 import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
 import type { ILogger } from "../shared/interfaces/i_log_service.ts";
 import type { ILogService } from "../shared/interfaces/i_log_service.ts";
@@ -16,7 +17,7 @@ import type { ILogService } from "../shared/interfaces/i_log_service.ts";
 export class StructuredLoggerService implements ILogService {
   private logBuffer: IStructuredLogEntry[] = [];
   private subscribers: Array<(entry: IStructuredLogEntry) => void> = [];
-  private maxBufferSize = 10000;
+  private maxBufferSize = DEFAULT_LOG_BUFFER_SIZE;
 
   constructor(private structuredLogger: ILogger) {
     // Set up context for service logs

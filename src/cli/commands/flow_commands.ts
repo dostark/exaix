@@ -10,6 +10,7 @@ import { Table } from "@cliffy/table";
 import { join } from "@std/path";
 import { FlowLoader } from "../../flows/flow_loader.ts";
 import type { IFlow } from "../../shared/schemas/flow.ts";
+import { DEFAULT_NONE_LABEL } from "../../shared/constants.ts";
 import { BaseCommand } from "../base.ts";
 import type { ICliApplicationContext } from "../cli_context.ts";
 
@@ -122,7 +123,7 @@ export class FlowCommands extends BaseCommand {
         stepsTable.push([
           step.id,
           step.identity,
-          step.dependsOn.length > 0 ? step.dependsOn.join(", ") : "None",
+          step.dependsOn.length > 0 ? step.dependsOn.join(", ") : DEFAULT_NONE_LABEL,
           step.name,
         ]);
       }

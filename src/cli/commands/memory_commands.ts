@@ -6,6 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
  */
 
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "../../shared/constants.ts";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "../base.ts";
@@ -76,7 +77,7 @@ export class MemoryCommands extends BaseCommand {
     let lastActivity: string | null = null;
 
     // List projects
-    const projectsDir = join(this.config.system.root, this.config.paths.memory, "Projects");
+    const projectsDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH);
     if (await exists(projectsDir)) {
       for await (const entry of Deno.readDir(projectsDir)) {
         if (entry.isDirectory) {
@@ -86,7 +87,7 @@ export class MemoryCommands extends BaseCommand {
     }
 
     // Count executions and find last activity
-    const executionDir = join(this.config.system.root, this.config.paths.memory, "Execution");
+    const executionDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_EXECUTION_MEMORY_PATH);
     if (await exists(executionDir)) {
       const executionList = await this.memoryBank.getExecutionHistory(undefined, 1);
       executions = await this.countExecutions();

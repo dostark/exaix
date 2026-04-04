@@ -6,7 +6,16 @@
  * * @related-files [src/shared/enums.ts, src/config/schema.ts]
  */
 
-import { LogLevel, McpToolName, McpTransportType, MockStrategy, ProviderCostTier, ProviderType } from "./enums.ts";
+import {
+  LogLevel,
+  McpToolName,
+  McpTransportType,
+  MockStrategy,
+  ProviderCostTier,
+  ProviderType,
+  RequestPriority,
+  TaskType,
+} from "./enums.ts";
 
 // ============================================================================
 // Path Configuration Defaults
@@ -89,6 +98,16 @@ export const DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS = 5;
 export const DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE = 1;
 
 // ============================================================================
+
+// ============================================================================
+// Service Limits and Batch Sizes
+// ============================================================================
+export const DEFAULT_LOG_BUFFER_SIZE = 10000;
+export const DEFAULT_COST_PRECISION_FACTOR = 10000;
+export const DEFAULT_TITLE_PLACEHOLDER = "Untitled";
+export const DEFAULT_NONE_LABEL = "None";
+export const DEFAULT_DESCRIPTION_PLACEHOLDER = "(no description)";
+
 // Agent Validation Limits
 // ============================================================================
 export const AGENT_TIMEOUT_SEC_MIN = 1;
@@ -647,10 +666,10 @@ export const ICON_WARNING = "⚠️";
 export const ICON_INFO = "ℹ️";
 
 export const SHARED_PRIORITY_ICONS: Record<string, string> = {
-  critical: "🔴",
-  high: "🟠",
-  normal: "⚪",
-  low: "🔵",
+  [RequestPriority.CRITICAL]: "🔴",
+  [RequestPriority.HIGH]: "🟠",
+  [RequestPriority.NORMAL]: "⚪",
+  [RequestPriority.LOW]: "🔵",
   default: "⚪",
 };
 
@@ -746,33 +765,33 @@ export const ANALYSIS_HEDGING_WORDS: string[] = [
 
 /** Action verbs mapped to task type classification. */
 export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
-  fix: "bugfix",
-  bug: "bugfix",
-  repair: "bugfix",
-  correct: "bugfix",
-  resolve: "bugfix",
-  refactor: "refactor",
-  restructure: "refactor",
-  reorganize: "refactor",
-  rewrite: "refactor",
-  cleanup: "refactor",
-  "clean up": "refactor",
-  test: "test",
-  "add test": "test",
-  "add tests": "test",
-  "write test": "test",
-  "write tests": "test",
-  spec: "test",
-  document: "docs",
-  documentation: "docs",
-  "update doc": "docs",
-  "update docs": "docs",
-  "add doc": "docs",
-  readme: "docs",
-  analyze: "analysis",
-  analyse: "analysis",
-  investigate: "analysis",
-  research: "analysis",
+  fix: TaskType.BUGFIX,
+  bug: TaskType.BUGFIX,
+  repair: TaskType.BUGFIX,
+  correct: TaskType.BUGFIX,
+  resolve: TaskType.BUGFIX,
+  refactor: TaskType.REFACTOR,
+  restructure: TaskType.REFACTOR,
+  reorganize: TaskType.REFACTOR,
+  rewrite: TaskType.REFACTOR,
+  cleanup: TaskType.REFACTOR,
+  "clean up": TaskType.REFACTOR,
+  test: TaskType.TEST,
+  "add test": TaskType.TEST,
+  "add tests": TaskType.TEST,
+  "write test": TaskType.TEST,
+  "write tests": TaskType.TEST,
+  spec: TaskType.TEST,
+  document: TaskType.DOCS,
+  documentation: TaskType.DOCS,
+  "update doc": TaskType.DOCS,
+  "update docs": TaskType.DOCS,
+  "add doc": TaskType.DOCS,
+  readme: TaskType.DOCS,
+  analyze: TaskType.ANALYSIS,
+  analyse: TaskType.ANALYSIS,
+  investigate: TaskType.ANALYSIS,
+  research: TaskType.ANALYSIS,
   audit: "analysis",
   implement: "feature",
   add: "feature",
@@ -780,6 +799,7 @@ export const ANALYSIS_TASK_TYPE_VERBS: Record<string, string> = {
   build: "feature",
   introduce: "feature",
   new: "feature",
+  commit: TaskType.COMMIT,
 };
 
 // === Portal Knowledge ===

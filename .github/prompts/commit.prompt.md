@@ -2,10 +2,10 @@
 agent: agent
 description: "Create a structured commit message for current changes following Exaix conventions"
 tools:
-  - search/changes
-  - search/codebase
-  - edit
-  - terminal
+  - git_status
+  - git_commit
+  - search_files
+  - run_command
 ---
 
 # Commit current changes

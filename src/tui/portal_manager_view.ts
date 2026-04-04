@@ -170,7 +170,7 @@ export class PortalManagerTuiSession extends BaseTreeView<IPortalInfo> {
       const node = createNode<IPortalInfo>(
         portal.alias,
         portal.alias,
-        "portal",
+        TuiNodeType.PORTAL,
         {
           data: portal,
           icon: portal.status === PortalStatus.ACTIVE ? TuiIcon.PORTAL_ACTIVE : TuiIcon.PORTAL_BROKEN,

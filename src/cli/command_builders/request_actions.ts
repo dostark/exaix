@@ -14,7 +14,7 @@ import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.
 import { PRIORITY_ICONS } from "../cli.config.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
+import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;
@@ -240,7 +240,7 @@ export async function handleRequestShow(
       const analysisData: JSONObject = {
         complexity: analysis.complexity,
         actionability: `${analysis.actionabilityScore}%`,
-        ambiguity: analysis.ambiguities.length > 0 ? `${analysis.ambiguities.length} items` : "None",
+        ambiguity: analysis.ambiguities.length > 0 ? `${analysis.ambiguities.length} items` : DEFAULT_NONE_LABEL,
       };
       display.info(
         "request.analysis",

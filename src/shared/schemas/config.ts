@@ -197,7 +197,7 @@ export const ConfigSchema = z.object({
       .optional(),
     base_url: z.string().optional(),
   })).default({
-    default: {
+    [DEFAULTS.DEFAULT_AGENT_MODEL]: {
       provider: DEFAULTS.PROVIDER_GOOGLE,
       model: DEFAULTS.DEFAULT_GOOGLE_MODEL,
       timeout_ms: DEFAULTS.DEFAULT_GOOGLE_TIMEOUT_MS,
@@ -599,7 +599,7 @@ export const ConfigSchema = z.object({
     DEFAULTS.PROVIDER_GOOGLE,
     DEFAULTS.PROVIDER_MOCK,
   ];
-  const allAvailable = [...modelKeys, ...fallbackChainKeys, ...providerTypes, "default"];
+  const allAvailable = [...modelKeys, ...fallbackChainKeys, ...providerTypes, DEFAULTS.DEFAULT_AGENT_MODEL];
 
   if (data.agents?.default_model && !allAvailable.includes(data.agents.default_model)) {
     ctx.addIssue({

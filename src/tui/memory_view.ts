@@ -441,8 +441,8 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     const node = this.findNodeById(this.state.selectedNodeId);
     let defaultPortal: string | undefined;
 
-    if (node?.id.startsWith("project:")) {
-      defaultPortal = node.id.replace("project:", "");
+    if (node?.id.startsWith(`${TuiNodeType.PROJECT}:`)) {
+      defaultPortal = node.id.replace(`${TuiNodeType.PROJECT}:`, "");
     }
 
     this.state.activeDialog = new AddLearningDialog(defaultPortal);
@@ -460,12 +460,12 @@ export class MemoryViewTuiSession extends TuiSessionBase {
 
     // Check if it's a project learning
     const parent = this.findParentNode(node.id);
-    if (!parent || !parent.id.startsWith("project:")) {
+    if (!parent || !parent.id.startsWith(`${TuiNodeType.PROJECT}:`)) {
       this.statusMessage = "Can only promote project learnings";
       return;
     }
 
-    const portal = parent.id.replace("project:", "");
+    const portal = parent.id.replace(`${TuiNodeType.PROJECT}:`, "");
     this.state.activeDialog = new PromoteDialog(node.label, portal);
   }
 
@@ -511,7 +511,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
       case "scope":
         this.state.detailContent = MemoryFormatter.formatScopeDetail(node);
         break;
-      case "project":
+      case TuiNodeType.PROJECT:
         this.state.detailContent = await MemoryFormatter.formatProjectDetail(node, this.service);
         break;
       case "execution":
@@ -654,12 +654,12 @@ export class MemoryViewTuiSession extends TuiSessionBase {
     if (node.id === "pending") {
       return "[A] Approve All  [Enter] Expand";
     }
-    if (node.type === "project") {
+    if (node.type === TuiNodeType.PROJECT) {
       return "[L] Add Learning  [Enter] View  [Tab] Switch Panel";
     }
     if (node.type === "learning") {
       const parent = this.findParentNode(node.id);
-      if (parent?.id.startsWith("project:")) {
+      if (parent?.id.startsWith(`${TuiNodeType.PROJECT}:`)) {
         return "[P] Promote to Global  [Enter] View Details";
       }
     }

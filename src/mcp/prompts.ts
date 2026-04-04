@@ -85,6 +85,17 @@ export function getPrompts(): IMCPPrompt[] {
         },
       ],
     },
+    {
+      name: "commit_message",
+      description: "Generate a structured commit message for changes in a portal",
+      arguments: [
+        {
+          name: "portal",
+          description: "Portal name whose changes will be summarized",
+          required: true,
+        },
+      ],
+    },
   ];
 }
 
@@ -259,7 +270,70 @@ export function generatePrompt(
         args as { portal: string; description: string; trace_id: string },
         db,
       );
+    case "commit_message":
+      return generateCommitMessagePrompt(
+        args as { portal: string },
+        db,
+      );
     default:
       return null;
   }
+}
+
+/**
+ * Generate prompt messages for commit_message
+ */
+export function generateCommitMessagePrompt(
+  args: { portal: string },
+  db: IDatabaseService,
+): MCPPromptResult {
+  const { portal } = args;
+
+  // Log prompt generation
+  db.logActivity(
+    "mcp.prompts",
+    "mcp.prompts.commit_message",
+    "system",
+    {
+      portal,
+    },
+  );
+
+  const messages: MCPPromptMessage[] = [
+    {
+      role: MessageRole.USER,
+      content: {
+        type: "text",
+        text: `You are a commit message assistant for Exaix in portal "${portal}".
+
+**Your Task:**
+1. Check the git status in the portal
+2. Review the staged and unstaged changes
+3. Generate a structured commit message following Exaix conventions
+
+**Available Tools:**
+- git_status(portal) - Check git status
+- read_file(portal, path) - Read changes
+- list_directory(portal, path) - Understand context
+
+**Exaix Commit Message Schema:**
+[type]: [subject]
+
+what: <detailed explanation>
+rationale: <why>
+tests: <status of tests>
+who: <your name>
+impact: <component>: <details>
+
+Available types: feat, fix, docs, style, refactor, perf, test, build, ci, chore.
+
+Begin by analyzing the changes.`,
+      },
+    },
+  ];
+
+  return {
+    description: `Generate commit message for portal ${portal}`,
+    messages,
+  };
 }

@@ -28,7 +28,11 @@ import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
-import { DEFAULT_UNKNOWN_ERROR_MESSAGE, DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
+import {
+  DEFAULT_COST_PRECISION_FACTOR,
+  DEFAULT_UNKNOWN_ERROR_MESSAGE,
+  DEFAULT_UNKNOWN_LABEL,
+} from "../shared/constants.ts";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -1259,7 +1263,7 @@ export class FlowRunner implements IFlowRunner {
         totalInputTokens,
         totalOutputTokens,
         totalTokens: totalInputTokens + totalOutputTokens,
-        totalCostUsd: Math.round(totalCostUsd * 10000) / 10000, // Round to 4 decimal places
+        totalCostUsd: Math.round(totalCostUsd * DEFAULT_COST_PRECISION_FACTOR) / DEFAULT_COST_PRECISION_FACTOR, // Round to 4 decimal places
         providers: providerStats,
         traceId,
         requestId,
@@ -1271,7 +1275,7 @@ export class FlowRunner implements IFlowRunner {
         total_tokens: totalInputTokens + totalOutputTokens,
         token_provider: Object.keys(providerStats).join(", ") || undefined,
         token_model: models.size > 0 ? Array.from(models).join(", ") : undefined,
-        token_cost_usd: Math.round(totalCostUsd * 10000) / 10000,
+        token_cost_usd: Math.round(totalCostUsd * DEFAULT_COST_PRECISION_FACTOR) / DEFAULT_COST_PRECISION_FACTOR,
       };
     } catch (error) {
       // Log error but don't fail the flow

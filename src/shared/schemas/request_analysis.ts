@@ -13,36 +13,12 @@
 import { z } from "zod";
 import { ANALYZER_VERSION } from "../constants.ts";
 
-// ============================================================================
-// Enums
-// ============================================================================
+import { TaskComplexity, TaskType } from "../enums.ts";
 
-/**
- * Complexity classification for a request.
- */
-export enum RequestAnalysisComplexity {
-  /** Short, clear, single-concern requests (< 200 chars, ≤ 2 bullets, ≤ 1 file). */
-  SIMPLE = "simple",
-  /** Standard multi-step requests (default). */
-  MEDIUM = "medium",
-  /** Multi-file, multi-requirement, lengthy requests (> 10 bullets or > 5 files). */
-  COMPLEX = "complex",
-  /** Multi-phase or cross-service initiatives (multi-phase keywords detected). */
-  EPIC = "epic",
-}
+const RequestAnalysisComplexity = TaskComplexity;
+const RequestTaskType = TaskType;
 
-/**
- * Classification of the type of task a request describes.
- */
-export enum RequestTaskType {
-  BUGFIX = "bugfix",
-  FEATURE = "feature",
-  REFACTOR = "refactor",
-  TEST = "test",
-  DOCS = "docs",
-  ANALYSIS = "analysis",
-  UNKNOWN = "unknown",
-}
+export { RequestAnalysisComplexity, RequestTaskType };
 
 /**
  * Impact level of an identified ambiguity.

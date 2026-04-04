@@ -123,7 +123,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
   override getSelectedIndex(): number {
     if (!this.state.selectedId) return 0;
     const node = this.getSelectedNode();
-    if (node?.type === "plan" && node.data) {
+    if (node?.type === TuiNodeType.PLAN && node.data) {
       const idx = this.plans.findIndex((p) => p.id === (node.data as IPlan).id);
       return idx >= 0 ? idx : 0;
     }
@@ -165,7 +165,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
       const node = createNode<IPlan>(
         plan.id,
         plan.subject || plan.id,
-        "plan",
+        TuiNodeType.PLAN,
         {
           data: plan,
           icon: PLAN_ICONS[status] || PLAN_ICONS.folder,
@@ -239,7 +239,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
   private setDefaultSelection(): void {
     if (!this.state.selectedId && this.state.tree.length > 0) {
       const flat = flattenTree(this.state.tree);
-      const firstPlan = flat.find((f: any) => f.node.type === "plan");
+      const firstPlan = flat.find((f: any) => f.node.type === TuiNodeType.PLAN);
       if (firstPlan) {
         this.state.selectedId = firstPlan.node.id;
       } else {
@@ -345,7 +345,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
       selected.expanded = !selected.expanded;
       return;
     }
-    if (selected.type === "plan") {
+    if (selected.type === TuiNodeType.PLAN) {
       await this.showDiffAction(selected.data as IPlan);
     }
   }

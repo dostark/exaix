@@ -11,7 +11,9 @@
  * @architectural-layer Services
  * * @related-files [src/services/execution_loop.ts, src/services/memory_bank.ts]
  */
+import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "../../shared/constants.ts";
 import { IDatabaseService } from "../core/db.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
@@ -161,7 +163,7 @@ export class MissionReporter {
       await this.memoryBank.createExecutionRecord(executionMemory);
 
       const createdAt = new Date();
-      const reportPath = `Memory/Execution/${traceData.traceId}/summary.md`;
+      const reportPath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, traceData.traceId, "summary.md");
 
       // Log success
       this.logActivity({
@@ -240,9 +242,9 @@ export class MissionReporter {
    */
   private extractPortalFromContext(contextFiles: string[]): string {
     for (const file of contextFiles) {
-      if (file.includes("Portals/")) {
+      if (file.includes(`${DEFAULT_PORTALS_PATH}/`)) {
         const parts = file.split("/");
-        const portalIndex = parts.indexOf("Portals");
+        const portalIndex = parts.indexOf(DEFAULT_PORTALS_PATH);
         if (portalIndex >= 0 && portalIndex + 1 < parts.length) {
           return parts[portalIndex + 1];
         }

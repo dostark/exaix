@@ -13,7 +13,7 @@ import type {
 } from "../../shared/schemas/memory_bank.ts";
 import { MemoryType } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
-import { DEFAULT_QUERY_LIMIT } from "../../shared/constants.ts";
+import { DEFAULT_QUERY_LIMIT, DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 
 export interface ISearchDeps {
   projectsDir: string;
@@ -196,7 +196,7 @@ export async function searchByTags(
     if (includesAllTags(learning.tags ?? [], normalizedTags)) {
       results.push({
         type: MemoryType.LEARNING,
-        title: learning.title || "Untitled",
+        title: learning.title || DEFAULT_TITLE_PLACEHOLDER,
         summary: learning.description || "",
         relevance_score: 0.95,
         tags: learning.tags,
@@ -273,7 +273,7 @@ export async function searchByKeyword(
     if (titleFreq === 0 && descFreq === 0) continue;
     results.push({
       type: MemoryType.LEARNING,
-      title: learning.title || "Untitled",
+      title: learning.title || DEFAULT_TITLE_PLACEHOLDER,
       summary: learning.description || "",
       relevance_score: deps.calculateRelevance(titleFreq, descFreq),
       tags: learning.tags,

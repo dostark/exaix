@@ -430,11 +430,11 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   }
 
   private buildGroupedByPriority(requests: IRequest[]): ITreeNode[] {
-    const priorityOrder = ["critical", "high", "normal", "low"];
+    const priorityOrder = [RequestPriority.CRITICAL, RequestPriority.HIGH, RequestPriority.NORMAL, RequestPriority.LOW];
     const groups = new Map<string, IRequest[]>();
 
     for (const req of requests) {
-      const priority = req.priority || "normal";
+      const priority = req.priority || RequestPriority.NORMAL;
       if (!groups.has(priority)) groups.set(priority, []);
       groups.get(priority)!.push(req);
     }
@@ -775,8 +775,13 @@ export class RequestManagerTuiSession extends TuiSessionBase {
   private handlePriorityResult(value: string): void {
     if (!value || !this.state.selectedRequestId) return;
 
-    const validPriorities = ["low", "normal", "high", "critical"];
-    if (!validPriorities.includes(value.toLowerCase())) {
+    const validPriorities = [
+      RequestPriority.LOW,
+      RequestPriority.NORMAL,
+      RequestPriority.HIGH,
+      RequestPriority.CRITICAL,
+    ];
+    if (!validPriorities.includes(value.toLowerCase() as RequestPriority)) {
       this.setStatus("Invalid priority. Use: low, normal, high, critical", MessageType.ERROR);
       return;
     }

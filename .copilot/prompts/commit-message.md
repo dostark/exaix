@@ -1,7 +1,7 @@
 ---
 agent: general
 scope: dev
-title: "Detailed Commit Message Prompt"
+title: "Detailed Commit Message Prompt (#commit)"
 short_summary: "Enforces structured, informative commit messages for agents and human developers."
 version: "0.3"
 topics: ["git", "commit", "documentation", "best-practices", "structured-logging"]

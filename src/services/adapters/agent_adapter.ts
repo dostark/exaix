@@ -12,6 +12,7 @@ import { exists } from "@std/fs";
 import { AgentHealth } from "../../shared/enums.ts";
 import { AgentStatus } from "../../shared/status/agent_status.ts";
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../shared/types/agent.ts";
+import { DEFAULT_AGENT_MODEL } from "../../shared/constants.ts";
 import { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
 
 export class AgentServiceAdapter extends BaseCommand implements IAgentService {
@@ -39,7 +40,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
           id: "system",
           name: "System Agent",
           status: AgentStatus.ACTIVE,
-          model: this.config.ai?.model || "default",
+          model: this.config.ai?.model || DEFAULT_AGENT_MODEL,
           lastActivity: new Date().toISOString(),
           capabilities: ["core", "filesystem"],
           defaultSkills: [],
@@ -53,7 +54,7 @@ export class AgentServiceAdapter extends BaseCommand implements IAgentService {
             id: id,
             name: id.charAt(0).toUpperCase() + id.slice(1),
             status: AgentStatus.ACTIVE,
-            model: "default",
+            model: DEFAULT_AGENT_MODEL,
             lastActivity: new Date().toISOString(),
             capabilities: [],
             defaultSkills: [],

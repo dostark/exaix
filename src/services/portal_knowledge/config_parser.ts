@@ -10,6 +10,7 @@
  */
 
 import { join } from "@std/path";
+import { DependencyCategory, SystemCommand } from "../../shared/enums.ts";
 import type { IDependencyInfo } from "../../shared/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
@@ -78,7 +79,7 @@ const TEST_FRAMEWORKS: Record<string, string> = {
   jasmine: "jasmine",
   "@angular/core": "ng-test",
   pytest: "pytest",
-  "deno test": "deno",
+  "deno test": SystemCommand.DENO,
 };
 
 const BUILD_TOOLS: Record<string, string> = {
@@ -92,61 +93,61 @@ const BUILD_TOOLS: Record<string, string> = {
   turborepo: "turborepo",
   nx: "nx",
   bazel: "bazel",
-  "deno compile": "deno",
+  "deno compile": SystemCommand.DENO,
   gradle: "gradle",
   maven: "maven",
 };
 
 const DEP_PURPOSES: Record<string, string> = {
   // web frameworks
-  express: "web framework",
-  fastify: "web framework",
-  hono: "web framework",
-  oak: "web framework",
-  koa: "web framework",
-  "@nestjs/core": "web framework",
-  next: "fullstack framework",
-  nuxt: "fullstack framework",
-  "@sveltejs/kit": "fullstack framework",
-  astro: "static site / fullstack framework",
-  "@remix-run/node": "fullstack framework",
+  express: DependencyCategory.WEB_FRAMEWORK,
+  fastify: DependencyCategory.WEB_FRAMEWORK,
+  hono: DependencyCategory.WEB_FRAMEWORK,
+  oak: DependencyCategory.WEB_FRAMEWORK,
+  koa: DependencyCategory.WEB_FRAMEWORK,
+  "@nestjs/core": DependencyCategory.WEB_FRAMEWORK,
+  next: DependencyCategory.FULLSTACK_FRAMEWORK,
+  nuxt: DependencyCategory.FULLSTACK_FRAMEWORK,
+  "@sveltejs/kit": DependencyCategory.FULLSTACK_FRAMEWORK,
+  astro: DependencyCategory.FULLSTACK_FRAMEWORK,
+  "@remix-run/node": DependencyCategory.FULLSTACK_FRAMEWORK,
   // validation / schema
-  zod: "schema validation",
-  joi: "schema validation",
-  yup: "schema validation",
-  valibot: "schema validation",
+  zod: DependencyCategory.SCHEMA_VALIDATION,
+  joi: DependencyCategory.SCHEMA_VALIDATION,
+  yup: DependencyCategory.SCHEMA_VALIDATION,
+  valibot: DependencyCategory.SCHEMA_VALIDATION,
   // test
-  jest: "test framework",
-  vitest: "test framework",
-  mocha: "test framework",
-  jasmine: "test framework",
+  jest: DependencyCategory.TEST_FRAMEWORK,
+  vitest: DependencyCategory.TEST_FRAMEWORK,
+  mocha: DependencyCategory.TEST_FRAMEWORK,
+  jasmine: DependencyCategory.TEST_FRAMEWORK,
   // build
-  vite: "build tool",
-  webpack: "build tool",
-  rollup: "build tool",
-  esbuild: "build tool",
-  parcel: "build tool",
+  vite: DependencyCategory.BUILD_TOOL,
+  webpack: DependencyCategory.BUILD_TOOL,
+  rollup: DependencyCategory.BUILD_TOOL,
+  esbuild: DependencyCategory.BUILD_TOOL,
+  parcel: DependencyCategory.BUILD_TOOL,
   // DB / ORM
-  prisma: "ORM",
-  "@prisma/client": "ORM",
-  typeorm: "ORM",
-  drizzle: "ORM",
-  mongoose: "ODM / MongoDB",
+  prisma: DependencyCategory.ORM,
+  "@prisma/client": DependencyCategory.ORM,
+  typeorm: DependencyCategory.ORM,
+  drizzle: DependencyCategory.ORM,
+  mongoose: DependencyCategory.ORM,
   // utility
-  lodash: "utility library",
-  ramda: "functional utility",
-  dayjs: "date utility",
-  "date-fns": "date utility",
-  axios: "HTTP client",
-  "node-fetch": "HTTP client",
-  got: "HTTP client",
+  lodash: DependencyCategory.UTILITY,
+  ramda: DependencyCategory.UTILITY,
+  dayjs: DependencyCategory.UTILITY,
+  "date-fns": DependencyCategory.UTILITY,
+  axios: DependencyCategory.UTILITY,
+  "node-fetch": DependencyCategory.UTILITY,
+  got: DependencyCategory.UTILITY,
   // state management
-  redux: "state management",
-  "@reduxjs/toolkit": "state management",
-  zustand: "state management",
+  redux: DependencyCategory.STATE_MANAGEMENT,
+  "@reduxjs/toolkit": DependencyCategory.STATE_MANAGEMENT,
+  zustand: DependencyCategory.STATE_MANAGEMENT,
   // DI
-  inversify: "dependency injection",
-  tsyringe: "dependency injection",
+  inversify: DependencyCategory.UTILITY,
+  tsyringe: DependencyCategory.UTILITY,
 };
 
 // ---------------------------------------------------------------------------
@@ -175,7 +176,7 @@ function detectTestFramework(
   }
   // Check scripts for "deno test"
   for (const cmd of Object.values(scripts)) {
-    if (cmd.includes("deno test")) return "deno";
+    if (cmd.includes("deno test")) return SystemCommand.DENO;
   }
   return undefined;
 }
@@ -287,7 +288,7 @@ async function parseDenoJson(
   }
 
   const entry: IDependencyInfo = {
-    packageManager: "deno",
+    packageManager: SystemCommand.DENO,
     configFile: filename,
     keyDependencies,
   };

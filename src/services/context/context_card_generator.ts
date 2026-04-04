@@ -5,6 +5,7 @@
  * @architectural-layer Services
  * * @related-files [src/services/memory_bank.ts, src/services/db.ts]
  */
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "../../shared/constants.ts";
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import type { IDatabaseService } from "../core/db.ts";
@@ -28,7 +29,7 @@ export class ContextCardGenerator {
   }
 
   async generate(info: IPortalInfo): Promise<void> {
-    const portalsDir = join(this.config.system.root, this.config.paths.memory, "Projects");
+    const portalsDir = join(this.config.system.root, this.config.paths.memory, DEFAULT_PROJECTS_MEMORY_PATH);
 
     // Ensure directory exists
     await Deno.mkdir(portalsDir, { recursive: true });

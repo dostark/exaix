@@ -10,7 +10,7 @@ import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import { MCPConfigSchema, type MCPTool } from "../shared/schemas/mcp.ts";
 import { JSONValue } from "../shared/types/json.ts";
-import { McpTransportType } from "../shared/enums.ts";
+import { JsonRpcErrorCode, McpTransportType } from "../shared/enums.ts";
 import { ToolHandler } from "./tool_handler.ts";
 import { GitCommitTool } from "./handlers/git_commit_tool.ts";
 import { GitCreateBranchTool } from "./handlers/git_create_branch_tool.ts";
@@ -237,7 +237,7 @@ export class MCPServer {
         jsonrpc: "2.0",
         id: request.id ?? null,
         error: {
-          code: -32600, // Invalid Request
+          code: JsonRpcErrorCode.INVALID_REQUEST,
           message: "Invalid JSON-RPC 2.0 request: missing or invalid 'jsonrpc' field",
         },
       };
@@ -264,7 +264,7 @@ export class MCPServer {
           jsonrpc: "2.0",
           id: request.id,
           error: {
-            code: -32601, // Method not found
+            code: JsonRpcErrorCode.METHOD_NOT_FOUND,
             message: `Method '${request.method}' not found`,
           },
         };
@@ -364,7 +364,7 @@ export class MCPServer {
         jsonrpc: "2.0",
         id: request.id,
         error: {
-          code: -32602, // Invalid params
+          code: JsonRpcErrorCode.INVALID_PARAMS,
           message: `Tool '${params.name}' not found`,
         },
       };
@@ -453,7 +453,7 @@ export class MCPServer {
       const zodError = error as { errors: Array<{ path?: (string | number)[]; message: string }> };
       return {
         type: "validation_error",
-        code: -32602, // Invalid params
+        code: JsonRpcErrorCode.INVALID_PARAMS,
         message: "Invalid tool arguments",
         data: {
           validation_errors: zodError.errors.map((e) => ({ path: e.path?.join?.(".") ?? "", message: e.message })),
@@ -467,25 +467,25 @@ export class MCPServer {
       const rules: Array<{ type: string; code: number; message: string; needles: string[] }> = [
         {
           type: "security_error",
-          code: -32602,
+          code: JsonRpcErrorCode.INVALID_PARAMS,
           message: "Access denied: Invalid path",
           needles: ["Path traversal", "outside allowed roots"],
         },
         {
           type: "not_found_error",
-          code: -32602,
+          code: JsonRpcErrorCode.INVALID_PARAMS,
           message: "Resource not found",
           needles: ["not found", "ENOENT", "Portal"],
         },
         {
           type: "permission_error",
-          code: -32603,
+          code: JsonRpcErrorCode.INTERNAL_ERROR,
           message: "Permission denied",
           needles: ["permission", "EACCES", "Permission denied"],
         },
         {
           type: "timeout_error",
-          code: -32603,
+          code: JsonRpcErrorCode.INTERNAL_ERROR,
           message: "Operation timed out",
           needles: ["timeout", "aborted", "timed out"],
         },
@@ -498,7 +498,7 @@ export class MCPServer {
     // Fallback
     return {
       type: "internal_error",
-      code: -32603,
+      code: JsonRpcErrorCode.INTERNAL_ERROR,
       message: error instanceof Error ? error.message : "Internal server error",
     };
   }
@@ -514,7 +514,7 @@ export class MCPServer {
       jsonrpc: "2.0",
       id: request.id,
       error: {
-        code: -32603,
+        code: JsonRpcErrorCode.INTERNAL_ERROR,
         message: error instanceof Error ? error.message : String(error),
       },
     };
@@ -558,7 +558,7 @@ export class MCPServer {
           jsonrpc: "2.0",
           id: request.id,
           error: {
-            code: -32602,
+            code: JsonRpcErrorCode.INVALID_PARAMS,
             message: `Invalid portal URI: ${params.uri}`,
           },
         };
@@ -571,7 +571,7 @@ export class MCPServer {
           jsonrpc: "2.0",
           id: request.id,
           error: {
-            code: -32603,
+            code: JsonRpcErrorCode.INTERNAL_ERROR,
             message: "read_file tool not available",
           },
         };
@@ -642,7 +642,7 @@ export class MCPServer {
           jsonrpc: "2.0",
           id: request.id,
           error: {
-            code: -32602,
+            code: JsonRpcErrorCode.INVALID_PARAMS,
             message: `Prompt '${params.name}' not found`,
           },
         };
@@ -740,7 +740,7 @@ export class MCPServer {
         jsonrpc: "2.0",
         id: null,
         error: {
-          code: -32700,
+          code: JsonRpcErrorCode.PARSE_ERROR,
           message: "Parse error",
         },
       };

@@ -7,7 +7,7 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
-import { DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
+import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import type { ITreeNode } from "./helpers/tree_view.ts";
 import {
@@ -491,7 +491,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   getGroupByLabel(): string {
     switch (this.state.groupBy) {
       case TuiGroupBy.NONE:
-        return "None";
+        return DEFAULT_NONE_LABEL;
       case TuiGroupBy.STATUS:
         return "Status";
       case TuiGroupBy.MODEL:

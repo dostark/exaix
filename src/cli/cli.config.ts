@@ -6,7 +6,8 @@
  * * @related-files [src/cli/main.ts]
  */
 
-import { SHARED_PRIORITY_ICONS } from "../shared/constants.ts";
+import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "../shared/constants.ts";
+import { RequestPriority } from "../shared/enums.ts";
 
 export const MEMORY_COMMAND_DEFAULTS = {
   LIMIT: 20,
@@ -31,8 +32,8 @@ export const PRIORITY_ICONS: Record<string, string> = {
 };
 
 export const CLI_DEFAULTS = {
-  PRIORITY: "normal",
-  AGENT: "default",
+  PRIORITY: RequestPriority.NORMAL,
+  AGENT: DEFAULT_AGENT_MODEL,
   LOG_LINES: 50,
   DAEMON_CHECK_INTERVAL_MS: 50,
 };

@@ -20,9 +20,12 @@ import { MemoryCommands } from "./commands/memory_commands.ts";
 import { IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import {
   MemoryBankSource,
+  MemoryScope,
   PortalAnalysisMode,
   PortalExecutionStrategy,
   PortalStatus,
+  RequestOperation,
+  RequestPriority,
   UIOutputFormat,
 } from "../shared/enums.ts";
 import { AnalysisMode } from "../shared/types/request.ts";
@@ -211,7 +214,7 @@ function renderReviewShowSummary(cs: ReviewDetails) {
     agent: agentInfo ?? null,
     portal: portalInfo ?? null,
     base_branch: cs.base_branch ?? null,
-    priority: cs.request_priority || "normal",
+    priority: cs.request_priority || RequestPriority.NORMAL,
     created_by: cs.request_created_by || "unknown",
     files_changed: cs.files_changed,
     commits: cs.commits.length,
@@ -295,7 +298,7 @@ export const __test_command = new Command()
         'exactl request "Fix critical bug" --priority critical --identity debugger',
       )
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List pending requests")
           .option(
@@ -332,11 +335,11 @@ export const __test_command = new Command()
   )
   // Plan commands
   .command(
-    "plan",
+    RequestOperation.PLAN,
     new Command()
       .description("Manage AI-generated plans")
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all plans awaiting review")
           .option("-s, --status <status:string>", "Filter by status (review, needs_revision)")
@@ -389,7 +392,7 @@ export const __test_command = new Command()
     new Command()
       .description("Review and manage agent-generated outputs (code changes and artifacts)")
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all pending reviews")
           .option("-s, --status <status:string>", "Filter by status (pending, approved, rejected)")
@@ -447,7 +450,7 @@ export const __test_command = new Command()
         new Command()
           .description("Git worktree maintenance")
           .command(
-            "list",
+            RequestOperation.LIST,
             new Command()
               .description("List git worktrees")
               .option("--portal <portal:string>", "Target a configured portal repository")
@@ -777,7 +780,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "list",
+        RequestOperation.LIST,
         new Command()
           .description("List all configured portals")
           .action(async () => {
@@ -1369,7 +1372,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "project",
+        MemoryScope.PROJECT,
         new Command()
           .description("Project memory operations")
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
@@ -1604,7 +1607,9 @@ export const __test_command = new Command()
             new Command()
               .description("Create a new skill")
               .option("-d, --description <desc:string>", "Skill description")
-              .option("-c, --category <category:string>", "Category: core, project, learned", { default: "project" })
+              .option("-c, --category <category:string>", "Category: core, project, learned", {
+                default: MemoryScope.PROJECT,
+              })
               .option("-i, --instructions <instructions:string>", "Skill instructions")
               .option("-k, --keywords <keywords:string>", "Comma-separated trigger keywords")
               .option("-t, --task-types <taskTypes:string>", "Comma-separated trigger task types")

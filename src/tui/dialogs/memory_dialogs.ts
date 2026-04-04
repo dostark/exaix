@@ -19,6 +19,7 @@ import {
   setupDialogRender,
 } from "../helpers/dialog_base.ts";
 import { DialogStatus, MemoryScope } from "../../shared/enums.ts";
+import { DEFAULT_DESCRIPTION_PLACEHOLDER } from "../../shared/constants.ts";
 
 // ===== Dialog Types =====
 
@@ -212,7 +213,7 @@ export class ConfirmApproveDialog extends DialogBase<IApproveDialogResult> {
     renderProposalInfo(this.proposal, innerWidth, theme, lines);
 
     // Description (truncated)
-    const desc = this.proposal.learning?.description?.slice(0, innerWidth - 6) ?? "(no description)";
+    const desc = this.proposal.learning?.description?.slice(0, innerWidth - 6) ?? DEFAULT_DESCRIPTION_PLACEHOLDER;
     lines.push(renderBoxLine(`  ${desc.padEnd(innerWidth - 2)}`, innerWidth, theme));
     lines.push(renderBoxLine("", innerWidth, theme));
 

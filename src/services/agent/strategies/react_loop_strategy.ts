@@ -11,7 +11,7 @@ import { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, AgentExecutor, IAgentFileBlueprint } from "../agent_executor.ts";
 import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../../../shared/schemas/agent_executor.ts";
 import { IModelProvider } from "../../../ai/types.ts";
-import { AgentExecutionErrorType, ExecutionStrategyName } from "../../../shared/enums.ts";
+import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
 import { parse as parseToml } from "@std/toml";
 import { JSONValue } from "../../../shared/types/json.ts";
 import {
@@ -176,7 +176,11 @@ INSTRUCTIONS:
 4. Output your thought process preceded by "${REACT_THOUGHT_PREFIX}".
 
 AVAILABLE TOOLS:
-${(options.permitted_tools || ["read_file", "write_file", "run_command", "list_directory", "search_files"]).join(", ")}
+${
+      (options.permitted_tools ||
+        [ToolName.READ_FILE, ToolName.WRITE_FILE, ToolName.RUN_COMMAND, ToolName.LIST_DIRECTORY, ToolName.SEARCH_FILES])
+        .join(", ")
+    }
 
 FORMAT:
 ${REACT_THOUGHT_PREFIX}[Your reasoning]

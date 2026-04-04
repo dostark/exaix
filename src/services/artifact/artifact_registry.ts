@@ -16,6 +16,7 @@ import type {
   IArtifactWithContent,
 } from "../../shared/schemas/artifact.ts";
 import { coerceReviewStatus, type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "../../shared/constants.ts";
 
 interface IArtifactRow {
   id: string;
@@ -80,12 +81,12 @@ export class ArtifactRegistry {
     targetBranch?: string,
   ): Promise<string> {
     const artifactId = `artifact-${shortId()}`;
-    const relativeFilePath = join("Memory", "Execution", `${artifactId}.md`);
+    const relativeFilePath = join(DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH, `${artifactId}.md`);
     const absoluteFilePath = join(this.rootDir, relativeFilePath);
     const created = new Date().toISOString();
 
     // Ensure Memory/Execution directory exists
-    await Deno.mkdir(join(this.rootDir, "Memory", "Execution"), { recursive: true });
+    await Deno.mkdir(join(this.rootDir, DEFAULT_MEMORY_PATH, DEFAULT_EXECUTION_MEMORY_PATH), { recursive: true });
 
     // Create frontmatter
     const frontmatter: IArtifactFrontmatter = {

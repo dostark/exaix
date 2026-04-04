@@ -2,9 +2,10 @@
 agent: agent
 description: "Refactor magic-value violations from deno task check:magic"
 tools:
-  - search/changes
-  - search/codebase
-  - edit
+  - git_status
+  - search_files
+  - patch_file
+  - run_command
 ---
 
 # Refactor check:magic violations

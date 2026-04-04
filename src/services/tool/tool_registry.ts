@@ -11,7 +11,7 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
-import { ActivityActor, GitBranchName, LogLevel } from "../../shared/enums.ts";
+import { ActivityActor, GitBranchName, LogLevel, SystemCommand, ToolName } from "../../shared/enums.ts";
 import { DEFAULT_MCP_IDENTITY_ID, PORTAL_PREFIX_PATTERN } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import { IServiceContext } from "../common/types.ts";
@@ -58,28 +58,12 @@ const ALLOWED_COMMANDS = new Set([
   "hash",
   "alias",
   // Validated commands
-  "ls",
-  "cat",
-  "head",
-  "tail",
-  "wc",
-  "file",
-  "stat",
-  "basename",
-  "dirname",
-  "grep",
-  "cut",
-  "tr",
-  "sort",
-  "uniq",
-  "rev",
-  "fold",
-  "fmt",
-  "git",
-  "npm",
-  "node",
-  "deno",
-  "exoctl",
+  SystemCommand.LS,
+  SystemCommand.GIT,
+  SystemCommand.NPM,
+  SystemCommand.NODE,
+  SystemCommand.DENO,
+  SystemCommand.EXOCTL,
 ]);
 
 // ============================================================================
@@ -115,14 +99,14 @@ function validateCommandArguments(command: string, args: string[]): { valid: boo
 
   // Command-specific validations
   switch (command) {
-    case "git":
+    case SystemCommand.GIT:
       return validateGitArguments(args);
-    case "npm":
-    case "node":
-    case "deno":
-    case "exoctl":
+    case SystemCommand.NPM:
+    case SystemCommand.NODE:
+    case SystemCommand.DENO:
+    case SystemCommand.EXOCTL:
       return validateRuntimeArguments(command, args);
-    case "ls":
+    case SystemCommand.LS:
       return validateLsArguments(args);
     case "grep":
       return validateGrepArguments(args);
@@ -376,8 +360,8 @@ export class ToolRegistry implements IToolRegistry {
       },
     });
 
-    this.tools.set("list_directory", {
-      name: "list_directory",
+    this.tools.set(ToolName.LIST_DIRECTORY, {
+      name: ToolName.LIST_DIRECTORY,
       description: "List files and directories in a path",
       parameters: {
         type: "object",
@@ -610,18 +594,18 @@ export class ToolRegistry implements IToolRegistry {
     const strArr = (v: JSONValue): string[] =>
       Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
-    this.executors.set("read_file", (p) => this.readFile(str(p.path)));
-    this.executors.set("write_file", (p) => this.writeFile(str(p.path), str(p.content)));
-    this.executors.set("list_directory", (p) => this.listDirectory(str(p.path)));
-    this.executors.set("search_files", (p) => this.searchFiles(str(p.pattern), str(p.path)));
-    this.executors.set("run_command", (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : []));
-    this.executors.set("create_directory", (p) => this.createDirectory(str(p.path)));
+    this.executors.set(ToolName.READ_FILE, (p) => this.readFile(str(p.path)));
+    this.executors.set(ToolName.WRITE_FILE, (p) => this.writeFile(str(p.path), str(p.content)));
+    this.executors.set(ToolName.LIST_DIRECTORY, (p) => this.listDirectory(str(p.path)));
+    this.executors.set(ToolName.SEARCH_FILES, (p) => this.searchFiles(str(p.pattern), str(p.path)));
+    this.executors.set(ToolName.RUN_COMMAND, (p) => this.runCommand(str(p.command), p.args ? strArr(p.args) : []));
+    this.executors.set(ToolName.CREATE_DIRECTORY, (p) => this.createDirectory(str(p.path)));
     this.executors.set(
-      "fetch_url",
+      ToolName.FETCH_URL,
       (p) => this.fetchUrl(str(p.url), p.format ? str(p.format) : undefined),
     );
     this.executors.set(
-      "grep_search",
+      ToolName.GREP_SEARCH,
       (p) =>
         this.grepSearch(
           str(p.pattern),
@@ -630,26 +614,26 @@ export class ToolRegistry implements IToolRegistry {
         ),
     );
     this.executors.set(
-      "move_file",
+      ToolName.MOVE_FILE,
       (p) =>
         this.moveFile(str(p.source), str(p.destination), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
     );
     this.executors.set(
-      "copy_file",
+      ToolName.COPY_FILE,
       (p) =>
         this.copyFile(str(p.source), str(p.destination), p.overwrite !== undefined ? bool(p.overwrite) : undefined),
     );
-    this.executors.set("delete_file", (p) => this.deleteFile(str(p.path)));
+    this.executors.set(ToolName.DELETE_FILE, (p) => this.deleteFile(str(p.path)));
     this.executors.set(
-      "git_info",
+      ToolName.GIT_INFO,
       (p) => this.gitInfo(str(p.repo_path), p.scope ? str(p.scope) : undefined),
     );
     this.executors.set(
-      "deno_task",
+      ToolName.DENO_TASK,
       (p) => this.denoTask(str(p.task), p.path ? str(p.path) : undefined, p.args ? strArr(p.args) : undefined),
     );
     this.executors.set(
-      "patch_file",
+      ToolName.PATCH_FILE,
       (p) => this.patchFile(str(p.path), p.patches as Array<{ search: string; replace: string }>),
     );
   }

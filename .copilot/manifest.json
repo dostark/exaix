@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-04T13:28:32.677Z",
+  "generated_at": "2026-04-04T14:41:38.694Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -124,7 +124,7 @@
       "path": ".copilot/prompts/commit-message.md",
       "agent": "general",
       "scope": "dev",
-      "title": "Detailed Commit Message Prompt",
+      "title": "Detailed Commit Message Prompt (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
       "version": "0.3",
       "topics": [

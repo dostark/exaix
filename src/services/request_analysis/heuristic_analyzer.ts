@@ -183,6 +183,7 @@ const ACTION_VERBS = [
   "improve",
   "optimise",
   "optimize",
+  "commit",
 ];
 
 function extractTags(text: string, fileRefs: string[]): string[] {

@@ -6,6 +6,7 @@
  * * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
+import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
@@ -183,7 +184,7 @@ export class MemoryExtractorService {
     } else if (proposal.target_project) {
       // Add as pattern to project
       const pattern: IPattern = {
-        name: learning.title || "Untitled Learning",
+        name: learning.title || `${DEFAULT_TITLE_PLACEHOLDER} Learning`,
         description: learning.description || "",
         examples: learning.references?.filter((r: { type: MemoryReferenceType; path: string }) =>
           r.type === MemoryReferenceType.FILE
@@ -205,7 +206,7 @@ export class MemoryExtractorService {
       target: proposal.target_project || MemoryScope.GLOBAL,
       metadata: {
         proposal_id: proposalId,
-        learning_title: proposal.learning?.title || "Untitled",
+        learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
       },
     });
   }
@@ -232,7 +233,7 @@ export class MemoryExtractorService {
       target: proposal.target_project || MemoryScope.GLOBAL,
       metadata: {
         proposal_id: proposalId,
-        learning_title: proposal.learning?.title || "Untitled",
+        learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
         reason,
       },
     });

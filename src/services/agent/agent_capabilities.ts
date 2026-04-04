@@ -6,10 +6,12 @@
  * * @related-files [src/services/agent_executor.ts, src/services/agent_runner.ts]
  */
 
+import { ToolName } from "../../shared/enums.ts";
+
 export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
-  "write_file",
-  "git_commit",
-  "git_create_branch",
+  ToolName.WRITE_FILE,
+  ToolName.GIT_COMMIT,
+  ToolName.GIT_CREATE_BRANCH,
 ] as const;
 
 export type WriteCapabilityRequiringGitTracking = typeof WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING[number];

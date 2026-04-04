@@ -25,7 +25,15 @@ import {
   MemoryType,
 } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION, LOCK_ACQUIRE_TIMEOUT_MS } from "../../shared/constants.ts";
+import {
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_GLOBAL_MEMORY_PATH,
+  DEFAULT_GLOBAL_MEMORY_VERSION,
+  DEFAULT_INDEX_MEMORY_PATH,
+  DEFAULT_PROJECTS_MEMORY_PATH,
+  DEFAULT_TASKS_MEMORY_PATH,
+  LOCK_ACQUIRE_TIMEOUT_MS,
+} from "../../shared/constants.ts";
 import {
   ExecutionMemorySchema,
   GlobalMemorySchema,
@@ -82,11 +90,11 @@ export class MemoryBankService implements IMemoryBankService {
   constructor(private config: Config, private db: IDatabaseService) {
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
-    this.projectsDir = join(this.memoryRoot, "Projects");
-    this.executionDir = join(this.memoryRoot, "Execution");
-    this.tasksDir = join(this.memoryRoot, "Tasks");
-    this.indexDir = join(this.memoryRoot, "Index");
-    this.globalDir = join(this.memoryRoot, "Global");
+    this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);
+    this.executionDir = join(this.memoryRoot, DEFAULT_EXECUTION_MEMORY_PATH);
+    this.tasksDir = join(this.memoryRoot, DEFAULT_TASKS_MEMORY_PATH);
+    this.indexDir = join(this.memoryRoot, DEFAULT_INDEX_MEMORY_PATH);
+    this.globalDir = join(this.memoryRoot, DEFAULT_GLOBAL_MEMORY_PATH);
 
     // Ensure directory structure exists
     this.initializeDirectories();

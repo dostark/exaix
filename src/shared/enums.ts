@@ -112,6 +112,62 @@ export enum GitBranchName {
 }
 
 /**
+ * Standard task types used for categorization and routing.
+ */
+export enum TaskType {
+  TEST = "test",
+  BUGFIX = "bugfix",
+  FEATURE = "feature",
+  REFACTOR = "refactor",
+  DOCS = "docs",
+  ANALYSIS = "analysis",
+  INFRA = "infra",
+  SECURITY = "security",
+  COMMIT = "commit",
+  UNKNOWN = "unknown",
+}
+
+/**
+ * Canonical names for built-in tools.
+ */
+export enum ToolName {
+  READ_FILE = "read_file",
+  WRITE_FILE = "write_file",
+  LIST_DIRECTORY = "list_directory",
+  SEARCH_FILES = "search_files",
+  CREATE_DIRECTORY = "create_directory",
+  RUN_COMMAND = "run_command",
+  FETCH_URL = "fetch_url",
+  GREP_SEARCH = "grep_search",
+  MOVE_FILE = "move_file",
+  COPY_FILE = "copy_file",
+  DELETE_FILE = "delete_file",
+  GIT_INFO = "git_info",
+  DENO_TASK = "deno_task",
+  PATCH_FILE = "patch_file",
+  GIT_COMMIT = "git_commit",
+  GIT_CREATE_BRANCH = "git_create_branch",
+  GIT_CHECKOUT = "git_checkout",
+  GIT_MERGE = "git_merge",
+  GIT_PUSH = "git_push",
+  GIT_PULL = "git_pull",
+  GIT_STASH = "git_stash",
+}
+
+/**
+ * Supported runtime and system commands for tool execution.
+ */
+export enum SystemCommand {
+  DENO = "deno",
+  GIT = "git",
+  NPM = "npm",
+  NODE = "node",
+  EXOCTL = "exoctl",
+  LS = "ls",
+  GREP = "grep",
+}
+
+/**
  * Memory type classifications.
  */
 export enum MemoryType {
@@ -123,6 +179,9 @@ export enum MemoryType {
   PATTERN = "pattern",
   DECISION = "decision",
   LEARNING = "learning",
+  INSIGHT = "insight",
+  ANTI_PATTERN = "anti-pattern",
+  TROUBLESHOOTING = "troubleshooting",
 }
 
 /**
@@ -179,6 +238,8 @@ export enum TaskComplexity {
   MEDIUM = "medium",
   /** Complex operations requiring significant processing */
   COMPLEX = "complex",
+  /** Multi-phase or cross-service initiatives */
+  EPIC = "epic",
 }
 
 /**
@@ -306,6 +367,8 @@ export enum RequestOperation {
   CREATE = "create",
   VIEW = "view",
   DELETE = "delete",
+  LIST = "list",
+  PLAN = "plan",
 }
 
 /**
@@ -1138,6 +1201,7 @@ export enum TuiNodeType {
   SCOPE = "scope",
   PROJECT = "project",
   EXECUTION = "execution",
+  PORTAL = "portal",
   LEARNING = "learning",
   PATTERN = "pattern",
   DECISION = "decision",
@@ -1145,6 +1209,8 @@ export enum TuiNodeType {
   STATUS_GROUP = "status-group",
   MODEL_GROUP = "model-group",
   GROUP = "group",
+  PLAN = "plan",
+  ARTIFACT = "artifact",
 }
 
 /**
@@ -1308,4 +1374,49 @@ export enum ClarifyResultStatus {
   CANCELLED = "cancelled",
   /** No clarification session found for the given request. */
   NO_SESSION = "no_session",
+}
+
+/**
+ * Canonical names for TUI views.
+ */
+export enum TuiViewName {
+  DASHBOARD = "TuiDashboard",
+  PORTAL_MANAGER = "PortalManagerView",
+  MONITOR = "MonitorView",
+  PLAN_REVIEWER = "PlanReviewerView",
+  DAEMON_CONTROL = "DaemonControlView",
+  SKILLS_MANAGER = "SkillsManagerView",
+  MEMORY_VIEW = "MemoryView",
+  REQUEST_MANAGER = "RequestManagerView",
+  AGENT_STATUS = "AgentStatusView",
+  LOG_VIEWER = "LogViewer",
+  STRUCTURED_LOG_VIEWER = "StructuredLogViewer",
+}
+
+/**
+ * Categories of dependencies identified during portal knowledge gathering.
+ */
+export enum DependencyCategory {
+  WEB_FRAMEWORK = "web framework",
+  FULLSTACK_FRAMEWORK = "fullstack framework",
+  SCHEMA_VALIDATION = "schema validation",
+  TEST_FRAMEWORK = "test framework",
+  BUILD_TOOL = "build tool",
+  STATE_MANAGEMENT = "state management",
+  UI_LIBRARY = "ui library",
+  ORM = "orm",
+  DATABASE = "database",
+  UTILITY = "utility",
+  DOCUMENTATION = "documentation",
+}
+
+/**
+ * Standard JSON-RPC 2.0 error codes.
+ */
+export enum JsonRpcErrorCode {
+  PARSE_ERROR = -32700,
+  INVALID_REQUEST = -32600,
+  METHOD_NOT_FOUND = -32601,
+  INVALID_PARAMS = -32602,
+  INTERNAL_ERROR = -32603,
 }

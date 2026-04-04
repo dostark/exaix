@@ -13,6 +13,7 @@
  */
 
 import type { Config } from "../../shared/schemas/config.ts";
+import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 import { MemoryScope } from "../../shared/enums.ts";
 import { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
@@ -59,12 +60,12 @@ export class NotificationService implements INotificationService {
    */
   async notifyMemoryUpdate(proposal: IMemoryUpdateProposal): Promise<void> {
     const metadata = JSON.stringify({
-      learning_title: proposal.learning?.title || "Untitled",
+      learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
       reason: proposal.reason,
     });
 
     await this.notify(
-      `Memory update pending: ${proposal.learning?.title || "Untitled"}`,
+      `Memory update pending: ${proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER}`,
       "memory_update_pending",
       proposal.id,
       undefined,
@@ -78,7 +79,7 @@ export class NotificationService implements INotificationService {
       metadata: {
         proposal_id: proposal.id,
         identity_id: proposal.identity_id,
-        learning_title: proposal.learning?.title || "Untitled",
+        learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
         reason: proposal.reason,
       },
     });

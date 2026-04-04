@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { IMemoryEmbeddingService } from "./memory_embedding.ts";
 import type { ILearning, IMemorySearchResult } from "../../shared/schemas/memory_bank.ts";
-import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../shared/enums.ts";
+import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 
 // ===== Configuration Schema =====
@@ -36,7 +36,7 @@ export type SessionMemoryConfig = z.infer<typeof SessionMemoryConfigSchema>;
  * A memory item retrieved for context injection
  */
 export const MemoryItemSchema = z.object({
-  type: z.enum(["learning", "pattern", "decision", "execution", "insight"]),
+  type: z.nativeEnum(MemoryType),
   title: z.string(),
   content: z.string(),
   relevance: z.number().min(0).max(1),
@@ -68,7 +68,7 @@ export type EnhancedRequest = z.infer<typeof EnhancedRequestSchema>;
 export const InsightSchema = z.object({
   title: z.string().max(100),
   description: z.string().max(2000),
-  category: z.enum(["pattern", "anti-pattern", "decision", "insight", "troubleshooting"]),
+  category: z.nativeEnum(LearningCategory),
   tags: z.array(z.string()).max(10),
   confidence: z.nativeEnum(ConfidenceLevel),
   portal: z.string().optional().describe("Project scope, if any"),
@@ -150,7 +150,7 @@ export class SessionMemoryService {
 
       for (const result of embeddingResults) {
         memories.push({
-          type: "learning",
+          type: MemoryType.LEARNING,
           title: result.title,
           content: result.summary,
           relevance: result.similarity,
@@ -171,8 +171,8 @@ export class SessionMemoryService {
       }
 
       // Filter by config
-      if (result.type === "execution" && !cfg.includeExecutions) continue;
-      if (result.type === "pattern" && !cfg.includePatterns) continue;
+      if (result.type === MemoryType.EXECUTION && !cfg.includeExecutions) continue;
+      if (result.type === MemoryType.PATTERN && !cfg.includePatterns) continue;
 
       memories.push({
         type: this.mapResultType(result.type),
@@ -373,7 +373,7 @@ export class SessionMemoryService {
     const executions = await this.memoryBank.getExecutionHistory(portal, limit);
 
     return executions.map((exec) => ({
-      type: "execution" as const,
+      type: MemoryType.EXECUTION,
       title: `Execution: ${exec.trace_id.slice(0, 8)}`,
       content: exec.summary,
       relevance: 1.0, // Recent executions are always relevant
@@ -543,16 +543,16 @@ ${memory.content}`;
     type: IMemorySearchResult["type"],
   ): MemoryItem["type"] {
     switch (type) {
-      case "learning":
-        return "learning";
-      case "pattern":
-        return "pattern";
-      case "decision":
-        return "decision";
-      case "execution":
-        return "execution";
+      case MemoryType.LEARNING:
+        return MemoryType.LEARNING;
+      case MemoryType.PATTERN:
+        return MemoryType.PATTERN;
+      case MemoryType.DECISION:
+        return MemoryType.DECISION;
+      case MemoryType.EXECUTION:
+        return MemoryType.EXECUTION;
       default:
-        return "insight";
+        return MemoryType.INSIGHT;
     }
   }
 }

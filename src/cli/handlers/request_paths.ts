@@ -6,6 +6,8 @@
  * * @related-files [src/cli/handlers/request_create_handler.ts]
  */
 
+import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
+import { RequestPriority } from "../../shared/enums.ts";
 import { join } from "@std/path";
 import type { ICommandContext } from "../base.ts";
 
@@ -30,8 +32,8 @@ export function getWorkspaceArchiveDir(context: ICommandContext): string {
 /** Core frontmatter fields shared across request list and show handlers. */
 export const REQUEST_CORE_FIELDS: Array<{ key: string; fallback: string }> = [
   { key: "trace_id", fallback: "" },
-  { key: "priority", fallback: "normal" },
-  { key: "identity", fallback: "default" },
+  { key: "priority", fallback: RequestPriority.NORMAL },
+  { key: "identity", fallback: DEFAULT_IDENTITY_ID },
   { key: "created", fallback: "" },
   { key: "created_by", fallback: "unknown" },
   { key: "source", fallback: "unknown" },

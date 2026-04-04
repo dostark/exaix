@@ -40,6 +40,7 @@ These templates are the canonical Exaix workflow prompts. They are distinct from
 - `#upgrade` — Dependency/Version Upgrade
 - `#explore` — Codebase Exploration
 - `#duplication` — Code Duplication Reduction
+- `#commit` — Detailed Commit Message
 - `#next-steps` — TDD Red-Green-Refactor Phase Steps (plan-driven, CI-gated, per-step commits)
 
 ## Usage Example

@@ -9,7 +9,7 @@
 import { colorize, type ITuiTheme } from "./colors.ts";
 import { renderLayoutPresetListLines } from "./layout_rendering.ts";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "./constants.ts";
-import { ResizeDirection, SplitDirection } from "../../shared/enums.ts";
+import { ResizeDirection, SplitDirection, TuiViewName } from "../../shared/enums.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 
 // ===== Layout Interfaces =====
@@ -70,7 +70,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
     shortcut: "1",
     create: (width, height, views) => [{
       id: TUI_MAIN_PANE_ID,
-      viewName: views[0] || "PortalManagerView",
+      viewName: views[0] || TuiViewName.PORTAL_MANAGER,
       x: 0,
       y: 0,
       width,
@@ -89,7 +89,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       return [
         {
           id: "left",
-          viewName: views[0] || "PortalManagerView",
+          viewName: views[0] || TuiViewName.PORTAL_MANAGER,
           x: 0,
           y: 0,
           width: halfWidth,
@@ -98,7 +98,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "right",
-          viewName: views[1] || "MonitorView",
+          viewName: views[1] || TuiViewName.MONITOR,
           x: halfWidth,
           y: 0,
           width: width - halfWidth,
@@ -119,7 +119,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       return [
         {
           id: "top",
-          viewName: views[0] || "PortalManagerView",
+          viewName: views[0] || TuiViewName.PORTAL_MANAGER,
           x: 0,
           y: 0,
           width,
@@ -128,7 +128,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "bottom",
-          viewName: views[1] || "MonitorView",
+          viewName: views[1] || TuiViewName.MONITOR,
           x: 0,
           y: halfHeight,
           width,
@@ -150,7 +150,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       return [
         {
           id: "top-left",
-          viewName: views[0] || "PortalManagerView",
+          viewName: views[0] || TuiViewName.PORTAL_MANAGER,
           x: 0,
           y: 0,
           width: halfWidth,
@@ -159,7 +159,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "top-right",
-          viewName: views[1] || "PlanReviewerView",
+          viewName: views[1] || TuiViewName.PLAN_REVIEWER,
           x: halfWidth,
           y: 0,
           width: width - halfWidth,
@@ -168,7 +168,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "bottom-left",
-          viewName: views[2] || "MonitorView",
+          viewName: views[2] || TuiViewName.MONITOR,
           x: 0,
           y: halfHeight,
           width: halfWidth,
@@ -177,7 +177,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "bottom-right",
-          viewName: views[3] || "DaemonControlView",
+          viewName: views[3] || TuiViewName.DAEMON_CONTROL,
           x: halfWidth,
           y: halfHeight,
           width: width - halfWidth,
@@ -198,7 +198,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       return [
         {
           id: TUI_MAIN_PANE_ID,
-          viewName: views[0] || "PortalManagerView",
+          viewName: views[0] || TuiViewName.PORTAL_MANAGER,
           x: 0,
           y: 0,
           width: mainWidth,
@@ -207,7 +207,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "sidebar",
-          viewName: views[1] || "MonitorView",
+          viewName: views[1] || TuiViewName.MONITOR,
           x: mainWidth,
           y: 0,
           width: width - mainWidth,
@@ -229,7 +229,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
       return [
         {
           id: TUI_MAIN_PANE_ID,
-          viewName: views[0] || "PortalManagerView",
+          viewName: views[0] || TuiViewName.PORTAL_MANAGER,
           x: 0,
           y: 0,
           width: mainWidth,
@@ -238,7 +238,7 @@ export const LAYOUT_PRESETS: ILayoutPreset[] = [
         },
         {
           id: "sidebar-top",
-          viewName: views[1] || "PlanReviewerView",
+          viewName: views[1] || TuiViewName.PLAN_REVIEWER,
           x: mainWidth,
           y: 0,
           width: width - mainWidth,

@@ -25,6 +25,7 @@ import {
   TUI_TREE_ICONS,
 } from "./helpers/constants.ts";
 import { colorize, getTheme, type ITuiTheme } from "./helpers/colors.ts";
+import { KeyBindingCategory } from "./helpers/keyboard.ts";
 import {
   handleMemoryNotifications as _handleMemoryNotifications,
   type IDashboardContext,
@@ -263,31 +264,61 @@ type DashboardAction =
 export class DashboardKeyBindings extends KeyBindingsBase<DashboardAction> {
   readonly KEY_BINDINGS: readonly IKeyBinding<DashboardAction>[] = [
     // Navigation
-    { key: KEYS.TAB, action: "next_pane", description: "Next pane", category: "Navigation" },
-    { key: KEYS.SHIFT_TAB, action: "prev_pane", description: "Previous pane", category: "Navigation" },
-    { key: KEYS.ONE_TO_SEVEN, action: "view_1", description: "Jump to pane 1-7", category: "Navigation" },
+    { key: KEYS.TAB, action: "next_pane", description: "Next pane", category: KeyBindingCategory.NAVIGATION },
+    { key: KEYS.SHIFT_TAB, action: "prev_pane", description: "Previous pane", category: KeyBindingCategory.NAVIGATION },
+    {
+      key: KEYS.ONE_TO_SEVEN,
+      action: "view_1",
+      description: "Jump to pane 1-7",
+      category: KeyBindingCategory.NAVIGATION,
+    },
 
     // Layout
-    { key: KEYS.V, action: "split_vertical", description: "Split pane vertically", category: "Layout" },
-    { key: KEYS.H, action: "split_horizontal", description: "Split pane horizontally", category: "Layout" },
-    { key: KEYS.C, action: "close_pane", description: "Close current pane", category: "Layout" },
-    { key: KEYS.CAP_Z, action: "maximize_pane", description: "Maximize/restore pane", category: "Layout" },
-    { key: KEYS.S, action: "save_layout", description: "Save layout", category: "Layout" },
-    { key: KEYS.R, action: "restore_layout", description: "Restore layout", category: "Layout" },
-    { key: KEYS.D, action: "reset_layout", description: "Reset to default", category: "Layout" },
+    {
+      key: KEYS.V,
+      action: "split_vertical",
+      description: "Split pane vertically",
+      category: KeyBindingCategory.LAYOUT,
+    },
+    {
+      key: KEYS.H,
+      action: "split_horizontal",
+      description: "Split pane horizontally",
+      category: KeyBindingCategory.LAYOUT,
+    },
+    { key: KEYS.C, action: "close_pane", description: "Close current pane", category: KeyBindingCategory.LAYOUT },
+    {
+      key: KEYS.CAP_Z,
+      action: "maximize_pane",
+      description: "Maximize/restore pane",
+      category: KeyBindingCategory.LAYOUT,
+    },
+    { key: KEYS.S, action: "save_layout", description: "Save layout", category: KeyBindingCategory.LAYOUT },
+    { key: KEYS.R, action: "restore_layout", description: "Restore layout", category: KeyBindingCategory.LAYOUT },
+    { key: KEYS.D, action: "reset_layout", description: "Reset to default", category: KeyBindingCategory.LAYOUT },
 
     // Resizing
-    { key: KEYS.CTRL_LEFT, action: "resize_left", description: "Resize left", category: "Layout" },
-    { key: KEYS.CTRL_RIGHT, action: "resize_right", description: "Resize right", category: "Layout" },
-    { key: KEYS.CTRL_UP, action: "resize_up", description: "Resize up", category: "Layout" },
-    { key: KEYS.CTRL_DOWN, action: "resize_down", description: "Resize down", category: "Layout" },
+    { key: KEYS.CTRL_LEFT, action: "resize_left", description: "Resize left", category: KeyBindingCategory.LAYOUT },
+    { key: KEYS.CTRL_RIGHT, action: "resize_right", description: "Resize right", category: KeyBindingCategory.LAYOUT },
+    { key: KEYS.CTRL_UP, action: "resize_up", description: "Resize up", category: KeyBindingCategory.LAYOUT },
+    { key: KEYS.CTRL_DOWN, action: "resize_down", description: "Resize down", category: KeyBindingCategory.LAYOUT },
 
     // Dialogs
-    { key: KEYS.QUESTION, action: "show_help", description: "Show help", category: "General" },
-    { key: KEYS.N, action: "show_notifications", description: "Toggle notifications", category: "General" },
-    { key: KEYS.M, action: "show_memory_notifications", description: "Memory updates", category: "General" },
-    { key: KEYS.P, action: "show_view_picker", description: "View picker", category: "General" },
-    { key: KEYS.ESC_Q, action: "quit", description: "Quit dashboard", category: "General" },
+    { key: KEYS.QUESTION, action: "show_help", description: "Show help", category: KeyBindingCategory.GENERAL },
+    {
+      key: KEYS.N,
+      action: "show_notifications",
+      description: "Toggle notifications",
+      category: KeyBindingCategory.GENERAL,
+    },
+    {
+      key: KEYS.M,
+      action: "show_memory_notifications",
+      description: "Memory updates",
+      category: KeyBindingCategory.GENERAL,
+    },
+    { key: KEYS.P, action: "show_view_picker", description: "View picker", category: KeyBindingCategory.GENERAL },
+    { key: KEYS.ESC_Q, action: "quit", description: "Quit dashboard", category: KeyBindingCategory.GENERAL },
   ];
 }
 

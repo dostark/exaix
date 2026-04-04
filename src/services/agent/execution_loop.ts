@@ -34,6 +34,7 @@ import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/s
 import { isReadOnlyAgentCapabilities } from "./agent_capabilities.ts";
 import { ArtifactRegistry } from "../artifact/artifact_registry.ts";
 import {
+  DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
@@ -143,7 +144,12 @@ export class ExecutionLoop {
   }
 
   private async createWorktreeExecutionPointer(traceId: string, canonicalWorktreePath: string): Promise<void> {
-    const traceDir = join(this.config.system.root, this.config.paths.memory, "Execution", traceId);
+    const traceDir = join(
+      this.config.system.root,
+      this.config.paths.memory,
+      DEFAULT_EXECUTION_MEMORY_PATH,
+      traceId,
+    );
     await Deno.mkdir(traceDir, { recursive: true });
 
     const pointerPath = join(traceDir, "worktree");
@@ -743,7 +749,12 @@ export class ExecutionLoop {
 
   private async persistExecutionReport(traceId: string, report: string): Promise<void> {
     try {
-      const execDir = join(this.config.system.root, this.config.paths.memory, "Execution", traceId);
+      const execDir = join(
+        this.config.system.root,
+        this.config.paths.memory,
+        DEFAULT_EXECUTION_MEMORY_PATH,
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
       await Deno.writeTextFile(join(execDir, EXECUTION_REPORT_FILENAME), report);
     } catch (error) {
@@ -820,7 +831,12 @@ export class ExecutionLoop {
     // Persist the executed plan as an execution artifact for trace inspection.
     // This avoids relying on git diffs for read-only agent outputs.
     try {
-      const execDir = join(this.config.system.root, this.config.paths.memory, "Execution", traceId);
+      const execDir = join(
+        this.config.system.root,
+        this.config.paths.memory,
+        DEFAULT_EXECUTION_MEMORY_PATH,
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
 
       const planContent = await Deno.readTextFile(planPath);
@@ -833,11 +849,16 @@ export class ExecutionLoop {
     // This provides a single stable review surface (separate from git).
     if (artifactContext?.isReadOnly && this.db && artifactContext.planAgentId) {
       try {
-        const execDir = join(this.config.system.root, this.config.paths.memory, "Execution", traceId);
+        const execDir = join(
+          this.config.system.root,
+          this.config.paths.memory,
+          DEFAULT_EXECUTION_MEMORY_PATH,
+          traceId,
+        );
         const summaryPath = join(
           this.config.system.root,
           this.config.paths.memory,
-          "Execution",
+          DEFAULT_EXECUTION_MEMORY_PATH,
           traceId,
           "summary.md",
         );
@@ -858,7 +879,7 @@ export class ExecutionLoop {
         }
 
         const memoryRoot = this.config.paths.memory.replace(/^\.\/?/, "");
-        const memoryExecutionDir = this.config.paths.memoryExecution || "Execution";
+        const memoryExecutionDir = this.config.paths.memoryExecution || DEFAULT_EXECUTION_MEMORY_PATH;
         const traceDirRel = `${memoryRoot}/${memoryExecutionDir}/${traceId}/`;
         const planSection = planContent.trim().length > 0
           ? `${EXECUTION_ARTIFACT_SECTION_SEPARATOR}${EXECUTION_ARTIFACT_PLAN_SECTION_TITLE}` +
@@ -928,7 +949,12 @@ export class ExecutionLoop {
 
     // Persist the failed plan as an execution artifact for trace inspection.
     try {
-      const execDir = join(this.config.system.root, this.config.paths.memory, "Execution", traceId);
+      const execDir = join(
+        this.config.system.root,
+        this.config.paths.memory,
+        DEFAULT_EXECUTION_MEMORY_PATH,
+        traceId,
+      );
       await Deno.mkdir(execDir, { recursive: true });
       const planContent = await Deno.readTextFile(planPath);
       await Deno.writeTextFile(join(execDir, "plan.md"), planContent);
@@ -993,7 +1019,11 @@ export class ExecutionLoop {
   private createMissionReporter(): MissionReporter {
     const memoryBank = new MemoryBankService(this.config, this.db!);
     const reportConfig = {
-      reportsDirectory: join(this.config.system.root, this.config.paths.memory, "Execution"),
+      reportsDirectory: join(
+        this.config.system.root,
+        this.config.paths.memory,
+        DEFAULT_EXECUTION_MEMORY_PATH,
+      ),
     };
     return new MissionReporter(this.config, reportConfig, memoryBank, this.db);
   }
@@ -1132,7 +1162,7 @@ export class ExecutionLoop {
         const failureDir = join(
           this.config.system.root,
           this.config.paths.memory,
-          "Execution",
+          DEFAULT_EXECUTION_MEMORY_PATH,
           traceId,
         );
         await Deno.mkdir(failureDir, { recursive: true });
