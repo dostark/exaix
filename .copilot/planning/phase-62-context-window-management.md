@@ -90,14 +90,16 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 
 **Success Criteria:**
 
-- [ ] `PromptBudgetAllocator.allocate()` correctly calculates base shares, enforcing `SECTION_FLOORS`.
-- [ ] `Waterfall` logic successfully shifts surplus from empty Memory/Skills/History to the **Plan** and **System** sections.
-- [ ] Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via `transformers.js` or `tiktoken` port).
+- [x] `PromptBudgetAllocator.allocate()` correctly calculates base shares, enforcing `SECTION_FLOORS`.
+- [x] `Waterfall` logic successfully shifts surplus from empty Memory/Skills/History to the **Plan** and **System** sections.
+- [x] Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via `transformers.js` or `tiktoken` port).
 
-**Planned Tests:**
+**Implemented Tests:**
 
-- **Unit**: `tests/unit/services/prompt_budget_allocator_test.ts` — test allocation with 100% empty memory (surplus transfer).
-- **Unit**: `tests/unit/services/token_counter_test.ts` — verify heuristic accuracy.
+- ✅ **Unit**: `tests/unit/services/prompt_budget_allocator_test.ts` — 5/5 tests passing (allocation with waterfall, base weights, floor enforcement, default fallback).
+- ✅ **Unit**: `tests/unit/services/token_counter_test.ts` — 5/5 tests passing (heuristic accuracy, edge cases, constant verification).
+
+**✅ IMPLEMENTED** — `src/services/context/prompt_budget_allocator.ts`, `src/services/context/token_counter.ts`, 10/10 tests passing
 
 ### Step 62.3: Context Service Refactoring
 

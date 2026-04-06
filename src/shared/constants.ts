@@ -413,6 +413,19 @@ export const SECTION_FLOORS = {
   plan: 2_000,
 } as const;
 
+/**
+ * Base allocation weights for prompt budget sections (as proportions of usable context).
+ * Sum should equal 1.0 after waterfall reallocation.
+ */
+export const SECTION_BASE_WEIGHTS = {
+  system: 0.20,
+  plan: 0.35,
+  portalKnowledge: 0.20,
+  memory: 0.10,
+  skills: 0.10,
+  loopHistory: 0.05,
+} as const;
+
 // ============================================================================
 // Cost Tracking Validation Limits
 // ============================================================================
