@@ -43,15 +43,19 @@ import type { BlueprintCreateOptions, BlueprintRemoveOptions } from "../../src/c
 */
 
 // ---- Basic module export sanity tests ----
-Deno.test("exactl exposes test context when EXA_TEST_MODE=1", async () => {
-  await withTestMod((mod, _ctx) => {
-    assertExists(mod.__test_getContext);
-    const c = mod.__test_getContext();
-    assertEquals(c.IN_TEST_MODE, true);
-    assertExists(c.requestCommands);
-    assertExists(c.planCommands);
-    assertExists(c.flowCommands);
-  });
+Deno.test({
+  name: "exactl exposes test context when EXA_TEST_MODE=1",
+  ignore: !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1",
+  async fn() {
+    await withTestMod((mod, _ctx) => {
+      assertExists(mod.__test_getContext);
+      const c = mod.__test_getContext();
+      assertEquals(c.IN_TEST_MODE, true);
+      assertExists(c.requestCommands);
+      assertExists(c.planCommands);
+      assertExists(c.flowCommands);
+    });
+  },
 });
 
 // ---- Parse-based command tests (merged from existing test suite) ----

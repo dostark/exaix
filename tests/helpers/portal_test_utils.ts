@@ -20,6 +20,7 @@ import { IReviewStatus, ReviewStatus } from "../../src/reviews/review_status.ts"
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
+import { withCliProcessMutex } from "./cli_process_mutex.ts";
 
 export interface IPortalTestSetup {
   portalAlias: string;
@@ -80,6 +81,51 @@ export async function setupPortalGitRepos(): Promise<IPortalGitRepoSetup> {
   return { tempDir, portalRepoDir, workspaceRepoDir, config, db, cleanup };
 }
 
+function getFallbackConfig(root: string): string {
+  return `
+[system]
+version = "1.0.0"
+log_level = "info"
+root = "${root}"
+
+[paths]
+memory = "./Memory"
+blueprints = "./Blueprints"
+runtime = "./.exa"
+workspace = "./Workspace"
+portals = "./Portals"
+active = "Active"
+archive = "Archive"
+plans = "Plans"
+requests = "Requests"
+rejected = "Rejected"
+identities = "Identities"
+flows = "Flows"
+memoryProjects = "Projects"
+memoryExecution = "Execution"
+memoryIndex = "Index"
+memorySkills = "Skills"
+memoryPending = "Pending"
+memoryTasks = "Tasks"
+memoryGlobal = "Global"
+
+[database.sqlite]
+journal_mode = "WAL"
+foreign_keys = true
+busy_timeout_ms = 5000
+
+[agents]
+default_model = "default"
+timeout_sec = 60
+max_iterations = 10
+
+[models.default]
+provider = "mock"
+model = "gpt-5.2-pro"
+timeout_ms = 30000
+`.trim();
+}
+
 /**
  * Helper to run exactl CLI command
  */
@@ -87,20 +133,34 @@ export async function runExactl(args: string[], cwd: string) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
   const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
 
-  const env = Deno.env.toObject();
-  delete env.EXA_TEST_MODE;
-  delete env.EXA_TEST_CLI_MODE;
-  env.EXA_CONFIG_PATH = join(cwd, "exa.config.toml");
+  const configPath = join(cwd, "exa.config.toml");
+  const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
+  if (!hasConfig) {
+    await Deno.writeTextFile(configPath, getFallbackConfig(cwd));
+  }
 
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", exactlPath, ...args],
-    cwd,
-    stdout: "piped",
-    stderr: "piped",
-    env,
+  const parentEnv = Deno.env.toObject();
+  const env: Record<string, string> = {
+    PATH: parentEnv.PATH ?? "",
+    HOME: parentEnv.HOME ?? "",
+    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
+    TERM: parentEnv.TERM ?? "xterm",
+  };
+  env.EXA_CONFIG_PATH = configPath;
+  // Ensure deterministic provider selection under parallel test execution.
+  env.EXA_LLM_PROVIDER = "mock";
+
+  const { code, stdout, stderr } = await withCliProcessMutex(async () => {
+    const command = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", exactlPath, ...args],
+      cwd,
+      stdout: "piped",
+      stderr: "piped",
+      env,
+    });
+
+    return await command.output();
   });
-
-  const { code, stdout, stderr } = await command.output();
   const stdoutStr = new TextDecoder().decode(stdout);
   const stderrStr = new TextDecoder().decode(stderr);
 

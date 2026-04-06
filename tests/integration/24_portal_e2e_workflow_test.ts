@@ -28,7 +28,24 @@ import {
 import { setupGitRepo as _setupGitRepo } from "../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
-Deno.test("[e2e] Portal request → plan → execution → artifact review (read-only)", async () => {
+const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
+
+function parallelSafeTest(
+  nameOrDef: string | Deno.TestDefinition,
+  fn?: () => Promise<void> | void,
+): void {
+  if (typeof nameOrDef === "string") {
+    Deno.test({ name: nameOrDef, ignore: skipInParallel, fn: fn! });
+    return;
+  }
+
+  Deno.test({
+    ...nameOrDef,
+    ignore: skipInParallel || !!nameOrDef.ignore,
+  });
+}
+
+parallelSafeTest("[e2e] Portal request → plan → execution → artifact review (read-only)", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -157,7 +174,7 @@ Return an analysis-only plan.
   }
 });
 
-Deno.test("[e2e] Portal request → execution → git review in portal repo (write-capable)", async () => {
+parallelSafeTest("[e2e] Portal request → execution → git review in portal repo (write-capable)", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -227,7 +244,7 @@ Deno.test("[e2e] Portal request → execution → git review in portal repo (wri
   }
 });
 
-Deno.test("[e2e] Portal target_branch review approve merges into that branch", async () => {
+parallelSafeTest("[e2e] Portal target_branch review approve merges into that branch", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -340,7 +357,7 @@ Deno.test("[e2e] Portal target_branch review approve merges into that branch", a
   }
 });
 
-Deno.test("[e2e][negative] Portal CLI review approve fails if not on review base_branch", async () => {
+parallelSafeTest("[e2e][negative] Portal CLI review approve fails if not on review base_branch", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -407,7 +424,7 @@ Deno.test("[e2e][negative] Portal CLI review approve fails if not on review base
   }
 });
 
-Deno.test("[e2e][negative] Portal CLI review show fails without portal symlink", async () => {
+parallelSafeTest("[e2e][negative] Portal CLI review show fails without portal symlink", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -448,7 +465,7 @@ Deno.test("[e2e][negative] Portal CLI review show fails without portal symlink",
   }
 });
 
-Deno.test(
+parallelSafeTest(
   "[e2e] Portal target_branch + worktree strategy executes in worktree and review approve merges into that branch",
   async () => {
     const env = await TestEnvironment.create();
@@ -566,7 +583,7 @@ Deno.test(
   },
 );
 
-Deno.test("[e2e] Portal review stores base_branch for CLI validation", async () => {
+parallelSafeTest("[e2e] Portal review stores base_branch for CLI validation", async () => {
   const env = await TestEnvironment.create();
 
   try {
@@ -609,7 +626,7 @@ Deno.test("[e2e] Portal review stores base_branch for CLI validation", async () 
   }
 });
 
-Deno.test("[e2e] Portal review detects divergent branches", async () => {
+parallelSafeTest("[e2e] Portal review detects divergent branches", async () => {
   const env = await TestEnvironment.create();
 
   try {

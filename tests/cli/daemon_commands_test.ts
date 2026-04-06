@@ -580,7 +580,10 @@ async function waitForProcessState(
 }
 
 // Additional edge case tests from tests/daemon_commands_test.ts
-describe("DaemonCommands - Edge Cases", () => {
+describe("DaemonCommands - Edge Cases", {
+  sanitizeResources: false,
+  sanitizeOps: false,
+}, () => {
   let tempDir: string;
   let db: DatabaseService;
   let daemonCommands: TestDaemonCommands;

@@ -14,6 +14,52 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ArtifactRegistry } from "../../src/services/artifact/artifact_registry.ts";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
+import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
+
+function getFallbackConfig(root: string): string {
+  return `
+[system]
+version = "1.0.0"
+log_level = "info"
+root = "${root}"
+
+[paths]
+memory = "./Memory"
+blueprints = "./Blueprints"
+runtime = "./.exa"
+workspace = "./Workspace"
+portals = "./Portals"
+active = "Active"
+archive = "Archive"
+plans = "Plans"
+requests = "Requests"
+rejected = "Rejected"
+identities = "Identities"
+flows = "Flows"
+memoryProjects = "Projects"
+memoryExecution = "Execution"
+memoryIndex = "Index"
+memorySkills = "Skills"
+memoryPending = "Pending"
+memoryTasks = "Tasks"
+memoryGlobal = "Global"
+
+[database.sqlite]
+journal_mode = "WAL"
+foreign_keys = true
+busy_timeout_ms = 5000
+
+[agents]
+default_model = "default"
+timeout_sec = 60
+max_iterations = 10
+
+[models.default]
+provider = "mock"
+model = "gpt-5.2-pro"
+timeout_ms = 30000
+`.trim();
+}
 
 // Helper to run exactl command in a given workspace
 async function runExactl(args: string[], cwd: string) {
@@ -22,20 +68,34 @@ async function runExactl(args: string[], cwd: string) {
 
   console.log(`Running CLI command: exactl ${args.join(" ")} in ${cwd}`);
 
-  const env = Deno.env.toObject();
-  delete env.EXA_TEST_MODE;
-  delete env.EXA_TEST_CLI_MODE;
-  env.EXA_CONFIG_PATH = join(cwd, "exa.config.toml");
+  const configPath = join(cwd, "exa.config.toml");
+  const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
+  if (!hasConfig) {
+    await Deno.writeTextFile(configPath, getFallbackConfig(cwd));
+  }
+
+  const parentEnv = Deno.env.toObject();
+  const env: Record<string, string> = {
+    PATH: parentEnv.PATH ?? "",
+    HOME: parentEnv.HOME ?? "",
+    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
+    TERM: parentEnv.TERM ?? "xterm",
+  };
+  env.EXA_CONFIG_PATH = configPath;
+  // Prevent cross-test env leakage from selecting paid providers in parallel runs.
+  env.EXA_LLM_PROVIDER = "mock";
 
   // Run deno directly with cwd set
-  const command = new Deno.Command(Deno.execPath(), {
-    args: ["run", "--allow-all", exactlPath, ...args],
-    cwd: cwd,
-    stdout: "piped",
-    stderr: "piped",
-    env,
+  const { code, stdout, stderr } = await withCliProcessMutex(async () => {
+    const command = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-all", exactlPath, ...args],
+      cwd: cwd,
+      stdout: "piped",
+      stderr: "piped",
+      env,
+    });
+    return await command.output();
   });
-  const { code, stdout, stderr } = await command.output();
   const stdoutStr = new TextDecoder().decode(stdout);
   const stderrStr = new TextDecoder().decode(stderr);
 
@@ -96,7 +156,13 @@ async function runExactl(args: string[], cwd: string) {
   };
 }
 
-Deno.test("CLI: request list shows created requests", async () => {
+const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
+
+function cliTest(name: string, fn: () => Promise<void>): void {
+  Deno.test({ name, ignore: skipInParallel, fn });
+}
+
+cliTest("CLI: request list shows created requests", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a request file in the workspace
@@ -111,7 +177,7 @@ Deno.test("CLI: request list shows created requests", async () => {
   }
 });
 
-Deno.test("[regression] CLI: request list surfaces target_branch", async () => {
+cliTest("[regression] CLI: request list surfaces target_branch", async () => {
   const env = await TestEnvironment.create();
   try {
     const targetBranch = "release_1.2";
@@ -127,7 +193,7 @@ Deno.test("[regression] CLI: request list surfaces target_branch", async () => {
   }
 });
 
-Deno.test("CLI: request show displays request details", async () => {
+cliTest("CLI: request show displays request details", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a request
@@ -141,7 +207,7 @@ Deno.test("CLI: request show displays request details", async () => {
   }
 });
 
-Deno.test("[regression] CLI: request show surfaces target_branch", async () => {
+cliTest("[regression] CLI: request show surfaces target_branch", async () => {
   const env = await TestEnvironment.create();
   try {
     const targetBranch = "release_1.2";
@@ -156,7 +222,7 @@ Deno.test("[regression] CLI: request show surfaces target_branch", async () => {
   }
 });
 
-Deno.test("CLI: plan list shows generated plans", async () => {
+cliTest("CLI: plan list shows generated plans", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a request and a plan
@@ -171,7 +237,7 @@ Deno.test("CLI: plan list shows generated plans", async () => {
   }
 });
 
-Deno.test("CLI: plan show displays plan details", async () => {
+cliTest("CLI: plan show displays plan details", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a request and a plan
@@ -189,7 +255,7 @@ Deno.test("CLI: plan show displays plan details", async () => {
   }
 });
 
-Deno.test("CLI: review list shows pending reviews", async () => {
+cliTest("CLI: review list shows pending reviews", async () => {
   const env = await TestEnvironment.create();
   try {
     // Just check command runs in clean env
@@ -200,7 +266,7 @@ Deno.test("CLI: review list shows pending reviews", async () => {
   }
 });
 
-Deno.test("CLI: review show displays review details", async () => {
+cliTest("CLI: review show displays review details", async () => {
   const env = await TestEnvironment.create();
   try {
     // Just check command runs with dummy id
@@ -211,7 +277,7 @@ Deno.test("CLI: review show displays review details", async () => {
   }
 });
 
-Deno.test("CLI: review show --diff displays artifact body for artifact IDs", async () => {
+cliTest("CLI: review show --diff displays artifact body for artifact IDs", async () => {
   const env = await TestEnvironment.create();
   try {
     const artifactRegistry = new ArtifactRegistry(env.db, env.tempDir);
@@ -229,7 +295,7 @@ Deno.test("CLI: review show --diff displays artifact body for artifact IDs", asy
   }
 });
 
-Deno.test("CLI: review approve marks artifact as approved (no git)", async () => {
+cliTest("CLI: review approve marks artifact as approved (no git)", async () => {
   const env = await TestEnvironment.create();
   try {
     const artifactRegistry = new ArtifactRegistry(env.db, env.tempDir);
@@ -249,7 +315,7 @@ Deno.test("CLI: review approve marks artifact as approved (no git)", async () =>
   }
 });
 
-Deno.test("CLI: review list includes both code reviews and artifact-backed reviews", async () => {
+cliTest("CLI: review list includes both code reviews and artifact-backed reviews", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create an artifact-backed review
@@ -279,7 +345,7 @@ Deno.test("CLI: review list includes both code reviews and artifact-backed revie
   }
 });
 
-Deno.test("CLI: portal add/remove/refresh works", async () => {
+cliTest("CLI: portal add/remove/refresh works", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create a dummy project to add as portal
@@ -299,7 +365,7 @@ Deno.test("CLI: portal add/remove/refresh works", async () => {
   }
 });
 
-Deno.test("[regression] CLI: portal analyze and knowledge commands are recognized", async () => {
+cliTest("[regression] CLI: portal analyze and knowledge commands are recognized", async () => {
   const env = await TestEnvironment.create();
   try {
     // These should not return "Unknown command" (exit code 2)
@@ -319,7 +385,7 @@ Deno.test("[regression] CLI: portal analyze and knowledge commands are recognize
   }
 });
 
-Deno.test("[regression] CLI: request --target-branch writes target_branch frontmatter", async () => {
+cliTest("[regression] CLI: request --target-branch writes target_branch frontmatter", async () => {
   const env = await TestEnvironment.create();
   try {
     const description = "Target branch frontmatter request";
@@ -357,7 +423,7 @@ Deno.test("[regression] CLI: request --target-branch writes target_branch frontm
   }
 });
 
-Deno.test("[regression] CLI: portal add persists default_branch and execution_strategy", async () => {
+cliTest("[regression] CLI: portal add persists default_branch and execution_strategy", async () => {
   const env = await TestEnvironment.create();
   try {
     const portalAlias = "TestPortal";
@@ -423,7 +489,7 @@ Deno.test.ignore("[regression] CLI: portal show includes default_branch and exec
   }
 });
 
-Deno.test("[regression] CLI: portal add rejects invalid --execution-strategy", async () => {
+cliTest("[regression] CLI: portal add rejects invalid --execution-strategy", async () => {
   const env = await TestEnvironment.create();
   try {
     const portalAlias = "TestPortal";
@@ -445,7 +511,7 @@ Deno.test("[regression] CLI: portal add rejects invalid --execution-strategy", a
   }
 });
 
-Deno.test("CLI: dashboard launches without error (smoke test)", async () => {
+cliTest("CLI: dashboard launches without error (smoke test)", async () => {
   const env = await TestEnvironment.create();
   try {
     const result = await runExactl(["dashboard", "--help"], env.tempDir);
@@ -468,7 +534,7 @@ Deno.test("CLI: dashboard launches without error (smoke test)", async () => {
   }
 });
 
-Deno.test("CLI: request create with missing description fails", async () => {
+cliTest("CLI: request create with missing description fails", async () => {
   const env = await TestEnvironment.create();
   try {
     const result = await runExactl([FlowInputSource.REQUEST], env.tempDir);
@@ -480,7 +546,7 @@ Deno.test("CLI: request create with missing description fails", async () => {
   }
 });
 
-Deno.test("CLI: plan approve/reject/revise error handling", async () => {
+cliTest("CLI: plan approve/reject/revise error handling", async () => {
   const env = await TestEnvironment.create();
   try {
     // Approve non-existent plan
@@ -500,7 +566,7 @@ Deno.test("CLI: plan approve/reject/revise error handling", async () => {
   }
 });
 
-Deno.test("CLI: blueprint create/list/show/remove/validate edge cases", async () => {
+cliTest("CLI: blueprint create/list/show/remove/validate edge cases", async () => {
   const env = await TestEnvironment.create();
   try {
     // Create blueprint with missing required options
@@ -528,7 +594,7 @@ Deno.test("CLI: blueprint create/list/show/remove/validate edge cases", async ()
   }
 });
 
-Deno.test("CLI: daemon start/stop/restart/status/logs error handling", async () => {
+cliTest("CLI: daemon start/stop/restart/status/logs error handling", async () => {
   const env = await TestEnvironment.create();
   try {
     // These may fail if daemon is not configured, but should not crash

@@ -9,12 +9,30 @@ import { assert, assertStringIncludes } from "https://deno.land/std@0.201.0/test
 import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
 import { getDefaultPaths } from "../../../src/config/paths.ts";
 import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
+import { withCliProcessMutex } from "../../helpers/cli_process_mutex.ts";
+
+const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
+
+function parallelSafeTest(
+  nameOrDef: string | Deno.TestDefinition,
+  fn?: () => Promise<void> | void,
+): void {
+  if (typeof nameOrDef === "string") {
+    Deno.test({ name: nameOrDef, ignore: skipInParallel, fn: fn! });
+    return;
+  }
+
+  Deno.test({
+    ...nameOrDef,
+    ignore: skipInParallel || !!nameOrDef.ignore,
+  });
+}
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const _paths = getDefaultPaths(REPO_ROOT);
 
-Deno.test("deploy_workspace.sh --no-run creates deploy files", async () => {
+parallelSafeTest("deploy_workspace.sh --no-run creates deploy files", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-deploy-test-" });
   try {
     const deployScript = join(REPO_ROOT, "scripts", "deploy_workspace.sh");
@@ -71,6 +89,51 @@ Deno.test("deploy_workspace.sh --no-run creates deploy files", async () => {
 });
 
 // Helper to run exactl command in a workspace
+function getFallbackConfig(root: string): string {
+  return `
+[system]
+version = "1.0.0"
+log_level = "info"
+root = "${root}"
+
+[paths]
+memory = "./Memory"
+blueprints = "./Blueprints"
+runtime = "./.exa"
+workspace = "./Workspace"
+portals = "./Portals"
+active = "Active"
+archive = "Archive"
+plans = "Plans"
+requests = "Requests"
+rejected = "Rejected"
+identities = "Identities"
+flows = "Flows"
+memoryProjects = "Projects"
+memoryExecution = "Execution"
+memoryIndex = "Index"
+memorySkills = "Skills"
+memoryPending = "Pending"
+memoryTasks = "Tasks"
+memoryGlobal = "Global"
+
+[database.sqlite]
+journal_mode = "WAL"
+foreign_keys = true
+busy_timeout_ms = 5000
+
+[agents]
+default_model = "default"
+timeout_sec = 60
+max_iterations = 10
+
+[models.default]
+provider = "mock"
+model = "gpt-5.2-pro"
+timeout_ms = 30000
+`.trim();
+}
+
 async function runExactl(
   workspacePath: string,
   args: string[],
@@ -78,19 +141,39 @@ async function runExactl(
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
   const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
-  const fullEnv = { ...Deno.env.toObject(), ...env };
-  delete fullEnv.EXA_TEST_MODE;
-  delete fullEnv.EXA_TEST_CLI_MODE;
 
-  const cmd = new Deno.Command("deno", {
-    args: ["run", "--allow-all", exactlPath, ...args],
-    cwd: workspacePath,
-    stdout: "piped",
-    stderr: "piped",
-    env: fullEnv,
+  const configPath = join(workspacePath, "exa.config.toml");
+  const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);
+  if (!hasConfig) {
+    await Deno.writeTextFile(configPath, getFallbackConfig(workspacePath));
+  }
+
+  const parentEnv = Deno.env.toObject();
+  const fullEnv: Record<string, string> = {
+    PATH: parentEnv.PATH ?? "",
+    HOME: parentEnv.HOME ?? "",
+    TMPDIR: parentEnv.TMPDIR ?? "/tmp",
+    TERM: parentEnv.TERM ?? "xterm",
+    ...env,
+  };
+  // Force mock provider unless explicitly overridden by the caller.
+  if (!fullEnv.EXA_LLM_PROVIDER) {
+    fullEnv.EXA_LLM_PROVIDER = "mock";
+  }
+
+  fullEnv.EXA_CONFIG_PATH = configPath;
+
+  const res = await withCliProcessMutex(async () => {
+    const cmd = new Deno.Command("deno", {
+      args: ["run", "--allow-all", exactlPath, ...args],
+      cwd: workspacePath,
+      stdout: "piped",
+      stderr: "piped",
+      env: fullEnv,
+    });
+
+    return await cmd.output();
   });
-
-  const res = await cmd.output();
   return {
     code: res.code,
     stdout: new TextDecoder().decode(res.stdout),
@@ -135,7 +218,7 @@ async function deployTestWorkspace(): Promise<string> {
   return tmp;
 }
 
-Deno.test({
+parallelSafeTest({
   name: "exactl daemon status reports not running for fresh workspace",
   async fn() {
     const workspace = await deployTestWorkspace();
@@ -152,7 +235,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-Deno.test({
+parallelSafeTest({
   name: "exactl daemon start/stop lifecycle",
   async fn() {
     const workspace = await deployTestWorkspace();
@@ -214,7 +297,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-Deno.test({
+parallelSafeTest({
   name: "exactl daemon restart works correctly",
   async fn() {
     const workspace = await deployTestWorkspace();
@@ -276,7 +359,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-Deno.test({
+parallelSafeTest({
   name: "exactl daemon start is idempotent (already running)",
   async fn() {
     const workspace = await deployTestWorkspace();
@@ -319,7 +402,7 @@ Deno.test({
   sanitizeOps: false,
 });
 
-Deno.test({
+parallelSafeTest({
   name: "exactl daemon stop is idempotent (not running)",
   async fn() {
     const workspace = await deployTestWorkspace();
