@@ -395,6 +395,16 @@ export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "google:gemini-2.5-flash": 1_000_000,
 };
 
+/** Provider ID prefixes that identify local/self-hosted LLM providers. */
+export const LOCAL_PROVIDER_PREFIXES = ["ollama:", "lmstudio:", "local:"] as const;
+
+/** Conservative fallback context window for local models when model-specific window is unknown. */
+export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
+
+/** Default budget enforcement policy by provider category. */
+export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED = true;
+export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = false;
+
 /**
  * Model pricing map in USD per 1K tokens for cost estimation.
  * Keys are provider:model identifiers.

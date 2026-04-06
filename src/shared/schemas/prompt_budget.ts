@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED, DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED } from "../constants.ts";
 
 export enum PromptBudgetSection {
   SYSTEM = "system",
@@ -33,5 +34,12 @@ export const ZPromptBudget = z.object({
   sections: ZPromptBudgetSections,
 });
 
+/** Runtime policy that controls budget enforcement by provider category. */
+export const ZBudgetPolicy = z.object({
+  cloud: z.boolean().default(DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED),
+  local: z.boolean().default(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED),
+});
+
 export type IPromptBudgetSections = z.infer<typeof ZPromptBudgetSections>;
 export type IPromptBudget = z.infer<typeof ZPromptBudget>;
+export type IBudgetPolicy = z.infer<typeof ZBudgetPolicy>;
