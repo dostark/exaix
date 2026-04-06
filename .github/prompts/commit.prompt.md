@@ -21,7 +21,7 @@ Use this command to:
 
 1. Inspect current repository changes with `git status`, `git diff --staged`, and `git diff`.
 1. Follow the exact structured commit format and commit-scope rules defined in `../../.copilot/prompts/commit-message.md`.
-1. Run the required linting, tests, and other pre-commit checks relevant to the touched files.
+1. Run the required linting, tests, and other pre-commit checks relevant to the touched files. For test validation use `deno task test_parallel` (runs the full parallel suite followed by CLI-subprocess-heavy tests sequentially, then prints a combined summary).
 1. Split the changes into logically related commit batches unless the prompt explicitly requires a single combined commit.
 1. Output the full commit message and the final `git add` and `git commit` commands for each batch.
 

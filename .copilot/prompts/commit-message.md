@@ -27,7 +27,7 @@ Default commit scope and batching
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
 - At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.
-- For Exaix, prefer the repository-standard checks when they are relevant to the change, such as `deno fmt --check`, `deno lint`, targeted or full `deno test --allow-all`, and any task-specific checks implicated by the modified files.
+- For Exaix, prefer the repository-standard checks when they are relevant to the change, such as `deno fmt --check`, `deno lint`, `deno task test_parallel` (two-batch parallel+sequential runner), and any task-specific checks implicated by the modified files.
 - If a required check was not run, say so explicitly in `tests:` and treat that as a blocking issue before an actual commit.
 - Do not present the final `git commit` command as ready to run if known required checks are failing.
 
