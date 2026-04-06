@@ -34,6 +34,8 @@ export interface ISkillMatchRequest {
   tags?: string[];
   /** Raw request text for additional context */
   requestText?: string;
+  /** Optional character budget for the matched skills that will be formatted into prompt context */
+  contextBudgetChars?: number;
   /** ID of the agent making the request */
   identityId?: string;
 }

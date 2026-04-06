@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-04T18:20:24.583Z",
+  "generated_at": "2026-04-06T15:22:14.818Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -862,8 +862,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
-      "short_summary": "Introduce a PromptBudgetAllocator service with dynamic reallocation and cost tracking to manage context windows and prevent silent truncation.",
-      "version": 1.4,
+      "short_summary": "Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.",
+      "version": 1.5,
       "topics": [
         "context-window",
         "budgeting",
@@ -871,6 +871,8 @@
         "tokens",
         "cost-tracking",
         "loop-history",
+        "local-llm",
+        "provider-strategy",
         "W7",
         "W15"
       ],

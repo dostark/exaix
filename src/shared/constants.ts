@@ -124,6 +124,9 @@ export const DEFAULT_UNKNOWN_ERROR_MESSAGE = "Unknown error";
 export const DEFAULT_AGENT_TIMEOUT_SEC = 60;
 export const DEFAULT_AGENT_MAX_ITERATIONS = 10;
 
+/** Example execution time used in AgentExecutor response-shape examples. */
+export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
+
 // ReAct loop constants
 export const REACT_THOUGHT_PREFIX = "THOUGHT: ";
 export const REACT_STATUS_COMPLETE = "STATUS: COMPLETE";
@@ -404,6 +407,15 @@ export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 /** Default budget enforcement policy by provider category. */
 export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED = true;
 export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = false;
+
+/** Default maximum character budget for formatted session memory context. */
+export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT = 4_000;
+
+/** Default maximum character budget for formatted skills context. */
+export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET = 2_000;
+
+/** Maximum allowed length for a saved session-memory insight description. */
+export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;
 
 /**
  * Model pricing map in USD per 1K tokens for cost estimation.

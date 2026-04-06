@@ -7,7 +7,7 @@
  * * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
  */
 
-import { join } from "@std/path";
+import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
@@ -20,6 +20,7 @@ import { SafeError } from "../../errors/safe_error.ts";
 import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
 import {
+  AGENT_EXECUTION_EXAMPLE_TIME_MS,
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
   DEFAULT_GIT_DIFF_TIMEOUT_MS,
@@ -294,11 +295,7 @@ export class AgentExecutor {
     // ✓ Validate agent name to prevent path traversal
     const agentName = InputValidator.validateBlueprintName(rawAgentName);
 
-    const blueprintPath = join(
-      this.config.paths.blueprints,
-      DEFAULT_IDENTITIES_PATH,
-      `${agentName}.md`,
-    );
+    const blueprintPath = this.resolveBlueprintPath(agentName);
 
     try {
       const content = await Deno.readTextFile(blueprintPath);
@@ -402,6 +399,18 @@ export class AgentExecutor {
         this.logger,
       );
     }
+  }
+
+  private resolveBlueprintPath(agentName: string): string {
+    const blueprintsBase = isAbsolute(this.config.paths.blueprints)
+      ? this.config.paths.blueprints
+      : join(this.config.system.root, this.config.paths.blueprints);
+
+    return join(
+      blueprintsBase,
+      DEFAULT_IDENTITIES_PATH,
+      `${agentName}.md`,
+    );
   }
 
   /**
@@ -582,7 +591,7 @@ Respond with valid JSON containing the changeset result:
   "files_changed": ["path/to/file1.ts", "path/to/file2.ts"],
   "description": "Brief description of changes made",
   "tool_calls": 5,
-  "execution_time_ms": 2000
+  "execution_time_ms": ${AGENT_EXECUTION_EXAMPLE_TIME_MS}
 }
 \`\`\`
 

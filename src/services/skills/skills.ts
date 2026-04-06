@@ -14,7 +14,7 @@ import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
 import { ActivityActor, MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
 import { extractKeywords } from "../../helpers/text.ts";
-import { DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
+import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
 import {
   type ISkill,
   type ISkillIndex,
@@ -47,7 +47,7 @@ export interface ISkillsConfig {
 const DEFAULT_CONFIG: ISkillsConfig = {
   autoMatch: true,
   maxSkillsPerRequest: 5,
-  skillContextBudget: 2000,
+  skillContextBudget: DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
   matchThreshold: 0.3,
 };
 
@@ -285,7 +285,32 @@ export class SkillsService implements ISkillsService {
     // Sort by confidence
     matches.sort((a, b) => b.confidence - a.confidence);
 
-    return matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
+    const limitedMatches = matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
+    const contextBudgetChars = request.contextBudgetChars;
+
+    if (contextBudgetChars === undefined) {
+      return limitedMatches;
+    }
+
+    const budgetedMatches: ISkillMatch[] = [];
+    let remainingBudget = contextBudgetChars;
+
+    for (const match of limitedMatches) {
+      const skill = await this.getSkill(match.skillId);
+      if (!skill) {
+        continue;
+      }
+
+      const skillBlockLength = this.formatSkillForPrompt(skill).length;
+      if (skillBlockLength > remainingBudget) {
+        break;
+      }
+
+      budgetedMatches.push(match);
+      remainingBudget -= skillBlockLength;
+    }
+
+    return budgetedMatches;
   }
 
   // Calculate trigger match score

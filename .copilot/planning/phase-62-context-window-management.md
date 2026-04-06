@@ -40,10 +40,10 @@ Budget enforcement is **not a one-size-fits-all** concern. Cloud LLMs (OpenAI, A
 
 **Default Policy:**
 
-| Provider type | Budget enforcement | Context window fallback |
-| :------------ | :----------------- | :---------------------- |
-| Cloud         | ✅ Enforced (strict)| Exact model window      |
-| Local         | ⬜ Disabled (relaxed)| Conservative local fallback (32k) |
+| Provider type | Budget enforcement    | Context window fallback           |
+| :------------ | :-------------------- | :-------------------------------- |
+| Cloud         | ✅ Enforced (strict)  | Exact model window                |
+| Local         | ⬜ Disabled (relaxed) | Conservative local fallback (32k) |
 
 ### **Design Principles**
 
@@ -148,13 +148,15 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 
 **Success Criteria:**
 
-- [ ] `SessionMemoryService.lookupMemories` accepts a token cap.
-- [ ] `SkillsService.matchSkills` respects the provided budget.
-- [ ] Zero occurrences of hardcoded "4000" or "2000" character strings in service code.
+- [x] `SessionMemoryService.lookupMemories` accepts a token cap.
+- [x] `SkillsService.matchSkills` respects the provided budget.
+- [x] Zero occurrences of hardcoded "4000" or "2000" character strings in service code.
 
 **Planned Tests:**
 
-- **Integration**: `tests/integration/services/memory_budget_enforcement_test.ts`.
+- ✅ **Integration**: `tests/integration/services/memory_budget_enforcement_test.ts`.
+
+**✅ IMPLEMENTED** — `src/services/memory/session_memory.ts`, `src/services/skills/skills.ts`, 2/2 tests passing
 
 ### Step 62.4: Executor Integration & W15 Cost Logging
 
@@ -174,14 +176,14 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 
 ## Risks & Mitigations
 
-| Risk                                       | Impact | Likelihood | Mitigation                                                                                             |
-| :----------------------------------------- | :----- | :--------- | :----------------------------------------------------------------------------------------------------- |
-| **R1: Token Underestimation**              | Medium | Medium     | Use a conservative 10% "Safety Margin" buffer (cloud only; local skips this when enforcement is off). |
-| **R2: Performance Overhead**               | Low    | Low        | Use fast heuristic counting; cache pricing maps.                                                       |
-| **R3: Plan Truncation**                    | High   | Low        | Set Plan priority to "Critical" in the waterfall logic.                                               |
-| **R4: Local Model Window Mismatch**        | Medium | High       | Use conservative 32k fallback; document that users can override per model in `exa.config.toml`.       |
-| **R5: Policy Bypass for Cloud Models**     | High   | Low        | Enforce strict cloud policy by default; require explicit config opt-out with warning logged.           |
-| **R6: Local Prefix Detection Gap**         | Low    | Medium     | Maintain `LOCAL_PROVIDER_PREFIXES` constant; log a warning for unrecognised models, treat as cloud.   |
+| Risk                                   | Impact | Likelihood | Mitigation                                                                                            |
+| :------------------------------------- | :----- | :--------- | :---------------------------------------------------------------------------------------------------- |
+| **R1: Token Underestimation**          | Medium | Medium     | Use a conservative 10% "Safety Margin" buffer (cloud only; local skips this when enforcement is off). |
+| **R2: Performance Overhead**           | Low    | Low        | Use fast heuristic counting; cache pricing maps.                                                      |
+| **R3: Plan Truncation**                | High   | Low        | Set Plan priority to "Critical" in the waterfall logic.                                               |
+| **R4: Local Model Window Mismatch**    | Medium | High       | Use conservative 32k fallback; document that users can override per model in `exa.config.toml`.       |
+| **R5: Policy Bypass for Cloud Models** | High   | Low        | Enforce strict cloud policy by default; require explicit config opt-out with warning logged.          |
+| **R6: Local Prefix Detection Gap**     | Low    | Medium     | Maintain `LOCAL_PROVIDER_PREFIXES` constant; log a warning for unrecognised models, treat as cloud.   |
 
 ## Success Metrics
 

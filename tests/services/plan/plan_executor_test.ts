@@ -27,7 +27,7 @@ Deno.test("PlanExecutor: executes plan steps successfully", async () => {
     await git.ensureIdentity();
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -122,7 +122,7 @@ Deno.test("PlanExecutor: handles multiple steps", async () => {
     await git.ensureIdentity();
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -208,7 +208,7 @@ Deno.test("PlanExecutor: handles tool execution failure", async () => {
     await git.ensureIdentity();
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -263,6 +263,13 @@ Deno.test("PlanExecutor: handles no actions generated", async () => {
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
+    );
+
     // Mock response with no actions
     const mockProvider = new MockProvider("No actions here");
     const executor = new PlanExecutor(config, mockProvider, db, repoDir);
@@ -290,6 +297,13 @@ Deno.test("PlanExecutor: handles malformed TOML", async () => {
   try {
     await git.ensureRepository();
     await git.ensureIdentity();
+
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
+    );
 
     // Mock response with malformed TOML
     const mockResponse = `
@@ -328,7 +342,7 @@ Deno.test("PlanExecutor: handles tool failure (result.success=false)", async () 
     await git.ensureIdentity();
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -382,6 +396,13 @@ Deno.test("PlanExecutor: handles step with no changes", async () => {
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
+    );
+
     // Pre-create file
     // Note: It must be in repoDir for PlanExecutor (with baseDir=repoDir) to find it
     await Deno.writeTextFile(join(repoDir, "read.txt"), "Original content");
@@ -419,7 +440,7 @@ Deno.test("PlanExecutor: handles execution without git", async () => {
   const { tempDir: _tempDir, repoDir, db, cleanup, config } = await createGitTestContext("plan-exec-no-git-");
   try {
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
@@ -473,7 +494,7 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
     }];
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),

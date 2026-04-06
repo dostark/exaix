@@ -10,6 +10,11 @@ import { z } from "zod";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { IMemoryEmbeddingService } from "./memory_embedding.ts";
 import type { ILearning, IMemorySearchResult } from "../../shared/schemas/memory_bank.ts";
+import {
+  DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
+  SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "../../shared/constants.ts";
 import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 
@@ -25,7 +30,9 @@ export const SessionMemoryConfigSchema = z.object({
   includeExecutions: z.boolean().default(true).describe("Include execution history in search"),
   includeLearnings: z.boolean().default(true).describe("Include learnings in search"),
   includePatterns: z.boolean().default(true).describe("Include patterns in search"),
-  maxContextLength: z.number().default(4000).describe("Maximum characters for memory context"),
+  maxContextLength: z.number().default(DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT).describe(
+    "Maximum characters for memory context",
+  ),
 });
 
 export type SessionMemoryConfig = z.infer<typeof SessionMemoryConfigSchema>;
@@ -67,7 +74,7 @@ export type EnhancedRequest = z.infer<typeof EnhancedRequestSchema>;
  */
 export const InsightSchema = z.object({
   title: z.string().max(100),
-  description: z.string().max(2000),
+  description: z.string().max(SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS),
   category: z.nativeEnum(LearningCategory),
   tags: z.array(z.string()).max(10),
   confidence: z.nativeEnum(ConfidenceLevel),
@@ -96,7 +103,7 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
   includeExecutions: true,
   includeLearnings: true,
   includePatterns: true,
-  maxContextLength: 4000,
+  maxContextLength: DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
 };
 
 // ===== Session Memory Service =====
@@ -131,6 +138,7 @@ export class SessionMemoryService {
    */
   async lookupMemories(
     query: string,
+    tokenCap?: number,
     options?: Partial<SessionMemoryConfig>,
   ): Promise<MemoryItem[]> {
     const cfg = { ...this.config, ...options };
@@ -170,9 +178,9 @@ export class SessionMemoryService {
         continue;
       }
 
-      // Filter by config
-      if (result.type === MemoryType.EXECUTION && !cfg.includeExecutions) continue;
-      if (result.type === MemoryType.PATTERN && !cfg.includePatterns) continue;
+      if (!this.shouldIncludeSearchResult(result.type, cfg)) {
+        continue;
+      }
 
       memories.push({
         type: this.mapResultType(result.type),
@@ -186,12 +194,50 @@ export class SessionMemoryService {
 
     // Sort by relevance and limit
     memories.sort((a, b) => b.relevance - a.relevance);
+
+    if (tokenCap !== undefined) {
+      return this.applyTokenCap(memories, tokenCap);
+    }
+
     return memories.slice(0, cfg.topK);
   }
 
   /**
-   * Enhance a request with relevant memory context
-   *
+   * Determine if a search result should be included based on configuration
+   */
+  private shouldIncludeSearchResult(
+    resultType: string,
+    cfg: SessionMemoryConfig,
+  ): boolean {
+    if (resultType === MemoryType.EXECUTION && !cfg.includeExecutions) {
+      return false;
+    }
+    if (resultType === MemoryType.PATTERN && !cfg.includePatterns) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Apply token cap to memories
+   */
+  private applyTokenCap(memories: MemoryItem[], tokenCap: number): MemoryItem[] {
+    const charBudget = tokenCap * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
+    const cappedMemories: MemoryItem[] = [];
+    let usedChars = 0;
+
+    for (const memory of memories) {
+      const entryLength = this.formatMemoryItem(memory).length + 2;
+      if (usedChars + entryLength > charBudget) {
+        break;
+      }
+      cappedMemories.push(memory);
+      usedChars += entryLength;
+    }
+
+    return cappedMemories;
+  }
+  /**
    * Looks up memories and formats them into a context string that can be
    * injected into agent prompts.
    *
@@ -222,7 +268,8 @@ export class SessionMemoryService {
     const queryTerms = this.extractKeyTerms(request);
 
     // Lookup memories
-    const memories = await this.lookupMemories(request, cfg);
+    const tokenCap = Math.floor(cfg.maxContextLength / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+    const memories = await this.lookupMemories(request, tokenCap, cfg);
 
     // Format memory context
     const memoryContext = this.formatMemoryContext(memories, cfg.maxContextLength);

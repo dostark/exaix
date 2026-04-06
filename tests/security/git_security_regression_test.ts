@@ -24,6 +24,13 @@ Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", a
     await git.ensureRepository();
     await git.ensureIdentity();
 
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
+    await Deno.mkdir(blueprintsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(blueprintsDir, "test-agent.md"),
+      `---\nname: test-agent\nmodel: mock-model\nprovider: mock\ncapabilities: ["write"]\nallowed_paths: ["*"]\n---\nYou are a test agent.\n`,
+    );
+
     // Mock response that attempts a destructive reset
     const mockResponse = `
 \`\`\`toml
@@ -74,7 +81,7 @@ Deno.test("Git Security: blocks checkout to main branch", async () => {
     await git.ensureIdentity();
 
     // Create blueprint without mcp capability so Legacy strategy is used
-    const blueprintsDir = join(config.paths.blueprints, "Identities");
+    const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
