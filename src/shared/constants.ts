@@ -380,6 +380,40 @@ export const TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4;
 export const TOKEN_ESTIMATION_MAX_TOKENS = 2000;
 
 // ============================================================================
+// Prompt Budgeting (Phase 62)
+// ============================================================================
+
+/**
+ * Model context windows (tokens) used for prompt budget allocation.
+ * Keys are provider:model identifiers.
+ */
+export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+  "openai:gpt-4o-mini": 128_000,
+  "openai:gpt-4o": 128_000,
+  "anthropic:claude-3-5-sonnet": 200_000,
+  "anthropic:claude-3-7-sonnet": 200_000,
+  "google:gemini-2.5-flash": 1_000_000,
+};
+
+/**
+ * Model pricing map in USD per 1K tokens for cost estimation.
+ * Keys are provider:model identifiers.
+ */
+export const MODEL_PRICING_MAP: Record<string, number> = {
+  "openai:gpt-4o-mini": 0.0003,
+  "openai:gpt-4o": 0.005,
+  "anthropic:claude-3-5-sonnet": 0.003,
+  "anthropic:claude-3-7-sonnet": 0.003,
+  "google:gemini-2.5-flash": 0.00035,
+};
+
+/** Minimum reserved tokens for critical prompt sections. */
+export const SECTION_FLOORS = {
+  system: 1_000,
+  plan: 2_000,
+} as const;
+
+// ============================================================================
 // Cost Tracking Validation Limits
 // ============================================================================
 export const COST_TRACKING_BATCH_DELAY_MS_MIN = 100;

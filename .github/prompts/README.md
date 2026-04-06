@@ -36,3 +36,9 @@ If a prompt needs to be both:
 1. Add a thin slash-command wrapper in `.github/prompts/` that points at the canonical `.copilot` file.
 
 That keeps one source of truth for the actual workflow while preserving the integration-specific format required by GitHub/Copilot.
+
+## Available slash commands
+
+- `/commit` -> `commit.prompt.md` (canonical: `../../.copilot/prompts/commit-message.md`)
+- `/refactor-check-magic` -> `refactor-check-magic.prompt.md` (canonical: `../../.copilot/prompts/refactor-check-magic-comprehensive.md`)
+- `/next-steps` -> `next-steps.prompt.md` (canonical: `../../.copilot/prompts/tdd-phase-steps.md`)
