@@ -145,3 +145,30 @@ Deno.test("JournalFormatter: renders counts in text format", async () => {
   assertStringIncludes(output, JournalAction.Error);
   assertStringIncludes(output, String(JOURNAL_COUNT_VALUE));
 });
+
+Deno.test("JournalFormatter: renders estimated cost from usage payload", async () => {
+  const costActivities: ActivityRecord[] = [
+    {
+      ...baseActivities[0],
+      payload: JSON.stringify({
+        usage: {
+          tokens: 1200,
+          cost_usd_estimate: 0.42,
+        },
+      }),
+    },
+  ];
+
+  const textOutput = await captureConsoleOutput(() => {
+    const filter: IJournalFilterOptions = {};
+    JournalFormatter.render(costActivities, filter, DataFormat.TEXT);
+  });
+  assertStringIncludes(textOutput, "cost=");
+  assertStringIncludes(textOutput, "$0.420000");
+
+  const tableOutput = await captureConsoleOutput(() => {
+    const filter: IJournalFilterOptions = {};
+    JournalFormatter.render(costActivities, filter, UIOutputFormat.TABLE);
+  });
+  assertStringIncludes(tableOutput, "$0.420000");
+});

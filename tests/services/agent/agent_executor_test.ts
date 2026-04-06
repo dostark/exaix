@@ -14,7 +14,14 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
-import { McpToolName, MemoryOperation, PortalOperation, SecurityMode, ToolName } from "../../../src/shared/enums.ts";
+import {
+  ExecutionStrategyName,
+  McpToolName,
+  MemoryOperation,
+  PortalOperation,
+  SecurityMode,
+  ToolName,
+} from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
 import {
   AgentExecutionError,
@@ -35,6 +42,7 @@ import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 
 // Test fixtures - initialized once
 let testDir: string;
@@ -1150,6 +1158,95 @@ Deno.test({
       assertStringIncludes(prompt, "You are a helpful assistant.");
       // Malicious text is sanitized but context is preserved
       assertStringIncludes(prompt, "[REMOVED]");
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: requests prompt budget before strategy execution",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const budgetCalls: string[] = [];
+      const mockBudgetAllocator = {
+        allocate: (modelId: string) => {
+          budgetCalls.push(modelId);
+          return {
+            model: modelId,
+            totalBudgetTokens: 128000,
+            safetyBufferTokens: 12800,
+            sections: {
+              system: 1000,
+              plan: 2000,
+              portalKnowledge: 1000,
+              memory: 500,
+              skills: 500,
+              loopHistory: 500,
+            },
+          };
+        },
+      };
+
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/budget-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Budget test",
+            tool_calls: 0,
+            execution_time_ms: 1,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+        undefined,
+        mockBudgetAllocator,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "budget-req-1",
+        request: "Create test file",
+        plan: "Write a file",
+        portal: "TestPortal",
+      };
+
+      const options: IAgentExecutionOptions = {
+        identity_id: "test-agent",
+        portal: "TestPortal",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 10,
+        audit_enabled: true,
+      };
+
+      await executor.executeStep(context, options);
+      assertEquals(budgetCalls.length, 1);
+      assertEquals(budgetCalls[0], "openai:gpt-4o-mini");
+
+      executor.dispose();
     } finally {
       await cleanup();
     }

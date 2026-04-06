@@ -13,6 +13,7 @@ import { IJournalFilterOptions } from "../../shared/types/database.ts";
 import { DataFormat, UIOutputFormat } from "../../shared/enums.ts";
 
 const ERR_KEYWORD = "error";
+const COST_PRECISION = 6;
 
 export class JournalFormatter {
   static render(
@@ -75,6 +76,7 @@ export class JournalFormatter {
         colors.bold("Agent"),
         colors.bold("Trace ID"),
         colors.bold("Target"),
+        colors.bold("Cost"),
       ])
       .body(
         activities.map((a) => {
@@ -87,6 +89,7 @@ export class JournalFormatter {
             a.identity_id || a.actor || "-",
             colors.gray(a.trace_id.slice(0, 8)), // Truncate trace ID
             this.truncateText(a.target || "-", 30),
+            this.extractCostDisplay(a.payload),
           ];
         }),
       )
@@ -115,12 +118,32 @@ export class JournalFormatter {
 
       // Color code action
       const action = this.styleAction(activity.action_type);
+      const costText = this.extractCostDisplay(activity.payload);
+      const costSuffix = costText === "-" ? "" : ` ${colors.dim("cost=")}${colors.yellow(costText)}`;
 
       console.log(
         `${colors.gray(timestamp)} ${action} ${colors.dim("agent=")}${agent} ${colors.dim("trace=")}${
           colors.gray(traceId)
-        } ${colors.dim("target=")}${activity.target || "-"}`,
+        } ${colors.dim("target=")}${activity.target || "-"}${costSuffix}`,
       );
+    }
+  }
+
+  private static extractCostDisplay(payload: string): string {
+    try {
+      const parsed = JSON.parse(payload) as {
+        usage?: { cost_usd_estimate?: number };
+        cost_usd_estimate?: number;
+      };
+
+      const rawCost = parsed.usage?.cost_usd_estimate ?? parsed.cost_usd_estimate;
+      if (typeof rawCost !== "number" || Number.isNaN(rawCost)) {
+        return "-";
+      }
+
+      return `$${rawCost.toFixed(COST_PRECISION)}`;
+    } catch {
+      return "-";
     }
   }
 

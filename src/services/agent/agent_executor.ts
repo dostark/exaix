@@ -37,6 +37,8 @@ import {
   MAX_NAME_LENGTH,
   MAX_PROMPT_LENGTH,
   MAX_USER_INPUT_LENGTH,
+  MODEL_PRICING_MAP,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "../../shared/constants.ts";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "./agent_capabilities.ts";
 import {
@@ -63,6 +65,8 @@ import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
+import { PromptBudgetAllocator } from "../context/prompt_budget_allocator.ts";
+import type { IPromptBudget } from "../../shared/schemas/prompt_budget.ts";
 
 /**
  * Agent blueprint loaded from file
@@ -116,6 +120,7 @@ const BlueprintSchema = z.object({
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
+  private currentPromptBudget?: IPromptBudget;
 
   constructor(
     private config: Config,
@@ -126,6 +131,7 @@ export class AgentExecutor {
     private provider?: IModelProvider,
     private strategyRegistry?: StrategyRegistry,
     private _toolRegistry?: IToolRegistry,
+    private promptBudgetAllocator: { allocate: (modelId: string) => IPromptBudget } = new PromptBudgetAllocator(),
   ) {
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
@@ -457,6 +463,8 @@ export class AgentExecutor {
 
     // Load blueprint (TODO: use blueprint for agent spawning when implemented)
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
+    const modelId = this.resolveModelId(_blueprint);
+    this.currentPromptBudget = this.promptBudgetAllocator.allocate(modelId);
 
     // Log execution start
     await this.logExecutionStart(
@@ -484,6 +492,7 @@ export class AgentExecutor {
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
       const validated = await strategy.execute(_blueprint, context, options);
+      const usage = this.estimateExecutionUsage(_blueprint, context, validated);
 
       // Step 61.3/61.4: Real SHA and Audit
       const portalPath = portal.target_path;
@@ -519,6 +528,7 @@ export class AgentExecutor {
         context.trace_id,
         options.identity_id || "unknown",
         validated,
+        usage,
       );
 
       return validated;
@@ -531,6 +541,8 @@ export class AgentExecutor {
       });
 
       throw error;
+    } finally {
+      this.currentPromptBudget = undefined;
     }
   }
 
@@ -550,12 +562,25 @@ export class AgentExecutor {
     options: IAgentExecutionOptions,
   ): string {
     // Sanitize all user-controlled inputs
-    const sanitizedRequest = this.sanitizeUserInput(context.request);
-    const sanitizedPlan = this.sanitizeUserInput(context.plan);
-    const portalContext = this.buildPortalContextBlock(options.portal);
+    const sanitizedRequest = this.applyTokenBudget(
+      this.sanitizeUserInput(context.request),
+      this.currentPromptBudget?.sections.memory,
+    );
+    const sanitizedPlan = this.applyTokenBudget(
+      this.sanitizeUserInput(context.plan),
+      this.currentPromptBudget?.sections.plan,
+    );
+    const portalContext = this.applyTokenBudget(
+      this.buildPortalContextBlock(options.portal) ?? "",
+      this.currentPromptBudget?.sections.portalKnowledge,
+    );
+    const systemPrompt = this.applyTokenBudget(
+      blueprint.systemPrompt,
+      this.currentPromptBudget?.sections.system,
+    );
 
     // Use clear delimiters that prevent injection
-    return `${blueprint.systemPrompt}
+    return `${systemPrompt}
 
 ## Execution Context (SYSTEM CONTROLLED)
 **Trace ID:** ${context.trace_id}
@@ -596,6 +621,47 @@ Respond with valid JSON containing the changeset result:
 \`\`\`
 
 Ensure your response contains ONLY valid JSON, no additional text.`;
+  }
+
+  private applyTokenBudget(text: string, tokenBudget?: number): string {
+    if (!tokenBudget || tokenBudget <= 0) {
+      return text;
+    }
+
+    const maxChars = tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
+    if (text.length <= maxChars) {
+      return text;
+    }
+
+    return text.slice(0, Math.max(0, maxChars));
+  }
+
+  private resolveModelId(blueprint: IAgentFileBlueprint): string {
+    if (blueprint.model.includes(":")) {
+      return blueprint.model;
+    }
+
+    return `${blueprint.provider}:${blueprint.model}`;
+  }
+
+  private estimateExecutionUsage(
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    result: IChangesetResult,
+  ): { tokens: number; cost_usd_estimate: number } {
+    const modelId = this.resolveModelId(blueprint);
+    const totalChars = blueprint.systemPrompt.length +
+      context.request.length +
+      context.plan.length +
+      result.description.length;
+    const tokens = Math.max(1, Math.ceil(totalChars / TOKEN_ESTIMATION_CHARS_PER_TOKEN));
+    const pricePer1k = MODEL_PRICING_MAP[modelId] ?? 0;
+    const cost = (tokens / 1000) * pricePer1k;
+
+    return {
+      tokens,
+      cost_usd_estimate: Number(cost.toFixed(6)),
+    };
   }
 
   private buildPortalContextBlock(portalAlias: string): string | null {
@@ -1212,7 +1278,13 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     traceId: string,
     identityId: string,
     result: IChangesetResult,
+    usage?: { tokens: number; cost_usd_estimate: number },
   ): Promise<void> {
+    const usagePayload = usage ?? {
+      tokens: Math.max(1, Math.ceil(result.description.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN)),
+      cost_usd_estimate: 0,
+    };
+
     await this.logger.log({
       action: "agent.execution_completed",
       target: result.branch,
@@ -1228,6 +1300,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         files_changed: result.files_changed.length,
         tool_calls: result.tool_calls,
         execution_time_ms: result.execution_time_ms,
+        usage: usagePayload,
         completed_at: new Date().toISOString(),
       },
     });

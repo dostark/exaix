@@ -4,7 +4,7 @@
  * @description Verifies AgentExecutor journal calls use correct Actor/Agent/Identity field separation.
  */
 
-import { assertEquals, assertNotEquals } from "@std/assert";
+import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
@@ -110,6 +110,12 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
   assertEquals(event.actor, "system");
   assertEquals(event.actorType, ActorType.SERVICE);
   assertNotEquals(event.agentId, event.identityId);
+  assertExists(event.payload);
+  type CompletionPayload = { usage?: { tokens?: number; cost_usd_estimate?: number } };
+  const usage = (event.payload as CompletionPayload).usage;
+  assertExists(usage);
+  assertEquals(typeof usage.tokens, "number");
+  assertEquals(typeof usage.cost_usd_estimate, "number");
 
   executor.dispose();
 });
