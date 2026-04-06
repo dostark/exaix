@@ -56,13 +56,18 @@ jobs:
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:style
 
-      # --- GATE 4: Docs Drift Check ---
-      - name: "Gate 4: Documentation Drift"
+      # --- GATE 4: Magic Values Check ---
+      - name: "Gate 4: Magic Values"
+        if: always() && steps.setup-deno.outcome == 'success'
+        run: deno task check:magic
+
+      # --- GATE 5: Docs Drift Check ---
+      - name: "Gate 5: Documentation Drift"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:docs
 
-      # --- GATE 5: Markdown Lint ---
-      - name: "Gate 5: Markdown Linting"
+      # --- GATE 6: Markdown Lint ---
+      - name: "Gate 6: Markdown Linting"
         if: always() && steps.checkout.outcome == 'success'
         run: |
           STAGED_MD_FILES=$(git diff --name-only HEAD~1 HEAD | grep -E '.md$' || true)
@@ -73,23 +78,23 @@ jobs:
             echo "✅ No markdown files changed."
           fi
 
-      # --- GATE 6: Complexity Check ---
-      - name: "Gate 6: Code Complexity"
+      # --- GATE 7: Complexity Check ---
+      - name: "Gate 7: Code Complexity"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:complexity
 
-      # --- GATE 7: Architecture Check ---
-      - name: "Gate 7: Architecture & Grounding"
+      # --- GATE 8: Architecture Check ---
+      - name: "Gate 8: Architecture & Grounding"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task check:arch
 
-      # --- GATE 8: Agent Documentation Nervous System ---
-      - name: "Gate 8: Agent-Native Documentation"
+      # --- GATE 9: Agent Documentation Nervous System ---
+      - name: "Gate 9: Agent-Native Documentation"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-agent-validate
 
-      # --- GATE 9: Hallucination Benchmarks ---
-      - name: "Gate 9: Hallucination Benchmarks"
+      # --- GATE 10: Hallucination Benchmarks ---
+      - name: "Gate 10: Hallucination Benchmarks"
         if: always() && steps.setup-deno.outcome == 'success'
         run: deno task docs-bench
 
