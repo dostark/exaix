@@ -16,8 +16,6 @@ tools_referenced:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-# Exaix Architecture
-
 **Version:** 2.0.0\
 **Date:** January 16, 2026
 
@@ -2521,7 +2519,7 @@ This section provides explicit grounding for core infrastructure modules and hel
 
 ---
 
-**Footer — Agent Knowledge Base**
+## Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
