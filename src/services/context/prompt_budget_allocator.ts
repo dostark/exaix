@@ -7,8 +7,19 @@
  * @related-files [src/shared/schemas/prompt_budget.ts, src/shared/constants.ts]
  */
 
-import { MODEL_CONTEXT_WINDOWS, SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "../../shared/constants.ts";
-import { type IPromptBudget, type IPromptBudgetSections } from "../../shared/schemas/prompt_budget.ts";
+import {
+  LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
+  LOCAL_PROVIDER_PREFIXES,
+  MODEL_CONTEXT_WINDOWS,
+  SECTION_BASE_WEIGHTS,
+  SECTION_FLOORS,
+} from "../../shared/constants.ts";
+import {
+  type IBudgetPolicy,
+  type IPromptBudget,
+  type IPromptBudgetSections,
+  ZBudgetPolicy,
+} from "../../shared/schemas/prompt_budget.ts";
 
 /**
  * Options to hint at actual content usage for waterfall reallocation.
@@ -27,6 +38,12 @@ export interface IAllocationHints {
  * enforcing minimum floors and reallocating surplus from empty sections to high-priority ones.
  */
 export class PromptBudgetAllocator {
+  private readonly policy: IBudgetPolicy;
+
+  constructor(policy?: Partial<IBudgetPolicy>) {
+    this.policy = ZBudgetPolicy.parse(policy ?? {});
+  }
+
   /**
    * Allocate budgets across prompt sections for a given model.
    *
@@ -35,10 +52,13 @@ export class PromptBudgetAllocator {
    * @returns Allocated budget enforcing floors and waterfall logic
    */
   allocate(modelId: string, hints?: IAllocationHints): IPromptBudget {
-    // Get the model's context window, defaulting to GPT-4o-mini if not found
-    const totalTokens = MODEL_CONTEXT_WINDOWS[modelId as keyof typeof MODEL_CONTEXT_WINDOWS] ??
-      MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"] ??
-      128_000;
+    const isLocalModel = this._isLocalModel(modelId);
+    const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
+    const enforcementEnabled = isLocalModel ? this.policy.local : this.policy.cloud;
+
+    if (!enforcementEnabled) {
+      return this._buildRelaxedBudget(modelId, totalTokens);
+    }
 
     // Apply 10% safety buffer
     const safetyBufferTokens = Math.floor(totalTokens * 0.1);
@@ -80,8 +100,43 @@ export class PromptBudgetAllocator {
     return {
       model: modelId,
       totalBudgetTokens: totalTokens,
-      safetyBufferTokens: safetyBufferTokens,
-      sections: sections,
+      safetyBufferTokens,
+      sections,
+    };
+  }
+
+  private _isLocalModel(modelId: string): boolean {
+    return LOCAL_PROVIDER_PREFIXES.some((prefix) => modelId.startsWith(prefix));
+  }
+
+  private _resolveTotalTokens(modelId: string, isLocalModel: boolean): number {
+    const configuredWindow = MODEL_CONTEXT_WINDOWS[modelId as keyof typeof MODEL_CONTEXT_WINDOWS];
+    if (configuredWindow !== undefined) {
+      return configuredWindow;
+    }
+
+    if (isLocalModel) {
+      return LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK;
+    }
+
+    return MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"] ?? 128_000;
+  }
+
+  private _buildRelaxedBudget(modelId: string, totalTokens: number): IPromptBudget {
+    const uncappedSections: IPromptBudgetSections = {
+      system: totalTokens,
+      plan: totalTokens,
+      portalKnowledge: totalTokens,
+      memory: totalTokens,
+      skills: totalTokens,
+      loopHistory: totalTokens,
+    };
+
+    return {
+      model: modelId,
+      totalBudgetTokens: totalTokens,
+      safetyBufferTokens: 0,
+      sections: uncappedSections,
     };
   }
 

@@ -8,7 +8,12 @@
 
 import { assertEquals, assertGreater } from "@std/assert";
 import { PromptBudgetAllocator } from "../../../src/services/context/prompt_budget_allocator.ts";
-import { MODEL_CONTEXT_WINDOWS, SECTION_BASE_WEIGHTS, SECTION_FLOORS } from "../../../src/shared/constants.ts";
+import {
+  LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
+  MODEL_CONTEXT_WINDOWS,
+  SECTION_BASE_WEIGHTS,
+  SECTION_FLOORS,
+} from "../../../src/shared/constants.ts";
 
 // ============================================================================
 // Test 1: Base allocation respects model windows and safety buffer
@@ -92,4 +97,74 @@ Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", () 
   assertEquals(budget.model, "unknown:model");
   assertGreater(budget.totalBudgetTokens, 0);
   assertGreater(budget.sections.plan, 0);
+});
+
+// ============================================================================
+// Test 6: Local model defaults to relaxed/no-enforcement mode
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] local model defaults to relaxed pass-through budget", () => {
+  const allocator = new PromptBudgetAllocator();
+  const budget = allocator.allocate("ollama:llama3.2");
+
+  assertEquals(budget.totalBudgetTokens, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.safetyBufferTokens, 0);
+  assertEquals(budget.sections.system, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.sections.plan, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.sections.portalKnowledge, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.sections.memory, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.sections.skills, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertEquals(budget.sections.loopHistory, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+});
+
+// ============================================================================
+// Test 7: Local model with enforcement enabled uses 32k strict budgeting
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local policy enabled", () => {
+  const allocator = new PromptBudgetAllocator({
+    cloud: true,
+    local: true,
+  });
+
+  const budget = allocator.allocate("ollama:llama3.2", {
+    memoryUsedTokens: 0,
+    skillsUsedTokens: 0,
+    loopHistoryUsedTokens: 0,
+  });
+
+  assertEquals(budget.totalBudgetTokens, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertGreater(budget.safetyBufferTokens, 0);
+  assertGreater(budget.sections.plan, SECTION_FLOORS.plan - 1);
+});
+
+// ============================================================================
+// Test 8: Unknown cloud model stays strict and uses cloud fallback
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fallback", () => {
+  const allocator = new PromptBudgetAllocator();
+  const budget = allocator.allocate("custom:unknown-cloud-model");
+
+  assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertGreater(budget.safetyBufferTokens, 0);
+  assertGreater(budget.sections.plan, 0);
+});
+
+// ============================================================================
+// Test 9: Cloud enforcement can be disabled via policy override
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud policy disabled", () => {
+  const allocator = new PromptBudgetAllocator({
+    cloud: false,
+    local: false,
+  });
+
+  const budget = allocator.allocate("openai:gpt-4o-mini");
+
+  assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.safetyBufferTokens, 0);
+  assertEquals(budget.sections.system, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+  assertEquals(budget.sections.plan, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
 });
