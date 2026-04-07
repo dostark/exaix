@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T17:55:57.095Z",
+  "generated_at": "2026-04-07T18:06:47.220Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -64,6 +64,32 @@
       "chunks": [
         ".copilot/chunks/step.md.chunk0.txt",
         ".copilot/chunks/step.md.chunk1.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/plan-review.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase Planning Document Deep Review (#plan-review)",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "review",
+        "tdd",
+        "architecture",
+        "quality"
+      ],
+      "chunks": [
+        ".copilot/chunks/plan-review.md.chunk0.txt",
+        ".copilot/chunks/plan-review.md.chunk1.txt",
+        ".copilot/chunks/plan-review.md.chunk2.txt",
+        ".copilot/chunks/plan-review.md.chunk3.txt",
+        ".copilot/chunks/plan-review.md.chunk4.txt",
+        ".copilot/chunks/plan-review.md.chunk5.txt",
+        ".copilot/chunks/plan-review.md.chunk6.txt",
+        ".copilot/chunks/plan-review.md.chunk7.txt"
       ]
     },
     {
