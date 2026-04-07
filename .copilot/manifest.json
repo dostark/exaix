@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T18:11:53.630Z",
+  "generated_at": "2026-04-07T18:28:25.596Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -64,33 +64,6 @@
       "chunks": [
         ".copilot/chunks/step.md.chunk0.txt",
         ".copilot/chunks/step.md.chunk1.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/plan-review.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase Planning Document Deep Review (#plan-review)",
-      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.0",
-      "topics": [
-        "planning",
-        "gap-analysis",
-        "review",
-        "tdd",
-        "architecture",
-        "quality",
-        "security"
-      ],
-      "chunks": [
-        ".copilot/chunks/plan-review.md.chunk0.txt",
-        ".copilot/chunks/plan-review.md.chunk1.txt",
-        ".copilot/chunks/plan-review.md.chunk2.txt",
-        ".copilot/chunks/plan-review.md.chunk3.txt",
-        ".copilot/chunks/plan-review.md.chunk4.txt",
-        ".copilot/chunks/plan-review.md.chunk5.txt",
-        ".copilot/chunks/plan-review.md.chunk6.txt",
-        ".copilot/chunks/plan-review.md.chunk7.txt"
       ]
     },
     {
@@ -231,6 +204,33 @@
       ]
     },
     {
+      "path": ".copilot/prompts/pre-gap-analysis.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Planning Document Pre-Implementation Gap Analysis (#pre-gap-analysis)",
+      "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "architecture",
+        "risk",
+        "quality",
+        "security",
+        "tdd"
+      ],
+      "chunks": [
+        ".copilot/chunks/pre-gap-analysis.md.chunk0.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk1.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk2.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk3.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk4.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk5.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk6.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/README.md",
       "agent": "general",
       "scope": "dev",
@@ -271,31 +271,6 @@
       "chunks": [
         ".copilot/chunks/tdd-workflow.md.chunk0.txt",
         ".copilot/chunks/tdd-workflow.md.chunk1.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/gap-analysis.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Planning Document Gap Analysis (#gap-analysis)",
-      "short_summary": "Generic prompt for finding gaps, ambiguities, and risks in a phase planning document before implementation begins.",
-      "version": "0.1",
-      "topics": [
-        "planning",
-        "gap-analysis",
-        "architecture",
-        "risk",
-        "quality"
-      ],
-      "chunks": [
-        ".copilot/chunks/gap-analysis.md.chunk0.txt",
-        ".copilot/chunks/gap-analysis.md.chunk1.txt",
-        ".copilot/chunks/gap-analysis.md.chunk2.txt",
-        ".copilot/chunks/gap-analysis.md.chunk3.txt",
-        ".copilot/chunks/gap-analysis.md.chunk4.txt",
-        ".copilot/chunks/gap-analysis.md.chunk5.txt",
-        ".copilot/chunks/gap-analysis.md.chunk6.txt",
-        ".copilot/chunks/gap-analysis.md.chunk7.txt"
       ]
     },
     {
@@ -431,6 +406,33 @@
         ".copilot/chunks/refactor-check-magic-comprehensive.md.chunk4.txt",
         ".copilot/chunks/refactor-check-magic-comprehensive.md.chunk5.txt",
         ".copilot/chunks/refactor-check-magic-comprehensive.md.chunk6.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/post-gap-analysis.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase Planning Document Deep Review (#post-gap-analysis)",
+      "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "gap-analysis",
+        "review",
+        "tdd",
+        "architecture",
+        "quality",
+        "security"
+      ],
+      "chunks": [
+        ".copilot/chunks/post-gap-analysis.md.chunk0.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk1.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk2.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk3.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk4.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk5.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk6.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk7.txt"
       ]
     },
     {

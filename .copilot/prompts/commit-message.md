@@ -28,6 +28,7 @@ Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
 - At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.
 - For Exaix, prefer the repository-standard checks when they are relevant to the change, such as `deno fmt --check`, `deno lint`, `deno task test_parallel` (two-batch parallel+sequential runner), and any task-specific checks implicated by the modified files.
+- The pre-commit hook auto-regenerates and stages `.copilot/manifest.json` whenever `.copilot/` sources are staged — you do NOT need to run `build_agents_index.ts` manually.
 - If a required check was not run, say so explicitly in `tests:` and treat that as a blocking issue before an actual commit.
 - Do not present the final `git commit` command as ready to run if known required checks are failing.
 

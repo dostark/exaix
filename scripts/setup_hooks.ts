@@ -44,10 +44,26 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 5. Docs Drift Check
+# 5. Manifest Auto-Sync
+# Regenerate manifest.json if any .copilot/ source changed, then stage it
+# so it is always included automatically — no manual step required.
+STAGED_COPILOT=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^.copilot/' | grep -v 'manifest.json' || true)
+if [ -n "$STAGED_COPILOT" ]; then
+  echo "🔄 .copilot/ sources changed; regenerating manifest.json..."
+  deno run --allow-read --allow-write scripts/build_agents_index.ts
+  if [ $? -ne 0 ]; then
+    echo "❌ Error: Failed to regenerate .copilot/manifest.json."
+    exit 1
+  fi
+  git add .copilot/manifest.json
+fi
+
+# Verify manifest is now consistent (covers the case where manifest was
+# already staged with stale content but no .copilot/ sources were staged)
 deno task check:docs
 if [ $? -ne 0 ]; then
-  echo "❌ Error: Documentation manifest is out of date. Run 'deno run -A scripts/verify_manifest_fresh.ts' to update."
+  echo "❌ Error: Documentation manifest is still out of date after auto-sync."
+  echo "    Run 'deno run -A scripts/build_agents_index.ts' and stage the result."
   exit 1
 fi
 
