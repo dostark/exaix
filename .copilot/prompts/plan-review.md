@@ -4,7 +4,7 @@ scope: dev
 title: "Phase Planning Document Deep Review (#plan-review)"
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document."
 version: "1.0"
-topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality"]
+topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality", "security"]
 ---
 
 ```text
@@ -27,6 +27,9 @@ Key points
   gaps are remediated.
 - Bump the document version (e.g., 1.2 → 1.3) and update the Status line
   to "🚧 Gap Remediation In Progress" after writing gaps into it.
+- Run a security gap check (Phase 3b) on every step that touches input
+  handling, auth, path resolution, secrets, or external data. Security gaps
+  use the 🔒 severity symbol and are always prioritised above 🟡 Feasibility.
 
 Canonical prompt (short):
 "Deep-review .copilot/planning/phase-NN-*.md against the actual codebase.
@@ -43,8 +46,10 @@ Do / Don't
 - ✅ Do verify every success criterion by inspecting real code and test files.
 - ✅ Do cross-check each step against .copilot/planning/README.md §F
   requirements (Actions / Architecture Notes / Planned Tests / Success Criteria).
-- ✅ Do classify every gap with a severity symbol (🔴 Critical / 🟡 Feasibility /
-  🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
+- ✅ Do classify every gap with a severity symbol (🔴 Critical / � Security /
+  🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
+- ✅ Do run Phase 3b security checks on every step touching input handling,
+  auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do include a numbered gap summary table before the detailed gap entries.
 - ✅ Do write new remediation steps using the full §F TDD-First template.
 - ✅ Do add a documentation update step last (§3D) when interfaces or
@@ -52,6 +57,8 @@ Do / Don't
 - ✅ Do bump the document version and update the Status field in the frontmatter.
 - ✅ Do use any additionally supplied documents as context.
 - ❌ Don't mark a plan step as gap-free unless you verified its test files.
+- ❌ Don't skip Phase 3b for steps that handle external data or file paths —
+  even if the plan did not mention security.
 - ❌ Don't invent remediation steps for code that already exists and passes.
 - ❌ Don't report gaps only in chat — they MUST be written into the document.
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
@@ -139,6 +146,66 @@ For **every step not yet marked complete**:
 
 ---
 
+### Phase 3b — Security Gap Analysis
+
+For **every step** that touches any of the following areas, apply the checklist
+below. A finding becomes a gap classified 🔒 Security — always triaged above
+🟡 Feasibility.
+
+**Trigger areas** (check if the step modifies or introduces):
+
+- Input parsing / deserialisation of external data (JSON, TOML, YAML, user input)
+- File-system access, path construction, or directory traversal
+- Authentication, authorisation, or permission checks
+- Secrets / credentials / API keys (storage, logging, transmission)
+- Network calls or HTTP response handling
+- Process/command execution (`Deno.Command`, `eval`-like patterns)
+- Shared mutable state accessed by multiple async paths
+
+**Security checklist** — one finding per failed item:
+
+1. **Input validation** — Is all external input validated against a strict Zod
+   schema (or equivalent) before use? Are unexpected fields stripped?
+
+1. **Path traversal** — Does every file-system path go through `PathResolver`
+   (or equivalent allow-list check)? Are `../` sequences and absolute paths
+   from user data rejected?
+
+1. **Secret handling** — Are secrets never logged, never included in error
+   messages, never written to plain-text files, and never stored in code?
+
+1. **Injection** — Are all shell commands built from a fixed argument array
+   (no string interpolation)? Are SQL/template literals parameterised?
+
+1. **Auth boundary** — Is every protected action gated by an authorisation
+   check? Are permission checks performed before side effects, not after?
+
+1. **Error leakage** — Do error messages returned to callers omit internal
+   stack traces and file paths that could aid an attacker?
+
+1. **Concurrency & TOCTOU** — If shared state is read then written in separate
+   async steps, is a mutex or equivalent guard in place?
+
+1. **Dependency trust** — Does the step add new third-party imports? If so,
+   are they pinned to a specific version/hash?
+
+1. **Security tests** — Is there at least one negative test (malformed input,
+   path escape attempt, oversized payload) for each new security boundary?
+
+For each failed item, produce a gap entry using severity 🔒 Security:
+
+```text
+#### G{N}: {short title}  🔒 Security
+- **Checklist item:** {item number and name above}
+- **Location in plan:** Step N.M — "{quoted sentence from plan}"
+- **Actual state:** {what the code does / omits}
+- **Impact:** {attack vector or data-exposure risk if left unresolved}
+- **To fix:** {concrete one-sentence instruction referencing OWASP Top 10 where applicable}
+- **Resolved by:** Step {PhaseNN.M} below
+```
+
+---
+
 ### Phase 4 — Gap Classification
 
 1. **Classify every gap** using the severity taxonomy:
@@ -146,7 +213,8 @@ For **every step not yet marked complete**:
 | Symbol | Meaning |
 | --- | --- |
 | 🔴 Critical | Blocks correctness — code diverges from plan in a breaking way |
-| 🟡 Feasibility | Plan claim is unverifiable or implementation-risky |
+| � Security | Security vulnerability or missing security control (OWASP Top 10) |
+| �🟡 Feasibility | Plan claim is unverifiable or implementation-risky |
 | 🟠 Testing | Missing or under-specified test; implementation may ship uncovered |
 | 🔵 Conceptual | Minor mismatch, missing doc marker, or style divergence |
 

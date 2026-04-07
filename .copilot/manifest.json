@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T18:06:47.220Z",
+  "generated_at": "2026-04-07T18:11:53.630Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -79,7 +79,8 @@
         "review",
         "tdd",
         "architecture",
-        "quality"
+        "quality",
+        "security"
       ],
       "chunks": [
         ".copilot/chunks/plan-review.md.chunk0.txt",
