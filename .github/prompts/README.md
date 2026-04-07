@@ -42,3 +42,5 @@ That keeps one source of truth for the actual workflow while preserving the inte
 - `/commit` -> `commit.prompt.md` (canonical: `../../.copilot/prompts/commit-message.md`)
 - `/refactor-check-magic` -> `refactor-check-magic.prompt.md` (canonical: `../../.copilot/prompts/refactor-check-magic-comprehensive.md`)
 - `/next-steps` -> `next-steps.prompt.md` (canonical: `../../.copilot/prompts/tdd-phase-steps.md`)
+- `/pre-gap-analysis` -> `pre-gap-analysis.prompt.md` (canonical: `../../.copilot/prompts/pre-gap-analysis.md`)
+- `/post-gap-analysis` -> `post-gap-analysis.prompt.md` (canonical: `../../.copilot/prompts/post-gap-analysis.md`)

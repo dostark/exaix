@@ -1,7 +1,7 @@
 ---
 agent: senior-coder
 scope: dev
-title: "Phase Planning Document Deep Review (#plan-review)"
+title: "Phase Planning Document Deep Review (#post-gap-analysis)"
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document."
 version: "1.0"
 topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality", "security"]
@@ -37,8 +37,8 @@ Find all gaps between plan claims and implementation, write them into the
 document with remediation steps."
 
 Examples
-- "#plan-review .copilot/planning/phase-63-flow-error-recovery.md"
-- "#plan-review .copilot/planning/phase-64-flow-namespace-blackboard.md
+- "#post-gap-analysis .copilot/planning/phase-63-flow-error-recovery.md"
+- "#post-gap-analysis .copilot/planning/phase-64-flow-namespace-blackboard.md
    Additional context: ARCHITECTURE.md, src/flows/flow_runner.ts"
 
 Do / Don't
@@ -66,7 +66,7 @@ Do / Don't
   step number.
 
 Related templates:
-- #gap-analysis — Pre-implementation gap analysis (no code to check yet)
+- #pre-gap-analysis — Pre-implementation gap analysis (no code to check yet)
 - #plan         — Draft a new phase planning document from scratch
 - #step         — Implement a single remediation step from the gap list
 - #review       — Code review of a finished feature (not plan-level)

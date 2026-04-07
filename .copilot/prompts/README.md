@@ -41,6 +41,8 @@ These templates are the canonical Exaix workflow prompts. They are distinct from
 - `#explore` — Codebase Exploration
 - `#duplication` — Code Duplication Reduction
 - `#commit` — Detailed Commit Message
+- `#pre-gap-analysis` — Pre-implementation gap analysis of a planning document
+- `#post-gap-analysis` — Deep post-implementation review of a planning document
 - `#next-steps` — TDD Red-Green-Refactor Phase Steps (plan-driven, CI-gated, per-step commits)
 
 ## Usage Example
