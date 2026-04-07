@@ -106,6 +106,24 @@ Once implementation begins, the planning document MUST be updated in real-time t
 - Update the `Technical Architecture` section of the plan first.
 - Bump the document `version` (e.g., 1.0 → 1.1) to signal an architectural pivot.
 
+### D. Documentation Updates (Mandatory)
+
+When a phase introduces or modifies architecture, public interfaces, CLI behaviour, data formats, or user-facing features, the following documentation **must** be updated as part of the same implementation step — not deferred to a follow-up:
+
+| Document                      | Update when…                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `ARCHITECTURE.md`             | New components, services, data flows, or architectural layers are introduced |
+| `docs/`                       | User-facing behaviour, configuration, CLI commands, or workflows change      |
+| `TOOLS.md`                    | MCP tool schemas are added or modified (`deno task docs-sync-schemas`)       |
+| `CODE_STYLE.md`               | New patterns or constraints are established by the phase                     |
+| `.copilot/cross-reference.md` | New task→doc mappings are required for agent discoverability                 |
+
+**Rules:**
+
+- A step's **Success Criteria** must include documentation update verification when the step touches a public surface.
+- Documentation-only updates do not require new tests but must pass `deno task docs-agent-validate` and `deno task check:docs`.
+- If a document does not yet exist for the affected area, create it and add it to `.copilot/manifest.json`.
+
 ---
 
 ## 4. Guiding Principles
@@ -134,4 +152,4 @@ Once implementation begins, the planning document MUST be updated in real-time t
 1. `phase-80-enterprise-provider-support.md`: Comprehensive business-compliant implementation guidelines.
 
 ---
-**Last Updated**: 2026-04-02
+**Last Updated**: 2026-04-07

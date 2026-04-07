@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T14:59:10.242Z",
+  "generated_at": "2026-04-07T17:06:44.361Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1005,7 +1005,7 @@
       "scope": "dev",
       "title": "Phase 64: Flow Namespace & Shared Blackboard Coordination",
       "short_summary": "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1397,7 +1397,7 @@
       "scope": "dev",
       "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
       "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
-      "version": 1.2,
+      "version": 1.3,
       "topics": [
         "flow-orchestration",
         "error-recovery",
