@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)"
 short_summary: Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.
-version: 1.5
+version: "1.6"
 topics:
   - context-window
   - budgeting
@@ -19,7 +19,7 @@ topics:
 
 ## Phase 62: Global Prompt Budget Coordinator
 
-## Status: ✅ Complete
+## Status: 🚧 Gap Remediation In Progress
 
 **Author**: Comet Assistant (via senior-coder Blueprint)
 **Date**: 2026-04-02
@@ -196,3 +196,152 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 - [x] **Policy Toggle Verified** — Tests confirm cloud policy can be disabled and local policy can be enabled independently, changing allocator behavior at runtime (`prompt_budget_allocator_test.ts` — 4 policy-aware tests).
 
 **Agent Instructions**: Follow the implementation steps in sequence. Do not proceed to the next step until all "Planned Tests" for the current step pass with `deno task test`.
+
+---
+
+## Deep Review — 2026-04-07
+
+**Reviewer**: GitHub Copilot (via `#post-gap-analysis`)
+**Phase verified against**: v1.5
+
+All source files referenced by the implementation plan were read and inspected against the plan's success criteria. Security Phase 3b was applied to every step.
+
+---
+
+### Gap Summary
+
+| ID | Gap (short)                                                                                                                   | Severity       | Plan Section               | Verified in Code? |
+| -- | ----------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------- | ----------------- |
+| G1 | Steps 62.1–62.4 use `Justification` label — §F requires `Architecture Notes`                                                  | 🔵 Conceptual  | All steps                  | ✅                |
+| G2 | Pass-through success criterion says "sections = `Infinity`" but `_buildRelaxedBudget` uses `totalTokens` (32768)              | 🔵 Conceptual  | Step 62.2 success criteria | ✅                |
+| G3 | `ZBudgetPolicy` not wired into `ConfigSchema` — `exa.config.toml` override claimed but absent                                 | 🟡 Feasibility | Step 62.2 success criteria | ✅                |
+| G4 | Plan claims BPE tokenization supported; `TokenCounter` implements heuristic only                                              | 🔵 Conceptual  | Step 62.2 success criteria | ✅                |
+| G5 | `sections.skills` and `sections.loopHistory` allocated by `PromptBudgetAllocator` but never applied in `buildExecutionPrompt` | 🟠 Testing     | Step 62.4 success criteria | ✅                |
+
+### Security Phase 3b
+
+- **Step 62.4** (`estimateExecutionUsage`): uses string `.length` values only — no payload content is exposed. Cost journal entry `{ tokens: N, cost_usd_estimate: N }` contains no secrets or API keys. ✅ No security gap.
+- **Step 62.1** (`ZBudgetPolicy`): boolean fields with safe Zod defaults; no injection surface. ✅ No security gap.
+- No OWASP Top 10 issues found across the Phase 62 implementation.
+
+---
+
+### Detailed Gap Entries
+
+#### G1 — §F sub-section label non-compliance (all 4 steps)
+
+**Where**: Steps 62.1, 62.2, 62.3, 62.4 — each uses `- **Justification**: ...` instead of the `- **Architecture Notes**: ...` label required by `.copilot/planning/README.md §F`.
+
+**Impact**: Agent traceability tooling (and peer reviewers) that relies on the §F structure to locate DI/pattern rationale will miss these blocks. Low operational risk but blocks §F conformance checks.
+
+---
+
+#### G2 — Pass-through budget documented as "Infinity" but implementation caps at `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK`
+
+**Where**: Step 62.2 success criterion — `"sections set to Infinity (or the local fallback window uncapped)"`.
+
+**Reality**: `_buildRelaxedBudget` sets every section to `totalTokens`, which resolves to `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK` (32768) for an unknown local model. Tests in `prompt_budget_allocator_test.ts` and `prompt_budget_schema_test.ts` already assert `sections.system === LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK`, not `Infinity`. The actual behaviour is correct but the plan text misrepresents it.
+
+**Impact**: No runtime risk; however, "uncapped" wording in the plan is misleading and may cause a future implementor to skip the `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK` floor guard.
+
+---
+
+#### G3 — `ZBudgetPolicy` not wired into `ConfigSchema` / `exa.config.toml`
+
+**Where**: Step 62.2 success criterion — `"Both policies are independently toggleable via config; runtime value can be passed from exa.config.toml"`.
+
+**Reality**: `src/shared/schemas/config.ts` (`ConfigSchema`) has no `budget_enforcement` section. `AgentExecutor` instantiates `new PromptBudgetAllocator()` with no policy argument, meaning the allocator always uses the hardcoded defaults (`cloud: true`, `local: false`). The `ZBudgetPolicy` schema exists but is unreachable from the config system.
+
+**Impact**: The **"Configurable Overrides"** design principle stated in § "Design Principles" is unimplemented. Risk R4's mitigation ("users can override per model in `exa.config.toml`") is also unaddressed. Users who want to enable local-model enforcement must recompile.
+
+---
+
+#### G4 — BPE tokenization described as supported; `TokenCounter` implements heuristic only
+
+**Where**: Step 62.2 success criterion — `"Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via transformers.js or tiktoken port)"`.
+
+**Reality**: `src/services/context/token_counter.ts` exports `class TokenCounter { countTokens(text): number }` — a single `Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN)` call. There is no BPE path, no optional import, and no interface extension point.
+
+**Impact**: Low operational risk (4:1 heuristic is adequate for Phase 62 goals). The claim is false and may mislead future reviewers into believing a BPE path exists.
+
+---
+
+#### G5 — `sections.skills` and `sections.loopHistory` allocated but not applied in prompt assembly
+
+**Where**: `src/services/agent/agent_executor.ts` — `buildExecutionPrompt`.
+
+**Reality**: `buildExecutionPrompt` calls `applyTokenBudget` for exactly four sections: `sections.memory` (→ request), `sections.plan`, `sections.portalKnowledge`, `sections.system`. The `sections.skills` value and `sections.loopHistory` value are computed by the allocator and returned in `IPromptBudget`, but no code ever passes them to `applyTokenBudget` or to the skills/loop-history assembly paths. The waterfall sets these to zero when content is empty (correct), but if skills or loop-history content is present it can silently exceed its allocated budget.
+
+`context_overflow_recovery_test.ts` provides `sections: { skills: 10, loopHistory: 10 }` via a mock allocator but does not assert that oversized skills or loop-history content is truncated — so the test does not catch this gap.
+
+**Impact**: 15% of the total token budget (skills 10% + loopHistory 5%) is allocated but provides no enforcement. On a 128k-token model this is ~19k tokens of unguarded prompt real estate.
+
+---
+
+## Gap Remediation Plan
+
+Steps 62.5–62.8 below address the gaps. Ordered by severity then dependency.
+All steps follow the TDD-First policy per .copilot/planning/README.md §F.
+
+### Step 62.5 (G3): Wire `ZBudgetPolicy` into `ConfigSchema` and `AgentExecutor`
+
+- **Actions**:
+  - [ ] `src/shared/schemas/config.ts`: Add `budget_enforcement: ZBudgetPolicy.optional()` as a top-level field on `ConfigSchema` (mirrors other feature-flag sections like `quality_gate`).
+  - [ ] `src/services/agent/agent_executor.ts`: In the constructor default parameter, replace `new PromptBudgetAllocator()` with `new PromptBudgetAllocator(config.budget_enforcement ?? {})`.
+  - [ ] `templates/exa.config.sample.toml`: Add a commented `[budget_enforcement]` block with `cloud = true` and `local = false` and explanatory comments.
+- **Architecture Notes**: `ZBudgetPolicy.optional()` with no `.default()` preserves backward compatibility — existing configs that omit the section will continue using constant defaults inside `PromptBudgetAllocator`. No database migration is required. DI is already satisfied: `AgentExecutor` constructor accepts an injected allocator for tests.
+- **Planned Tests**:
+  - [ ] `tests/config/config_test.ts`: `"ConfigSchema accepts budget_enforcement with cloud = false"` — assert parse succeeds and `config.budget_enforcement.cloud === false`.
+  - [ ] `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: passes budget_enforcement policy to allocator from config"` — provide config with `budget_enforcement: { cloud: false }`, mock allocator, assert it receives `cloud: false`.
+- **Success Criteria**:
+  - [ ] `deno check src/shared/schemas/config.ts` passes.
+  - [ ] An `exa.config.toml` containing `[budget_enforcement]\ncloud = false` disables cloud enforcement at runtime.
+  - [ ] All existing config tests pass without modification.
+
+---
+
+### Step 62.6 (G5): Apply `sections.skills` and `sections.loopHistory` budgets in prompt assembly
+
+- **Actions**:
+  - [ ] `src/services/agent/agent_executor.ts`: In `buildExecutionPrompt`, expose the assembled skills context as a parameter (or retrieve it from the strategy context) and apply `applyTokenBudget(skillsBlock, this.currentPromptBudget?.sections.skills)` before inserting it into the prompt.
+  - [ ] `src/services/agent/agent_runner.ts`: In `matchAndApplySkills`, pass `contextBudgetChars: (allocatedSkillsTokens ?? 0) * TOKEN_ESTIMATION_CHARS_PER_TOKEN` to `skillsService.matchSkills()` when a budget is supplied via the new `IAgentRunOptions.skillsBudgetTokens` field.
+  - [ ] `src/services/agent/strategies/legacy_strategy.ts`: Thread `executor.currentPromptBudget?.sections.skills` into the runner invocation as `skillsBudgetTokens`.
+- **Architecture Notes**: `ISkillMatchRequest.contextBudgetChars` already supports budget filtering (Step 62.3). Conversion: `tokens × TOKEN_ESTIMATION_CHARS_PER_TOKEN`. For `loopHistory`, apply the budget cap inside `ReActLoopStrategy.buildPrompt` when appending the history block — truncate to `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars, trimming oldest entries first.
+- **Planned Tests**:
+  - [ ] `tests/integration/agent/context_overflow_recovery_test.ts`: Add assertion that skills content in the assembled prompt is ≤ `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars when the mock allocator provides `sections.skills = 10`.
+  - [ ] `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: skills block in prompt respects sections.skills budget"`.
+- **Success Criteria**:
+  - [ ] Skills content in the assembled prompt never exceeds `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
+  - [ ] Loop-history block in ReAct prompts never exceeds `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
+  - [ ] `context_overflow_recovery_test.ts` passes with the new assertions.
+
+---
+
+### Step 62.7 (G1, G2, G4): Correct plan documentation inaccuracies
+
+- **Actions**:
+  - [ ] `.copilot/planning/phase-62-context-window-management.md` Steps 62.1–62.4: Rename `- **Justification**:` → `- **Architecture Notes**:` in all four step headers.
+  - [ ] Step 62.2 success criterion: Replace `"sections set to Infinity (or the local fallback window uncapped)"` with `"sections set to totalTokens (= LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32 768 for unknown local models), safetyBufferTokens = 0"`.
+  - [ ] Step 62.2 success criterion: Replace `"Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via transformers.js or tiktoken port)"` with `"Token counting uses the 4:1 heuristic (TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4); BPE tokenization is deferred to a future phase"`.
+- **Architecture Notes**: Documentation-only edits. No source code or test changes required.
+- **Planned Tests**: No new tests needed — existing tests already assert the correct runtime behaviour.
+- **Success Criteria**:
+  - [ ] `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/phase-62-context-window-management.md` reports zero errors.
+  - [ ] All §F sub-section labels in Steps 62.1–62.4 read "Architecture Notes".
+
+---
+
+### Step 62.8 (§3D Documentation): Update `ARCHITECTURE.md`, cross-reference, and sample config
+
+- **Actions**:
+  - [ ] `ARCHITECTURE.md`: Add `PromptBudgetAllocator` to the architecture diagram and key-service table, noting the `budget_enforcement` TOML config key and the six prompt sections.
+  - [ ] `.copilot/cross-reference.md`: Add keyword entries: `budget_enforcement` → `phase-62-context-window-management.md`; `skills_budget` → `phase-62-context-window-management.md`; `loopHistory_budget` → `phase-62-context-window-management.md`.
+  - [ ] `docs/Exaix_User_Guide.md` §11 (Cost Tracking): Update §11.2 to reference the `[budget_enforcement]` TOML section once Step 62.5 lands.
+- **Architecture Notes**: §3D documentation update is mandatory when new TOML config keys are introduced. This step is sequenced after Step 62.5; it may be executed concurrently with Steps 62.6 and 62.7.
+- **Planned Tests**:
+  - [ ] `deno task docs-agent-validate` — verify no broken links introduced.
+  - [ ] `deno task check:arch` — architecture validation passes.
+- **Success Criteria**:
+  - [ ] `deno task docs-agent-validate` reports zero errors.
+  - [ ] `.copilot/cross-reference.md` contains a `budget_enforcement` entry pointing to Phase 62.
+  - [ ] `deno task check:arch` passes.

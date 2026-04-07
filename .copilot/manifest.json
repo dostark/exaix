@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T18:28:43.376Z",
+  "generated_at": "2026-04-07T19:47:44.682Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -951,7 +951,7 @@
       "scope": "dev",
       "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
       "short_summary": "Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.",
-      "version": 1.5,
+      "version": "1.6",
       "topics": [
         "context-window",
         "budgeting",
@@ -1176,7 +1176,7 @@
       "scope": "dev",
       "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
       "short_summary": "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "agent-executor",
         "mcp",

@@ -3,13 +3,23 @@ agent: antigravity
 scope: dev
 title: "Phase 61: AgentExecutor MCP Integration & Real-World Execution"
 short_summary: "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern."
-version: "1.1"
-topics: ["agent-executor", "mcp", "subprocess", "security", "git-audit", "execution-strategy", "identities", "process-management", "cross-process-context"]
+version: "1.2"
+topics: [
+  "agent-executor",
+  "mcp",
+  "subprocess",
+  "security",
+  "git-audit",
+  "execution-strategy",
+  "identities",
+  "process-management",
+  "cross-process-context",
+]
 ---
 
 ## Phase 61: AgentExecutor MCP Integration & Real-World Execution
 
-## Status: ✅ COMPLETE (All steps 61.1–61.5 implemented and tested)
+## Status: 🚧 Gap Remediation In Progress (Steps 61.6–61.9 pending; 61.1–61.5 verified ✅)
 
 **Phase Dependencies**: Phase 60
 **Risk Level**: M (Modifies core execution strategy)
@@ -166,12 +176,12 @@ AgentExecutor.executeStep()
 
 ## Risks & Mitigations
 
-| Risk | Impact | Likelihood | Mitigation |
-| :--- | :--- | :--- | :--- |
-| **R1: Subprocess Orphanage** | System instability / resource leaks | Medium | Implement PID tracking and a `SIGINT` cleanup handler in `SafeSubprocess`. |
-| **R2: Git Audit False Negatives** | Security breach (unauthorized changes) | Low | Use `git status --porcelain=v1` for deterministic parsing and assume any unknown change is unauthorized. |
-| **R3: MCP Latency** | Degraded UX for real-time tasks | Medium | Implement persistent JSON-RPC heartbeats and optimize Deno startup time using pre-cached modules. |
-| **R4: Strategy Divergence** | Broken TUI / Journal parsing | High | Centralize result validation in `AgentExecutor` using the shared `ChangesetResultSchema`. |
+| Risk                              | Impact                                 | Likelihood | Mitigation                                                                                               |
+| :-------------------------------- | :------------------------------------- | :--------- | :------------------------------------------------------------------------------------------------------- |
+| **R1: Subprocess Orphanage**      | System instability / resource leaks    | Medium     | Implement PID tracking and a `SIGINT` cleanup handler in `SafeSubprocess`.                               |
+| **R2: Git Audit False Negatives** | Security breach (unauthorized changes) | Low        | Use `git status --porcelain=v1` for deterministic parsing and assume any unknown change is unauthorized. |
+| **R3: MCP Latency**               | Degraded UX for real-time tasks        | Medium     | Implement persistent JSON-RPC heartbeats and optimize Deno startup time using pre-cached modules.        |
+| **R4: Strategy Divergence**       | Broken TUI / Journal parsing           | High       | Centralize result validation in `AgentExecutor` using the shared `ChangesetResultSchema`.                |
 
 ---
 
@@ -197,3 +207,166 @@ AgentExecutor.executeStep()
 
 ---
 **Agent Instructions**: Follow the steps in order. Each step MUST pass its associated planned tests before proceeding to the next. Do not mark steps as completed until the `ci.ts` pipeline returns a PASS for the specific test category.
+---
+
+## Deep Review — 2026-04-07
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#post-gap-analysis` (`.copilot/prompts/post-gap-analysis.md`)
+> **Scope:** All steps 61.1–61.5 verified against actual source files.
+> **Security Phase 3b:** Applied to Steps 61.2, 61.3, 61.4.
+
+All core Phase 61 implementation is confirmed present and matching the plan. Five gaps remain: one security (G5), one feasibility (G4), one testing (G3), and two conceptual (G1, G2). None block existing functionality; G5 has audit-trail implications.
+
+---
+
+### Gap Summary Table
+
+| ID | Gap (short)                                                                          | Severity       | Plan Section    | In Tests? |
+| -- | ------------------------------------------------------------------------------------ | -------------- | --------------- | --------- |
+| G1 | Stale TODO comment in `executeStep` misrepresents Phase 61 as unimplemented          | 🔵 Conceptual  | Step 61.1       | ❌        |
+| G2 | Steps 61.1–61.5 use "Justification" label — §F requires "Architecture Notes"         | 🔵 Conceptual  | All steps       | ❌        |
+| G3 | 4 planned tests marked ⚠️ NOT CREATED — no remediation step existed                  | 🟠 Testing     | Steps 61.2–61.4 | ❌        |
+| G4 | `IExecutionStrategy` lacks `dispose?()` — `AgentExecutor.dispose()` uses duck-typing | 🟡 Feasibility | Step 61.1/61.2  | ❌        |
+| G5 | `pipeStderrToLogger` swallows stream errors silently — incomplete audit trail        | 🔒 Security    | Step 61.2/61.3  | ❌        |
+
+---
+
+### Detailed Gap Entries
+
+#### G1 — 🔵 Conceptual: Stale TODO comment in `executeStep`
+
+**Evidence:** `src/services/agent/agent_executor.ts` at `executeStep()` contains:
+
+```ts
+// Load blueprint (TODO: use blueprint for agent spawning when implemented)
+```
+
+Phase 61 _did_ implement blueprint-based strategy dispatch — the blueprint is loaded and its `capabilities` array determines which `ExecutionStrategyName` is resolved via the strategy registry. The TODO misrepresents the implementation state.
+
+**Impact:** Future contributors reading this comment will incorrectly believe blueprint-based spawning is not yet implemented, risking duplicate or conflicting work.
+
+---
+
+#### G2 — 🔵 Conceptual: §F sub-section label "Justification" instead of "Architecture Notes"
+
+**Evidence:** Steps 61.1, 61.2, 61.3, 61.4, and 61.5 each use `- **Justification**:` as the second sub-section label. `.copilot/planning/README.md §F` requires the label `- **Architecture Notes**:`.
+
+**Impact:** All 5 steps are non-compliant with the planning document standard. Automated doc validation may reject the document.
+
+---
+
+#### G3 — 🟠 Testing: 4 planned tests marked ⚠️ NOT CREATED without remediation steps
+
+**Evidence:** The plan acknowledges four test files as NOT CREATED with no follow-up remediation step:
+
+- `tests/security/subprocess_isolation_test.ts` (Step 61.2) — subprocess permission restriction
+- `tests/functional/agent/SHA_accuracy_test.ts` (Step 61.3) — real 40-char hex SHA assertion
+- `tests/security/agent_isolation_audit_test.ts` (Step 61.4) — unauthorized path revert with `SECURITY_VIOLATION`
+- `tests/unit/agent/git_audit_parser_test.ts` (Step 61.4) — git porcelain edge cases
+
+**Impact:** Security coverage for subprocess isolation and git porcelain parsing is incomplete. Edge cases (renames, deletes, filenames with spaces) are covered only incidentally in integration tests.
+
+---
+
+#### G4 — 🟡 Feasibility: `IExecutionStrategy` lacks optional `dispose?()` method
+
+**Evidence:** `src/services/agent/strategies/execution_strategy.ts` declares only `name` and `execute()`. `McpAgentStrategy.dispose()` exists but is not part of the interface. `AgentExecutor.dispose()` uses runtime duck-typing:
+
+```ts
+if ("dispose" in strategy && typeof strategy.dispose === "function") {
+  strategy.dispose();
+}
+```
+
+**Impact:** Future `IExecutionStrategy` implementations holding external resources have no interface-level reminder to implement `dispose()`. Missing `dispose()` on a resource-holding strategy causes signal listener leaks and Deno sanitize-ops failures in tests.
+
+---
+
+#### G5 — 🔒 Security: `pipeStderrToLogger` swallows stream errors silently
+
+**Evidence:** `src/services/agent/strategies/mcp_agent_strategy.ts` — `pipeStderrToLogger`:
+
+```ts
+} catch {
+  // Stream error, typically process closed
+}
+```
+
+A stream error (subprocess crash, pipe break) produces no Activity Journal entry. Subprocess security warnings written to stderr (e.g., "Permission denied accessing /etc/passwd") are silently dropped when the pipe breaks.
+
+**Impact:** Incomplete audit trail — security-relevant subprocess stderr is lost when the stderr pipe fails. This conflicts with the Step 61.4 success criterion: `[x] Subprocess output is piped to the EventLogger for real-time monitoring`.
+
+**OWASP:** A10 — Insufficient Logging & Monitoring.
+
+---
+
+## Gap Remediation Plan
+
+### Step 61.6: Interface Hardening — Remove Stale TODO + Add `dispose?()` to `IExecutionStrategy` (G1, G4)
+
+- **Actions**: (1) Remove the stale `// Load blueprint (TODO: use blueprint for agent spawning when implemented)` comment from `AgentExecutor.executeStep()` and replace with an accurate comment reflecting the Phase 61 strategy dispatch. (2) Add `dispose?(): void` as an optional method to `IExecutionStrategy` in `src/services/agent/strategies/execution_strategy.ts`. (3) Update `AgentExecutor.dispose()` to use `strategy.dispose?.()` instead of the duck-typed `typeof` check.
+
+- **Architecture Notes**: Adding `dispose?()` as optional preserves backward compatibility — `LegacyAgentStrategy` and `ReActLoopStrategy` continue to satisfy `IExecutionStrategy` without changes. `McpAgentStrategy.dispose()` already satisfies the new contract. The `AgentExecutor.dispose()` upgrade from duck-typing to `strategy.dispose?.()` is type-safe and eliminates the runtime `typeof` guard.
+
+- **Planned Tests**:
+  - **Unit**: `tests/agents/strategy_registry_test.ts` — add a test verifying `AgentExecutor.dispose()` invokes `dispose()` on strategies that implement it and skips those that do not.
+
+- **Success Criteria**:
+  - [ ] `IExecutionStrategy` declares `dispose?(): void`.
+  - [ ] `AgentExecutor.dispose()` uses `strategy.dispose?.()` (no duck-typed `typeof` check).
+  - [ ] Stale TODO comment removed from `executeStep`.
+  - [ ] All existing tests pass with zero new sanitize-ops failures.
+
+---
+
+### Step 61.7: Create 4 Missing Planned Test Files (G3)
+
+- **Actions**: Write TDD-first tests for:
+  1. `tests/security/subprocess_isolation_test.ts` — assert that `buildAgentArgs()` output for `SecurityMode.SANDBOXED` includes the expected Deno permission flags and excludes `--allow-write`.
+  2. `tests/functional/agent/SHA_accuracy_test.ts` — assert `executeStep()` in HYBRID mode returns `commit_sha` matching `/^[0-9a-f]{40}$/`, not the zero-padded mock `"0000000000000000000000000000000000000000"`.
+  3. `tests/security/agent_isolation_audit_test.ts` — spawn a mock MCP agent that writes to an unauthorized path; assert `auditGitChanges()` detects the violation, revert is applied, and `AgentExecutionError` with `SECURITY_VIOLATION` is thrown.
+  4. `tests/unit/agent/git_audit_parser_test.ts` — unit-test `auditGitChanges()` against edge-case git porcelain lines: filenames with spaces, `R  old -> new` renames, `D  deleted.txt` deletions, staged+unstaged combinations.
+
+- **Architecture Notes**: Tests requiring real git operations use `sanitizeOps: false, sanitizeResources: false` and `initTestDbService()`. The `git_audit_parser_test.ts` stubs `SafeSubprocess.run` via the override pattern established in `agent_executor_test.ts`. `SHA_accuracy_test.ts` requires a real git repo temp dir and a real commit (not just a mock strategy response).
+
+- **Planned Tests**: The four new files above are this step's deliverables.
+
+- **Success Criteria**:
+  - [ ] All 4 test files exist and pass (`deno test --allow-all`).
+  - [ ] `subprocess_isolation_test.ts` asserts permission flags match `SecurityMode.SANDBOXED`.
+  - [ ] `SHA_accuracy_test.ts` asserts `commit_sha.match(/^[0-9a-f]{40}$/)` (not zero-padded).
+  - [ ] `agent_isolation_audit_test.ts` asserts `AgentExecutionError` with `SECURITY_VIOLATION`.
+  - [ ] `git_audit_parser_test.ts` covers: rename, delete, space-in-filename, staged+unstaged lines.
+
+---
+
+### Step 61.8: Fix Silent Exception Swallowing in `pipeStderrToLogger` (G5)
+
+- **Actions**: In `src/services/agent/strategies/mcp_agent_strategy.ts`, replace the bare `catch {}` in `pipeStderrToLogger` with a catch block that logs the error via `this.executor.logAgentOutput(context.trace_id, "[stderr pipe error: " + (error instanceof Error ? error.message : String(error)) + "]")`. Thread `context` into the method call site so it is available in the catch.
+
+- **Architecture Notes**: Do not re-throw from the catch — the main execution path must continue even if stderr piping fails. Use `logAgentOutput` (not `logger.error`) to maintain parity with normal agent output routing. The `finally { reader.releaseLock() }` block is correct and must remain unchanged.
+
+- **Planned Tests**:
+  - **Unit**: `tests/agents/mcp_strategy_stderr_test.ts` — construct a mock child process whose stderr stream throws on `read()`; assert that `logAgentOutput` is called with an error-containing message and that execution is not aborted.
+
+- **Success Criteria**:
+  - [ ] Stream errors in `pipeStderrToLogger` produce at least one `logAgentOutput` entry.
+  - [ ] Execution is not aborted when stderr piping fails.
+  - [ ] `tests/agents/mcp_strategy_stderr_test.ts` exists and passes.
+
+---
+
+### Step 61.9: Documentation Update — §F Label Remediation (G2) _(§3D step)_
+
+- **Actions**: (1) In this planning document, rename all 5 occurrences of `- **Justification**:` to `- **Architecture Notes**:` in Steps 61.1–61.5. (2) After Step 61.6 lands, update the `execution_strategy.ts` module doc comment to describe the optional `dispose?()` lifecycle contract.
+
+- **Architecture Notes**: Documentation-only change for step labels; no source code changes in this step. Run `deno task docs-agent-validate` after the rename to confirm compliance.
+
+- **Planned Tests**:
+  - **Validation**: `deno task docs-agent-validate` must pass.
+
+- **Success Criteria**:
+  - [ ] All 5 steps in this document use `- **Architecture Notes**:` (not `- **Justification**:`).
+  - [ ] `deno task docs-agent-validate` passes.
+  - [ ] `execution_strategy.ts` module comment references the `dispose?()` lifecycle after Step 61.6.
