@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T12:51:29.047Z",
+  "generated_at": "2026-04-07T14:59:10.242Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -701,6 +701,64 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-66-plan-amendment-gate.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning",
+      "short_summary": "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "plan-amendment",
+        "approval",
+        "confidence",
+        "replanning",
+        "human-in-loop"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk0.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk1.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk2.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk3.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk4.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk5.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk6.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-72-git-hash-portal-invalidation.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 72: Git-Hash Portal Knowledge Invalidation",
+      "short_summary": "Replace time-based portal knowledge staleness detection with git-commit-hash comparison, reducing redundant re-analysis and ensuring portal context is always grounded in the actual current state of the codebase.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "portal",
+        "knowledge",
+        "git",
+        "caching",
+        "invalidation"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk0.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk1.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk2.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk3.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk4.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk5.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk6.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-33-code-duplication-refactoring.md",
       "agent": "claude",
       "scope": "dev",
@@ -942,6 +1000,64 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-64-flow-namespace-blackboard.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 64: Flow Namespace & Shared Blackboard Coordination",
+      "short_summary": "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "flows",
+        "namespace",
+        "blackboard",
+        "shared-state",
+        "coordination"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk0.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk1.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk2.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk3.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk4.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk5.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk6.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-68-ollama-semantic-search.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 68: Ollama Embedding & Local Semantic Search",
+      "short_summary": "Integrate a local embedding model via Ollama to bring zero-cost semantic vector search to the Solo edition, replacing the noisy TF-IDF keyword fallback.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "embeddings",
+        "search",
+        "ollama",
+        "solo-tier"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk0.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk1.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk2.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk3.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk4.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk5.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk6.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-53-rename-agents-to-identity.md",
       "agent": "claude",
       "scope": "dev",
@@ -966,6 +1082,36 @@
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk5.txt",
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk6.txt",
         ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-73-reflexive-agent-convergence.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 73: ReflexiveAgent Convergence Detection & Adaptive Iteration Budget",
+      "short_summary": "Add inline ConfidenceScorer feedback inside the ReflexiveAgent loop for early exit on quality convergence, oscillation detection, and complexity- proportional iteration budgets derived from IRequestAnalysis.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "reflexive-agent",
+        "confidence",
+        "iteration",
+        "convergence",
+        "quality",
+        "complexity"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk0.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk1.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk2.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk3.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk4.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk5.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk6.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk7.txt"
       ]
     },
     {
@@ -1050,6 +1196,65 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-74-routing-policy-layer.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 74-R: RoutingPolicy Layer & Capability-Based Identity Selection",
+      "short_summary": "Introduce a policy-driven identity routing layer that selects the most appropriate blueprint version at runtime using declared capabilities, request analysis signals, and Activity Journal performance data.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "routing",
+        "capabilities",
+        "blueprints",
+        "policy",
+        "selection",
+        "journal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk0.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk1.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk2.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk3.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk4.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk5.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk6.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-71-confidence-based-memory-approval.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 71: Confidence-Based Memory Auto-Approval & Pending Digest",
+      "short_summary": "Implement automatic promotion of high-confidence agent learnings to approved status after a configurable delay, and surface a pending-memory digest notification to prevent silent accumulation in Memory/Pending/.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "approval",
+        "confidence",
+        "notification",
+        "automation"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk0.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk1.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk2.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk3.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk4.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk5.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk6.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-29-journal-command.md",
       "agent": "claude",
       "scope": "dev",
@@ -1072,6 +1277,64 @@
         ".copilot/chunks/phase-29-journal-command.md.chunk5.txt",
         ".copilot/chunks/phase-29-journal-command.md.chunk6.txt",
         ".copilot/chunks/phase-29-journal-command.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-67-live-execution-streaming.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 67: Live Execution Streaming & Watch Command",
+      "short_summary": "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "observability",
+        "sse",
+        "cli",
+        "streaming",
+        "ux"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk0.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk1.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk2.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk3.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk4.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk5.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk6.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-70-wire-skills-service.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 70: Wire SkillsService into AgentRunner & CLI Surface",
+      "short_summary": "Connect the dormant SkillsService.matchSkills() into the AgentRunner prompt construction pipeline and expose procedural memory inspection via exactl skills list|show commands.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "skills",
+        "procedural-memory",
+        "agent-runner",
+        "cli"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk0.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk1.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk2.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk3.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk4.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk5.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk6.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk7.txt"
       ]
     },
     {
@@ -1181,6 +1444,64 @@
         ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk5.txt",
         ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk6.txt",
         ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-65-parallel-execution-groups.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 65: Explicit Parallel Execution Groups & Fan-In Merge",
+      "short_summary": "Formalize explicit parallel step groups and deterministic fan-in merge behavior on top of ExaIx’s existing dependency-wave flow execution model.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "flows",
+        "parallelism",
+        "fan-in",
+        "merge",
+        "scheduler"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk0.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk1.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk2.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk3.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk4.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk5.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk6.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-69-token-cost-persistence.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 69: Token & Cost Persistence",
+      "short_summary": "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "finops",
+        "tokens",
+        "cost",
+        "metrics",
+        "journal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk0.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk1.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk2.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk3.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk4.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk5.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk6.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk7.txt"
       ]
     },
     {
