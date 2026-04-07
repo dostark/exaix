@@ -941,6 +941,16 @@ export enum StepExecutionMode {
 }
 
 /**
+ * Recovery actions available when a flow step fails.
+ */
+export enum FlowStepOnErrorAction {
+  RETRY = "retry",
+  FALLBACK = "fallback",
+  COMPENSATE = "compensate",
+  ABORT = "abort",
+}
+
+/**
 /**
  * Standard MCP tool names used in the system.
  */

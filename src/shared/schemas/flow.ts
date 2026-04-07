@@ -12,12 +12,52 @@ import {
   FlowGateOnFail,
   FlowInputSource,
   FlowOutputFormat,
+  FlowStepOnErrorAction,
   FlowStepType,
   McpToolName,
   StepExecutionMode,
 } from "../enums.ts";
 import { JSONValueSchema } from "../types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "../constants.ts";
+
+const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
+  return value instanceof Date ? value.toISOString() : value;
+});
+
+export const ZToolCall = z.object({
+  tool: z.nativeEnum(McpToolName),
+  args: z.record(JSONValueSchema).optional(),
+  params: z.record(JSONValueSchema).optional(),
+  description: z.string().optional(),
+}).refine((toolCall) => toolCall.args !== undefined || toolCall.params !== undefined, {
+  message: "Tool call must provide args or params",
+});
+
+export const ZFlowStepOnError = z.object({
+  action: z.nativeEnum(FlowStepOnErrorAction),
+  fallbackStep: z.string().optional(),
+  maxRetries: z.number().int().min(1).max(5).optional().default(1),
+  compensate: z.array(ZToolCall).optional(),
+});
+
+export const ZFlowStepResult = z.object({
+  stepId: z.string().min(1),
+  success: z.boolean(),
+  skipped: z.boolean().optional(),
+  skipReason: z.string().optional(),
+  result: z.unknown().optional(),
+  error: z.string().optional(),
+  duration: z.number().nonnegative(),
+  startedAt: DateOrStringSchema,
+  completedAt: DateOrStringSchema,
+});
+
+export const ZFlowCheckpoint = z.object({
+  traceId: z.string().min(1),
+  flowContentHash: z.string().min(1).describe("Hash of the flow YAML to prevent resume on stale definitions"),
+  completedSteps: z.record(z.string(), ZFlowStepResult),
+  savedAt: z.string().datetime(),
+});
 
 // Gate evaluation configuration schema
 export const GateEvaluateSchema = z.object({
@@ -92,6 +132,7 @@ export const FlowStepSchema = z.object({
     maxAttempts: z.number().int().min(1).default(1),
     backoffMs: z.number().int().min(0).default(1000),
   }).default({}),
+  onError: ZFlowStepOnError.optional(),
   /** Gate evaluation config (for type: "gate") */
   evaluate: GateEvaluateSchema.optional(),
   /** Feedback loop config */
@@ -137,6 +178,10 @@ export type IFlowStepInput = z.input<typeof FlowStepSchema>;
 export type IFlow = z.infer<typeof FlowSchema>;
 /** Flow input type (before defaults are applied) */
 export type IFlowInput = z.input<typeof FlowSchema>;
+export type IToolCall = z.infer<typeof ZToolCall>;
+export type IFlowStepOnError = z.infer<typeof ZFlowStepOnError>;
+export type IFlowStepResultSnapshot = z.infer<typeof ZFlowStepResult>;
+export type IFlowCheckpoint = z.infer<typeof ZFlowCheckpoint>;
 export type IGateEvaluate = z.infer<typeof GateEvaluateSchema>;
 export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
 export type IBranchCondition = z.infer<typeof BranchConditionSchema>;

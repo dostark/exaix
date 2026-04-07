@@ -44,8 +44,7 @@ This phase introduces three complementary capabilities to `FlowRunner`:
 
 ---
 
-Current vs. Target Flow Failure Lifecycle
------------------------------------------
+## Current vs. Target Flow Failure Lifecycle
 
 ### **Current (W13 — No Recovery)**
 
@@ -74,9 +73,9 @@ FlowRunner.run(steps)
 
 ## Weakness Remediation Mapping Matrix {#matrix}
 
-| # | Weakness | Solo 🟢 | Team 🔵 | Enterprise 🟣 | Fix Delivery Tier | Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **W13** | No flow-level error recovery, fallback steps, or checkpointing | ❌ Affected | ❌ Affected | ❌ Affected | 🟢 All (Core FlowRunner) | Multi-step flows exist in all editions. `onError` + checkpointing is a core engine concern. |
+| #       | Weakness                                                       | Solo 🟢     | Team 🔵     | Enterprise 🟣 | Fix Delivery Tier        | Notes                                                                                       |
+| :------ | :------------------------------------------------------------- | :---------- | :---------- | :------------ | :----------------------- | :------------------------------------------------------------------------------------------ |
+| **W13** | No flow-level error recovery, fallback steps, or checkpointing | ❌ Affected | ❌ Affected | ❌ Affected   | 🟢 All (Core FlowRunner) | Multi-step flows exist in all editions. `onError` + checkpointing is a core engine concern. |
 
 ---
 
@@ -107,13 +106,15 @@ export const ZFlowCheckpoint = z.object({
 
 **Success Criteria:**
 
-- [ ] `ZFlowStepOnError` parses all four action variants without error.
-- [ ] Existing flow YAML files without `onError` continue to parse (field is optional).
-- [ ] `ZFlowCheckpoint` round-trips cleanly through JSON serialisation.
+- [x] `ZFlowStepOnError` parses all four action variants without error.
+- [x] Existing flow YAML files without `onError` continue to parse (field is optional).
+- [x] `ZFlowCheckpoint` round-trips cleanly through JSON serialisation.
 
 **Planned Tests:**
 
-- **Unit**: `tests/unit/shared/flow_step_on_error_schema_test.ts`
+- ✅ **Unit**: `tests/flows/flow_step_on_error_schema_test.ts`
+
+**✅ IMPLEMENTED** — `src/shared/schemas/flow.ts` (+ `src/shared/enums.ts`), 3/3 tests passing
 
 ---
 
@@ -142,15 +143,16 @@ if !result.ok && onError.action == "abort":
 
 **Success Criteria:**
 
-- [ ] A step configured with `maxRetries: 2` is executed up to 3 times total before escalating.
-- [ ] A `fallback` step is resolved by `id` from the same flow definition.
-- [ ] Each retry/fallback attempt emits a `flow.step.retry` or `flow.step.fallback` journal event.
-- [ ] `abort` propagates a typed `FlowAbortError` with the originating step id.
+- [x] A step configured with `maxRetries: 2` is executed up to 3 times total before escalating.
+- [x] A `fallback` step is resolved by `id` from the same flow definition.
+- [x] Each retry/fallback attempt emits a `flow.step.retry` or `flow.step.fallback` journal event.
+- [x] `abort` propagates a typed `FlowAbortError` with the originating step id.
 
 **Planned Tests:**
 
-- **Unit**: `tests/unit/services/flow_runner_retry_test.ts` — mock step fails twice then succeeds.
-- **Unit**: `tests/unit/services/flow_runner_fallback_test.ts` — primary fails, fallback succeeds.
+- ✅ **Unit**: `tests/flows/flow_runner_test.ts` — retry, fallback, and abort recovery coverage added to the existing FlowRunner suite.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`; targeted `deno test --allow-all tests/flows/flow_runner_test.ts` passing
 
 ---
 
@@ -176,19 +178,21 @@ if (checkpoint.flowContentHash !== currentFlowHash(flow)) {
   logger.warn("Flow definition changed; invalidating checkpoint.");
   return runAllSteps(steps);
 }
-const pendingSteps = steps.filter(s => !checkpoint.completedSteps[s.id]);
+const pendingSteps = steps.filter((s) => !checkpoint.completedSteps[s.id]);
 ```
 
 **Success Criteria:**
 
-- [ ] `CheckpointService.save()` writes valid JSON to the correct path.
-- [ ] A re-started flow with an existing checkpoint skips already-completed steps.
-- [ ] Checkpoint file is deleted on clean flow completion (no leftover state).
-- [ ] `flow.checkpoint.saved` and `flow.checkpoint.loaded` events appear in the Activity Journal.
+- [x] `CheckpointService.save()` writes valid JSON to the correct path.
+- [x] A re-started flow with an existing checkpoint skips already-completed steps.
+- [x] Checkpoint file is deleted on clean flow completion (no leftover state).
+- [x] `flow.checkpoint.saved` and `flow.checkpoint.loaded` events appear in the Activity Journal.
 
 **Planned Tests:**
 
-- **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — simulate mid-flow crash; verify resume skips completed steps.
+- ✅ **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — simulate mid-flow crash; verify resume skips completed steps.
+
+**✅ IMPLEMENTED** — `src/services/flow/flow_checkpoint_service.ts`, `src/flows/flow_runner.ts`, `tests/integration/services/flow_checkpoint_test.ts`; targeted integration + FlowRunner suite passing
 
 ---
 
@@ -231,12 +235,12 @@ steps:
 
 ## Risks & Mitigations
 
-| Risk | Impact | Likelihood | Mitigation |
-| :--- | :--- | :--- | :--- |
-| **R1: Compensation tool-call fails** | Medium | Low | Log and continue; emit `flow.compensation.partial_failure` event. |
-| **R2: Checkpoint grows stale across code changes** | Medium | Low | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version. |
-| **R3: Retry storms on transient LLM errors** | High | Medium | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts. |
-| **R4: Fallback step creates infinite loop** | Medium | Low | Detect and reject cyclic fallback chains at flow load time. |
+| Risk                                               | Impact | Likelihood | Mitigation                                                                                        |
+| :------------------------------------------------- | :----- | :--------- | :------------------------------------------------------------------------------------------------ |
+| **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                 |
+| **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version. |
+| **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts.         |
+| **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                       |
 
 ---
 

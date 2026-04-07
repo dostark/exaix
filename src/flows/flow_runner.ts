@@ -8,6 +8,7 @@
 
 import { IFlow, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
 import { join } from "@std/path";
+import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
 import { IAgentExecutionResult } from "../services/agent/agent_runner.ts";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
@@ -18,7 +19,7 @@ import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { FlowInputSource, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
+import { FlowInputSource, FlowStepOnErrorAction, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "../journal/activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
@@ -28,6 +29,8 @@ import { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
+import { FlowCheckpointService, IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
+import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "../shared/schemas/flow.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -154,6 +157,18 @@ export class FlowExecutionError extends Error {
   }
 }
 
+export class FlowAbortError extends Error {
+  constructor(
+    public readonly stepId: string,
+    message: string,
+    public readonly flowRunId?: string,
+    public readonly failureResult?: IStepResult,
+  ) {
+    super(message);
+    this.name = "FlowAbortError";
+  }
+}
+
 type BuiltInTransformHandler = (ctx: {
   input: string;
   transformArgs?: JSONValue;
@@ -238,6 +253,11 @@ export class FlowRunner implements IFlowRunner {
   private db?: IDatabaseService;
   private gateEvaluator?: IGateEvaluator;
   private config?: Config;
+  private checkpointService?: IFlowCheckpointService;
+
+  private isPromiseRejectedResult(result: PromiseSettledResult<IStepResult>): result is PromiseRejectedResult {
+    return result.status === "rejected";
+  }
 
   constructor(
     private readonly options: IFlowRunnerConfig,
@@ -248,6 +268,9 @@ export class FlowRunner implements IFlowRunner {
     this.db = options.context?.db || options.db;
     this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
     this.config = options.context?.config.get() || options.config;
+    if (this.config) {
+      this.checkpointService = new FlowCheckpointService(this.config);
+    }
 
     const config = this.config;
     const db = this.db;
@@ -314,15 +337,18 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
     const startedAt = new Date();
+    const flowContentHash = await this.computeFlowContentHash(flow);
 
     // Validate flow
     await this.validateIFlow(flow, request, flowRunId);
 
     const stepResults = new Map<string, IStepResult>();
 
+    await this.loadCheckpointIfAvailable(flow, request, flowRunId, flowContentHash, stepResults);
+
     try {
       // Execute waves and aggregate results
-      await this.executeWaves(flow, request, flowRunId, stepResults);
+      await this.executeWaves(flow, request, flowRunId, flowContentHash, stepResults);
 
       // Aggregate output and finalize
       return await this.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);
@@ -368,6 +394,7 @@ export class FlowRunner implements IFlowRunner {
     flow: IFlow,
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     flowRunId: string,
+    flowContentHash: string,
     stepResults: Map<string, IStepResult>,
   ): Promise<void> {
     // Log flow start
@@ -399,7 +426,7 @@ export class FlowRunner implements IFlowRunner {
     // Execute waves sequentially
     for (let waveIndex = 0; waveIndex < waves.length; waveIndex++) {
       const wave = waves[waveIndex];
-      await this.executeWave(flow, request, flowRunId, wave, waveIndex, stepResults, failFast);
+      await this.executeWave(flow, request, flowRunId, flowContentHash, wave, waveIndex, stepResults, failFast);
     }
   }
 
@@ -410,6 +437,7 @@ export class FlowRunner implements IFlowRunner {
     flow: IFlow,
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     flowRunId: string,
+    flowContentHash: string,
     wave: string[],
     waveIndex: number,
     stepResults: Map<string, IStepResult>,
@@ -427,8 +455,36 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
+    const pendingStepIds = wave.filter((stepId) => !stepResults.has(stepId));
+
+    if (pendingStepIds.length !== wave.length) {
+      await this.eventLogger.log("flow.wave.resume.skipped", {
+        flowRunId,
+        waveNumber,
+        skippedStepIds: wave.filter((stepId) => stepResults.has(stepId)),
+        traceId: request.traceId,
+        requestId: request.requestId,
+      });
+    }
+
+    if (pendingStepIds.length === 0) {
+      await this.eventLogger.log("flow.wave.completed", {
+        flowRunId,
+        waveNumber,
+        waveSize: wave.length,
+        successCount: wave.length,
+        failureCount: 0,
+        failed: false,
+        traceId: request.traceId,
+        requestId: request.requestId,
+      });
+      return;
+    }
+
     // Execute steps in this wave in parallel
-    const wavePromises = wave.map((stepId) => this.executeStepSafe(flowRunId, stepId, flow, request, stepResults));
+    const wavePromises = pendingStepIds.map((stepId) =>
+      this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)
+    );
     const waveResults = await Promise.allSettled(wavePromises);
 
     // Process wave results
@@ -436,25 +492,36 @@ export class FlowRunner implements IFlowRunner {
       flow,
       request,
       flowRunId,
-      wave,
+      pendingStepIds,
       waveNumber,
       waveResults,
+      flowContentHash,
       stepResults,
       failFast,
     );
 
+    const abortResult = waveResults.find(
+      (result): result is PromiseRejectedResult => {
+        return this.isPromiseRejectedResult(result) && result.reason instanceof FlowAbortError;
+      },
+    );
+
+    if (abortResult) {
+      throw abortResult.reason;
+    }
+
     // If failFast is enabled and wave failed, stop execution
     if (waveFailed && failFast) {
-      const failedStepIndex = wave.findIndex((_stepId, i) => {
+      const failedStepIndex = pendingStepIds.findIndex((_stepId, i) => {
         const result = waveResults[i];
-        return result.status === "rejected" ||
+        return this.isPromiseRejectedResult(result) ||
           (result.status === "fulfilled" && !result.value.success);
       });
-      const failedStepId = wave[failedStepIndex];
+      const failedStepId = pendingStepIds[failedStepIndex];
       const failedResult = waveResults[failedStepIndex];
       const errorMessage = failedResult.status === "fulfilled"
         ? failedResult.value.error || DEFAULT_UNKNOWN_ERROR_MESSAGE
-        : (failedResult.status === "rejected" && failedResult.reason instanceof Error
+        : (this.isPromiseRejectedResult(failedResult) && failedResult.reason instanceof Error
           ? failedResult.reason.message
           : String((failedResult as PromiseRejectedResult).reason ?? DEFAULT_UNKNOWN_ERROR_MESSAGE));
       throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId);
@@ -465,12 +532,13 @@ export class FlowRunner implements IFlowRunner {
    * Process results from a completed wave
    */
   private async processWaveResults(
-    _flow: IFlow,
+    flow: IFlow,
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     flowRunId: string,
     wave: string[],
     waveNumber: number,
     waveResults: PromiseSettledResult<IStepResult>[],
+    flowContentHash: string,
     stepResults: Map<string, IStepResult>,
     failFast: boolean,
   ): Promise<boolean> {
@@ -490,6 +558,7 @@ export class FlowRunner implements IFlowRunner {
 
           if (result.success) {
             waveSuccessCount++;
+            await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
           } else {
             waveFailureCount++;
             if (failFast) {
@@ -503,7 +572,9 @@ export class FlowRunner implements IFlowRunner {
             : String(promiseResult.reason);
           waveErrors.push({ stepId, error });
 
-          const errorIStepResult: IStepResult = {
+          const abortError = promiseResult.reason instanceof FlowAbortError ? promiseResult.reason : null;
+
+          const errorIStepResult: IStepResult = abortError?.failureResult ?? {
             stepId,
             success: false,
             error: error instanceof Error ? error.message : String(error),
@@ -604,6 +675,8 @@ export class FlowRunner implements IFlowRunner {
     const success = Array.from(stepResults.values()).every((result) => result.success);
     const successfulSteps = Array.from(stepResults.values()).filter((r) => r.success).length;
     const failedSteps = stepResults.size - successfulSteps;
+
+    await this.clearCheckpointOnSuccess(flow, request, flowRunId, success);
 
     // Log flow completion
     await this.eventLogger.log("flow.completed", {
@@ -711,13 +784,125 @@ export class FlowRunner implements IFlowRunner {
     });
 
     try {
-      // Prepare step input
-      const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
-      const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+      const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
       return this.formatStepSuccess(flowRunId, step, request, result, startedAt);
     } catch (error) {
-      return this.formatStepFailure(flowRunId, step, request, error, startedAt);
+      return await this.handleStepFailureRecovery(
+        flowRunId,
+        step,
+        flow,
+        request,
+        stepResults,
+        startedAt,
+        error,
+      );
     }
+  }
+
+  /**
+   * Execute a single step attempt without applying recovery policy.
+   */
+  private async runStepAttempt(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepResults: Map<string, IStepResult>,
+    startedAt: Date,
+  ): Promise<IAgentExecutionResult> {
+    const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
+    return await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+  }
+
+  /**
+   * Apply retry, fallback, or abort recovery policy after a step failure.
+   */
+  private async handleStepFailureRecovery(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepResults: Map<string, IStepResult>,
+    startedAt: Date,
+    initialError: unknown,
+  ): Promise<IStepResult> {
+    if (!step.onError) {
+      return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
+    }
+
+    let lastError: unknown = initialError;
+
+    if (step.onError.action === FlowStepOnErrorAction.RETRY) {
+      const maxRetries = step.onError.maxRetries ?? 1;
+
+      for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
+        await this.eventLogger.log("flow.step.retry", {
+          flowRunId,
+          stepId: step.id,
+          identityId: step.identity,
+          attempt: retryAttempt,
+          maxRetries,
+          error: lastError instanceof Error ? lastError.message : String(lastError),
+          traceId: request.traceId,
+          requestId: request.requestId,
+        });
+
+        try {
+          const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
+          return this.formatStepSuccess(flowRunId, step, request, result, startedAt);
+        } catch (retryError) {
+          lastError = retryError;
+        }
+      }
+    }
+
+    if (step.onError.action === FlowStepOnErrorAction.FALLBACK) {
+      const fallbackStepId = step.onError.fallbackStep;
+      const fallbackStep = fallbackStepId ? flow.steps.find((candidate) => candidate.id === fallbackStepId) : null;
+
+      if (!fallbackStep) {
+        lastError = new Error(
+          `Fallback step not found for ${step.id}: ${fallbackStepId ?? DEFAULT_UNKNOWN_LABEL}`,
+        );
+      } else {
+        await this.eventLogger.log("flow.step.fallback", {
+          flowRunId,
+          stepId: step.id,
+          identityId: step.identity,
+          fallbackStepId: fallbackStep.id,
+          fallbackIdentityId: fallbackStep.identity,
+          error: lastError instanceof Error ? lastError.message : String(lastError),
+          traceId: request.traceId,
+          requestId: request.requestId,
+        });
+
+        try {
+          const result = await this.runStepAttempt(flowRunId, fallbackStep, flow, request, stepResults, startedAt);
+          return this.formatStepSuccess(
+            flowRunId,
+            { ...step, identity: fallbackStep.identity },
+            request,
+            result,
+            startedAt,
+          );
+        } catch (fallbackError) {
+          lastError = fallbackError;
+        }
+      }
+    }
+
+    const failureResult = this.formatStepFailure(flowRunId, step, request, lastError, startedAt);
+
+    if (step.onError.action === FlowStepOnErrorAction.ABORT) {
+      throw new FlowAbortError(
+        step.id,
+        failureResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        flowRunId,
+        failureResult,
+      );
+    }
+
+    return failureResult;
   }
 
   /**
@@ -1147,6 +1332,10 @@ export class FlowRunner implements IFlowRunner {
     try {
       return await this.executeStep(flowRunId, stepId, flow, request, stepResults);
     } catch (error) {
+      if (error instanceof FlowAbortError) {
+        throw error;
+      }
+
       // Log unexpected error and return a safe failure IStepResult
       try {
         await this.eventLogger.log("flow.step.unexpected_error", {
@@ -1170,6 +1359,129 @@ export class FlowRunner implements IFlowRunner {
         completedAt: new Date(),
       };
     }
+  }
+
+  private async computeFlowContentHash(flow: IFlow): Promise<string> {
+    const serialized = JSON.stringify(flow, (_key, value) => {
+      return typeof value === "function" ? "__function__" : value;
+    });
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
+    return encodeHex(digest);
+  }
+
+  private async loadCheckpointIfAvailable(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    flowContentHash: string,
+    stepResults: Map<string, IStepResult>,
+  ): Promise<void> {
+    if (!this.checkpointService || !request.traceId) {
+      return;
+    }
+
+    const checkpoint = await this.checkpointService.load(request.traceId);
+    if (!checkpoint) {
+      return;
+    }
+
+    if (checkpoint.flowContentHash !== flowContentHash) {
+      await this.eventLogger.log("flow.checkpoint.stale", {
+        flowRunId,
+        flowId: flow.id,
+        traceId: request.traceId,
+        requestId: request.requestId,
+      });
+      await this.checkpointService.delete(request.traceId);
+      return;
+    }
+
+    const restoredSteps = this.restoreStepResultsFromCheckpoint(checkpoint);
+    for (const [stepId, result] of Object.entries(restoredSteps)) {
+      stepResults.set(stepId, result);
+    }
+
+    await this.eventLogger.log("flow.checkpoint.loaded", {
+      flowRunId,
+      flowId: flow.id,
+      traceId: request.traceId,
+      requestId: request.requestId,
+      restoredSteps: Object.keys(restoredSteps).length,
+    });
+  }
+
+  private restoreStepResultsFromCheckpoint(checkpoint: IFlowCheckpoint): Record<string, IStepResult> {
+    const restored: Record<string, IStepResult> = {};
+    for (const [stepId, snapshot] of Object.entries(checkpoint.completedSteps)) {
+      restored[stepId] = {
+        ...snapshot,
+        result: snapshot.result as IAgentExecutionResult | undefined,
+        startedAt: new Date(snapshot.startedAt),
+        completedAt: new Date(snapshot.completedAt),
+      };
+    }
+    return restored;
+  }
+
+  private buildCheckpointSnapshot(stepResults: Map<string, IStepResult>): Record<string, IFlowStepResultSnapshot> {
+    const snapshot: Record<string, IFlowStepResultSnapshot> = {};
+    for (const [stepId, result] of stepResults.entries()) {
+      if (!result.success) {
+        continue;
+      }
+
+      snapshot[stepId] = {
+        ...result,
+        startedAt: result.startedAt.toISOString(),
+        completedAt: result.completedAt.toISOString(),
+      };
+    }
+    return snapshot;
+  }
+
+  private async saveCheckpointIfEnabled(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    flowContentHash: string,
+    stepResults: Map<string, IStepResult>,
+  ): Promise<void> {
+    if (!this.checkpointService || !request.traceId) {
+      return;
+    }
+
+    const checkpoint = await this.checkpointService.save(
+      request.traceId,
+      flowContentHash,
+      this.buildCheckpointSnapshot(stepResults),
+    );
+
+    await this.eventLogger.log("flow.checkpoint.saved", {
+      flowRunId,
+      flowId: flow.id,
+      traceId: request.traceId,
+      requestId: request.requestId,
+      completedSteps: Object.keys(checkpoint.completedSteps).length,
+    });
+  }
+
+  private async clearCheckpointOnSuccess(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    success: boolean,
+  ): Promise<void> {
+    if (!success || !this.checkpointService || !request.traceId) {
+      return;
+    }
+
+    await this.checkpointService.delete(request.traceId);
+    await this.eventLogger.log("flow.checkpoint.cleared", {
+      flowRunId,
+      flowId: flow.id,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
   }
 
   /**

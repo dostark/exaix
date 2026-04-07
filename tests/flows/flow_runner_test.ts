@@ -6,8 +6,9 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "../../src/shared/enums.ts";
 import {
+  FlowAbortError,
   FlowExecutionError,
   FlowRunner,
   type IAgentExecutor,
@@ -66,6 +67,40 @@ class MockEventLogger implements IFlowEventLogger {
 
   log(event: string, payload: Record<string, JSONValue | undefined>) {
     this.events.push({ event, payload });
+  }
+}
+
+class SequencedMockAgentRunner implements IAgentExecutor {
+  private readonly sequences = new Map<string, Array<IAgentExecutionResult | Error>>();
+  calls: string[] = [];
+
+  constructor(sequences: Record<string, Array<IAgentExecutionResult | Error | string>>) {
+    for (const [identityId, results] of Object.entries(sequences)) {
+      this.sequences.set(
+        identityId,
+        results.map((result) => {
+          if (typeof result === "string") {
+            return { thought: "Mock thought", content: result, raw: result };
+          }
+          return result;
+        }),
+      );
+    }
+  }
+
+  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
+    this.calls.push(identityId);
+    const sequence = this.sequences.get(identityId);
+    if (!sequence || sequence.length === 0) {
+      throw new Error(`No mock sequence result for agent ${identityId}`);
+    }
+
+    const next = sequence.shift()!;
+    if (next instanceof Error) {
+      throw next;
+    }
+
+    return await Promise.resolve(next);
   }
 }
 
@@ -254,6 +289,139 @@ Deno.test("FlowRunner: handles failFast behavior", async () => {
     assert(error instanceof FlowExecutionError);
     assert(error.message.includes("Step step2 failed"));
   }
+});
+
+Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step1",
+      name: "Retrying Step",
+      identity: "flaky-agent",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2 },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "retry-flow",
+    name: "Retry Flow",
+    description: "Retries a flaky step",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "flaky-agent": [
+      new Error("temporary failure 1"),
+      new Error("temporary failure 2"),
+      "Recovered result",
+    ],
+  });
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, "Recovered result");
+  assertEquals(mockAgentRunner.calls, ["flaky-agent", "flaky-agent", "flaky-agent"]);
+
+  const retryEvents = mockLogger.events.filter((event) => event.event === "flow.step.retry");
+  assertEquals(retryEvents.length, 2);
+  assertEquals(retryEvents[0].payload.stepId, "step1");
+  assertEquals(retryEvents[0].payload.attempt, 1);
+  assertEquals(retryEvents[1].payload.attempt, 2);
+});
+
+Deno.test("FlowRunner: falls back to a recovery step when primary step fails", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "primary",
+      name: "Primary Step",
+      identity: "failing-agent",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+    {
+      id: "fallback",
+      name: "Fallback Step",
+      identity: "fallback-agent",
+      dependsOn: [],
+      condition: "false",
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "fallback-flow",
+    name: "Fallback Flow",
+    description: "Falls back to a secondary step",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "primary", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "failing-agent": [new Error("primary failed")],
+    "fallback-agent": ["Fallback result"],
+  });
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, "Fallback result");
+  assertEquals(mockAgentRunner.calls, ["failing-agent", "fallback-agent"]);
+
+  const fallbackEvent = mockLogger.events.find((event) => event.event === "flow.step.fallback");
+  assert(fallbackEvent);
+  assertEquals(fallbackEvent.payload.stepId, "primary");
+  assertEquals(fallbackEvent.payload.fallbackStepId, "fallback");
+});
+
+Deno.test("FlowRunner: abort action throws FlowAbortError with originating step id", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step1",
+      name: "Abort Step",
+      identity: "always-fails",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.ABORT },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "abort-flow",
+    name: "Abort Flow",
+    description: "Aborts immediately on step failure",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "always-fails": [new Error("fatal failure")],
+  });
+  const mockLogger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+
+  await assertRejects(
+    async () => await runner.execute(flow as IFlow, { userPrompt: "test request" }),
+    FlowAbortError,
+    "fatal failure",
+  );
 });
 
 Deno.test("FlowRunner: continues execution when failFast is false", async () => {
