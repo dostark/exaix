@@ -120,9 +120,15 @@ export function validateCommitMsg(
         `Impact field must follow the format "<component>: <details>" (e.g., "ReqProc: added validation").`,
       );
     } else {
-      // Component Traceability: Every component must appear in 'what'
-      // We assume multiple components might be separated by semicolon or just listed
-      const components = impact.split(";").map((s) => s.split(":")[0].trim());
+      // Component Traceability: Every component must appear in 'what'.
+      // Multi-component entries are separated by semicolons:
+      //   "CompA: details; CompB: more details"
+      // Segments without a colon are plain continuation text, not component names.
+      const components = impact
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.includes(":"))
+        .map((s) => s.split(":")[0].trim());
       for (const comp of components) {
         if (comp && !what.toLowerCase().includes(comp.toLowerCase())) {
           errors.push(

@@ -52,6 +52,10 @@ model: <YOUR actual model name and version>
 - Identify yourself as "Antigravity".
 - Use the actual underlying model name (e.g., "Gemini") for the model field.
 
+⚠️ CRITICAL: Impact Field Traps (common validator failures)
+- The **component word(s) before `:` in `impact:`** must appear **verbatim (case-insensitive)** in `what:`. The validator enforces this. Strategy: draft `what:` first using real ARCHITECTURE.md component names; then mirror that exact word in `impact:`. Do NOT choose a generic category label (e.g., `Documentation`, `Planning`, `Schemas`) unless that exact word already appeared in your `what:` text.
+- **Semicolons in `impact:` separate multiple `Component: detail` entries only.** Appending plain English clauses after a semicolon (e.g., `; no runtime changes.` or `; doc-only change.`) causes the validator to misread the clause as a spurious component name. Put such notes inside the `detail` part (e.g., `CompA: added X, no runtime changes`).
+
 Canonical prompt (short):
 "You've completed [work]. Create a MANDATORY structured commit message.
 Review all staged and unstaged changes first, split them into logical commit batches unless the prompt says otherwise, run the required pre-commit checks, then follow the schema: subject line, then what:, rationale:, tests:, who:, and impact: (grounded in ARCHITECTURE.md).
@@ -75,6 +79,8 @@ Do / Don't:
 - ✅ Do reference specific components from ARCHITECTURE.md in the impact field.
 - ✅ Do list actual tool usage in tool_audit.
 - ✅ Do include your real identity.
+- ✅ Do ensure the component word(s) before `:` in `impact:` appear verbatim (case-insensitive) in `what:`. Write the `what:` first, pick a component name that already appears there, then write `impact:`.
+- ✅ Do use semicolons in `impact:` only to separate multiple `Component: details` entries (e.g., `CompA: detail; CompB: detail`). Never append plain English clauses after a semicolon (e.g., `; no runtime changes.`) — write them inside the `details` position instead.
 - ❌ Don't use a single paragraph for everything.
 - ❌ Don't ignore unstaged task changes just because they are not staged yet, unless the prompt narrows scope.
 - ❌ Don't bundle unrelated changes into one commit when they can be separated cleanly.

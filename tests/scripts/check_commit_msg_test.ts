@@ -214,4 +214,32 @@ impact: ReqProc: update`;
     const result = validateCommitMsg(msg, { changedFileCount: 20 });
     assertEquals(result.success, true, result.errors?.join(", "));
   });
+
+  it("passes when impact has trailing plain-text clause after semicolon (no spurious component)", () => {
+    // Regression: "CompA: details; plain sentence." must not parse "plain sentence." as a component name.
+    const msg = `feat: regression trap B
+
+what: updated ReqProc to handle new validation rules for better coverage
+rationale: to fix an edge case
+tests: pass
+who: user
+impact: ReqProc: added validation logic; no runtime changes.`;
+    const result = validateCommitMsg(msg);
+    assertEquals(result.success, true, result.errors?.join(", "));
+  });
+
+  it("still enforces component traceability when multiple real components are listed", () => {
+    // "CompA: details; CompB: details" — both components must appear in what.
+    const msg = `feat: multi-component impact
+
+what: updated ReqProc rules
+rationale: to fix an edge case
+tests: pass
+who: user
+impact: ReqProc: added validation; EventLogger: added audit entry`;
+    const result = validateCommitMsg(msg);
+    // "EventLogger" is not in what: → should fail
+    assertEquals(result.success, false);
+    assertEquals(result.errors.some((e: string) => e.includes("EventLogger")), true);
+  });
 });
