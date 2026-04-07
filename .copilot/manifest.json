@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-06T19:09:28.746Z",
+  "generated_at": "2026-04-07T12:51:29.047Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1134,7 +1134,7 @@
       "scope": "dev",
       "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
       "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
-      "version": 1.1,
+      "version": 1.2,
       "topics": [
         "flow-orchestration",
         "error-recovery",

@@ -1,6 +1,6 @@
 /**
  * @module PortalWorkspaceIntegrationTest
- * @path tests/integration/portal_workspace_integration_test.ts
+ * @path tests/integration/36_portal_workspace_integration_test.ts
  * @description Verifies the integration of portal workspaces, ensuring correct
  * detection of agent capabilities (Read-only vs Write-capable) and repository boundaries.
  */

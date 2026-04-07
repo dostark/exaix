@@ -6,7 +6,7 @@
  * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_checkpoint_service.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts";
@@ -136,10 +136,12 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
       config,
     });
 
+    const resumedStartedAt = performance.now();
     const resumedResult = await resumedRunner.execute(
       flow as IFlow,
       { userPrompt: "checkpoint me", traceId, requestId },
     );
+    const resumedDurationMs = performance.now() - resumedStartedAt;
 
     assertEquals(resumedResult.success, true);
     assertEquals(resumedResult.output, "step2-result");
@@ -147,8 +149,13 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     assertEquals(resumedExecutor.calls.includes("agent1"), false);
     assertEquals(resumedExecutor.calls.includes("agent2"), true);
     assertEquals(await exists(checkpointPath), false);
+    assert(
+      resumedDurationMs < 2000,
+      `Expected checkpoint resume overhead under 2000ms, received ${resumedDurationMs.toFixed(2)}ms`,
+    );
 
-    assertEquals(resumedLogger.events.some((entry) => entry.event === "flow.checkpoint.loaded"), true);
+    const loadedEvent = resumedLogger.events.find((entry) => entry.event === "flow.checkpoint.loaded");
+    assertEquals(loadedEvent?.payload.restoredSteps, 1);
     assertEquals(resumedLogger.events.some((entry) => entry.event === "flow.checkpoint.saved"), true);
   } finally {
     await cleanup();

@@ -56,6 +56,7 @@ export interface IFlowRunner {
       requestId?: string;
       requestAnalysis?: IRequestAnalysis;
       portalKnowledge?: IPortalKnowledge;
+      portal?: string;
     },
   ): Promise<IFlowResult>;
 }
@@ -248,6 +249,7 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
   private dynamicStepExecutor?: DynamicStepExecutor;
+  private mcpClient?: McpClient;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
   private db?: IDatabaseService;
@@ -305,6 +307,7 @@ export class FlowRunner implements IFlowRunner {
       } as IApplicationContext;
 
       const mcpClient = new McpClient(context, mcpHandlers);
+      this.mcpClient = mcpClient;
       const llmClient = new LlmClient(config);
       this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
     }
@@ -333,6 +336,7 @@ export class FlowRunner implements IFlowRunner {
       traceId?: string;
       requestId?: string;
       requestAnalysis?: IRequestAnalysis;
+      portal?: string;
     },
   ): Promise<IFlowResult> {
     const flowRunId = crypto.randomUUID();
@@ -893,6 +897,10 @@ export class FlowRunner implements IFlowRunner {
 
     const failureResult = this.formatStepFailure(flowRunId, step, request, lastError, startedAt);
 
+    if (step.onError.action === FlowStepOnErrorAction.COMPENSATE) {
+      await this.executeCompensatingTransactions(flowRunId, step, flow, request, stepResults);
+    }
+
     if (step.onError.action === FlowStepOnErrorAction.ABORT) {
       throw new FlowAbortError(
         step.id,
@@ -903,6 +911,82 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return failureResult;
+  }
+
+  private async executeCompensatingTransactions(
+    flowRunId: string,
+    failedStep: IFlowStep,
+    flow: IFlow,
+    request: {
+      userPrompt: string;
+      traceId?: string;
+      requestId?: string;
+      requestAnalysis?: IRequestAnalysis;
+      portal?: string;
+    },
+    stepResults: Map<string, IStepResult>,
+  ): Promise<void> {
+    if (!this.mcpClient) {
+      return;
+    }
+
+    const completedStepIds = Array.from(stepResults.values())
+      .filter((result) => result.success)
+      .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime())
+      .map((result) => result.stepId);
+
+    for (const completedStepId of completedStepIds) {
+      const completedStep = flow.steps.find((candidate) => candidate.id === completedStepId);
+      const compensations = completedStep?.onError?.compensate ?? [];
+
+      for (const compensation of compensations) {
+        const compensationArgs = (compensation.args ?? compensation.params ?? {}) as Record<string, JSONValue>;
+        const args: Record<string, JSONValue> = {
+          ...(request.portal ? { portal: request.portal } : {}),
+          identity_id: completedStep?.identity ?? failedStep.identity,
+          ...compensationArgs,
+        };
+
+        try {
+          const result = await this.mcpClient.callTool(compensation.tool, args);
+
+          await this.eventLogger.log("flow.step.compensated", {
+            flowRunId,
+            failedStepId: failedStep.id,
+            sourceStepId: completedStepId,
+            tool: compensation.tool,
+            args,
+            success: true,
+            result,
+            traceId: request.traceId,
+            requestId: request.requestId,
+          });
+        } catch (error) {
+          await this.eventLogger.log("flow.step.compensated", {
+            flowRunId,
+            failedStepId: failedStep.id,
+            sourceStepId: completedStepId,
+            tool: compensation.tool,
+            args,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+            traceId: request.traceId,
+            requestId: request.requestId,
+          });
+
+          await this.eventLogger.log("flow.step.compensation_failed", {
+            flowRunId,
+            failedStepId: failedStep.id,
+            sourceStepId: completedStepId,
+            tool: compensation.tool,
+            args,
+            error: error instanceof Error ? error.message : String(error),
+            traceId: request.traceId,
+            requestId: request.requestId,
+          });
+        }
+      }
+    }
   }
 
   /**

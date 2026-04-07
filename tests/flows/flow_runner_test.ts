@@ -334,7 +334,11 @@ Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
   assertEquals(retryEvents.length, 2);
   assertEquals(retryEvents[0].payload.stepId, "step1");
   assertEquals(retryEvents[0].payload.attempt, 1);
+  assertEquals(retryEvents[0].payload.error, "temporary failure 1");
+  assertEquals(retryEvents[0].payload.maxRetries, 2);
   assertEquals(retryEvents[1].payload.attempt, 2);
+  assertEquals(retryEvents[1].payload.error, "temporary failure 2");
+  assertEquals(retryEvents[1].payload.maxRetries, 2);
 });
 
 Deno.test("FlowRunner: falls back to a recovery step when primary step fails", async () => {
@@ -382,10 +386,12 @@ Deno.test("FlowRunner: falls back to a recovery step when primary step fails", a
   assertEquals(result.output, "Fallback result");
   assertEquals(mockAgentRunner.calls, ["failing-agent", "fallback-agent"]);
 
-  const fallbackEvent = mockLogger.events.find((event) => event.event === "flow.step.fallback");
-  assert(fallbackEvent);
-  assertEquals(fallbackEvent.payload.stepId, "primary");
-  assertEquals(fallbackEvent.payload.fallbackStepId, "fallback");
+  const fallbackEvents = mockLogger.events.filter((event) => event.event === "flow.step.fallback");
+  assertEquals(fallbackEvents.length, 1);
+  assertEquals(fallbackEvents[0].payload.stepId, "primary");
+  assertEquals(fallbackEvents[0].payload.fallbackStepId, "fallback");
+  assertEquals(fallbackEvents[0].payload.fallbackIdentityId, "fallback-agent");
+  assertEquals(fallbackEvents[0].payload.error, "primary failed");
 });
 
 Deno.test("FlowRunner: abort action throws FlowAbortError with originating step id", async () => {

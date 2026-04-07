@@ -212,6 +212,7 @@ export class RequestRouter {
         userPrompt: request.body,
         traceId,
         requestId,
+        portal: request.frontmatter?.portal,
       },
     );
 

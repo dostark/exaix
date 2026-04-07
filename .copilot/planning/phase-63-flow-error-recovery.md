@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)"
 short_summary: Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.
-version: 1.1
+version: 1.2
 topics:
   - flow-orchestration
   - error-recovery
@@ -16,10 +16,11 @@ topics:
 
 ## Phase 63: Flow-Level Error Recovery & Checkpointing
 
-## Status: 📋 Planning
+## Status: ✅ Implemented and Validated
 
 **Author**: Comet Assistant (via senior-coder Blueprint)
 **Date**: 2026-04-02
+**Last Updated**: 2026-04-07
 **Impact Level**: H (Core Flow Reliability)
 **Risk Level**: M (Modifies FlowRunner step execution loop)
 **Phase Dependencies**: Phase 57, Phase 59, Phase 62
@@ -152,7 +153,7 @@ if !result.ok && onError.action == "abort":
 
 - ✅ **Unit**: `tests/flows/flow_runner_test.ts` — retry, fallback, and abort recovery coverage added to the existing FlowRunner suite.
 
-**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`; targeted `deno test --allow-all tests/flows/flow_runner_test.ts` passing
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`; targeted retry/fallback/abort coverage verifies per-attempt journal payloads for retry and fallback recovery.
 
 ---
 
@@ -192,7 +193,7 @@ const pendingSteps = steps.filter((s) => !checkpoint.completedSteps[s.id]);
 
 - ✅ **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — simulate mid-flow crash; verify resume skips completed steps.
 
-**✅ IMPLEMENTED** — `src/services/flow/flow_checkpoint_service.ts`, `src/flows/flow_runner.ts`, `tests/integration/services/flow_checkpoint_test.ts`; targeted integration + FlowRunner suite passing
+**✅ IMPLEMENTED** — `src/services/flow/flow_checkpoint_service.ts`, `src/flows/flow_runner.ts`, `tests/integration/services/flow_checkpoint_test.ts`; targeted integration coverage now also benchmarks checkpoint resume overhead and asserts restored-step journal payloads.
 
 ---
 
@@ -221,15 +222,17 @@ steps:
 
 **Success Criteria:**
 
-- [ ] Compensation tool-calls are invoked in LIFO order relative to completed steps.
-- [ ] Each compensation call is executed against the step's worktree, not `main`.
-- [ ] A `flow.step.compensated` journal event is emitted per compensation action.
-- [ ] If a compensation tool-call itself fails, the failure is logged but does not block remaining compensations.
+- [x] Compensation tool-calls are invoked in LIFO order relative to completed steps.
+- [x] Each compensation call is executed against the step's worktree, not `main`.
+- [x] A `flow.step.compensated` journal event is emitted per compensation action.
+- [x] If a compensation tool-call itself fails, the failure is logged but does not block remaining compensations.
 
 **Planned Tests:**
 
-- **Integration**: `tests/integration/services/flow_compensation_test.ts` — verify git state after compensation.
-- **Functional**: `tests/functional/flow/multi_step_recovery_test.ts` — end-to-end: step 3 fails → steps 1 & 2 compensated → worktree clean.
+- ✅ **Integration**: `tests/integration/services/flow_compensation_test.ts` — LIFO compensation order, portal/worktree-targeted tool args, per-action events, and failure-continue behavior.
+- ✅ **Functional**: `tests/integration/37_multi_step_recovery_test.ts` — end-to-end: step 3 fails → steps 1 & 2 compensated → worktree clean.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `src/services/request/request_router.ts`, `tests/integration/services/flow_compensation_test.ts`, `tests/integration/37_multi_step_recovery_test.ts`; targeted compensation integration, real worktree validation, routing, and FlowRunner/checkpoint regression suites passing, including explicit worktree-clean and successful-compensation assertions.
 
 ---
 
@@ -246,9 +249,9 @@ steps:
 
 ## Success Metrics
 
-- [ ] **0 stranded worktrees** — All flow failures result in a clean worktree (either via compensation or abort with no partial writes).
-- [ ] **100% retry visibility** — Every retry and fallback attempt has a corresponding Activity Journal entry.
-- [ ] **Checkpoint resume** — A flow restarted after a mid-run crash resumes from the last successful step in < 2 seconds overhead.
+- [x] **0 stranded worktrees** — Proven by `tests/integration/37_multi_step_recovery_test.ts`: compensated files are removed, compensation succeeds, and the git worktree is clean after downstream failure.
+- [x] **100% retry visibility** — Proven by `tests/flows/flow_runner_test.ts`: retry attempts emit one `flow.step.retry` event per failed attempt with attempt/error payloads, and fallback emits the expected `flow.step.fallback` journal event.
+- [x] **Checkpoint resume** — Proven by `tests/integration/services/flow_checkpoint_test.ts`: resumed execution restores the checkpoint, skips completed steps, and completes with measured resume overhead under 2 seconds.
 
 ---
 
