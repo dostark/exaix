@@ -124,6 +124,12 @@ export const DEFAULT_UNKNOWN_ERROR_MESSAGE = "Unknown error";
 export const DEFAULT_AGENT_TIMEOUT_SEC = 60;
 export const DEFAULT_AGENT_MAX_ITERATIONS = 10;
 
+// Agent event names
+export const AGENT_EVENT_EXECUTION_STARTED = "agent.execution_started";
+export const AGENT_EVENT_EXECUTION_COMPLETED = "agent.execution_completed";
+export const AGENT_EVENT_OUTPUT = "agent.output";
+export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
+
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
 
@@ -789,6 +795,9 @@ export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 
 /** Semantic version for flows. Bump on breaking schema changes. */
 export const DEFAULT_FLOW_VERSION = "1.0.0";
+
+/** Default max serialized size for a flow namespace artifact in bytes. */
+export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
 
 /** Semantic version for global memory. Bump on breaking schema changes. */
 export const DEFAULT_GLOBAL_MEMORY_VERSION = "1.0.0";
