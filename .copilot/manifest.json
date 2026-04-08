@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-07T19:47:44.682Z",
+  "generated_at": "2026-04-08T09:05:14.736Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1035,7 +1035,7 @@
       "scope": "dev",
       "title": "Phase 64: Flow Namespace & Shared Blackboard Coordination",
       "short_summary": "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact.",
-      "version": "1.1",
+      "version": "1.3",
       "topics": [
         "planning",
         "roadmap",
@@ -1482,7 +1482,7 @@
       "scope": "dev",
       "title": "Phase 65: Explicit Parallel Execution Groups & Fan-In Merge",
       "short_summary": "Formalize explicit parallel step groups and deterministic fan-in merge behavior on top of ExaIx’s existing dependency-wave flow execution model.",
-      "version": "1.0",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",
