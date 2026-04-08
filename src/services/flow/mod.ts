@@ -9,3 +9,4 @@
 export * from "./flow_reporter.ts";
 export * from "./flow_validator.ts";
 export * from "./flow_checkpoint_service.ts";
+export * from "./flow_namespace_service.ts";

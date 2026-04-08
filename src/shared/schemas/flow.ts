@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import {
+  DataFormat,
   FlowConsensusMethod,
   FlowGateOnFail,
   FlowInputSource,
@@ -18,7 +19,7 @@ import {
   StepExecutionMode,
 } from "../enums.ts";
 import { JSONValueSchema } from "../types/json.ts";
-import { DEFAULT_FLOW_VERSION } from "../constants.ts";
+import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "../constants.ts";
 
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
@@ -57,6 +58,35 @@ export const ZFlowCheckpoint = z.object({
   flowContentHash: z.string().min(1).describe("Hash of the flow YAML to prevent resume on stale definitions"),
   completedSteps: z.record(z.string(), ZFlowStepResult),
   savedAt: z.string().datetime(),
+});
+
+export const ZFlowNamespaceConfig = z.object({
+  enabled: z.boolean().default(false),
+  format: z.enum([FlowOutputFormat.MARKDOWN, DataFormat.YAML]).default(FlowOutputFormat.MARKDOWN),
+  maxBytes: z.number().int().positive().default(DEFAULT_NAMESPACE_MAX_BYTES),
+});
+
+export const ZFlowNamespaceRead = z.object({
+  key: z.string().min(1).describe("Namespace key to inject into sharedNamespace context"),
+  required: z.boolean().default(false).describe("If true, step fails when key is absent"),
+});
+
+export const ZFlowNamespaceWrite = z.object({
+  key: z.string().min(1).describe("Namespace key to set after step completion"),
+  from: z.string().min(1).optional().describe("Dot-path into step output to extract value; omit to use full output"),
+  mode: z.enum(["write", "append"]).default("write"),
+});
+
+export const ZFlowStepNamespace = z.object({
+  reads: z.array(ZFlowNamespaceRead).default([]),
+  writes: z.array(ZFlowNamespaceWrite).default([]),
+});
+
+export const ZFlowNamespaceEntry = z.object({
+  key: z.string(),
+  value: z.string().describe("String value; structured data should be JSON-serialized by the writer"),
+  authorStepId: z.string(),
+  updatedAt: z.string().datetime(),
 });
 
 // Gate evaluation configuration schema
@@ -145,6 +175,7 @@ export const FlowStepSchema = z.object({
   consensus: ConsensusConfigSchema.optional(),
   /** Skills to apply for this step (Phase 17) */
   skills: z.array(z.string()).optional(),
+  namespace: ZFlowStepNamespace.optional(),
 });
 
 // Flow schema definition
@@ -167,6 +198,7 @@ export const FlowSchema = z.object({
   }).default({}),
   /** Default skills to apply to all steps (Phase 17) */
   defaultSkills: z.array(z.string()).optional(),
+  namespace: ZFlowNamespaceConfig.optional(),
 });
 
 // Type exports for use in other modules
@@ -182,6 +214,11 @@ export type IToolCall = z.infer<typeof ZToolCall>;
 export type IFlowStepOnError = z.infer<typeof ZFlowStepOnError>;
 export type IFlowStepResultSnapshot = z.infer<typeof ZFlowStepResult>;
 export type IFlowCheckpoint = z.infer<typeof ZFlowCheckpoint>;
+export type IFlowNamespaceConfig = z.infer<typeof ZFlowNamespaceConfig>;
+export type IFlowNamespaceRead = z.infer<typeof ZFlowNamespaceRead>;
+export type IFlowNamespaceWrite = z.infer<typeof ZFlowNamespaceWrite>;
+export type IFlowStepNamespace = z.infer<typeof ZFlowStepNamespace>;
+export type IFlowNamespaceEntry = z.infer<typeof ZFlowNamespaceEntry>;
 export type IGateEvaluate = z.infer<typeof GateEvaluateSchema>;
 export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
 export type IBranchCondition = z.infer<typeof BranchConditionSchema>;
