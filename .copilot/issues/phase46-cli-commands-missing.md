@@ -27,7 +27,7 @@ exactl portal knowledge portal-exaix
 
 Both commands fail with an "Unknown command" error:
 
-```
+```text
 error: Unknown command "analyze". Did you mean command "add"?
 error: Unknown command "knowledge". Did you mean command "show"?
 ```
@@ -52,6 +52,7 @@ Checking `src/cli/exactl.ts` confirms that the `portal` command group only defin
 
 **Technical Details:**
 The implementation exists in `src/cli/commands/portal_commands.ts`:
+
 - `PortalCommands.analyze(alias, options)`
 - `PortalCommands.knowledge(alias, options)`
 
@@ -60,6 +61,7 @@ However, `src/cli/exactl.ts` does not include these subcommands in the `.command
 ## Investigation Areas
 
 ### CLI Wiring
+
 - [ ] Add `analyze <alias>` subcommand to `portal` group in `src/cli/exactl.ts`.
 - [ ] Add `knowledge <alias>` subcommand to `portal` group in `src/cli/exactl.ts`.
 - [ ] Ensure options (like `--mode`, `--force`, `--json`) are properly passed to implementation methods.
@@ -75,6 +77,7 @@ However, `src/cli/exactl.ts` does not include these subcommands in the `.command
    - Wired options `-m/--mode`, `-f/--force` for `analyze` and `--json` for `knowledge`.
 
 **Verification:**
+
 - `deno task cli portal analyze --help` shows the command and its options.
 - `deno task cli portal knowledge --help` shows the command and its options.
 - Regression test `tests/portal_cli_wiring_regression_test.ts` passes.

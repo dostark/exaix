@@ -636,7 +636,7 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 
 ### Phase 3c Gap Summary
 
-| ID  | Gap (short) | Severity | Checklist Item | In Tests? |
+| ID | Gap (short) | Severity | Checklist Item | In Tests? |
 | --- | ----------- | -------- | -------------- | --------- |
 | G10 | All flow event name strings are inline literals — at least 11 strings, no constants in `constants.ts` | 🟡 Traceability | Event naming constants | ❌ |
 | G11 | `IFlowEventLogger.log()` payload type is `Record<string, JSONValue \| undefined>` — completely untyped | 🟡 Traceability | Event payload typing | ❌ |

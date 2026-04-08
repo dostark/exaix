@@ -3,18 +3,8 @@ agent: antigravity
 scope: dev
 title: "Phase 61: AgentExecutor MCP Integration & Real-World Execution"
 short_summary: "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern."
-version: "1.2"
-topics: [
-  "agent-executor",
-  "mcp",
-  "subprocess",
-  "security",
-  "git-audit",
-  "execution-strategy",
-  "identities",
-  "process-management",
-  "cross-process-context",
-]
+version: "1.3"
+topics: ["agent-executor", "mcp", "subprocess", "security", "git-audit", "execution-strategy", "identities", "process-management", "cross-process-context"]
 ---
 
 ## Phase 61: AgentExecutor MCP Integration & Real-World Execution
@@ -176,12 +166,12 @@ AgentExecutor.executeStep()
 
 ## Risks & Mitigations
 
-| Risk                              | Impact                                 | Likelihood | Mitigation                                                                                               |
-| :-------------------------------- | :------------------------------------- | :--------- | :------------------------------------------------------------------------------------------------------- |
-| **R1: Subprocess Orphanage**      | System instability / resource leaks    | Medium     | Implement PID tracking and a `SIGINT` cleanup handler in `SafeSubprocess`.                               |
-| **R2: Git Audit False Negatives** | Security breach (unauthorized changes) | Low        | Use `git status --porcelain=v1` for deterministic parsing and assume any unknown change is unauthorized. |
-| **R3: MCP Latency**               | Degraded UX for real-time tasks        | Medium     | Implement persistent JSON-RPC heartbeats and optimize Deno startup time using pre-cached modules.        |
-| **R4: Strategy Divergence**       | Broken TUI / Journal parsing           | High       | Centralize result validation in `AgentExecutor` using the shared `ChangesetResultSchema`.                |
+| Risk | Impact | Likelihood | Mitigation |
+| :--- | :--- | :--- | :--- |
+| **R1: Subprocess Orphanage** | System instability / resource leaks | Medium | Implement PID tracking and a `SIGINT` cleanup handler in `SafeSubprocess`. |
+| **R2: Git Audit False Negatives** | Security breach (unauthorized changes) | Low | Use `git status --porcelain=v1` for deterministic parsing and assume any unknown change is unauthorized. |
+| **R3: MCP Latency** | Degraded UX for real-time tasks | Medium | Implement persistent JSON-RPC heartbeats and optimize Deno startup time using pre-cached modules. |
+| **R4: Strategy Divergence** | Broken TUI / Journal parsing | High | Centralize result validation in `AgentExecutor` using the shared `ChangesetResultSchema`. |
 
 ---
 
@@ -207,6 +197,7 @@ AgentExecutor.executeStep()
 
 ---
 **Agent Instructions**: Follow the steps in order. Each step MUST pass its associated planned tests before proceeding to the next. Do not mark steps as completed until the `ci.ts` pipeline returns a PASS for the specific test category.
+
 ---
 
 ## Deep Review — 2026-04-07
@@ -222,13 +213,13 @@ All core Phase 61 implementation is confirmed present and matching the plan. Fiv
 
 ### Gap Summary Table
 
-| ID | Gap (short)                                                                          | Severity       | Plan Section    | In Tests? |
-| -- | ------------------------------------------------------------------------------------ | -------------- | --------------- | --------- |
-| G1 | Stale TODO comment in `executeStep` misrepresents Phase 61 as unimplemented          | 🔵 Conceptual  | Step 61.1       | ❌        |
-| G2 | Steps 61.1–61.5 use "Justification" label — §F requires "Architecture Notes"         | 🔵 Conceptual  | All steps       | ❌        |
-| G3 | 4 planned tests marked ⚠️ NOT CREATED — no remediation step existed                  | 🟠 Testing     | Steps 61.2–61.4 | ❌        |
-| G4 | `IExecutionStrategy` lacks `dispose?()` — `AgentExecutor.dispose()` uses duck-typing | 🟡 Feasibility | Step 61.1/61.2  | ❌        |
-| G5 | `pipeStderrToLogger` swallows stream errors silently — incomplete audit trail        | 🔒 Security    | Step 61.2/61.3  | ❌        |
+| ID | Gap (short) | Severity | Plan Section | In Tests? |
+| ---- | ------------- | ---------- | ------------- | ----------- |
+| G1 | Stale TODO comment in `executeStep` misrepresents Phase 61 as unimplemented | 🔵 Conceptual | Step 61.1 | ❌ |
+| G2 | Steps 61.1–61.5 use "Justification" label — §F requires "Architecture Notes" | 🔵 Conceptual | All steps | ❌ |
+| G3 | 4 planned tests marked ⚠️ NOT CREATED — no remediation step existed | 🟠 Testing | Steps 61.2–61.4 | ❌ |
+| G4 | `IExecutionStrategy` lacks `dispose?()` — `AgentExecutor.dispose()` uses duck-typing | 🟡 Feasibility | Step 61.1/61.2 | ❌ |
+| G5 | `pipeStderrToLogger` swallows stream errors silently — incomplete audit trail | 🔒 Security | Step 61.2/61.3 | ❌ |
 
 ---
 
@@ -381,10 +372,10 @@ A stream error (subprocess crash, pipe break) produces no Activity Journal entry
 
 ### Phase 3c Gap Summary
 
-| ID | Gap (short) | Severity | Checklist Item | In Tests? |
-| -- | ----------- | -------- | -------------- | --------- |
-| G6 | Agent event action strings are inline literals — no constants defined | 🟡 Traceability | Event naming constants | ❌ |
-| G7 | No test asserting `security.violation` event payload fields | 🟠 Traceability | Event assertions in tests | ❌ |
+| ID  | Gap (short)                                                            | Severity        | Checklist Item            | In Tests? |
+| --- | ---------------------------------------------------------------------- | --------------- | ------------------------- | --------- |
+| G6  | Agent event action strings are inline literals — no constants defined  | 🟡 Traceability | Event naming constants    | ❌        |
+| G7  | No test asserting `security.violation` event payload fields            | 🟠 Traceability | Event assertions in tests | ❌        |
 
 ### Phase 3c Detailed Gap Entries
 
@@ -450,3 +441,4 @@ The planned `tests/security/agent_isolation_audit_test.ts` (Step 61.7) would cov
 - **Success Criteria**:
   - [ ] `tests/security/agent_isolation_audit_test.ts` asserts the `security.violation` entry with `payload.portal !== undefined`, `payload.unauthorized_files.length > 0`, `payload.identity !== undefined`.
   - [ ] Test passes as part of `deno test --allow-all`.
+

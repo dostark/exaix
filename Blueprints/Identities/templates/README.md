@@ -151,11 +151,13 @@ Fragments are located in `Blueprints/Fragments/`.
    ```bash
    cp templates/reflexive-agent.md.template ../my-reviewer.md
    ```
+
 1.
    - **Update Frontmatter:** Change `agent_id`, `name`, and `model`.
    - **Define Persona:** Replace `{{placeholder}}` values.
    - **Customize Criteria:** Adjust confidence thresholds, evaluation criteria.
    - **Refine Capabilities:** Add/remove tools as needed.
+
 1. ```bash
    exactl blueprint validate my-reviewer
    ```

@@ -110,7 +110,7 @@ Exaix architecture, particularly the Phase 17 Skills system. It addresses:
 | `performance-engineer` | code_review.flow                   | `code-review`                       |
 | `technical-writer`     | code_review, documentation         | `documentation-driven`              |
 | `product-manager`      | feature_development                | (none)                              |
-| `software-architect`   | feature_development, documentation | `exaix-conventions`              |
+| `software-architect`   | feature_development, documentation | `exaix-conventions`                 |
 | `test-engineer`        | feature_development                | `tdd-methodology`, `error-handling` |
 | `code-analyst`         | documentation                      | `code-review`                       |
 
@@ -125,7 +125,7 @@ From `Memory/Skills/core/`:
 | `tdd-methodology`      | test-engineer, feature-developer               |
 | `error-handling`       | senior-coder, feature-developer                |
 | `documentation-driven` | api-documenter, technical-writer               |
-| `exaix-conventions` | all Exaix-specific agents                   |
+| `exaix-conventions`    | all Exaix-specific agents                      |
 | `typescript-patterns`  | senior-coder, feature-developer                |
 | `commit-message`       | feature-developer                              |
 
