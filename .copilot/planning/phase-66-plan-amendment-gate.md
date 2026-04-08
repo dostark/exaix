@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning"
 short_summary: "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable."
-version: "1.0"
+version: "1.2"
 topics: [
   "planning",
   "roadmap",
@@ -36,13 +36,13 @@ topics: [
 
 ### Key Files
 
-| File                                | Current Role              | Gap                                           |
-| ----------------------------------- | ------------------------- | --------------------------------------------- |
-| `src/services/plan_executor.ts`     | Executes approved plans   | No amendment lifecycle                        |
-| `src/services/agent_executor.ts`    | Runs plan steps           | No trigger path for plan amendment proposals  |
-| `src/services/confidence_scorer.ts` | Scores output quality     | No amendment threshold integration            |
-| `src/services/event_logger.ts`      | Journals execution events | No amendment proposal / approval event family |
-| `src/services/notification.ts`      | User-facing notifications | No amendment approval prompt path             |
+| File                                              | Current Role              | Gap                                           |
+| ------------------------------------------------- | ------------------------- | --------------------------------------------- |
+| `src/services/plan/plan_executor.ts`              | Executes approved plans   | No amendment lifecycle                        |
+| `src/services/agent/agent_executor.ts`            | Runs plan steps           | No trigger path for plan amendment proposals  |
+| `src/services/utils/confidence_scorer.ts`         | Scores output quality     | No amendment threshold integration            |
+| `src/services/core/event_logger.ts`               | Journals execution events | No amendment proposal / approval event family |
+| `src/services/notification/notification.ts`       | User-facing notifications | No amendment approval prompt path             |
 
 ### Constraints
 
@@ -52,10 +52,11 @@ topics: [
 
 ### Interfaces Affected
 
-- `src/services/plan_executor.ts:PlanExecutor`
-- `src/services/agent_executor.ts:AgentExecutor`
-- `src/services/confidence_scorer.ts:ConfidenceScorer`
-- `src/services/notification.ts:NotificationService`
+- `src/services/plan/plan_executor.ts:PlanExecutor`
+- `src/services/agent/agent_executor.ts:AgentExecutor`
+- `src/services/utils/confidence_scorer.ts:ConfidenceScorer`
+- `src/services/notification/notification.ts:NotificationService`
+- `src/shared/types/notification.ts:IMemoryNotification` — extend `type` union: add `"amendment_pending" | "amendment_approved" | "amendment_rejected" | "amendment_expired"`; add corresponding color entries in `renderNotificationPanel`'s `messageColorByType` map.
 
 ## Technical Architecture & Detailed Design
 
@@ -71,18 +72,18 @@ export const ZPlanAmendmentTrigger = z.object({
 });
 
 export const ZPlanAmendmentPatch = z.object({
-  amendmentId: z.string(),
-  planId: z.string(),
+  amendmentId: z.string().uuid(),
+  planId: z.string().uuid(),
   affectedRemainingStepIds: z.array(z.string()).min(1),
   summary: z.string().min(1),
-  adds: z.array(z.unknown()).default([]),
-  updates: z.array(z.unknown()).default([]),
+  adds: z.array(z.object({ number: z.number().int().min(1), title: z.string().min(1), content: z.string() })).default([]),
+  updates: z.array(z.object({ number: z.number().int().min(1), title: z.string().min(1), content: z.string() })).default([]),
   removes: z.array(z.string()).default([]),
   createdAt: z.string().datetime(),
 });
 
 export const ZPlanAmendmentDecision = z.object({
-  amendmentId: z.string(),
+  amendmentId: z.string().uuid(),
   decision: z.enum(["approved", "rejected", "expired"]),
   decidedAt: z.string().datetime(),
   decidedBy: z.string().min(1),
@@ -136,23 +137,24 @@ flowchart TD
 
 ### Step 66.1: Amendment Schema & Lifecycle Contracts
 
-1. **Actions**
+#### Actions
 
 - Add amendment schemas and types in `src/shared/schemas/plan_amendment.ts`.
 - Create `src/services/plan/plan_amendment_service.ts`.
 - Define an approval adapter contract for CLI/TUI integration.
 
-1. **Architecture Notes**
+#### Architecture Notes
 
 - Keep the patch format intentionally narrow in v1.
 - Avoid patching executed steps or changing original plan history in place.
+- `amendmentId` and `planId` must be UUIDs (`z.string().uuid()`); always validate before any path construction (OWASP A1).
 
-1. **Planned Tests**
+#### Planned Tests
 
 - `tests/schemas/plan_amendment_schema_test.ts`
 - `tests/unit/services/plan_amendment_service_contract_test.ts`
 
-1. **Success Criteria**
+#### Success Criteria
 
 - All amendment schemas validate correctly.
 - Decision lifecycle supports approved, rejected, and expired outcomes.
@@ -160,22 +162,24 @@ flowchart TD
 
 ### Step 66.2: Trigger Detection in Execution Path
 
-1. **Actions**
+#### Actions
 
-- Integrate amendment trigger detection into `src/services/agent_executor.ts` and `src/services/plan_executor.ts`.
+- Integrate amendment trigger detection into `src/services/agent/agent_executor.ts` and `src/services/plan/plan_executor.ts`.
 - Use `ConfidenceScorer` thresholds and typed tool-failure categories as trigger sources.
 
-1. **Architecture Notes**
+#### Architecture Notes
 
 - Trigger policy should be config-driven, not hardcoded.
 - Low-confidence triggers should include the score and failed criterion summary.
+- **Remaining steps computation (G4):** The amendment trigger receives the full `IPlanContext.steps` and the current step's number; remaining steps are computed as `context.steps.filter(s => s.number > currentStep.number)`. No change to `PlanExecutor`'s public API is required.
+- **`ConfidenceScorer` injection (G5):** `ConfidenceScorer` is injected into `PlanExecutor` via `IPlanExecutorOptions` as optional `confidenceScorer?: ConfidenceScorer`. After each `agentExecutor.executeStep()` call, `PlanExecutor.executeSteps()` calls `this.options.confidenceScorer?.assessQuick(result.description)` and compares `score` against the config-driven `amendmentThreshold`. `AgentExecutor` itself is not modified.
 
-1. **Planned Tests**
+#### Planned Tests
 
 - `tests/integration/agent/plan_amendment_trigger_test.ts`
 - `tests/unit/services/amendment_threshold_policy_test.ts`
 
-1. **Success Criteria**
+#### Success Criteria
 
 - Low-confidence and tool-error conditions can both trigger proposals.
 - Non-qualifying failures do not create amendment artifacts.
@@ -183,23 +187,25 @@ flowchart TD
 
 ### Step 66.3: Amendment Diff Proposal & Approval Gate
 
-1. **Actions**
+#### Actions
 
 - Implement proposal generation against remaining steps only.
-- Add approval request path through `src/services/notification.ts` and existing plan review surfaces.
+- Add approval request path through `src/services/notification/notification.ts` and existing plan review surfaces.
 - Persist amendment artifacts under execution-scoped storage.
 
-1. **Architecture Notes**
+#### Architecture Notes
 
 - Proposed patch should include a concise human-readable summary plus exact structural diff.
-- Approval must pause the execution state until a decision is recorded.
+- **Execution pause/resume (G2):** Execution pause is implemented as checkpoint-then-halt: when an amendment is proposed, `PlanExecutor` saves a checkpoint (Phase 63 semantics), writes the amendment artifact, emits `plan.amendment.awaiting_approval`, and throws `PlanAmendmentPendingError`. `ExecutionLoop` catches this, leaves the plan in `Workspace/Active/` with status `amendment_pending`, and exits. Resume: `exactl plan amendment approve <amendmentId>` applies the patch and re-queues the plan. Next `ExecutionLoop` invocation picks up from the checkpoint.
+- **Amendment artifact storage (G6):** Amendment artifacts are stored at `Memory/Execution/{traceId}/amendments/{amendmentId}.json`. New constant `AMENDMENT_ARTIFACTS_DIR = 'amendments'` in `src/shared/constants.ts`. Path construction uses the same defensive join pattern as `FlowCheckpointService.getCheckpointPath()`.
+- **LLM summary sanitization (G9):** The LLM-generated `summary` field must be sanitized before storage or display: strip YAML front-matter delimiters (`---`), null bytes (`\x00`), and limit to 500 characters. Reference the existing `sanitizePrompt()` pattern in `src/services/agent/agent_executor.ts` (OWASP A8).
 
-1. **Planned Tests**
+#### Planned Tests
 
 - `tests/integration/services/plan_amendment_approval_test.ts`
 - `tests/functional/66_plan_amendment_pause_resume_test.ts`
 
-1. **Success Criteria**
+#### Success Criteria
 
 - Execution pauses while awaiting amendment decision.
 - Approved amendments update only remaining steps.
@@ -207,23 +213,23 @@ flowchart TD
 
 ### Step 66.4: Resume, Reporting, and Guardrails
 
-1. **Actions**
+#### Actions
 
 - Resume execution from amended plan state when approved.
 - Emit amendment lifecycle events and include amendment outcomes in mission/flow reports.
 - Add expiry timeout for unattended amendment requests.
 
-1. **Architecture Notes**
+#### Architecture Notes
 
 - Resume path must integrate with Phase 63 checkpointing.
 - Expired amendments should produce deterministic policy behavior: abort by default in v1.
 
-1. **Planned Tests**
+#### Planned Tests
 
 - `tests/integration/services/plan_amendment_resume_test.ts`
 - `tests/unit/services/mission_reporter_amendment_summary_test.ts`
 
-1. **Success Criteria**
+#### Success Criteria
 
 - Approved amendments resume cleanly from the paused point.
 - Expired amendments never silently continue.
@@ -252,6 +258,91 @@ flowchart TD
 - Non-amendment executions follow the exact current lifecycle.
 - Original approved plan history remains immutable; amendments are stored as linked artifacts rather than destructive rewrites.
 
-## Usage
+---
 
-You can paste these directly into the planning folder as new files. I used the README’s mandatory section order and kept the design style aligned with the recent architecture-heavy phases already present in the folder. [github](https://github.com/dostark/exaix/blob/main/.copilot/planning/README.md)
+## Pre-Gap Analysis — v1.0 → v1.2 (April 2026)
+
+> Performed before implementation. All gaps resolved in-document.
+
+### Gap Summary
+
+| ID  | Sev       | Area                            | Resolution                                                         |
+| --- | --------- | ------------------------------- | ------------------------------------------------------------------ |
+| G1  | 🔴 Critical | All 5 Key File paths incorrect  | Corrected to actual src paths; Interfaces Affected updated         |
+| G2  | 🔴 Critical | Pause/resume mechanism missing  | Checkpoint-then-halt pattern documented in Step 66.3 Arch Notes    |
+| G3  | 🟡 Major  | `z.unknown()` in adds/updates   | Replaced with typed `IPlanStep`-shape object schema                |
+| G4  | 🟡 Major  | `remainingSteps` source unclear | `context.steps.filter(s > current)` documented in Step 66.2       |
+| G5  | 🟠 Moderate | `ConfidenceScorer` injection    | Optional `confidenceScorer?` in `IPlanExecutorOptions` documented  |
+| G6  | 🟠 Moderate | Artifact storage path missing   | `Memory/Execution/{traceId}/amendments/` + constant documented     |
+| G7  | 🟠 Moderate | `IMemoryNotification.type` gap  | Amendment variants added to Interfaces Affected entry              |
+| G8  | 🔒 Security | UUID constraint missing (A1)    | `z.string().uuid()` on amendmentId/planId; note in Step 66.1      |
+| G9  | 🔒 Security | LLM summary unsanitized (A8)    | Sanitization spec + `sanitizePrompt()` ref in Step 66.3            |
+| G10 | 🔵 Style  | `1. **Actions**` violates §F    | All 4 steps reformatted to `#### Actions` H4 subsections           |
+| G11 | 🔵 Style  | `## Usage` is AI meta-content   | Section removed                                                    |
+
+### Gap Details
+
+**G1 🔴 — Key File Paths (all 5 wrong)**
+Original doc referenced `src/services/plan_executor.ts`, `src/services/agent_executor.ts`,
+`src/services/confidence_scorer.ts`, `src/services/event_logger.ts`, and
+`src/services/notification.ts`. Actual paths verified by search:
+`src/services/plan/plan_executor.ts`, `src/services/agent/agent_executor.ts`,
+`src/services/utils/confidence_scorer.ts`, `src/services/core/event_logger.ts`,
+`src/services/notification/notification.ts`.
+
+**G2 🔴 — Execution Pause/Resume Undefined**
+The original doc stated "Approval must pause the execution state until a decision is recorded"
+but gave no concrete mechanism. Resolved: checkpoint-then-halt semantics using Phase 63
+`FlowCheckpointService` pattern; `PlanAmendmentPendingError` thrown; `ExecutionLoop` leaves
+plan at `amendment_pending`; CLI `exactl plan amendment approve <id>` triggers resume.
+
+**G3 🟡 — `z.array(z.unknown())` Type Erasure**
+`adds` and `updates` fields used `z.unknown()`, preventing compile-time safety for step
+objects. Replaced with `z.object({ number, title, content })` matching `IPlanStep` shape.
+
+**G4 🟡 — `remainingSteps` Source Not Specified**
+`proposeAmendment()` accepts `remainingSteps` but the doc didn't say how `PlanExecutor`
+computes them. Resolved: `context.steps.filter(s => s.number > currentStep.number)`.
+No public API change to `PlanExecutor` needed.
+
+**G5 🟠 — `ConfidenceScorer` Injection Path**
+`ConfidenceScorer` is in `src/services/utils/confidence_scorer.ts` and is NOT a dependency
+of `AgentExecutor`. Resolved: inject as optional via `IPlanExecutorOptions.confidenceScorer?`;
+called with `assessQuick(result.description)` after each step execution.
+
+**G6 🟠 — Amendment Artifact Storage Path**
+No storage path was specified. Resolved: `Memory/Execution/{traceId}/amendments/{amendmentId}.json`.
+New constant `AMENDMENT_ARTIFACTS_DIR = 'amendments'` in `src/shared/constants.ts`. Uses
+the defensive join pattern from `FlowCheckpointService.getCheckpointPath()`.
+
+**G7 🟠 — `IMemoryNotification.type` Not Extended**
+`renderNotificationPanel` in `src/services/notification/notification.ts` uses a closed
+`messageColorByType` map. Amendment types would silently fall through. Resolved: Interfaces
+Affected now specifies extending `type` with four amendment variants and adding color entries.
+
+**G8 🔒 — No UUID Constraint on IDs (OWASP A1)**
+`amendmentId` and `planId` as plain `z.string()` allow path traversal when used in file
+path construction. Resolved: `z.string().uuid()` on both fields in `ZPlanAmendmentPatch`
+and `ZPlanAmendmentDecision`; architecture note added in Step 66.1.
+
+**G9 🔒 — LLM `summary` Unsanitized (OWASP A8)**
+LLM-generated `summary` could contain YAML delimiters or null bytes enabling prompt injection
+when persisted to YAML artifacts or shown in notifications. Resolved: strip `---`, `\x00`,
+cap at 500 chars; reference `sanitizePrompt()` in Step 66.3 architecture note.
+
+**G10 🔵 — Wrong Step Section Format (§F Violation)**
+Steps used `1. **Actions** / 1. **Architecture Notes** / ...` (ordered list items). §F
+mandates `#### Actions / #### Architecture Notes / #### Planned Tests / #### Success Criteria`.
+All 4 steps (66.1–66.4) reformatted.
+
+**G11 🔵 — AI Meta-Commentary in `## Usage`**
+The `## Usage` section at end of document was AI-generated commentary explaining how to use
+the document. Not part of the standard planning doc format. Section removed.
+
+### Pre-Implementation Actions
+
+- [ ] Verify `sanitizePrompt()` exists and is exported from `src/services/agent/agent_executor.ts`
+- [ ] Confirm `FlowCheckpointService.getCheckpointPath()` pattern for use in artifact storage
+- [ ] Add `AMENDMENT_ARTIFACTS_DIR` constant to `src/shared/constants.ts` before Step 66.3
+- [ ] Extend `IMemoryNotification` type union and `messageColorByType` map before Step 66.3
+- [ ] Ensure `IPlanExecutorOptions` interface is exported; add `confidenceScorer?` field in Step 66.2

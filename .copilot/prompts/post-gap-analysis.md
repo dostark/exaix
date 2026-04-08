@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase Planning Document Deep Review (#post-gap-analysis)"
 short_summary: "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document."
-version: "1.0"
+version: "1.1"
 topics: ["planning", "gap-analysis", "review", "tdd", "architecture", "quality", "security"]
 ---
 
@@ -30,6 +30,9 @@ Key points
 - Run a security gap check (Phase 3b) on every step that touches input
   handling, auth, path resolution, secrets, or external data. Security gaps
   use the 🔒 severity symbol and are always prioritised above 🟡 Feasibility.
+- Run a traceability & configurability check (Phase 3c) on every step that
+  introduces new EventLogger events, thresholds, timeouts, or opt-in features.
+  Untyped events and hardcoded values are gaps.
 
 Canonical prompt (short):
 "Deep-review .copilot/planning/phase-NN-*.md against the actual codebase.
@@ -64,6 +67,12 @@ Do / Don't
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
 - ❌ Don't renumber existing steps — new steps continue from the last existing
   step number.
+- ✅ Do run Phase 3c traceability & configurability checks on every step that
+  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
+- ❌ Don't accept hardcoded threshold or timeout literals — they must be named
+  constants in `src/shared/constants.ts` or config-schema fields.
+- ❌ Don't skip event payload typing — untyped events block audit chain
+  verification and make integration tests fragile.
 
 Related templates:
 - #pre-gap-analysis — Pre-implementation gap analysis (no code to check yet)
@@ -201,6 +210,60 @@ For each failed item, produce a gap entry using severity 🔒 Security:
 - **Actual state:** {what the code does / omits}
 - **Impact:** {attack vector or data-exposure risk if left unresolved}
 - **To fix:** {concrete one-sentence instruction referencing OWASP Top 10 where applicable}
+- **Resolved by:** Step {PhaseNN.M} below
+```
+
+---
+
+### Phase 3c — Traceability & Configurability Check
+
+For **every step that introduces new behaviour**, apply the two checklists below.
+A finding becomes a gap classified 🟠 Testing (missing assertion) or 🟡 Feasibility
+(missing design decision). Gaps that leave a core audit chain broken are 🔴 Critical.
+
+#### Traceability (Event Logging)
+
+1. **Event naming** — Does the implementation emit every `EventLogger` event the
+   plan named? Are event-name strings stored as constants in
+   `src/shared/constants.ts`, not inlined as literals in the code?
+
+1. **Event payload typing** — Are event payloads typed with a declared interface
+   or Zod schema? Code emitting `Record<string, unknown>` without a named type
+   is a gap.
+
+1. **Audit chain completeness** — For every state transition the step introduces
+   (e.g., `pending → approved`), is there a corresponding journal event in the
+   code? An unmapped transition breaks the audit chain.
+
+1. **Event assertions in tests** — Does the test suite include at least one test
+   that asserts the correct event was emitted with the correct payload?
+
+#### Configurability
+
+1. **Config-driven vs. constant-driven** — For every threshold, timeout, limit,
+   or feature toggle introduced, is the value (a) a named constant in
+   `src/shared/constants.ts`, (b) a user-facing config field in
+   `exa.config.toml` / a Zod config schema in `src/config/`, or (c) neither?
+   Hardcoded literals without a named constant are a gap.
+
+1. **Config schema declaration** — If a new config field was added, is it
+   declared in the relevant Zod config schema in `src/config/` with a
+   `.default()` value?
+
+1. **Feature enable/disable path** — If the step introduces opt-in behaviour,
+   is there a config key that enables it, and is the disabled path tested?
+
+1. **Config validation tests** — Is there at least one test that rejects an
+   invalid config value (e.g., negative threshold, zero timeout)?
+
+For each unresolved item, produce a gap entry:
+
+```text
+#### G{N}: {short title}  🟠 Testing / 🟡 Feasibility
+- **Checklist item:** {item name above}
+- **Plan claim:** "{quoted sentence from plan}"
+- **Actual state:** {what the code does or omits}
+- **Impact:** {consequence if left unresolved}
 - **Resolved by:** Step {PhaseNN.M} below
 ```
 

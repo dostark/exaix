@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T09:05:14.736Z",
+  "generated_at": "2026-04-08T09:59:10.447Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -414,7 +414,7 @@
       "scope": "dev",
       "title": "Phase Planning Document Deep Review (#post-gap-analysis)",
       "short_summary": "Deep review of an existing phase planning document: checks implementation against plan, finds gaps, and writes remediation steps back into the document.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "gap-analysis",
@@ -736,7 +736,7 @@
       "scope": "dev",
       "title": "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning",
       "short_summary": "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable.",
-      "version": "1.0",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",

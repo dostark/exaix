@@ -24,6 +24,7 @@ Use this command to:
    - Phase 2: Verify source file existence, data-flow chains, constructor contracts, schema compat, algorithm completeness, cross-component ownership.
    - Phase 3: Check §F sub-section completeness, test coverage spec, §3D documentation compliance, export paths, missing constants.
    - Phase 3b: Security feasibility check on every step touching input, auth, paths, secrets, or external data.
+   - Phase 3c: Traceability & configurability check on every step introducing new events, thresholds, or opt-in features.
    - Phase 4: Classify every gap (🔴 Critical / 🔒 Security / 🟡 Feasibility / 🟠 Testing / 🔵 Conceptual), build gap summary table.
    - Phase 5: Write gap entries, summary table, and Pre-Implementation Actions list into the planning document.
    - Phase 6: Bump document version; run markdown lint.

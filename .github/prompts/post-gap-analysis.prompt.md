@@ -25,6 +25,7 @@ Use this command to:
    - Phase 2: For every completed step, verify the real code matches the plan, tests exist and pass, and success criteria are met. Flag silently-implemented but unmarked steps.
    - Phase 3: Check all four §F sub-sections per step and §3D documentation compliance.
    - Phase 3b: Security gap check on every step touching input, auth, paths, secrets, or external data.
+   - Phase 3c: Traceability & configurability check on every step introducing new events, thresholds, or opt-in features.
    - Phase 4: Classify every gap (🔴 Critical / 🔒 Security / 🟡 Feasibility / 🟠 Testing / 🔵 Conceptual), build gap summary table.
    - Phase 5: Append Deep Review header, gap entries, summary table, and numbered TDD-First remediation steps into the planning document.
    - Phase 6: Bump document version; update status to "🚧 Gap Remediation In Progress"; run markdown lint.

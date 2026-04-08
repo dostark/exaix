@@ -23,6 +23,9 @@ Key points
   touches input handling, auth, path resolution, secrets, or external data.
   Security gaps use the 🔒 severity symbol and are always prioritised above
   🟡 Feasibility.
+- A traceability & configurability check (Phase 3c) is required for every step
+  that introduces new EventLogger events, thresholds, timeouts, or opt-in
+  features. Untyped events and hardcoded values are gaps.
 - Bump the document version (e.g., 1.0 → 1.1) after writing all gaps in.
 
 Canonical prompt (short):
@@ -51,6 +54,8 @@ Do / Don't
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do use any additionally supplied documents as context.
+- ✅ Do run Phase 3c traceability & configurability checks on every step that
+  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
 - ❌ Don't mark a step gap-free unless its data sources, types, and tests are
   fully specified.
 - ❌ Don't skip Phase 3b for steps that handle external data or file paths —
@@ -60,6 +65,10 @@ Do / Don't
 - ❌ Don't ignore backward-compatibility risk on schema changes.
 - ❌ Don't assume tests cover a path — verify the plan's Planned Tests section
   explicitly names them.
+- ❌ Don't accept hardcoded threshold or timeout literals — they must be named
+  constants in `src/shared/constants.ts` or config-schema fields.
+- ❌ Don't skip event payload typing — untyped events block audit chain
+  verification and make integration tests fragile.
 
 Related templates:
 - #post-gap-analysis — Deep post-implementation review (code already written)
@@ -230,6 +239,63 @@ For each unspecified item, produce a gap entry using severity 🔒 Security:
 - **Problem:** {what the plan omits or leaves unspecified}
 - **Impact:** {attack vector or data-exposure risk if left unresolved}
 - **To fix:** {concrete one-sentence instruction referencing OWASP Top 10 where applicable}
+```
+
+---
+
+### Phase 3c — Traceability & Configurability Check
+
+For **every step** that introduces new behaviour, apply the two checklists below.
+A finding becomes a gap classified 🟠 Testing (missing assertion) or 🟡 Feasibility
+(missing design decision). Gaps that leave a core audit chain broken are 🔴 Critical.
+
+#### Traceability (Event Logging)
+
+1. **Event naming** — Does the plan name every `EventLogger` event the step
+   emits (e.g., `plan.amendment.awaiting_approval`)? Are event-name strings
+   stored as constants in `src/shared/constants.ts`, not inlined as literals?
+
+1. **Event payload typing** — Are event payloads typed with a declared interface
+   or Zod schema? Plans that pass `Record<string, unknown>` without a named type
+   are a gap.
+
+1. **Audit chain completeness** — For every state transition the step introduces
+   (e.g., `pending → approved`), does the plan name the corresponding journal
+   event? An unmapped transition breaks the audit chain.
+
+1. **Event assertions in tests** — Does the Planned Tests section name at least
+   one test that asserts the correct event was emitted with the correct payload?
+
+#### Configurability
+
+1. **Config-driven vs. constant-driven** — For every threshold, timeout, limit,
+   or feature toggle the step introduces, does the plan explicitly state whether
+   the value is (a) a named constant in `src/shared/constants.ts`, (b) a
+   user-facing config field in `exa.config.toml` / a Zod config schema in
+   `src/config/`, or (c) hardcoded? Hardcoded values without justification are
+   a gap.
+
+1. **Config schema declaration** — If a new config field is introduced, is it
+   declared in the relevant Zod config schema in `src/config/` with a
+   `.default()` value?
+
+1. **Feature enable/disable path** — If the step introduces opt-in behaviour,
+   does the plan specify the config key that enables it and describe what
+   happens when it is absent or `false`?
+
+1. **Config validation tests** — Does the Planned Tests section name at least
+   one test that rejects an invalid config value (e.g., negative threshold,
+   zero timeout)?
+
+For each unspecified item, produce a gap entry:
+
+```text
+#### G{N}: {short title}  🟠 Testing / 🟡 Feasibility
+- **Checklist item:** {item name above}
+- **Location in plan:** Step N.M — "{quoted sentence from plan}"
+- **Problem:** {what the plan omits}
+- **Impact:** {what breaks or becomes unverifiable if left unresolved}
+- **To fix:** {concrete one-sentence instruction}
 ```
 
 ---
