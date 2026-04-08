@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T11:51:50.512Z",
+  "generated_at": "2026-04-08T11:58:41.732Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1064,7 +1064,7 @@
       "scope": "dev",
       "title": "Phase 68: Ollama Embedding & Local Semantic Search",
       "short_summary": "Integrate a local embedding model via Ollama to bring zero-cost semantic vector search to the Solo edition, replacing the noisy TF-IDF keyword fallback.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",
