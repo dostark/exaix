@@ -36,14 +36,14 @@ topics: [
 
 ### Key Files
 
-| File                                           | Current Role                                | Gap                                                    |
+| File | Current Role | Gap |
 | ---------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
-| `src/flows/flow_runner.ts`                     | Executes flow steps and dependency ordering | No shared, flow-scoped read/write coordination surface |
-| `src/shared/schemas/flow.ts`                   | Validates flow definitions                  | No namespace config or namespace bindings              |
-| `src/services/event_logger.ts`                 | Emits execution events                      | No namespace-specific journal events                   |
-| `src/services/flow/flow_reporter.ts`           | Produces flow execution reports             | No namespace artifact metadata in report frontmatter   |
-| `src/services/flow/flow_checkpoint_service.ts` | Checkpoints completed steps per trace       | Architectural template for namespace service pattern   |
-| `src/services/flow/mod.ts`                     | Barrel exports for flow services            | Missing `flow_namespace_service.ts` re-export          |
+| `src/flows/flow_runner.ts` | Executes flow steps and dependency ordering | No shared, flow-scoped read/write coordination surface |
+| `src/shared/schemas/flow.ts` | Validates flow definitions | No namespace config or namespace bindings |
+| `src/services/event_logger.ts` | Emits execution events | No namespace-specific journal events |
+| `src/services/flow/flow_reporter.ts` | Produces flow execution reports | No namespace artifact metadata in report frontmatter |
+| `src/services/flow/flow_checkpoint_service.ts` | Checkpoints completed steps per trace | Architectural template for namespace service pattern |
+| `src/services/flow/mod.ts` | Barrel exports for flow services | Missing `flow_namespace_service.ts` re-export |
 
 ### Constraints
 
@@ -433,11 +433,11 @@ flowchart TD
 
 - **`ARCHITECTURE.md`** — in the component reference table (near `Gate Evaluator`, `Feedback Loop`), add the three new/newly-documented flow services:
 
-  | Component                   | Role                                               | Path                                           |
-  | --------------------------- | -------------------------------------------------- | ---------------------------------------------- |
-  | **Flow Checkpoint Service** | Step resume checkpoint persistence per trace       | `src/services/flow/flow_checkpoint_service.ts` |
-  | **Flow Namespace Service**  | Per-flow shared blackboard coordination (Phase 64) | `src/services/flow/flow_namespace_service.ts`  |
-  | **Flow Reporter**           | Markdown execution report generation per flow run  | `src/services/flow/flow_reporter.ts`           |
+| Component | Role | Path |
+| --------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| **Flow Checkpoint Service** | Step resume checkpoint persistence per trace | `src/services/flow/flow_checkpoint_service.ts` |
+| **Flow Namespace Service** | Per-flow shared blackboard coordination (Phase 64) | `src/services/flow/flow_namespace_service.ts` |
+| **Flow Reporter** | Markdown execution report generation per flow run | `src/services/flow/flow_reporter.ts` |
 
   Also add a `## Flow Namespace & Shared Blackboard` subsection under the Agent Orchestration Architecture section describing: the blackboard pattern, `IFlowNamespaceService`, read/write binding YAML syntax, storage path (`Memory/Execution/{traceId}/namespace.md`), and post-wave serial flush semantics.
 
@@ -466,13 +466,13 @@ flowchart TD
 - `docs/dev/flow_namespace.md` exists and documents YAML syntax, storage path, and `sharedNamespace` injection.
 - `deno task docs-agent-validate` passes with no broken links.
 
-| Risk                                       | Impact | Likelihood | Mitigation Strategy                                                                                                                                |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ------------------------------------------ | ------ | ---------: | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1: Namespace becomes an unstructured dump | High   |     Medium | Restrict v1 to key-based reads/writes with explicit bindings                                                                                       |
-| R2: Hidden coupling between steps          | Medium |     Medium | Require declared namespace reads/writes in YAML                                                                                                    |
-| R3: File corruption on concurrent writes   | Medium |        Low | Write intents buffered on `IStepResult`; flushed serially in `processWaveResults()` after wave settles, matching `saveCheckpointIfEnabled` pattern |
-| R4: Duplicate data with transforms         | Low    |     Medium | Keep transforms for direct payload routing; namespace for shared context only                                                                      |
-| R5: maxBytes exceeded at runtime           | Medium |        Low | Throw `NamespaceQuotaExceededError` before write; handled in step failure path                                                                     |
+| R1: Namespace becomes an unstructured dump | High | Medium | Restrict v1 to key-based reads/writes with explicit bindings |
+| R2: Hidden coupling between steps | Medium | Medium | Require declared namespace reads/writes in YAML |
+| R3: File corruption on concurrent writes | Medium | Low | Write intents buffered on `IStepResult`; flushed serially in `processWaveResults()` after wave settles, matching `saveCheckpointIfEnabled` pattern |
+| R4: Duplicate data with transforms | Low | Medium | Keep transforms for direct payload routing; namespace for shared context only |
+| R5: maxBytes exceeded at runtime | Medium | Low | Throw `NamespaceQuotaExceededError` before write; handled in step failure path |
 
 ## Success Metrics (Quantitative)
 
@@ -687,16 +687,16 @@ flowchart TD
 
 ### Gap Summary Table
 
-| ID | Gap (short)                                             | Severity       | Plan Section | Blocks Coding? |
-| -- | ------------------------------------------------------- | -------------- | ------------ | -------------- |
-| G1 | `NamespaceQuotaExceededError` undeclared — no location  | 🔴 Critical    | Step 64.2    | ✅ Yes         |
-| G2 | `initializeNamespace` helper signature unspecified      | 🔴 Critical    | Step 64.3    | ✅ Yes         |
-| G3 | LLM `from` dot-path used without sanitization           | 🔒 Security    | Step 64.2    | ⚠️ Conditional |
-| G4 | `FlowReporter.generate()` API change undocumented       | 🔒 Security    | Step 64.4    | ⚠️ Conditional |
-| G5 | Checkpoint-resume + namespace path untested             | 🟠 Testing     | Step 64.3    | ❌ No          |
-| G6 | Inferred types split from `flow.ts` — dual-import       | 🟠 Testing     | Step 64.1    | ❌ No          |
-| G7 | `flowRunId` key breaks checkpoint-resume namespace load | 🟡 Feasibility | Steps 64.2-3 | ✅ Yes         |
-| G8 | `memoryExecution` path join replicates no guard logic   | 🟡 Feasibility | Step 64.2    | ⚠️ Conditional |
+| ID | Gap (short) | Severity | Plan Section | Blocks Coding? |
+| --- | ------------------------------------------------------- | -------------- | ------------ | -------------- |
+| G1 | `NamespaceQuotaExceededError` undeclared — no location | 🔴 Critical | Step 64.2 | ✅ Yes |
+| G2 | `initializeNamespace` helper signature unspecified | 🔴 Critical | Step 64.3 | ✅ Yes |
+| G3 | LLM `from` dot-path used without sanitization | 🔒 Security | Step 64.2 | ⚠️ Conditional |
+| G4 | `FlowReporter.generate()` API change undocumented | 🔒 Security | Step 64.4 | ⚠️ Conditional |
+| G5 | Checkpoint-resume + namespace path untested | 🟠 Testing | Step 64.3 | ❌ No |
+| G6 | Inferred types split from `flow.ts` — dual-import | 🟠 Testing | Step 64.1 | ❌ No |
+| G7 | `flowRunId` key breaks checkpoint-resume namespace load | 🟡 Feasibility | Steps 64.2-3 | ✅ Yes |
+| G8 | `memoryExecution` path join replicates no guard logic | 🟡 Feasibility | Step 64.2 | ⚠️ Conditional |
 
 ---
 
@@ -742,11 +742,11 @@ Resolve in order before writing any implementation code:
 
 ### Phase 3c Gap Summary
 
-| ID  | Gap (short)                                                                                                                    | Severity            | Checklist Item              | In Tests? |
+| ID | Gap (short) | Severity | Checklist Item | In Tests? |
 | --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------- | --------------------------- | --------- |
-| G9  | `ZFlowNamespaceConfig.maxBytes` default `65536` is an inline literal — no `DEFAULT_NAMESPACE_MAX_BYTES` constant              | 🟡 Configurability  | Config-driven vs. hardcoded | ❌        |
-| G10 | All 3 namespace event name strings are inline literals in Step 64.3 — no `FLOW_EVENT_NAMESPACE_*` constants in `constants.ts` | 🟡 Traceability     | Event naming constants      | ❌        |
-| G11 | No test asserting namespace event payload fields for `flow.namespace.initialized` or `flow.namespace.write`                   | 🟠 Traceability     | Event assertions in tests   | ❌        |
+| G9 | `ZFlowNamespaceConfig.maxBytes` default `65536` is an inline literal — no `DEFAULT_NAMESPACE_MAX_BYTES` constant | 🟡 Configurability | Config-driven vs. hardcoded | ❌ |
+| G10 | All 3 namespace event name strings are inline literals in Step 64.3 — no `FLOW_EVENT_NAMESPACE_*` constants in `constants.ts` | 🟡 Traceability | Event naming constants | ❌ |
+| G11 | No test asserting namespace event payload fields for `flow.namespace.initialized` or `flow.namespace.write` | 🟠 Traceability | Event assertions in tests | ❌ |
 
 ### Phase 3c Detailed Gap Entries
 

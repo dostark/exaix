@@ -36,13 +36,13 @@ topics: [
 
 ### Key Files
 
-| File                                              | Current Role              | Gap                                           |
+| File | Current Role | Gap |
 | ------------------------------------------------- | ------------------------- | --------------------------------------------- |
-| `src/services/plan/plan_executor.ts`              | Executes approved plans   | No amendment lifecycle                        |
-| `src/services/agent/agent_executor.ts`            | Runs plan steps           | No trigger path for plan amendment proposals  |
-| `src/services/utils/confidence_scorer.ts`         | Scores output quality     | No amendment threshold integration            |
-| `src/services/core/event_logger.ts`               | Journals execution events | No amendment proposal / approval event family |
-| `src/services/notification/notification.ts`       | User-facing notifications | No amendment approval prompt path             |
+| `src/services/plan/plan_executor.ts` | Executes approved plans | No amendment lifecycle |
+| `src/services/agent/agent_executor.ts` | Runs plan steps | No trigger path for plan amendment proposals |
+| `src/services/utils/confidence_scorer.ts` | Scores output quality | No amendment threshold integration |
+| `src/services/core/event_logger.ts` | Journals execution events | No amendment proposal / approval event family |
+| `src/services/notification/notification.ts` | User-facing notifications | No amendment approval prompt path |
 
 ### Constraints
 
@@ -237,12 +237,12 @@ flowchart TD
 
 ## Risks & Mitigations
 
-| Risk                                        | Impact | Likelihood | Mitigation Strategy                                                       |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ------------------------------------------- | ------ | ---------: | ------------------------------------------------------------------------- |
-| R1: Amendment spam from noisy thresholds    | High   |     Medium | Configurable threshold policy and minimum trigger severity                |
-| R2: Human approval fatigue                  | Medium |     Medium | Require concise diffs and limit v1 to high-signal triggers                |
-| R3: Patch corrupts remaining plan structure | High   |        Low | Validate amended plan through existing plan schema before apply           |
-| R4: Pause/resume bugs strand executions     | High   |     Medium | Reuse checkpointing semantics from Phase 63 and add explicit resume tests |
+| R1: Amendment spam from noisy thresholds | High | Medium | Configurable threshold policy and minimum trigger severity |
+| R2: Human approval fatigue | Medium | Medium | Require concise diffs and limit v1 to high-signal triggers |
+| R3: Patch corrupts remaining plan structure | High | Low | Validate amended plan through existing plan schema before apply |
+| R4: Pause/resume bugs strand executions | High | Medium | Reuse checkpointing semantics from Phase 63 and add explicit resume tests |
 
 ## Success Metrics (Quantitative)
 
@@ -266,80 +266,80 @@ flowchart TD
 
 ### Gap Summary
 
-| ID  | Sev       | Area                            | Resolution                                                         |
+| ID | Sev | Area | Resolution |
 | --- | --------- | ------------------------------- | ------------------------------------------------------------------ |
-| G1  | 🔴 Critical | All 5 Key File paths incorrect  | Corrected to actual src paths; Interfaces Affected updated         |
-| G2  | 🔴 Critical | Pause/resume mechanism missing  | Checkpoint-then-halt pattern documented in Step 66.3 Arch Notes    |
-| G3  | 🟡 Major  | `z.unknown()` in adds/updates   | Replaced with typed `IPlanStep`-shape object schema                |
-| G4  | 🟡 Major  | `remainingSteps` source unclear | `context.steps.filter(s > current)` documented in Step 66.2       |
-| G5  | 🟠 Moderate | `ConfidenceScorer` injection    | Optional `confidenceScorer?` in `IPlanExecutorOptions` documented  |
-| G6  | 🟠 Moderate | Artifact storage path missing   | `Memory/Execution/{traceId}/amendments/` + constant documented     |
-| G7  | 🟠 Moderate | `IMemoryNotification.type` gap  | Amendment variants added to Interfaces Affected entry              |
-| G8  | 🔒 Security | UUID constraint missing (A1)    | `z.string().uuid()` on amendmentId/planId; note in Step 66.1      |
-| G9  | 🔒 Security | LLM summary unsanitized (A8)    | Sanitization spec + `sanitizePrompt()` ref in Step 66.3            |
-| G10 | 🔵 Style  | `1. **Actions**` violates §F    | All 4 steps reformatted to `#### Actions` H4 subsections           |
-| G11 | 🔵 Style  | `## Usage` is AI meta-content   | Section removed                                                    |
+| G1 | 🔴 Critical | All 5 Key File paths incorrect | Corrected to actual src paths; Interfaces Affected updated |
+| G2 | 🔴 Critical | Pause/resume mechanism missing | Checkpoint-then-halt pattern documented in Step 66.3 Arch Notes |
+| G3 | 🟡 Major | `z.unknown()` in adds/updates | Replaced with typed `IPlanStep`-shape object schema |
+| G4 | 🟡 Major | `remainingSteps` source unclear | `context.steps.filter(s > current)` documented in Step 66.2 |
+| G5 | 🟠 Moderate | `ConfidenceScorer` injection | Optional `confidenceScorer?` in `IPlanExecutorOptions` documented |
+| G6 | 🟠 Moderate | Artifact storage path missing | `Memory/Execution/{traceId}/amendments/` + constant documented |
+| G7 | 🟠 Moderate | `IMemoryNotification.type` gap | Amendment variants added to Interfaces Affected entry |
+| G8 | 🔒 Security | UUID constraint missing (A1) | `z.string().uuid()` on amendmentId/planId; note in Step 66.1 |
+| G9 | 🔒 Security | LLM summary unsanitized (A8) | Sanitization spec + `sanitizePrompt()` ref in Step 66.3 |
+| G10 | 🔵 Style | `1. **Actions**` violates §F | All 4 steps reformatted to `#### Actions` H4 subsections |
+| G11 | 🔵 Style | `## Usage` is AI meta-content | Section removed |
 
 ### Gap Details
 
-**G1 🔴 — Key File Paths (all 5 wrong)**
-Original doc referenced `src/services/plan_executor.ts`, `src/services/agent_executor.ts`,
+## G1 🔴 — Key File Paths (all 5 wrong)
+
 `src/services/confidence_scorer.ts`, `src/services/event_logger.ts`, and
 `src/services/notification.ts`. Actual paths verified by search:
 `src/services/plan/plan_executor.ts`, `src/services/agent/agent_executor.ts`,
 `src/services/utils/confidence_scorer.ts`, `src/services/core/event_logger.ts`,
 `src/services/notification/notification.ts`.
 
-**G2 🔴 — Execution Pause/Resume Undefined**
-The original doc stated "Approval must pause the execution state until a decision is recorded"
+## G2 🔴 — Execution Pause/Resume Undefined
+
 but gave no concrete mechanism. Resolved: checkpoint-then-halt semantics using Phase 63
 `FlowCheckpointService` pattern; `PlanAmendmentPendingError` thrown; `ExecutionLoop` leaves
 plan at `amendment_pending`; CLI `exactl plan amendment approve <id>` triggers resume.
 
-**G3 🟡 — `z.array(z.unknown())` Type Erasure**
-`adds` and `updates` fields used `z.unknown()`, preventing compile-time safety for step
+## G3 🟡 — `z.array(z.unknown())` Type Erasure
+
 objects. Replaced with `z.object({ number, title, content })` matching `IPlanStep` shape.
 
-**G4 🟡 — `remainingSteps` Source Not Specified**
-`proposeAmendment()` accepts `remainingSteps` but the doc didn't say how `PlanExecutor`
+## G4 🟡 — `remainingSteps` Source Not Specified
+
 computes them. Resolved: `context.steps.filter(s => s.number > currentStep.number)`.
 No public API change to `PlanExecutor` needed.
 
-**G5 🟠 — `ConfidenceScorer` Injection Path**
-`ConfidenceScorer` is in `src/services/utils/confidence_scorer.ts` and is NOT a dependency
+## G5 🟠 — `ConfidenceScorer` Injection Path
+
 of `AgentExecutor`. Resolved: inject as optional via `IPlanExecutorOptions.confidenceScorer?`;
 called with `assessQuick(result.description)` after each step execution.
 
-**G6 🟠 — Amendment Artifact Storage Path**
-No storage path was specified. Resolved: `Memory/Execution/{traceId}/amendments/{amendmentId}.json`.
+## G6 🟠 — Amendment Artifact Storage Path
+
 New constant `AMENDMENT_ARTIFACTS_DIR = 'amendments'` in `src/shared/constants.ts`. Uses
 the defensive join pattern from `FlowCheckpointService.getCheckpointPath()`.
 
-**G7 🟠 — `IMemoryNotification.type` Not Extended**
-`renderNotificationPanel` in `src/services/notification/notification.ts` uses a closed
+## G7 🟠 — `IMemoryNotification.type` Not Extended
+
 `messageColorByType` map. Amendment types would silently fall through. Resolved: Interfaces
 Affected now specifies extending `type` with four amendment variants and adding color entries.
 
-**G8 🔒 — No UUID Constraint on IDs (OWASP A1)**
-`amendmentId` and `planId` as plain `z.string()` allow path traversal when used in file
+## G8 🔒 — No UUID Constraint on IDs (OWASP A1)
+
 path construction. Resolved: `z.string().uuid()` on both fields in `ZPlanAmendmentPatch`
 and `ZPlanAmendmentDecision`; architecture note added in Step 66.1.
 
-**G9 🔒 — LLM `summary` Unsanitized (OWASP A8)**
-LLM-generated `summary` could contain YAML delimiters or null bytes enabling prompt injection
+## G9 🔒 — LLM `summary` Unsanitized (OWASP A8)
+
 when persisted to YAML artifacts or shown in notifications. Resolved: strip `---`, `\x00`,
 cap at 500 chars; reference `sanitizePrompt()` in Step 66.3 architecture note.
 
-**G10 🔵 — Wrong Step Section Format (§F Violation)**
-Steps used `1. **Actions** / 1. **Architecture Notes** / ...` (ordered list items). §F
+## G10 🔵 — Wrong Step Section Format (§F Violation)
+
 mandates `#### Actions / #### Architecture Notes / #### Planned Tests / #### Success Criteria`.
 All 4 steps (66.1–66.4) reformatted.
 
-**G11 🔵 — AI Meta-Commentary in `## Usage`**
-The `## Usage` section at end of document was AI-generated commentary explaining how to use
+## G11 🔵 — AI Meta-Commentary in `## Usage`
+
 the document. Not part of the standard planning doc format. Section removed.
 
-### Pre-Implementation Actions
+## Pre-Implementation Actions
 
 - [ ] Verify `sanitizePrompt()` exists and is exported from `src/services/agent/agent_executor.ts`
 - [ ] Confirm `FlowCheckpointService.getCheckpointPath()` pattern for use in artifact storage
@@ -357,13 +357,13 @@ the document. Not part of the standard planning doc format. Section removed.
 
 ### Phase 3c Gap Summary
 
-| ID  | Gap (short)                                                                                            | Severity            | Checklist Item              | In Tests? |
+| ID | Gap (short) | Severity | Checklist Item | In Tests? |
 | --- | ------------------------------------------------------------------------------------------------------ | ------------------- | --------------------------- | --------- |
-| G12 | 4 of 5 amendment lifecycle event names unspecified — only `plan.amendment.awaiting_approval` is named  | 🔴 Traceability     | Audit chain completeness    | ❌        |
-| G13 | Amendment event names are inline literals — no `PLAN_AMENDMENT_EVENT_*` constants in `constants.ts`   | 🟡 Traceability     | Event naming constants      | ❌        |
-| G14 | Amendment event payloads untyped — no field lists for any amendment event                              | 🟡 Traceability     | Event payload typing        | ❌        |
-| G15 | `amendmentThreshold` not declared in any Zod config schema; enable/disable config key absent           | 🟡 Configurability  | Config schema declaration   | ❌        |
-| G16 | Amendment expiry timeout (Step 66.4) has no default constant and no config schema field                | 🟡 Configurability  | Config-driven vs. hardcoded | ❌        |
+| G12 | 4 of 5 amendment lifecycle event names unspecified — only `plan.amendment.awaiting_approval` is named | 🔴 Traceability | Audit chain completeness | ❌ |
+| G13 | Amendment event names are inline literals — no `PLAN_AMENDMENT_EVENT_*` constants in `constants.ts` | 🟡 Traceability | Event naming constants | ❌ |
+| G14 | Amendment event payloads untyped — no field lists for any amendment event | 🟡 Traceability | Event payload typing | ❌ |
+| G15 | `amendmentThreshold` not declared in any Zod config schema; enable/disable config key absent | 🟡 Configurability | Config schema declaration | ❌ |
+| G16 | Amendment expiry timeout (Step 66.4) has no default constant and no config schema field | 🟡 Configurability | Config-driven vs. hardcoded | ❌ |
 
 ### Phase 3c Detailed Gap Entries
 
@@ -373,16 +373,17 @@ the document. Not part of the standard planning doc format. Section removed.
 - **Location in plan:** Step 66.3 Architecture Notes — "emits `plan.amendment.awaiting_approval`"; Step 66.4 Actions — "Emit amendment lifecycle events"; Step 66.4 Success Criteria — "Journal and reports show proposal, decision, and resume events"
 - **Problem:** The plan names exactly one event. The full amendment lifecycle introduces six state transitions requiring journal coverage:
 
-  | Transition                   | Expected event                            | Status     |
-  | ---------------------------- | ----------------------------------------- | ---------- |
-  | Trigger threshold crossed    | `plan.amendment.proposed`                 | ❌ unnamed |
-  | Proposal recorded, gate open | `plan.amendment.awaiting_approval`        | ✅ named   |
-  | Decision = approved          | `plan.amendment.approved`                 | ❌ unnamed |
-  | Decision = rejected          | `plan.amendment.rejected`                 | ❌ unnamed |
-  | TTL elapsed without decision | `plan.amendment.expired`                  | ❌ unnamed |
-  | Amended plan resumed         | `plan.amendment.applied`                  | ❌ unnamed |
+| Transition | Expected event | Status |
+| ---------------------------- | ----------------------------------------- | ---------- |
+| Trigger threshold crossed | `plan.amendment.proposed` | ❌ unnamed |
+| Proposal recorded, gate open | `plan.amendment.awaiting_approval` | ✅ named |
+| Decision = approved | `plan.amendment.approved` | ❌ unnamed |
+| Decision = rejected | `plan.amendment.rejected` | ❌ unnamed |
+| TTL elapsed without decision | `plan.amendment.expired` | ❌ unnamed |
+| Amended plan resumed | `plan.amendment.applied` | ❌ unnamed |
 
   Without canonical names, each implementer chooses arbitrary strings, creating an incoherent audit trail.
+
 - **Impact:** The amendment governance model depends on journaled events for compliance and human review surfaces. Missing event names mean some transitions leave no searchable trace, breaking audit completeness — a critical failure for a human-in-loop governance feature.
 - **To fix:** Name all five missing events in Architecture Notes and add them as constants (see Step 66.5 below).
 
