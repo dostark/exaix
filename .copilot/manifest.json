@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T11:58:41.732Z",
+  "generated_at": "2026-04-08T12:09:08.387Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1511,7 +1511,7 @@
       "scope": "dev",
       "title": "Phase 69: Token & Cost Persistence",
       "short_summary": "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",

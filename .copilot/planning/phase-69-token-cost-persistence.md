@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 69: Token & Cost Persistence"
 short_summary: "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI."
-version: "1.1"
+version: "1.2"
 topics: ["planning", "roadmap", "architecture", "tdd", "finops", "tokens", "cost", "metrics", "journal"]
 ---
 
@@ -26,11 +26,11 @@ topics: ["planning", "roadmap", "architecture", "tdd", "finops", "tokens", "cost
 
 ### Key Files
 
-| File                                      | Current Role                          | Gap                                      |
+| File | Current Role | Gap |
 | ----------------------------------------- | ------------------------------------- | ---------------------------------------- |
-| `src/services/providers/base_provider.ts` | Defines provider generation contracts | Returns `text` only, dropping usage data |
-| `src/services/event_logger.ts`            | Records execution events              | No schema fields for tokens/cost         |
-| `src/cli/main.ts`                         | CLI routing                           | Lacks cost reporting commands            |
+| `src/ai/providers/base_provider.ts` | Defines provider generation contracts | Returns `content` only, dropping usage data |
+| `src/services/core/event_logger.ts` | Records execution events | No schema fields for tokens/cost |
+| `src/cli/main.ts` | CLI routing | Lacks cost reporting commands |
 
 ### Constraints
 
@@ -39,8 +39,9 @@ topics: ["planning", "roadmap", "architecture", "tdd", "finops", "tokens", "cost
 
 ### Interfaces Affected
 
-- `src/services/providers/base_provider.ts:IModelProvider`
-- `src/services/event_logger.ts:IActivityJournal`
+- `src/ai/providers/base_provider.ts:BaseProvider`
+- `src/ai/types.ts:IModelProvider`
+- `src/services/core/event_logger.ts:IEventLogger`
 
 ## Technical Architecture & Detailed Design
 
@@ -51,31 +52,33 @@ export const ZTokenUsage = z.object({
   promptTokens: z.number().int().min(0),
   completionTokens: z.number().int().min(0),
   totalTokens: z.number().int().min(0),
-  costUsdEstimate: z.number().min(0).optional(),
 });
 
 export type ITokenUsage = z.infer<typeof ZTokenUsage>;
 
-// Update to existing generation result
-export const ZGenerationResult = z.object({
-  text: z.string(),
-  usage: ZTokenUsage.optional(),
-  model: z.string(), // Exact model used, for pricing lookups
-});
+// Amend existing IGenerateResult in src/ai/providers/common.ts — do NOT create a new type.
+// Add the optional cost_usd field; keep the existing content/usage/model/provider fields.
+// IGenerateResult (amended) =
+//   content: string          ← already exists (was never "text")
+//   usage: ITokenUsage       ← already exists
+//   model: string            ← already exists
+//   provider: string         ← already exists
+//   cost_usd?: number        ← NEW: populated by CostTracker.estimateCost() after generation
 ```
 
 ### Interfaces
 
 ```ts
-export interface IPricingTable {
-  [modelName: string]: {
-    promptPer1k: number;
-    completionPer1k: number;
-  };
-}
-
-export interface ICostCalculatorService {
-  calculate(model: string, usage: ITokenUsage): number;
+// ICostCalculatorService is NOT a new class — cost estimation is already
+// implemented in src/ai/provider_common_utils.ts:calculateCost() and
+// src/services/cost/cost_tracker.ts:CostTracker.
+// Step 69.2 extends CostTracker with persistEntry() and queryByCriteria() rather
+// than introducing a competing implementation.
+export interface ICostFilter {
+  traceId?: string;
+  portal?: string;
+  since?: Date;
+  model?: string;
 }
 ```
 
@@ -94,57 +97,88 @@ flowchart TD
 
 ### Design Decisions
 
-- **Client-Side Pricing Calculation**: APIs often change pricing or only return tokens. We maintain a local `pricing_table.json` (or constant map) updated periodically to estimate USD cost.
-- **Journal Attachment**: Usage is attached to the `agent.generation*completed` or `tool.end` events, ensuring we can aggregate by `trace*id`, `portal`, or `agent_id`.
+- **Client-Side Pricing Calculation**: APIs often change pricing or only return tokens. `CostTracker` (at `src/services/cost/cost_tracker.ts`) maintains the pricing table already; `calculateCost()` in `src/ai/provider_common_utils.ts` implements the formula. No new calculator service is needed.
+- **Journal Attachment**: Usage is attached to the `AGENT_GENERATION_COMPLETED` event (constant defined in Step 69.0 / `src/constants.ts`), ensuring we can aggregate by `trace_id`, `portal`, or `agent_id`. Cost is stored as `cost_usd` (snake_case, matching the SQL schema convention).
 
 ## Implementation Plan (Step-by-Step)
+
+### Step 69.0: Define Cost & Event Constants
+
+1. **Actions**
+
+- Add the following constant to `src/constants.ts`:
+  - `AGENT_GENERATION_COMPLETED = "agent.generation_completed"`
+
+1. **Architecture Notes**
+
+- All subsequent steps must use `AGENT_GENERATION_COMPLETED` rather than the inline string `"agent.generation_completed"` when emitting or handling generation events.
+- Field convention for SQL persistence is `cost_usd` (snake_case); TypeScript domain objects may surface this as `costUsd` via a repository mapping layer, but the DB column name must remain `cost_usd`.
+
+1. **Planned Tests**
+
+- No dedicated test file; the constant is exercised by tests in Steps 69.3 and 69.4.
+
+1. **Success Criteria**
+
+- `src/constants.ts` exports `AGENT_GENERATION_COMPLETED` without compile errors.
+- No inline string `"agent.generation_completed"` appears in Steps 69.1–69.4 implementation files.
 
 ### Step 69.1: Provider Return Type Updates
 
 1. **Actions**
 
-- Update `IModelProvider.generate()` to return `IGenerationResult` instead of a plain string.
-- Update `ClaudeProvider`, `OpenAIProvider`, `OllamaProvider` (returns tokens, cost 0) to parse and map their respective usage objects.
+- Extend `IGenerateResult` in `src/ai/providers/common.ts` with an optional `cost_usd?: number` field.
+- Update `ClaudeProvider`, `OpenAIProvider`, `OllamaProvider` to parse and map their respective usage objects into `IGenerateResult.usage`; call `calculateCost()` from `src/ai/provider_common_utils.ts` to populate `cost_usd`.
 
 1. **Architecture Notes**
 
-- Refactor `AgentExecutor` and `ReflexiveAgent` to unpack `result.text` while preserving `result.usage`.
+- **Full call-site audit required before merging.** Run `grep -rn '\.generate('` across the codebase. Known call sites that must be updated:
+  - `src/ai/rate_limited_provider.ts:RateLimitedProvider.generate()` — delegate wrapper; must forward `cost_usd` from the inner result.
+  - `src/ai/providers/lazy_provider.ts:LazyProvider.generate()` — delegate wrapper; same as above.
+  - `src/services/agent/strategies/react_loop_strategy.ts:ReActLoopStrategy.execute()` — primary call site for agent LLM steps.
+  - `src/services/plan/plan_executor.ts:PlanExecutor` — calls provider for plan steps.
+  - `AgentExecutor` and `ReflexiveAgent` — must unpack `result.content` (not `result.text`) and preserve `result.usage` and `result.cost_usd`.
+  - All test mock factories for `IModelProvider` — `generate()` return type must be updated.
 
 1. **Planned Tests**
 
-- `tests/unit/services/providers/provider*usage*mapping_test.ts`
+- `tests/ai/providers/provider_usage_mapping_test.ts`
 
 1. **Success Criteria**
 
-- All active providers successfully return token counts.
-- Orchestration layer correctly handles the new return object.
+- All active providers successfully return token counts in `IGenerateResult.usage`.
+- Orchestration layer correctly handles `result.content` (not `result.text`) from the updated return type.
 
-### Step 69.2: Cost Calculator Service
+### Step 69.2: Extend CostTracker for Persistence and Querying
 
 1. **Actions**
 
-- Create `src/services/finops/cost_calculator.ts`.
-- Implement a lookup table for current major models (GPT-4o, Claude 3.5 Sonnet, etc.).
-- Inject cost estimates into the `ZTokenUsage` object before it hits the logger.
+- Extend `CostTracker` in `src/services/cost/cost_tracker.ts` with:
+  - `persistEntry(record: IProviderCostRecord): Promise<void>` — writes a per-generation record to SQLite.
+  - `queryByCriteria(filter: ICostFilter): Promise<IProviderCostRecord[]>` — filters by `traceId`, `portal`, `since`, and `model`.
+- Do **not** create `src/services/finops/cost_calculator.ts` — this would duplicate the existing `calculateCost()` in `src/ai/provider_common_utils.ts` and the pricing table already in `CostTracker`.
 
 1. **Architecture Notes**
 
-- Missing models default to a $0.00 estimate but preserve accurate token counts.
+- Missing models default to a $0.00 `cost_usd` estimate but preserve accurate token counts.
+- All cost computation must use the single `calculateCost()` function from `src/ai/provider_common_utils.ts` to ensure consistent pricing across the codebase.
 
 1. **Planned Tests**
 
-- `tests/unit/services/finops/cost*calculator*test.ts`
+- `tests/services/cost/cost_tracker_test.ts` (extend existing file with persistence and query-filter assertions)
 
 1. **Success Criteria**
 
-- Accurate USD calculations for prompt + completion combinations based on the table.
+- Accurate USD calculations for prompt + completion combinations based on the pricing table.
+- `queryByCriteria` correctly filters records by all supported filter dimensions.
 
 ### Step 69.3: Journal Schema & Logging
 
 1. **Actions**
 
-- Update `IActivityJournal` schema and SQLite/Postgres schemas to include `prompt*tokens`, `completion*tokens`, and `cost_usd`.
-- Ensure `EventLogger.log()` persists these fields when present in the payload.
+- Update `IEventLogger` schema and SQLite schema to include `prompt_tokens`, `completion_tokens`, and `cost_usd`.
+- Ensure `EventLogger.log()` in `src/services/core/event_logger.ts` persists these fields when present in the payload.
+- Emit cost data under the `AGENT_GENERATION_COMPLETED` event name (from Step 69.0).
 
 1. **Architecture Notes**
 
@@ -152,7 +186,7 @@ flowchart TD
 
 1. **Planned Tests**
 
-- `tests/integration/services/event*logger*cost*persistence*test.ts`
+- `tests/integration/services/event_logger_cost_persistence_test.ts`
 
 1. **Success Criteria**
 
@@ -165,6 +199,7 @@ flowchart TD
 - Create `src/cli/commands/log_cost.ts`.
 - Implement `exactl log cost [--trace <id>] [--portal <name>] [--since <date>]`.
 - Use SQL aggregations (`SUM(prompt_tokens)`, etc.) for fast reporting.
+- **All filter values (`--trace`, `--portal`, `--since`) MUST be passed as parameterized SQLite bind parameters** (e.g., `db.query('... WHERE trace_id = ?', [traceId])`) — never string-interpolated into query statements (OWASP A03 — SQL Injection).
 
 1. **Architecture Notes**
 
@@ -172,7 +207,7 @@ flowchart TD
 
 1. **Planned Tests**
 
-- `tests/cli/log*cost*command_test.ts`
+- `tests/cli/log_cost_command_test.ts` — include a security test asserting that passing `'; DROP TABLE costs;--` as `--trace` produces an error or empty result, not a DB mutation (OWASP A03).
 
 1. **Success Criteria**
 
@@ -181,10 +216,10 @@ flowchart TD
 
 ## Risks & Mitigations
 
-| Risk                          | Impact | Likelihood | Mitigation Strategy                                                                      |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ----------------------------- | ------ | ---------: | ---------------------------------------------------------------------------------------- |
-| R1: Pricing table drift       | Low    |       High | Treat USD as an "estimate". Add a note in CLI output. Tokens are the source of truth.    |
-| R2: Streaming usage omissions | Medium |     Medium | Some APIs don't send usage in streams. Ensure the final chunk is parsed for usage stats. |
+| R1: Pricing table drift | Low | High | Treat USD as an "estimate". Add a note in CLI output. Tokens are the source of truth. |
+| R2: Streaming usage omissions | Medium | Medium | Some APIs don't send usage in streams. Ensure the final chunk is parsed for usage stats. |
 
 ## Success Metrics (Quantitative)
 
@@ -200,23 +235,23 @@ flowchart TD
 
 ## Pre-Gap Analysis — 2026-04-08
 
-### Assessment: 4 critical duplication/interface errors + 1 security gap must be resolved before coding
+### Assessment: ✅ All 8 gaps resolved — plan updated 2026-04-08; ready for implementation
 
-> This section was added by pre-gap analysis on 2026-04-08. All gaps must be
-> resolved and the plan updated before implementation of any affected step.
+> Initial gaps were identified by pre-gap analysis on 2026-04-08. All gaps have been
+> resolved in the plan body above. This section is retained as a record.
 
 ### Gap Summary
 
 | ID | Gap (short) | Severity | Plan Section | Blocks Coding? |
-| -- | ----------- | -------- | ------------ | -------------- |
-| G1 | File paths for `base_provider.ts` and `IModelProvider` are wrong | 🔴 Critical | Key Files / Interfaces Affected / Steps 69.1–69.2 | ✅ Yes |
-| G2 | `IActivityJournal` interface does not exist — real interface is `IEventLogger` at wrong path | 🔴 Critical | Key Files / Interfaces Affected / Step 69.4 | ✅ Yes |
-| G3 | `ZGenerationResult` duplicates `IGenerateResult` with conflicting field names | 🔴 Critical | Technical Architecture / Step 69.2 | ✅ Yes |
-| G4 | `src/services/finops/cost_calculator.ts` would duplicate `calculateCost()` and `CostTracker` already in codebase | 🔴 Critical | Key Files / Step 69.3 | ✅ Yes |
-| G5 | `provider.generate()` call-site audit is incomplete — plan lists 2 of ~5 affected sites | 🟡 Feasibility | Step 69.2 | ⚠️ Conditionally |
-| G6 | Test paths `tests/unit/services/providers/` and `tests/unit/services/finops/` don't exist | 🟠 Testing | Step 69.1 / Step 69.3 | ❌ No |
-| G7 | CLI `--trace`/`--portal`/`--since` values may feed SQL queries — parameterized query requirement not stated | 🔒 Security | Step 69.4 | ⚠️ Conditionally |
-| G8 | `agent.generation*completed` event name is an inline string; `costUsdEstimate` conflicts with existing `cost*usd` field convention in `TokenMap` | 🟡 Traceability | Step 69.3 / Technical Architecture | ❌ No |
+| --- | ----------- | -------- | ------------ | -------------- |
+| G1 | File paths for `base_provider.ts` and `IModelProvider` are wrong | 🔴 Critical | Key Files / Interfaces Affected / Steps 69.1–69.2 | ✅ Resolved |
+| G2 | `IActivityJournal` interface does not exist — real interface is `IEventLogger` at wrong path | 🔴 Critical | Key Files / Interfaces Affected / Step 69.4 | ✅ Resolved |
+| G3 | `ZGenerationResult` duplicates `IGenerateResult` with conflicting field names | 🔴 Critical | Technical Architecture / Step 69.2 | ✅ Resolved |
+| G4 | `src/services/finops/cost_calculator.ts` would duplicate `calculateCost()` and `CostTracker` already in codebase | 🔴 Critical | Key Files / Step 69.3 | ✅ Resolved |
+| G5 | `provider.generate()` call-site audit is incomplete — plan lists 2 of ~5 affected sites | 🟡 Feasibility | Step 69.2 | ✅ Resolved |
+| G6 | Test paths `tests/unit/services/providers/` and `tests/unit/services/finops/` don't exist | 🟠 Testing | Step 69.1 / Step 69.3 | ✅ Resolved |
+| G7 | CLI `--trace`/`--portal`/`--since` values may feed SQL queries — parameterized query requirement not stated | 🔒 Security | Step 69.4 | ✅ Resolved |
+| G8 | `agent.generation_completed` event name is an inline string; `costUsdEstimate` conflicts with existing `cost_usd` field convention in `TokenMap` | 🟡 Traceability | Step 69.3 / Technical Architecture | ✅ Resolved |
 
 ### Detailed Gap Entries
 
@@ -294,12 +329,12 @@ flowchart TD
 
 ## Pre-Implementation Actions
 
-Resolve in order before writing any implementation code:
+> ✅ All actions completed — resolved in plan body above (2026-04-08).
 
-1. **(G1 + G2)** Correct all file paths in Key Files, Interfaces Affected, and step Actions — use `src/ai/providers/base*provider.ts`, `src/ai/types.ts:IModelProvider`, `src/services/core/event*logger.ts:IEventLogger`.
-1. **(G3)** Remove `ZGenerationResult` from the plan; describe extending `IGenerateResult` with an optional `cost?: ICostEntry` field instead.
-1. **(G4)** Remove `src/services/finops/cost*calculator.ts` from the plan; redirect Step 69.3 to extend `CostTracker` at `src/services/cost/cost*tracker.ts`.
-1. **(G5)** Add a comprehensive `generate()` call-site table to Step 69.2 (`RateLimitedProvider`, `LazyProvider`, `ReActLoopStrategy`, `PlanExecutor`, test mocks).
-1. **(G7)** Add an explicit Action to Step 69.4 mandating parameterized SQL bind parameters for all CLI filter values, with a security test.
-1. **(G6)** Correct test paths to `tests/ai/providers/` and `tests/services/cost/`.
-1. **(G8)** Add `AGENT*GENERATION*COMPLETED` constant to `src/constants.ts`; align `costUsdEstimate` field name with `cost_usd` SQL convention.
+1. **(G1 + G2)** ✅ Corrected all file paths — `src/ai/providers/base_provider.ts`, `src/ai/types.ts:IModelProvider`, `src/services/core/event_logger.ts:IEventLogger`.
+1. **(G3)** ✅ Removed `ZGenerationResult`; plan now extends `IGenerateResult` with `cost_usd?: number`.
+1. **(G4)** ✅ Removed `src/services/finops/cost_calculator.ts`; Step 69.2 redirected to extend `CostTracker`.
+1. **(G5)** ✅ Added comprehensive call-site table to Step 69.1 Architecture Notes.
+1. **(G7)** ✅ Parameterized SQL binding mandated in Step 69.4 Actions with OWASP A03 citation and security test requirement.
+1. **(G6)** ✅ Test paths corrected to `tests/ai/providers/` and `tests/services/cost/`.
+1. **(G8)** ✅ Step 69.0 added for `AGENT_GENERATION_COMPLETED` constant; `costUsdEstimate` replaced with `cost_usd` throughout.
