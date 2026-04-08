@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning"
 short_summary: "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable."
-version: "1.2"
+version: "1.3"
 topics: [
   "planning",
   "roadmap",
@@ -346,3 +346,169 @@ the document. Not part of the standard planning doc format. Section removed.
 - [ ] Add `AMENDMENT_ARTIFACTS_DIR` constant to `src/shared/constants.ts` before Step 66.3
 - [ ] Extend `IMemoryNotification` type union and `messageColorByType` map before Step 66.3
 - [ ] Ensure `IPlanExecutorOptions` interface is exported; add `confidenceScorer?` field in Step 66.2
+
+---
+
+## Phase 3c Review — Traceability & Configurability
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#pre-gap-analysis` Phase 3c
+> **Scope:** Event naming constants, payload typing, audit chain completeness, config schema declaration
+
+### Phase 3c Gap Summary
+
+| ID  | Gap (short)                                                                                            | Severity            | Checklist Item              | In Tests? |
+| --- | ------------------------------------------------------------------------------------------------------ | ------------------- | --------------------------- | --------- |
+| G12 | 4 of 5 amendment lifecycle event names unspecified — only `plan.amendment.awaiting_approval` is named  | 🔴 Traceability     | Audit chain completeness    | ❌        |
+| G13 | Amendment event names are inline literals — no `PLAN_AMENDMENT_EVENT_*` constants in `constants.ts`   | 🟡 Traceability     | Event naming constants      | ❌        |
+| G14 | Amendment event payloads untyped — no field lists for any amendment event                              | 🟡 Traceability     | Event payload typing        | ❌        |
+| G15 | `amendmentThreshold` not declared in any Zod config schema; enable/disable config key absent           | 🟡 Configurability  | Config schema declaration   | ❌        |
+| G16 | Amendment expiry timeout (Step 66.4) has no default constant and no config schema field                | 🟡 Configurability  | Config-driven vs. hardcoded | ❌        |
+
+### Phase 3c Detailed Gap Entries
+
+#### G12 — 🔴 Traceability: 4 of 5 amendment lifecycle event names unspecified
+
+- **Checklist item:** Audit chain completeness
+- **Location in plan:** Step 66.3 Architecture Notes — "emits `plan.amendment.awaiting_approval`"; Step 66.4 Actions — "Emit amendment lifecycle events"; Step 66.4 Success Criteria — "Journal and reports show proposal, decision, and resume events"
+- **Problem:** The plan names exactly one event. The full amendment lifecycle introduces six state transitions requiring journal coverage:
+
+  | Transition                   | Expected event                            | Status     |
+  | ---------------------------- | ----------------------------------------- | ---------- |
+  | Trigger threshold crossed    | `plan.amendment.proposed`                 | ❌ unnamed |
+  | Proposal recorded, gate open | `plan.amendment.awaiting_approval`        | ✅ named   |
+  | Decision = approved          | `plan.amendment.approved`                 | ❌ unnamed |
+  | Decision = rejected          | `plan.amendment.rejected`                 | ❌ unnamed |
+  | TTL elapsed without decision | `plan.amendment.expired`                  | ❌ unnamed |
+  | Amended plan resumed         | `plan.amendment.applied`                  | ❌ unnamed |
+
+  Without canonical names, each implementer chooses arbitrary strings, creating an incoherent audit trail.
+- **Impact:** The amendment governance model depends on journaled events for compliance and human review surfaces. Missing event names mean some transitions leave no searchable trace, breaking audit completeness — a critical failure for a human-in-loop governance feature.
+- **To fix:** Name all five missing events in Architecture Notes and add them as constants (see Step 66.5 below).
+
+---
+
+#### G13 — 🟡 Traceability: Amendment event names are inline literals
+
+- **Checklist item:** Event naming constants
+- **Location in plan:** Step 66.3 Architecture Notes — `"plan.amendment.awaiting_approval"` as a quoted string
+- **Problem:** Even the one named event appears as an inline string literal. The pre-gap G6 fix added `AMENDMENT_ARTIFACTS_DIR` to `src/shared/constants.ts`, but no event-name constants were included. The `FLOW_EVENT_*` constant pattern from other phases is not applied here.
+- **Impact:** A rename of `plan.amendment.awaiting_approval` has no type-safety guard; the compiler cannot flag missed replacement sites.
+- **To fix:** Add `PLAN_AMENDMENT_EVENT_*` constants to `src/shared/constants.ts` as part of Step 66.5.
+
+---
+
+#### G14 — 🟡 Traceability: Amendment event payloads untyped
+
+- **Checklist item:** Event payload typing
+- **Location in plan:** Step 66.3 Architecture Notes — no payload field list for any proposed/awaiting/approved events
+- **Problem:** The plan emits `plan.amendment.awaiting_approval` when a proposal is created but never specifies the payload fields. `NotificationService` cannot display amendment info reliably without a known payload shape. Integration tests cannot assert payload correctness.
+- **Impact:** Inconsistent payloads across caller sites make the amendment journal unreliable as a source of truth for approval workflows.
+- **To fix:** Add payload field specifications to Step 66.3 and 66.4 Architecture Notes (see Step 66.5 below).
+
+---
+
+#### G15 — 🟡 Configurability: `amendmentThreshold` not declared in any Zod config schema
+
+- **Checklist item:** Config schema declaration + Feature enable/disable path
+- **Location in plan:** Step 66.2 Architecture Notes — "Trigger policy should be config-driven, not hardcoded" and "config-driven `amendmentThreshold`"
+- **Problem:** No implementation step adds `amendmentThreshold` or an `amendment.enabled` flag to any Zod config schema in `src/config/` or `src/shared/schemas/config.ts`. The Backward Compatibility section states the feature is "disabled by default unless configured," but no config key is named and no schema default is provided.
+- **Impact:** Feature flag and threshold are unvalidatable. A typo in the config key silently leaves the feature disabled or always-on with no feedback.
+- **To fix:** Add an `amendment` sub-object to the Zod config schema with `enabled`, `threshold`, and `expiryMs` fields (see Step 66.6 below).
+
+---
+
+#### G16 — 🟡 Configurability: Amendment expiry timeout has no default constant
+
+- **Checklist item:** Config-driven vs. hardcoded
+- **Location in plan:** Step 66.4 Actions — "Add expiry timeout for unattended amendment requests"
+- **Problem:** No default expiry duration is named anywhere. Implementers will use an arbitrary inline millisecond value with no constant name, no schema default, and no documented rationale.
+- **Impact:** Tests asserting expiry behaviour must hard-code the same arbitrary value. A future change to the default forces manual updates across all copy-sites.
+- **To fix:** Add `export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000;` (24 hours) to `src/shared/constants.ts` and reference it in the config schema default (see Step 66.6 below).
+
+---
+
+### Phase 3c Gap Remediation
+
+#### Step 66.5 (G12, G13, G14): Name All Amendment Events and Add Constants
+
+#### Actions
+
+- [ ] `src/shared/constants.ts`: Add a `// Plan amendment event names (Phase 66)` block:
+
+  ```typescript
+  // Plan amendment event names (Phase 66)
+  export const PLAN_AMENDMENT_EVENT_PROPOSED = "plan.amendment.proposed";
+  export const PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL = "plan.amendment.awaiting_approval";
+  export const PLAN_AMENDMENT_EVENT_APPROVED = "plan.amendment.approved";
+  export const PLAN_AMENDMENT_EVENT_REJECTED = "plan.amendment.rejected";
+  export const PLAN_AMENDMENT_EVENT_EXPIRED = "plan.amendment.expired";
+  export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
+  ```
+
+- [ ] Step 66.3 Architecture Notes (this plan): Replace the inline `"plan.amendment.awaiting_approval"` with `PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL`; add payload spec: `{ amendmentId: string; planId: string; triggerSource: string; affectedStepCount: number; createdAt: string }`.
+- [ ] Step 66.4 Architecture Notes (this plan): Specify remaining events and payloads:
+  - `PLAN_AMENDMENT_EVENT_PROPOSED`: emitted in `proposeAmendment()` before approval gate; payload: `{ amendmentId, planId, stepId, triggerSource }`.
+  - `PLAN_AMENDMENT_EVENT_APPROVED/REJECTED/EXPIRED`: payload: `{ amendmentId, planId, decidedBy, decidedAt }`.
+  - `PLAN_AMENDMENT_EVENT_APPLIED`: emitted on successful resume; payload: `{ amendmentId, planId, appliedStepCount }`.
+
+#### Architecture Notes
+
+All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.ts` — so test files and `PlanExecutor` can reference them without circular imports. `PLAN_AMENDMENT_EVENT_APPLIED` aligns with existing `plan.approved` / `plan.rejected` naming in `PlanService`.
+
+#### Planned Tests
+
+- [ ] `tests/schemas/plan_amendment_schema_test.ts`: `"all 6 PLAN_AMENDMENT_EVENT_* constants have correct string values"` — imports and asserts each symbol.
+- [ ] `tests/integration/services/plan_amendment_approval_test.ts`: `"approval emits PLAN_AMENDMENT_EVENT_APPROVED with amendmentId and decidedBy"` — payload assertion via `MockEventLogger`.
+- [ ] `tests/integration/services/plan_amendment_approval_test.ts`: `"proposal emits PLAN_AMENDMENT_EVENT_PROPOSED before PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL"` — event order assertion.
+
+#### Success Criteria
+
+- [ ] `src/shared/constants.ts` exports all 6 `PLAN_AMENDMENT_EVENT_*` symbols.
+- [ ] No inline `"plan.amendment.*"` string literals remain in implementation files.
+- [ ] Payload fields specified for all 6 events in plan architecture notes.
+- [ ] Event order test passes: `PROPOSED` precedes `AWAITING_APPROVAL` in the event log.
+
+---
+
+#### Step 66.6 (G15, G16): Declare Amendment Config Schema and Default Constants
+
+#### Actions
+
+- [ ] `src/shared/constants.ts`: Add:
+
+  ```typescript
+  // Plan amendment config defaults (Phase 66)
+  export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000; // 24 hours
+  export const DEFAULT_AMENDMENT_THRESHOLD = 60;         // ConfidenceScorer 0-100
+  ```
+
+- [ ] `src/shared/schemas/config.ts` (or relevant Zod config file): Add optional `amendment` sub-object:
+
+  ```typescript
+  amendment: z.object({
+    enabled: z.boolean().default(false),
+    threshold: z.number().min(0).max(100).default(DEFAULT_AMENDMENT_THRESHOLD),
+    expiryMs: z.number().int().positive().default(DEFAULT_AMENDMENT_EXPIRY_MS),
+  }).optional(),
+  ```
+
+- [ ] Step 66.2 Architecture Notes (this plan): Replace "config-driven `amendmentThreshold`" with "`config.amendment?.threshold ?? DEFAULT_AMENDMENT_THRESHOLD`".
+- [ ] Step 66.4 Architecture Notes (this plan): Replace "expiry timeout" with "`config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS`".
+
+#### Architecture Notes
+
+`amendment.enabled: false` by default satisfies the Backward Compatibility guarantee without code-path changes. All three fields use Zod `.default()` so omitting `[amendment]` in `exa.config.toml` is valid. `threshold: 60` aligns with the `ConfidenceScorer` 0–100 scale; teams can lower it in their config.
+
+#### Planned Tests
+
+- [ ] `tests/config/config_test.ts`: `"amendment feature defaults to disabled"` — `ConfigSchema.safeParse({})` has falsy `amendment?.enabled`.
+- [ ] `tests/config/config_test.ts`: `"amendment threshold rejects values outside 0-100"` — `safeParse` fails for `-1` and `101`.
+- [ ] `tests/config/config_test.ts`: `"amendment expiryMs rejects zero and negative values"` — `safeParse` fails for `0` and `-1`.
+
+#### Success Criteria
+
+- [ ] `DEFAULT_AMENDMENT_EXPIRY_MS` and `DEFAULT_AMENDMENT_THRESHOLD` exported from `src/shared/constants.ts`.
+- [ ] `config.amendment?.enabled` is falsy when no `amendment` block is present.
+- [ ] Invalid threshold and expiry values are rejected by the config schema.
+- [ ] Amendment service returns early (no proposal created) when `config.amendment?.enabled !== true`.

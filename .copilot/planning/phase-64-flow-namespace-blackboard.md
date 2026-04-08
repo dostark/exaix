@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 64: Flow Namespace & Shared Blackboard Coordination"
 short_summary: "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact."
-version: "1.3"
+version: "1.4"
 topics: [
   "planning",
   "roadmap",
@@ -731,3 +731,110 @@ Resolve in order before writing any implementation code:
 1. **(G4 — API clarity, 64.4)** Resolve the `FlowReporter.generate()` design ambiguity in Step 64.4
    Architecture Notes. Recommend: omit key count from the section (no new file I/O, no signature change)
    unless the snapshot parameter approach is explicitly chosen and documented.
+
+---
+
+## Phase 3c Review — Traceability & Configurability
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#pre-gap-analysis` Phase 3c
+> **Scope:** Event naming constants, payload typing, config-driven values
+
+### Phase 3c Gap Summary
+
+| ID  | Gap (short)                                                                                                                    | Severity            | Checklist Item              | In Tests? |
+| --- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------- | --------------------------- | --------- |
+| G9  | `ZFlowNamespaceConfig.maxBytes` default `65536` is an inline literal — no `DEFAULT_NAMESPACE_MAX_BYTES` constant              | 🟡 Configurability  | Config-driven vs. hardcoded | ❌        |
+| G10 | All 3 namespace event name strings are inline literals in Step 64.3 — no `FLOW_EVENT_NAMESPACE_*` constants in `constants.ts` | 🟡 Traceability     | Event naming constants      | ❌        |
+| G11 | No test asserting namespace event payload fields for `flow.namespace.initialized` or `flow.namespace.write`                   | 🟠 Traceability     | Event assertions in tests   | ❌        |
+
+### Phase 3c Detailed Gap Entries
+
+#### G9 — 🟡 Configurability: `ZFlowNamespaceConfig.maxBytes` inline default
+
+- **Checklist item:** Config-driven vs. hardcoded
+- **Location in plan:** Step 64.1 — "`maxBytes: z.number().int().positive().default(65536)`"
+- **Problem:** The default byte quota `65536` is an inline magic number in the Zod schema. No named constant exists in `src/shared/constants.ts`. Test fixtures asserting `NamespaceQuotaExceededError` must hard-code the same value.
+- **Impact:** A quota change requires hunting all copy-sites. Tests asserting quota behaviour need manual updates.
+- **To fix:** Add `export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;` to `src/shared/constants.ts` and use it in `ZFlowNamespaceConfig.maxBytes.default(DEFAULT_NAMESPACE_MAX_BYTES)`.
+
+---
+
+#### G10 — 🟡 Traceability: Namespace event names are inline literals
+
+- **Checklist item:** Event naming constants
+- **Location in plan:** Step 64.3 — `"flow.namespace.initialized"`, `"flow.namespace.read"`, `"flow.namespace.write"` appear as quoted strings in the Actions pseudocode
+- **Problem:** Three event names are inline string literals. No `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, or `FLOW_EVENT_NAMESPACE_WRITE` constants exist in `src/shared/constants.ts`. Phase 63 Step 63.15 establishes the `FLOW_EVENT_*` pattern but does not cover these Phase 64 events.
+- **Impact:** A rename refactor on any namespace event silently breaks tests asserting string equality.
+- **To fix:** Add three constants to `src/shared/constants.ts` (see Step 64.6 below) and replace inline literals in Step 64.3 pseudocode and implementation.
+
+---
+
+#### G11 — 🟠 Traceability: No test asserting namespace event payload fields
+
+- **Checklist item:** Event assertions in tests
+- **Location in plan:** Step 64.3 Planned Tests — `tests/flows/flow_runner_namespace_test.ts`, `tests/integration/64_namespace_integration_test.ts`
+- **Problem:** Neither planned test explicitly asserts the payload of `flow.namespace.initialized` (expected fields: `namespaceId`, `flowId`) or `flow.namespace.write` (expected fields: `namespaceId`, `stepId`). Test descriptions focus on data hydration, not event emission.
+- **Impact:** A payload field rename (e.g. `namespaceId` → `traceId`) produces no test failure. The namespace audit trail is unverified at the payload level.
+- **To fix:** Extend `tests/flows/flow_runner_namespace_test.ts` to capture events via `MockEventLogger` and assert key payload fields (see Step 64.7 below).
+
+---
+
+### Phase 3c Gap Remediation
+
+#### Step 64.6 (G9, G10): Extract Namespace Constants
+
+#### Actions
+
+- [ ] `src/shared/constants.ts`: Add below the `// Flow event names` block (Phase 63 Step 63.15):
+
+  ```typescript
+  // Namespace event names (Phase 64)
+  export const FLOW_EVENT_NAMESPACE_INITIALIZED = "flow.namespace.initialized";
+  export const FLOW_EVENT_NAMESPACE_READ = "flow.namespace.read";
+  export const FLOW_EVENT_NAMESPACE_WRITE = "flow.namespace.write";
+  // Namespace config defaults (Phase 64)
+  export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
+  ```
+
+- [ ] `src/services/flow/flow_namespace_service.ts` (Step 64.2): Import and use the three `FLOW_EVENT_NAMESPACE_*` constants instead of inline string literals.
+- [ ] `src/shared/schemas/flow.ts` (Step 64.1): Change `.default(65536)` to `.default(DEFAULT_NAMESPACE_MAX_BYTES)` in `ZFlowNamespaceConfig`.
+- [ ] Step 64.3 pseudocode (this plan): Replace all three quoted event strings with the constant names.
+
+#### Architecture Notes
+
+Follows the `FLOW_EVENT_*` / `DEFAULT_*` patterns established by Phase 63 Steps 63.15–63.16. Constants must be importable from `src/shared/constants.ts` so test files and `FlowNamespaceService` can reference them without importing `FlowRunner`.
+
+#### Planned Tests
+
+- [ ] `tests/shared/constants_test.ts`: `"FLOW_EVENT_NAMESPACE_* and DEFAULT_NAMESPACE_MAX_BYTES exported with correct values"` — imports and asserts all four new symbols.
+
+#### Success Criteria
+
+- [ ] `src/shared/constants.ts` exports `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, `FLOW_EVENT_NAMESPACE_WRITE`, and `DEFAULT_NAMESPACE_MAX_BYTES`.
+- [ ] No inline `"flow.namespace.*"` string literals remain in implementation files.
+- [ ] `ZFlowNamespaceConfig.maxBytes.default(DEFAULT_NAMESPACE_MAX_BYTES)` compiles without error.
+
+---
+
+#### Step 64.7 (G11): Assert Namespace Event Payload Fields
+
+#### Actions
+
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: Add two test cases using `MockEventLogger`:
+  - Assert `flow.namespace.initialized` payload carries `namespaceId` (non-empty string) and `flowId`.
+  - Assert `flow.namespace.write` payload carries `namespaceId` and `stepId`.
+
+#### Architecture Notes
+
+Reuse the `MockEventLogger` pattern from `tests/flows/flow_runner_test.ts`. Assert field presence and string type — do **not** assert ISO date values (fragile). The test serves as a regression guard: a `namespaceId` → `traceId` rename in `FlowNamespaceService` must fail these assertions.
+
+#### Planned Tests
+
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.initialized event carries namespaceId and flowId"` — payload assertion
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.write event carries namespaceId and stepId"` — payload assertion
+
+#### Success Criteria
+
+- [ ] Both tests pass with `deno test --allow-all`.
+- [ ] Renaming `namespaceId` in the service without updating the constant causes a test failure.

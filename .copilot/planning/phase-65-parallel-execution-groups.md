@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 65: Explicit Parallel Execution Groups & Fan-In Merge"
 short_summary: "Formalize explicit parallel step groups and deterministic fan-in merge behavior on top of ExaIx’s existing dependency-wave flow execution model."
-version: "1.2"
+version: "1.3"
 topics: ["planning", "roadmap", "architecture", "tdd", "flows", "parallelism", "fan-in", "merge", "scheduler"]
 ---
 
@@ -296,3 +296,88 @@ flowchart TD
 - [ ] **G5 🟠** Clarify checkpoint: no new `ZFlowCheckpoint` fields; group membership re-derived from flow ✅ Resolved in this doc
 - [ ] **G9 🔵** Reformat step sections to `#### Actions` ✅ Resolved in this doc
 - [ ] **G10 🔵** Fix Key Files table — correct `event_logger.ts` gap description ✅ Resolved in this doc
+
+---
+
+## Phase 3c Review — Traceability & Configurability
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#pre-gap-analysis` Phase 3c
+> **Scope:** Event naming constants, payload typing, audit chain completeness
+
+### Phase 3c Gap Summary
+
+| ID  | Gap (short)                                                                                                                              | Severity        | Checklist Item           | In Tests? |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------ | --------- |
+| G11 | `flow.parallel_group.started` and `flow.parallel_group.completed` are inline literals — no `FLOW_EVENT_PARALLEL_GROUP_*` constants       | 🟡 Traceability | Event naming constants   | ❌        |
+| G12 | Payload fields for `flow.parallel_group.started/completed` are unspecified — no typed interface or field list                            | 🟡 Traceability | Event payload typing     | ❌        |
+| G13 | Fan-in merge failure event name unspecified — "merge failures are typed and journaled" (Step 65.3) but no event name given               | 🟡 Traceability | Audit chain completeness | ❌        |
+
+### Phase 3c Detailed Gap Entries
+
+#### G11 — 🟡 Traceability: Parallel group event names are inline literals
+
+- **Checklist item:** Event naming constants
+- **Location in plan:** Step 65.2 Success Criteria — "Group execution emits `flow.parallel_group.started` and `flow.parallel_group.completed`"
+- **Problem:** Both event name strings appear as quoted literals. No `FLOW_EVENT_PARALLEL_GROUP_STARTED` or `FLOW_EVENT_PARALLEL_GROUP_COMPLETED` constants exist in `src/shared/constants.ts`. Phase 63 Step 63.15 establishes the `FLOW_EVENT_*` pattern for checkpoint/retry events, but these Phase 65 group lifecycle events are not included.
+- **Impact:** Any test asserting the event name will silently continue passing after a rename unless the constant is used at every call-site.
+- **To fix:** Add `FLOW_EVENT_PARALLEL_GROUP_STARTED`, `FLOW_EVENT_PARALLEL_GROUP_COMPLETED`, and `FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED` to `src/shared/constants.ts` (see Step 65.5 below).
+
+---
+
+#### G12 — 🟡 Traceability: Parallel group event payloads unspecified
+
+- **Checklist item:** Event payload typing
+- **Location in plan:** Step 65.2 Architecture Notes — (no payload specification present)
+- **Problem:** The plan names `flow.parallel_group.started` and `flow.parallel_group.completed` but never specifies their payload fields. Without a declared contract, implementers will produce divergent payload shapes across call-sites.
+- **Impact:** The group audit trail is unverifiable — event-name assertions in tests cannot also assert payload correctness, making the audit chain fragile.
+- **To fix:** Add payload field specifications to Step 65.2 Architecture Notes (see Step 65.5 below).
+
+---
+
+#### G13 — 🟡 Traceability: Fan-in merge failure event name unspecified
+
+- **Checklist item:** Audit chain completeness
+- **Location in plan:** Step 65.3 Success Criteria — "Merge failures are typed and journaled"
+- **Problem:** The plan states merge failures will be journaled but never names the event. Without a canonical event name, implementations will emit ad-hoc strings, making merge failures unsearchable in the journal.
+- **Impact:** A merge failure in production creates a journal entry under an unpredictable event name, breaking the audit chain for group-level reporting.
+- **To fix:** Specify `flow.parallel_group.merge_failed` as the canonical event and document its payload in Step 65.3 Architecture Notes (see Step 65.5 below).
+
+---
+
+### Phase 3c Gap Remediation
+
+#### Step 65.5 (G11, G12, G13): Extract Parallel Group Event Constants and Specify Payloads
+
+#### Actions
+
+- [ ] `src/shared/constants.ts`: Add to the `// Flow event names` block (after Phase 63/64 constants):
+
+  ```typescript
+  // Parallel group event names (Phase 65)
+  export const FLOW_EVENT_PARALLEL_GROUP_STARTED = "flow.parallel_group.started";
+  export const FLOW_EVENT_PARALLEL_GROUP_COMPLETED = "flow.parallel_group.completed";
+  export const FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED = "flow.parallel_group.merge_failed";
+  ```
+
+- [ ] Step 65.2 Architecture Notes (this plan): Add payload specification:
+  - `flow.parallel_group.started` payload: `{ groupId: string; stepIds: string[]; waveIndex: number; traceId?: string }`
+  - `flow.parallel_group.completed` payload: `{ groupId: string; successCount: number; failureCount: number; durationMs: number; traceId?: string }`
+- [ ] Step 65.3 Architecture Notes (this plan): Specify `flow.parallel_group.merge_failed` as the canonical merge failure event; payload: `{ groupId: string; mergeMode: string; error: string; traceId?: string }`.
+- [ ] `src/flows/flow_runner.ts` (Steps 65.2, 65.3): Use constants wherever inline group event strings appear.
+
+#### Architecture Notes
+
+Follows `FLOW_EVENT_*` pattern from Phase 63 Step 63.15 and Phase 64 Step 64.6. Payload field conventions follow `flow.wave.started` (`stepIds`, `waveIndex`) for consistency. All constants in `src/shared/constants.ts` — no flow-specific module.
+
+#### Planned Tests
+
+- [ ] `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.started with groupId and stepIds"` — payload assertion via `MockEventLogger`
+- [ ] `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.completed with successCount"` — payload assertion
+- [ ] `tests/unit/services/parallel_group_merge_test.ts`: `"merge failure emits flow.parallel_group.merge_failed with groupId and error"` — event name and payload assertion
+
+#### Success Criteria
+
+- [ ] `src/shared/constants.ts` exports all three `FLOW_EVENT_PARALLEL_GROUP_*` symbols.
+- [ ] No inline `"flow.parallel_group.*"` literals remain in implementation files.
+- [ ] All three event payload tests pass; a payload field rename causes the relevant test to fail.
