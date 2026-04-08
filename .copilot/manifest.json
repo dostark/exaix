@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T11:24:40.512Z",
+  "generated_at": "2026-04-08T11:45:24.493Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1064,7 +1064,7 @@
       "scope": "dev",
       "title": "Phase 68: Ollama Embedding & Local Semantic Search",
       "short_summary": "Integrate a local embedding model via Ollama to bring zero-cost semantic vector search to the Solo edition, replacing the noisy TF-IDF keyword fallback.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1315,7 +1315,7 @@
       "scope": "dev",
       "title": "Phase 67: Live Execution Streaming & Watch Command",
       "short_summary": "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1511,7 +1511,7 @@
       "scope": "dev",
       "title": "Phase 69: Token & Cost Persistence",
       "short_summary": "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
