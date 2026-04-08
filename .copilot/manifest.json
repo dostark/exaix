@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T12:09:08.387Z",
+  "generated_at": "2026-04-08T12:43:52.344Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -765,7 +765,7 @@
       "scope": "dev",
       "title": "Phase 72: Git-Hash Portal Knowledge Invalidation",
       "short_summary": "Replace time-based portal knowledge staleness detection with git-commit-hash comparison, reducing redundant re-analysis and ensuring portal context is always grounded in the actual current state of the codebase.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1261,7 +1261,7 @@
       "scope": "dev",
       "title": "Phase 71: Confidence-Based Memory Auto-Approval & Pending Digest",
       "short_summary": "Implement automatic promotion of high-confidence agent learnings to approved status after a configurable delay, and surface a pending-memory digest notification to prevent silent accumulation in Memory/Pending/.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1344,7 +1344,7 @@
       "scope": "dev",
       "title": "Phase 70: Wire SkillsService into AgentRunner & CLI Surface",
       "short_summary": "Connect the dormant SkillsService.matchSkills() into the AgentRunner prompt construction pipeline and expose procedural memory inspection via exactl skills list|show commands.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",

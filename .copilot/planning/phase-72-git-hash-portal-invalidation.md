@@ -5,7 +5,7 @@ title: "Phase 72: Git-Hash Portal Knowledge Invalidation"
 short_summary: "Replace time-based portal knowledge staleness detection with
   git-commit-hash comparison, reducing redundant re-analysis and ensuring portal
   context is always grounded in the actual current state of the codebase."
-version: "1.0"
+version: "1.1"
 topics:
   - planning
   - roadmap
@@ -47,11 +47,11 @@ with no impact on downstream prompt assembly or memory services.
 
 ### Key Files
 
-| File                             | Current Role                          | Gap                                                                    |
+| File | Current Role | Gap |
 | -------------------------------- | ------------------------------------- | ---------------------------------------------------------------------- |
-| `src/services/portal_knowledge/` | 6-strategy codebase analysis pipeline | Invalidation is purely time-based (`gatheredAt` timestamp)             |
-| `knowledge.json`                 | Cached analysis output per portal     | Does not store `HEAD` SHA                                              |
-| `src/services/git_service.ts`    | Full Git abstraction (24 KB)          | Already has `git rev-parse HEAD` capability — unused in knowledge path |
+| `src/services/portal_knowledge/` | 6-strategy codebase analysis pipeline | Invalidation is purely time-based (`gatheredAt` timestamp) |
+| `knowledge.json` | Cached analysis output per portal | Does not store `HEAD` SHA |
+| `src/services/core/git_service.ts` | Full Git abstraction | Already has `git rev-parse HEAD` capability — unused in knowledge path |
 
 ### Constraints
 
@@ -64,7 +64,7 @@ with no impact on downstream prompt assembly or memory services.
 ### Interfaces Affected
 
 - `src/services/portal_knowledge/portal_knowledge_service.ts`
-- `src/services/portal_knowledge/knowledge_storage.ts` (or equivalent)
+- `src/services/portal_knowledge/knowledge_persistence.ts` (persistence layer: `loadKnowledge()` / `saveKnowledge()`)
 - `knowledge.json` schema
 
 ## Technical Architecture & Detailed Design
@@ -134,11 +134,11 @@ flowchart TD
 
 ### Analysis Mode Strategy Map
 
-| Mode          | Strategies Executed                                 | Typical Use Case                                                    |
+| Mode | Strategies Executed | Typical Use Case |
 | ------------- | --------------------------------------------------- | ------------------------------------------------------------------- |
-| `skip`        | None                                                | Codebase unchanged since last analysis                              |
-| `incremental` | 1 Directory Census, 2 Key File ID, 3 Config Parsing | Small commits: docs, comments, minor config tweaks                  |
-| `full`        | All 6 strategies                                    | Structural changes: new modules, renamed files, architecture shifts |
+| `skip` | None | Codebase unchanged since last analysis |
+| `incremental` | 1 Directory Census, 2 Key File ID, 3 Config Parsing | Small commits: docs, comments, minor config tweaks |
+| `full` | All 6 strategies | Structural changes: new modules, renamed files, architecture shifts |
 
 ### Config Extension
 
@@ -168,9 +168,12 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 
 1. **Actions**
 
-   - Extend `ZPortalKnowledgeHeader` with `headCommitSha` and `fullAnalysis` fields.
-   - Write a one-time migration in `KnowledgeStorage` that adds `headCommitSha: null`
-     to existing `knowledge.json` files (treated as cache miss on next request).
+   - Extend `PortalKnowledgeSchema` in `src/shared/schemas/portal_knowledge.ts` with optional
+     `headCommitSha` and `fullAnalysis` fields.
+   - Update `saveKnowledge()` / `loadKnowledge()` in
+     `src/services/portal_knowledge/knowledge_persistence.ts` to persist these new fields.
+   - Add a one-time migration step in `loadKnowledge()` that treats old `knowledge.json`
+     files lacking `headCommitSha` as a cache miss (returns `null`).
 
 1. **Architecture Notes**
 
@@ -179,8 +182,8 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 
 1. **Planned Tests**
 
-   - `tests/unit/services/portal_knowledge/knowledge_header_schema_test.ts`
-   - `tests/unit/services/portal_knowledge/knowledge_storage_migration_test.ts`
+   - `tests/services/portal_knowledge/knowledge_header_schema_test.ts`
+   - `tests/services/portal_knowledge/knowledge_persistence_migration_test.ts`
 
 1. **Success Criteria**
 
@@ -194,17 +197,23 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 1. **Actions**
 
    - Create `src/services/portal_knowledge/git_head_resolver.ts`.
-   - Implement `resolve()` using `GitService` to call `git rev-parse HEAD`.
+   - Implement `resolve()` using `SafeSubprocess.run('git', [GIT_CMD_REV_PARSE, 'HEAD'],
+     {cwd: portalPath, timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS})` — the same
+     pattern as `AgentExecutor.getPortalHeadSha()` and `PlanExecutor.getPortalHeadSha()`.
    - Implement `changedFilesSince()` using `git diff --name-only <sha> HEAD`.
 
 1. **Architecture Notes**
 
-   - Both calls use `GitService`'s existing subprocess abstraction — no raw shell calls.
+   - Both calls use `SafeSubprocess.run()` — no raw `Deno.Command` or `GitService`
+     instance needed; `IGitHeadResolver` is a standalone, lightweight helper.
    - Return `null` on any git error; do not throw.
+   - The return value of `changedFilesSince()` is used solely as a count
+     (`filesDelta = result.length`). Filenames must never be used for file I/O or
+     path construction.
 
 1. **Planned Tests**
 
-   - `tests/unit/services/portal_knowledge/git_head_resolver_test.ts`
+   - `tests/services/portal_knowledge/git_head_resolver_test.ts`
    - `tests/integration/services/portal_knowledge/git_head_resolver_integration_test.ts`
 
 1. **Success Criteria**
@@ -232,7 +241,7 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 
 1. **Planned Tests**
 
-   - `tests/unit/services/portal_knowledge/invalidation_strategy_test.ts`
+   - `tests/services/portal_knowledge/invalidation_strategy_test.ts`
 
 1. **Success Criteria**
 
@@ -282,7 +291,7 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 
 1. **Planned Tests**
 
-   - `tests/unit/services/portal_knowledge/knowledge_journal_events_test.ts`
+   - `tests/services/portal_knowledge/knowledge_journal_events_test.ts`
 
 1. **Success Criteria**
 
@@ -291,12 +300,12 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
 
 ## Risks & Mitigations
 
-| Risk                                                         | Impact | Likelihood | Mitigation Strategy                                                |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ------------------------------------------------------------ | ------ | ---------: | ------------------------------------------------------------------ |
-| R1: Git command fails silently during analysis               | Medium |        Low | Return `null` from resolver; fall back to TTL                      |
-| R2: SHA changes on every rebase even without semantic change | Low    |     Medium | Acceptable: full analysis is cheap; this is an edge case           |
-| R3: `knowledge.json` corruption on concurrent access         | High   |        Low | Atomic write (temp + rename) + existing daemon lease               |
-| R4: Incremental misses structural changes                    | Medium |        Low | `max_files_delta = 20` default; reduce for safety-critical portals |
+| R1: Git command fails silently during analysis | Medium | Low | Return `null` from resolver; fall back to TTL |
+| R2: SHA changes on every rebase even without semantic change | Low | Medium | Acceptable: full analysis is cheap; this is an edge case |
+| R3: `knowledge.json` corruption on concurrent access | High | Low | Atomic write (temp + rename) + existing daemon lease |
+| R4: Incremental misses structural changes | Medium | Low | `max_files_delta = 20` default; reduce for safety-critical portals |
 
 ## Success Metrics (Quantitative)
 
@@ -312,3 +321,79 @@ log_invalidation_reason = true    # emit portal.knowledge.validity_check to jour
   one full analysis runs on first upgrade.
 - Non-git portals continue to use TTL logic unchanged.
 - All 6-strategy pipeline outputs remain identical to before when `full` mode runs.
+
+---
+
+## Pre-Gap Analysis — 2026-04-08
+
+### Assessment: 2 critical path errors and 1 security gap must be resolved before coding
+
+> This section was added by pre-gap analysis on 2026-04-08. All gaps must be
+> resolved and the plan updated before implementation of any affected step.
+
+### Gap Summary
+
+| ID | Gap (short) | Severity | Plan Section | Blocks Coding? |
+| --- | ----------- | -------- | ------------ | -------------- |
+| G1 | `src/services/git_service.ts` wrong path — actual `src/services/core/git_service.ts` | 🔴 Critical | Key Files / Step 72.2 | ✅ Yes |
+| G2 | `knowledge_storage.ts` does not exist — actual persistence layer is `src/services/portal_knowledge/knowledge_persistence.ts` | 🔴 Critical | Key Files / Interfaces Affected / Step 72.1 | ✅ Yes |
+| G3 | Step 72.2 references "`GitService` subprocess abstraction" but `IGitService` has no `getHeadSha()` — the correct API is `runGitCommand([GIT_CMD_REV_PARSE, "HEAD"], {throwOnError: false})` | 🟡 Feasibility | Step 72.2 | ⚠️ Conditionally |
+| G4 | `tests/unit/services/portal_knowledge/` does not exist — project convention is `tests/services/portal_knowledge/` | 🟠 Testing | Steps 72.1–72.5 | ❌ No |
+| G5 | `git diff --name-only` output is user-repository-controlled; each filename must be treated as untrusted input (OWASP A03) | 🔒 Security | Step 72.2 | ⚠️ Conditionally |
+
+### Detailed Gap Entries
+
+#### G1 — 🔴 Critical: `src/services/git_service.ts` wrong path
+
+- **Location in plan:** Key Files table — "`src/services/git_service.ts`"; Step 72.2 — "using `GitService` to call `git rev-parse HEAD`"
+- **Problem:** The file does not exist at the stated path. The actual module is `src/services/core/git_service.ts` (class `GitService`, interface `IGitService`).
+- **Impact:** Any step targeting this path would create a ghost module; `GitService` from the real path would be unavailable to `IGitHeadResolver`.
+- **To fix:** Replace all plan references to `src/services/git_service.ts` with `src/services/core/git_service.ts`.
+
+---
+
+#### G2 — 🔴 Critical: `knowledge_storage.ts` does not exist
+
+- **Location in plan:** Key Files table — `src/services/portal_knowledge/knowledge_storage.ts (or equivalent)`; Interfaces Affected — `knowledge_storage.ts`; Step 72.1 — "migration in `KnowledgeStorage`"
+- **Problem:** There is no `knowledge_storage.ts` in the project. The actual persistence layer is `src/services/portal_knowledge/knowledge_persistence.ts`, which exports `loadKnowledge()` and `saveKnowledge()` (no class, just functions). The `"or equivalent"` hedge signals the plan author was uncertain.
+- **Impact:** Step 72.1 would create a ghost file instead of extending the real persistence layer; `loadKnowledge()` / `saveKnowledge()` are the actual entry points for schema migration.
+- **To fix:** Replace all plan references to `knowledge_storage.ts` / `KnowledgeStorage` with `knowledge_persistence.ts` / `loadKnowledge()` + `saveKnowledge()`.
+
+---
+
+#### G3 — 🟡 Feasibility: `IGitHeadResolver` must use `runGitCommand()`, not a mythical `getHeadSha()`
+
+- **Location in plan:** Step 72.2 Architecture Notes — "Both calls use `GitService`'s existing subprocess abstraction"
+- **Problem:** `IGitService` (at `src/shared/interfaces/i_git_service.ts`) has no `getHeadSha()` method. The canonical way to run `git rev-parse HEAD` via `GitService` is `runGitCommand([GIT_CMD_REV_PARSE, "HEAD"], {throwOnError: false})`. The plan does not specify this, leaving the implementation undefined. Alternatively, `IGitHeadResolver` can use `SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {cwd: portalPath})` — the pattern already used in `AgentExecutor.getPortalHeadSha()` and `PlanExecutor.getPortalHeadSha()`.
+- **Impact:** Without a specified API, the implementation might introduce raw `Deno.Command` calls rather than using the established subprocess abstraction.
+- **To fix:** Add to Step 72.2 Architecture Notes: "Use `SafeSubprocess.run('git', [GIT_CMD_REV_PARSE, 'HEAD'], {cwd: portalPath, timeoutMs: DEFAULT_GIT_REV_PARSE_TIMEOUT_MS})` — the same pattern as `AgentExecutor.getPortalHeadSha()`. Wrap in try/catch; return `null` on any non-zero exit code or exception."
+
+---
+
+#### G4 — 🟠 Testing: `tests/unit/services/portal_knowledge/` does not exist
+
+- **Location in plan:** Steps 72.1, 72.2, 72.3, 72.5 Planned Tests — `tests/unit/services/portal_knowledge/*`
+- **Problem:** There is no `tests/unit/` directory in the project. The existing portal knowledge tests live at `tests/services/portal_knowledge/` (verified: `tests/services/portal_knowledge/portal_knowledge_service_test.ts`, `tests/services/portal_knowledge/knowledge_persistence_test.ts`).
+- **Impact:** Tests created at wrong paths are not discovered by `deno test` and do not contribute to CI coverage.
+- **To fix:** Remove the `unit/` prefix from all planned test paths: use `tests/services/portal_knowledge/`.
+
+---
+
+#### G5 — 🔒 Security: `git diff --name-only` output is untrusted user-controlled input (OWASP A03)
+
+- **Location in plan:** Step 72.2 Actions — "Implement `changedFilesSince()` using `git diff --name-only <sha> HEAD`"
+- **Problem:** The output of `git diff --name-only` is a list of filenames from the repository. Repository filenames are user-controlled and can contain path-traversal sequences, shell metacharacters, or null bytes. If `filesDelta` count is used only as a numeric threshold (as in the logic flow), this is safe — but if any code downstream attempts to use the filenames for file I/O or path construction, injection is possible.
+- **Impact:** A malicious filename (e.g., `../../etc/passwd`) in the diff output could cause path traversal if used for file access (OWASP A03 Injection).
+- **To fix:** Add to Step 72.2 Architecture Notes: "The return value of `changedFilesSince()` is used solely as a count (`filesDelta = result.length`). Filenames must not be used for any file I/O or path construction. Document this constraint in the `IGitHeadResolver` interface JSDoc."
+
+---
+
+## Pre-Implementation Actions
+
+Resolve in order before writing any implementation code:
+
+1. **(G1)** Update Key Files table, Interfaces Affected, and Step 72.2: replace `src/services/git_service.ts` with `src/services/core/git_service.ts`.
+1. **(G2)** Update Key Files table, Interfaces Affected, and Step 72.1: replace `knowledge_storage.ts` / `KnowledgeStorage` with `knowledge_persistence.ts` / `loadKnowledge()` + `saveKnowledge()`.
+1. **(G3)** Add to Step 72.2 Architecture Notes: specify `SafeSubprocess.run()` as the subprocess pattern, matching `AgentExecutor.getPortalHeadSha()`.
+1. **(G5)** Add to Step 72.2 Architecture Notes: document that `changedFilesSince()` output is used as a count only, never for path construction.
+1. **(G4)** Fix all Planned Tests paths to remove `unit/` prefix; use `tests/services/portal_knowledge/`.
