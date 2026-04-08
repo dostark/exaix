@@ -9,6 +9,12 @@ import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
 import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
+import {
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_EVENT_OUTPUT,
+  AGENT_EVENT_SECURITY_VIOLATION,
+} from "../../../src/shared/constants.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import type { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
@@ -61,6 +67,7 @@ Deno.test("AgentExecutor: logExecutionStart writes correct field separation", as
   // Assert
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
+  assertEquals(event.action, AGENT_EVENT_EXECUTION_STARTED);
   assertEquals(event.agentId, "agent-executor"); // constant — the runtime agent
   assertEquals(event.agentKind, AgentKind.AGENT_EXECUTOR);
   assertEquals(event.identityId, "senior-coder"); // the blueprint slug
@@ -104,6 +111,7 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
   // Assert
   assertEquals(loggedEvents.length, 1);
   const event = loggedEvents[0];
+  assertEquals(event.action, AGENT_EVENT_EXECUTION_COMPLETED);
   assertEquals(event.agentId, "agent-executor");
   assertEquals(event.agentKind, AgentKind.AGENT_EXECUTOR);
   assertEquals(event.identityId, "code-reviewer");
@@ -187,4 +195,11 @@ Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint 
   assertEquals(event.identityId, "senior-coder");
 
   executor.dispose();
+});
+
+Deno.test("Agent event constants: exported values match the journal contract", () => {
+  assertEquals(AGENT_EVENT_EXECUTION_STARTED, "agent.execution_started");
+  assertEquals(AGENT_EVENT_EXECUTION_COMPLETED, "agent.execution_completed");
+  assertEquals(AGENT_EVENT_OUTPUT, "agent.output");
+  assertEquals(AGENT_EVENT_SECURITY_VIOLATION, "security.violation");
 });

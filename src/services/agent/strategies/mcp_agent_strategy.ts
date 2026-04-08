@@ -251,8 +251,11 @@ export class McpAgentStrategy implements IExecutionStrategy {
           await this.executor.logAgentOutput(context.trace_id, value);
         }
       }
-    } catch {
-      // Stream error, typically process closed
+    } catch (error) {
+      await this.executor.logAgentOutput(
+        context.trace_id,
+        `[stderr pipe error: ${error instanceof Error ? error.message : String(error)}]`,
+      );
     } finally {
       reader.releaseLock();
     }

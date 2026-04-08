@@ -20,6 +20,10 @@ import { SafeError } from "../../errors/safe_error.ts";
 import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
 import {
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_EVENT_OUTPUT,
+  AGENT_EVENT_SECURITY_VIOLATION,
   AGENT_EXECUTION_EXAMPLE_TIME_MS,
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
@@ -248,12 +252,11 @@ export class AgentExecutor {
    * Call this when the AgentExecutor is no longer needed
    */
   dispose(): void {
-    // Dispose all strategies (which cleans up their signal listeners)
+    // Dispose all strategies (which cleans up their signal listeners).
+    // Uses the IExecutionStrategy.dispose?() optional-chaining contract.
     if (this.strategyRegistry) {
       for (const strategy of this.strategyRegistry.all()) {
-        if ("dispose" in strategy && typeof strategy.dispose === "function") {
-          strategy.dispose();
-        }
+        strategy.dispose?.();
       }
     }
   }
@@ -461,7 +464,7 @@ export class AgentExecutor {
       );
     }
 
-    // Load blueprint (TODO: use blueprint for agent spawning when implemented)
+    // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
     this.currentPromptBudget = this.promptBudgetAllocator.allocate(modelId);
@@ -511,7 +514,7 @@ export class AgentExecutor {
         await this.revertUnauthorizedChanges(portalPath, unauthorizedChanges);
 
         // Log security violation
-        await this.logger.error("security.violation", context.trace_id, {
+        await this.logger.error(AGENT_EVENT_SECURITY_VIOLATION, context.trace_id, {
           portal: options.portal,
           unauthorized_files: unauthorizedChanges,
           identity: options.identity_id,
@@ -550,7 +553,7 @@ export class AgentExecutor {
    * Log output from an agent subprocess
    */
   public async logAgentOutput(traceId: string, output: string): Promise<void> {
-    await this.logger.info("agent.output", "subprocess", { output }, traceId);
+    await this.logger.info(AGENT_EVENT_OUTPUT, "subprocess", { output }, traceId);
   }
 
   /**
@@ -1256,7 +1259,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     portal: string,
   ): Promise<void> {
     await this.logger.log({
-      action: "agent.execution_started",
+      action: AGENT_EVENT_EXECUTION_STARTED,
       target: portal,
       actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
@@ -1286,7 +1289,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     };
 
     await this.logger.log({
-      action: "agent.execution_completed",
+      action: AGENT_EVENT_EXECUTION_COMPLETED,
       target: result.branch,
       actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,

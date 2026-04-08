@@ -31,6 +31,8 @@ import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
+  AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_STARTED,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   PORTAL_CONTEXT_KEY,
@@ -355,7 +357,7 @@ export class AgentRunner implements IAgentRunner {
   ): void {
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
-      "agent.execution_started",
+      AGENT_EVENT_EXECUTION_STARTED,
       requestId || null,
       {
         identity_id: identityId,
@@ -460,7 +462,7 @@ export class AgentRunner implements IAgentRunner {
     } = args;
     this.logActivity(
       ACTIVITY_ACTOR_AGENT,
-      "agent.execution_completed",
+      AGENT_EVENT_EXECUTION_COMPLETED,
       requestId || null,
       {
         identity_id: identityId,
