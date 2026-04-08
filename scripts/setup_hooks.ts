@@ -2,7 +2,7 @@
  * @module setup_hooks
  * @description Script: setup_hooks
  */
-import { join } from "https://deno.land/std@0.221.0/path/mod.ts";
+import { join } from "@std/path";
 
 /**
  * setup_hooks.ts
@@ -37,14 +37,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 4. Magic Values Check
+# 4. Test Placement Check
+deno task check:test-placement
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Test placement validation failed."
+  exit 1
+fi
+
+# 5. Magic Values Check
 deno task check:magic
 if [ $? -ne 0 ]; then
   echo "❌ Error: Magic value validation failed."
   exit 1
 fi
 
-# 5. Manifest Auto-Sync
+# 6. Manifest Auto-Sync
 # Regenerate manifest.json if any .copilot/ source changed, then stage it
 # so it is always included automatically — no manual step required.
 STAGED_COPILOT=$(git diff --cached --name-only --diff-filter=ACMRD | grep -E '^.copilot/' | grep -v 'manifest.json' || true)
@@ -67,7 +74,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 6. Markdown Lint (only when staged markdown files changed)
+# 7. Markdown Lint (only when staged markdown files changed)
 STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.md$' || true)
 if [ -n "$STAGED_MD_FILES" ]; then
   echo "📝 Markdown files changed; running markdown lint..."
@@ -78,28 +85,28 @@ if [ -n "$STAGED_MD_FILES" ]; then
   fi
 fi
 
-# 7. Complexity Check
+# 8. Complexity Check
 deno task check:complexity
 if [ $? -ne 0 ]; then
   echo "❌ Error: Code complexity exceeds threshold. Please refactor complex functions."
   exit 1
 fi
 
-# 8. Architecture Check
+# 9. Architecture Check
 deno task check:arch
 if [ $? -ne 0 ]; then
   echo "❌ Error: Architecture validation failed."
   exit 1
 fi
 
-# 9. Agent-Native Documentation Nervous System Check
+# 10. Agent-Native Documentation Nervous System Check
 deno task docs-agent-validate
 if [ $? -ne 0 ]; then
   echo "❌ Error: Documentation nervous system validation failed (links/symbols)."
   exit 1
 fi
 
-# 10. Hallucination Benchmarks (Ground Truth)
+# 11. Hallucination Benchmarks (Ground Truth)
 deno task docs-bench
 if [ $? -ne 0 ]; then
   echo "❌ Error: Hallucination benchmarks failed. Verify ground truth consistency."
@@ -175,7 +182,7 @@ async function installHooks() {
 
   console.log("✅ Hooks installed successfully in .git/hooks/");
   console.log(
-    "   - pre-commit: fmt, lint, style/boundary, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
+    "   - pre-commit: fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
   );
   console.log("   - pre-push: type-check, security tests");
   console.log("   - commit-msg: structured commit message validation");

@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "./schemas/deno-config.schema.json",
+  "title": "Local Deno Config Schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "lock": {
+      "type": ["boolean", "string"]
+    },
+    "exports": {
+      "type": "string"
+    },
+    "tasks": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "imports": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "exclude": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fmt": {
+      "type": "object",
+      "properties": {
+        "useTabs": { "type": "boolean" },
+        "lineWidth": { "type": "integer" },
+        "indentWidth": { "type": "integer" },
+        "semiColons": { "type": "boolean" },
+        "singleQuote": { "type": "boolean" },
+        "proseWrap": { "type": "string" },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "test": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "compilerOptions": {
+      "type": "object",
+      "properties": {
+        "lib": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "strict": { "type": "boolean" },
+        "checkJs": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

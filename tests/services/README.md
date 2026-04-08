@@ -4,9 +4,15 @@ This directory contains unit and integration tests for the Exaix service layer.
 
 ## Structure
 
+## Enforcement
+
+- `deno task check:test-placement` rejects new `tests/services/*_test.ts` files placed directly in this folder.
+- Service tests must live in `tests/services/<domain>/`.
+- If a service domain does not exist yet, create the domain subfolder first and then add the test file inside it.
+
 Tests are organized by **domain** to improve discoverability and maintainability. Each subfolder contains tests for a specific service or related group of services.
 
-```
+```text
 tests/services/
 ├── request/          # Request processing and routing
 ├── memory/           # Memory bank and extraction
@@ -136,7 +142,7 @@ tests/services/
 
 ### Decision Tree
 
-```
+```text
 What are you testing?
 │
 ├─→ Request processing/routing?
@@ -218,33 +224,41 @@ What are you testing?
 
 ### Examples
 
-**Example 1: New Request Validator**
+### Deterministic Mapping For Agents
 
-```
+- `src/services/agent/...` → `tests/services/agent/...`
+- `src/services/flow/...` → `tests/services/flow/...`
+- `src/services/request/...` → `tests/services/request/...`
+- `src/services/portal/...` → `tests/services/portal/...`
+- `src/services/tool/...` → `tests/services/tool/...`
+
+#### Example 1: New Request Validator
+
+```text
 Testing: Request validation logic
 Decision: Related to request processing
 Location: tests/services/request/request_validator_test.ts
 ```
 
-**Example 2: New Memory Embedding Service**
+#### Example 2: New Memory Embedding Service
 
-```
+```text
 Testing: Memory embedding generation
 Decision: Related to memory bank
 Location: tests/services/memory/memory_embedding_service_test.ts
 ```
 
-**Example 3: New Health Check Provider**
+#### Example 3: New Health Check Provider
 
-```
+```text
 Testing: Custom health check provider
 Decision: Related to health checks
 Location: tests/services/health/health_check_custom_provider_test.ts
 ```
 
-**Example 4: New Tool Registry Feature**
+#### Example 4: New Tool Registry Feature
 
-```
+```text
 Testing: Tool discovery mechanism
 Decision: Related to tool registry
 Location: tests/services/tool/tool_discovery_test.ts

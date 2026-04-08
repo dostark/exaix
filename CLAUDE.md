@@ -11,7 +11,7 @@ links:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-# 🤖 CLAUDE.md — REQUIRED READING FOR ALL AI AGENTS
+## 🤖 CLAUDE.md — REQUIRED READING FOR ALL AI AGENTS
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
 >
@@ -340,6 +340,7 @@ These are **REQUIRED** for all code tasks:
 - **MUST** consult `.copilot/cross-reference.md` to find relevant docs before implementation
 - **MUST** read matching `.copilot/` docs and cite them in your plan
 - **MUST** use established test helpers (`initTestDbService`, `createCliTestContext`, etc.)
+- **MUST** place new tests under the correct `tests/` domain folder; do not add new `*_test.ts` files outside `tests/`, and do not place service tests directly in `tests/services/`
 - **MUST** keep Problems tab clean (fix TS errors before completing)
 - **MUST** run `deno task test` before committing
 - **MUST** verify all CI checks pass locally before claiming task completion (see CI Verification section)
@@ -358,7 +359,7 @@ These actions are **PROHIBITED**:
 
 ---
 
-**Footer — Agent Knowledge Base**
+## Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)

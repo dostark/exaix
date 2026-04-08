@@ -25,7 +25,7 @@ deno check tests/
 
 ## Directory Structure
 
-```
+```text
 tests/
 ├── helpers/              # Test utilities (NO tests here)
 ├── fixtures/             # Test data builders and mock data
@@ -100,6 +100,13 @@ tests/
 
 ## Writing New Tests
 
+## Enforcement
+
+- Test placement is enforced by `deno task check:test-placement`.
+- New files matching `*_test.ts` must live under `tests/`.
+- New service tests must live under `tests/services/<domain>/`, not directly under `tests/services/`.
+- The authoritative agent-facing placement rules live in `.copilot/tests/testing.md`.
+
 ### 1. Choose the Right Location
 
 **Ask yourself:**
@@ -114,6 +121,18 @@ tests/
    - Check `helpers/` for existing utilities
    - Use `initTestDbService()` for database tests
    - Use `createCliTestContext()` for CLI tests
+
+### Deterministic Source-To-Test Mapping
+
+- `src/services/<domain>/...` → `tests/services/<domain>/...`
+- `src/shared/schemas/...` → `tests/schemas/...`
+- `src/shared/...` → `tests/shared/...`
+- `src/flows/...` → `tests/flows/...`
+- `src/cli/...` → `tests/cli/...`
+- `src/ai/...` → `tests/ai/...`
+- `src/mcp/...` → `tests/mcp/...`
+- `src/errors/...` → `tests/errors/...`
+- `scripts/...` → `tests/scripts/...`
 
 ### 2. Follow Naming Conventions
 
@@ -383,15 +402,17 @@ New test coverage for journal field separation:
 
 1. Create file in appropriate subfolder
 2. Add module docblock at top:
-   ```typescript
-   /**
-    * @module MyTestModule
-    * @path tests/domain/my_test.ts
-    * @description What this tests
-    */
-   ```
-3. Run `deno fmt` and `deno lint`
-4. Verify with `deno task test`
+
+```typescript
+/**
+ * @module MyTestModule
+ * @path tests/domain/my_test.ts
+ * @description What this tests
+ */
+```
+
+1. Run `deno fmt` and `deno lint`
+1. Verify with `deno task test`
 
 ---
 

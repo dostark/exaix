@@ -2,7 +2,7 @@
  * @module ci
  * @description Script: ci
  */
-import { Command } from "jsr:@cliffy/command@^1.0.0-rc.8";
+import { Command } from "@cliffy/command";
 import { join, resolve } from "@std/path";
 
 /**
@@ -58,6 +58,7 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "fmt:check"], desc: "Formatting Check" },
       { cmd: ["deno", "task", "lint"], desc: "Linting" },
       { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
+      { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
       { cmd: ["deno", "task", "check"], desc: "Type Checking" },
       { cmd: ["deno", "task", "check:docs"], desc: "Docs Drift Check" },
     ]);

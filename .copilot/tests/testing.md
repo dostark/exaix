@@ -59,6 +59,27 @@ Target: Minimum 70% branch coverage on new features. Request an implementation w
 - `tests/integration/` - End-to-end workflows
 - `tests/helpers/` - Shared test utilities
 
+### Mandatory Test Placement Rules
+
+- All new runtime test files matching `*_test.ts` must live under `tests/`.
+- Never add new `*_test.ts` files under `src/`, `scripts/`, `docs/`, or other non-`tests/` roots.
+- Service tests must live under `tests/services/<domain>/`, not directly under `tests/services/`.
+- Before creating a new test, search for an existing domain folder and place the file there.
+- If no suitable service domain folder exists yet, create `tests/services/<domain>/` first.
+- Enforcement is automatic via `deno task check:test-placement`; treat violations as blocking.
+
+### Deterministic Source-To-Test Mapping
+
+- `src/services/<domain>/...` → `tests/services/<domain>/...`
+- `src/shared/schemas/...` → `tests/schemas/...`
+- `src/shared/...` → `tests/shared/...`
+- `src/flows/...` → `tests/flows/...`
+- `src/cli/...` → `tests/cli/...`
+- `src/ai/...` → `tests/ai/...`
+- `src/mcp/...` → `tests/mcp/...`
+- `src/errors/...` → `tests/errors/...`
+- `scripts/...` → `tests/scripts/...`
+
 Deduplication checklist:
 
 1. Search for similar test file names

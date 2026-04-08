@@ -43,6 +43,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`docs`** → [docs/documentation.md](docs/documentation.md)
 - **`patterns`** → [source/exaix.md](source/exaix.md) (Service Pattern, Module Documentation)
 - **`helpers`** → [tests/testing.md](tests/testing.md) (Test Organization, Helpers)
+- **`test-placement`** → [tests/testing.md](tests/testing.md) (Mandatory Test Placement Rules), [../tests/README.md](../tests/README.md)
 - **`openai`** → [providers/openai.md](providers/openai.md)
 - **`prompts`** → [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md)
 - **`commit`** → [prompts/commit-message.md](prompts/commit-message.md), [../Blueprints/Skills/commit-message.skill.md](../Blueprints/Skills/commit-message.skill.md)
@@ -103,7 +104,6 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 
 1.
 1.
-
 
 ## Provider-Specific Quick Links
 
