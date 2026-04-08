@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 74-R: RoutingPolicy Layer & Capability-Based Identity Selection"
 short_summary: "Introduce a policy-driven identity routing layer that selects the most appropriate blueprint version at runtime using declared capabilities, request analysis signals, and Activity Journal performance data."
-version: "1.0"
+version: "1.1"
 topics:
   - planning
   - roadmap
@@ -36,15 +36,15 @@ topics:
 
 ### Key Files
 
-| File                                             | Current Role                                       | Gap                                                           |
+| File | Current Role | Gap |
 | ------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------- |
-| `src/services/agent_runner.ts`                   | Assembles execution context and invokes identities | No policy-based identity selection stage                      |
-| `src/services/agent_capabilities.ts`             | Capability-related identity metadata support       | Not used as a first-class routing decision engine             |
-| `src/services/blueprint_loader.ts`               | Loads identity blueprints and versions             | Returns available blueprints but does not rank or route them  |
-| `src/services/request_analysis/`                 | Produces `IRequestAnalysis`                        | Signals exist but are not used for runtime identity selection |
-| `src/services/event_logger.ts` / journal queries | Stores execution outcomes and trace data           | No routing-performance aggregation service                    |
-| `src/shared/types/blueprint.ts`                  | Blueprint shape and capability declarations        | Capabilities are declared but not leveraged for routing       |
-| `src/flows/flow_runner.ts`                       | Executes flow-defined identities                   | No dynamic identity substitution or policy evaluation hook    |
+| `src/services/agent/agent_runner.ts` | Assembles execution context and invokes identities | No policy-based identity selection stage |
+| `src/services/agent/agent_capabilities.ts` | Capability-related identity metadata support | Not used as a first-class routing decision engine |
+| `src/services/blueprint/blueprint_loader.ts` | Loads identity blueprints and versions | Returns available blueprints but does not rank or route them |
+| `src/services/request_analysis/` | Produces `IRequestAnalysis` | Signals exist but are not used for runtime identity selection |
+| `src/services/core/event_logger.ts` / journal queries | Stores execution outcomes and trace data | No routing-performance aggregation service |
+| `src/services/blueprint/blueprint_loader.ts:ILoadedBlueprint` | Runtime blueprint shape with `capabilities: string[]` | Capabilities declared but not leveraged for routing |
+| `src/flows/flow_runner.ts` | Executes flow-defined identities | No dynamic identity substitution or policy evaluation hook |
 
 ### Constraints
 
@@ -56,12 +56,12 @@ topics:
 
 ### Interfaces Affected
 
-- `src/services/agent_runner.ts:AgentRunner`
-- `src/services/blueprint_loader.ts:BlueprintLoader`
-- `src/services/agent_capabilities.ts`
-- `src/shared/types/blueprint.ts`
-- `src/shared/types/request_analysis.ts`
-- `src/services/event_logger.ts`
+- `src/services/agent/agent_runner.ts:AgentRunner`
+- `src/services/blueprint/blueprint_loader.ts:BlueprintLoader` (add `listAll()` method)
+- `src/services/agent/agent_capabilities.ts`
+- `src/services/blueprint/blueprint_loader.ts:ILoadedBlueprint` (carries capabilities)
+- `src/shared/schemas/request_analysis.ts`
+- `src/services/core/event_logger.ts`
 
 ## Technical Architecture & Detailed Design
 
@@ -116,7 +116,7 @@ export const ZRoutingCandidate = z.object({
   }),
 });
 
-export const ZRoutingDecision = z.object({
+export const ZRoutingPolicyDecision = z.object({
   selectedIdentityId: z.string().min(1),
   selectedVersion: z.string().min(1),
   strategy: z.enum(["explicit", "policy", "capability_fallback", "static_fallback"]),
@@ -152,7 +152,7 @@ export interface IIdentityPerformanceSnapshot {
 }
 
 export interface IRoutingPolicyService {
-  selectIdentity(context: IRoutingContext): Promise<IRoutingDecision>;
+  selectIdentity(context: IRoutingContext): Promise<IRoutingPolicyDecision>;
   listCandidates(context: IRoutingContext): Promise<IRoutingCandidate[]>;
 }
 
@@ -272,8 +272,8 @@ Where:
 
 1. **Planned Tests**
 
-   - `tests/unit/shared/schemas/routing_policy_schema_test.ts`
-   - `tests/unit/services/routing/routing_policy_loader_test.ts`
+   - `tests/schemas/routing_policy_schema_test.ts`
+   - `tests/services/routing/routing_policy_loader_test.ts`
 
 1. **Success Criteria**
 
@@ -288,6 +288,8 @@ Where:
 1. **Actions**
 
    - Create `src/services/routing/capability_matcher.ts`.
+   - Add `BlueprintLoader.listAll(): Promise<ILoadedBlueprint[]>` to enumerate all
+     `*.md` files under `Blueprints/Identities/` (required prerequisite).
    - Extend `BlueprintLoader` access pattern to enumerate candidate blueprints by identity family and capability.
    - Score candidates based on capability overlap, language/task metadata, and explicit version availability.
 
@@ -299,8 +301,8 @@ Where:
 
 1. **Planned Tests**
 
-   - `tests/unit/services/routing/capability_matcher_test.ts`
-   - `tests/unit/services/routing/candidate_discovery_test.ts`
+   - `tests/services/routing/capability_matcher_test.ts`
+   - `tests/services/routing/candidate_discovery_test.ts`
 
 1. **Success Criteria**
 
@@ -326,7 +328,7 @@ Where:
 
 1. **Planned Tests**
 
-   - `tests/unit/services/routing/identity_performance_repository_test.ts`
+   - `tests/services/routing/identity_performance_repository_test.ts`
    - `tests/integration/services/routing/journal_performance_aggregation_test.ts`
 
 1. **Success Criteria**
@@ -348,23 +350,27 @@ Where:
      - journal performance signals,
      - bounded experiment logic,
      - deterministic fallback strategy.
-   - Return a fully populated `IRoutingDecision`.
+   - Return a fully populated `IRoutingPolicyDecision`.
 
 1. **Architecture Notes**
 
    - Rule evaluation order: ascending `priority`, then declaration order.
-   - `trafficSplit` should be implemented deterministically using a stable hash of `traceId` or request ID rather than non-reproducible randomness.
+   - `trafficSplit` must be implemented deterministically using
+     `crypto.subtle.digest("SHA-256", textEncoder.encode(traceId + experimentSalt))`
+     where `experimentSalt` is a non-empty string from config (`[routing] experiment_salt`).
+     Do not log the hash input in `routing.decision` journal events; log only the outcome
+     and experiment bucket.
    - Fallback order:
      1. explicit identity/version,
-     2. explicit identity latest stable version,
-     3. best capability candidate,
-     4. system default identity.
+     1.
+     1.
+     1.
 
 1. **Planned Tests**
 
-   - `tests/unit/services/routing/routing_policy_service_rule_match_test.ts`
-   - `tests/unit/services/routing/routing_policy_service_fallback_test.ts`
-   - `tests/unit/services/routing/routing_policy_service_experiment_split_test.ts`
+   - `tests/services/routing/routing_policy_service_rule_match_test.ts`
+   - `tests/services/routing/routing_policy_service_fallback_test.ts`
+   - `tests/services/routing/routing_policy_service_experiment_split_test.ts`
 
 1. **Success Criteria**
 
@@ -378,7 +384,7 @@ Where:
 
 1. **Actions**
 
-   - Insert the routing stage into `src/services/agent_runner.ts` after request analysis and before blueprint loading/execution.
+   - Insert the routing stage into `src/services/agent/agent_runner.ts` after request analysis and before blueprint loading/execution.
    - Add `allowDynamicRouting` to request/step execution context.
    - Preserve current behavior when dynamic routing is disabled.
 
@@ -386,7 +392,7 @@ Where:
 
    - For flow steps, dynamic selection should be opt-in at the step or flow level in v1.
    - For ad hoc requests, dynamic routing can be enabled globally via config.
-   - `AgentRunner` should attach the resulting `IRoutingDecision` to the execution context for later reporting.
+   - `AgentRunner` should attach the resulting `IRoutingPolicyDecision` to the execution context for later reporting.
 
 1. **Planned Tests**
 
@@ -416,8 +422,8 @@ Where:
 
 1. **Planned Tests**
 
-   - `tests/unit/services/event_logger_routing_events_test.ts`
-   - `tests/unit/services/mission_reporter_routing_summary_test.ts`
+   - `tests/services/event_logger_routing_events_test.ts`
+   - `tests/services/mission_reporter_routing_summary_test.ts`
 
 1. **Success Criteria**
 
@@ -455,13 +461,13 @@ Where:
 
 ## Risks & Mitigations
 
-| Risk                                                          | Impact | Likelihood | Mitigation Strategy                                                        |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ------------------------------------------------------------- | ------ | ---------: | -------------------------------------------------------------------------- |
-| R1: Misrouting to a lower-quality identity                    | High   |     Medium | Deterministic fallback, minimum sample thresholds, explicit opt-in         |
-| R2: Experiments create non-obvious behavior                   | Medium |     Medium | Stable hash-based split + explicit journal events                          |
-| R3: Policy file becomes too complex to maintain               | Medium |        Low | Keep v1 schema narrow and add `routing policy validate`                    |
-| R4: Journal statistics are too sparse or noisy                | Medium |     Medium | Neutral scoring below minimum sample size                                  |
-| R5: Dynamic routing conflicts with explicit plan expectations | High   |        Low | Explicit identities remain authoritative unless dynamic routing is enabled |
+| R1: Misrouting to a lower-quality identity | High | Medium | Deterministic fallback, minimum sample thresholds, explicit opt-in |
+| R2: Experiments create non-obvious behavior | Medium | Medium | Stable hash-based split + explicit journal events |
+| R3: Policy file becomes too complex to maintain | Medium | Low | Keep v1 schema narrow and add `routing policy validate` |
+| R4: Journal statistics are too sparse or noisy | Medium | Medium | Neutral scoring below minimum sample size |
+| R5: Dynamic routing conflicts with explicit plan expectations | High | Low | Explicit identities remain authoritative unless dynamic routing is enabled |
 
 ## Success Metrics (Quantitative)
 
@@ -478,3 +484,154 @@ Where:
 - Missing or invalid policy files fall back to current behavior rather than blocking execution.
 - Capability metadata already present in blueprints becomes more valuable but does not require immediate blueprint rewrites.
 - Experiment logic is disabled by default and must be explicitly enabled in policy/config.
+
+---
+
+## Pre-Gap Analysis — 2026-04-08
+
+> Consulted: `src/services/agent/agent_runner.ts`, `src/services/agent/agent_capabilities.ts`,
+> `src/services/blueprint/blueprint_loader.ts`, `src/services/core/event_logger.ts`,
+> `src/services/request/request_router.ts`, `src/flows/flow_runner.ts`,
+> `src/shared/schemas/request_analysis.ts`.
+
+### Gap Summary
+
+| ID | Severity | Area | Title | Blocking? |
+| --- | -------------- | ------------------- | ----------------------------------------------------------------- | --------- |
+| G1 | 🔴 Critical | File Path | Wrong path for `AgentRunner` | Yes |
+| G2 | 🔴 Critical | File Path | Wrong path for `agent_capabilities.ts` | Yes |
+| G3 | 🔴 Critical | File Path | Wrong path for `BlueprintLoader` | Yes |
+| G4 | 🔴 Critical | File Path | Wrong path for `EventLogger` | Yes |
+| G5 | 🔴 Critical | File Path / API | `src/shared/types/blueprint.ts` does not exist; capabilities live on `ILoadedBlueprint` | Yes |
+| G6 | 🔴 Critical | Naming Conflict | `IRoutingDecision` already exported from `request_router.ts` | Yes |
+| G7 | 🟡 Feasibility | Missing API | `BlueprintLoader` has no capability-enumeration method | No |
+| G8 | 🟠 Testing | Test Paths | `tests/unit/services/routing/` prefix does not exist | No |
+| G9 | 🔒 Security | Determinism / Audit | `trafficSplit` hash must use keyed digest; raw input must not be logged | No |
+
+### Detailed Gap Entries
+
+#### G1 — 🔴 Critical: Wrong path for `AgentRunner`
+
+**Plan says:** `src/services/agent_runner.ts`\
+**Actual path:** `src/services/agent/agent_runner.ts`\
+**Resolution:** Update Key Files table row and Step 74.5 references.
+
+---
+
+#### G2 — 🔴 Critical: Wrong path for `agent_capabilities.ts`
+
+**Plan says:** `src/services/agent_capabilities.ts`\
+**Actual path:** `src/services/agent/agent_capabilities.ts`\
+**Evidence:** `execution_loop.ts` imports it as `"./agent_capabilities.ts"` from inside
+`src/services/agent/`; test is at `tests/services/agent/agent_capability_test.ts`.\
+**Resolution:** Update Key Files table row.
+
+---
+
+#### G3 — 🔴 Critical: Wrong path for `BlueprintLoader`
+
+**Plan says:** `src/services/blueprint_loader.ts`\
+**Actual path:** `src/services/blueprint/blueprint_loader.ts`\
+**Evidence:** `flow_runner.ts` imports `import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts"`.\
+**Resolution:** Update Key Files table and Steps 74.1 and 74.2 references.
+
+---
+
+#### G4 — 🔴 Critical: Wrong path for `EventLogger`
+
+**Plan says:** `src/services/event_logger.ts`\
+**Actual path:** `src/services/core/event_logger.ts`\
+**Evidence:** Confirmed from test imports across the codebase.\
+**Resolution:** Update Key Files table and Step 74.6 references.
+
+---
+
+#### G5 — 🔴 Critical: `src/shared/types/blueprint.ts` does not exist; capabilities on `ILoadedBlueprint`
+
+**Plan says:** `src/shared/types/blueprint.ts` holds "Blueprint shape and capability
+declarations" and that `CapabilityMatcher.scoreCandidates(candidates: ILoadedBlueprint[], ...)`
+receives `ILoadedBlueprint[]`.\
+**Actual situation:** There is `src/shared/schemas/blueprint.ts` (Zod schema for frontmatter
+validation) but the runtime type carrying `capabilities: string[]` is `ILoadedBlueprint`,
+exported from `src/services/blueprint/blueprint_loader.ts`. The legacy `IBlueprint` interface
+in `agent_runner.ts` is `{ systemPrompt: string; identityId?: string }` and has no capabilities
+field.\
+**Impact:** The Key Files table row misleads implementors about where capability declarations
+live.\
+**Resolution:**
+
+- Remove the `src/shared/types/blueprint.ts` row from Key Files.
+- Add row: `src/services/blueprint/blueprint_loader.ts:ILoadedBlueprint` — carries
+  `capabilities: string[]` used by `CapabilityMatcher`.
+- Clarify throughout Step 74.2 that `CapabilityMatcher` receives `ILoadedBlueprint[]`, not
+  `IBlueprint[]`.
+
+---
+
+#### G6 — 🔴 Critical: `IRoutingDecision` naming collision
+
+**Plan says:** Create `IRoutingDecision` (new schema and interfaces).\
+**Actual situation:** `src/services/request/request_router.ts` already exports
+`IRoutingDecision` (used by `RequestRouter.routeToAgent()` and `routeToDefaultAgent()`).
+Introducing a second `IRoutingDecision` with a different shape causes TypeScript import
+conflicts.\
+**Resolution:** Rename the Phase 74 type to `IRoutingPolicyDecision` and the Zod schema to
+`ZRoutingPolicyDecision` throughout the schemas section, interfaces section, Steps 74.4,
+74.5, and 74.6, and all journal event descriptions.
+
+---
+
+#### G7 — 🟡 Feasibility: `BlueprintLoader` has no capability-enumeration method
+
+**Plan says (Step 74.2):** "Extend `BlueprintLoader` access pattern to enumerate candidate
+blueprints by identity family and capability."\
+**Actual API:** `BlueprintLoader` exposes only `load(identityId)`, `loadOrThrow()`, `exists()`,
+`clearCache()`, `invalidate()`, `toLegacyBlueprint()` — no enumeration or list method.\
+**Impact:** Candidate discovery cannot be implemented without first adding enumeration to
+`BlueprintLoader`.\
+**Resolution:** Add to Step 74.2 Actions: "Add `BlueprintLoader.listAll(): Promise<ILoadedBlueprint[]>`
+scanning `Blueprints/Identities/` for all `*.md` files." This is a required prerequisite API
+change that must be tracked in tests.
+
+---
+
+#### G8 — 🟠 Testing: `tests/unit/` prefix does not exist
+
+**Plan says:** `tests/unit/services/routing/...`, `tests/unit/shared/schemas/...`,
+`tests/unit/services/event_logger_`, `tests/unit/services/mission_reporter_`.\
+**Actual structure:** Tests live under `tests/services/`, `tests/schemas/` — no `tests/unit/`
+level.\
+**Resolution:** Remove the `unit/` prefix from all planned test paths.
+
+---
+
+#### G9 — 🔒 Security: `trafficSplit` hash must use keyed digest; input must not be logged
+
+**Plan says (Step 74.4):** "`trafficSplit` should be implemented deterministically using a
+stable hash of `traceId`." No specification of hash algorithm or secret keying.\
+**Concern:** A simple modular hash of a predictable `traceId` allows an attacker with
+knowledge of the routing logic to craft trace IDs that always select (or always avoid) the
+experiment branch. Additionally, logging the raw hash input in `routing.decision` journal
+events could expose internal trace IDs unnecessarily.\
+**Resolution:**
+
+- Implement using `crypto.subtle.digest("SHA-256", textEncoder.encode(traceId + salt))` where
+  `salt` is a fixed, non-empty config-provided string (e.g., from `[routing] experiment_salt`).
+- `encodeHex` utility is already available in the codebase (`src/flows/flow_runner.ts` uses it).
+- Log only the routing decision outcome and experiment bucket in journal events; do not log
+  the hash input or intermediate digest.
+- Document this in Step 74.4 Architecture Notes.
+
+---
+
+## Pre-Implementation Actions
+
+- [ ] **[G1]** Fix: `src/services/agent_runner.ts` → `src/services/agent/agent_runner.ts` throughout
+- [ ] **[G2]** Fix: `src/services/agent_capabilities.ts` → `src/services/agent/agent_capabilities.ts` throughout
+- [ ] **[G3]** Fix: `src/services/blueprint_loader.ts` → `src/services/blueprint/blueprint_loader.ts` throughout
+- [ ] **[G4]** Fix: `src/services/event_logger.ts` → `src/services/core/event_logger.ts` throughout
+- [ ] **[G5]** Remove `src/shared/types/blueprint.ts` from Key Files; replace with `src/services/blueprint/blueprint_loader.ts:ILoadedBlueprint`
+- [ ] **[G6]** Rename Phase 74 `IRoutingDecision` → `IRoutingPolicyDecision` and `ZRoutingDecision` → `ZRoutingPolicyDecision` throughout
+- [ ] **[G7]** Add to Step 74.2 Actions: "Add `BlueprintLoader.listAll()` to enumerate all Identity blueprints"
+- [ ] **[G8]** Remove `unit/` prefix from all test paths
+- [ ] **[G9]** Specify in Step 74.4: use `crypto.subtle.digest("SHA-256", ...)` with config-provided `experiment_salt`; do not log hash inputs

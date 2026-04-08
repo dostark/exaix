@@ -5,7 +5,7 @@ title: "Phase 73: ReflexiveAgent Convergence Detection & Adaptive Iteration Budg
 short_summary: "Add inline ConfidenceScorer feedback inside the ReflexiveAgent loop
   for early exit on quality convergence, oscillation detection, and complexity-
   proportional iteration budgets derived from IRequestAnalysis."
-version: "1.0"
+version: "1.1"
 topics:
   - planning
   - roadmap
@@ -47,12 +47,12 @@ must therefore be rigorously tested and config-guarded.
 
 ### Key Files
 
-| File                                   | Current Role                             | Gap                                                       |
+| File | Current Role | Gap |
 | -------------------------------------- | ---------------------------------------- | --------------------------------------------------------- |
-| `src/services/reflexive_agent.ts`      | Self-critique loop up to `maxIterations` | No inline quality feedback; exits only on iteration count |
-| `src/services/confidence_scorer.ts`    | Post-execution quality scoring           | Not called during the refinement loop                     |
-| `src/services/agent_runner.ts`         | Passes `IRequestAnalysis` to execution   | Does not pass `complexity` to `ReflexiveAgent`            |
-| `src/shared/types/request_analysis.ts` | Defines `IRequestAnalysis.complexity`    | Unused as an iteration budget signal                      |
+| `src/services/agent/reflexive_agent.ts` | Self-critique loop up to `maxIterations` | No inline quality feedback; exits only on iteration count |
+| `src/services/utils/confidence_scorer.ts` | Post-execution quality scoring | Not called during the refinement loop |
+| `src/services/agent/agent_runner.ts` | Passes `IRequestAnalysis` to execution | Does not pass `complexity` to `ReflexiveAgent` |
+| `src/shared/schemas/request_analysis.ts` | Defines `IRequestAnalysis.complexity` | Unused as an iteration budget signal |
 
 ### Constraints
 
@@ -65,10 +65,10 @@ must therefore be rigorously tested and config-guarded.
 
 ### Interfaces Affected
 
-- `src/services/reflexive_agent.ts:ReflexiveAgent`
-- `src/services/confidence_scorer.ts:ConfidenceScorer`
-- `src/shared/types/reflexive_agent.ts`
-- `src/config/exa.config.toml`
+- `src/services/agent/reflexive_agent.ts:ReflexiveAgent`
+- `src/services/utils/confidence_scorer.ts:ConfidenceScorer`
+- `src/services/agent/reflexive_agent.ts` (interfaces co-located in main file)
+- `exa.config.toml`
 
 ## Technical Architecture & Detailed Design
 
@@ -136,15 +136,16 @@ effectiveMaxIterations =
   )
 ```
 
-Where `complexity` is a normalized 0–10 score from `IRequestAnalysis.complexity`.
+Where `complexity` is first mapped from `RequestAnalysisComplexity` enum to a numeric
+weight (`SIMPLE=0`, `MEDIUM=3`, `COMPLEX=6`, `EPIC=10`) before applying the formula.
 With defaults (`base=3, scale=1.0, absolute=12`):
 
-| Complexity        | effectiveMax |
+| Complexity | effectiveMax |
 | ----------------- | ------------ |
-| 0 (trivial)       | 3            |
-| 3 (moderate)      | 6            |
-| 6 (complex)       | 9            |
-| 10 (very complex) | 12           |
+| 0 (trivial) | 3 |
+| 3 (moderate) | 6 |
+| 6 (complex) | 9 |
+| 10 (very complex) | 12 |
 
 ### Convergence Detector Logic
 
@@ -152,7 +153,7 @@ With defaults (`base=3, scale=1.0, absolute=12`):
 flowchart TD
     A[Iteration N produces output] --> B{N % score_every_n == 0?}
     B -- No --> G[Continue]
-    B -- Yes --> C[ConfidenceScorer.score current output]
+    B -- Yes --> C[ConfidenceScorer.assessQuick current output]
     C --> D{score >= quality_exit_threshold?}
     D -- Yes --> E[Exit: quality_threshold_met]
     D -- No --> F{len >= oscillation_window?}
@@ -198,8 +199,8 @@ flowchart TD
 
 1. **Planned Tests**
 
-   - `tests/unit/shared/schemas/reflexive_convergence_config_test.ts`
-   - `tests/unit/config/convergence_config_defaults_test.ts`
+   - `tests/schemas/reflexive_convergence_config_test.ts`
+   - `tests/config/convergence_config_defaults_test.ts`
 
 1. **Success Criteria**
 
@@ -212,7 +213,7 @@ flowchart TD
 
 1. **Actions**
 
-   - Create `src/services/agents/convergence_detector.ts` implementing
+   - Create `src/services/agent/convergence_detector.ts` implementing
      `IConvergenceDetector`.
    - Implement `evaluate()` covering all four exit reasons.
    - Export as a pure function with no side effects.
@@ -224,10 +225,10 @@ flowchart TD
 
 1. **Planned Tests**
 
-   - `tests/unit/services/agents/convergence_detector_quality_exit_test.ts`
-   - `tests/unit/services/agents/convergence_detector_plateau_test.ts`
-   - `tests/unit/services/agents/convergence_detector_oscillation_test.ts`
-   - `tests/unit/services/agents/convergence_detector_max_iterations_test.ts`
+   - `tests/services/agent/convergence_detector_quality_exit_test.ts`
+   - `tests/services/agent/convergence_detector_plateau_test.ts`
+   - `tests/services/agent/convergence_detector_oscillation_test.ts`
+   - `tests/services/agent/convergence_detector_max_iterations_test.ts`
 
 1. **Success Criteria**
 
@@ -241,19 +242,19 @@ flowchart TD
 
 1. **Actions**
 
-   - Create `src/services/agents/iteration_budget.ts` with a pure `computeBudget()`
+   - Create `src/services/agent/iteration_budget.ts` with a pure `computeBudget()`
      function.
    - Wire into `ReflexiveAgent.run()` using `IRequestAnalysis.complexity` passed via
      `IReflexiveAgentOpts`.
 
 1. **Architecture Notes**
 
-   - `complexity` from `IRequestAnalysis` is a raw signal; normalize to 0–10 before
-     applying the formula.
+   - `complexity` from `IRequestAnalysis` is a `RequestAnalysisComplexity` enum; map to
+     numeric weight (`SIMPLE=0, MEDIUM=3, COMPLEX=6, EPIC=10`) before applying the formula.
 
 1. **Planned Tests**
 
-   - `tests/unit/services/agents/iteration_budget_test.ts`
+   - `tests/services/agent/iteration_budget_test.ts`
 
 1. **Success Criteria**
 
@@ -267,11 +268,11 @@ flowchart TD
 
 1. **Actions**
 
-   - Update `src/services/reflexive_agent.ts`:
+   - Update `src/services/agent/reflexive_agent.ts`:
      - Accept `IReflexiveAgentOpts` (adds `requestAnalysis` and `convergenceConfig`).
-     - Compute `effectiveMaxIterations` at start of `run()`.
-     - Call `ConfidenceScorer.score()` on the output every `score_every_n_iterations`
-       iterations.
+     - Compute `effectiveMaxIterations` at start of `run()` using `computeBudget()`.
+     - Call `scorer.assessQuick(currentResponse.content)` every `score_every_n_iterations`
+       iterations (pass `originalRequest.userPrompt` as `request` if using async `assess()`).
      - Call `ConvergenceDetector.evaluate()` after each scoring event.
      - Exit loop on `shouldExit: true`; log exit reason to journal.
 
@@ -282,8 +283,8 @@ flowchart TD
 
 1. **Planned Tests**
 
-   - `tests/unit/services/reflexive_agent_early_exit_test.ts`
-   - `tests/unit/services/reflexive_agent_complexity_budget_test.ts`
+   - `tests/services/reflexive/reflexive_agent_early_exit_test.ts`
+   - `tests/services/reflexive/reflexive_agent_complexity_budget_test.ts`
    - `tests/integration/services/reflexive_agent_convergence_integration_test.ts`
 
 1. **Success Criteria**
@@ -318,7 +319,7 @@ flowchart TD
 
 1. **Planned Tests**
 
-   - `tests/unit/services/event_logger_convergence_events_test.ts`
+   - `tests/services/event_logger_convergence_events_test.ts`
    - `tests/integration/services/reflexive_agent_journal_events_test.ts`
 
 1. **Success Criteria**
@@ -330,13 +331,13 @@ flowchart TD
 
 ## Risks & Mitigations
 
-| Risk                                                              | Impact | Likelihood | Mitigation Strategy                                                                                |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | ----------------------------------------------------------------- | ------ | ---------: | -------------------------------------------------------------------------------------------------- |
-| R1: Premature exit due to noisy score fluctuation                 | High   |     Medium | Require `min_improvement_delta` and at least two scored iterations before plateau/oscillation exit |
-| R2: Inline scoring increases token cost too much                  | Medium |     Medium | Make `score_every_n_iterations` configurable; default to 1 but allow 2–3 for cost-sensitive modes  |
-| R3: Complexity score is inaccurate and over-allocates iterations  | Medium |        Low | Hard-cap with `absolute_max_iterations`                                                            |
-| R4: Oscillation detector mistakes legitimate refinement for churn | Medium |        Low | Require alternating sign and low delta across the configured oscillation window                    |
-| R5: Additional exit paths complicate debugging                    | Low    |     Medium | Emit explicit convergence journal events and keep exit reasons strongly typed                      |
+| R1: Premature exit due to noisy score fluctuation | High | Medium | Require `min_improvement_delta` and at least two scored iterations before plateau/oscillation exit |
+| R2: Inline scoring increases token cost too much | Medium | Medium | Make `score_every_n_iterations` configurable; default to 1 but allow 2–3 for cost-sensitive modes |
+| R3: Complexity score is inaccurate and over-allocates iterations | Medium | Low | Hard-cap with `absolute_max_iterations` |
+| R4: Oscillation detector mistakes legitimate refinement for churn | Medium | Low | Require alternating sign and low delta across the configured oscillation window |
+| R5: Additional exit paths complicate debugging | Low | Medium | Emit explicit convergence journal events and keep exit reasons strongly typed |
 
 ## Success Metrics (Quantitative)
 
@@ -358,4 +359,150 @@ flowchart TD
   provides defaulting at the constructor or factory layer.
 - Existing journal consumers remain compatible because new event types are additive.
 
-If the cut happened earlier than this, the next safest continuation block is the **full ending package for Sprint 3**: the Phase 73 tail above completes the last required section order from the planning guideline. If you want, I can now continue with **Sprint 3-B / Phase 74-R** in the same document quality level. [github](https://github.com/dostark/exaix/blob/main/.copilot/planning/README.md)
+---
+
+## Pre-Gap Analysis — 2026-04-08
+
+> Consulted: `src/services/agent/reflexive_agent.ts`, `src/services/utils/confidence_scorer.ts`,
+> `src/services/agent/agent_runner.ts`, `src/shared/schemas/request_analysis.ts`,
+> `tests/services/reflexive/`.
+
+### Gap Summary
+
+| ID | Severity | Area | Title | Blocking? |
+| --- | --------------- | -------------------- | ------------------------------------------------------------------ | --------- |
+| G1 | 🔴 Critical | File Path | Wrong path for `ReflexiveAgent` | Yes |
+| G2 | 🔴 Critical | File Path | Wrong path for `ConfidenceScorer` | Yes |
+| G3 | 🔴 Critical | File Path | Wrong path for `AgentRunner` | Yes |
+| G4 | 🔴 Critical | File Path | Wrong path for `IRequestAnalysis` | Yes |
+| G5 | 🔴 Critical | Algorithm | `complexity` is an enum, not a 0–10 numeric score | Yes |
+| G6 | 🔴 Critical | API Contract | `ConfidenceScorer.score()` method does not exist | Yes |
+| G7 | 🟡 Feasibility | Directory Convention | `src/services/agents/` is wrong; convention is `src/services/agent/` | No |
+| G8 | 🟠 Testing | Test Paths | `tests/unit/services/agents/` prefix does not exist in this project | No |
+| G9 | 🟡 Traceability | Step Detail | `assess()` call-site arguments not specified | No |
+
+### Detailed Gap Entries
+
+#### G1 — 🔴 Critical: Wrong path for `ReflexiveAgent`
+
+**Plan says:** `src/services/reflexive_agent.ts`\
+**Actual path:** `src/services/agent/reflexive_agent.ts`\
+**Evidence:** File confirmed at `src/services/agent/reflexive_agent.ts`.\
+**Resolution:** Update all Key Files and Interfaces Affected references.
+
+---
+
+#### G2 — 🔴 Critical: Wrong path for `ConfidenceScorer`
+
+**Plan says:** `src/services/confidence_scorer.ts`\
+**Actual path:** `src/services/utils/confidence_scorer.ts`\
+**Evidence:** File confirmed at `src/services/utils/confidence_scorer.ts`.\
+**Resolution:** Update Interfaces Affected and all step references.
+
+---
+
+#### G3 — 🔴 Critical: Wrong path for `AgentRunner`
+
+**Plan says:** `src/services/agent_runner.ts`\
+**Actual path:** `src/services/agent/agent_runner.ts`\
+**Evidence:** File confirmed at `src/services/agent/agent_runner.ts`.\
+**Resolution:** Update Key Files table and Step 73.4 references.
+
+---
+
+#### G4 — 🔴 Critical: Wrong path for `IRequestAnalysis`
+
+**Plan says:** `src/shared/types/request_analysis.ts`\
+**Actual path:** `src/shared/schemas/request_analysis.ts`\
+**Evidence:** `IRequestAnalysis` and `RequestAnalysisComplexity` are exported from
+`src/shared/schemas/request_analysis.ts`.\
+**Resolution:** Update Key Files table, Interfaces Affected, and all step references.
+
+---
+
+#### G5 — 🔴 Critical: `complexity` is an enum, not a 0–10 numeric score
+
+**Plan says:** `complexity` is "a normalized 0–10 score from `IRequestAnalysis.complexity`"
+and proposes: `MIN(base + FLOOR(complexity * scale), absolute)`.\
+**Actual type:** `RequestAnalysisComplexity` is an alias of `TaskComplexity` enum with
+string values `SIMPLE | MEDIUM | COMPLEX | EPIC` — not a number.\
+**Impact:** Multiplying an enum string by `complexity_scale_factor` produces `NaN`,
+silently breaking the budget formula.\
+**Resolution:** Step 73.3 `computeBudget()` must first map the enum to a numeric weight:
+
+```ts
+const COMPLEXITY_NUMERIC: Record<RequestAnalysisComplexity, number> = {
+  [RequestAnalysisComplexity.SIMPLE]: 0,
+  [RequestAnalysisComplexity.MEDIUM]: 3,
+  [RequestAnalysisComplexity.COMPLEX]: 6,
+  [RequestAnalysisComplexity.EPIC]: 10,
+};
+```
+
+The table examples (`complexity=0 → 3`, `complexity=10 → 12`) remain valid once
+mapped. Update the Effective Max Iterations Formula section accordingly.
+
+---
+
+#### G6 — 🔴 Critical: `ConfidenceScorer.score()` does not exist
+
+**Plan says:** "Call `ConfidenceScorer.score()` on the output every N iterations."\
+**Actual API:** `ConfidenceScorer` exposes two public assessment methods:
+
+- `assess(request, response, traceId?, critique?): Promise<IConfidenceResult>` — LLM-backed,
+  async
+- `assessQuick(response): ConfidenceAssessment` — heuristic-only, sync, returns `score` 0–100
+
+Neither is named `score()`.\
+**Impact:** Step 73.4 will not compile.\
+**Resolution:** Use `assessQuick(currentResponse.content)` for inline use (no extra LLM
+call, sync), mapping `.score` directly to the convergence threshold. If async LLM scoring
+is desired, use `assess(originalRequest.userPrompt, currentResponse.content)` and honor the
+scoring-frequency gate. Update all `ConfidenceScorer.score()` references in Step 73.4.
+
+---
+
+#### G7 — 🟡 Feasibility: Wrong service subdirectory convention
+
+**Plan says:** New files at `src/services/agents/convergence_detector.ts` and
+`src/services/agents/iteration_budget.ts` (plural `agents/`).\
+**Actual convention:** All agent-related services sit under `src/services/agent/`
+(singular): `agent_runner.ts`, `reflexive_agent.ts`, `agent_executor.ts`,
+`agent_capabilities.ts`.\
+**Resolution:** Use `src/services/agent/convergence_detector.ts` and
+`src/services/agent/iteration_budget.ts`.
+
+---
+
+#### G8 — 🟠 Testing: `tests/unit/` prefix does not exist
+
+**Plan says:** Test paths `tests/unit/services/agents/...`, `tests/unit/shared/schemas/...`,
+`tests/unit/config/...`.\
+**Actual structure:** Tests live directly under `tests/services/`, `tests/schemas/`,
+`tests/config/`. Existing reflexive tests are at `tests/services/reflexive/`.\
+**Resolution:** Strip the `unit/` prefix; use `tests/services/agent/`,
+`tests/services/reflexive/`, `tests/schemas/`, `tests/config/`, `tests/services/`.
+
+---
+
+#### G9 — 🟡 Traceability: `assess()` call-site arguments unspecified
+
+**Plan says:** "Call `ConfidenceScorer.score()` on the output every N iterations" — no
+mention of the `request` argument required by `assess()`.\
+**Actual signature:** `assess(request: string, response: string, ...)`.\
+**Resolution:** Clarify in Step 73.4: `request` = `originalRequest.userPrompt`, `response` =
+`currentResponse.content`.
+
+---
+
+## Pre-Implementation Actions
+
+- [ ] **[G1]** Fix: `src/services/reflexive_agent.ts` → `src/services/agent/reflexive_agent.ts` throughout
+- [ ] **[G2]** Fix: `src/services/confidence_scorer.ts` → `src/services/utils/confidence_scorer.ts` throughout
+- [ ] **[G3]** Fix: `src/services/agent_runner.ts` → `src/services/agent/agent_runner.ts` throughout
+- [ ] **[G4]** Fix: `src/shared/types/request_analysis.ts` → `src/shared/schemas/request_analysis.ts` throughout
+- [ ] **[G5]** Rewrite `computeBudget()` spec: map `RequestAnalysisComplexity` enum → numeric weight before applying formula
+- [ ] **[G6]** Replace all `ConfidenceScorer.score()` with `assessQuick(currentResponse.content)` or `assess(request, response)` in Step 73.4
+- [ ] **[G7]** Change `src/services/agents/` → `src/services/agent/` for all new files
+- [ ] **[G8]** Remove `unit/` prefix from all test paths; use `tests/services/agent/` and `tests/services/reflexive/`
+- [ ] **[G9]** Document in Step 73.4 that `assess()` receives `originalRequest.userPrompt` as the `request` argument

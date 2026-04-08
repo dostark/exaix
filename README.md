@@ -11,7 +11,7 @@ links:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-# Exaix — Auditable Agent Orchestration Platform
+## Exaix — Auditable Agent Orchestration Platform
 
 [![Deno](https://img.shields.io/badge/runtime-Deno-green.svg)](https://deno.land/)
 [![SQLite](https://img.shields.io/badge/storage-SQLite-blue.svg)](https://www.sqlite.org/)
@@ -20,7 +20,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 Exaix enables secure, auditable multi-agent workflows with human-in-the-loop supervision — unlike LangChain or CrewAI, it guarantees full reproducibility via persistent SQLite journals and filesystem-based APIs. [cite:3]
 
-## Why Exaix?
+## Why Exaix
 
 - **Permanent audit trail**: Every agent action (plan, tool call, file change) is journaled immutably.
 - **Human oversight**: Agents propose structured Plans requiring explicit approval before execution.
@@ -40,7 +40,7 @@ Exaix enables secure, auditable multi-agent workflows with human-in-the-loop sup
 
 ## Architecture Overview
 
-````mermaid
+`````mermaid
 graph TD
     A[User Request] --> B[Agent Planning]
     B --> C[Human Review/Approve]
@@ -73,13 +73,13 @@ exactl request "Refactor src/cli.ts to use new JournalService"
 
 # 4. Review & approve in dashboard (new tab)
 exactl dashboard
-````
+````text
 
 **Full CLI install**: `deno install -A --unstable https://deno.land/x/exactl@latest` [cite:3]
 
 ## Repo Structure
 
-```
+```text
 exaix/
 ├── Blueprints/     # Agent personas/templates
 ├── Memory/         # Persistent memory banks
@@ -88,7 +88,7 @@ exaix/
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons
-```
+```text
 
 Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state). [cite:4]
 
@@ -102,7 +102,7 @@ Exaix auto-selects providers by cost/performance. Edit `exa.config.toml`:
 [ai]
 provider = "ollama"
 model = "llama3.2"
-```
+```text
 
 **Advanced Multi-Provider**:
 
@@ -114,7 +114,7 @@ model = "llama3.2"
 [provider_strategy]
 prefer_free = true
 max_daily_cost_usd = 5.00
-```
+```text
 
 Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDER=ollama exactl request ...` [cite:3]
 
@@ -129,7 +129,7 @@ Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDE
 ```bash
 deno task test      # Unit tests
 deno task ci        # Full CI: fmt, lint, test, coverage
-```
+```text
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regression tests mandatory (`[regression]` prefix). [cite:3][cite:4]
 
@@ -146,9 +146,10 @@ Proprietary © Exaix Development Team. See [LICENSE](./LICENSE). [cite:4]
 
 ---
 
-**Footer — Agent Knowledge Base**
+# Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
 - **Planning**: [.copilot/planning/](./.copilot/planning/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
+`````

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T12:43:52.344Z",
+  "generated_at": "2026-04-08T13:02:43.498Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1120,7 +1120,7 @@
       "scope": "dev",
       "title": "Phase 73: ReflexiveAgent Convergence Detection & Adaptive Iteration Budget",
       "short_summary": "Add inline ConfidenceScorer feedback inside the ReflexiveAgent loop for early exit on quality convergence, oscillation detection, and complexity- proportional iteration budgets derived from IRequestAnalysis.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1231,7 +1231,7 @@
       "scope": "dev",
       "title": "Phase 74-R: RoutingPolicy Layer & Capability-Based Identity Selection",
       "short_summary": "Introduce a policy-driven identity routing layer that selects the most appropriate blueprint version at runtime using declared capabilities, request analysis signals, and Activity Journal performance data.",
-      "version": "1.0",
+      "version": "1.1",
       "topics": [
         "planning",
         "roadmap",
@@ -1957,12 +1957,11 @@
     },
     {
       "path": ".copilot/issues/exa-bin-path-changes.md",
-      "title": "Support for Independent Exactl Installations via EXA_BIN_PATH",
+      "title": "Support for Independent Exactl Installations via EXA*BIN*PATH",
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/exa-bin-path-changes.md.chunk0.txt",
-        ".copilot/chunks/exa-bin-path-changes.md.chunk1.txt",
-        ".copilot/chunks/exa-bin-path-changes.md.chunk2.txt"
+        ".copilot/chunks/exa-bin-path-changes.md.chunk1.txt"
       ]
     },
     {
@@ -2139,8 +2138,7 @@
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk0.txt",
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk1.txt",
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk2.txt",
-        ".copilot/chunks/phase46-cli-commands-missing.md.chunk3.txt",
-        ".copilot/chunks/phase46-cli-commands-missing.md.chunk4.txt"
+        ".copilot/chunks/phase46-cli-commands-missing.md.chunk3.txt"
       ]
     },
     {
