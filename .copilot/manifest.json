@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T09:59:10.447Z",
+  "generated_at": "2026-04-08T10:46:08.311Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -951,7 +951,7 @@
       "scope": "dev",
       "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
       "short_summary": "Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.",
-      "version": "1.6",
+      "version": "1.7",
       "topics": [
         "context-window",
         "budgeting",
@@ -1427,7 +1427,7 @@
       "scope": "dev",
       "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
       "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
-      "version": 1.3,
+      "version": 1.4,
       "topics": [
         "flow-orchestration",
         "error-recovery",

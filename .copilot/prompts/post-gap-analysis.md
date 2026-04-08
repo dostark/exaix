@@ -59,6 +59,8 @@ Do / Don't
   schemas change.
 - ✅ Do bump the document version and update the Status field in the frontmatter.
 - ✅ Do use any additionally supplied documents as context.
+- ✅ Do run Phase 3c traceability & configurability checks on every step that
+  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
 - ❌ Don't mark a plan step as gap-free unless you verified its test files.
 - ❌ Don't skip Phase 3b for steps that handle external data or file paths —
   even if the plan did not mention security.
@@ -67,8 +69,6 @@ Do / Don't
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
 - ❌ Don't renumber existing steps — new steps continue from the last existing
   step number.
-- ✅ Do run Phase 3c traceability & configurability checks on every step that
-  introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
 - ❌ Don't accept hardcoded threshold or timeout literals — they must be named
   constants in `src/shared/constants.ts` or config-schema fields.
 - ❌ Don't skip event payload typing — untyped events block audit chain

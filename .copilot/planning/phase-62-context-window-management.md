@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)"
 short_summary: Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.
-version: "1.6"
+version: "1.7"
 topics:
   - context-window
   - budgeting
@@ -345,3 +345,52 @@ All steps follow the TDD-First policy per .copilot/planning/README.md §F.
   - [ ] `deno task docs-agent-validate` reports zero errors.
   - [ ] `.copilot/cross-reference.md` contains a `budget_enforcement` entry pointing to Phase 62.
   - [ ] `deno task check:arch` passes.
+
+---
+
+## Phase 3c Review — Traceability & Configurability
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#post-gap-analysis` Phase 3c
+> **Scope:** Event naming constants, payload typing, config-driven values, config validation tests
+
+### Phase 3c Gap Summary
+
+| ID | Gap (short) | Severity | Checklist Item | In Tests? |
+| -- | ----------- | -------- | -------------- | --------- |
+| G6 | No config validation test rejecting invalid `budget_enforcement` field values | 🟡 Configurability | Config validation tests | ❌ |
+
+### Phase 3c Detailed Gap Entry
+
+#### G6 — 🟡 Configurability: No config validation test for invalid `budget_enforcement` values
+
+**Evidence:** Step 62.5 (planned) adds `budget_enforcement: ZBudgetPolicy.optional()` to `ConfigSchema` and adds tests for valid values (`cloud: false`). However, no planned or existing test asserts that `ConfigSchema` rejects malformed `budget_enforcement` objects such as:
+
+- `{ cloud: "yes" }` (string instead of boolean)
+- `{ cloud: 1 }` (number instead of boolean)
+- `{ unknown_field: true }` (extra field — Zod default `strict` vs `passthrough` behavior)
+
+`ZBudgetPolicy` is defined as `z.object({ cloud: z.boolean(), local: z.boolean() })` with `.default()` values. Zod will reject type mismatches at parse time, but this is only safe if callers use `.safeParse()` / `.parse()` (which `ConfigSchema` does via `ZConfig.parse()`). Without an explicit test, a future change to `ZBudgetPolicy` stripping the boolean coercion or switching to `z.coerce.boolean()` could silently allow invalid values.
+
+**Impact:** The `budget_enforcement` config path (added in Step 62.5) has no boundary validation test — violates the Phase 3c configurability requirement: _"at least one test rejecting invalid config values"_ (Checklist item 4).
+
+---
+
+### Phase 3c Gap Remediation
+
+#### Step 62.9 (G6): Config Validation Test for Invalid `budget_enforcement` Values
+
+- **Action**: In `tests/config/config_test.ts` (or the dedicated budget schema test file), add test cases that assert `ConfigSchema.safeParse()` returns `success: false` when `budget_enforcement` contains invalid types.
+
+- **Architecture Notes**: These tests are purely at the schema/parse boundary — no source code changes required. They validate that `ZBudgetPolicy` rejects non-boolean values before they reach `PromptBudgetAllocator`. Tests should be grouped under `"ConfigSchema: budget_enforcement validation"`.
+
+- **Planned Tests**:
+  - **Unit**: `tests/config/config_test.ts` — add three cases:
+    1. `"ConfigSchema: rejects budget_enforcement.cloud as string"` — parse `{ budget_enforcement: { cloud: "yes", local: false } }` → assert `success === false`.
+    1. `"ConfigSchema: rejects budget_enforcement.local as number"` — parse `{ budget_enforcement: { cloud: true, local: 1 } }` → assert `success === false`.
+    1. `"ConfigSchema: accepts omitted budget_enforcement (backward compat)"` — parse a config without `budget_enforcement` → assert `success === true` and `config.budget_enforcement === undefined`.
+
+- **Success Criteria**:
+  - [ ] All three new test cases exist and pass `deno task test`.
+  - [ ] No source code changes are required for this step — purely additive test coverage.
+  - [ ] `tests/config/config_test.ts` uses `ConfigSchema.safeParse()` (not `.parse()`) to avoid thrown exceptions in the invalid-type cases.

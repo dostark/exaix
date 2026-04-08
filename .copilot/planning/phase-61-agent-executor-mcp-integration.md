@@ -370,3 +370,83 @@ A stream error (subprocess crash, pipe break) produces no Activity Journal entry
   - [ ] All 5 steps in this document use `- **Architecture Notes**:` (not `- **Justification**:`).
   - [ ] `deno task docs-agent-validate` passes.
   - [ ] `execution_strategy.ts` module comment references the `dispose?()` lifecycle after Step 61.6.
+
+---
+
+## Phase 3c Review — Traceability & Configurability
+
+> **Performed by:** GitHub Copilot
+> **Workflow:** `#post-gap-analysis` Phase 3c
+> **Scope:** Event naming constants, payload typing, audit chain, config-driven values
+
+### Phase 3c Gap Summary
+
+| ID | Gap (short) | Severity | Checklist Item | In Tests? |
+| -- | ----------- | -------- | -------------- | --------- |
+| G6 | Agent event action strings are inline literals — no constants defined | 🟡 Traceability | Event naming constants | ❌ |
+| G7 | No test asserting `security.violation` event payload fields | 🟠 Traceability | Event assertions in tests | ❌ |
+
+### Phase 3c Detailed Gap Entries
+
+#### G6 — 🟡 Traceability: Agent event action strings are inline literals
+
+**Evidence:** All event action strings in `AgentExecutor` and `AgentRunner` are inline string literals:
+
+- `src/services/agent/agent_executor.ts` `logExecutionStart` → `action: "agent.execution_started"` (inline)
+- `src/services/agent/agent_executor.ts` `logExecutionComplete` → `action: "agent.execution_completed"` (inline)
+- `src/services/agent/agent_executor.ts` `logAgentOutput` → `this.logger.info("agent.output", ...)` (inline)
+- `src/services/agent/agent_executor.ts` `executeStep` → `this.logger.error("security.violation", ...)` (inline)
+- `src/services/agent/agent_runner.ts` line 463 → `"agent.execution_completed"` (inline duplicate)
+
+By contrast, timeout and iteration limits (`DEFAULT_AGENT_TIMEOUT_SEC`, `DEFAULT_AGENT_MAX_ITERATIONS`, `DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS`) are already named constants in `src/shared/constants.ts` — the event names should follow the same pattern.
+
+**Impact:** Typos in duplicated strings silently produce mismatched journal entries that are invisible to event-driven dashboards, grep-based auditing, and the planned Phase 3c constant-check tooling. The `AgentRunner` duplication of `"agent.execution_completed"` is an existing silent mismatch risk.
+
+---
+
+#### G7 — 🟠 Traceability: No test asserting `security.violation` event payload
+
+**Evidence:** Step 61.4 success criterion — `[x] Security violations are logged to the Activity Journal via logger.error("security.violation")`. The journal assertion tests in `tests/agents/agent_executor_journal_test.ts` assert `agentId`, `actorType`, `usage` payloads for `logExecutionComplete` — but no test verifies that the `security.violation` journal entry emitted in `executeStep` carries the expected payload fields: `portal`, `unauthorized_files`, `identity`.
+
+The planned `tests/security/agent_isolation_audit_test.ts` (Step 61.7) would cover the revert path but its planned assertions focus on `AgentExecutionError` being thrown rather than the journal event payload.
+
+**Impact:** A refactor of the `security.violation` payload (e.g., renaming `unauthorized_files` → `files`) would produce no test failure. The audit trail for security violations is untested at the payload level.
+
+---
+
+### Phase 3c Gap Remediation
+
+#### Step 61.10 (G6): Extract Agent Event Names to Constants
+
+- **Action**: In `src/shared/constants.ts`, add:
+  - `export const AGENT_EVENT_EXECUTION_STARTED = "agent.execution_started";`
+  - `export const AGENT_EVENT_EXECUTION_COMPLETED = "agent.execution_completed";`
+  - `export const AGENT_EVENT_OUTPUT = "agent.output";`
+  - `export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";`
+
+  Then replace all four inline string literals in `src/services/agent/agent_executor.ts` and the one duplicate in `src/services/agent/agent_runner.ts` with the corresponding constants.
+
+- **Architecture Notes**: Follows the existing constant naming pattern (`DEFAULT_AGENT_*`, `AGENT_TIMEOUT_SEC_*`). All four constants should be grouped under a `// Agent event names` comment block adjacent to the other agent constants. The `agent_runner.ts` duplicate of `"agent.execution_completed"` is an existing silent mismatch risk — both files must be updated atomically.
+
+- **Planned Tests**:
+  - **Unit**: `tests/agents/agent_executor_journal_test.ts` — add import of each constant and assert `activityEntry.action === AGENT_EVENT_EXECUTION_COMPLETED` (type-safe assertion instead of string literal).
+
+- **Success Criteria**:
+  - [ ] `src/shared/constants.ts` exports `AGENT_EVENT_EXECUTION_STARTED`, `AGENT_EVENT_EXECUTION_COMPLETED`, `AGENT_EVENT_OUTPUT`, `AGENT_EVENT_SECURITY_VIOLATION`.
+  - [ ] Zero inline `"agent.execution_completed"`, `"agent.execution_started"`, `"agent.output"`, `"security.violation"` strings in `agent_executor.ts` and `agent_runner.ts`.
+  - [ ] All existing journal tests pass after the constant substitution.
+
+---
+
+#### Step 61.11 (G7): Assert `security.violation` Journal Event Payload
+
+- **Action**: In `tests/security/agent_isolation_audit_test.ts` (Step 61.7), extend the test that asserts `AgentExecutionError` with `SECURITY_VIOLATION` to **also** assert the journal event payload. Specifically: after the error is thrown, query the mock `EventLogger` (or journal spy) for the emitted `security.violation` entry and assert `payload.portal`, `payload.unauthorized_files` (array with at least one entry), and `payload.identity` are present.
+
+- **Architecture Notes**: The test should use the mock `EventLogger` already instantiated in the test (not a real DB) to capture the emit call. No changes to `agent_executor.ts` itself — the existing `logger.error("security.violation", ...)` emit is the correct path; this step only adds test coverage for the payload shape.
+
+- **Planned Tests**:
+  - **Security**: `tests/security/agent_isolation_audit_test.ts` — extend planned test (Step 61.7) to include journal payload assertion.
+
+- **Success Criteria**:
+  - [ ] `tests/security/agent_isolation_audit_test.ts` asserts the `security.violation` entry with `payload.portal !== undefined`, `payload.unauthorized_files.length > 0`, `payload.identity !== undefined`.
+  - [ ] Test passes as part of `deno test --allow-all`.
