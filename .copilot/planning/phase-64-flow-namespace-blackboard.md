@@ -494,6 +494,82 @@ flowchart TD
 
 ---
 
+## Plan Amendments (Pre-Gap Analysis — 2026-04-08)
+
+### Implementation Corrections
+
+The following corrections to Steps 64.1–64.4 are required before implementation:
+
+1. **Step 64.2** — `getNamespacePath` must key on `traceId` (same as `FlowCheckpointService.getCheckpointPath`), not `flowRunId`. Fall back to `flowRunId` only when no `traceId` is present (same pattern as `saveCheckpointIfEnabled`). Update all Steps 64.2–64.3 references and planned tests.
+2. **Step 64.2** — Declare `NamespaceQuotaExceededError extends Error`; state one explicit file location (`src/errors/flow_errors.ts` or inline in `flow_namespace_service.ts`). Update the import in `flow_namespace_service.ts`.
+3. **Step 64.3** — Add `initializeNamespace` pseudocode: the helper always calls `load()` first; `load()` must return an empty snapshot (not throw) when no file exists. Document this as a `FlowNamespaceService.load()` success criterion.
+4. **Step 64.2** — Replicate the `executionRoot` defensive join from `FlowCheckpointService.getCheckpointPath` (`memoryExecution.includes("/") ? memoryExecution : join(memory, memoryExecution)`) in `getNamespacePath`. Update the path-formula design decision.
+5. **Step 64.1** — Remove the separate `src/shared/types/flow_namespace.ts` file. Export all inferred namespace types (`IFlowNamespaceConfig`, `IFlowNamespaceRead`, `IFlowNamespaceWrite`, `IFlowStepNamespace`, `IFlowNamespaceEntry`) from `src/shared/schemas/flow.ts` directly, following the `IFlowCheckpoint` / `IFlowStep` precedent.
+6. **Step 64.2** — Add `from` dot-path safety rules to Architecture Notes: (a) if `stepOutput` is not valid JSON, log warning via `eventLogger` and fall back to full string; (b) validate namespace key strings against `/^[a-zA-Z0-9._-]+$/`; (c) truncate extracted values to `min(maxBytes, 8192)` bytes before aggregate check. Add `tests/unit/services/flow_namespace_dotpath_safety_test.ts` to Planned Tests.
+7. **Step 64.3** — Add `tests/integration/64_flow_namespace_checkpoint_resume_test.ts` to Planned Tests: run two-step flow where step 1 writes a namespace key, fail at step 2, resume from checkpoint, verify step 2 can read step 1's key.
+8. **Step 64.4** — Resolve `FlowReporter.generate()` design ambiguity: omit key count from the `## Shared Namespace` report section (no new file I/O, no signature change). Document this choice in Architecture Notes and Backward Compatibility.
+
+---
+
+### Step 64.6: Extract Namespace Constants
+
+#### Actions
+
+- [ ] `src/shared/constants.ts`: Add below the `// Flow event names` block (Phase 63 Step 63.15):
+
+  ```typescript
+  // Namespace event names (Phase 64)
+  export const FLOW_EVENT_NAMESPACE_INITIALIZED = "flow.namespace.initialized";
+  export const FLOW_EVENT_NAMESPACE_READ = "flow.namespace.read";
+  export const FLOW_EVENT_NAMESPACE_WRITE = "flow.namespace.write";
+  // Namespace config defaults (Phase 64)
+  export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
+  ```
+
+- [ ] `src/services/flow/flow_namespace_service.ts` (Step 64.2): Import and use the three `FLOW_EVENT_NAMESPACE_*` constants instead of inline string literals.
+- [ ] `src/shared/schemas/flow.ts` (Step 64.1): Change `.default(65536)` to `.default(DEFAULT_NAMESPACE_MAX_BYTES)` in `ZFlowNamespaceConfig`.
+- [ ] Step 64.3 pseudocode (this plan): Replace all three quoted event strings with the constant names.
+
+#### Architecture Notes
+
+Follows the `FLOW_EVENT_*` / `DEFAULT_*` patterns established by Phase 63 Steps 63.15–63.16. Constants must be importable from `src/shared/constants.ts` so test files and `FlowNamespaceService` can reference them without importing `FlowRunner`.
+
+#### Planned Tests
+
+- [ ] `tests/shared/constants_test.ts`: `"FLOW_EVENT_NAMESPACE_* and DEFAULT_NAMESPACE_MAX_BYTES exported with correct values"` — imports and asserts all four new symbols.
+
+#### Success Criteria
+
+- [ ] `src/shared/constants.ts` exports `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, `FLOW_EVENT_NAMESPACE_WRITE`, and `DEFAULT_NAMESPACE_MAX_BYTES`.
+- [ ] No inline `"flow.namespace.*"` string literals remain in implementation files.
+- [ ] `ZFlowNamespaceConfig.maxBytes.default(DEFAULT_NAMESPACE_MAX_BYTES)` compiles without error.
+
+---
+
+### Step 64.7: Assert Namespace Event Payload Fields
+
+#### Actions
+
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: Add two test cases using `MockEventLogger`:
+  - Assert `flow.namespace.initialized` payload carries `namespaceId` (non-empty string) and `flowId`.
+  - Assert `flow.namespace.write` payload carries `namespaceId` and `stepId`.
+
+#### Architecture Notes
+
+Reuse the `MockEventLogger` pattern from `tests/flows/flow_runner_test.ts`. Assert field presence and string type — do **not** assert ISO date values (fragile). The test serves as a regression guard: a `namespaceId` → `traceId` rename in `FlowNamespaceService` must fail these assertions.
+
+#### Planned Tests
+
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.initialized event carries namespaceId and flowId"` — payload assertion
+- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.write event carries namespaceId and stepId"` — payload assertion
+
+#### Success Criteria
+
+- [ ] Both tests pass with `deno test --allow-all`.
+- [ ] Renaming `namespaceId` in the service without updating the constant causes a test failure.
+
+---
+
 ## Pre-Gap Analysis — 2026-04-08
 
 ### Assessment: 8 gaps must be resolved before coding (2 blocking, 2 security, 2 testing, 2 feasibility/conceptual)

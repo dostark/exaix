@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T13:02:43.498Z",
+  "generated_at": "2026-04-08T13:48:56.315Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1176,7 +1176,7 @@
       "scope": "dev",
       "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
       "short_summary": "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern.",
-      "version": "1.2",
+      "version": "1.3",
       "topics": [
         "agent-executor",
         "mcp",
@@ -1957,11 +1957,12 @@
     },
     {
       "path": ".copilot/issues/exa-bin-path-changes.md",
-      "title": "Support for Independent Exactl Installations via EXA*BIN*PATH",
+      "title": "Support for Independent Exactl Installations via EXA_BIN_PATH",
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/exa-bin-path-changes.md.chunk0.txt",
-        ".copilot/chunks/exa-bin-path-changes.md.chunk1.txt"
+        ".copilot/chunks/exa-bin-path-changes.md.chunk1.txt",
+        ".copilot/chunks/exa-bin-path-changes.md.chunk2.txt"
       ]
     },
     {
@@ -2138,7 +2139,8 @@
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk0.txt",
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk1.txt",
         ".copilot/chunks/phase46-cli-commands-missing.md.chunk2.txt",
-        ".copilot/chunks/phase46-cli-commands-missing.md.chunk3.txt"
+        ".copilot/chunks/phase46-cli-commands-missing.md.chunk3.txt",
+        ".copilot/chunks/phase46-cli-commands-missing.md.chunk4.txt"
       ]
     },
     {
