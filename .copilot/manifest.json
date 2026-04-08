@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-08T11:45:24.493Z",
+  "generated_at": "2026-04-08T11:51:50.512Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1315,7 +1315,7 @@
       "scope": "dev",
       "title": "Phase 67: Live Execution Streaming & Watch Command",
       "short_summary": "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",

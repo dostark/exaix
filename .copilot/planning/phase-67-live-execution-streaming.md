@@ -3,7 +3,7 @@ agent: senior-coder
 scope: dev
 title: "Phase 67: Live Execution Streaming & Watch Command"
 short_summary: "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions."
-version: "1.1"
+version: "1.2"
 topics: ["planning", "roadmap", "architecture", "tdd", "observability", "sse", "cli", "streaming", "ux"]
 ---
 
@@ -19,18 +19,18 @@ topics: ["planning", "roadmap", "architecture", "tdd", "observability", "sse", "
 ## Executive Summary
 
 - **The Problem**: Long-running flows and deep codebase analysis provide no real-time feedback. Users either wait for a timeout or completion, lacking visibility into mid-execution tool calls, ReflexiveAgent critique cycles, or stalls (Weakness 8).
-- **The Solution**: Add an in-memory pub/sub Event Bus to `EventLogger`, emit an execution heartbeat from `ExecutionLoop`, and expose an SSE endpoint. Add `exactl watch <trace_id>` to tail live executions.
+- **The Solution**: Add an in-memory pub/sub Event Bus to `EventLogger`, emit an execution heartbeat from `ReActLoopStrategy`, and expose an SSE endpoint. Add `exactl watch <trace_id>` to tail live executions.
 - **The Goal**: Provide instantaneous, `docker logs -f` style observability for the execution engine, enhancing UX and enabling future TUI/Web UI live-streaming.
 
 ## Current State Analysis
 
 ### Key Files
 
-| File                             | Current Role                          | Gap                                         |
+| File | Current Role | Gap |
 | -------------------------------- | ------------------------------------- | ------------------------------------------- |
-| `src/services/event_logger.ts`   | Writes structured events to SQLite/DB | No pub/sub or live broadcast mechanism      |
-| `src/services/execution_loop.ts` | Orchestrates the tool/agent loop      | No heartbeat emission during long LLM calls |
-| `src/cli/main.ts`                | CLI entry point                       | Missing `watch` command for trace tailing   |
+| `src/services/core/event_logger.ts` | Writes structured events to SQLite/DB | No pub/sub or live broadcast mechanism |
+| `src/services/agent/execution_loop.ts` | Orchestrates the tool/agent loop | No heartbeat emission during long LLM calls |
+| `src/cli/main.ts` | CLI entry point | Missing `watch` command for trace tailing |
 
 ### Constraints
 
@@ -40,8 +40,8 @@ topics: ["planning", "roadmap", "architecture", "tdd", "observability", "sse", "
 
 ### Interfaces Affected
 
-- `src/services/event_logger.ts:IEventLogger`
-- `src/services/execution_loop.ts:ExecutionLoop`
+- `src/services/core/event_logger.ts:IEventLogger`
+- `src/services/agent/execution_loop.ts:ExecutionLoop`
 
 ## Technical Architecture & Detailed Design
 
@@ -52,7 +52,14 @@ export const ZStreamingEvent = z.object({
   eventId: z.string().uuid(),
   traceId: z.string(),
   timestamp: z.string().datetime(),
-  type: z.enum(["agent.heartbeat", "tool.start", "tool.end", "llm.stream", "flow.status"]),
+  // Event type constants are defined in Step 67.0 (src/shared/constants.ts)
+  type: z.enum([
+    STREAMING_EVENT_HEARTBEAT,
+    STREAMING_EVENT_TOOL_START,
+    STREAMING_EVENT_TOOL_END,
+    STREAMING_EVENT_LLM_STREAM,
+    STREAMING_EVENT_FLOW_STATUS,
+  ] as const),
   payload: z.record(z.unknown()),
 });
 
@@ -78,7 +85,7 @@ export interface ISseServer {
 
 ```mermaid
 flowchart TD
-    A[ExecutionLoop / ToolReflector] -->|Emit Event / Heartbeat| B[EventLogger]
+    A[ReActLoopStrategy / ToolReflector] -->|Emit Event / Heartbeat| B[EventLogger]
     B -->|Persist| C[(SQLite/Postgres)]
     B -->|Publish| D[EventBusService]
     D -->|Push| E[SSE Handler]
@@ -89,10 +96,36 @@ flowchart TD
 ### Design Decisions
 
 - **In-Memory Pub/Sub**: We use a simple `EventEmitter` pattern locally since the daemon and executors run in the same process. No Redis/external broker required for Solo/Team.
-- **Heartbeat Interval**: `ExecutionLoop` emits `agent.heartbeat` every 5 seconds during long LLM network wait times.
-- **Backpressure**: EventBus will drop events for a specific subscriber if its queue exceeds 1000 events to prevent memory leaks.
+- **Heartbeat Interval**: `ReActLoopStrategy` emits `STREAMING_EVENT_HEARTBEAT` every `EXECUTION_HEARTBEAT_INTERVAL_MS` (5 000 ms) immediately before `await provider.generate()` in `src/services/agent/strategies/react_loop_strategy.ts`.
+- **Backpressure**: EventBus will drop events for a specific subscriber if its queue exceeds `EVENT_BUS_MAX_SUBSCRIBER_QUEUE` (1 000) events to prevent memory leaks.
 
 ## Implementation Plan (Step-by-Step)
+
+### Step 67.0: Define Streaming Constants
+
+1. **Actions**
+
+- Add the following constants to `src/shared/constants.ts`:
+  - `STREAMING_EVENT_HEARTBEAT = "agent.heartbeat"`
+  - `STREAMING_EVENT_TOOL_START = "tool.start"`
+  - `STREAMING_EVENT_TOOL_END = "tool.end"`
+  - `STREAMING_EVENT_LLM_STREAM = "llm.stream"`
+  - `STREAMING_EVENT_FLOW_STATUS = "flow.status"`
+  - `EXECUTION_HEARTBEAT_INTERVAL_MS = 5000`
+  - `EVENT_BUS_MAX_SUBSCRIBER_QUEUE = 1000`
+
+1. **Architecture Notes**
+
+- All subsequent steps must import these constants rather than using inline string or numeric literals.
+
+1. **Planned Tests**
+
+- No dedicated test file; constants are validated at compile time and exercised by tests in Steps 67.1–67.4.
+
+1. **Success Criteria**
+
+- `src/shared/constants.ts` exports all 7 constants without compile errors.
+- No inline string literal `"agent.heartbeat"` or numeric literal `5000`/`1000` appears in Steps 67.1–67.4 implementation files.
 
 ### Step 67.1: Event Bus Foundation
 
@@ -100,15 +133,16 @@ flowchart TD
 
 - Create `src/services/observability/event_bus_service.ts`.
 - Implement `publish`, `subscribe`, and clean cleanup logic.
-- Update `src/services/event_logger.ts` to push events to the bus synchronously.
+- Update `src/services/core/event_logger.ts` to push events to the bus synchronously.
 
 1. **Architecture Notes**
 
 - Subscribers are mapped by `traceId`. A `*` wildcard can be used for daemon-wide monitoring.
+- Add `eventBus?: IEventBusService` to `IEventLoggerConfig` in `src/services/core/event_logger.ts`. The field is optional and defaults to a no-op; only callers wanting live streaming need to pass a bus instance — no existing `new EventLogger(...)` call site requires modification for non-streaming paths.
 
 1. **Planned Tests**
 
-- `tests/unit/services/event_bus_service_test.ts`
+- `tests/services/observability/event_bus_service_test.ts`
 
 1. **Success Criteria**
 
@@ -119,20 +153,22 @@ flowchart TD
 
 1. **Actions**
 
-- Update `src/services/execution_loop.ts` to emit `agent.heartbeat` on a `setInterval` timer (5s) while waiting for `provider.generate()`.
-- Ensure interval is cleared in `finally` blocks.
+- Update `ReActLoopStrategy.execute()` in `src/services/agent/strategies/react_loop_strategy.ts` to set a `setInterval` using `EXECUTION_HEARTBEAT_INTERVAL_MS` immediately before `await this.provider.generate(...)` and clear it in the surrounding `try/finally` block.
+- Publish `STREAMING_EVENT_HEARTBEAT` events via the injected `IEventBusService`.
+- Ensure the interval is cleared on success, failure, and cancellation.
 
 1. **Architecture Notes**
 
-- Include current execution step and elapsed time in the heartbeat payload.
+- Include the current execution step name and elapsed wall-clock time in the heartbeat payload.
+- `ExecutionLoop` (`src/services/agent/execution_loop.ts`) remains the orchestrator; the heartbeat fires from within the inner strategy layer where the LLM await actually occurs.
 
 1. **Planned Tests**
 
-- `tests/unit/services/execution_loop_heartbeat_test.ts`
+- `tests/services/agent/strategies/react_loop_strategy_heartbeat_test.ts`
 
 1. **Success Criteria**
 
-- Heartbeats are emitted exactly every 5 seconds during mocked long-running LLM calls.
+- Heartbeats are emitted exactly every `EXECUTION_HEARTBEAT_INTERVAL_MS` during mocked long-running LLM calls.
 - Timer is rigorously cleared on success, failure, and cancellation.
 
 ### Step 67.3: Local SSE Endpoint
@@ -144,11 +180,13 @@ flowchart TD
 
 1. **Architecture Notes**
 
+- Bind the HTTP server to `127.0.0.1` only — never `0.0.0.0` — to prevent remote subscription to local execution events (OWASP A10).
+- Validate the `:id` URL path parameter against `z.string().uuid()` before forwarding to `EventBusService.subscribe()`; return HTTP 400 for non-UUID values (OWASP A03).
 - Handle client disconnects (`req.signal.addEventListener("abort")`) to trigger bus unsubscription.
 
 1. **Planned Tests**
 
-- `tests/integration/api/sse_handler_test.ts`
+- `tests/integration/api/sse_handler_test.ts` — include a negative test asserting HTTP 400 for a non-UUID `traceId`.
 
 1. **Success Criteria**
 
@@ -178,10 +216,10 @@ flowchart TD
 
 ## Risks & Mitigations
 
-| Risk                                          | Impact | Likelihood | Mitigation Strategy                                       |
+| Risk | Impact | Likelihood | Mitigation Strategy |
 | --------------------------------------------- | ------ | ---------: | --------------------------------------------------------- |
-| R1: Memory leak from unclosed SSE connections | High   |     Medium | Strict `AbortController` bindings and connection timeouts |
-| R2: Console spam during fast tool execution   | Low    |       High | Debounce or summarize rapid events in the CLI formatter   |
+| R1: Memory leak from unclosed SSE connections | High | Medium | Strict `AbortController` bindings and connection timeouts |
+| R2: Console spam during fast tool execution | Low | High | Debounce or summarize rapid events in the CLI formatter |
 
 ## Success Metrics (Quantitative)
 
@@ -206,7 +244,7 @@ flowchart TD
 ### Gap Summary
 
 | ID | Gap (short) | Severity | Plan Section | Blocks Coding? |
-| -- | ----------- | -------- | ------------ | -------------- |
+| --- | ----------- | -------- | ------------ | -------------- |
 | G1 | `src/services/event_logger.ts` wrong path — actual `src/services/core/event_logger.ts` | 🔴 Critical | Key Files / Step 67.1 | ✅ Yes |
 | G2 | `src/services/execution_loop.ts` wrong path — actual `src/services/agent/execution_loop.ts` | 🔴 Critical | Key Files / Step 67.2 | ✅ Yes |
 | G3 | `ExecutionLoop` never calls `provider.generate()` — heartbeat injection site is wrong | 🔴 Critical | Step 67.2 | ✅ Yes |
