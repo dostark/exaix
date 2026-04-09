@@ -76,7 +76,6 @@ Deno.test("[Step63.4] FlowRunner compensates prior portal changes and leaves the
         return { thought: "step1", content: "step1-result", raw: "step1-result" };
       },
       agent2: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 5));
         await Deno.writeTextFile(step2Path, "step2 output\n");
         return { thought: "step2", content: "step2-result", raw: "step2-result" };
       },

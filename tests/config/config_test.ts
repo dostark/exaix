@@ -108,6 +108,23 @@ Deno.test("ConfigSchema: accepts omitted budget_enforcement (backward compat)", 
   }
 });
 
+Deno.test("ConfigSchema accepts max_flow_retry_cost_usd", () => {
+  const result = ConfigSchema.safeParse({
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+    max_flow_retry_cost_usd: 0.25,
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    const parsed = result.data as { max_flow_retry_cost_usd?: number };
+    assertEquals(parsed.max_flow_retry_cost_usd, 0.25);
+  }
+});
+
 Deno.test("ConfigSchema applies defaults for missing agents section", () => {
   const configWithoutAgents = {
     system: {

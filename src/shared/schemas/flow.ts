@@ -38,6 +38,7 @@ export const ZFlowStepOnError = z.object({
   action: z.nativeEnum(FlowStepOnErrorAction),
   fallbackStep: z.string().optional(),
   maxRetries: z.number().int().min(1).max(5).optional().default(1),
+  backoffMs: z.number().int().positive().optional().default(1000),
   compensate: z.array(ZToolCall).optional(),
 });
 

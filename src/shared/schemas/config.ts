@@ -320,6 +320,8 @@ export const ConfigSchema = z.object({
   }),
   /** Prompt budget enforcement policy overrides (Phase 62) */
   budget_enforcement: ZBudgetPolicy.optional(),
+  /** Flow retry cost budget guard (Phase 63). Omit or set to 0 to disable. */
+  max_flow_retry_cost_usd: z.number().min(0).optional(),
   /** Request intent analysis configuration (Phase 45) */
   request_analysis: z.object({
     /**

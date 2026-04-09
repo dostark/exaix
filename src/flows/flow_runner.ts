@@ -27,6 +27,7 @@ import { LlmClient } from "../ai/llm_client.ts";
 import type { ToolHandler } from "../mcp/tool_handler.ts";
 import type { Config } from "../shared/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
+import { RetryPolicy } from "../services/core/retry_policy.ts";
 import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
@@ -110,6 +111,8 @@ export interface IStepResult {
   startedAt: Date;
   /** When the step completed */
   completedAt: Date;
+  /** Zero-based wave number used for deterministic compensation ordering. */
+  waveIndex?: number;
 }
 
 /**
@@ -557,7 +560,10 @@ export class FlowRunner implements IFlowRunner {
 
       try {
         if (promiseResult.status === "fulfilled") {
-          const result = promiseResult.value;
+          const result = {
+            ...promiseResult.value,
+            waveIndex: waveNumber,
+          } satisfies IStepResult;
           stepResults.set(stepId, result);
 
           if (result.success) {
@@ -585,7 +591,12 @@ export class FlowRunner implements IFlowRunner {
             duration: 0,
             startedAt: new Date(),
             completedAt: new Date(),
+            waveIndex: waveNumber,
           };
+
+          if (abortError?.failureResult) {
+            errorIStepResult.waveIndex = waveNumber;
+          }
 
           stepResults.set(stepId, errorIStepResult);
           waveFailureCount++;
@@ -838,8 +849,11 @@ export class FlowRunner implements IFlowRunner {
 
     if (step.onError.action === FlowStepOnErrorAction.RETRY) {
       const maxRetries = step.onError.maxRetries ?? 1;
+      const retryBackoffMs = step.onError.backoffMs ?? 1000;
 
       for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
+        await this.enforceRetryCostBudget(flowRunId, request);
+
         await this.eventLogger.log("flow.step.retry", {
           flowRunId,
           stepId: step.id,
@@ -850,6 +864,8 @@ export class FlowRunner implements IFlowRunner {
           traceId: request.traceId,
           requestId: request.requestId,
         });
+
+        await this.applyRetryBackoff(retryBackoffMs, retryAttempt);
 
         try {
           const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
@@ -913,6 +929,58 @@ export class FlowRunner implements IFlowRunner {
     return failureResult;
   }
 
+  private async applyRetryBackoff(backoffMs: number, retryAttempt: number): Promise<void> {
+    const retryPolicy = new RetryPolicy({
+      initialDelayMs: backoffMs,
+      maxDelayMs: 30000,
+      backoffMultiplier: 2,
+      jitterFactor: 0,
+    });
+
+    const delayMs = retryPolicy.calculateDelay(retryAttempt);
+    if (Deno.env.get("DENO_TEST") !== "1") {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  private async enforceRetryCostBudget(
+    flowRunId: string,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+  ): Promise<void> {
+    const maxFlowRetryCostUsd = this.config?.max_flow_retry_cost_usd;
+    if (!this.db || !request.traceId || !maxFlowRetryCostUsd || maxFlowRetryCostUsd <= 0) {
+      return;
+    }
+
+    const totalCostUsd = await this.getCumulativeFlowCostUsd(request.traceId);
+    if (totalCostUsd > maxFlowRetryCostUsd) {
+      throw new FlowExecutionError("Retry budget exceeded", flowRunId);
+    }
+  }
+
+  private async getCumulativeFlowCostUsd(traceId: string): Promise<number> {
+    const tokenEvents = await this.db!.queryActivity({
+      traceId,
+      actionType: "llm.usage",
+    });
+
+    let totalCostUsd = 0;
+    for (const event of tokenEvents) {
+      try {
+        const payload = JSON.parse(event.payload) as Record<string, JSONValue>;
+        const rawCost = payload.cost_usd;
+        const costUsd = typeof rawCost === "number" ? rawCost : Number(rawCost ?? 0);
+        if (Number.isFinite(costUsd)) {
+          totalCostUsd += costUsd;
+        }
+      } catch {
+        // Ignore malformed activity rows when calculating the retry budget.
+      }
+    }
+
+    return totalCostUsd;
+  }
+
   private async executeCompensatingTransactions(
     flowRunId: string,
     failedStep: IFlowStep,
@@ -932,7 +1000,21 @@ export class FlowRunner implements IFlowRunner {
 
     const completedStepIds = Array.from(stepResults.values())
       .filter((result) => result.success)
-      .sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime())
+      .sort((left, right) => {
+        const waveDiff = (right.waveIndex ?? -1) - (left.waveIndex ?? -1);
+        if (waveDiff !== 0) {
+          return waveDiff;
+        }
+
+        const completedAtDiff = right.completedAt.getTime() - left.completedAt.getTime();
+        if (completedAtDiff !== 0) {
+          return completedAtDiff;
+        }
+
+        const leftFlowIndex = flow.steps.findIndex((candidate) => candidate.id === left.stepId);
+        const rightFlowIndex = flow.steps.findIndex((candidate) => candidate.id === right.stepId);
+        return rightFlowIndex - leftFlowIndex;
+      })
       .map((result) => result.stepId);
 
     for (const completedStepId of completedStepIds) {

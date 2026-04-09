@@ -200,3 +200,119 @@ Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and contin
     await cleanup();
   }
 });
+
+Deno.test("[Step63.11] FlowRunner compensates same-wave steps in reverse declaration order when timestamps tie", async () => {
+  const { config, cleanup } = await initTestDbService();
+
+  try {
+    RecordingDeleteFileTool.calls = [];
+
+    const traceId = "trace-flow-compensation-same-wave";
+    const requestId = "req-flow-compensation-same-wave";
+    const fixedTimestamp = new Date("2026-04-09T00:00:00.000Z").getTime();
+    const RealDate = Date;
+
+    class FixedDate extends RealDate {
+      constructor(value?: string | number | Date) {
+        super(value ?? fixedTimestamp);
+      }
+
+      static override now(): number {
+        return fixedTimestamp;
+      }
+
+      static override parse(dateString: string): number {
+        return RealDate.parse(dateString);
+      }
+
+      static override UTC(...args: [number, number, number?, number?, number?, number?, number?]): number {
+        return RealDate.UTC(...args);
+      }
+    }
+
+    const flow: IFlowInput = {
+      id: "same-wave-compensation-flow",
+      name: "Same Wave Compensation Flow",
+      description: "Ensures tied same-wave completions compensate in reverse declaration order",
+      version: DEFAULT_FLOW_VERSION,
+      steps: [
+        {
+          id: "stepA",
+          name: "Step A",
+          identity: "agentA",
+          dependsOn: [],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: 1000 },
+          onError: {
+            action: FlowStepOnErrorAction.COMPENSATE,
+            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/stepA" } }],
+          },
+        },
+        {
+          id: "stepB",
+          name: "Step B",
+          identity: "agentB",
+          dependsOn: [],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: 1000 },
+          onError: {
+            action: FlowStepOnErrorAction.COMPENSATE,
+            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/stepB" } }],
+          },
+        },
+        {
+          id: "stepFail",
+          name: "Failing Step",
+          identity: "agentFail",
+          dependsOn: ["stepA", "stepB"],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: 1000 },
+          onError: { action: FlowStepOnErrorAction.COMPENSATE },
+        },
+      ],
+      output: { from: "stepFail", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 2, failFast: true },
+    };
+
+    const executor = new SequencedAgentExecutor({
+      agentA: ["stepA-result"],
+      agentB: ["stepB-result"],
+      agentFail: [new Error("stepFail exploded")],
+    });
+
+    const logger = new RecordingFlowLogger();
+    const compensationContext = createStubContext({ config: createStubConfig(config) });
+    const deleteFileTool = new RecordingDeleteFileTool(compensationContext);
+
+    const runner = new FlowRunner({
+      agentExecutor: executor,
+      eventLogger: logger,
+      config,
+      mcpHandlers: [deleteFileTool],
+    });
+
+    globalThis.Date = FixedDate as DateConstructor;
+
+    try {
+      await assertRejects(
+        () => runner.execute(flow as IFlow, { userPrompt: "trigger same-wave compensation", traceId, requestId }),
+        FlowExecutionError,
+      );
+    } finally {
+      globalThis.Date = RealDate;
+    }
+
+    assertEquals(
+      RecordingDeleteFileTool.calls.map((call) => call.path),
+      ["rollback/stepB", "rollback/stepA"],
+    );
+
+    const compensatedEvents = logger.events.filter((entry) => entry.event === "flow.step.compensated");
+    assertEquals(
+      compensatedEvents.map((entry) => entry.payload.sourceStepId),
+      ["stepB", "stepA"],
+    );
+  } finally {
+    await cleanup();
+  }
+});

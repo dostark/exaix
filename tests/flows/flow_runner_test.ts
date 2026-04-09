@@ -15,12 +15,15 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
+import type { Config } from "../../src/shared/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import { RetryPolicy } from "../../src/services/core/retry_policy.ts";
 import { DEFAULT_FLOW_VERSION, PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "../../src/shared/constants.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
 import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import { createMockConfig } from "../helpers/config.ts";
 
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */
 interface TokenSummary {
@@ -339,6 +342,68 @@ Deno.test("FlowRunner: retries a failed step until it succeeds", async () => {
   assertEquals(retryEvents[1].payload.attempt, 2);
   assertEquals(retryEvents[1].payload.error, "temporary failure 2");
   assertEquals(retryEvents[1].payload.maxRetries, 2);
+});
+
+Deno.test("FlowRunner: retry backoff is skipped in test mode", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step1",
+      name: "Retrying Step",
+      identity: "flaky-agent",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "retry-flow-test-mode",
+    name: "Retry Flow Test Mode",
+    description: "Retries a flaky step without waiting in tests",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "flaky-agent": [
+      new Error("temporary failure 1"),
+      new Error("temporary failure 2"),
+      "Recovered result",
+    ],
+  });
+  const mockLogger = new MockEventLogger();
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+
+  const originalCalculateDelay = RetryPolicy.prototype.calculateDelay;
+  const previousTestMode = Deno.env.get("DENO_TEST");
+  const delayAttempts: number[] = [];
+
+  RetryPolicy.prototype.calculateDelay = function (attempt: number): number {
+    delayAttempts.push(attempt);
+    return originalCalculateDelay.call(this, attempt);
+  };
+  Deno.env.set("DENO_TEST", "1");
+
+  try {
+    const startedAt = Date.now();
+    const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+    const durationMs = Date.now() - startedAt;
+
+    assertEquals(result.success, true);
+    assertEquals(result.output, "Recovered result");
+    assertEquals(delayAttempts, [1, 2]);
+    assert(durationMs < 500, `expected retry backoff to be skipped in tests, got ${durationMs}ms`);
+  } finally {
+    RetryPolicy.prototype.calculateDelay = originalCalculateDelay;
+    if (previousTestMode === undefined) {
+      Deno.env.delete("DENO_TEST");
+    } else {
+      Deno.env.set("DENO_TEST", previousTestMode);
+    }
+  }
 });
 
 Deno.test("FlowRunner: falls back to a recovery step when primary step fails", async () => {
@@ -1843,9 +1908,32 @@ Deno.test("FlowRunner: logs hasSkills in input.prepared event", async () => {
 // Mock DatabaseService for testing token aggregation
 class MockDatabaseService {
   private activities: Array<ActivityRecord> = [];
+  private readonly queryResponses: Array<ActivityRecord[]>;
+  queryCallCount = 0;
 
-  constructor(activities: Array<{ traceId: string; actionType: string; payload: Record<string, JSONValue> }> = []) {
-    this.activities = activities.map((a) => ({
+  constructor(
+    activities: Array<{ traceId: string; actionType: string; payload: Record<string, JSONValue> }> = [],
+    queryResponses: Array<Array<{ traceId: string; actionType: string; payload: Record<string, JSONValue> }>> = [],
+  ) {
+    this.activities = MockDatabaseService.toActivityRecords(activities);
+    this.queryResponses = queryResponses.map((response) => MockDatabaseService.toActivityRecords(response));
+  }
+
+  queryActivity(filter: IJournalFilterOptions): Promise<ActivityRecord[]> {
+    this.queryCallCount++;
+    const responseIndex = this.queryCallCount - 1;
+    const source = this.queryResponses[responseIndex] ?? this.activities;
+    return Promise.resolve(source.filter((a) => {
+      if (filter.traceId && a.trace_id !== filter.traceId) return false;
+      if (filter.actionType && a.action_type !== filter.actionType) return false;
+      return true;
+    }));
+  }
+
+  private static toActivityRecords(
+    activities: Array<{ traceId: string; actionType: string; payload: Record<string, JSONValue> }>,
+  ): Array<ActivityRecord> {
+    return activities.map((a) => ({
       id: crypto.randomUUID(),
       trace_id: a.traceId,
       action_type: a.actionType,
@@ -1856,14 +1944,6 @@ class MockDatabaseService {
       identity_id: null,
       agent_kind: null,
       target: null,
-    }));
-  }
-
-  queryActivity(filter: IJournalFilterOptions): Promise<ActivityRecord[]> {
-    return Promise.resolve(this.activities.filter((a) => {
-      if (filter.traceId && a.trace_id !== filter.traceId) return false;
-      if (filter.actionType && a.action_type !== filter.actionType) return false;
-      return true;
     }));
   }
 
@@ -2055,4 +2135,78 @@ Deno.test("[regression] FlowRunner: handles zero token usage gracefully", async 
   assertEquals(summary.totalTokens, 0);
   assertEquals(summary.totalCostUsd, 0);
   assertEquals(Object.keys(summary.providers).length, 0);
+});
+
+Deno.test("FlowRunner: retry aborts when cost budget is exceeded", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "flow-runner-retry-budget-" });
+  const previousTestMode = Deno.env.get("DENO_TEST");
+
+  try {
+    const steps: IFlowStepInput[] = [
+      {
+        id: "step1",
+        name: "Retrying Step",
+        identity: "flaky-agent",
+        dependsOn: [],
+        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+        onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2, backoffMs: 250 },
+        retry: { maxAttempts: 1, backoffMs: 1000 },
+      },
+    ];
+
+    const flow: IFlowInput = {
+      id: "retry-budget-flow",
+      name: "Retry Budget Flow",
+      description: "Aborts retries once cumulative cost exceeds the configured budget",
+      version: DEFAULT_FLOW_VERSION,
+      steps,
+      output: { from: "step1", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 3, failFast: true },
+    };
+
+    const mockAgentRunner = new SequencedMockAgentRunner({
+      "flaky-agent": [
+        new Error("temporary failure 1"),
+        new Error("temporary failure 2"),
+        "Recovered result",
+      ],
+    });
+    const mockLogger = new MockEventLogger();
+    const mockDb = new MockDatabaseService(
+      [],
+      [
+        [{ traceId: "test-trace-budget", actionType: "llm.usage", payload: { cost_usd: 0.002 } }],
+        [{ traceId: "test-trace-budget", actionType: "llm.usage", payload: { cost_usd: 0.006 } }],
+      ],
+    );
+    const config = {
+      ...createMockConfig(tempDir),
+      max_flow_retry_cost_usd: 0.005,
+    } as Config;
+
+    const runner = new FlowRunner({
+      agentExecutor: mockAgentRunner,
+      eventLogger: mockLogger,
+      db: mockDb,
+      config,
+    });
+
+    Deno.env.set("DENO_TEST", "1");
+
+    await assertRejects(
+      async () => await runner.execute(flow as IFlow, { userPrompt: "test request", traceId: "test-trace-budget" }),
+      FlowExecutionError,
+      "Retry budget exceeded",
+    );
+
+    assertEquals(mockAgentRunner.calls, ["flaky-agent", "flaky-agent"]);
+    assertEquals(mockDb.queryCallCount, 2);
+  } finally {
+    if (previousTestMode === undefined) {
+      Deno.env.delete("DENO_TEST");
+    } else {
+      Deno.env.set("DENO_TEST", previousTestMode);
+    }
+    await Deno.remove(tempDir, { recursive: true });
+  }
 });

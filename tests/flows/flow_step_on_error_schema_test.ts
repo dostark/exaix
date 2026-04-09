@@ -14,6 +14,10 @@ Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
   const retryResult = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2 });
   assertEquals(retryResult.action, "retry");
   assertEquals(retryResult.maxRetries, 2);
+  assertEquals(retryResult.backoffMs, 1000);
+
+  const retryWithBackoff = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2, backoffMs: 250 });
+  assertEquals(retryWithBackoff.backoffMs, 250);
 
   const fallbackResult = ZFlowStepOnError.parse({ action: "fallback", fallbackStep: "repair" });
   assertEquals(fallbackResult.action, "fallback");

@@ -20,7 +20,7 @@ topics:
 
 **Author**: Comet Assistant (via senior-coder Blueprint)
 **Date**: 2026-04-02
-**Last Updated**: 2026-04-07
+**Last Updated**: 2026-04-09
 **Impact Level**: H (Core Flow Reliability)
 **Risk Level**: M (Modifies FlowRunner step execution loop)
 **Phase Dependencies**: Phase 57, Phase 59, Phase 62
@@ -129,7 +129,7 @@ export const ZFlowCheckpoint = z.object({
 ```text
 for attempt in 1..onError.maxRetries:
   // Phase 62 Integration: Check if retry exceeds cumulative cost budget
-  if (currentFlowCost() > maxFlowBudget) throw BudgetExceededError()
+  if (currentFlowCost() > maxFlowRetryCostUsd) throw FlowExecutionError("Retry budget exceeded")
 
   result = await runStep(step)
   if result.ok: break
@@ -238,12 +238,12 @@ steps:
 
 ## Risks & Mitigations
 
-| Risk                                               | Impact | Likelihood | Mitigation                                                                                        |
-| :------------------------------------------------- | :----- | :--------- | :------------------------------------------------------------------------------------------------ |
-| **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                 |
-| **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version. |
-| **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts.         |
-| **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                       |
+| Risk                                               | Impact | Likelihood | Mitigation                                                                                                            |
+| :------------------------------------------------- | :----- | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
+| **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                                     |
+| **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version.                     |
+| **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts. **Mitigated** in Step 63.6. |
+| **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                                           |
 
 ---
 
@@ -252,88 +252,12 @@ steps:
 - [x] **0 stranded worktrees** — Proven by `tests/integration/37_multi_step_recovery_test.ts`: compensated files are removed, compensation succeeds, and the git worktree is clean after downstream failure.
 - [x] **100% retry visibility** — Proven by `tests/flows/flow_runner_test.ts`: retry attempts emit one `flow.step.retry` event per failed attempt with attempt/error payloads, and fallback emits the expected `flow.step.fallback` journal event.
 - [x] **Checkpoint resume** — Proven by `tests/integration/services/flow_checkpoint_test.ts`: resumed execution restores the checkpoint, skips completed steps, and completes with measured resume overhead under 2 seconds.
-- [ ] **Backoff on retry** — Proven by unit test in `tests/flows/flow_runner_test.ts`: DENO_TEST mode skips delay; production path uses exponential multiplier via `RetryPolicy`.
-- [ ] **Stable LIFO for concurrent steps** — Proven by updated `tests/integration/services/flow_compensation_test.ts`: same-wave steps compensated in deterministic order with `setTimeout` workaround removed.
+- [x] **Backoff on retry** — Proven by unit test in `tests/flows/flow_runner_test.ts`: DENO_TEST mode skips delay; production path uses exponential multiplier via `RetryPolicy`.
+- [x] **Stable LIFO for concurrent steps** — Proven by updated `tests/integration/services/flow_compensation_test.ts`: same-wave steps compensated in deterministic reverse-declaration order when timestamps tie, and `tests/integration/37_multi_step_recovery_test.ts` now passes without the old `setTimeout` workaround.
 
 ---
 
 **Agent Instructions**: Follow the implementation steps in sequence. Do not proceed to the next step until all "Planned Tests" for the current step pass with `deno task test`. For Step 63.4, run the functional test against a real worktree (use the `--worktree-mode` test flag) to validate git state.
-
-Searched for text `onError|compensat|retry|fallback|FlowAbort|handleStepFailure|BudgetExceeded` (`**/src/flows/flow_runner.ts`), 20 results
-
-Searched for text `onError|compensat|retry|fallback|FlowAbort|checkpoint|recovery` (`**/src/shared/schemas/flow.ts`), 14 results
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#1-1), lines 1 to 65
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#820-820), lines 820 to 1050
-
-Read [](file:///home/dkasymov/git/exaix/src/shared/schemas/flow.ts#30-30), lines 30 to 65
-
-Searched for text `backoff|exponential|sleep|delay|BudgetExceeded|maxFlowBudget|cyclic|cycle` (`**/src/flows/flow_runner.ts`), no results
-
-Searched for text `retry|fallback|abort|compensat|onError|backoff|cyclic|budget` (`**/tests/flows/flow_runner_test.ts`), 20 results
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#80-80), lines 80 to 155
-
-Searched for regex `onError|FlowStepOnErrorAction|RETRY|FALLBACK|ABORT|COMPENSATE` (`**/tests/flows/flow_runner_test.ts`), 20 results
-
-Searched for text `cyclic|validateFallback|fallbackChain|loadCheckpointIfAvailable|schemaVersion` (`**/src/flows/flow_runner.ts`), 3 results
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#1456-1456), lines 1456 to 1530
-
-Read [](file:///home/dkasymov/git/exaix/tests/flows/flow_runner_test.ts#295-295), lines 295 to 430
-
-Compacted conversation
-
-Read [](file:///home/dkasymov/git/exaix/tests/flows/flow_runner_test.ts#430-430), lines 430 to 530
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#1530-1530), lines 1530 to 1560
-
-Searched for files matching `**/tests/integration/*flow*checkpoint*`, no matches
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#1560-1560), lines 1560 to 1620
-
-Searched for files matching `**/tests/integration/**/*`, 46 matches
-
-Searched for regex `COMPENSATE|compensat|compensation|FlowStepOnErrorAction.ABORT|FlowStepOnErrorAction.FALLBACK` (`**/tests/flows/flow_runner_test.ts`), 2 results
-
-Read [](file:///home/dkasymov/git/exaix/tests/integration/services/flow_checkpoint_test.ts#1-1), lines 1 to 120
-
-Read [](file:///home/dkasymov/git/exaix/tests/integration/services/flow_compensation_test.ts#1-1), lines 1 to 120
-
-Read [](file:///home/dkasymov/git/exaix/tests/integration/services/flow_compensation_test.ts#120-120), lines 120 to 203
-
-Read [](file:///home/dkasymov/git/exaix/tests/integration/services/flow_checkpoint_test.ts#120-120), lines 120 to 164
-
-Read [](file:///home/dkasymov/git/exaix/tests/integration/37_multi_step_recovery_test.ts)
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#100-100), lines 100 to 835
-
-Now let me read the Phase 63 plan document and relevant weakness doc entries for the full comparison.
-
-Searched for text `W13|flow.*error|recovery|fallback|checkpoint|compensation` (`**/docs/dev/Exaix_Weaknesses.md`), 20 results
-
-Read [](file:///home/dkasymov/git/exaix/.copilot/planning/phase-63-flow-error-recovery.md#1-1), lines 1 to 250
-
-Read [](file:///home/dkasymov/git/exaix/.copilot/planning/phase-63-flow-error-recovery.md#250-250), lines 250 to 259
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#270-270), lines 270 to 835
-
-Now let me check the actual retry loop and the `handleStepFailureRecovery` full body, plus the `clearCheckpointOnSuccess` event name:
-
-Searched for regex `handleStepFailureRecovery|RETRY|maxRetries|attempt.*retry|retry.*attempt` (`**/src/flows/flow_runner.ts`), 15 results
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#1050-1050), lines 1050 to 1070
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#824-824), lines 824 to 920
-
-Let me check the compensation implementation for sort order details:
-
-Searched for text `flow.checkpoint.deleted` (`**/src/flows/flow_runner.ts`), no results
-
-Read [](file:///home/dkasymov/git/exaix/src/flows/flow_runner.ts#920-920), lines 920 to 1000
-
-I now have a complete picture. Here is the comprehensive Phase 63 implementation review:
 
 ---
 
@@ -350,7 +274,7 @@ I now have a complete picture. Here is the comprehensive Phase 63 implementation
 - **Plan (R3):** "Apply exponential backoff (1s, 2s, 4s) between attempts."
 - **Code:** `handleStepFailureRecovery` retry loop (lines 842–862) has zero delay. Hits next attempt immediately.
 - **Schema:** `ZFlowStepOnError` has no `backoffMs` or `backoffStrategy` field. (The `retry.backoffMs` on `IFlowStep` is for the step-execution retry via `ZFlowStep`, **not** the `onError.action: RETRY` path — separate mechanism.)
-- **R3 outcome:** Half-delivered. `maxRetries` cap of 5 ✅. Backoff ❌. The risk ("retry storms on transient LLM errors") is only half-mitigated.
+- **R3 outcome:** Mitigated by Step 63.6. `maxRetries` cap of 5 remains enforced in schema, `backoffMs` now defaults to `1000`, and retry delays are delegated to `RetryPolicy` with a deterministic `1x/2x/4x` progression capped at 30 000 ms.
 
 #### G4: No Phase 62 cost-budget check in retry loop
 
@@ -413,17 +337,17 @@ I now have a complete picture. Here is the comprehensive Phase 63 implementation
 
 ### Summary Table
 
-| ID | Gap | Severity | Plan Section | In Tests? |
-| ---- | ----- | ---------- | ------------- | ----------- |
-| G1 | No retry backoff | **High** | R3 | ❌ |
-| G4 | No budget check in retry | **High** | Step 63.2 pseudocode | ❌ |
-| G8 | Fallback ignores its own `onError` | **High** | Implicit from semantics | Hidden by test setup |
-| G3 | `ZFlowCheckpoint` missing `schemaVersion` | **Medium** | R2 | ❌ |
-| G6 | LIFO sort unstable for same-wave steps | **Medium** | Step 63.4 principles | Masked by `setTimeout` |
-| G2 | No cyclic fallback detection | Low | R4 | ❌ |
-| G5 | `IStepResult` no recovery metadata | Low | Design principle | ❌ |
-| G7 | `cleared` event not asserted in test | Low | Step 63.3 | Partial |
-| G9 | Stale-hash invalidation not tested | Low | Step 63.3 | ❌ |
+| ID | Gap                                       | Severity   | Plan Section            | In Tests?              |
+| -- | ----------------------------------------- | ---------- | ----------------------- | ---------------------- |
+| G1 | No retry backoff                          | **High**   | R3                      | ✅                     |
+| G4 | No budget check in retry                  | **High**   | Step 63.2 pseudocode    | ❌                     |
+| G8 | Fallback ignores its own `onError`        | **High**   | Implicit from semantics | Hidden by test setup   |
+| G3 | `ZFlowCheckpoint` missing `schemaVersion` | **Medium** | R2                      | ❌                     |
+| G6 | LIFO sort unstable for same-wave steps    | **Medium** | Step 63.4 principles    | Masked by `setTimeout` |
+| G2 | No cyclic fallback detection              | Low        | R4                      | ❌                     |
+| G5 | `IStepResult` no recovery metadata        | Low        | Design principle        | ❌                     |
+| G7 | `cleared` event not asserted in test      | Low        | Step 63.3               | Partial                |
+| G9 | Stale-hash invalidation not tested        | Low        | Step 63.3               | ❌                     |
 
 ---
 
@@ -454,33 +378,37 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] `ZFlowStepOnError` parses `backoffMs` as optional positive integer; defaults to `1000`.
-- [ ] Retry attempts 1, 2, 3 produce delays of 1 s, 2 s, 4 s (or `backoffMs`, `2×`, `4×`) in production mode.
-- [ ] No delay is introduced in `DENO_TEST=1` mode.
-- [ ] R3 risk row updated to **Mitigated** in the Risks table above.
+- [x] `ZFlowStepOnError` parses `backoffMs` as optional positive integer; defaults to `1000`.
+- [x] Retry attempts 1, 2, 3 produce delays of 1 s, 2 s, 4 s (or `backoffMs`, `2×`, `4×`) in production mode.
+- [x] No delay is introduced in `DENO_TEST=1` mode.
+- [x] R3 risk row updated to **Mitigated** in the Risks table above.
 
 **Planned Tests:**
 
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — add `"FlowRunner: retry backoff is skipped in test mode"` test; assert zero `flow.step.retry` delay via wall-clock measurement under `DENO_TEST=1`.
-- [ ] **Unit**: `tests/schemas/flow_schema_test.ts` (or `tests/flows/flow_step_on_error_schema_test.ts`) — assert `backoffMs` field parses correctly and defaults to `1000`.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — add `"FlowRunner: retry backoff is skipped in test mode"` test; assert zero `flow.step.retry` delay via wall-clock measurement under `DENO_TEST=1`.
+- [x] **Unit**: `tests/schemas/flow_schema_test.ts` (or `tests/flows/flow_step_on_error_schema_test.ts`) — assert `backoffMs` field parses correctly and defaults to `1000`.
+
+**✅ IMPLEMENTED** — `src/shared/schemas/flow.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_step_on_error_schema_test.ts`, `tests/flows/flow_runner_test.ts`; focused Step 63.6 tests passed, `tests/services/ai/retry_policy_test.ts` passed to verify the production `1x/2x/4x` backoff sequence, and `deno fmt`, `deno lint`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch` all passed.
 
 ---
 
 ### Step 63.7 (G4): Phase 62 Cost-Budget Guard in Retry Loop
 
-- **Action**: Before each retry attempt in `handleStepFailureRecovery`, query cumulative flow cost from `db.queryActivity` (action type `"llm.usage"`, same `traceId`) and throw `FlowExecutionError` with message `"Retry budget exceeded"` if total cost exceeds `config.maxFlowRetryCostUsd` (new config field, default `0` = disabled).
-- **Files**: `src/shared/schemas/flow.ts` (no change), `src/flows/flow_runner.ts` (retry loop), `src/config/service.ts` or `src/config/schema.ts` (new `maxFlowRetryCostUsd` field).
-- **Architecture Notes**: Guard with `if (!this.db || !request.traceId || !config.maxFlowRetryCostUsd)` to keep retrocompatibility when DB or traceId is absent (e.g., unit tests that use no DB).
+- **Action**: Before each retry attempt in `handleStepFailureRecovery`, query cumulative flow cost from `db.queryActivity` (action type `"llm.usage"`, same `traceId`) and throw `FlowExecutionError` with message `"Retry budget exceeded"` if total cost exceeds `config.max_flow_retry_cost_usd` (new config field; `0` or omission disables the guard).
+- **Files**: `src/shared/schemas/config.ts` (new `max_flow_retry_cost_usd` field), `src/flows/flow_runner.ts` (retry loop + cost helper), `tests/flows/flow_runner_test.ts`, `tests/config/config_test.ts`.
+- **Architecture Notes**: Guard with `if (!this.db || !request.traceId || !config.max_flow_retry_cost_usd)` to keep retrocompatibility when DB or traceId is absent (e.g., unit tests that use no DB). The implementation follows the repo's snake_case config convention rather than adding a one-off camelCase field.
 
 **Success Criteria:**
 
-- [ ] When cumulative LLM cost exceeds `maxFlowRetryCostUsd`, the retry loop terminates with `FlowExecutionError("Retry budget exceeded")`.
-- [ ] When `maxFlowRetryCostUsd` is `0` or absent, behavior is identical to current code.
-- [ ] Step 63.2 pseudocode updated to reflect actual implementation (replace `BudgetExceededError` with `FlowExecutionError`).
+- [x] When cumulative LLM cost exceeds `max_flow_retry_cost_usd`, the retry loop terminates with `FlowExecutionError("Retry budget exceeded")`.
+- [x] When `max_flow_retry_cost_usd` is `0` or absent, behavior is identical to current code.
+- [x] Step 63.2 pseudocode updated to reflect actual implementation (replace `BudgetExceededError` with `FlowExecutionError`).
 
 **Planned Tests:**
 
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: retry aborts when cost budget is exceeded"` — mock `db.queryActivity` to return a cost above threshold; assert `FlowExecutionError` is thrown before the second retry fires.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: retry aborts when cost budget is exceeded"` — use sequenced `db.queryActivity` responses so the first retry is allowed and the second is blocked once cumulative cost exceeds the configured threshold.
+
+**✅ IMPLEMENTED** — `src/shared/schemas/config.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`, `tests/config/config_test.ts`; focused Step 63.7 tests passed (`deno test --allow-all tests/flows/flow_runner_test.ts tests/config/config_test.ts`), and `deno fmt`, `deno lint`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch` all passed.
 
 ---
 
@@ -548,13 +476,15 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] Two steps in the same wave with identical `completedAt` milliseconds are compensated in deterministic reverse-declaration order (later wave position first).
-- [ ] The `setTimeout(r, 5)` workaround in `37_multi_step_recovery_test.ts` is removed; test still passes.
+- [x] Two steps in the same wave with identical `completedAt` milliseconds are compensated in deterministic reverse-declaration order (later wave position first).
+- [x] The `setTimeout(r, 5)` workaround in `37_multi_step_recovery_test.ts` is removed; test still passes.
 
 **Planned Tests:**
 
-- [ ] **Integration**: `tests/integration/services/flow_compensation_test.ts` — add case: two parallel steps in the same wave, then a failing step; assert LIFO order without relying on wall-clock gaps.
-- [ ] **Integration**: `tests/integration/37_multi_step_recovery_test.ts` — remove `setTimeout` workaround; confirm test still asserts LIFO compensation order.
+- [x] **Integration**: `tests/integration/services/flow_compensation_test.ts` — add case: two parallel steps in the same wave, then a failing step; assert LIFO order without relying on wall-clock gaps.
+- [x] **Integration**: `tests/integration/37_multi_step_recovery_test.ts` — remove `setTimeout` workaround; confirm test still asserts LIFO compensation order.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/integration/services/flow_compensation_test.ts`, `tests/integration/37_multi_step_recovery_test.ts`; focused Step 63.11 integration tests passed (`deno test --allow-all tests/integration/services/flow_compensation_test.ts tests/integration/37_multi_step_recovery_test.ts`), and `deno fmt`, `deno lint`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch` all passed.
 
 ---
 
@@ -587,7 +517,7 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 In the existing successful-resume test, add:
 
 ```typescript
-const clearedEvent = resumedLogger.events.find(e => e.event === "flow.checkpoint.cleared");
+const clearedEvent = resumedLogger.events.find((e) => e.event === "flow.checkpoint.cleared");
 assertEquals(clearedEvent !== undefined, true);
 ```
 
@@ -636,13 +566,13 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 
 ### Phase 3c Gap Summary
 
-| ID | Gap (short) | Severity | Checklist Item | In Tests? |
-| --- | ----------- | -------- | -------------- | --------- |
-| G10 | All flow event name strings are inline literals — at least 11 strings, no constants in `constants.ts` | 🟡 Traceability | Event naming constants | ❌ |
-| G11 | `IFlowEventLogger.log()` payload type is `Record<string, JSONValue \| undefined>` — completely untyped | 🟡 Traceability | Event payload typing | ❌ |
-| G12 | `backoffMs: 1000` inline default in `ZFlowStep` schema and test fixtures — no named constant | 🟡 Configurability | Config-driven vs. hardcoded | ❌ |
-| G13 | `maxRetries` bounds `min(1).max(5)` inline in `ZFlowStepOnError` — no named constants | 🟡 Configurability | Config-driven vs. hardcoded | ❌ |
-| G14 | No test asserting checkpoint event payload fields (saved/loaded) | 🟠 Traceability | Event assertions in tests | ❌ |
+| ID  | Gap (short)                                                                                           | Severity           | Checklist Item              | In Tests? |
+| --- | ----------------------------------------------------------------------------------------------------- | ------------------ | --------------------------- | --------- |
+| G10 | All flow event name strings are inline literals — at least 11 strings, no constants in `constants.ts` | 🟡 Traceability    | Event naming constants      | ❌        |
+| G11 | `IFlowEventLogger.log()` payload type is an untyped string-keyed JSONValue-or-undefined record        | 🟡 Traceability    | Event payload typing        | ❌        |
+| G12 | `backoffMs: 1000` inline default in `ZFlowStep` schema and test fixtures — no named constant          | 🟡 Configurability | Config-driven vs. hardcoded | ❌        |
+| G13 | `maxRetries` bounds `min(1).max(5)` inline in `ZFlowStepOnError` — no named constants                 | 🟡 Configurability | Config-driven vs. hardcoded | ❌        |
+| G14 | No test asserting checkpoint event payload fields (saved/loaded)                                      | 🟠 Traceability    | Event assertions in tests   | ❌        |
 
 ### Phase 3c Detailed Gap Entries
 
@@ -650,19 +580,19 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 
 **Evidence:** Every `eventLogger.log(...)` call in `src/flows/flow_runner.ts` uses a string literal, not a named constant:
 
-| Location | Inline string |
-| --- | --- |
-| `handleStepFailureRecovery` | `"flow.step.retry"` |
-| `handleStepFailureRecovery` | `"flow.step.fallback"` |
-| `executeStep` (condition skip) | `"flow.step.skipped"` (if present) |
-| `saveCheckpointIfEnabled` | `"flow.checkpoint.saved"` |
-| `loadCheckpointIfAvailable` | `"flow.checkpoint.loaded"` |
-| `loadCheckpointIfAvailable` | `"flow.checkpoint.stale"` (emitted on stale-hash rejection) |
-| `clearCheckpointOnSuccess` | `"flow.checkpoint.cleared"` |
-| `executeCompensatingTransactions` | `"flow.step.compensated"` |
-| `executeCompensatingTransactions` | `"flow.step.compensation_failed"` |
-| `aggregateAndFinalize` | `"flow.completed"` |
-| `validateIFlow` (Step 63.9) | `"flow.validation.failed"` |
+| Location                          | Inline string                                               |
+| --------------------------------- | ----------------------------------------------------------- |
+| `handleStepFailureRecovery`       | `"flow.step.retry"`                                         |
+| `handleStepFailureRecovery`       | `"flow.step.fallback"`                                      |
+| `executeStep` (condition skip)    | `"flow.step.skipped"` (if present)                          |
+| `saveCheckpointIfEnabled`         | `"flow.checkpoint.saved"`                                   |
+| `loadCheckpointIfAvailable`       | `"flow.checkpoint.loaded"`                                  |
+| `loadCheckpointIfAvailable`       | `"flow.checkpoint.stale"` (emitted on stale-hash rejection) |
+| `clearCheckpointOnSuccess`        | `"flow.checkpoint.cleared"`                                 |
+| `executeCompensatingTransactions` | `"flow.step.compensated"`                                   |
+| `executeCompensatingTransactions` | `"flow.step.compensation_failed"`                           |
+| `aggregateAndFinalize`            | `"flow.completed"`                                          |
+| `validateIFlow` (Step 63.9)       | `"flow.validation.failed"`                                  |
 
 `FlowRunner` imports only `DEFAULT_COST_PRECISION_FACTOR`, `DEFAULT_UNKNOWN_ERROR_MESSAGE`, `DEFAULT_UNKNOWN_LABEL` from `src/shared/constants.ts` — no flow event name constants exist anywhere.
 
@@ -799,7 +729,7 @@ The planned Step 63.13 (G7 + G9) adds a `flow.checkpoint.cleared` assertion but 
   For `flow.checkpoint.saved`:
 
   ```typescript
-  const savedEvent = firstRunLogger.events.find(e => e.event === FLOW_EVENT_CHECKPOINT_SAVED);
+  const savedEvent = firstRunLogger.events.find((e) => e.event === FLOW_EVENT_CHECKPOINT_SAVED);
   assertExists(savedEvent);
   assertEquals(typeof savedEvent.payload.flowRunId, "string");
   assertEquals(savedEvent.payload.traceId, traceId);
@@ -810,7 +740,7 @@ The planned Step 63.13 (G7 + G9) adds a `flow.checkpoint.cleared` assertion but 
   For `flow.checkpoint.loaded`:
 
   ```typescript
-  const loadedEvent = resumedLogger.events.find(e => e.event === FLOW_EVENT_CHECKPOINT_LOADED);
+  const loadedEvent = resumedLogger.events.find((e) => e.event === FLOW_EVENT_CHECKPOINT_LOADED);
   assertExists(loadedEvent);
   assertEquals(loadedEvent.payload.traceId, traceId);
   assertEquals(typeof loadedEvent.payload.restoredSteps, "number");
@@ -840,7 +770,7 @@ In the component table (§ "System Components"), add three rows after the `Flow 
 
 ```markdown
 | **Flow Checkpoint Service** | Persist and resume completed flow steps | `src/services/flow/flow_checkpoint_service.ts:FlowCheckpointService` | 🟢 All |
-| **Flow Step On-Error**      | Per-step RETRY/FALLBACK/COMPENSATE/ABORT policy | `src/shared/schemas/flow.ts:ZFlowStepOnError` | 🟢 All |
+| **Flow Step On-Error** | Per-step RETRY/FALLBACK/COMPENSATE/ABORT policy | `src/shared/schemas/flow.ts:ZFlowStepOnError` | 🟢 All |
 | **Compensating Transactions** | LIFO rollback tool-calls on step failure | `src/flows/flow_runner.ts:FlowRunner.executeCompensatingTransactions` | 🟢 All |
 ```
 
