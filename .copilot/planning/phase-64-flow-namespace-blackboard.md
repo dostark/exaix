@@ -329,6 +329,16 @@ Validated with:
 
 ### Step 64.3: FlowRunner Integration
 
+Implemented 2026-04-09.
+Validated with:
+
+- `deno test --allow-all tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
+- `deno fmt src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
+- `deno check src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
+- `deno lint src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
 1. **Constructor** — add `private namespaceService?: IFlowNamespaceService` field. After the `checkpointService` line in the constructor body:
@@ -399,20 +409,22 @@ Validated with:
 
 #### Planned Tests
 
-- `tests/flows/flow_runner_namespace_integration_test.ts` — two-step flow where step 2 reads step 1's namespace write without a transform
-- `tests/integration/64_flow_namespace_end_to_end_test.ts` — full execution including file artifact inspection; namespace file located at `Memory/Execution/{traceId}/namespace.md`
-- `tests/flows/flow_runner_namespace_no_regression_test.ts` — all existing flow fixtures execute unchanged when namespace is not configured
-- `tests/integration/64_flow_namespace_checkpoint_resume_test.ts` — step 1 writes a namespace key; flow fails at step 2; flow resumed with the same `traceId`; step 2 reads step 1's key from the persisted namespace file
+- [x] `tests/flows/flow_runner_namespace_integration_test.ts` — two-step flow where step 2 reads step 1's namespace write without a transform
+- [x] `tests/integration/64_flow_namespace_end_to_end_test.ts` — full execution including file artifact inspection; namespace file located at `Memory/Execution/{traceId}/namespace.md`
+- [x] `tests/flows/flow_runner_namespace_no_regression_test.ts` — all existing flow fixtures execute unchanged when namespace is not configured
+- [x] `tests/integration/64_flow_namespace_checkpoint_resume_test.ts` — step 1 writes a namespace key; flow fails at step 2; flow resumed with the same `traceId`; step 2 reads step 1's key from the persisted namespace file
 
 #### Success Criteria
 
-- Downstream step reads an upstream finding via `sharedNamespace` without transform-threading.
-- Namespace events (`flow.namespace.initialized`, `flow.namespace.read`, `flow.namespace.write`) appear in the journal.
-- `IFlowResult.namespaceArtifactPath` is populated when namespace is enabled.
-- Flows without namespace config behave exactly as before (zero behavioral change).
-- Failed step does not modify the namespace.
-- Checkpoint-resumed flow loads the existing namespace file instead of creating a blank one.
-- Steps executing concurrently in the same wave produce no lost updates: writes are serialized in `processWaveResults()` after all wave promises settle.
+- [x] Downstream step reads an upstream finding via `sharedNamespace` without transform-threading.
+- [x] Namespace events (`flow.namespace.initialized`, `flow.namespace.read`, `flow.namespace.write`) appear in the journal.
+- [x] `IFlowResult.namespaceArtifactPath` is populated when namespace is enabled.
+- [x] Flows without namespace config behave exactly as before (zero behavioral change).
+- [x] Failed step does not modify the namespace.
+- [x] Checkpoint-resumed flow loads the existing namespace file instead of creating a blank one.
+- [x] Steps executing concurrently in the same wave produce no lost updates: writes are serialized in `processWaveResults()` after all wave promises settle.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/helpers/flow_namespace_test_helper.ts`, `tests/flows/flow_runner_namespace_integration_test.ts`, `tests/flows/flow_runner_namespace_no_regression_test.ts`, `tests/integration/64_flow_namespace_end_to_end_test.ts`, `tests/integration/64_flow_namespace_checkpoint_resume_test.ts`; FlowRunner now initializes the per-trace namespace, hydrates `sharedNamespace` reads into step requests, defers namespace writes until serial post-wave flushing, preserves namespace state across checkpoint resume, and returns `namespaceArtifactPath` when namespace support is enabled.
 
 ### Step 64.4: Reporting Surface
 

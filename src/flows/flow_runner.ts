@@ -6,7 +6,7 @@
  * * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
  */
 
-import type { IFlow, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
+import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
@@ -31,6 +31,7 @@ import { RetryPolicy } from "../services/core/retry_policy.ts";
 import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
+import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
 import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "../shared/schemas/flow.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
@@ -87,6 +88,8 @@ export interface IFlowStepRequest {
   skills?: string[];
   /** Structured request analysis from Step 11 */
   requestAnalysis?: IRequestAnalysis;
+  /** Resolved namespace reads for this step, keyed by binding key (Phase 64) */
+  sharedNamespace?: Record<string, string>;
 }
 
 /**
@@ -134,6 +137,20 @@ export interface IStepResult {
   fallbackUsed?: boolean;
   /** True when compensation actions were executed for this completed step. */
   compensationRan?: boolean;
+  /** Deferred namespace writes flushed after the wave settles (Phase 64). */
+  namespaceWrites?: IStepNamespaceWrites;
+}
+
+interface IStepNamespaceWrites {
+  writes: IFlowNamespaceWrite[];
+  stepOutput: string;
+}
+
+interface IWaveProcessingOutcome {
+  successCount: number;
+  failureCount: number;
+  failed: boolean;
+  waveError?: { stepId: string; error: Error | string };
 }
 
 interface IStepRecoveryMetadata {
@@ -359,6 +376,8 @@ export interface IFlowResult {
   startedAt: Date;
   /** When the flow completed */
   completedAt: Date;
+  /** Absolute path to the persisted namespace artifact; undefined when namespace is disabled (Phase 64) */
+  namespaceArtifactPath?: string;
   /** Optional token usage summary for the flow */
   tokenSummary?: {
     input_tokens: number;
@@ -485,6 +504,7 @@ export class FlowRunner implements IFlowRunner {
   private gateEvaluator?: IGateEvaluator;
   private config?: Config;
   private checkpointService?: IFlowCheckpointService;
+  private namespaceService?: IFlowNamespaceService;
 
   private isPromiseRejectedResult(result: PromiseSettledResult<IStepResult>): result is PromiseRejectedResult {
     return result.status === "rejected";
@@ -501,6 +521,7 @@ export class FlowRunner implements IFlowRunner {
     this.config = options.context?.config.get() || options.config;
     if (this.config) {
       this.checkpointService = new FlowCheckpointService(this.config);
+      this.namespaceService = new FlowNamespaceService(this.config);
     }
 
     const config = this.config;
@@ -588,6 +609,7 @@ export class FlowRunner implements IFlowRunner {
     const stepResults = new Map<string, IStepResult>();
 
     await this.loadCheckpointIfAvailable(flow, request, flowRunId, flowContentHash, stepResults);
+    await this.initializeNamespace(this.getNamespaceId(request, flowRunId), flow);
 
     try {
       // Execute waves and aggregate results
@@ -828,72 +850,27 @@ export class FlowRunner implements IFlowRunner {
     let waveSuccessCount = 0;
     let waveFailureCount = 0;
     const waveErrors: Array<{ stepId: string; error: Error | string }> = [];
+    const namespaceId = this.getNamespaceId(request, flowRunId);
 
     for (let i = 0; i < wave.length; i++) {
-      const stepId = wave[i];
-      const promiseResult = waveResults[i];
+      const outcome = await this.processWaveResultEntry(
+        flow,
+        request,
+        flowRunId,
+        wave[i],
+        waveNumber,
+        waveResults[i],
+        flowContentHash,
+        stepResults,
+        failFast,
+        namespaceId,
+      );
 
-      try {
-        if (promiseResult.status === "fulfilled") {
-          const result = {
-            ...promiseResult.value,
-            waveIndex: waveNumber,
-          } satisfies IStepResult;
-          stepResults.set(stepId, result);
-
-          if (result.success) {
-            waveSuccessCount++;
-            await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
-          } else {
-            waveFailureCount++;
-            if (failFast) {
-              waveFailed = true;
-            }
-          }
-        } else {
-          // Execution threw; record safe failure
-          const error: Error | string = promiseResult.reason instanceof Error
-            ? promiseResult.reason
-            : String(promiseResult.reason);
-          waveErrors.push({ stepId, error });
-
-          const abortError = promiseResult.reason instanceof FlowAbortError ? promiseResult.reason : null;
-
-          const errorIStepResult: IStepResult = abortError?.failureResult ?? {
-            stepId,
-            success: false,
-            error: error instanceof Error ? error.message : String(error),
-            duration: 0,
-            startedAt: new Date(),
-            completedAt: new Date(),
-            waveIndex: waveNumber,
-          };
-
-          if (abortError?.failureResult) {
-            errorIStepResult.waveIndex = waveNumber;
-          }
-
-          stepResults.set(stepId, errorIStepResult);
-          waveFailureCount++;
-
-          if (failFast) {
-            waveFailed = true;
-          }
-        }
-      } catch (processingError) {
-        // Protect aggregation code from throwing and corrupting results
-        await this.eventLogger.log("flow.step.processing_error", {
-          flowRunId,
-          stepId,
-          error: processingError instanceof Error ? processingError.message : String(processingError),
-          traceId: request.traceId,
-          requestId: request.requestId,
-        });
-
-        waveFailureCount++;
-        if (failFast) {
-          waveFailed = true;
-        }
+      waveSuccessCount += outcome.successCount;
+      waveFailureCount += outcome.failureCount;
+      waveFailed = waveFailed || outcome.failed;
+      if (outcome.waveError) {
+        waveErrors.push(outcome.waveError);
       }
     }
 
@@ -925,6 +902,166 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return waveFailed;
+  }
+
+  private async processWaveResultEntry(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    stepId: string,
+    waveNumber: number,
+    promiseResult: PromiseSettledResult<IStepResult>,
+    flowContentHash: string,
+    stepResults: Map<string, IStepResult>,
+    failFast: boolean,
+    namespaceId: string,
+  ): Promise<IWaveProcessingOutcome> {
+    try {
+      if (promiseResult.status === "fulfilled") {
+        return await this.handleFulfilledWaveResult(
+          flow,
+          request,
+          flowRunId,
+          stepId,
+          waveNumber,
+          promiseResult.value,
+          flowContentHash,
+          stepResults,
+          failFast,
+          namespaceId,
+        );
+      }
+
+      return this.handleRejectedWaveResult(stepId, waveNumber, promiseResult, stepResults, failFast);
+    } catch (processingError) {
+      return await this.handleWaveProcessingError(
+        flowRunId,
+        request,
+        stepId,
+        processingError,
+        stepResults,
+        failFast,
+      );
+    }
+  }
+
+  private async handleFulfilledWaveResult(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    stepId: string,
+    waveNumber: number,
+    promiseValue: IStepResult,
+    flowContentHash: string,
+    stepResults: Map<string, IStepResult>,
+    failFast: boolean,
+    namespaceId: string,
+  ): Promise<IWaveProcessingOutcome> {
+    const result = {
+      ...promiseValue,
+      waveIndex: waveNumber,
+    } satisfies IStepResult;
+    stepResults.set(stepId, result);
+
+    if (!result.success) {
+      return { successCount: 0, failureCount: 1, failed: failFast };
+    }
+
+    await this.persistWaveNamespaceWrites(result, request, stepId, namespaceId, flow.namespace?.enabled === true);
+    await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
+
+    return { successCount: 1, failureCount: 0, failed: false };
+  }
+
+  private async persistWaveNamespaceWrites(
+    result: IStepResult,
+    request: { traceId?: string; requestId?: string },
+    stepId: string,
+    namespaceId: string,
+    namespaceEnabled: boolean,
+  ): Promise<void> {
+    if (!result.namespaceWrites || !this.namespaceService || !namespaceEnabled) {
+      return;
+    }
+
+    await this.namespaceService.writeEntries(
+      namespaceId,
+      stepId,
+      result.namespaceWrites.writes,
+      result.namespaceWrites.stepOutput,
+    );
+    await this.eventLogger.log("flow.namespace.write", {
+      namespaceId,
+      stepId,
+      keys: result.namespaceWrites.writes.map((write) => write.key),
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+  }
+
+  private handleRejectedWaveResult(
+    stepId: string,
+    waveNumber: number,
+    promiseResult: PromiseRejectedResult,
+    stepResults: Map<string, IStepResult>,
+    failFast: boolean,
+  ): IWaveProcessingOutcome {
+    const error: Error | string = promiseResult.reason instanceof Error
+      ? promiseResult.reason
+      : String(promiseResult.reason);
+    const abortError = promiseResult.reason instanceof FlowAbortError ? promiseResult.reason : null;
+    const errorIStepResult: IStepResult = abortError?.failureResult ?? {
+      stepId,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      duration: 0,
+      startedAt: new Date(),
+      completedAt: new Date(),
+      waveIndex: waveNumber,
+    };
+
+    if (abortError?.failureResult) {
+      errorIStepResult.waveIndex = waveNumber;
+    }
+
+    stepResults.set(stepId, errorIStepResult);
+    return {
+      successCount: 0,
+      failureCount: 1,
+      failed: failFast,
+      waveError: { stepId, error },
+    };
+  }
+
+  private async handleWaveProcessingError(
+    flowRunId: string,
+    request: { traceId?: string; requestId?: string },
+    stepId: string,
+    processingError: unknown,
+    stepResults: Map<string, IStepResult>,
+    failFast: boolean,
+  ): Promise<IWaveProcessingOutcome> {
+    const processingErrorMessage = processingError instanceof Error ? processingError.message : String(processingError);
+    const previousResult = stepResults.get(stepId);
+    if (previousResult?.success) {
+      stepResults.set(stepId, {
+        ...previousResult,
+        success: false,
+        result: undefined,
+        error: processingErrorMessage,
+        namespaceWrites: undefined,
+      });
+    }
+
+    await this.eventLogger.log("flow.step.processing_error", {
+      flowRunId,
+      stepId,
+      error: processingErrorMessage,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    return { successCount: 0, failureCount: 1, failed: failFast };
   }
 
   /**
@@ -986,6 +1123,9 @@ export class FlowRunner implements IFlowRunner {
     const tokenSummary = (this.db && request.traceId)
       ? await this.aggregateAndLogTokenUsage(flowRunId, flow.id, request.traceId, request.requestId)
       : null;
+    const namespaceArtifactPath = this.namespaceService && flow.namespace?.enabled
+      ? this.namespaceService.getNamespacePath(this.getNamespaceId(request, flowRunId))
+      : undefined;
 
     return {
       flowRunId,
@@ -995,6 +1135,7 @@ export class FlowRunner implements IFlowRunner {
       duration,
       startedAt,
       completedAt,
+      namespaceArtifactPath,
       tokenSummary: tokenSummary ?? undefined,
     };
   }
@@ -1074,8 +1215,16 @@ export class FlowRunner implements IFlowRunner {
     });
 
     try {
-      const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
-      return this.formatStepSuccess(flowRunId, step, request, result, startedAt);
+      const attemptOutcome = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
+      return this.formatStepSuccess(
+        flowRunId,
+        step,
+        request,
+        attemptOutcome.result,
+        startedAt,
+        undefined,
+        attemptOutcome.namespaceWrites,
+      );
     } catch (error) {
       return await this.handleStepFailureRecovery(
         flowRunId,
@@ -1099,9 +1248,20 @@ export class FlowRunner implements IFlowRunner {
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
-  ): Promise<IAgentExecutionResult> {
+  ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
-    return await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+    const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+    const writes = step.namespace?.writes ?? [];
+
+    return {
+      result,
+      namespaceWrites: writes.length > 0
+        ? {
+          writes,
+          stepOutput: result.content,
+        }
+        : undefined,
+    };
   }
 
   /**
@@ -1143,11 +1303,19 @@ export class FlowRunner implements IFlowRunner {
         await this.applyRetryBackoff(retryBackoffMs, retryAttempt);
 
         try {
-          const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
-          return this.formatStepSuccess(flowRunId, step, request, result, startedAt, {
-            wasRetried: true,
-            retryCount: retryAttempt,
-          });
+          const retryOutcome = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
+          return this.formatStepSuccess(
+            flowRunId,
+            step,
+            request,
+            retryOutcome.result,
+            startedAt,
+            {
+              wasRetried: true,
+              retryCount: retryAttempt,
+            },
+            retryOutcome.namespaceWrites,
+          );
         } catch (retryError) {
           lastError = retryError;
         }
@@ -1248,6 +1416,7 @@ export class FlowRunner implements IFlowRunner {
         wasRetried: fallbackResult.wasRetried,
         retryCount: fallbackResult.retryCount,
       },
+      fallbackResult.namespaceWrites,
     );
   }
 
@@ -1586,6 +1755,7 @@ export class FlowRunner implements IFlowRunner {
     result: IAgentExecutionResult,
     startedAt: Date,
     recoveryMetadata?: IStepRecoveryMetadata,
+    namespaceWrites?: IStepNamespaceWrites,
   ): IStepResult {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
@@ -1609,6 +1779,7 @@ export class FlowRunner implements IFlowRunner {
       duration,
       startedAt,
       completedAt,
+      namespaceWrites,
       ...recoveryMetadata,
     };
   }
@@ -1659,70 +1830,8 @@ export class FlowRunner implements IFlowRunner {
     originalRequest: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     stepResults: Map<string, IStepResult>,
   ): Promise<IFlowStepRequest> {
-    let inputData: string;
-
-    // Collect input data based on source
-    switch (step.input.source) {
-      case FlowInputSource.REQUEST: {
-        inputData = originalRequest.userPrompt;
-        break;
-      }
-
-      case "step": {
-        if (!step.input.stepId) {
-          throw new Error(`Step ${step.id} has source "step" but no stepId specified`);
-        }
-        const sourceResult = stepResults.get(step.input.stepId);
-        if (!sourceResult?.result) {
-          throw new Error(`Step ${step.id} depends on ${step.input.stepId} which has no result`);
-        }
-        inputData = sourceResult.result.content;
-        break;
-      }
-
-      case "aggregate": {
-        if (!step.input.from || step.input.from.length === 0) {
-          throw new Error(`Step ${step.id} has source "aggregate" but no "from" steps specified`);
-        }
-        const aggregatedInputs: string[] = [];
-        for (const stepId of step.input.from) {
-          const result = stepResults.get(stepId);
-          if (!result?.result) {
-            throw new Error(`Step ${step.id} depends on ${stepId} which has no result`);
-          }
-          aggregatedInputs.push(result.result.content);
-        }
-        inputData = aggregatedInputs.length === 1 ? aggregatedInputs[0] : aggregatedInputs.join("\n\n");
-        break;
-      }
-
-      default:
-        throw new Error(`Invalid input source: ${step.input.source}`);
-    }
-
-    // Apply transform
-    let userPrompt = inputData;
-    if (step.input.transform) {
-      const transformStart = Date.now();
-      userPrompt = this.applyTransform(
-        inputData,
-        step.input.transform as string | ((input: string) => string),
-        step.input.transformArgs as JSONValue | undefined,
-        originalRequest.userPrompt,
-      );
-
-      // Log transform application
-      await this.eventLogger.log("flow.step.transform.applied", {
-        flowRunId,
-        stepId: step.id,
-        transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
-        inputSize: inputData.length,
-        outputSize: userPrompt.length,
-        duration: Date.now() - transformStart,
-        traceId: originalRequest.traceId,
-        requestId: originalRequest.requestId,
-      });
-    }
+    const inputData = this.collectStepInputData(step, originalRequest, stepResults);
+    const userPrompt = await this.buildStepUserPrompt(flowRunId, step, originalRequest, inputData);
 
     // Merge skills: step-level skills override flow-level defaults (Phase 17)
     const skills = step.skills ?? flow.defaultSkills;
@@ -1736,7 +1845,7 @@ export class FlowRunner implements IFlowRunner {
       requestId: originalRequest.requestId,
     });
 
-    return {
+    const stepRequest: IFlowStepRequest = {
       userPrompt,
       context: {},
       traceId: originalRequest.traceId,
@@ -1744,6 +1853,130 @@ export class FlowRunner implements IFlowRunner {
       skills,
       requestAnalysis: originalRequest.requestAnalysis,
     };
+
+    return await this.attachSharedNamespace(stepRequest, flowRunId, step, flow, originalRequest);
+  }
+
+  private collectStepInputData(
+    step: IFlowStep,
+    originalRequest: { userPrompt: string },
+    stepResults: Map<string, IStepResult>,
+  ): string {
+    switch (step.input.source) {
+      case FlowInputSource.REQUEST:
+        return originalRequest.userPrompt;
+
+      case "step":
+        return this.getStepResultContent(step, step.input.stepId, stepResults);
+
+      case "aggregate":
+        return this.getAggregatedStepInput(step, stepResults);
+
+      default:
+        throw new Error(`Invalid input source: ${step.input.source}`);
+    }
+  }
+
+  private getStepResultContent(
+    step: IFlowStep,
+    sourceStepId: string | undefined,
+    stepResults: Map<string, IStepResult>,
+  ): string {
+    if (!sourceStepId) {
+      throw new Error(`Step ${step.id} has source "step" but no stepId specified`);
+    }
+
+    const sourceResult = stepResults.get(sourceStepId);
+    if (!sourceResult?.result) {
+      throw new Error(`Step ${step.id} depends on ${sourceStepId} which has no result`);
+    }
+
+    return sourceResult.result.content;
+  }
+
+  private getAggregatedStepInput(
+    step: IFlowStep,
+    stepResults: Map<string, IStepResult>,
+  ): string {
+    if (!step.input.from || step.input.from.length === 0) {
+      throw new Error(`Step ${step.id} has source "aggregate" but no "from" steps specified`);
+    }
+
+    const aggregatedInputs = step.input.from.map((stepId) => this.getStepResultContent(step, stepId, stepResults));
+    return aggregatedInputs.length === 1 ? aggregatedInputs[0] : aggregatedInputs.join("\n\n");
+  }
+
+  private async buildStepUserPrompt(
+    flowRunId: string,
+    step: IFlowStep,
+    originalRequest: { userPrompt: string; traceId?: string; requestId?: string },
+    inputData: string,
+  ): Promise<string> {
+    if (!step.input.transform) {
+      return inputData;
+    }
+
+    const transformStart = Date.now();
+    const userPrompt = this.applyTransform(
+      inputData,
+      step.input.transform as string | ((input: string) => string),
+      step.input.transformArgs as JSONValue | undefined,
+      originalRequest.userPrompt,
+    );
+
+    await this.eventLogger.log("flow.step.transform.applied", {
+      flowRunId,
+      stepId: step.id,
+      transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
+      inputSize: inputData.length,
+      outputSize: userPrompt.length,
+      duration: Date.now() - transformStart,
+      traceId: originalRequest.traceId,
+      requestId: originalRequest.requestId,
+    });
+
+    return userPrompt;
+  }
+
+  private async attachSharedNamespace(
+    stepRequest: IFlowStepRequest,
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    originalRequest: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+  ): Promise<IFlowStepRequest> {
+    if (!this.namespaceService || !flow.namespace?.enabled || !step.namespace?.reads?.length) {
+      return stepRequest;
+    }
+
+    const namespaceId = this.getNamespaceId(originalRequest, flowRunId);
+    const readKeys = step.namespace.reads.map((read) => read.key);
+    const resolvedNamespace = await this.namespaceService.readKeys(namespaceId, readKeys);
+    const missingRequiredKeys = step.namespace.reads
+      .filter((read) => read.required && resolvedNamespace[read.key] === undefined)
+      .map((read) => read.key);
+
+    if (missingRequiredKeys.length > 0) {
+      throw new Error(
+        `Step ${step.id} is missing required namespace keys: ${missingRequiredKeys.join(", ")}`,
+      );
+    }
+
+    await this.eventLogger.log("flow.namespace.read", {
+      namespaceId,
+      stepId: step.id,
+      keys: readKeys,
+      traceId: originalRequest.traceId,
+      requestId: originalRequest.requestId,
+    });
+
+    const sharedNamespaceEntries = Object.entries(resolvedNamespace)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined);
+    if (sharedNamespaceEntries.length > 0) {
+      stepRequest.sharedNamespace = Object.fromEntries(sharedNamespaceEntries);
+    }
+
+    return stepRequest;
   }
 
   /**
@@ -1910,6 +2143,25 @@ export class FlowRunner implements IFlowRunner {
       traceId: request.traceId,
       requestId: request.requestId,
       restoredSteps: Object.keys(restoredSteps).length,
+    });
+  }
+
+  private getNamespaceId(
+    request: { traceId?: string },
+    flowRunId: string,
+  ): string {
+    return request.traceId ?? flowRunId;
+  }
+
+  private async initializeNamespace(namespaceId: string, flow: IFlow): Promise<void> {
+    if (!this.namespaceService || !flow.namespace?.enabled) {
+      return;
+    }
+
+    await this.namespaceService.initialize(namespaceId);
+    await this.eventLogger.log("flow.namespace.initialized", {
+      namespaceId,
+      flowId: flow.id,
     });
   }
 
