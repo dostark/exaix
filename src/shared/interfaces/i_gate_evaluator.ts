@@ -6,9 +6,9 @@
  * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts, src/shared/interfaces/i_application_context.ts]
  */
 
-import { EvaluationCriterion, EvaluationResult } from "../../flows/evaluation_criteria.ts";
-import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import { FlowGateAction, FlowGateOnFail } from "../../shared/enums.ts";
+import type { EvaluationCriterion, EvaluationResult } from "../../flows/evaluation_criteria.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { FlowGateAction, FlowGateOnFail } from "../../shared/enums.ts";
 
 /**
  * Result of gate evaluation

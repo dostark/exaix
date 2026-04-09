@@ -59,7 +59,11 @@ export class SearchFilesTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): {
+    name: string;
+    description: string;
+    inputSchema: Record<string, JSONValue>;
+  } {
     return {
       name: McpToolName.SEARCH_FILES,
       description: "Search for files matching a glob pattern (e.g., '**/*.ts')",

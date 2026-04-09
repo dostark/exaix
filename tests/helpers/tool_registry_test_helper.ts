@@ -11,7 +11,9 @@ import type { DatabaseService as DatabaseService } from "../../src/services/core
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { getMemoryProjectsDir } from "./paths_helper.ts";
-import { JSONObject, JSONValue, toSafeJson } from "../../src/shared/types/json.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "../../src/shared/types/json.ts";
+import type { IToolResult } from "../../src/shared/interfaces/i_tool_registry.ts";
+import type { Config } from "../../src/shared/schemas/config.ts";
 
 /**
  * Test helper for ToolRegistry tests
@@ -21,17 +23,20 @@ export class ToolRegistryTestHelper {
   public tempDir: string;
   public registry: ToolRegistry;
   public db: DatabaseService;
+  public config: Config;
   private dbCleanup: () => Promise<void>;
 
   private constructor(
     tempDir: string,
     registry: ToolRegistry,
     db: DatabaseService,
+    config: Config,
     dbCleanup: () => Promise<void>,
   ) {
     this.tempDir = tempDir;
     this.registry = registry;
     this.db = db;
+    this.config = config;
     this.dbCleanup = dbCleanup;
   }
 
@@ -44,7 +49,7 @@ export class ToolRegistryTestHelper {
     const config = createMockConfig(tempDir);
     const registry = new ToolRegistry({ config, db });
 
-    return new ToolRegistryTestHelper(tempDir, registry, db, cleanup);
+    return new ToolRegistryTestHelper(tempDir, registry, db, config, cleanup);
   }
 
   /**
@@ -90,7 +95,7 @@ export class ToolRegistryTestHelper {
   /**
    * Executes a tool and returns the result
    */
-  async execute(toolName: string, params: JSONObject) {
+  async execute(toolName: string, params: JSONObject): Promise<IToolResult> {
     return await this.registry.execute(toolName, toSafeJson(params) as Record<string, JSONValue>);
   }
 
@@ -104,10 +109,10 @@ export class ToolRegistryTestHelper {
   /**
    * Gets activity logs for a specific action type
    */
-  getActivityLogs(actionType: string) {
+  getActivityLogs(actionType: string): JSONObject[] {
     return this.db.instance
       .prepare("SELECT * FROM activity WHERE action_type = ?")
-      .all(actionType);
+      .all(actionType) as JSONObject[];
   }
 
   /**

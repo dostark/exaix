@@ -15,7 +15,7 @@ import type { DatabaseService } from "../core/db.ts";
 import type { EventLogger } from "../core/event_logger.ts";
 import type { PathResolver } from "../portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../portal/portal_permissions.ts";
-import { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "../../ai/types.ts";
 import { SafeError } from "../../errors/safe_error.ts";
 import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
@@ -52,7 +52,7 @@ import {
   type IChangesetResult,
   type IExecutionContext,
 } from "../../shared/schemas/agent_executor.ts";
-import { IToolRegistry } from "../../shared/interfaces/i_tool_registry.ts";
+import type { IToolRegistry } from "../../shared/interfaces/i_tool_registry.ts";
 import {
   ActorType,
   AgentExecutionErrorType,
@@ -63,7 +63,7 @@ import {
 } from "../../shared/enums.ts";
 import { InputValidator } from "../../shared/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
@@ -135,7 +135,9 @@ export class AgentExecutor {
     private provider?: IModelProvider,
     private strategyRegistry?: StrategyRegistry,
     private _toolRegistry?: IToolRegistry,
-    private promptBudgetAllocator: { allocate: (modelId: string) => IPromptBudget } = new PromptBudgetAllocator(),
+    private promptBudgetAllocator: { allocate: (modelId: string) => IPromptBudget } = new PromptBudgetAllocator(
+      config.budget_enforcement ?? {},
+    ),
   ) {
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
@@ -581,6 +583,10 @@ export class AgentExecutor {
       blueprint.systemPrompt,
       this.currentPromptBudget?.sections.system,
     );
+    const skillContext = this.applyTokenBudget(
+      context.skills_context ?? "",
+      this.currentPromptBudget?.sections.skills,
+    );
 
     // Use clear delimiters that prevent injection
     return `${systemPrompt}
@@ -591,7 +597,11 @@ export class AgentExecutor {
 **Portal:** ${options.portal}
 **Security Mode:** ${options.security_mode}
 
-${portalContext ? `${portalContext}\n\n` : ""}## User Request (START)
+${portalContext ? `${portalContext}\n\n` : ""}${
+      skillContext
+        ? `## Skills Context (SYSTEM CONTROLLED)\n--- BEGIN SKILLS ---\n${skillContext}\n--- END SKILLS ---\n\n`
+        : ""
+    }## User Request (START)
 --- BEGIN USER INPUT ---
 ${sanitizedRequest}
 --- END USER INPUT ---
@@ -1240,7 +1250,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
   /**
    * Validate review result structure
    */
-  validateReviewResult(result: any): IChangesetResult {
+  validateReviewResult(result: unknown): IChangesetResult {
     try {
       return ChangesetResultSchema.parse(result);
     } catch (error) {

@@ -5,7 +5,7 @@
  * @architectural-layer CLI
  * * @related-files [src/cli/request_commands.ts]
  */
-import { RequestCommands } from "../commands/request_commands.ts";
+import type { RequestCommands } from "../commands/request_commands.ts";
 import { isTestMode } from "../../config/env_schema.ts";
 import type { IRequestMetadata } from "../../shared/types/request.ts";
 

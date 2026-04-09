@@ -9,16 +9,16 @@ import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueSeverity, McpToolName } from "../../../src/shared/enums.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import {
   createFastToolReflector,
   createStrictToolReflector,
   createToolReflector,
-  IToolCall,
-  IToolResult,
+  type IToolCall,
+  type IToolResult,
   ToolReflectionSchema,
 } from "../../../src/services/tool/tool_reflector.ts";
-import { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "../../../src/shared/types/json.ts";
 
 // ============================================================================
 // Mock LLM Provider
@@ -84,7 +84,7 @@ function createMockToolCall(overrides?: Partial<IToolCall>): IToolCall {
 // Helper to setup reflector test context
 function setupReflector(
   responses: string[] = [],
-  config?: any,
+  config?: Parameters<typeof createToolReflector>[1],
 ) {
   const provider = createMockProvider(responses.length ? responses : [makeReflectionJSON({ success: true })]);
   const reflector = createToolReflector(provider, config);

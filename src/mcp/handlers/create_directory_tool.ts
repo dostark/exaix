@@ -52,7 +52,7 @@ export class CreateDirectoryTool extends ToolHandler {
     };
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.CREATE_DIRECTORY,
       description: "Create a directory (and all required parent directories) within a portal. " +

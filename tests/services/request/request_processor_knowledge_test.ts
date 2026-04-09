@@ -12,17 +12,19 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES } from "../../../src/shared/constants.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import { PortalOperation } from "../../../src/shared/enums.ts";
 import {
   makeKnowledge,
   makeMockKnowledgeService,
   makeRequestProcessorEnv as makeEnvBase,
 } from "./request_test_helpers.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 
 // ============================================================================
 // Fixtures
@@ -77,7 +79,7 @@ async function makeKnowledgeProcessorEnv(opts: {
       target_path: portalTargetDir,
       default_branch: TEST_DEFAULT_BRANCH,
       identities_allowed: ["*"],
-      operations: ["read", "write", "git"] as any, // Cast to any to see. Wait! Any is forbidden!
+      operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
   }
 
@@ -92,11 +94,11 @@ async function makeKnowledgeProcessorEnv(opts: {
   const activeProvider = opts.providerOverride ?? provider;
 
   const context: IApplicationContext = {
-    config: { get: () => config, getChecksum: () => "test" } as any,
+    config: createStubConfig(config),
     db,
     provider: activeProvider,
-    git: {} as any,
-    display: new EventLogger({ db, defaultActor: "test" }),
+    git: createStubGit(),
+    display: createStubDisplay(db),
     portalKnowledge: opts.knowledgeService,
   };
 
@@ -161,7 +163,9 @@ Deno.test("[RequestProcessor] buildPortalKnowledgeSummary: caps convention lists
     confidence: "high" as const,
     examples: [],
   }));
-  const knowledge = makeKnowledge({ conventions: extraConventions as any[] });
+  const knowledge = makeKnowledge({
+    conventions: extraConventions as IPortalKnowledge["conventions"],
+  });
   const summary = buildPortalKnowledgeSummary(knowledge);
 
   const lines = summary.split("\n");

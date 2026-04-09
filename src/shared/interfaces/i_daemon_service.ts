@@ -5,7 +5,7 @@
  * @architectural-layer Shared
  * * @related-files [src/shared/types/daemon.ts]
  */
-import { DaemonStatus } from "../enums.ts";
+import type { DaemonStatus } from "../enums.ts";
 
 export interface IDaemonService {
   /**

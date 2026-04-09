@@ -5,7 +5,7 @@
  * configured LLM agents are correctly identified and loaded at runtime.
  */
 
-import { assert, assertExists } from "https://deno.land/std@0.203.0/assert/mod.ts";
+import { assert, assertExists } from "@std/assert";
 import { buildIndex } from "../../scripts/build_agents_index.ts";
 import { inject } from "../../scripts/inject_agent_context.ts";
 

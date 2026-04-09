@@ -5,7 +5,7 @@
  * exponential backoff, and identification of transient vs. terminal errors.
  */
 
-import { assertEquals, assertRejects } from "https://deno.land/std@0.221.0/assert/mod.ts";
+import { assertEquals, assertRejects } from "@std/assert";
 import { AuthenticationError, isRetryable, RateLimitError, withRetry } from "../../src/ai/providers/common.ts";
 
 Deno.test("isRetryable - identifies retryable errors", () => {

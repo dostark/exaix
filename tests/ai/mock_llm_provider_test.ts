@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpToolName, MockStrategy } from "../../src/shared/enums.ts";
-import { IModelProvider } from "../../src/ai/types.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 import { TEST_MODEL_ANTHROPIC } from "../config/constants.ts";
 
 import {

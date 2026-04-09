@@ -9,14 +9,16 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import type { IRequestProcessingContext } from "../../../src/services/request/request_processor.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import { PlanValidationError } from "../../../src/services/plan/plan_adapter.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
+import { MiddlewarePipeline } from "../../../src/services/middleware/pipeline.ts";
 import { makeRequestProcessorEnv } from "./request_test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 
 function parseFrontmatter(content: string): JSONObject {
   const parts = content.split("---");
@@ -40,13 +42,14 @@ async function setupPlanValidationEnv(requestContentTemplate: string) {
 
   const requestContent = requestContentTemplate.replace("{traceId}", traceId);
   await Deno.writeTextFile(requestPath, requestContent);
+  let testPipelineFactory: (() => MiddlewarePipeline<IRequestProcessingContext>) | undefined;
 
   const context: IApplicationContext = {
-    config: { get: () => config, getChecksum: () => "test" } as any,
+    config: createStubConfig(config),
     db,
-    provider: null as any,
-    git: {} as any,
-    display: new EventLogger({ db, defaultActor: "test" }),
+    provider: createStubProvider(),
+    git: createStubGit(),
+    display: createStubDisplay(db),
   };
 
   const processor = new RequestProcessor({
@@ -56,6 +59,12 @@ async function setupPlanValidationEnv(requestContentTemplate: string) {
     includeReasoning: false,
     context,
     costTracker,
+    testPipelineFactory: () => {
+      if (!testPipelineFactory) {
+        throw new Error("testPipelineFactory not configured");
+      }
+      return testPipelineFactory();
+    },
   });
 
   return {
@@ -66,6 +75,9 @@ async function setupPlanValidationEnv(requestContentTemplate: string) {
     traceId,
     db,
     config,
+    setTestPipelineFactory(factory: () => MiddlewarePipeline<IRequestProcessingContext>): void {
+      testPipelineFactory = factory;
+    },
     cleanup: async () => {
       await costTracker.flush();
       await cleanup();
@@ -95,15 +107,13 @@ Do flow work.
       fullRawResponse: "Complete LLM response here",
     });
 
-    // Mock createRequestProcessingPipeline to inject a failing middleware
-    const originalCreate = (env.processor as any).createRequestProcessingPipeline;
-    (env.processor as any).createRequestProcessingPipeline = function () {
-      const pipeline = originalCreate.apply(this);
+    env.setTestPipelineFactory(() => {
+      const pipeline = new MiddlewarePipeline<IRequestProcessingContext>();
       pipeline.use(() => {
         throw error;
       });
       return pipeline;
-    };
+    });
 
     await env.processor.process(env.requestPath);
 

@@ -8,8 +8,8 @@
 
 import { z } from "zod";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "../../shared/enums.ts";
-import { IModelProvider } from "../../ai/types.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { IModelProvider } from "../../ai/types.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import {
   AgentRunner,
@@ -27,7 +27,7 @@ import { EventLogger } from "../core/event_logger.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
-import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import { MAX_CRITIQUE_REQUIREMENTS } from "../../shared/constants.ts";
 
 export interface IReflexiveAgentConfig extends IAgentRunnerConfig {

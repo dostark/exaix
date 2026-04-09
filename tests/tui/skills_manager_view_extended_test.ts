@@ -19,7 +19,6 @@ import {
   STATUS_ICONS,
 } from "../../src/tui/skills_manager_view.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "../../src/shared/enums.ts";
-import { type ISkillsService as _ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
 import {
   createSkillsManagerTuiSession,
   createSkillsManagerViewWithMock,

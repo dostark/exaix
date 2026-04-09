@@ -10,16 +10,16 @@ import { FlowConsensusMethod } from "../../src/shared/enums.ts";
 import {
   createFeedbackLoop,
   FeedbackLoop,
-  FeedbackLoopConfig,
-  FeedbackLoopResult as _FeedbackLoopResult,
-  ImprovementAgent,
+  type FeedbackLoopConfig,
+  type FeedbackLoopResult as _FeedbackLoopResult,
+  type ImprovementAgent,
   runSelfCorrectingAgent,
   SimpleImprovementAgent,
 } from "../../src/flows/feedback_loop.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import {
-  type IGateConfig as _GateConfig,
-  type IGateResult as _IGateResult,
+import type {
+  IGateConfig as _GateConfig,
+  IGateResult as _IGateResult,
 } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CRITERIA } from "../../src/flows/evaluation_criteria.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";

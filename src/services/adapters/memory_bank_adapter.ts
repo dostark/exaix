@@ -8,7 +8,7 @@
 
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
-import { MemoryType } from "../../shared/enums.ts";
+import type { MemoryType } from "../../shared/enums.ts";
 import type {
   IActivitySummary,
   IDecision,

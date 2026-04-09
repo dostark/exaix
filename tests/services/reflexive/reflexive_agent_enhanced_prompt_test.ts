@@ -12,7 +12,7 @@ import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { assertEquals, assertExists } from "@std/assert";
 import {
   createReflexiveAgent,
-  ReflexiveAgent as _ReflexiveAgent,
+  type ReflexiveAgent as _ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
 import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";

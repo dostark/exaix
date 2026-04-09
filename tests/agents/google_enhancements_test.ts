@@ -5,8 +5,8 @@
  * ensuring correct frontmatter schemas and long-context optimization sections.
  */
 
-import { assert, assertEquals } from "https://deno.land/std@0.221.0/assert/mod.ts";
-import { parse } from "https://deno.land/std@0.221.0/yaml/mod.ts";
+import { assert, assertEquals } from "@std/assert";
+import { parse } from "@std/yaml";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";

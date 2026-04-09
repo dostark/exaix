@@ -13,6 +13,7 @@ import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import type { ConfigReloadLogger } from "../../src/config/config_reload_handler.ts";
 import { createConfigReloadHandler } from "../../src/config/config_reload_handler.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
+import type { LogMetadata } from "../../src/shared/types/json.ts";
 
 /**
  * Test for "Investigate why exactl portal add not showing in daemon logs"
@@ -66,11 +67,11 @@ stability_check = false
     level: LogLevel;
     action: string;
     target: string;
-    payload: any;
+    payload: LogMetadata;
   }
   const logs: IStructuredLogEntry[] = [];
   const logger: ConfigReloadLogger = {
-    info: (action: string, target: string, payload: any) => {
+    info: (action: string, target: string, payload: LogMetadata) => {
       logs.push({ level: LogLevel.INFO, action, target, payload });
       return Promise.resolve();
     },

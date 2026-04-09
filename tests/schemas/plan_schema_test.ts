@@ -9,7 +9,7 @@ import { describe, it } from "@std/testing/bdd";
 import { McpToolName } from "../../src/shared/enums.ts";
 
 import { assertEquals, assertExists } from "@std/assert";
-import { ZodError } from "zod";
+import type { ZodError } from "zod";
 // Import schemas (will create these)
 import type { IPlanStep, Plan } from "../../src/shared/schemas/plan_schema.ts";
 import { PlanSchema, PlanStepSchema } from "../../src/shared/schemas/plan_schema.ts";

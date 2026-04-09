@@ -5,7 +5,7 @@
  * strict confinement of agent operations to authorized portal root boundaries.
  */
 
-import { assert, assertEquals, assertExists, assertRejects as _assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, type assertRejects as _assertRejects } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
 
 import { join } from "@std/path";

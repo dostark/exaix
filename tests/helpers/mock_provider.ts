@@ -5,7 +5,7 @@
  * stable control over agent responses, token usage, and error states.
  */
 
-import { IModelProvider } from "../../src/ai/types.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 
 /**
  * Creates a mock LLM provider that returns predefined responses.

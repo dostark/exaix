@@ -154,6 +154,7 @@ export const ExecutionContextSchema = z.object({
   userId: z.string().optional(),
   sessionId: z.string().optional(),
   timestamp: z.date().optional(),
+  skills_context: z.string().optional(),
 }).strict();
 
 /**

@@ -111,9 +111,12 @@ Deno.test("GitCreateBranchTool: getToolDefinition returns correct definition", (
   const context = createStubContext();
   const handler = new GitCreateBranchTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, "git_create_branch");
   assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(def.inputSchema.required.join(), "portal");
-  assertStringIncludes(def.inputSchema.required.join(), "branch");
+  assertStringIncludes(required.join(), "portal");
+  assertStringIncludes(required.join(), "branch");
 });

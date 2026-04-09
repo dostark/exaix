@@ -5,10 +5,10 @@
  */
 import { assertEquals, assertRejects } from "@std/assert";
 import { LlmClient } from "../../src/ai/llm_client.ts";
-import { IBlueprintFrontmatter } from "../../src/shared/schemas/blueprint.ts";
+import type { IBlueprintFrontmatter } from "../../src/shared/schemas/blueprint.ts";
 import { McpToolName, ToolName } from "../../src/shared/enums.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
-import { IModelProvider } from "../../src/ai/types.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 
 const mockIdentity: IBlueprintFrontmatter = {
   identity_id: "test",

@@ -11,7 +11,7 @@ import { ensureDir } from "@std/fs/ensure-dir";
 import type { IDatabaseService } from "../core/db.ts";
 import { ActivityActor } from "../../shared/enums.ts";
 import type { Config } from "../../shared/schemas/config.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 export interface IPortalInfo {
   alias: string;
@@ -82,7 +82,7 @@ export class ContextCardGenerator {
     });
   }
 
-  private logActivity(actionType: string, payload: Record<string, JSONValue>) {
+  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
     if (!this.db) return;
 
     try {

@@ -17,9 +17,15 @@ import {
 } from "../../src/tui/tui_dashboard.ts";
 import { PortalStatus, SplitDirection } from "../../src/shared/enums.ts";
 
-import { assertEquals } from "https://deno.land/std@0.204.0/assert/assert_equals.ts";
+import { assertEquals } from "@std/assert";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { getTheme } from "../../src/tui/helpers/colors.ts";
+
+type ISavedLayoutPane =
+  & Pick<IPane, "id" | "x" | "y" | "width" | "height" | "focused" | "flexX" | "flexY" | "flexWidth" | "flexHeight">
+  & {
+    viewName: string;
+  };
 
 Deno.test("TUI dashboard handles empty portal list and error state", async () => {
   const dashboard = await launchTuiDashboard({ testMode: true }) as ITuiDashboard;
@@ -238,12 +244,16 @@ Deno.test("TUI dashboard layout save and restore", async () => {
   const originalActive = dashboard.activePaneId;
 
   // Mock save
-  let savedLayout: any = null;
+  let savedLayout: { panes: ISavedLayoutPane[]; activePaneId: string } | null = null;
   dashboard.saveLayout = () => {
     savedLayout = {
       panes: dashboard.panes.map((p) => ({
         id: p.id,
         viewName: p.view.name,
+        flexX: p.flexX,
+        flexY: p.flexY,
+        flexWidth: p.flexWidth,
+        flexHeight: p.flexHeight,
         x: p.x,
         y: p.y,
         width: p.width,
@@ -256,8 +266,10 @@ Deno.test("TUI dashboard layout save and restore", async () => {
   };
 
   await dashboard.saveLayout();
-  assertEquals(savedLayout.panes.length, originalPanes);
-  assertEquals(savedLayout.activePaneId, originalActive);
+  if (!savedLayout) throw new Error("Layout was not saved");
+  const persistedLayout = savedLayout as { panes: ISavedLayoutPane[]; activePaneId: string };
+  assertEquals(persistedLayout.panes.length, originalPanes);
+  assertEquals(persistedLayout.activePaneId, originalActive);
 
   // Reset and restore
   dashboard.resetToDefault();

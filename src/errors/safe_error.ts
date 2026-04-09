@@ -41,7 +41,11 @@ export class SafeError extends Error {
   /**
    * Returns safe JSON representation (excludes internal error details)
    */
-  toJSON() {
+  toJSON(): {
+    name: string;
+    message: string;
+    errorCode: string;
+  } {
     return {
       name: this.name,
       message: this.message,

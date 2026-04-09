@@ -12,7 +12,7 @@ import {
   type MCPToolResponse,
   QueryJournalToolArgsSchema,
 } from "../shared/schemas/mcp.ts";
-import { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";
@@ -66,7 +66,7 @@ export class CreateRequestTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_create_request",
       description: "Create a new generic request for Exaix",
@@ -133,7 +133,7 @@ export class ListPlansTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_list_plans",
       description: "List plans matching a status (default: pending)",
@@ -192,7 +192,7 @@ export class ApprovePlanTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_approve_plan",
       description: "Approve a pending plan for execution",
@@ -255,7 +255,7 @@ export class QueryJournalTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_query_journal",
       description: "Query the IActivity Journal for events",

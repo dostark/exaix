@@ -13,6 +13,7 @@ import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { ExecutionStrategyName, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/shared/constants.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { initTestDbService } from "../../helpers/db.ts";
@@ -62,6 +63,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     const permissions = new PortalPermissionsService(config.portals);
 
     let promptLengthSeen = 0;
+    let skillsBlockLengthSeen = 0;
     let allocatorCalls = 0;
     const tinyBudgetAllocator = {
       allocate: (_modelId: string) => {
@@ -89,6 +91,8 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       execute: (blueprint, context, options) => {
         const prompt = holder.executor!.buildExecutionPrompt(blueprint, context, options);
         promptLengthSeen = prompt.length;
+        const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
+        skillsBlockLengthSeen = skillMatch?.[1].length ?? 0;
         return Promise.resolve({
           branch: "feat/overflow-recovery",
           commit_sha: "0000000000000000000000000000000000000000",
@@ -121,7 +125,8 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
       request: `Request: ${requestHuge}`,
       plan: `Plan: ${planHuge}`,
       portal: "TestPortal",
-    };
+      skills_context: "S".repeat(500),
+    } as IExecutionContext & { skills_context: string };
     const options: IAgentExecutionOptions = {
       identity_id: "test-agent",
       portal: "TestPortal",
@@ -136,6 +141,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     assertEquals(allocatorCalls, 1);
     assert(promptLengthSeen > 0);
     assert(promptLengthSeen < 10000);
+    assertEquals(skillsBlockLengthSeen <= 10 * TOKEN_ESTIMATION_CHARS_PER_TOKEN, true);
 
     executor.dispose();
   } finally {

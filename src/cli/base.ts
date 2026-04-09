@@ -20,6 +20,7 @@ import type {
   IRequestService,
   ISkillsService,
 } from "./cli_context.ts";
+import type { Config } from "../shared/schemas/config.ts";
 
 export interface ICommandContext extends ICliApplicationContext {}
 
@@ -38,39 +39,39 @@ export abstract class BaseCommand {
   /**
    * Get the configuration.
    */
-  protected get config() {
+  protected get config(): Config {
     return this.context.config.getAll();
   }
 
   /**
    * Get the database service.
    */
-  protected get db() {
+  protected get db(): ICliApplicationContext["db"] {
     return this.context.db;
   }
 
   /**
    * Get the display service (logger).
    */
-  protected get display() {
+  protected get display(): ICliApplicationContext["display"] {
     return this.context.display;
   }
 
   /**
    * Get the logger (alias for display for backward compatibility).
    */
-  protected get logger() {
+  protected get logger(): ICliApplicationContext["display"] {
     return this.context.display;
   }
 
   /**
    * Get the action logger (alias for display for backward compatibility).
    */
-  protected getActionLogger() {
+  protected getActionLogger(): ICliApplicationContext["display"] {
     return this.context.display;
   }
 
-  protected get git() {
+  protected get git(): ICliApplicationContext["git"] {
     return this.context.git;
   }
 
@@ -291,7 +292,7 @@ export abstract class BaseCommand {
    * Get the system configuration
    * @returns Config object
    */
-  public getConfig() {
+  public getConfig(): Config {
     return this.config;
   }
 

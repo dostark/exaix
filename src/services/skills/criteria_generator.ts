@@ -8,10 +8,10 @@
  * * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
  */
 
-import { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
+import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "../../shared/enums.ts";
-import { ICriteriaGeneratorService } from "../../shared/interfaces/i_criteria_generator_service.ts";
-import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { ICriteriaGeneratorService } from "../../shared/interfaces/i_criteria_generator_service.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import {
   ACCEPTANCE_CRITERION_WEIGHT,
   CRITERION_NAME_MAX_LENGTH,

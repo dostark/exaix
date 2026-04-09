@@ -7,13 +7,17 @@
  * @related-files [src/services/agent/agent_executor.ts, src/services/plan/plan_executor.ts]
  */
 
-import { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, AgentExecutor, IAgentFileBlueprint } from "../agent_executor.ts";
-import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../../../shared/schemas/agent_executor.ts";
-import { IModelProvider } from "../../../ai/types.ts";
+import type { IExecutionStrategy } from "./execution_strategy.ts";
+import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
+import type {
+  IAgentExecutionOptions,
+  IChangesetResult,
+  IExecutionContext,
+} from "../../../shared/schemas/agent_executor.ts";
+import type { IModelProvider } from "../../../ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
 import { parse as parseToml } from "@std/toml";
-import { JSONValue } from "../../../shared/types/json.ts";
+import type { JSONValue } from "../../../shared/types/json.ts";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   REACT_CALLING_TOOL_PREFIX,
@@ -23,12 +27,26 @@ import {
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "../../../shared/constants.ts";
+
+interface IReActLoopExecutor {
+  logAgentOutput: AgentExecutor["logAgentOutput"];
+  validateReviewResult: AgentExecutor["validateReviewResult"];
+  parseAgentResponse: AgentExecutor["parseAgentResponse"];
+  toolRegistry: AgentExecutor["toolRegistry"];
+}
 
 export interface IReActAction {
   tool: string;
   params: Record<string, JSONValue>;
   description?: string;
+}
+
+interface IToolExecutionResult {
+  success?: boolean;
+  error?: string;
+  data?: JSONValue;
 }
 
 /**
@@ -50,7 +68,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
   private readonly MAX_ITERATIONS = DEFAULT_AGENT_MAX_ITERATIONS;
 
   constructor(
-    private executor: AgentExecutor,
+    private executor: IReActLoopExecutor,
     private provider?: IModelProvider,
   ) {}
 
@@ -133,7 +151,10 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     );
   }
 
-  private async executeTool(action: IReActAction, options: IAgentExecutionOptions): Promise<any> {
+  private async executeTool(
+    action: IReActAction,
+    options: IAgentExecutionOptions,
+  ): Promise<IToolExecutionResult> {
     if (!this.executor.toolRegistry) {
       throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
     }
@@ -147,7 +168,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       enrichedParams.path = `@${options.portal}/${enrichedParams.path}`;
     }
 
-    return await this.executor.toolRegistry.execute(action.tool, enrichedParams);
+    return await this.executor.toolRegistry.execute(action.tool, enrichedParams) as IToolExecutionResult;
   }
 
   private buildPrompt(
@@ -156,7 +177,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     options: IAgentExecutionOptions,
     history: Array<{ role: ReActRole; content: string }>,
   ): string {
-    const historyText = history.map((h) => `${h.role.toUpperCase()}: ${h.content}`).join("\n\n");
+    const historyText = this.buildBudgetedHistoryText(history);
 
     return `IDENTITY: ${blueprint.name}
 CAPABILITIES: ${blueprint.capabilities.join(", ")}
@@ -167,7 +188,7 @@ Trace ID: ${context.trace_id}
 Request: ${context.request}
 Plan Step: ${context.plan}
 
-${history.length > 0 ? "HISTORY:\n" + historyText + "\n\n" : ""}
+${history.length > 0 ? `HISTORY:\n${historyText}` : ""}
 
 INSTRUCTIONS:
 1. Reason about the current state.
@@ -196,6 +217,44 @@ OR
 ${REACT_STATUS_COMPLETE}
 ${REACT_SUMMARY_PREFIX}[What was done]
 `;
+  }
+
+  private buildBudgetedHistoryText(
+    history: Array<{ role: ReActRole; content: string }>,
+  ): string {
+    const historyEntries = history.map((entry) => `${entry.role.toUpperCase()}: ${entry.content}`);
+    const maxChars = this.getLoopHistoryCharBudget();
+
+    if (!maxChars) {
+      return historyEntries.join("\n\n");
+    }
+
+    let remainingEntries = [...historyEntries];
+    let historyText = remainingEntries.join("\n\n");
+
+    while (remainingEntries.length > 1 && historyText.length > maxChars) {
+      remainingEntries = remainingEntries.slice(1);
+      historyText = remainingEntries.join("\n\n");
+    }
+
+    if (historyText.length <= maxChars) {
+      return historyText;
+    }
+
+    return historyText.slice(Math.max(0, historyText.length - maxChars));
+  }
+
+  private getLoopHistoryCharBudget(): number | undefined {
+    const promptBudget = Reflect.get(this.executor, "currentPromptBudget") as {
+      sections?: { loopHistory?: number };
+    } | undefined;
+    const loopHistoryTokens = promptBudget?.sections?.loopHistory;
+
+    if (!loopHistoryTokens || loopHistoryTokens <= 0) {
+      return undefined;
+    }
+
+    return loopHistoryTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
   }
 
   private parseResponse(response: string): { thought?: string; actions: IReActAction[]; isComplete: boolean } {

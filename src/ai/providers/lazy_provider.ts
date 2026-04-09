@@ -5,8 +5,8 @@
  * @architectural-layer AI
  * * @related-files [src/ai/provider_registry.ts]
  */
-import { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
-import { IProviderFactory } from "../factories/abstract_provider_factory.ts";
+import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IProviderFactory } from "../factories/abstract_provider_factory.ts";
 
 export class LazyProvider implements IModelProvider {
   private instance: IModelProvider | null = null;

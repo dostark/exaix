@@ -14,9 +14,9 @@ import { RequestStatus } from "../../shared/status/request_status.ts";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";
-import {
-  type IRequestMetadata as RequestMetadata,
-  type IRequestOptions as RequestOptions,
+import type {
+  IRequestMetadata as RequestMetadata,
+  IRequestOptions as RequestOptions,
 } from "../../shared/types/request.ts";
 import { resolveSubject } from "../helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";

@@ -10,9 +10,9 @@ import { MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "../..
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
 import { AnthropicProviderFactory } from "../../src/ai/factories/anthropic_factory.ts";
 import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";
-import { IResolvedProviderOptions } from "../../src/ai/types.ts";
+import type { IResolvedProviderOptions } from "../../src/ai/types.ts";
 import { ProviderFactory } from "../../src/ai/provider_factory.ts";
-import { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { TEST_MODEL_ANTHROPIC } from "../config/constants.ts";
 

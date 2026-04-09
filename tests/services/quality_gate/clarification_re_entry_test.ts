@@ -19,8 +19,8 @@ import type { IRequestSpecification } from "../../../src/shared/schemas/request_
 import { finalizeAndWritePending } from "../../../src/services/quality_gate/clarification_persistence.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { QualityGateMode, RequestSource } from "../../../src/shared/enums.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import type { IRequestQualityIssue } from "../../../src/shared/schemas/request_quality_assessment.ts";
@@ -31,6 +31,7 @@ import {
 } from "../../../src/shared/schemas/request_quality_assessment.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -69,7 +70,7 @@ function makeRequestFile(
 }
 
 async function setupProcessorTestEnv(
-  config: any,
+  config: Config,
   tempDir: string,
 ): Promise<{
   workspacePath: string;
@@ -207,11 +208,11 @@ function buildMinimalProcessor(
 ): RequestProcessor {
   const mockProvider = createMockProvider(["<content>{}</content>"]);
   const context: IApplicationContext = {
-    config: { get: () => config, getChecksum: () => "test" } as any,
+    config: createStubConfig(config),
     db,
     provider: mockProvider,
-    git: {} as any,
-    display: new EventLogger({ db, defaultActor: "test" }),
+    git: createStubGit(),
+    display: createStubDisplay(db),
     gateEvaluator: undefined,
   };
 

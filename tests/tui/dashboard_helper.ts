@@ -22,7 +22,12 @@ interface TestDashboardProps {
 /**
  * Creates a TUI dashboard with a real NotificationService backed by an ephemeral test DB.
  */
-export async function createTuiDashboardWithNotification(testProps: TestDashboardProps = {}) {
+export async function createTuiDashboardWithNotification(testProps: TestDashboardProps = {}): Promise<{
+  dashboard: ITuiDashboard;
+  notificationService: NotificationService;
+  db: IDatabaseService;
+  cleanup: () => Promise<void>;
+}> {
   const { db, config, cleanup } = await initTestDbService();
   const notificationService = new NotificationService(config, db);
 

@@ -6,9 +6,10 @@
  */
 
 import type { ILearning, IPattern } from "../../../src/shared/schemas/memory_bank.ts";
-import { IExecutionMemory, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
 import type { IDecision } from "../../../src/shared/schemas/memory_bank.ts";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import {
@@ -50,7 +51,7 @@ export async function createTestMemoryBankWithGlobal(
 ): Promise<{
   service: MemoryBankService;
   config: Config;
-  db: any;
+  db: DatabaseService;
   cleanup: () => Promise<void>;
 }> {
   const result = await createTestMemoryBankBase(async (service) => {
@@ -78,7 +79,7 @@ export async function createTestMemoryBankWithGlobal(
   return result as {
     service: MemoryBankService;
     config: Config;
-    db: any;
+    db: DatabaseService;
     cleanup: () => Promise<void>;
   };
 }
@@ -92,7 +93,7 @@ async function createTestMemoryBankBase(
 ): Promise<{
   service: MemoryBankService;
   config: Config;
-  db?: any;
+  db?: DatabaseService;
   cleanup: () => Promise<void>;
 }> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
@@ -104,7 +105,12 @@ async function createTestMemoryBankBase(
     await dbCleanup();
   };
 
-  const result: any = { service, config, cleanup };
+  const result: {
+    service: MemoryBankService;
+    config: Config;
+    db?: DatabaseService;
+    cleanup: () => Promise<void>;
+  } = { service, config, cleanup };
   if (includeDb) {
     result.db = db;
   }

@@ -9,12 +9,28 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
-import { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
-function cast<T = any>(obj: unknown): T {
+interface IReviewCommandsInternals {
+  normalizeTypeFilter(value?: string): string;
+  normalizeStatusFilter(value?: string): string | undefined;
+  isArtifactId(value: string): boolean;
+  getDefaultBranch(rootPath: string): Promise<string>;
+  resolvePortalEntryTarget(basePath: string, targetPath: string): string;
+  findWorktreePathForBranch(
+    gitService: { runGitCommand(args: string[]): Promise<{ output: string }> },
+    branch: string,
+  ): Promise<string | null>;
+  createPortalGitService(rootPath: string, traceId: string): Promise<unknown>;
+  deleteBranchWithWorktreeHandling(gitService: unknown, branch: string, rootPath: string): Promise<void>;
+  updateArtifactStatus(artifactId: string, status: string): Promise<void>;
+  bestEffortLinkRequestRejection(requestId: string, rejectedPath: string): Promise<void>;
+}
+
+function cast<T>(obj: unknown): T {
   return obj as T;
 }
 
@@ -40,30 +56,32 @@ describe("ReviewCommands Targeted Coverage", () => {
     await cleanup();
   });
 
+  const internals = () => cast<IReviewCommandsInternals>(reviewCommands);
+
   describe("Internal Helper Coverage", () => {
     it("normalizeTypeFilter: handles various inputs", () => {
-      assertEquals(cast(reviewCommands).normalizeTypeFilter("CODE"), "code");
-      assertEquals(cast(reviewCommands).normalizeTypeFilter("artifact"), "artifact");
-      assertEquals(cast(reviewCommands).normalizeTypeFilter("all"), "all");
-      assertEquals(cast(reviewCommands).normalizeTypeFilter("invalid"), "all");
-      assertEquals(cast(reviewCommands).normalizeTypeFilter(undefined), "all");
+      assertEquals(internals().normalizeTypeFilter("CODE"), "code");
+      assertEquals(internals().normalizeTypeFilter("artifact"), "artifact");
+      assertEquals(internals().normalizeTypeFilter("all"), "all");
+      assertEquals(internals().normalizeTypeFilter("invalid"), "all");
+      assertEquals(internals().normalizeTypeFilter(undefined), "all");
     });
 
     it("normalizeStatusFilter: handles various inputs", () => {
-      assertEquals(cast(reviewCommands).normalizeStatusFilter("PENDING"), "pending");
-      assertEquals(cast(reviewCommands).normalizeStatusFilter("approved"), "approved");
-      assertEquals(cast(reviewCommands).normalizeStatusFilter("invalid"), undefined);
-      assertEquals(cast(reviewCommands).normalizeStatusFilter(undefined), undefined);
+      assertEquals(internals().normalizeStatusFilter("PENDING"), "pending");
+      assertEquals(internals().normalizeStatusFilter("approved"), "approved");
+      assertEquals(internals().normalizeStatusFilter("invalid"), undefined);
+      assertEquals(internals().normalizeStatusFilter(undefined), undefined);
     });
 
     it("isArtifactId: identifies artifact IDs correctly", () => {
-      assertEquals(cast(reviewCommands).isArtifactId("artifact-123"), true);
-      assertEquals(cast(reviewCommands).isArtifactId("feat/branch"), false);
+      assertEquals(internals().isArtifactId("artifact-123"), true);
+      assertEquals(internals().isArtifactId("feat/branch"), false);
     });
 
     it("getDefaultBranch: handles missing remote and master fallback", async () => {
       // Current repo has TEST_DEFAULT_BRANCH from initGitRepo
-      const branch = await cast(reviewCommands).getDefaultBranch(tempDir);
+      const branch = await internals().getDefaultBranch(tempDir);
       assertEquals(branch, TEST_DEFAULT_BRANCH);
     });
 
@@ -74,7 +92,7 @@ describe("ReviewCommands Targeted Coverage", () => {
         await runGitCommand(mainDir, ["config", "user.name", "Test"]);
         await runGitCommand(mainDir, ["config", "user.email", "test@test.com"]);
         await runGitCommand(mainDir, ["commit", "--allow-empty", "-m", "init"]);
-        const branch = await cast(reviewCommands).getDefaultBranch(mainDir);
+        const branch = await internals().getDefaultBranch(mainDir);
         assertEquals(branch, "main");
       } finally {
         await Deno.remove(mainDir, { recursive: true });
@@ -82,9 +100,9 @@ describe("ReviewCommands Targeted Coverage", () => {
     });
 
     it("resolvePortalEntryTarget: handles absolute and relative paths", () => {
-      const abs = cast(reviewCommands).resolvePortalEntryTarget("/a/b/c", "/x/y");
+      const abs = internals().resolvePortalEntryTarget("/a/b/c", "/x/y");
       assertEquals(abs, "/x/y");
-      const rel = cast(reviewCommands).resolvePortalEntryTarget("/a/b/c", "../d");
+      const rel = internals().resolvePortalEntryTarget("/a/b/c", "../d");
       // dirname(/a/b/c) is /a/b, resolve(/a/b, ../d) is /a/d
       assertEquals(rel, "/a/d");
     });
@@ -186,9 +204,10 @@ branch refs/heads/other
 `,
           }),
       };
-      const path = await cast(reviewCommands).findWorktreePathForBranch(cast(mockGit), "my-branch");
+      const gitInternals = cast<Parameters<IReviewCommandsInternals["findWorktreePathForBranch"]>[0]>(mockGit);
+      const path = await internals().findWorktreePathForBranch(gitInternals, "my-branch");
       assertEquals(path, "/path/to/wt");
-      const pathNotFound = await cast(reviewCommands).findWorktreePathForBranch(cast(mockGit), "nonexistent");
+      const pathNotFound = await internals().findWorktreePathForBranch(gitInternals, "nonexistent");
       assertEquals(pathNotFound, null);
     });
 
@@ -196,8 +215,8 @@ branch refs/heads/other
       const branch = "feat/to-delete";
       await runGitCommand(tempDir, ["branch", branch]);
 
-      const gitService = await cast(reviewCommands).createPortalGitService(tempDir, "trace-1");
-      await cast(reviewCommands).deleteBranchWithWorktreeHandling(gitService, branch, tempDir);
+      const gitService = await internals().createPortalGitService(tempDir, "trace-1");
+      await internals().deleteBranchWithWorktreeHandling(gitService, branch, tempDir);
 
       const log = await runGitCommand(tempDir, ["branch", "--list", branch]);
       assertEquals(log.trim(), "");
@@ -250,14 +269,14 @@ branch refs/heads/other
         ["artifact-bad", "req-bad", "analysis", "identity", "pending", new Date().toISOString(), "bad-art.md"],
       );
       await assertRejects(
-        () => cast(reviewCommands).updateArtifactStatus("artifact-bad", "approved"),
+        () => internals().updateArtifactStatus("artifact-bad", "approved"),
         Error,
         "Invalid artifact format",
       );
     });
 
     it("bestEffortLinkRequestRejection: handles missing request file", async () => {
-      await cast(reviewCommands).bestEffortLinkRequestRejection("nonexistent-req", "some/path");
+      await internals().bestEffortLinkRequestRejection("nonexistent-req", "some/path");
       // Should not throw
     });
 
@@ -272,7 +291,7 @@ title: My Request
 ---
 Content`,
       );
-      await cast(reviewCommands).bestEffortLinkRequestRejection("req-1", "rejected/path.md");
+      await internals().bestEffortLinkRequestRejection("req-1", "rejected/path.md");
 
       const updated = await Deno.readTextFile(requestFile);
       assertEquals(updated.includes("rejected_path: rejected/path.md"), true);

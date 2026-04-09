@@ -10,7 +10,7 @@ import { KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingCategory } from "./helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "./tui_common.ts";
-import { AnalysisMode } from "../shared/types/request.ts";
+import type { AnalysisMode } from "../shared/types/request.ts";
 import { isRequestStatus, RequestStatus, type RequestStatusType } from "../shared/status/request_status.ts";
 import { createGroupNode, createNode, findNode, flattenTree, type ITreeNode, renderTree } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
@@ -31,7 +31,7 @@ import {
 } from "./request_manager/dialog_handlers.ts";
 import {
   MessageType,
-  NavDirection,
+  type NavDirection,
   RequestDialogType,
   RequestGroupingMode,
   RequestOperation,
@@ -41,20 +41,20 @@ import {
 } from "../shared/enums.ts";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 
-import {
-  type IRequestEntry as IRequest,
-  type IRequestMetadata,
-  type IRequestOptions,
-  type IRequestShowResult,
+import type {
+  IRequestEntry as IRequest,
+  IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
 } from "../shared/types/request.ts";
-import { IRequestService } from "../shared/interfaces/i_request_service.ts";
+import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,
   TUI_KEY_LABEL_ENTER,
   TUI_PRIORITY_ICONS,
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
-import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
 
 /**
  * View state interface

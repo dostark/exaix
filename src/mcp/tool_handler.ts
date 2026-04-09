@@ -9,10 +9,10 @@ import { join, normalize, relative } from "@std/path";
 import type { Config } from "../shared/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
-import { type MCPToolResponse } from "../shared/schemas/mcp.ts";
-import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
-import { PortalOperation } from "../shared/enums.ts";
-import { JSONValue, LogMetadata, toSafeJson } from "../shared/types/json.ts";
+import type { MCPToolResponse } from "../shared/schemas/mcp.ts";
+import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
+import type { PortalOperation } from "../shared/enums.ts";
+import { type JSONValue, type LogMetadata, toSafeJson } from "../shared/types/json.ts";
 
 /**
  * Base class for all MCP tool handlers

@@ -90,7 +90,7 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
   const { mockFlowRunner, mockAgentRunner, router } = createRouterTestContext();
 
   const _originalRoute = router.route.bind(router);
-  router.route = async function (request: any) {
+  router.route = async function (request: Parameters<typeof router.route>[0]) {
     // Skip the conflicting fields check for this test
     const flowId = request.frontmatter.flow;
     const identityId = request.frontmatter.identity;

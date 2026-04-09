@@ -7,8 +7,9 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryBankSource } from "../../src/shared/enums.ts";
-
 import { initSimpleMCPServer } from "./helpers/test_setup.ts";
+
+type IMCPServerTestContext = Awaited<ReturnType<typeof initSimpleMCPServer>>;
 
 // ============================================================================
 // Prompts List Tests
@@ -16,7 +17,7 @@ import { initSimpleMCPServer } from "./helpers/test_setup.ts";
 
 // Helper for MCP server tests
 async function withMCPServer(
-  fn: (ctx: { server: any; db: any }) => Promise<void>,
+  fn: (ctx: Pick<IMCPServerTestContext, "server" | "db">) => Promise<void>,
 ) {
   const { server, db, cleanup } = await initSimpleMCPServer();
   try {

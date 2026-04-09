@@ -10,8 +10,9 @@ import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 import type { MCPToolResponse } from "../../src/shared/schemas/mcp.ts";
-
 import { createStubContext } from "../helpers/test_helpers.ts";
+
+type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;
 
 const mockContext: ICliApplicationContext = createStubContext({
   db: {
@@ -45,7 +46,7 @@ class PassingTool extends ToolHandler {
     await Promise.resolve();
     return { content: [{ type: "text", text: "success_result" }] };
   }
-  getToolDefinition(): any {
+  getToolDefinition(): IToolDefinition {
     return { name: McpToolName.READ_FILE, description: "", inputSchema: { type: "object", properties: {} } };
   }
 }
@@ -58,7 +59,7 @@ class FailingTool extends ToolHandler {
     await Promise.resolve();
     throw new Error("execution error");
   }
-  getToolDefinition(): any {
+  getToolDefinition(): IToolDefinition {
     return { name: McpToolName.WRITE_FILE, description: "", inputSchema: { type: "object", properties: {} } };
   }
 }

@@ -6,11 +6,11 @@
  * * @related-files [src/ai/provider_registry.ts]
  */
 
-import { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
+import type { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
-import { CostTracker } from "../services/cost/cost_tracker.ts";
-import { HealthCheckService } from "../services/core/health_check_service.ts";
-import { Config } from "../shared/schemas/config.ts";
+import type { CostTracker } from "../services/cost/cost_tracker.ts";
+import type { HealthCheckService } from "../services/core/health_check_service.ts";
+import type { Config } from "../shared/schemas/config.ts";
 import { getValidatedEnvOverrides, isCIMode, isTestMode } from "../config/env_schema.ts";
 import { PricingTier, ProviderCostTier, TaskComplexity } from "../shared/enums.ts";
 

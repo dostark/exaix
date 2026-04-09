@@ -15,10 +15,10 @@ import { AgentStatusView } from "../agent_status_view.ts";
 import { RequestManagerView } from "../request_manager_view.ts";
 import { MemoryView } from "../memory_view.ts";
 import { SkillsManagerView } from "../skills_manager_view.ts";
-import { type ITuiView } from "../tui_dashboard.ts";
+import type { ITuiView } from "../tui_dashboard.ts";
 import type { ILogService } from "../../shared/interfaces/i_log_service.ts";
-import { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
-import { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
+import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
+import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
 import {
   MockAgentService,
   MockDaemonService,
@@ -32,16 +32,16 @@ import {
   MockStructuredLoggerService,
 } from "../tui_dashboard_mocks.ts";
 
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
-import { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
-import { IStructuredLogger } from "../../shared/interfaces/i_log_service.ts";
-import { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
-import { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
+import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
+import type { IStructuredLogger } from "../../shared/interfaces/i_log_service.ts";
+import type { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
+import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
 import { TUI_ELEMENT_ACTION_BUTTONS, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
-import { IRequestService } from "../../shared/interfaces/i_request_service.ts";
-import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import { type Config } from "../../shared/schemas/config.ts";
+import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
+import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
+import type { Config } from "../../shared/schemas/config.ts";
 
 /**
  * Service bundle interface for TUI initialization

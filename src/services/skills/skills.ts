@@ -12,7 +12,7 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
-import { ActivityActor, MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
+import { ActivityActor, type MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
 import {
@@ -22,13 +22,13 @@ import {
   type ISkillMatch,
   type ISkillTriggers,
   type SkillDefinition,
-  SkillIndexSchema as _SkillIndexSchema,
+  type SkillIndexSchema as _SkillIndexSchema,
   SkillSchema,
   type SkillUpdates,
 } from "../../shared/schemas/memory_bank.ts";
-import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
-import { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import { ISkillMatchRequest } from "../../shared/types/skill.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
+import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
 
 /**
  * Skills Service Configuration

@@ -6,9 +6,9 @@
  * * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import { type IPortalDetails, type IPortalInfo, type IVerificationResult } from "../shared/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
-import { type IPortalService } from "../shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { ConfirmDialog, type DialogBase } from "./helpers/dialog_base.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
@@ -24,8 +24,8 @@ import {
 } from "./helpers/tree_view.ts";
 import {
   DialogStatus,
-  PortalAnalysisMode,
-  PortalExecutionStrategy,
+  type PortalAnalysisMode,
+  type PortalExecutionStrategy,
   PortalStatus,
   TuiIcon,
   TuiNodeType,

@@ -6,7 +6,7 @@
  * * @related-files [src/ai/providers/llama_provider.ts]
  */
 import { AbstractProviderFactory } from "./abstract_provider_factory.ts";
-import { IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { LlamaProvider } from "../providers/llama_provider.ts";
 
 export class LlamaProviderFactory extends AbstractProviderFactory {

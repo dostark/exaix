@@ -19,6 +19,7 @@ import {
 } from "../../src/tui/tui_dashboard_mocks.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { RequestPriority } from "../../src/shared/enums.ts";
+import type { IStructuredLogEntry } from "../../src/shared/types/logging.ts";
 import {
   TEST_MODEL_OPENAI,
   TEST_PROPOSAL_ID,
@@ -207,7 +208,7 @@ Deno.test("MockStructuredLoggerService: returns empty logs and unsubscribe", asy
   if (!Array.isArray(await service.getLogsByCorrelationId("cid"))) throw new Error("getLogsByCorrelationId failed");
   if (!Array.isArray(await service.getLogsByTraceId("tid"))) throw new Error("getLogsByTraceId failed");
   if (!Array.isArray(await service.getLogsByAgentId("aid"))) throw new Error("getLogsByAgentId failed");
-  const unsubscribe = service.subscribeToLogs((_entry: any) => {});
+  const unsubscribe = service.subscribeToLogs((_entry: IStructuredLogEntry) => {});
   if (typeof unsubscribe !== "function") throw new Error("subscribeToLogs failed");
   await service.exportLogs("file", []);
 });

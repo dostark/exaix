@@ -5,7 +5,7 @@
  * between sequential steps in an agentic workflow.
  */
 
-import { assertEquals } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import {
   appendToRequest,
   extractSection,

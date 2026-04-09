@@ -5,7 +5,7 @@
  * @architectural-layer Interfaces
  * * @related-files [src/services/tool_registry.ts]
  */
-import { JSONValue } from "../types/json.ts";
+import type { JSONValue } from "../types/json.ts";
 
 export interface IToolParameterSchema {
   type: string;

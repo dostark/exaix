@@ -16,7 +16,7 @@ import {
   type IClarifyResult,
   RequestClarifyHandler,
 } from "../handlers/request_clarify_handler.ts";
-import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import { RequestSource } from "../../shared/enums.ts";
 import {
   AnalysisMode,
@@ -102,6 +102,11 @@ export class RequestCommands extends BaseCommand {
    */
   async show(idOrFilename: string): Promise<IRequestShowResult> {
     return await this.showHandler.show(idOrFilename);
+  }
+
+  async getRequestContent(requestId: string): Promise<string> {
+    const result = await this.show(requestId);
+    return result.content;
   }
 
   /**

@@ -7,12 +7,13 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "../../src/ai/providers.ts";
-import { AgentRunner, IBlueprint, IParsedRequest } from "../../src/services/agent/agent_runner.ts";
+import { AgentRunner, type IBlueprint, type IParsedRequest } from "../../src/services/agent/agent_runner.ts";
 import { PORTAL_CONTEXT_KEY } from "../../src/shared/constants.ts";
 import { buildPortalContextBlock } from "../../src/services/context/prompt_context.ts";
-import { ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
-import { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
-import type { ISkill, ISkillMatch } from "../../src/shared/schemas/memory_bank.ts";
+import type { ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
+import type { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
+import type { ISkill, ISkillMatch, SkillDefinition } from "../../src/shared/schemas/memory_bank.ts";
+import { MemoryBankSource, MemoryScope, SkillStatus } from "../../src/shared/enums.ts";
 
 // ============================================================================
 // Test Fixtures
@@ -790,18 +791,31 @@ class MockSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
+  private createSkillRecord(skillDef: SkillDefinition, skillId: string): ISkill {
+    return {
+      ...skillDef,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      usage_count: 0,
+      skill_id: skillId,
+      source: MemoryBankSource.CORE,
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+    };
+  }
+
   deriveSkillFromLearnings(
     _learningIds: string[],
-    _skillDef: Omit<ISkill, "id" | "created_at" | "usage_count">,
-  ): Promise<any> {
-    return Promise.resolve({ skill_id: "derived" });
+    skillDef: SkillDefinition,
+  ): Promise<ISkill> {
+    return Promise.resolve(this.createSkillRecord(skillDef, "derived"));
   }
 
   rebuildIndex(): Promise<void> {
     return Promise.resolve();
   }
 
-  listSkills(): Promise<any[]> {
+  listSkills(): Promise<ISkill[]> {
     return Promise.resolve([]);
   }
 
@@ -810,12 +824,12 @@ class MockSkillsService implements ISkillsService {
   }
 
   createSkill(
-    _skillDef: Omit<ISkill, "id" | "created_at" | "usage_count">,
-  ): Promise<any> {
-    return Promise.resolve({ skill_id: "created" });
+    skillDef: SkillDefinition,
+  ): Promise<ISkill> {
+    return Promise.resolve(this.createSkillRecord(skillDef, "created"));
   }
 
-  getSkill(_id: string): Promise<any> {
+  getSkill(_id: string): Promise<ISkill | null> {
     return Promise.resolve(null);
   }
 

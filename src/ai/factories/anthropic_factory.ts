@@ -6,7 +6,7 @@
  * * @related-files [src/ai/providers/anthropic_provider.ts]
  */
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
-import { IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { AnthropicProvider } from "../providers/anthropic_provider.ts";
 import { PROVIDER_ANTHROPIC } from "../../shared/constants.ts";
 

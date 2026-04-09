@@ -231,6 +231,15 @@ version = "1.0.0"
 # Default identity ID for MCP tool operations when not explicitly specified
 identity_id = "system"
 
+# ---------------------------------------------------------------------------
+# Prompt budget enforcement configuration
+# Cloud providers default to strict budget enforcement. Local providers default
+# to relaxed mode unless you explicitly opt in.
+# ---------------------------------------------------------------------------
+[budget_enforcement]
+cloud = true
+local = false
+
 [git]
 # Git operations constraints for MCP tools
 branch_prefix_pattern = "^(feat|fix|docs|chore|refactor|test)/"

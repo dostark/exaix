@@ -33,7 +33,10 @@ export async function runWithTimeout<T>(
 /**
  * Captures console.log output during the execution of a function.
  */
-export async function captureConsoleOutput(fn: () => Promise<void> | void, timeoutMs: number = 10000) {
+export async function captureConsoleOutput(
+  fn: () => Promise<void> | void,
+  timeoutMs: number = 10000,
+): Promise<string> {
   let out = "";
   const origLog = console.log;
   console.log = (msg: string) => (out += msg + "\n");
@@ -49,7 +52,10 @@ export async function captureConsoleOutput(fn: () => Promise<void> | void, timeo
 /**
  * Captures all console outputs (log, warn, error) during the execution of a function.
  */
-export async function captureAllOutputs(fn: () => Promise<void> | void, timeoutMs: number = 10000) {
+export async function captureAllOutputs(
+  fn: () => Promise<void> | void,
+  timeoutMs: number = 10000,
+): Promise<{ logs: string[]; warns: string[]; errs: string[] }> {
   const logs: string[] = [];
   const warns: string[] = [];
   const errs: string[] = [];

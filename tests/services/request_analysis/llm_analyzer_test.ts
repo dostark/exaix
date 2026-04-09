@@ -8,11 +8,11 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "../../../src/ai/providers.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import {
   createOutputValidator,
   type IOutputSchemaName,
   type IOutputValidator,
-  type IValidationResult,
 } from "../../../src/services/tool/output_validator.ts";
 import { LlmAnalyzer } from "../../../src/services/request_analysis/llm_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
@@ -44,7 +44,7 @@ const validAnalysisJson = JSON.stringify({
 // Test Helpers
 // ---------------------------------------------------------------------------
 
-function createCapturingProvider(responseJson: string): { provider: any; capturedPrompt: () => string } {
+function createCapturingProvider(responseJson: string): { provider: IModelProvider; capturedPrompt: () => string } {
   let capturedPrompt = "";
   return {
     capturedPrompt: () => capturedPrompt,
@@ -156,7 +156,7 @@ Deno.test("[LlmAnalyzer] uses OutputValidator for schema validation", async () =
     parseAndValidateWithSchema: <K extends IOutputSchemaName>(
       raw: string,
       _schemaName: K,
-    ): IValidationResult<any> => {
+    ) => {
       return {
         success: false,
         repairAttempted: false,

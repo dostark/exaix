@@ -13,9 +13,9 @@ import { ensureDirSync } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "../../shared/constants.ts";
-import { JSONValue } from "../../shared/types/json.ts";
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 
 export type SqliteParam = string | number | boolean | null;
 
@@ -112,7 +112,7 @@ export class DatabaseService implements IDatabaseService {
     actorType?: string | null,
     identityId?: string | null,
     agentKind?: string | null,
-  ) {
+  ): void {
     if (this.isClosing) {
       console.warn("Cannot log activity: DatabaseService is closing");
       return;
@@ -287,7 +287,7 @@ export class DatabaseService implements IDatabaseService {
   /**
    * Flush pending log entries to database
    */
-  private flush() {
+  private flush(): void {
     if (this.flushTimer !== null) {
       clearTimeout(this.flushTimer);
       this.flushTimer = null;

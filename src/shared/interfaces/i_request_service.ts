@@ -10,8 +10,8 @@ import type { RequestStatusType } from "../status/request_status.ts";
 import type { RequestSource } from "../enums.ts";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "../types/request.ts";
 
-import { IRequestAnalysis } from "../schemas/request_analysis.ts";
-import { AnalysisMode } from "../types/request.ts";
+import type { IRequestAnalysis } from "../schemas/request_analysis.ts";
+import type { AnalysisMode } from "../types/request.ts";
 
 export interface IRequestService {
   /**

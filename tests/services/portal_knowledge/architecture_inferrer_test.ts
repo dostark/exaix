@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { ZodType, ZodTypeDef } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
 import {
   ArchitectureInferrer,
   type IArchitectureValidator,

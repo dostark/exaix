@@ -6,8 +6,8 @@
  * * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
  */
 
-import { buildEvaluationPrompt, EvaluationCriterion, EvaluationResult } from "./evaluation_criteria.ts";
-import { IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
+import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "./evaluation_criteria.ts";
+import type { IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
 
 /**
  * Context object for agent requests

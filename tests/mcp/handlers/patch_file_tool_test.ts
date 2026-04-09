@@ -125,11 +125,14 @@ Deno.test("PatchFileTool: getToolDefinition returns correct definition", () => {
   const context = createStubContext();
   const handler = new PatchFileTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, "patch_file");
   assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(def.inputSchema.required.join(), "portal");
-  assertStringIncludes(def.inputSchema.required.join(), "path");
-  assertStringIncludes(def.inputSchema.required.join(), "search");
-  assertStringIncludes(def.inputSchema.required.join(), "replace");
+  assertStringIncludes(required.join(), "portal");
+  assertStringIncludes(required.join(), "path");
+  assertStringIncludes(required.join(), "search");
+  assertStringIncludes(required.join(), "replace");
 });

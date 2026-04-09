@@ -17,8 +17,8 @@ import { RequestProcessor } from "../../src/services/request/request_processor.t
 import { getTestModel } from "../ai/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";
-import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 
 const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test(
@@ -65,11 +65,11 @@ Always respond with:
 
       // Create RequestProcessor using real provider
       const context: IApplicationContext = {
-        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        config: createStubConfig(env.config),
         db: env.db,
         provider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
       };
 
       const processor = new RequestProcessor({

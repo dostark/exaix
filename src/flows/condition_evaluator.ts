@@ -6,10 +6,10 @@
  * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 
-import { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
+import type { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
 import { FlowInputSource, RequestKind } from "../shared/enums.ts";
-import { IStepResult } from "./flow_runner.ts";
-import { JSONValue } from "../shared/types/json.ts";
+import type { IStepResult } from "./flow_runner.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 
 /**
  * Context available during condition evaluation

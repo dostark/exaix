@@ -10,16 +10,14 @@
  * @architectural-layer Services
  * * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
  */
-import { type IFlowResult, type IFlowRunner } from "../../flows/flow_runner.ts";
-import {
-  type IAgentExecutionResult,
-  type IAgentRunner,
-  type IBlueprint,
-  type IParsedRequest,
-} from "../agent/agent_runner.ts";
-import { EventLogger } from "../core/event_logger.ts";
+import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
+import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
+import type { EventLogger } from "../core/event_logger.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
-import { IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "../portal/workspace_execution_context.ts";
+import {
+  type IWorkspaceExecutionContext,
+  WorkspaceExecutionContextBuilder,
+} from "../portal/workspace_execution_context.ts";
 import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
@@ -63,7 +61,7 @@ export interface IFlowValidator {
   validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
 }
 
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IRequestRouterConfig {
   flowRunner: IFlowRunner;

@@ -6,14 +6,14 @@
  */
 
 import process from "node:process";
-import { type IPane } from "../../src/tui/tui_dashboard.ts";
+import type { IPane } from "../../src/tui/tui_dashboard.ts";
 import { noColorTheme } from "../../src/tui/helpers/colors.ts";
 import { prodRender } from "../../src/tui/dashboard/renderer.ts";
-import { type INotificationService } from "../../src/services/notification/notification.ts";
-import { type IMemoryNotification } from "../../src/shared/types/notification.ts";
-import { type IPortalDetails, type IPortalInfo } from "../../src/shared/types/portal.ts";
-import { type IDashboardViewState } from "../../src/tui/tui_dashboard.ts";
-import { type IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { INotificationService } from "../../src/services/notification/notification.ts";
+import type { IMemoryNotification } from "../../src/shared/types/notification.ts";
+import type { IPortalDetails, IPortalInfo } from "../../src/shared/types/portal.ts";
+import type { IDashboardViewState } from "../../src/tui/tui_dashboard.ts";
+import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
 import { makePane } from "./layout_test_utils.ts";
 
 // ===== Types =====
@@ -79,7 +79,7 @@ export async function testProdRender(
     notifications?: IMemoryNotification[];
     portals?: IPortalInfo[];
   } = {},
-) {
+): Promise<{ captured: CapturedConsole; writes: string[] }> {
   const { captured, restore } = captureConsole();
   const { writes, restore: restoreStdout } = captureStdout();
   try {

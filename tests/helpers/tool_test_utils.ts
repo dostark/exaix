@@ -11,7 +11,7 @@ import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "../../src/shared/types/json.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 
 export interface IToolTestContext {

@@ -12,7 +12,7 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import { DataFormat, McpToolName } from "../../shared/enums.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH } from "../../shared/constants.ts";
 
 /**

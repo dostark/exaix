@@ -8,9 +8,9 @@
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
-import { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
-import { UIOutputFormat } from "../../shared/enums.ts";
+import type { UIOutputFormat } from "../../shared/enums.ts";
 
 export interface IJournalCommandOptions {
   filter?: string[];

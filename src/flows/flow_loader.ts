@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
+import type { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
 import { FlowSchema } from "../shared/schemas/flow.ts";
 import { StepExecutionMode } from "../shared/enums.ts";
 import { WRITE_TOOLS } from "../shared/constants.ts";

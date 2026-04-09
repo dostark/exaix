@@ -11,17 +11,12 @@ import { AiConfigSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "../schemas/mcp.ts";
 import * as DEFAULTS from "../constants.ts";
 import { ProviderTypeSchema } from "./ai_config.ts";
-import {
-  LogLevel,
-  PortalAnalysisMode,
-  PortalOperation,
-  ProviderCostTier,
-  QualityGateMode,
-  SqliteJournalMode,
-} from "../enums.ts";
+import { LogLevel, PortalAnalysisMode, ProviderCostTier, QualityGateMode, SqliteJournalMode } from "../enums.ts";
+import type { PortalOperation } from "../enums.ts";
 import { AnalysisMode } from "../types/request.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "../version.ts";
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
+import { ZBudgetPolicy } from "./prompt_budget.ts";
 
 export interface IPortalConfig {
   alias: string;
@@ -323,6 +318,8 @@ export const ConfigSchema = z.object({
       proceed: DEFAULTS.DEFAULT_QG_PROCEED_THRESHOLD,
     },
   }),
+  /** Prompt budget enforcement policy overrides (Phase 62) */
+  budget_enforcement: ZBudgetPolicy.optional(),
   /** Request intent analysis configuration (Phase 45) */
   request_analysis: z.object({
     /**

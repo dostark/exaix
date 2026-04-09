@@ -5,8 +5,8 @@
  * and activity tables are correctly created during project bootstrap.
  */
 
-import { assert } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
+import { assert } from "@std/assert";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
 
 // Resolve repository root (two levels up from this test file)

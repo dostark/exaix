@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { MockProvider, ModelFactory, OllamaProvider } from "../../src/ai/providers.ts";
-import { IModelProvider } from "../../src/ai/types.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 import { ConnectionError, ModelProviderError, TimeoutError } from "../../src/ai/providers/common.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 

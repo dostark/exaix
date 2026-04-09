@@ -17,12 +17,12 @@ import { BlueprintCommands } from "./commands/blueprint_commands.ts";
 import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
-import { IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
+import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import {
   FlowInputSource,
-  MemoryBankSource,
+  type MemoryBankSource,
   MemoryScope,
-  PortalAnalysisMode,
+  type PortalAnalysisMode,
   PortalExecutionStrategy,
   PortalStatus,
   RequestKind,
@@ -31,13 +31,13 @@ import {
   UIOutputFormat,
 } from "../shared/enums.ts";
 import { AnalysisMode } from "../shared/types/request.ts";
-import { IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
 import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
-import { ICliApplicationContext } from "./cli_context.ts";
+import type { ICliApplicationContext } from "./cli_context.ts";
 import { GitService } from "../services/core/git_service.ts";
-import { OutputFormat } from "./memory_types.ts";
+import type { OutputFormat } from "./memory_types.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
 import {
   DAEMON_IDENTITY_ID,
@@ -67,7 +67,7 @@ import {
 } from "./command_builders/plan_actions.ts";
 
 // Allow tests to run the CLI entrypoint without initializing heavy services
-export function isTestMode() {
+export function isTestMode(): boolean {
   return isTestModeImport();
 }
 
@@ -99,7 +99,25 @@ const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
-export function __test_getContext() {
+export function __test_getContext(): {
+  IN_TEST_MODE: boolean;
+  config: typeof config;
+  db: typeof db;
+  gitService: typeof gitService;
+  provider: typeof provider;
+  display: typeof display;
+  context: typeof context;
+  requestCommands: typeof requestCommands;
+  planCommands: typeof planCommands;
+  reviewCommands: typeof reviewCommands;
+  gitCommands: typeof gitCommands;
+  daemonCommands: typeof daemonCommands;
+  portalCommands: typeof portalCommands;
+  blueprintCommands: typeof blueprintCommands;
+  flowCommands: typeof flowCommands;
+  dashboardCommands: typeof dashboardCommands;
+  memoryCommands: typeof memoryCommands;
+} {
   return {
     IN_TEST_MODE: isTestMode(),
     config,
@@ -129,7 +147,7 @@ export type ExaCtlTestContext = ReturnType<typeof __test_getContext>;
 // Returns an object describing whether initialization succeeded and the constructed services.
 export function __test_initializeServices(
   opts?: { simulateFail?: boolean; instantiateDb?: boolean; configPath?: string },
-) {
+): ReturnType<typeof initializeServices> {
   return initializeServices(opts);
 }
 

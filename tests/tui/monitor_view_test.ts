@@ -11,8 +11,8 @@ import { MONITOR_KEY_BINDINGS, MonitorView } from "../../src/tui/monitor_view.ts
 import { LOG_COLORS, LOG_ICONS } from "../../src/tui/tui.config.ts";
 import type { ILogEntry } from "../../src/tui/monitor_view.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
-import { ActivityRecord } from "../../src/services/core/db.ts";
-import { IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import type { ActivityRecord } from "../../src/services/core/db.ts";
+import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import {
   createMockDatabaseService,
   createMonitorViewWithLogs,
@@ -169,9 +169,6 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
     queryActivity(filter: IJournalFilterOptions) {
       calls.push(`query:${JSON.stringify(filter)}`);
       return this.inner.queryActivity(filter);
-    }
-    addLog(log: ActivityRecord) {
-      return this.inner.addLog(log);
     }
     query(filter: IJournalFilterOptions) {
       calls.push(`query:${JSON.stringify(filter)}`);

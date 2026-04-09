@@ -16,6 +16,7 @@ import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_e
 import {
   CriterionPhase,
   CriterionStatus,
+  type ICriterion,
   type ICriterionResult,
   type IScenarioStep,
   type ScenarioExecutionMode,
@@ -298,15 +299,21 @@ function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>)
     ...step,
     command: step.command ? expand(step.command) : step.command,
     args: step.args?.map(expand),
-    input_criteria: step.input_criteria.map((c: any) => ({
-      ...c,
-      path: c.path ? expand(c.path) : c.path,
-      target_file: c.target_file ? expand(c.target_file) : c.target_file,
-    })),
-    output_criteria: step.output_criteria.map((c: any) => ({
-      ...c,
-      path: c.path ? expand(c.path) : c.path,
-      target_file: c.target_file ? expand(c.target_file) : c.target_file,
-    })),
+    input_criteria: step.input_criteria.map((criterion: ICriterion) => {
+      const updates: Partial<Record<"path" | "target_file", string>> = {};
+      if ("path" in criterion && typeof criterion.path === "string") updates.path = expand(criterion.path);
+      if ("target_file" in criterion && typeof criterion.target_file === "string") {
+        updates.target_file = expand(criterion.target_file);
+      }
+      return { ...criterion, ...updates } as ICriterion;
+    }),
+    output_criteria: step.output_criteria.map((criterion: ICriterion) => {
+      const updates: Partial<Record<"path" | "target_file", string>> = {};
+      if ("path" in criterion && typeof criterion.path === "string") updates.path = expand(criterion.path);
+      if ("target_file" in criterion && typeof criterion.target_file === "string") {
+        updates.target_file = expand(criterion.target_file);
+      }
+      return { ...criterion, ...updates } as ICriterion;
+    }),
   } as IScenarioStep;
 }

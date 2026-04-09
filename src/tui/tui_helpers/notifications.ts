@@ -104,7 +104,7 @@ export async function handleMemoryNotifications(
   key: string,
   panes: IPane[],
   notificationService: INotificationService,
-) {
+): Promise<number> {
   if (key === KEYS.ESCAPE || key === KEYS.M) {
     self.state.showMemoryNotifications = false;
     return panes.findIndex((p) => p.id === self.activePaneId);
@@ -114,13 +114,13 @@ export async function handleMemoryNotifications(
   const memoryNotifs = allNotifs.filter((n) => n.type === "memory_update_pending");
   const count = memoryNotifs.length;
 
-  const updateIndex = (delta: number) => {
+  const updateIndex = (delta: number): void => {
     if (count > 0) {
       self.state.selectedMemoryNotifIndex = (self.state.selectedMemoryNotifIndex + delta + count) % count;
     }
   };
 
-  const approveOrReject = async (approve: boolean) => {
+  const approveOrReject = async (approve: boolean): Promise<void> => {
     if (count > 0 && self.state.selectedMemoryNotifIndex < count) {
       const selected = memoryNotifs[self.state.selectedMemoryNotifIndex];
       const id = (selected.proposal_id || selected.id) as string;

@@ -5,9 +5,9 @@
  * of assets and execution of post-deployment verification hooks.
  */
 
-import { assert, assertFalse } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
+import { assert, assertFalse } from "@std/assert";
+import { exists } from "@std/fs";
+import { dirname, fromFileUrl, join } from "@std/path";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");

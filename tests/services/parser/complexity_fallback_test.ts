@@ -5,7 +5,7 @@
  * that the system falls back to more capable models for non-trivial requests.
  */
 
-import { assertEquals } from "https://deno.land/std@0.224.0/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { calculateComplexityFromText } from "../../../scripts/measure_complexity.ts";
 
 Deno.test("[heuristic] simple complexity counts", () => {

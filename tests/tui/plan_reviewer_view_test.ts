@@ -21,6 +21,8 @@ import { createPlanReviewerSession, sampleBasicPlans, samplePendingPlans, sample
 import { PlanAdapter } from "../../src/services/adapters/plan_adapter.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
+import type { JSONObject, JSONValue } from "../../src/shared/types/json.ts";
+import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 
 function yamlFrontmatter(obj: Record<string, string>): string {
   const lines = ["---"];
@@ -39,21 +41,12 @@ interface ReviewerLog {
   timestamp?: string;
 }
 
-interface ReviewerPayload {
-  [field: string]: string | number | boolean | undefined;
+function asString(value: JSONValue | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
-class MockDB {
-  logs: ReviewerLog[] = [];
-  logActivity(
-    action_type: string,
-    plan_id: string,
-    reviewer?: string,
-    reason?: string | null,
-    timestamp?: string,
-  ) {
-    this.logs.push({ action_type, plan_id, reviewer, reason, timestamp });
-  }
+function asObject(value: JSONValue | undefined): JSONObject | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JSONObject : undefined;
 }
 
 async function setupWorkspace(planId: string, frontmatter: Record<string, string>, body = "") {
@@ -76,37 +69,20 @@ async function setupPlanReviewerTest(options: {
   const body = options.body || "# Body\n";
 
   const root = await setupWorkspace(planId, frontmatter, body);
-  const db = new MockDB();
+  const db = createStubDb();
+  const baseContext = createStubContext();
   const config = {
-    system: { root: root },
+    ...baseContext.config.getAll(),
+    system: {
+      ...baseContext.config.getAll().system,
+      root,
+    },
     paths: { ...ExaPathDefaults },
   };
-  const context: any = {
-    config: {
-      get: () => config,
-      getAll: () => config,
-      getConfigPath: () => `${root}/exa.config.toml`,
-      reload: () => config,
-      addPortal: () => Promise.resolve(),
-      removePortal: () => Promise.resolve(),
-      getPortals: () => [],
-      getPortal: () => undefined,
-    },
+  const context: ConstructorParameters<typeof PlanCommands>[0] = {
+    ...baseContext,
     db,
-    display: {
-      info: () => Promise.resolve(),
-      warn: () => Promise.resolve(),
-      error: () => Promise.resolve(),
-      debug: () => Promise.resolve(),
-      fatal: () => Promise.resolve(),
-    },
-    git: {
-      getCurrentBranch: () => Promise.resolve("main"),
-    },
-    provider: {
-      id: "mock-provider",
-      generate: () => Promise.resolve(""),
-    },
+    config: createStubConfig(config),
   };
   const cmd = new PlanCommands(context);
   const view = new PlanReviewerView(new PlanAdapter(cmd));
@@ -187,14 +163,15 @@ Deno.test("DB-like path logs reviewer and reason", async () => {
   // Adapter must match DbLike interface: logActivity(activity: JSONObject)
   const dbLikeAdapter = {
     ...dbLike,
-    logActivity: (activity: any) => {
+    logActivity: (activity: JSONObject) => {
+      const payload = asObject(activity.payload);
       // Map ReviewerLogLike to ReviewerLog
       logs.push({
-        action_type: activity.action_type ?? activity.action,
-        plan_id: activity.plan_id ?? activity.target,
-        reviewer: activity.reviewer ?? (activity.payload ? activity.payload.reviewer : undefined),
-        reason: activity.reason ?? (activity.payload ? activity.payload.reason : undefined),
-        timestamp: activity.timestamp,
+        action_type: asString(activity.action_type) ?? asString(activity.action) ?? "",
+        plan_id: asString(activity.plan_id) ?? asString(activity.target) ?? "",
+        reviewer: asString(activity.reviewer) ?? asString(payload?.reviewer),
+        reason: asString(activity.reason) ?? asString(payload?.reason),
+        timestamp: asString(activity.timestamp),
       });
       return Promise.resolve();
     },

@@ -630,7 +630,7 @@ Deno.test("MemoryBankService: concurrent project memory updates maintain data in
     assertEquals(finalMem.patterns.length, 4); // 1 initial + 3 concurrent
 
     // Verify no duplicate patterns
-    const patternNames = finalMem.patterns.map((p: any) => p.name);
+    const patternNames = finalMem.patterns.map((pattern) => pattern.name);
     const uniqueNames = new Set(patternNames);
     assertEquals(uniqueNames.size, patternNames.length);
   } finally {

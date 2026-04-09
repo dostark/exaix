@@ -7,7 +7,7 @@
 
 import { createLayoutManager, type ILayoutPane } from "../../src/tui/helpers/layout_manager.ts";
 
-export function setupLayoutManager(width = 80, height = 24) {
+export function setupLayoutManager(width = 80, height = 24): ReturnType<typeof createLayoutManager> {
   return createLayoutManager(width, height);
 }
 

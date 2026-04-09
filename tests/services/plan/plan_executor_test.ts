@@ -7,8 +7,8 @@
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import {
-  FlowStepType as _FlowStepType,
-  MemoryOperation as _MemoryOperation,
+  type FlowStepType as _FlowStepType,
+  type MemoryOperation as _MemoryOperation,
   PortalOperation as _PortalOperation,
 } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";

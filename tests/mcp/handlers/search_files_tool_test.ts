@@ -125,8 +125,11 @@ Deno.test("SearchFilesTool: getToolDefinition returns correct definition", () =>
   const context = createStubContext();
   const handler = new SearchFilesTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, McpToolName.SEARCH_FILES);
-  assertEquals(def.inputSchema.required.includes("portal"), true);
-  assertEquals(def.inputSchema.required.includes("pattern"), true);
+  assertEquals(required.includes("portal"), true);
+  assertEquals(required.includes("pattern"), true);
 });

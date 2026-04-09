@@ -14,6 +14,11 @@ import {
   initMCPTestWithoutPortal,
 } from "./helpers/test_setup.ts";
 
+interface IMCPResponseShape<TResult = unknown> {
+  error?: { code: number; message: string };
+  result?: TResult;
+}
+
 /**
  * Tests for Git Tool Implementations
  *
@@ -39,8 +44,14 @@ Deno.test("git_create_branch: successfully creates feature branch", async () => 
 
     const response = await ctx.server.handleRequest(request);
     assertMCPSuccess(response);
-    assertMCPContentIncludes(response, "feat/new-feature");
-    assertMCPContentIncludes(response, "created");
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "feat/new-feature",
+    );
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "created",
+    );
   } finally {
     await ctx.cleanup();
   }
@@ -108,7 +119,10 @@ Deno.test("git_commit: successfully commits changes", async () => {
 
     const response = await ctx.server.handleRequest(request);
     assertMCPSuccess(response);
-    assertMCPContentIncludes(response, "committed");
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "committed",
+    );
   } finally {
     await ctx.cleanup();
   }
@@ -179,7 +193,10 @@ Deno.test("git_status: shows clean repository status", async () => {
 
     const response = await ctx.server.handleRequest(request);
     assertMCPSuccess(response);
-    assertMCPContentIncludes(response, "clean");
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "clean",
+    );
   } finally {
     await ctx.cleanup();
   }
@@ -197,7 +214,10 @@ Deno.test("git_status: shows uncommitted changes", async () => {
 
     const response = await ctx.server.handleRequest(request);
     assertMCPSuccess(response);
-    assertMCPContentIncludes(response, "new-file.txt");
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "new-file.txt",
+    );
   } finally {
     await ctx.cleanup();
   }

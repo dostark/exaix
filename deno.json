@@ -31,7 +31,7 @@
     "coverage:lcov": "mkdir -p coverage && deno coverage coverage/ --include='^file://.*Exaix/src/' --exclude='test\\.(ts|js)$' --lcov --output=coverage/lcov.info",
     "coverage:with-llama": "rm -rf coverage && ./scripts/coverage.sh summary --with-llama",
     "bench": "deno bench --allow-all tests/benchmarks/",
-    "lint": "deno lint --rules-exclude=no-explicit-any,verbatim-module-syntax,no-import-prefix src/ tests/",
+    "lint": "deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix src/ tests/",
     "fmt": "deno fmt src/ tests/ docs/",
     "fmt:check": "deno fmt --check src/ tests/ docs/",
     "cache": "deno cache src/main.ts",
@@ -65,6 +65,8 @@
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.8",
     "deno-tui": "https://deno.land/x/deno_tui@v1.1.1/mod.ts",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
+    "typescript": "npm:typescript@5.3.3",
+    "@babel/parser": "npm:@babel/parser@7.24.4",
     "@std/flags": "jsr:@std/flags@^0.221.0",
     "@std/streams": "jsr:@std/streams@^0.221.0"
   },

@@ -6,7 +6,7 @@
  * * @related-files [src/cli/base/command.ts]
  */
 
-import { ValidationResult } from "../base/command.ts";
+import type { ValidationResult } from "../base/command.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 
 export const CommandUtils = {

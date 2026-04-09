@@ -21,11 +21,11 @@ import {
   PORTAL_PREFIX_PATTERN,
 } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import { IServiceContext } from "../common/types.ts";
+import type { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
-import { JSONValue } from "../../shared/types/json.ts";
-import { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
+import type { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
@@ -291,7 +291,7 @@ export class ToolRegistry implements IToolRegistry {
     this.setupMiddleware();
   }
 
-  private setupMiddleware() {
+  private setupMiddleware(): void {
     // Validation Middleware
     this.pipeline.use(async (ctx, next) => {
       if (!this.tools.has(ctx.toolName)) {
@@ -340,7 +340,7 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Register all core tools
    */
-  private registerCoreTools() {
+  private registerCoreTools(): void {
     this.tools.set("read_file", {
       name: "read_file",
       description: "Read the contents of a file",
@@ -603,7 +603,7 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Register all core executors
    */
-  private registerCoreExecutors() {
+  private registerCoreExecutors(): void {
     const str = (v: JSONValue): string => (typeof v === "string" ? v : String(v ?? ""));
     const bool = (v: JSONValue): boolean => Boolean(v);
     const strArr = (v: JSONValue): string[] =>
@@ -920,7 +920,7 @@ export class ToolRegistry implements IToolRegistry {
   /**
    * Log activity to database
    */
-  private logActivity(actionType: string, payload: Record<string, JSONValue>) {
+  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
     if (!this.db) return;
 
     try {

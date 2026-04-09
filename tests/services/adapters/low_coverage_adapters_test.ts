@@ -12,9 +12,11 @@ import { DisplayAdapter } from "../../../src/services/adapters/display_adapter.t
 import { JournalServiceAdapter } from "../../../src/services/adapters/journal_adapter.ts";
 import { AgentServiceAdapter } from "../../../src/services/adapters/agent_adapter.ts";
 import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts";
-import { LogLevel, RequestPriority, RequestSource } from "../../../src/shared/enums.ts";
+import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
+import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import type { IStructuredLogEntry } from "../../../src/shared/types/logging.ts";
 import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/logger/structured_logger.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
@@ -41,6 +43,27 @@ function createRequestMetadata() {
   };
 }
 
+function createRequestAnalysis(): IRequestAnalysis {
+  return {
+    goals: [],
+    requirements: [],
+    constraints: [],
+    acceptanceCriteria: [],
+    ambiguities: [],
+    actionabilityScore: 100,
+    complexity: TaskComplexity.SIMPLE,
+    taskType: TaskType.ANALYSIS,
+    tags: [],
+    referencedFiles: [],
+    metadata: {
+      analyzedAt: new Date().toISOString(),
+      durationMs: 0,
+      mode: AnalysisMode.HYBRID,
+      analyzerVersion: "test",
+    },
+  };
+}
+
 Deno.test("RequestAdapter delegates create/list/show helpers and update status paths", async () => {
   let updateCalled = false;
   const metadata = createRequestMetadata();
@@ -52,6 +75,7 @@ Deno.test("RequestAdapter delegates create/list/show helpers and update status p
     list: () => toPromise([metadata]),
     show: () => toPromise({ metadata, content: "hello" }),
     getRequestContent: () => toPromise("request body"),
+    analyze: () => toPromise(createRequestAnalysis()),
     updateRequestStatus: (_requestId: string, _status: string) => {
       updateCalled = true;
       return toPromise(true);
@@ -75,6 +99,7 @@ Deno.test("RequestAdapter delegates create/list/show helpers and update status p
     list: () => toPromise([metadata]),
     show: () => toPromise({ metadata, content: "ok" }),
     getRequestContent: () => toPromise("ok"),
+    analyze: () => toPromise(createRequestAnalysis()),
   });
   assertEquals(await noUpdateAdapter.updateRequestStatus(TEST_TRACE_ID, RequestStatus.COMPLETED), false);
 });

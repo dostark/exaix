@@ -7,7 +7,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
-import { Config } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";
 
 Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -25,17 +26,18 @@ You are a lead UI/UX designer.
 
   await Deno.writeTextFile(join(identityDir, "designer.md"), blueprintContent);
 
-  const mockConfig: Partial<Config> = {
-    paths: { blueprints: tempDir } as any,
+  const mockConfig = createStubConfig(ConfigSchema.parse({
+    system: { root: tempDir, log_level: "info", schema_version: "1.0.0" },
+    paths: { blueprints: tempDir },
     portals: [],
-  };
+  }));
 
   const executor = new AgentExecutor(
-    mockConfig as Config,
-    {} as any,
-    { info: () => {} } as any, // Simple mock logger
-    {} as any,
-    {} as any,
+    mockConfig.get(),
+    createStubDb() as AgentExecutor["db"],
+    createStubDisplay() as AgentExecutor["logger"],
+    {} as AgentExecutor["pathResolver"],
+    {} as AgentExecutor["permissions"],
   );
 
   try {
@@ -59,11 +61,15 @@ Deno.test({
   sanitizeOps: false,
   fn: async () => {
     const executor = new AgentExecutor(
-      { paths: { blueprints: "/tmp" } } as any,
-      {} as any,
-      { error: () => {} } as any,
-      {} as any,
-      {} as any,
+      createStubConfig(ConfigSchema.parse({
+        system: { root: "/tmp", log_level: "info", schema_version: "1.0.0" },
+        paths: { blueprints: "/tmp" },
+        portals: [],
+      })).get(),
+      createStubDb() as AgentExecutor["db"],
+      createStubDisplay() as AgentExecutor["logger"],
+      {} as AgentExecutor["pathResolver"],
+      {} as AgentExecutor["permissions"],
     );
 
     await assertRejects(

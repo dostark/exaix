@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * * @related-files [src/ai/provider_registry.ts, src/ai/factories/anthropic_factory.ts]
  */
-import { IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { getApiKeyWithOptionalPersistence } from "../provider_api_key.ts";
 import { ProviderFactoryError } from "../errors.ts";
 

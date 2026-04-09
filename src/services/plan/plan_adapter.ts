@@ -12,10 +12,10 @@
  * * @related-files [src/services/plan_writer.ts, src/services/tool/output_validator.ts]
  */
 
-import { Plan, PlanSchema } from "../../shared/schemas/plan_schema.ts";
-import { createOutputValidator, OutputValidator } from "../tool/output_validator.ts";
+import { type Plan, PlanSchema } from "../../shared/schemas/plan_schema.ts";
+import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
 import { describeSchema } from "../../shared/schemas/schema_describer.ts";
-import { JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 
 // ============================================================================
 // Types

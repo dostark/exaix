@@ -6,10 +6,10 @@
  * * @related-files [src/services/plan_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import { type IPlanDetails, type IPlanMetadata } from "../shared/types/plan.ts";
+import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "../shared/constants.ts";
 import { TUI_ACTION_SEARCH, TUI_ELEMENT_ACTION_BUTTONS, TUI_LABEL_CANCEL } from "./helpers/constants.ts";
-import { IPlanService } from "../shared/interfaces/i_plan_service.ts";
+import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { coercePlanStatus, PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
 import { ConfirmDialog, type DialogBase, InputDialog } from "./helpers/dialog_base.ts";
@@ -148,7 +148,12 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     this.setDefaultSelection();
   }
 
-  private categorizePlans(plans: IPlan[]) {
+  private categorizePlans(plans: IPlan[]): {
+    pending: ITreeNode<IPlan>[];
+    approved: ITreeNode<IPlan>[];
+    rejected: ITreeNode<IPlan>[];
+    unknown: ITreeNode<IPlan>[];
+  } {
     const pending: ITreeNode<IPlan>[] = [];
     const approved: ITreeNode<IPlan>[] = [];
     const rejected: ITreeNode<IPlan>[] = [];
@@ -242,7 +247,7 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
   private setDefaultSelection(): void {
     if (!this.state.selectedId && this.state.tree.length > 0) {
       const flat = flattenTree(this.state.tree);
-      const firstPlan = flat.find((f: any) => f.node.type === TuiNodeType.PLAN);
+      const firstPlan = flat.find((flatNode) => flatNode.node.type === TuiNodeType.PLAN);
       if (firstPlan) {
         this.state.selectedId = firstPlan.node.id;
       } else {

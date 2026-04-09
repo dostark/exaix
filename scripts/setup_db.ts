@@ -30,8 +30,10 @@ async function runMigrations() {
     `);
 
     // Get applied migrations
-    const appliedRows = db.prepare("SELECT version FROM schema_migrations ORDER BY id ASC").all();
-    const applied = new Set(appliedRows.map((row: any) => row.version));
+    const appliedRows = db.prepare("SELECT version FROM schema_migrations ORDER BY id ASC").all() as Array<
+      { version: string }
+    >;
+    const applied = new Set(appliedRows.map((row) => row.version));
 
     // Get available migrations
     const files = [];

@@ -28,21 +28,23 @@ import {
   AgentExecutor,
   type IAgentFileBlueprint,
 } from "../../../src/services/agent/agent_executor.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IWorkspaceExecutionContext } from "../../../src/services/portal/workspace_execution_context.ts";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "../../../src/errors/safe_error.ts";
-import { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
-import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
+import { PROVIDER_OPENAI, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/shared/constants.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
+import { PromptBudgetAllocator } from "../../../src/services/context/prompt_budget_allocator.ts";
 
 // Test fixtures - initialized once
 let testDir: string;
@@ -1256,6 +1258,106 @@ Deno.test({
 });
 
 Deno.test({
+  name: "AgentExecutor: passes budget_enforcement policy to allocator from config",
+  fn: async () => {
+    await setup();
+    const allocateCalls: string[] = [];
+    const configWithBudgetEnforcement = {
+      ...testConfig,
+      budget_enforcement: {
+        cloud: false,
+        local: true,
+      },
+    } as Config;
+
+    const allocateStub = stub(
+      PromptBudgetAllocator.prototype,
+      "allocate",
+      function (this: PromptBudgetAllocator, modelId: string) {
+        allocateCalls.push(modelId);
+        const policy = Reflect.get(this, "policy") as { cloud: boolean; local: boolean } | undefined;
+        assertEquals(policy?.cloud, false);
+        assertEquals(policy?.local, true);
+
+        return {
+          model: modelId,
+          totalBudgetTokens: 128000,
+          safetyBufferTokens: 0,
+          sections: {
+            system: 1000,
+            plan: 2000,
+            portalKnowledge: 1000,
+            memory: 500,
+            skills: 500,
+            loopHistory: 500,
+          },
+        };
+      },
+    );
+
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/budget-policy-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Budget policy test",
+            tool_calls: 0,
+            execution_time_ms: 1,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        configWithBudgetEnforcement,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "budget-policy-req-1",
+        request: "Create test file",
+        plan: "Write a file",
+        portal: "TestPortal",
+      };
+
+      const options: IAgentExecutionOptions = {
+        identity_id: "test-agent",
+        portal: "TestPortal",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 10,
+        audit_enabled: true,
+      };
+
+      await executor.executeStep(context, options);
+      assertEquals(allocateCalls, ["openai:gpt-4o-mini"]);
+      executor.dispose();
+    } finally {
+      allocateStub.restore();
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentExecutor: sanitizes data-like structures in prompt",
   fn: async () => {
     await setup();
@@ -1331,8 +1433,11 @@ Deno.test({
       const originalDir = Deno.cwd();
       const targetDir = testDir;
 
-      const mockContext: any = {
+      const mockContext: IWorkspaceExecutionContext = {
         workingDirectory: targetDir,
+        gitRepository: portalDir,
+        allowedPaths: [portalDir],
+        reviewRepo: portalDir,
       };
 
       await executor.withExecutionContext(mockContext, () => {
@@ -1535,8 +1640,20 @@ Deno.test({
     const { db, logger, pathResolver, permissions } = getServices();
     const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
 
-    const writeBlueprint: any = { capabilities: ["git_commit", ToolName.WRITE_FILE] };
-    const readBlueprint: any = { capabilities: ["file_read", "terminal_read"] };
+    const writeBlueprint: IAgentFileBlueprint = {
+      name: "write-agent",
+      model: "mock-model",
+      provider: "mock",
+      capabilities: ["git_commit", ToolName.WRITE_FILE],
+      systemPrompt: "Write agent",
+    };
+    const readBlueprint: IAgentFileBlueprint = {
+      name: "read-agent",
+      model: "mock-model",
+      provider: "mock",
+      capabilities: ["file_read", "terminal_read"],
+      systemPrompt: "Read agent",
+    };
 
     assertEquals(executor.requiresGitTracking(writeBlueprint), true);
     assertEquals(executor.requiresGitTracking(readBlueprint), false);
@@ -1599,20 +1716,27 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
 
-      const blueprint: any = {
+      const blueprint: IAgentFileBlueprint = {
+        name: "agent1",
+        model: "mock-model",
+        provider: "mock",
         systemPrompt: "You are an agent.",
         capabilities: [],
       };
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "t1",
         request_id: "r1",
         request: "Do stuff",
         plan: "My plan",
+        portal: "P1",
       };
-      const options: any = {
+      const options: IAgentExecutionOptions = {
         portal: "P1",
         security_mode: SecurityMode.HYBRID,
         identity_id: "agent1",
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
       };
 
       // Set execution context to enable portal context block
@@ -1641,6 +1765,65 @@ Deno.test({
 });
 
 Deno.test({
+  name: "AgentExecutor: skills block in prompt respects sections.skills budget",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
+
+      Reflect.set(executor, "currentPromptBudget", {
+        model: "openai:gpt-4o-mini",
+        totalBudgetTokens: 1000,
+        safetyBufferTokens: 0,
+        sections: {
+          system: 100,
+          plan: 100,
+          portalKnowledge: 50,
+          memory: 50,
+          skills: 10,
+          loopHistory: 10,
+        },
+      });
+
+      const blueprint: IAgentFileBlueprint = {
+        name: "test-agent",
+        model: "gpt-4o-mini",
+        provider: PROVIDER_OPENAI,
+        capabilities: [],
+        systemPrompt: "You are an agent.",
+      };
+      const context = {
+        trace_id: "00000000-0000-0000-0000-000000000010",
+        request_id: "skills-budget-1",
+        request: "Do stuff",
+        plan: "My plan",
+        portal: "P1",
+        skills_context: "S".repeat(200),
+      } as IExecutionContext & { skills_context: string };
+      const options: IAgentExecutionOptions = {
+        portal: "P1",
+        security_mode: SecurityMode.HYBRID,
+        identity_id: "agent1",
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      const prompt = executor.buildExecutionPrompt(blueprint, context, options);
+      const skillMatch = prompt.match(/--- BEGIN SKILLS ---\n([\s\S]*?)\n--- END SKILLS ---/);
+
+      assertExists(skillMatch);
+      assertEquals(skillMatch[1].length <= 10 * TOKEN_ESTIMATION_CHARS_PER_TOKEN, true);
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "AgentExecutor: executeStep with provider parses JSON response",
   fn: async () => {
     await setup();
@@ -1656,9 +1839,12 @@ Deno.test({
         execution_time_ms: 100,
       };
 
-      const mockProvider: any = {
+      const mockProvider: IModelProvider = {
         id: "mock",
-        generate: () => `Here is the result \`\`\`json\n${JSON.stringify(mockResult)}\n\`\`\``,
+        generate: async (): Promise<string> => {
+          await Promise.resolve();
+          return `Here is the result \`\`\`json\n${JSON.stringify(mockResult)}\n\`\`\``;
+        },
       };
 
       const executor = new AgentExecutor(
@@ -1684,17 +1870,20 @@ Deno.test({
         "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt",
       );
 
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "7e5c81f3-4236-461d-adcb-bf5741a2c0c7",
         request_id: "r-prov",
         request: "Work",
         plan: "Plan",
         portal: "TestPortal",
       };
-      const options: any = {
+      const options: IAgentExecutionOptions = {
         portal: "TestPortal",
         identity_id: "test-agent",
         security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
       };
 
       const result = await executor.executeStep(context, options);
@@ -1747,10 +1936,11 @@ Deno.test({
         permissions,
       );
 
-      const fakeContext: any = {
+      const fakeContext: IWorkspaceExecutionContext = {
         workingDirectory: Deno.cwd(),
         gitRepository: "/fake/repo",
         allowedPaths: ["/fake/path"],
+        reviewRepo: "/fake/repo",
       };
 
       // Test basic context setting
@@ -1797,7 +1987,7 @@ Deno.test({
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: gpt\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "6e5c81f3-4236-461d-adcb-bf5741a2c0c7",
         request_id: "r-prov",
         request: "Work",
@@ -1805,10 +1995,13 @@ Deno.test({
         portal: "TestPortal",
       };
 
-      const options: any = {
+      const options: IAgentExecutionOptions = {
         portal: "TestPortal",
         identity_id: "test-agent",
         security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
       };
 
       const result = await executor.executeStep(context, options);
@@ -1860,11 +2053,9 @@ Deno.test({
   fn: async () => {
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
-    const mockProvider: any = {
+    const mockProvider: IModelProvider = {
       id: "mock-error",
-      generate: () => {
-        throw new Error("Provider synthetic failure");
-      },
+      generate: (): Promise<string> => Promise.reject(new Error("Provider synthetic failure")),
     };
 
     try {
@@ -1874,14 +2065,21 @@ Deno.test({
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "9e5c81f3-4236-461d-adcb-bf5741a2c0c7",
         request_id: "r1",
         request: "Q",
         plan: "P",
         portal: "TestPortal",
       };
-      const options: any = { portal: "TestPortal", identity_id: "test-agent", security_mode: SecurityMode.HYBRID };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
 
       await assertRejects(
         () => executor.executeStep(context, options),
@@ -1902,9 +2100,12 @@ Deno.test({
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     // Provide a response with just plain text, no {} at all
-    const mockProvider: any = {
+    const mockProvider: IModelProvider = {
       id: "mock-plaintext",
-      generate: () => "I did absolutely nothing. No json.",
+      generate: async (): Promise<string> => {
+        await Promise.resolve();
+        return "I did absolutely nothing. No json.";
+      },
     };
 
     try {
@@ -1914,14 +2115,21 @@ Deno.test({
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "ae5c81f3-4236-461d-adcb-bf5741a2c0c7",
         request_id: "r2",
         request: "Q",
         plan: "P",
         portal: "TestPortal",
       };
-      const options: any = { portal: "TestPortal", identity_id: "test-agent", security_mode: SecurityMode.HYBRID };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
 
       const result = await executor.executeStep(context, options);
       // Validates fallback object
@@ -1943,9 +2151,12 @@ Deno.test({
     await setup();
     const { db, logger, pathResolver, permissions } = getServices();
     // Provide a JSON-like response but invalid formatting
-    const mockProvider: any = {
+    const mockProvider: IModelProvider = {
       id: "mock-badjson",
-      generate: () => `\`\`\`json\n{ "branch": "test", "missing_quotes: true }\n\`\`\``,
+      generate: async (): Promise<string> => {
+        await Promise.resolve();
+        return `\`\`\`json\n{ "branch": "test", "missing_quotes: true }\n\`\`\``;
+      },
     };
 
     try {
@@ -1955,14 +2166,21 @@ Deno.test({
       await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, "---\nmodel: mock\nprovider: mock\ncapabilities: []\n---\nPrompt");
 
-      const context: any = {
+      const context: IExecutionContext = {
         trace_id: "ce5c81f3-4236-461d-adcb-bf5741a2c0c7",
         request_id: "r3",
         request: "Q",
         plan: "P",
         portal: "TestPortal",
       };
-      const options: any = { portal: "TestPortal", identity_id: "test-agent", security_mode: SecurityMode.HYBRID };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
 
       const result = await executor.executeStep(context, options);
       // Validates parse fail fallback

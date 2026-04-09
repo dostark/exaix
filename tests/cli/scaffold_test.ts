@@ -5,9 +5,9 @@
  * creation of the required directory structure, config templates, and baseline assets.
  */
 
-import { assert, assertStringIncludes } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
+import { assert, assertStringIncludes } from "@std/assert";
+import { exists } from "@std/fs";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));

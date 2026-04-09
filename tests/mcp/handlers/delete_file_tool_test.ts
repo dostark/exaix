@@ -84,9 +84,12 @@ Deno.test("DeleteFileTool: getToolDefinition returns correct definition", () => 
   const context = createStubContext();
   const handler = new DeleteFileTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, "delete_file");
   assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(def.inputSchema.required.join(), "portal");
-  assertStringIncludes(def.inputSchema.required.join(), "path");
+  assertStringIncludes(required.join(), "portal");
+  assertStringIncludes(required.join(), "path");
 });

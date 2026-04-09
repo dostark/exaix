@@ -21,7 +21,7 @@ import type { IReviewStatus } from "../../reviews/review_status.ts";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "../../shared/schemas/artifact.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import {
-  ArtifactSubtype,
+  type ArtifactSubtype,
   GitBranchName,
   ReviewType,
   ReviewTypeFilter as ReviewFilterEnum,
@@ -684,7 +684,7 @@ export class ReviewCommands extends BaseCommand {
   private async appendArtifactReviews(
     reviews: IReviewMetadata[],
     normalizedStatus: IReviewStatus | undefined,
-  ) {
+  ): Promise<void> {
     const artifacts = await this.listArtifacts({
       status: normalizedStatus,
     });
@@ -721,7 +721,7 @@ export class ReviewCommands extends BaseCommand {
     reviews: IReviewMetadata[],
     dbBranches: Set<string>,
     normalizedStatus: IReviewStatus | undefined,
-  ) {
+  ): Promise<void> {
     try {
       const query = this.getDbReviewQuery(normalizedStatus);
       const rows = await this.db.preparedAll<{
@@ -798,7 +798,7 @@ export class ReviewCommands extends BaseCommand {
     };
   }
 
-  private async pushEnrichedOrBasic(reviews: IReviewMetadata[], basic: IReviewMetadata) {
+  private async pushEnrichedOrBasic(reviews: IReviewMetadata[], basic: IReviewMetadata): Promise<void> {
     try {
       const enrichedMetadata = await this.extractReviewMetadataWithContext(basic);
       reviews.push(enrichedMetadata);
@@ -811,7 +811,7 @@ export class ReviewCommands extends BaseCommand {
     reviews: IReviewMetadata[],
     dbBranches: Set<string>,
     normalizedStatus: IReviewStatus | undefined,
-  ) {
+  ): Promise<void> {
     const portalPaths = await this.getPortalRepoPaths();
 
     for (const repoPath of portalPaths) {
@@ -824,7 +824,7 @@ export class ReviewCommands extends BaseCommand {
     dbBranches: Set<string>,
     normalizedStatus: IReviewStatus | undefined,
     repoPath: string,
-  ) {
+  ): Promise<void> {
     const defaultBranch = await this.getDefaultBranch(repoPath);
     const branches = await this.listFeatBranches(repoPath);
 

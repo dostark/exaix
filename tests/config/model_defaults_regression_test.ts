@@ -5,7 +5,7 @@
  * production models (GPT, Claude, Gemini) are correctly mapped as system defaults.
  */
 
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
 import { AnthropicProvider } from "../../src/ai/providers/anthropic_provider.ts";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";

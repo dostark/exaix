@@ -6,7 +6,7 @@
  */
 
 // Helper to temporarily set environment variables for a test and restore them after
-export async function withEnv(env: Record<string, string | null>, fn: () => Promise<void> | void) {
+export async function withEnv(env: Record<string, string | null>, fn: () => Promise<void> | void): Promise<void> {
   const old: Record<string, string | undefined> = {};
   for (const k of Object.keys(env)) {
     old[k] = Deno.env.get(k);

@@ -7,7 +7,7 @@
  */
 import { FlowSchema, type IFlow } from "../shared/schemas/flow.ts";
 import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
-import { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 export function defineFlow(config: {
   id: string;
   name: string;

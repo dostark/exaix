@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { walk } from "https://deno.land/std@0.200.0/fs/mod.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.221.0/path/mod.ts";
+import { walk } from "@std/fs";
+import { dirname, fromFileUrl, join } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 

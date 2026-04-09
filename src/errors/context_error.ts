@@ -40,7 +40,13 @@ export class ContextError extends Error {
    * JSON serialization for logging and debugging
    * Includes all error context while safely handling cause
    */
-  toJSON() {
+  toJSON(): {
+    name: string;
+    message: string;
+    context: IErrorContext;
+    stack: string | undefined;
+    cause: { name: string; message: string } | undefined;
+  } {
     return {
       name: this.name,
       message: this.message,

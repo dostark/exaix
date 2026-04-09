@@ -97,7 +97,7 @@ export class MoveFileTool extends ToolHandler {
     };
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.MOVE_FILE,
       description: "Move or rename a file within a portal. " +

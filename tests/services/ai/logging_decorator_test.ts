@@ -41,7 +41,7 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   const calls: LoggedCall[] = [];
   const logger = createStubLogger(calls);
 
-  const original = function (this: any, value: string) {
+  const original = function (this: unknown, value: string) {
     return Promise.resolve(`ok:${value}`);
   };
 

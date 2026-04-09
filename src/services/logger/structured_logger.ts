@@ -23,13 +23,15 @@ import * as DEFAULTS from "../../shared/constants.ts";
 // Types and Interfaces
 // ============================================================================
 
-import { LogLevel, LogRotationInterval } from "../../shared/enums.ts";
-import { LogMetadata } from "../../shared/types/json.ts";
-import { ILogger, ILogOutput } from "../../shared/interfaces/i_log_service.ts";
-import { IStructuredLogEntry } from "../../shared/types/logging.ts";
+import { LogLevel, type LogRotationInterval } from "../../shared/enums.ts";
+import type { LogMetadata } from "../../shared/types/json.ts";
+import type * as LogServiceTypes from "../../shared/interfaces/i_log_service.ts";
+import type * as LoggingTypes from "../../shared/types/logging.ts";
 
-export type IStructuredLogger = ILogger;
-export { type ILogger, type ILogOutput, type IStructuredLogEntry };
+export type ILogger = LogServiceTypes.ILogger;
+export type ILogOutput = LogServiceTypes.ILogOutput;
+export type IStructuredLogEntry = LoggingTypes.IStructuredLogEntry;
+export type IStructuredLogger = LogServiceTypes.ILogger;
 
 export interface IStructuredLoggerConfig {
   minLevel: LogLevel;

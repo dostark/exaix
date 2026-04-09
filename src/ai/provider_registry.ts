@@ -5,8 +5,8 @@
  * @architectural-layer AI
  * * @related-files [src/ai/providers.ts, src/services/agent_runner.ts]
  */
-import { PricingTier, PriorityLevel, ProviderCostTier } from "../shared/enums.ts";
-import { IProviderFactory } from "./factories/abstract_provider_factory.ts";
+import { PricingTier, PriorityLevel, type ProviderCostTier } from "../shared/enums.ts";
+import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 
 /**
  * Metadata describing a provider's capabilities and characteristics.

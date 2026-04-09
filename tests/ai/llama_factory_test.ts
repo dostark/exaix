@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { ProviderType } from "../../src/shared/enums.ts";
 import { DEFAULT_OLLAMA_ENDPOINT } from "../../src/shared/constants.ts";
 import { LlamaProviderFactory } from "../../src/ai/factories/llama_factory.ts";
-import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
+import type { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 
 Deno.test("LlamaProviderFactory.create wires model + baseUrl into LlamaProvider", async () => {
   const factory = new LlamaProviderFactory();

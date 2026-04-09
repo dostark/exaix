@@ -16,11 +16,11 @@ import { join } from "@std/path";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { loadAnalysis } from "../../src/services/request_analysis/mod.ts";
-import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
 import { RequestAnalysisSchema } from "../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Test 1: Heuristic-only analysis path
@@ -41,11 +41,11 @@ Deno.test(
         mode: AnalysisMode.HEURISTIC,
       });
       const context: IApplicationContext = {
-        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        config: createStubConfig(env.config),
         db: env.db,
         provider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
       };
 
       const processor = new RequestProcessor({

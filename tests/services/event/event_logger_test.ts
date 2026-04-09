@@ -10,12 +10,15 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 
+type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];
+type IEventLoggerOptions = ConstructorParameters<typeof EventLogger>[0];
+
 // ============================================================================
 // Helpers
 // ============================================================================
 
 interface IEventLoggerTestCtx {
-  db: any;
+  db: ITestDb;
   logger: EventLogger;
   logs: string[];
   restoreConsole: () => void;
@@ -23,7 +26,7 @@ interface IEventLoggerTestCtx {
 
 async function withEventLoggerTest(
   testFn: (ctx: IEventLoggerTestCtx) => Promise<void>,
-  loggerOptions: any = { prefix: "[Test]" },
+  loggerOptions: IEventLoggerOptions = { prefix: "[Test]" },
 ) {
   const { db, cleanup } = await initTestDbService();
   const logs: string[] = [];

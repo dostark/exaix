@@ -35,7 +35,7 @@ import {
   TEST_SKILL_REQUEST_TEXT,
   TEST_SKILL_TASK_TYPE,
 } from "../config/constants.ts";
-import { join } from "https://deno.land/std@0.203.0/path/join.ts";
+import { join } from "@std/path";
 
 /**
  * Builds a reusable test proposal data object for pending-commands tests.

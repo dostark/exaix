@@ -8,14 +8,16 @@ import { assertEquals } from "@std/assert";
 import { defineFlow } from "../../src/flows/define_flow.ts";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 
-function cast<T = any>(obj: unknown): T {
+function cast<T>(obj: unknown): T {
   return obj as T;
 }
+
+type IDefineFlowInput = Parameters<typeof defineFlow>[0];
 
 Deno.test("defineFlow: validation of required fields", () => {
   let thrown = false;
   try {
-    defineFlow(cast({ id: "", name: "n", description: "d", steps: [], output: { from: "s" } }));
+    defineFlow(cast<IDefineFlowInput>({ id: "", name: "n", description: "d", steps: [], output: { from: "s" } }));
   } catch (err) {
     thrown = true;
     assertEquals((err as Error).message, "Flow ID cannot be empty");
@@ -24,7 +26,7 @@ Deno.test("defineFlow: validation of required fields", () => {
 
   thrown = false;
   try {
-    defineFlow(cast({ id: "id", name: "", description: "d", steps: [], output: { from: "s" } }));
+    defineFlow(cast<IDefineFlowInput>({ id: "id", name: "", description: "d", steps: [], output: { from: "s" } }));
   } catch (err) {
     thrown = true;
     assertEquals((err as Error).message, "Flow name cannot be empty");
@@ -33,7 +35,7 @@ Deno.test("defineFlow: validation of required fields", () => {
 
   thrown = false;
   try {
-    defineFlow(cast({ id: "id", name: "n", description: "", steps: [], output: { from: "s" } }));
+    defineFlow(cast<IDefineFlowInput>({ id: "id", name: "n", description: "", steps: [], output: { from: "s" } }));
   } catch (err) {
     thrown = true;
     assertEquals((err as Error).message, "Flow description cannot be empty");

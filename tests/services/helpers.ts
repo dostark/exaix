@@ -15,14 +15,48 @@ import type {
 } from "../../src/services/agent/agent_runner.ts";
 import type { IFlow } from "../../src/shared/schemas/flow.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
-import { ILogEvent } from "../../src/services/common/types.ts";
-import { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
+import type { ILogEvent } from "../../src/services/common/types.ts";
+import type { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
 import type { JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
 import { createTestConfig } from "../ai/helpers/test_config.ts";
 
-export function createMockFlowRunner() {
+type IMockFlowRunner = IFlowRunner & {
+  executedFlows: Array<{ flow: IFlow; request: { userPrompt: string; traceId?: string; requestId?: string } }>;
+};
+
+type IMockAgentRunner = IAgentRunner & {
+  executedAgents: Array<{ blueprint: IBlueprint; request: IParsedRequest }>;
+};
+
+type IFlowValidationResponse = { valid: boolean; error?: string };
+
+type IMockFlowValidator = IFlowValidator & {
+  validFlows: Set<string>;
+  invalidFlows: Set<string>;
+};
+
+type IMockEventLogger = IEventLogger & {
+  events: Array<{ action: string; target: string; payload?: Record<string, JSONValue>; traceId?: string }>;
+};
+
+type IRouterRequestSample = {
+  traceId: string;
+  requestId: string;
+  frontmatter: IRequestFrontmatter;
+  body: string;
+};
+
+type IRouterTestContext = {
+  mockFlowRunner: IMockFlowRunner;
+  mockAgentRunner: IMockAgentRunner;
+  mockFlowValidator: IMockFlowValidator;
+  mockLogger: IMockEventLogger;
+  router: RequestRouter;
+};
+
+export function createMockFlowRunner(): IMockFlowRunner {
   class MockFlowRunner implements IFlowRunner {
     executedFlows: Array<{ flow: IFlow; request: { userPrompt: string; traceId?: string; requestId?: string } }> = [];
 
@@ -42,7 +76,7 @@ export function createMockFlowRunner() {
   return new MockFlowRunner();
 }
 
-export function createMockAgentRunner() {
+export function createMockAgentRunner(): IMockAgentRunner {
   class MockAgentRunner implements IAgentRunner {
     executedAgents: Array<{ blueprint: IBlueprint; request: IParsedRequest }> = [];
 
@@ -58,12 +92,12 @@ export function createMockAgentRunner() {
   return new MockAgentRunner();
 }
 
-export function createMockFlowValidator() {
-  class MockFlowValidator {
+export function createMockFlowValidator(): IMockFlowValidator {
+  class MockFlowValidator implements IFlowValidator {
     validFlows = new Set(["code-review", "deploy", "research"]);
     invalidFlows = new Set(["broken-flow", "missing-deps"]);
 
-    validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }> {
+    validateFlow(flowId: string): Promise<IFlowValidationResponse> {
       if (this.validFlows.has(flowId)) {
         return Promise.resolve({ valid: true });
       }
@@ -77,7 +111,7 @@ export function createMockFlowValidator() {
   return new MockFlowValidator();
 }
 
-export function createMockEventLogger() {
+export function createMockEventLogger(): IMockEventLogger {
   class MockEventLogger implements IEventLogger {
     events: Array<{ action: string; target: string; payload?: Record<string, JSONValue>; traceId?: string }> = [];
 
@@ -167,7 +201,7 @@ export function createTestRequestRouter(
     blueprintsPath?: string;
     config?: Config;
   },
-) {
+): RequestRouter {
   class TestRequestRouter extends RequestRouter {
     private mockBlueprints: Map<string, IBlueprint> = new Map();
 
@@ -176,7 +210,7 @@ export function createTestRequestRouter(
         flowRunner,
         agentRunner,
         flowValidator,
-        eventLogger: logger as Partial<EventLogger> as EventLogger,
+        eventLogger: logger as EventLogger,
         defaultAgentId: defaultAgent,
         blueprintsPath,
         config,
@@ -198,7 +232,7 @@ export function sampleRouterRequest(overrides: {
   requestId?: string;
   frontmatter?: Partial<IRequestFrontmatter>;
   body?: string;
-} = {}) {
+} = {}): IRouterRequestSample {
   return {
     traceId: overrides.traceId ?? "test-trace-123",
     requestId: overrides.requestId ?? "req-123",
@@ -210,7 +244,7 @@ export function sampleRouterRequest(overrides: {
       source: "test",
       created_by: "tester",
       ...(overrides.frontmatter ?? {}),
-    } as Partial<Request> as IRequestFrontmatter,
+    } as IRequestFrontmatter,
     body: overrides.body ?? "Test request body",
   };
 }
@@ -222,7 +256,7 @@ export function sampleRouterRequest(overrides: {
 export function createRouterTestContext(overrides: {
   defaultAgent?: string;
   blueprintsPath?: string;
-} = {}) {
+} = {}): IRouterTestContext {
   const mockFlowRunner = createMockFlowRunner();
   const mockAgentRunner = createMockAgentRunner();
   const mockFlowValidator = createMockFlowValidator();

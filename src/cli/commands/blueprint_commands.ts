@@ -9,7 +9,7 @@
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
-import { BaseCommand, ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "../base.ts";
 import { ProviderType } from "../../shared/enums.ts";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";

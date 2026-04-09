@@ -13,7 +13,7 @@ import {
   createMockProjectMemory,
   createMockProposal,
   createTestSession,
-  ExtendedMockMemoryService as _ExtendedMockMemoryService,
+  type ExtendedMockMemoryService as _ExtendedMockMemoryService,
   setupSession,
   testExecutionDetailRendering,
   testSessionRender,

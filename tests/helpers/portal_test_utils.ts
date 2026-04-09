@@ -16,7 +16,7 @@ import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
-import { IReviewStatus, ReviewStatus } from "../../src/reviews/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "../../src/reviews/review_status.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
@@ -129,7 +129,10 @@ timeout_ms = 30000
 /**
  * Helper to run exactl CLI command
  */
-export async function runExactl(args: string[], cwd: string) {
+export async function runExactl(
+  args: string[],
+  cwd: string,
+): Promise<{ code: number; stdout: string; stderr: string }> {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
   const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
 

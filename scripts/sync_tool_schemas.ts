@@ -4,8 +4,8 @@
  * @description Extracts MCP tool definitions from source code and syncs them into TOOLS.md
  */
 
-import { basename, join } from "https://deno.land/std@0.224.0/path/mod.ts";
-import { walk } from "https://deno.land/std@0.224.0/fs/mod.ts";
+import { walk } from "@std/fs";
+import { basename, join } from "@std/path";
 
 const HANDLERS_DIR = "src/mcp/handlers";
 const TOOLS_MD = "TOOLS.md";

@@ -14,7 +14,7 @@ import type {
   IPortalSecurityConfig,
   IRBACPermissionCheckResult,
 } from "../../shared/schemas/portal_permissions.ts";
-import { AuditLogger } from "../core/audit_logger.ts";
+import type { AuditLogger } from "../core/audit_logger.ts";
 import {
   PermissionAction,
   PortalOperation,
@@ -23,7 +23,7 @@ import {
   SecurityMode,
   SecuritySeverity,
 } from "../../shared/enums.ts";
-import { JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 
 /**
  * Service for validating portal permissions

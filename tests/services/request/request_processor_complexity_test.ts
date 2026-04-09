@@ -9,11 +9,10 @@
 
 import { assertEquals } from "@std/assert";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../../src/shared/schemas/request_analysis.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
@@ -25,6 +24,7 @@ import {
   COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
 } from "../../../src/shared/constants.ts";
 import { makeAnalysis } from "./request_test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 
 /**
  * Accessor type to avoid prohibited Record types.
@@ -57,11 +57,11 @@ function callClassifyTaskComplexity(
 async function createComplexityTestSetup() {
   const { db, config, cleanup } = await initTestDbService();
   const context: IApplicationContext = {
-    config: { get: () => config, getChecksum: () => "test" } as any,
+    config: createStubConfig(config),
     db,
-    provider: null as any,
-    git: {} as any,
-    display: new EventLogger({ db, defaultActor: "test" }),
+    provider: createStubProvider(),
+    git: createStubGit(),
+    display: createStubDisplay(db),
   };
   const processor = new RequestProcessor({
     workspacePath: "",

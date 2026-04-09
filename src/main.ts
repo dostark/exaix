@@ -8,7 +8,7 @@
  * * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
  */
 import { ConfigService } from "./config/service.ts";
-import { DaemonStatus, LogLevel } from "./shared/enums.ts";
+import { DaemonStatus, type LogLevel } from "./shared/enums.ts";
 import { FileWatcher } from "./services/utils/watcher.ts";
 import { DatabaseService } from "./services/core/db.ts";
 import { ProviderFactory } from "./ai/provider_factory.ts";
@@ -21,16 +21,16 @@ import {
   ConsoleOutput,
   FileOutput,
   getGlobalLogger,
-  type ILogOutput,
   initializeGlobalLogger,
   logInfo,
 } from "./services/logger/structured_logger.ts";
 import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { LogMetadata, toSafeJson } from "./shared/types/json.ts";
+import type { ILogOutput } from "./shared/interfaces/i_log_service.ts";
+import { type LogMetadata, toSafeJson } from "./shared/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
-import { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
 import { DAEMON_IDENTITY_ID, DEFAULT_IDENTITIES_PATH, DEFAULT_MCP_IDENTITY_ID } from "./shared/constants.ts";
 
 if (import.meta.main) {

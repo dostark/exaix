@@ -355,7 +355,9 @@ All steps follow the TDD-First policy per .copilot/planning/README.md §F.
   - ✅ `deno task check:arch` — architecture validation passes.
 
 **✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/Exaix_User_Guide.md`, and refreshed `.copilot/manifest.json`; `deno task docs-agent-validate` and `deno task check:arch` passing
+
 - **Success Criteria**:
+
   - [x] `deno task docs-agent-validate` reports zero errors.
   - [x] `.copilot/cross-reference.md` contains a `budget_enforcement` entry pointing to Phase 62.
   - [x] `deno task check:arch` passes.

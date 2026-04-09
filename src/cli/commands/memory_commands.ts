@@ -11,11 +11,12 @@ import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus, UIOutputFormat } from "../../shared/enums.ts";
-import { type ISkillMatchRequest as SkillMatchRequest } from "../../shared/types/skill.ts";
+import type { SkillDefinition } from "../../shared/schemas/memory_bank.ts";
+import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
 import type { ILearning, IMemorySearchResult } from "../../shared/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";
 import { MemoryFormatter } from "../formatters/memory_formatter.ts";
-import { IMemoryBankSummary, OutputFormat } from "../memory_types.ts";
+import type { IMemoryBankSummary, OutputFormat } from "../memory_types.ts";
 
 export interface IMemoryCommandsContext extends ICommandContext {}
 
@@ -664,7 +665,7 @@ export class MemoryCommands extends BaseCommand {
     try {
       await this.skills.initialize();
 
-      const matchRequest: SkillMatchRequest = {
+      const matchRequest: ISkillMatchRequest = {
         requestText: request,
         taskType: options.taskType,
         tags: options.tags,
@@ -763,7 +764,7 @@ export class MemoryCommands extends BaseCommand {
       learningIds: string[];
     },
     skillId: string,
-  ) {
+  ): SkillDefinition {
     // Determine scope based on portal availability.
     // In CLI context, we check for EXA_PORTAL environment variable.
     const activePortal = Deno.env.get("EXA_PORTAL");
@@ -841,7 +842,7 @@ export class MemoryCommands extends BaseCommand {
       triggersKeywords?: string[];
       triggersTaskTypes?: string[];
     },
-  ) {
+  ): SkillDefinition {
     // Determine scope based on category and portal availability.
     // Core and Learned (Global) always use GLOBAL scope.
     // User/Project use PROJECT scope if a portal is active, otherwise fall back to GLOBAL.

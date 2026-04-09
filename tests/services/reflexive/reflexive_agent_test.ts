@@ -7,12 +7,15 @@
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueQuality, CritiqueSeverity } from "../../../src/shared/enums.ts";
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import {
   createCodeReviewReflexiveAgent,
   createHighQualityReflexiveAgent,
   createReflexiveAgent,
   CritiqueSchema,
+  type IReflexiveAgentConfig,
+  type IReflexiveExecutionResult,
+  type ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 
@@ -39,8 +42,8 @@ function makeCritiqueJSON(options: {
 // Helper for running agent tests
 async function runAgentTest(
   mockResponses: string[],
-  options: any = {},
-  assertions: (result: any, identity: any) => void | Promise<void>,
+  options: IReflexiveAgentConfig = {},
+  assertions: (result: IReflexiveExecutionResult, identity: ReflexiveAgent) => void | Promise<void>,
 ) {
   const agent = createReflexiveAgent(createMockProvider(mockResponses), options);
   const result = await agent.run(

@@ -7,16 +7,22 @@
 import { assertEquals } from "@std/assert";
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
-import { AgentExecutor, IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
-import { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
+import type { AgentExecutor, IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
+import type {
+  IAgentExecutionOptions,
+  IChangesetResult,
+  IExecutionContext,
+} from "../../../src/shared/schemas/agent_executor.ts";
 import { SecurityMode } from "../../../src/shared/enums.ts";
+
+type IMcpHandshakeExecutor = Pick<AgentExecutor, "validateReviewResult" | "getRecentActivitiesByTraceId">;
 
 Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
   const processManager = new ProcessManager();
-  const mockExecutor = {
-    validateReviewResult: (res: any) => res,
+  const mockExecutor: IMcpHandshakeExecutor = {
+    validateReviewResult: (res: IChangesetResult) => res,
     getRecentActivitiesByTraceId: () => Promise.resolve([]),
-  } as any;
+  };
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);
 
@@ -56,10 +62,10 @@ Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
 
 Deno.test("McpAgentStrategy - Parent Context Query", async () => {
   const processManager = new ProcessManager();
-  const mockExecutor = {
-    validateReviewResult: (res: any) => res,
+  const mockExecutor: IMcpHandshakeExecutor = {
+    validateReviewResult: (res: IChangesetResult) => res,
     getRecentActivitiesByTraceId: (_traceId: string) => Promise.resolve([]),
-  } as any;
+  };
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);
 

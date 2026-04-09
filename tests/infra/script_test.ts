@@ -4,8 +4,8 @@
  * @description Module for script_test.
  */
 
-import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.221.0/assert/mod.ts";
-import { join } from "https://deno.land/std@0.221.0/path/mod.ts";
+import { assertEquals, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 
 const CI_SCRIPT_PATH = join(Deno.cwd(), "scripts", "ci.ts");
 

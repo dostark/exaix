@@ -9,7 +9,7 @@
  */
 
 import type { IRequestAnalysis } from "../schemas/request_analysis.ts";
-import { AnalysisMode } from "../types/request.ts";
+import type { AnalysisMode } from "../types/request.ts";
 import type { EnhancedRequest } from "../../services/memory/session_memory.ts";
 
 /**

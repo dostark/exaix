@@ -6,16 +6,20 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { type IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
 import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
-import { PortalStatus } from "../../src/shared/enums.ts";
+import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "../../src/shared/enums.ts";
 import { createPortalTuiWithPortals } from "./helpers.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../src/shared/types/portal.ts";
 
+type IPortalAddOptions = { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy };
+type IPortalRemoveOptions = { keepCard?: boolean };
+type IPortalAnalyzeOptions = { mode?: PortalAnalysisMode; force?: boolean };
+
 // Minimal IPortalService mock for tests
 class MinimalIPortalServiceMock implements IPortalService {
-  add(_targetPath: string, _alias: string, _options?: any) {
+  add(_targetPath: string, _alias: string, _options?: IPortalAddOptions) {
     return Promise.resolve();
   }
   list = (): Promise<IPortalInfo[]> => {
@@ -28,7 +32,7 @@ class MinimalIPortalServiceMock implements IPortalService {
     return this.getPortalDetails(alias);
   };
   getPortalDetails = (_: string) => Promise.resolve({} as Partial<IPortalDetails> as IPortalDetails);
-  remove(_alias: string, _options?: any) {
+  remove(_alias: string, _options?: IPortalRemoveOptions) {
     return Promise.resolve();
   }
   removePortal = (_: string) => Promise.resolve(true);
@@ -49,7 +53,7 @@ class MinimalIPortalServiceMock implements IPortalService {
   getPortalFilesystemPath = (_: string) => Promise.resolve("");
   getPortalActivityLog = (_: string) => [] as string[];
   getKnowledge = (_: string) => Promise.resolve(null);
-  analyze = (_alias: string, _options?: any): Promise<string> => Promise.resolve("Mock analysis");
+  analyze = (_alias: string, _options?: IPortalAnalyzeOptions): Promise<string> => Promise.resolve("Mock analysis");
 }
 
 // Additional coverage for error branches and rendering helpers

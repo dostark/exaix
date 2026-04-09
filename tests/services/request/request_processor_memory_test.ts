@@ -7,11 +7,11 @@
  * @architectural-layer Tests
  */
 import { assertEquals, assertExists } from "@std/assert";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { type EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
+import type { EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 import {
   makeAgentRequestFileSync as makeRequestFile,
   makeAnalysis,
@@ -46,7 +46,7 @@ function makeSpyMemoryService(): { service: SessionMemoryService; calls: string[
 function makeMockAnalyzer(): IRequestAnalyzerService & { capturedCtx: IRequestAnalysisContext | undefined } {
   const analysis = makeAnalysis();
   let capturedCtx: IRequestAnalysisContext | undefined;
-  const mock = {
+  const mock: IRequestAnalyzerService & { capturedCtx: IRequestAnalysisContext | undefined } = {
     analyze: (_text: string, ctx?: IRequestAnalysisContext) => {
       capturedCtx = ctx;
       return Promise.resolve(analysis);
@@ -56,7 +56,7 @@ function makeMockAnalyzer(): IRequestAnalyzerService & { capturedCtx: IRequestAn
       return capturedCtx;
     },
   };
-  return mock as any;
+  return mock;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,11 +72,11 @@ Deno.test(
 
     try {
       const context: IApplicationContext = {
-        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        config: createStubConfig(env.config),
         db: env.db,
         provider: mockProvider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
         portalKnowledge: undefined,
       };
       const processor = new RequestProcessor({
@@ -108,11 +108,11 @@ Deno.test(
 
     try {
       const context: IApplicationContext = {
-        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        config: createStubConfig(env.config),
         db: env.db,
         provider: mockProvider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
         portalKnowledge: undefined,
       };
       const processor = new RequestProcessor({
@@ -143,17 +143,17 @@ Deno.test(
     const env = await makeEnv();
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
-    const failingService: SessionMemoryService = {
+    const failingService = {
       enhanceRequest: () => Promise.reject(new Error("Memory service exploded")),
-    } as any;
+    } as Pick<SessionMemoryService, "enhanceRequest"> as SessionMemoryService;
 
     try {
       const context: IApplicationContext = {
-        config: { get: () => env.config, getChecksum: () => "test" } as any,
+        config: createStubConfig(env.config),
         db: env.db,
         provider: mockProvider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
         portalKnowledge: undefined,
       };
       const processor = new RequestProcessor({

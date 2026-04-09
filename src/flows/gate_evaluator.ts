@@ -10,17 +10,17 @@ import { z } from "zod";
 import {
   calculateWeightedScore,
   checkRequiredCriteria,
-  EvaluationCriterion,
+  type EvaluationCriterion,
   EvaluationCriterionSchema,
-  EvaluationResult,
+  type EvaluationResult,
   getCriteriaByNames,
 } from "./evaluation_criteria.ts";
-import { IStepResult } from "./flow_runner.ts";
+import type { IStepResult } from "./flow_runner.ts";
 import { FlowGateAction, FlowGateOnFail } from "../shared/enums.ts";
-import { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
+import type { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
 import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
-import { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
-import { IGateConfig, IGateEvaluator, IGateResult, IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
+import type { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
+import type { IGateConfig, IGateEvaluator, IGateResult, IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
 
 /**
  * Gate configuration schema

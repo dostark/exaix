@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { createMonitorViewSession } from "./helpers.ts";
 import type { ILogEntry, MonitorTuiSession } from "../../src/tui/monitor_view.ts";
-import { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
+import type { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
 
 function makeLog(overrides: Partial<ILogEntry> = {}): ILogEntry {
   return {

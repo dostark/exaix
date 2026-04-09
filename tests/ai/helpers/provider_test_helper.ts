@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { Spy, spy, Stub, stub } from "https://deno.land/std@0.203.0/testing/mock.ts"; // No change
+import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../../src/ai/providers/common.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";

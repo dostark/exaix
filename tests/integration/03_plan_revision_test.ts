@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { McpToolName, MemoryBankSource } from "../../src/shared/enums.ts";
-import { join as _join } from "@std/path";
+import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 /**

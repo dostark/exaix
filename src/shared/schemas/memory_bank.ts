@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { DEFAULT_SKILL_INDEX_VERSION } from "../constants.ts";
 import {
-  ActivityType,
+  type ActivityType,
   ConfidenceLevel,
   ExecutionStatus,
   LearningCategory,
@@ -17,10 +17,10 @@ import {
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
-  MemoryType,
+  type MemoryType,
   ReviewSource,
-  SkillImmutableField,
-  SkillManagedField,
+  type SkillImmutableField,
+  type SkillManagedField,
   SkillStatus,
 } from "../enums.ts";
 import { MEMORY_STATUS_VALUES } from "../status/memory_status.ts";

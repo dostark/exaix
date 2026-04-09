@@ -61,7 +61,7 @@ export function setupTestAnalyzer(
   modeOrConfig: AnalysisMode | { mode: AnalysisMode; actionabilityThreshold?: number },
   provider: IModelProvider,
   db?: IDatabaseService,
-) {
+): { analyzer: RequestAnalyzer; validator: ReturnType<typeof createOutputValidator> } {
   const config = typeof modeOrConfig === "string" ? { mode: modeOrConfig } : modeOrConfig;
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new RequestAnalyzer(config, provider, validator, db);
@@ -71,7 +71,9 @@ export function setupTestAnalyzer(
 /**
  * Common setup for LlmAnalyzer tests.
  */
-export function setupTestLlmAnalyzer(provider: IModelProvider) {
+export function setupTestLlmAnalyzer(
+  provider: IModelProvider,
+): { analyzer: LlmAnalyzer; validator: ReturnType<typeof createOutputValidator> } {
   const validator = createOutputValidator({ autoRepair: false });
   const analyzer = new LlmAnalyzer(provider, validator);
   return { analyzer, validator };

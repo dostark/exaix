@@ -5,10 +5,10 @@
  * dependencies and global configuration are correctly handled during deployment.
  */
 
-import { assert, assertStringIncludes } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
+import { assert, assertStringIncludes } from "@std/assert";
+import { exists } from "@std/fs";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { getDefaultPaths } from "../../../src/config/paths.ts";
-import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
 import { withCliProcessMutex } from "../../helpers/cli_process_mutex.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";

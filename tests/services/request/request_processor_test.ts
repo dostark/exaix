@@ -10,12 +10,12 @@ import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import { ProviderRegistry } from "../../../src/ai/provider_registry.ts";
 import { MockProviderFactory } from "../../../src/ai/factories/mock_factory.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
-import { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { MockStrategy, PricingTier, ProviderCostTier } from "../../../src/shared/enums.ts";
@@ -25,8 +25,8 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 
 // ============================================================================
 // Test Utilities
@@ -148,11 +148,11 @@ describe("RequestProcessor", () => {
 
     createProcessor = (provider?: IModelProvider) => {
       const context: IApplicationContext = {
-        config: { get: () => config, getChecksum: () => "test" } as any,
+        config: createStubConfig(config),
         db,
-        provider: provider || (null as any),
-        git: {} as any,
-        display: new EventLogger({ db, defaultActor: "test" }),
+        provider: provider ?? createStubProvider(),
+        git: createStubGit(),
+        display: createStubDisplay(db),
       };
       return new RequestProcessor({
         ...processorConfig,

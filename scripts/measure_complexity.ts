@@ -2,12 +2,13 @@
  * @module measure_complexity
  * @description Script: measure_complexity
  */
-import { parse } from "https://deno.land/std@0.224.0/flags/mod.ts";
-import { walk } from "https://deno.land/std@0.224.0/fs/walk.ts";
+import { walk } from "@std/fs";
+import { parse } from "@std/flags";
+import type { JSONObject } from "../src/shared/types/json.ts";
 // Top-level dynamic imports for parser loading (see CODE_STYLE.md for rationale)
 // Import all parser candidates at the top-level (see CODE_STYLE.md for rationale)
 // Only use local or npm imports that are available and versioned
-import * as BabelParser1 from "npm:@babel/parser@7.24.4";
+import * as BabelParser1 from "@babel/parser";
 // The following remote imports are commented out due to uncached or missing remote URLs
 // import * as DenoAst1 from "https://deno.land/x/deno_ast@0.5.0/mod.ts";
 // import * as DenoAst2 from "https://deno.land/x/deno_ast@0.4.0/mod.ts";
@@ -28,13 +29,35 @@ const parserCandidates = [
   // BabelParserCDN5,
 ];
 
-function extractParse(mod: unknown): ((code: string, opts?: unknown) => unknown) | undefined {
+type ParserOptions = JSONObject;
+type BabelParseFn = (code: string, opts?: ParserOptions) => unknown;
+
+interface IAstNamedNode {
+  name?: string;
+}
+
+interface IAstLoc {
+  start?: { line?: number };
+}
+
+interface IAstNode {
+  type?: string;
+  loc?: IAstLoc;
+  alternate?: IAstNode;
+  test?: unknown;
+  operator?: string;
+  id?: IAstNamedNode | null;
+  key?: IAstNamedNode | null;
+  [key: string]: unknown;
+}
+
+function extractParse(mod: unknown): BabelParseFn | undefined {
   if (typeof mod === "object" && mod !== null) {
     if ("parse" in mod && typeof (mod as { parse?: unknown }).parse === "function") {
-      return (mod as { parse: (code: string, opts?: unknown) => unknown }).parse;
+      return (mod as { parse: BabelParseFn }).parse;
     }
     if ("default" in mod && typeof (mod as { default?: unknown }).default === "function") {
-      return (mod as { default: (code: string, opts?: unknown) => unknown }).default;
+      return (mod as { default: BabelParseFn }).default;
     }
     if (
       "default" in mod &&
@@ -42,7 +65,7 @@ function extractParse(mod: unknown): ((code: string, opts?: unknown) => unknown)
       (mod as { default: { parse?: unknown } }).default &&
       typeof (mod as { default: { parse?: unknown } }).default.parse === "function"
     ) {
-      return (mod as { default: { parse: (code: string, opts?: unknown) => unknown } }).default.parse;
+      return (mod as { default: { parse: BabelParseFn } }).default.parse;
     }
   }
   return undefined;
@@ -53,7 +76,7 @@ const babelParseError = babelParse ? undefined : new Error(
   "Could not load a JS parser from local/npm or CDN; please ensure network access or install a local parser (e.g. npm:@babel/parser).",
 );
 
-export function getBabelParse(): (code: string, opts?: any) => any {
+export function getBabelParse(): BabelParseFn {
   if (babelParse) return babelParse;
   throw babelParseError ?? new Error("Babel parser not loaded");
 }
@@ -83,7 +106,7 @@ const OUTPUT_JSON = !!flags.json;
 //   ConditionalExpression (ternary), LogicalExpression (||, &&)
 // We parse TypeScript/JS with @babel/parser and walk the AST.
 
-type Node = any;
+type Node = IAstNode;
 
 export function computeFileComplexityMetrics(
   fnComplexities: number[],
@@ -109,8 +132,8 @@ export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, paren
     const child = node[key];
     if (Array.isArray(child)) {
       for (const c of child) traverse(c, cb, node);
-    } else if (child && typeof child === "object" && child.type) {
-      traverse(child, cb, node);
+    } else if (child && typeof child === "object" && typeof (child as IAstNode).type === "string") {
+      traverse(child as IAstNode, cb, node);
     }
   }
 }
@@ -125,8 +148,8 @@ export function traverseWithAncestors(node: Node, cb: (n: Node, ancestors: Node[
     const child = node[key];
     if (Array.isArray(child)) {
       for (const c of child) traverseWithAncestors(c, cb, [...ancestors, node]);
-    } else if (child && typeof child === "object" && child.type) {
-      traverseWithAncestors(child, cb, [...ancestors, node]);
+    } else if (child && typeof child === "object" && typeof (child as IAstNode).type === "string") {
+      traverseWithAncestors(child as IAstNode, cb, [...ancestors, node]);
     }
   }
 }
@@ -207,7 +230,7 @@ async function runComplexityCheck() {
     }
   > = [];
 
-  let babelParse: ((code: string, opts?: any) => any) | null = null;
+  let babelParse: BabelParseFn | null = null;
   try {
     babelParse = await getBabelParse();
   } catch (_e) {
@@ -302,6 +325,7 @@ async function runComplexityCheck() {
         // If any ancestor is a function-like node, skip counting this node for top-level
         if (
           ancestors.some((a) =>
+            typeof a.type === "string" &&
             [
               "FunctionDeclaration",
               "FunctionExpression",

@@ -17,7 +17,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
-import { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
@@ -29,8 +29,7 @@ import {
   PortalOperation,
 } from "../../../src/shared/enums.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import {
   getBlueprintsIdentitiesDir,
@@ -792,11 +791,11 @@ Always respond with valid JSON containing a plan with actionable steps.`;
     );
 
     const context: IApplicationContext = {
-      config: { get: () => this.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(this.config),
       db: this.db,
       provider,
-      git: {} as any,
-      display: new EventLogger({ db: this.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(this.db),
     };
 
     const processor = new RequestProcessor({

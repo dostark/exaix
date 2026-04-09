@@ -24,6 +24,9 @@ export const ExecutionContextSchema = z.object({
   request: z.string().describe("Original user request content"),
   plan: z.string().describe("Plan to execute"),
   portal: z.string().describe("Target portal name"),
+  skills_context: z.string().optional().describe(
+    "Optional pre-built skills context block for prompt injection",
+  ),
   step_number: z.number().int().positive().optional().describe(
     "Step number if executing multi-step plan",
   ),

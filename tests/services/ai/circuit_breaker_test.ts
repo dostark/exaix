@@ -5,7 +5,7 @@
  * (Closed -> Open -> Half-Open) based on error thresholds and recovery timeouts.
  */
 
-import { assertEquals, assertRejects } from "https://deno.land/std@0.200.0/testing/asserts.ts";
+import { assertEquals, assertRejects } from "@std/assert";
 import { CircuitBreaker } from "../../../src/ai/circuit_breaker.ts";
 
 Deno.test("CircuitBreaker opens after failure threshold and recovers", async () => {

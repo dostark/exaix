@@ -21,6 +21,21 @@ import { createStubConfig, createStubDisplay, createStubGit, createStubProvider 
 import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
+
+interface IMCPErrorShape {
+  code: number;
+  message: string;
+}
+
+interface IMCPResponseShape<TResult = unknown> {
+  error?: IMCPErrorShape;
+  result?: TResult;
+}
+
+interface IMCPContentResult {
+  content?: Array<{ type: string; text: string }>;
+}
 
 export interface IToolPermissionOptions {
   portalAlias?: string;
@@ -118,7 +133,10 @@ async function initTestEnv(options: IPortalTestOptions & { prefix?: string }) {
 /**
  * Helper to create ICliApplicationContext from test env
  */
-function createTestContext(config: any, db: any): ICliApplicationContext {
+function createTestContext(
+  config: Config,
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"],
+): ICliApplicationContext {
   const stubConfig = createStubConfig(config);
   return {
     config: stubConfig,
@@ -240,7 +258,12 @@ export function createToolCallRequest(
   toolName: string,
   args: Record<string, JSONValue>,
   id: number | string = 1,
-) {
+): {
+  jsonrpc: "2.0";
+  id: number | string;
+  method: "tools/call";
+  params: { name: string; arguments: Record<string, JSONValue> };
+} {
   return {
     jsonrpc: "2.0" as const,
     id,
@@ -265,7 +288,12 @@ export function createMCPRequest(
   method: string,
   params?: Record<string, JSONValue>,
   id: number | string = 1,
-) {
+): {
+  jsonrpc: "2.0";
+  id: number | string;
+  method: string;
+  params: Record<string, JSONValue>;
+} {
   return {
     jsonrpc: "2.0" as const,
     id,
@@ -280,7 +308,7 @@ export function createMCPRequest(
  * @throws AssertionError if response is not an error or code doesn't match
  */
 export function assertMCPError(
-  response: any,
+  response: IMCPResponseShape,
   expectedCode: number,
   messageContains?: string,
 ): void {
@@ -307,7 +335,7 @@ export function assertMCPError(
  * @throws AssertionError if response contains an error
  * @returns The result object from the response
  */
-export function assertMCPSuccess<T = any>(response: any): T {
+export function assertMCPSuccess<T = unknown>(response: IMCPResponseShape<T>): T {
   if (response.error) {
     throw new Error(
       `Expected success, got error ${response.error.code}: ${response.error.message}`,
@@ -318,10 +346,7 @@ export function assertMCPSuccess<T = any>(response: any): T {
   return response.result as T;
 }
 
-/**
- * Assert that response result has content array with text
- */
-export function assertMCPContentIncludes(response: any, text: string): void {
+export function assertMCPContentIncludes(response: IMCPResponseShape<IMCPContentResult>, text: string): void {
   const result = assertMCPSuccess(response);
   assertExists(result.content, "Expected content array in result");
 

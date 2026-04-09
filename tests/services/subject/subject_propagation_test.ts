@@ -8,11 +8,11 @@ import { assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { DatabaseService } from "../../../src/services/core/db.ts";
-import { IModelProvider } from "../../../src/ai/types.ts";
-import { Config } from "../../../src/shared/schemas/config.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 
 interface ISubjectPropagationEnv {
   tempDir: string;
@@ -125,11 +125,11 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
     const mockProvider = (mockProviderRaw as unknown) as IModelProvider;
 
     const context: IApplicationContext = {
-      config: { get: () => config, getChecksum: () => "test" } as any,
+      config: createStubConfig(config),
       db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(db),
     };
 
     const processor = new RequestProcessor({
@@ -196,11 +196,11 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
     const mockProvider = (_mockProviderRaw as unknown) as IModelProvider;
 
     const context: IApplicationContext = {
-      config: { get: () => config, getChecksum: () => "test" } as any,
+      config: createStubConfig(config),
       db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(db),
     };
 
     const processor = new RequestProcessor({

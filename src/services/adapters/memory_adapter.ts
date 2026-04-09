@@ -6,9 +6,9 @@
  * * @related-files [src/services/memory_bank.ts, src/services/memory_extractor.ts, src/shared/interfaces/i_memory_service.ts]
  */
 
-import { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
-import { MemoryBankService } from "../memory/memory_bank.ts";
-import { MemoryExtractorService } from "../memory/memory_extractor.ts";
+import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
+import type { MemoryBankService } from "../memory/memory_bank.ts";
+import type { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import type {
   IExecutionMemory,
   IGlobalMemory,

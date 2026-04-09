@@ -5,7 +5,7 @@
  * prompts, ensuring that agent personas and limitations are respected.
  */
 
-import { assert, assertEquals } from "https://deno.land/std@0.203.0/assert/mod.ts";
+import { assert, assertEquals } from "@std/assert";
 import { inject } from "../../scripts/inject_agent_context.ts";
 
 Deno.test("inject_agent_context returns summary and snippet for copilot query", async () => {

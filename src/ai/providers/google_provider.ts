@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * * @related-files [src/ai/factories/google_factory.ts]
  */
-import { IModelOptions } from "../types.ts";
+import type { IModelOptions } from "../types.ts";
 import {
   extractGoogleContent,
   type GoogleResponse,
@@ -13,7 +13,7 @@ import {
   tokenMapperGoogle,
 } from "../provider_common_utils.ts";
 import * as DEFAULTS from "../../shared/constants.ts";
-import { BaseProvider, IBaseProviderOptions } from "./base_provider.ts";
+import { BaseProvider, type IBaseProviderOptions } from "./base_provider.ts";
 
 /**
  * Options for GoogleProvider

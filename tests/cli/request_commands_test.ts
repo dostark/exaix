@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
-import { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
@@ -108,8 +108,8 @@ describe("RequestCommands", () => {
 
     it("should reject invalid priority", async () => {
       // Use helper to bypass type checking for invalid priority test
-      function createOptions(priority: any): IRequestOptions {
-        return { priority };
+      function createOptions(priority: string): IRequestOptions {
+        return { priority: priority as IRequestOptions["priority"] };
       }
       await assertRejects(
         async () => await requestCommands.create("Test", createOptions("invalid")),

@@ -5,11 +5,18 @@
  */
 import { assertEquals } from "@std/assert";
 import { ActivityJournal } from "../../src/journal/activity_journal.ts";
-import { IFlowEventLogger } from "../../src/flows/flow_runner.ts";
-import { JSONValue } from "../../src/shared/types/json.ts";
+import type { IFlowEventLogger } from "../../src/flows/flow_runner.ts";
+import type { JSONValue } from "../../src/shared/types/json.ts";
+
+interface ILoggedEvent {
+  action?: string;
+  traceId?: string;
+  target?: string;
+  data?: string;
+}
 
 Deno.test("ActivityJournal - logs entries with traceId", async () => {
-  let loggedEvent: any;
+  let loggedEvent: ILoggedEvent | undefined;
   const mockLogger: IFlowEventLogger = {
     log: (event: string, payload: Record<string, JSONValue | undefined>) => {
       loggedEvent = { action: event, ...payload };
@@ -24,8 +31,8 @@ Deno.test("ActivityJournal - logs entries with traceId", async () => {
     data: "some data",
   });
 
-  assertEquals(loggedEvent.traceId, "test-trace");
-  assertEquals(loggedEvent.action, "test-event");
-  assertEquals(loggedEvent.target, "step-1");
-  assertEquals(loggedEvent.data, "some data");
+  assertEquals(loggedEvent?.traceId, "test-trace");
+  assertEquals(loggedEvent?.action, "test-event");
+  assertEquals(loggedEvent?.target, "step-1");
+  assertEquals(loggedEvent?.data, "some data");
 });

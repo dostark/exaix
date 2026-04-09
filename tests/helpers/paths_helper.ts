@@ -8,70 +8,70 @@
 import { join } from "@std/path";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 
-export function getWorkspaceDir(argDir: string) {
+export function getWorkspaceDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace);
 }
 
-export function getWorkspaceActiveDir(argDir: string) {
+export function getWorkspaceActiveDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace, ExaPathDefaults.active);
 }
 
-export function getWorkspacePlansDir(argDir: string) {
+export function getWorkspacePlansDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace, ExaPathDefaults.plans);
 }
 
-export function getWorkspaceRequestsDir(argDir: string) {
+export function getWorkspaceRequestsDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace, ExaPathDefaults.requests);
 }
 
-export function getWorkspaceArchiveDir(argDir: string) {
+export function getWorkspaceArchiveDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace, ExaPathDefaults.archive);
 }
 
-export function getWorkspaceRejectedDir(argDir: string) {
+export function getWorkspaceRejectedDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace, ExaPathDefaults.rejected);
 }
 
-export function getRuntimeDir(argDir: string) {
+export function getRuntimeDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.runtime);
 }
 
-export function getMemoryDir(argDir: string) {
+export function getMemoryDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memory);
 }
 
-export function getBlueprintsIdentitiesDir(argDir: string) {
+export function getBlueprintsIdentitiesDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.blueprints, ExaPathDefaults.identities);
 }
 
-export function getMemoryExecutionDir(argDir: string) {
+export function getMemoryExecutionDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryExecution);
 }
 
-export function getMemoryProjectsDir(argDir: string) {
+export function getMemoryProjectsDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryProjects);
 }
 
-export function getMemoryGlobalDir(argDir: string) {
+export function getMemoryGlobalDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryGlobal);
 }
 
-export function getMemoryIndexDir(argDir: string) {
+export function getMemoryIndexDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryIndex);
 }
 
-export function getMemorySkillsDir(argDir: string) {
+export function getMemorySkillsDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memorySkills);
 }
 
-export function getMemoryPendingDir(argDir: string) {
+export function getMemoryPendingDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryPending);
 }
 
-export function getMemoryTasksDir(argDir: string) {
+export function getMemoryTasksDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.memoryTasks);
 }
 
-export function getPortalsDir(argDir: string) {
+export function getPortalsDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.portals);
 }

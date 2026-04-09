@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { JournalCommands } from "../../src/cli/commands/journal_commands.ts";
-import { IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import { UIOutputFormat } from "../../src/shared/enums.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";

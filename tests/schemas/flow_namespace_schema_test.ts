@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { z, ZodError } from "zod";
+import { type z, ZodError } from "zod";
 import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "../../src/shared/constants.ts";
 import { DataFormat, FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import {

@@ -87,7 +87,7 @@ export class ListDirectoryTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.LIST_DIRECTORY,
       description: "List files and directories in a portal path",

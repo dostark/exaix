@@ -9,7 +9,7 @@
  */
 
 import type { IPortalKnowledge } from "../schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "../enums.ts";
+import type { PortalAnalysisMode } from "../enums.ts";
 
 /**
  * Configuration for the PortalKnowledgeService.

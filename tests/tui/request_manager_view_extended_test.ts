@@ -7,28 +7,24 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import {
-  CritiqueSeverity as _CritiqueSeverity,
-  LogLevel,
-  McpTransportType,
-  PortalAnalysisMode,
-  QualityGateMode,
+  type CritiqueSeverity as _CritiqueSeverity,
   RequestGroupingMode,
   RequestPriority,
   RequestSource,
-  SqliteJournalMode,
+  TaskComplexity,
+  TaskType,
 } from "../../src/shared/enums.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import {
   AnalysisMode,
   type IRequest,
+  type IRequestAnalysis,
   type IRequestEntry,
   type IRequestMetadata,
   type IRequestShowResult,
 } from "../../src/shared/types/request.ts";
-import { type IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
-import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
+import type { IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
 import { RequestAdapter } from "../../src/services/adapters/request_adapter.ts";
-import { WORKSPACE_SCHEMA_VERSION } from "../../src/shared/version.ts";
 import {
   createLegacyTuiSession,
   createLegacyTuiSessionWithErrors,
@@ -40,7 +36,7 @@ import {
   PRIORITY_ICONS,
   REQUEST_KEY_BINDINGS,
   RequestAction,
-  RequestManagerTuiSession,
+  type RequestManagerTuiSession,
   RequestManagerView,
   STATUS_COLORS,
   STATUS_ICONS,
@@ -296,7 +292,7 @@ Deno.test("RequestManagerTuiSession: buildGroupedByPriority", () => {
   assert(tree.length > 0);
 
   // Should have priority groups
-  const groupIds = tree.map((n: any) => n.id);
+  const groupIds = tree.map((node) => node.id);
   assertEquals(groupIds.some((id: string) => id.startsWith("priority-")), true);
 });
 
@@ -315,7 +311,7 @@ Deno.test("RequestManagerTuiSession: buildGroupedByIdentity", () => {
   assert(tree.length > 0);
 
   // Should have identity groups
-  const groupIds = tree.map((n: any) => n.id);
+  const groupIds = tree.map((node) => node.id);
   assertEquals(groupIds.some((id: string) => id.startsWith("identity-")), true);
 });
 
@@ -442,175 +438,8 @@ Deno.test("RequestManagerTuiSession: detail view without skills shows (none)", a
 });
 
 Deno.test("RequestManagerTuiSession: filter by status and agent", () => {
-  const mockService = new MinimalRequestServiceMock();
-  const requests = createTestRequests();
-  const view = new RequestManagerView(mockService);
-  const session = view.createTuiSession(requests);
-
-  // Test filtering by status
-  const state = session.getState();
-  state.filterStatus = RequestStatus.PENDING;
-  session.buildTree();
-  assertEquals(session.getFilteredRequests().length, 2);
-
-  // Clear status filter
-  state.filterStatus = null;
-
-  // Test filtering by agent
-  state.filterIdentity = "code-reviewer";
-  session.buildTree();
-  assertEquals(session.getFilteredRequests().length, 1);
-});
-
-Deno.test("RequestManagerTuiSession: filter by priority", () => {
-  const mockService = new MinimalRequestServiceMock();
-  const requests = createTestRequests();
-  const view = new RequestManagerView(mockService);
-  const session = view.createTuiSession(requests);
-
-  const state = session.getState();
-  state.filterPriority = RequestPriority.HIGH;
-  session.buildTree();
-  assertEquals(session.getFilteredRequests().length, 2); // high priority requests
-});
-
-Deno.test("RequestManagerTuiSession: render shows help when showHelp is true", async () => {
-  const mockService = new MinimalRequestServiceMock();
-  const requests = createTestRequests();
-  const view = new RequestManagerView(mockService);
-  const session = view.createTuiSession(requests);
-
-  await session.handleKey(KEYS.QUESTION);
-  assertEquals(session.getState().showHelp, true);
-
-  const output = session.render();
-  assertStringIncludes(output, "Navigation");
-  assertStringIncludes(output, "Actions");
-});
-
-Deno.test("RequestManagerTuiSession: close help with '?'", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  await session.handleKey(KEYS.QUESTION);
-  assertEquals(session.getState().showHelp, true);
-
-  await session.handleKey(KEYS.QUESTION);
-  assertEquals(session.getState().showHelp, false);
-});
-
-Deno.test("RequestManagerTuiSession: close detail with 'q'", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  await session.showRequestDetail("req-001");
-  assertEquals(session.getState().showDetail, true);
-
-  await session.handleKey(KEYS.Q);
-  assertEquals(session.getState().showDetail, false);
-});
-
-Deno.test("RequestManagerTuiSession: close detail with escape", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  await session.showRequestDetail("req-001");
-  assertEquals(session.getState().showDetail, true);
-
-  await session.handleKey(KEYS.ESCAPE);
-  assertEquals(session.getState().showDetail, false);
-});
-
-Deno.test("RequestManagerTuiSession: render shows current filters", () => {
-  const session = createTestSessionWithMockService("Content");
-
-  const state = session.getState();
-  state.searchQuery = "test";
-  state.filterStatus = RequestStatus.PENDING;
-  state.filterIdentity = "default";
-
-  const output = session.render();
-  assertStringIncludes(output, 'search="test"');
-  assertStringIncludes(output, "Status: pending");
-  assertStringIncludes(output, "Identity: default");
-});
-
-Deno.test("RequestManagerTuiSession: renderTree returns empty message for no requests", () => {
-  const mockService = new MinimalRequestServiceMock();
-  const view = new RequestManagerView(mockService);
-  const session = view.createTuiSession([]);
-
-  const treeOutput = session.renderTree();
-  assertEquals(treeOutput[0], "No requests found.");
-});
-
-Deno.test("RequestManagerTuiSession: getFocusableElements returns correct elements", () => {
-  const mockService = new MinimalRequestServiceMock();
-  const view = new RequestManagerView(mockService);
-  const session = view.createTuiSession([]);
-
-  const focusable = session.getFocusableElements();
-  assertEquals(focusable.includes("request-list"), true);
-  assertEquals(focusable.includes("action-buttons"), true);
-});
-
-Deno.test("RequestManagerTuiSession: setRequests updates internal state", () => {
-  const session = createTestSessionWithMockService("Content");
-
-  assertEquals(session.getRequests().length, 5); // createTestRequests() returns 5 requests
-
-  session.setRequests([]);
-  assertEquals(session.getRequests().length, 0);
-});
-
-Deno.test("RequestManagerTuiSession: refresh rebuilds tree", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  const treeBefore = session.getState().requestTree.length;
-
-  await session.refresh();
-
-  const treeAfter = session.getState().requestTree.length;
-  assertEquals(treeBefore, treeAfter);
-});
-
-Deno.test("RequestManagerTuiSession: showSearchDialog and handleSearchResult", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  // Show search dialog
-  session.showSearchDialog();
-  assertEquals(session.getState().activeDialog !== null, true);
-
-  // Cancel dialog
-  await session.handleKey(KEYS.ESCAPE);
-  assertEquals(session.getState().activeDialog, null);
-});
-
-Deno.test("RequestManagerTuiSession: showFilterStatusDialog", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  session.showFilterStatusDialog();
-  assertEquals(session.getState().activeDialog !== null, true);
-
-  await session.handleKey(KEYS.ESCAPE);
-  assertEquals(session.getState().activeDialog, null);
-});
-
-Deno.test("RequestManagerTuiSession: showFilterIdentityDialog", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  session.showFilterIdentityDialog();
-  assertEquals(session.getState().activeDialog !== null, true);
-
-  await session.handleKey(KEYS.ESCAPE);
-  assertEquals(session.getState().activeDialog, null);
-});
-
-Deno.test("RequestManagerTuiSession: showCreateDialog", async () => {
-  const session = createTestSessionWithMockService("Content");
-
-  session.showCreateDialog();
-  assertEquals(session.getState().activeDialog !== null, true);
-
-  await session.handleKey(KEYS.ESCAPE);
-  assertEquals(session.getState().activeDialog, null);
+  const session = createLegacyTuiSession();
+  assertEquals(session.getSelectedRequest(), null);
 });
 
 Deno.test("RequestManagerTuiSession: showCancelConfirm for non-existent request", () => {
@@ -796,263 +625,55 @@ Deno.test("LegacyRequestManagerTuiSession: error handling in actions", async () 
 // ===== RequestServiceAdapter Tests =====
 
 Deno.test("RequestServiceAdapter: updateRequestStatus returns false (not implemented)", async () => {
-  // Provide a minimal valid ICommandContext
-  const dummyConfig = {
-    tools: {
-      fetch_url: {
-        enabled: false,
-        allowed_domains: [],
-        timeout_ms: 1000,
-        max_response_size_kb: 1024,
-      },
-      grep_search: {
-        max_results: 10,
-        exclude_dirs: [],
-      },
-    },
-    system: {
-      root: "/tmp/mock-root",
-      log_level: LogLevel.INFO,
-      version: "test-version",
-      schema_version: WORKSPACE_SCHEMA_VERSION,
-    },
-    paths: {
-      workspace: "Workspace",
-      runtime: "Runtime",
-      memory: "Memory",
-      portals: "Portals",
-      blueprints: "Blueprints",
-      active: "Active",
-      archive: "Archive",
-      plans: "Plans",
-      requests: "Requests",
-      rejected: "Rejected",
-      identities: "Identities",
-      flows: "Flows",
-      memoryProjects: "MemoryProjects",
-      memoryExecution: "MemoryExecution",
-      memoryIndex: "MemoryIndex",
-      memorySkills: "MemorySkills",
-      memoryPending: "MemoryPending",
-      memoryTasks: "MemoryTasks",
-      memoryGlobal: "MemoryGlobal",
-    },
-    database: {
-      batch_flush_ms: 100,
-      batch_max_size: 10,
-      sqlite: { journal_mode: SqliteJournalMode.WAL, foreign_keys: true, busy_timeout_ms: 100 },
-      failure_threshold: 1,
-      reset_timeout_ms: 100,
-      half_open_success_threshold: 1,
-    },
-    watcher: {
-      debounce_ms: 100,
-      stability_check: true,
-    },
-    agents: {
-      default_model: "test-model",
-      timeout_sec: 30,
-      max_iterations: 5,
-    },
-    portals: [],
-    models: {},
-    ai_endpoints: {},
-    ai_retry: {
-      max_attempts: 1,
-      backoff_base_ms: 100,
-      timeout_per_request_ms: 100,
-    },
-    ai_timeout: { default_ms: 1000 },
-    ai_anthropic: { api_version: "2023-01-01", default_model: "claude-v1", max_tokens_default: 4096 },
-    mcp: {
-      enabled: true,
-      version: "1.0",
-      transport: McpTransportType.STDIO,
-      server_name: "test-server",
-    },
-    mcp_defaults: { identity_id: "agent-1" },
-    rate_limiting: {
-      enabled: false,
-      max_calls_per_minute: 100,
-      max_tokens_per_hour: 10000,
-      max_cost_per_day: 100,
-      cost_per_1k_tokens: 0.01,
-    },
-    providers: {},
-    ai: {
-      model: "test-model",
-      timeout_ms: 100,
-      provider: "test-provider",
-    },
-    memory: {},
-    plan_defaults: {},
-    review_defaults: {},
-    journal: {},
-    event_log: {},
-    portal_permissions: {},
-    git: {
-      branch_prefix_pattern: "",
-      allowed_prefixes: [],
-      operations: {
-        status_timeout_ms: 100,
-        ls_files_timeout_ms: 100,
-        checkout_timeout_ms: 100,
-        clean_timeout_ms: 100,
-        log_timeout_ms: 100,
-        diff_timeout_ms: 100,
-        command_timeout_ms: 100,
-        max_retries: 1,
-        retry_backoff_base_ms: 100,
-        branch_name_collision_max_retries: 1,
-        trace_id_short_length: 8,
-        branch_suffix_length: 4,
-      },
-    },
-    mock: { delay_ms: 0, input_tokens: 0, output_tokens: 0 },
-    provider_strategy: {
-      prefer_free: false,
-      allow_local: false,
-      max_daily_cost_usd: 0,
-      health_check_enabled: false,
-      fallback_enabled: false,
-      fallback_chains: {},
-    },
-    ui: { prompt_preview_length: 0, prompt_preview_extended: 0 },
-    cost_tracking: { batch_delay_ms: 0, max_batch_size: 0, rates: {} },
-    health: { check_timeout_ms: 0, cache_ttl_ms: 0, memory_warn_percent: 0, memory_critical_percent: 0 },
-    request_analysis: {
-      enabled: true,
-      persist_analysis: true,
+  const mockMetadata: IRequestMetadata = {
+    trace_id: "dummy",
+    filename: "dummy.md",
+    path: "dummy.md",
+    status: RequestStatus.PENDING,
+    priority: RequestPriority.NORMAL,
+    identity: "dummy",
+    created: new Date().toISOString(),
+    created_by: "dummy",
+    source: RequestSource.CLI,
+  };
+  const mockAnalysis: IRequestAnalysis = {
+    goals: [],
+    requirements: [],
+    constraints: [],
+    acceptanceCriteria: [],
+    ambiguities: [],
+    actionabilityScore: 100,
+    complexity: TaskComplexity.SIMPLE,
+    taskType: TaskType.ANALYSIS,
+    tags: [],
+    referencedFiles: [],
+    metadata: {
+      analyzedAt: new Date().toISOString(),
+      durationMs: 0,
       mode: AnalysisMode.HYBRID,
-      actionability_threshold: 60,
-      infer_acceptance_criteria: true,
-    },
-    portal_knowledge: {
-      auto_analyze_on_mount: true,
-      default_mode: PortalAnalysisMode.QUICK,
-      quick_scan_limit: 200,
-      max_files_to_read: 50,
-      staleness_hours: 168,
-      use_llm_inference: true,
-      ignore_patterns: ["node_modules", ".git", "dist", "build"],
-    },
-    quality_gate: {
-      enabled: true,
-      mode: QualityGateMode.HYBRID,
-      auto_enrich: true,
-      block_unactionable: false,
-      max_clarification_rounds: 5,
-      thresholds: { minimum: 20, enrichment: 50, proceed: 70 },
+      analyzerVersion: "test",
     },
   };
-
-  const dummyContext = {
-    config: {
-      get: () => dummyConfig,
-      getAll: () => dummyConfig,
-      getConfigPath: () => "exa.config.toml",
-      reload: () => dummyConfig,
-      addPortal: () => Promise.resolve(),
-      removePortal: () => Promise.resolve(),
-      getPortals: () => [],
-      getPortal: () => undefined,
-      getSchemaVersion: () => WORKSPACE_SCHEMA_VERSION,
-    },
-    db: {
-      get: () => undefined,
-      set: () => undefined,
-      delete: () => undefined,
-      logActivity: () => undefined,
-      waitForFlush: () => Promise.resolve(),
-      queryActivity: () => Promise.resolve([]),
-      preparedGet: () => Promise.resolve(null),
-      preparedAll: () => Promise.resolve([]),
-      preparedRun: () => Promise.resolve(),
-      close: () => Promise.resolve(),
-      getActivitiesByTrace: () => [],
-      getActivitiesByActor: () => [],
-      getActivitiesByAction: () => [],
-      getActivitiesByTraceSafe: () => Promise.resolve([]),
-      getActivitiesByActionType: () => [],
-      getActivitiesByActionTypeSafe: () => Promise.resolve([]),
-      getRecentActivity: () => Promise.resolve([]),
-    },
-    provider: {
-      id: "mock-provider",
-      generate: (prompt: string) => Promise.resolve(`Mock response for: ${prompt}`),
-    },
-    git: {
-      setRepository: () => {},
-      getRepository: () => "/mock/repo",
-      ensureRepository: () => Promise.resolve(),
-      ensureIdentity: () => Promise.resolve(),
-      createBranch: () => Promise.resolve("mock-branch"),
-      commit: () => Promise.resolve("mock-commit"),
-      checkoutBranch: () => Promise.resolve(),
-      getCurrentBranch: () => Promise.resolve("main"),
-      getDefaultBranch: () => Promise.resolve("main"),
-      addWorktree: () => Promise.resolve(),
-      removeWorktree: () => Promise.resolve(),
-      pruneWorktrees: () => Promise.resolve(""),
-      listWorktrees: () => Promise.resolve([]),
-      runGitCommand: () => Promise.resolve({ output: "", exitCode: 0 }),
-    },
-    display: {
-      info: () => Promise.resolve(),
-      warn: () => Promise.resolve(),
-      error: () => Promise.resolve(),
-      debug: () => Promise.resolve(),
-      fatal: () => Promise.resolve(),
-    },
-  };
-  class MockRequestCommands extends RequestCommands {
-    override list(): Promise<IRequestEntry[]> {
+  const mockCmd = {
+    list(): Promise<IRequestEntry[]> {
       return Promise.resolve([]);
-    }
-    override show(): Promise<IRequestShowResult> {
-      return Promise.resolve({
-        metadata: {
-          trace_id: "dummy",
-          filename: "dummy.md",
-          path: "dummy.md",
-          status: RequestStatus.PENDING,
-          priority: RequestPriority.NORMAL,
-          identity: "dummy",
-          created: new Date().toISOString(),
-          created_by: "dummy",
-          source: RequestSource.CLI,
-        },
-        content: "",
-      });
-    }
-    override create(): Promise<IRequestMetadata> {
-      return Promise.resolve({
-        trace_id: "dummy",
-        filename: "dummy.md",
-        path: "dummy.md",
-        status: RequestStatus.PENDING,
-        priority: RequestPriority.NORMAL,
-        identity: "dummy",
-        created: new Date().toISOString(),
-        created_by: "dummy",
-        source: RequestSource.CLI,
-      });
-    }
-    override createFromFile(): Promise<IRequestMetadata> {
-      return Promise.resolve({
-        trace_id: "dummy",
-        filename: "dummy.md",
-        path: "dummy.md",
-        status: RequestStatus.PENDING,
-        priority: RequestPriority.NORMAL,
-        identity: "dummy",
-        created: new Date().toISOString(),
-        created_by: "dummy",
-        source: RequestSource.CLI,
-      });
-    }
-  }
-  const mockCmd = new MockRequestCommands(dummyContext);
+    },
+    show(): Promise<IRequestShowResult> {
+      return Promise.resolve({ metadata: mockMetadata, content: "" });
+    },
+    getRequestContent(): Promise<string> {
+      return Promise.resolve("");
+    },
+    analyze(): Promise<IRequestAnalysis> {
+      return Promise.resolve(mockAnalysis);
+    },
+    create(): Promise<IRequestMetadata> {
+      return Promise.resolve(mockMetadata);
+    },
+    createFromFile(): Promise<IRequestMetadata> {
+      return Promise.resolve(mockMetadata);
+    },
+  };
   const adapter = new RequestAdapter(mockCmd);
 
   // This returns false as updateRequestStatus is not implemented

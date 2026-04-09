@@ -33,7 +33,10 @@ export interface IGitTestContext {
 /**
  * Helper to initialize git repository in a directory
  */
-export async function setupGitRepo(path: string, options: { initialCommit?: boolean; branch?: string } = {}) {
+export async function setupGitRepo(
+  path: string,
+  options: { initialCommit?: boolean; branch?: string } = {},
+): Promise<void> {
   const { initialCommit = false, branch = TEST_DEFAULT_BRANCH } = options;
 
   // Verify directory exists before running git commands

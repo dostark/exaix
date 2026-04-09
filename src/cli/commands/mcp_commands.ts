@@ -60,7 +60,7 @@ export class McpCommands extends BaseCommand {
     super(context);
   }
 
-  async start(options: { sse?: boolean; port?: number }) {
+  async start(options: { sse?: boolean; port?: number }): Promise<void> {
     const transport = options.sse ? McpTransportType.SSE : McpTransportType.STDIO;
     const server = new MCPServer({
       context: this.context,

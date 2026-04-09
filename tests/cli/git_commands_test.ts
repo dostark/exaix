@@ -10,7 +10,7 @@ import { MemoryOperation } from "../../src/shared/enums.ts";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { GitCommands } from "../../src/cli/commands/git_commands.ts";
-import { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 
 describe("GitCommands", () => {

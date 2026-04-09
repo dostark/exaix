@@ -10,18 +10,18 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryOperation,
-  MemoryReferenceType as _MemoryReferenceType,
+  type MemoryReferenceType as _MemoryReferenceType,
   MemoryScope,
 } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
+import type { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import { renderPendingPanel, renderStatsPanel } from "../../src/tui/memory_panels/index.ts";
 import type { IMemoryUpdateProposal } from "../../src/shared/schemas/memory_bank.ts";
 import {
   createInitializedMemoryViewSession,
   createMockProposals,
-  MinimalMemoryServiceMock as _MinimalMemoryServiceMock,
+  type MinimalMemoryServiceMock as _MinimalMemoryServiceMock,
 } from "./helpers.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 

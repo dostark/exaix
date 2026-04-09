@@ -14,7 +14,7 @@ import { MemoryExtractorService } from "../../../src/services/memory/memory_extr
 import { MemoryType, PortalExecutionStrategy } from "../../../src/shared/enums.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 
-function cast<T = any>(obj: unknown): T {
+function cast<T>(obj: unknown): T {
   return obj as T;
 }
 
@@ -128,16 +128,20 @@ Deno.test("MemoryBankAdapter: delegates project and execution methods", async ()
 
   const adapter = new MemoryBankAdapter(service);
 
-  const stubRecord = cast({});
+  const projectRecord = cast<Parameters<MemoryBankAdapter["createProjectMemory"]>[0]>({});
+  const patternRecord = cast<Parameters<MemoryBankAdapter["addPattern"]>[1]>({});
+  const decisionRecord = cast<Parameters<MemoryBankAdapter["addDecision"]>[1]>({});
+  const executionRecord = cast<Parameters<MemoryBankAdapter["createExecutionRecord"]>[0]>({});
+  const promotionRecord = cast<Parameters<MemoryBankAdapter["promoteLearning"]>[1]>({ type: MemoryType.PATTERN });
   await adapter.getProjectMemory("p");
-  await adapter.createProjectMemory(stubRecord); // fallback to parameter bypassing temporarily
+  await adapter.createProjectMemory(projectRecord); // fallback to parameter bypassing temporarily
   await adapter.updateProjectMemory("p", {});
-  await adapter.addPattern("p", stubRecord);
-  await adapter.addDecision("p", stubRecord);
-  await adapter.createExecutionRecord(stubRecord);
+  await adapter.addPattern("p", patternRecord);
+  await adapter.addDecision("p", decisionRecord);
+  await adapter.createExecutionRecord(executionRecord);
   await adapter.getExecutionByTraceId("t");
   await adapter.getExecutionHistory("p", 5);
-  await adapter.promoteLearning("p", cast({ type: MemoryType.PATTERN }));
+  await adapter.promoteLearning("p", promotionRecord);
   await adapter.demoteLearning("id", "p");
 
   assertEquals(addPatternCalled, true);
@@ -148,7 +152,8 @@ Deno.test("MemoryBankAdapter: delegates project and execution methods", async ()
 Deno.test("MemoryBankAdapter: delegates global and search methods", async () => {
   let initGlobalCalled = false;
   let rebuildCalled = false;
-  const stubRecord = cast({});
+  const learningRecord = cast<Parameters<MemoryBankAdapter["addGlobalLearning"]>[0]>({});
+  const embeddingService = cast<Parameters<MemoryBankAdapter["rebuildIndicesWithEmbeddings"]>[0]>({});
 
   const service = createMockMemoryBankService({
     initGlobalMemory: () => {
@@ -165,14 +170,14 @@ Deno.test("MemoryBankAdapter: delegates global and search methods", async () => 
 
   await adapter.getGlobalMemory();
   await adapter.initGlobalMemory();
-  await adapter.addGlobalLearning(stubRecord);
+  await adapter.addGlobalLearning(learningRecord);
   await adapter.searchMemory("q");
   await adapter.searchByTags(["t"]);
   await adapter.searchByKeyword("k");
   await adapter.searchMemoryAdvanced({ tags: ["t"], keyword: "k", portal: "p", limit: 10 });
   await adapter.getRecentActivity(10);
   await adapter.rebuildIndices();
-  await adapter.rebuildIndicesWithEmbeddings(stubRecord);
+  await adapter.rebuildIndicesWithEmbeddings(embeddingService);
   assertEquals(await adapter.getProjects(), ["alpha"]);
 
   assertEquals(initGlobalCalled, true);
@@ -218,7 +223,7 @@ Deno.test("MemoryExtractorAdapter: delegates all methods", async () => {
   assertEquals(await adapter.listPending(), []);
   assertEquals(await adapter.getPending("1"), null);
 
-  const learning = cast({
+  const learning = cast<Parameters<MemoryExtractorAdapter["createProposal"]>[0]>({
     type: "pattern",
     name: "p",
     title: "t",
@@ -227,7 +232,7 @@ Deno.test("MemoryExtractorAdapter: delegates all methods", async () => {
     confidence: 0.9,
     tags: [],
   });
-  const execution = cast({ trace_id: "t" });
+  const execution = cast<Parameters<MemoryExtractorAdapter["createProposal"]>[1]>({ trace_id: "t" });
   await adapter.analyzeExecution(execution);
   await adapter.createProposal(learning, execution, "identityId");
   await adapter.approvePending("1");

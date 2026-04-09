@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "../../ai/types.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import { AgentRunner } from "../agent/agent_runner.ts";
 import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
@@ -15,7 +15,7 @@ import { createOutputValidator } from "./output_validator.ts";
 import type { IOutputValidator } from "./output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";
 import { ToolReflectionIssueType, ToolReflectionSeverity } from "../../shared/enums.ts";
-import { JSONValue, JSONValueSchema, LogMetadata, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONValue, JSONValueSchema, type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
 
 export interface IToolCall {
   id: string;

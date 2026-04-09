@@ -27,6 +27,14 @@ import * as TEST_CONSTANTS from "../config/constants.ts";
 
 const TEST_PROMPT = TEST_CONSTANTS.REGRESSION_TEST_PROMPT;
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function getErrorName(error: unknown): string {
+  return error instanceof Error ? error.name : "UnknownError";
+}
+
 Deno.test({
   name: "[regression] GoogleProvider: Verify gemini-flash-latest works with v1beta",
   ignore: !Deno.env.get(TEST_CONSTANTS.ENV_GOOGLE_API_KEY),
@@ -53,10 +61,11 @@ Deno.test({
           response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (timeoutId) clearTimeout(timeoutId);
-      console.log(`${TEST_CONSTANTS.LOG_PREFIX_GOOGLE_ERROR} ${error.name} - ${error.message}`);
-      if (error.message.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404)) throw error;
+      const errorMessage = getErrorMessage(error);
+      console.log(`${TEST_CONSTANTS.LOG_PREFIX_GOOGLE_ERROR} ${getErrorName(error)} - ${errorMessage}`);
+      if (errorMessage.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404)) throw error;
       console.log(TEST_CONSTANTS.LOG_MSG_ENDPOINT_REACHED);
     }
   },
@@ -90,10 +99,11 @@ Deno.test({
           response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (timeoutId) clearTimeout(timeoutId);
-      console.log(`${TEST_CONSTANTS.LOG_PREFIX_OPENAI_ERROR} ${error.name} - ${error.message}`);
-      if (error.message.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404)) throw error;
+      const errorMessage = getErrorMessage(error);
+      console.log(`${TEST_CONSTANTS.LOG_PREFIX_OPENAI_ERROR} ${getErrorName(error)} - ${errorMessage}`);
+      if (errorMessage.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404)) throw error;
       console.log(TEST_CONSTANTS.LOG_MSG_ENDPOINT_REACHED);
     }
   },
@@ -127,13 +137,14 @@ Deno.test({
           response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (timeoutId) clearTimeout(timeoutId);
-      console.log(`${TEST_CONSTANTS.LOG_PREFIX_ANTHROPIC_ERROR} ${error.name} - ${error.message}`);
+      const errorMessage = getErrorMessage(error);
+      console.log(`${TEST_CONSTANTS.LOG_PREFIX_ANTHROPIC_ERROR} ${getErrorName(error)} - ${errorMessage}`);
       // Anthropic 404 is "not_found_error"
       if (
-        error.message.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404) ||
-        error.message.includes(TEST_CONSTANTS.ERROR_MSG_NOT_FOUND)
+        errorMessage.includes(TEST_CONSTANTS.ERROR_MSG_HTTP_404) ||
+        errorMessage.includes(TEST_CONSTANTS.ERROR_MSG_NOT_FOUND)
       ) {
         console.error(TEST_CONSTANTS.LOG_MSG_NOT_FOUND_DETECTED);
         throw error;

@@ -13,12 +13,12 @@ import {
   ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
 import type { IAgentExecutionResult, IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IAgentRunner } from "../../../src/services/agent/agent_runner.ts";
-import {
-  type IOutputValidator,
-  type IValidationMetrics,
-  type IValidationResult,
+import type {
+  IOutputValidator,
+  IValidationMetrics,
+  IValidationResult,
   OutputValidator,
 } from "../../../src/services/tool/output_validator.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
@@ -178,8 +178,8 @@ Deno.test("ReflexiveAgent.run: early-exits on first passing critique", async () 
   const agent = new ReflexiveAgent(stubProvider, { maxIterations: 3 });
 
   // Make circuit breakers no-ops for deterministic unit testing.
-  agent.agentBreaker.execute = (fn: () => Promise<any>) => fn();
-  agent.critiqueBreaker.execute = (fn: () => Promise<any>) => fn();
+  agent.agentBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
+  agent.critiqueBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
 
   let agentRuns = 0;
   agent.agentRunner = createMockRunner(() => {
@@ -221,8 +221,8 @@ Deno.test("ReflexiveAgent.run: early-exits on first passing critique", async () 
 Deno.test("ReflexiveAgent.run: refines when critique fails then accepts", async () => {
   const agent = new ReflexiveAgent(stubProvider, { maxIterations: 2, confidenceThreshold: 70 });
 
-  agent.agentBreaker.execute = (fn: () => Promise<any>) => fn();
-  agent.critiqueBreaker.execute = (fn: () => Promise<any>) => fn();
+  agent.agentBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
+  agent.critiqueBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
 
   const responses = ["v1", "v2"];
   const prompts: string[] = [];

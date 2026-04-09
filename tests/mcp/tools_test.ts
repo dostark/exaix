@@ -19,7 +19,11 @@ import {
   initMCPTest,
   initMCPTestWithoutPortal,
 } from "./helpers/test_setup.ts";
-import type { MCPServer } from "../../src/mcp/server.ts";
+
+interface IMCPResponseShape<TResult = unknown> {
+  error?: { code: number; message: string };
+  result?: TResult;
+}
 
 /**
  * Tests for read_file Tool Implementation
@@ -41,7 +45,7 @@ async function withMCPToolTest(
     fileContent?: Record<string, string>;
     skipPortal?: boolean;
   } = {},
-  fn: (ctx: { server: MCPServer; db: any; portalPath: string; tempDir: string }) => Promise<void>,
+  fn: (ctx: Pick<IMCPTestContext, "server" | "db" | "portalPath" | "tempDir">) => Promise<void>,
 ) {
   const ctx = options.skipPortal
     ? await initMCPTestWithoutPortal()
@@ -76,7 +80,9 @@ Deno.test("read_file: successfully reads file from portal", async () => {
       });
 
       const response = await server.handleRequest(request);
-      const result = assertMCPSuccess<{ content: Array<{ type: string; text: string }> }>(response);
+      const result = assertMCPSuccess<{ content: Array<{ type: string; text: string }> }>(
+        response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      );
 
       assertEquals(result.content.length, 1);
       assertEquals(result.content[0].type, "text");
@@ -96,7 +102,11 @@ Deno.test("read_file: logs invocation to IActivity Journal", async () => {
         path: "log-test.txt",
       });
 
-      await server.handleRequest(request);
+      const response = await server.handleRequest(request);
+      const result = assertMCPSuccess<{ content: Array<{ type: string; text: string }> }>(
+        response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      );
+      assertEquals(result.content[0]?.text, "content");
 
       // Allow time for batched logging
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -214,7 +224,10 @@ Deno.test("write_file: successfully writes file to portal", async () => {
 
     const response = await server.handleRequest(request);
     assertMCPSuccess(response);
-    assertMCPContentIncludes(response, "successfully");
+    assertMCPContentIncludes(
+      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
+      "successfully",
+    );
 
     // Verify file was actually written
     const written = await Deno.readTextFile(join(portalPath, "output.txt"));

@@ -9,9 +9,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { loadAnalysis } from "../../../src/services/request_analysis/mod.ts";
@@ -21,19 +20,20 @@ import type {
 } from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
 import {
   type IRequestAnalysis,
-  RequestAnalysisComplexity as _RequestAnalysisComplexity,
+  type RequestAnalysisComplexity as _RequestAnalysisComplexity,
   RequestTaskType,
 } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import { type IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
-import { initTestDbService as _initTestDbService } from "../../helpers/db.ts";
+import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
+import type { initTestDbService as _initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import {
   makeAgentRequestFileSync as makeAgentRequestFile,
   makeAnalysis,
-  makeBlueprintFileSync as _makeBlueprintFile,
+  type makeBlueprintFileSync as _makeBlueprintFile,
   makeFakeAnalyzer,
   makeFlowRequestFileSync as makeFlowRequestFile,
   makeRequestProcessorEnv,
@@ -131,11 +131,11 @@ Deno.test("[RequestProcessor] runs analysis before agent execution", async () =>
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -171,11 +171,11 @@ Deno.test("[RequestProcessor] persists analysis as _analysis.json", async () => 
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -207,11 +207,11 @@ Deno.test("[RequestProcessor] handles analyzer failure gracefully (continues wit
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -245,11 +245,11 @@ Deno.test("[RequestProcessor] passes analysis to flow processing path", async ()
     const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -291,11 +291,11 @@ Deno.test("[RequestProcessor] plan metadata contains request analysis", async ()
     ]);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -342,11 +342,11 @@ Deno.test("[RequestProcessor] skips analysis if request status is already PLANNE
     Deno.writeTextFileSync(filePath, updated);
 
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
-      provider: null as any,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      provider: createStubProvider(),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       portalKnowledge: undefined,
     };
     const processor = new RequestProcessor({
@@ -391,12 +391,12 @@ Deno.test("[RequestProcessor] skips analysis when request_analysis.enabled is fa
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "enabled-false" });
 
     const context: IApplicationContext = {
-      config: { get: () => disabledConfig as any, getChecksum: () => "test" },
+      config: createStubConfig(disabledConfig),
       db: env.db,
-      provider: null as any,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
-    } as any;
+      provider: createStubProvider(),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
+    };
     const processor = new RequestProcessor({
       ...env.processorConfig,
       context,
@@ -433,12 +433,12 @@ Deno.test("[RequestProcessor] skips persisting analysis when persist_analysis is
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "no-persist" });
 
     const context: IApplicationContext = {
-      config: { get: () => noPersistConfig as any, getChecksum: () => "test" },
+      config: createStubConfig(noPersistConfig),
       db: env.db,
-      provider: null as any,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
-    } as any;
+      provider: createStubProvider(),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
+    };
     const processor = new RequestProcessor({
       ...env.processorConfig,
       context,
@@ -483,12 +483,12 @@ Deno.test("[RequestProcessor] uses DEFAULT_ANALYZER_MODE (hybrid) not HEURISTIC 
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "default-mode" });
 
     const context: IApplicationContext = {
-      config: { get: () => hybridConfig as any, getChecksum: () => "test" },
+      config: createStubConfig(hybridConfig),
       db: env.db,
-      provider: null as any,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
-    } as any;
+      provider: createStubProvider(),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
+    };
     const processor = new RequestProcessor({
       ...env.processorConfig,
       context,

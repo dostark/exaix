@@ -194,7 +194,7 @@ To be approved
     const activities = JSON.parse(result.content[0].text);
     assertEquals(Array.isArray(activities), true);
     // Should find the one we just logged
-    const found = activities.find((a: any) => a.trace_id === traceId);
+    const found = activities.find((activity: { trace_id?: string }) => activity.trace_id === traceId);
     assertExists(found);
   });
 

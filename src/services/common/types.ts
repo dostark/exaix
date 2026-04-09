@@ -5,8 +5,8 @@
  * @architectural-layer Services
  * * @related-files [src/services/event_logger.ts, src/services/structured_logger.ts]
  */
-import { ActorType, AgentKind, LogLevel } from "../../shared/enums.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { ActorType, AgentKind, LogLevel } from "../../shared/enums.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
  * Actor types:

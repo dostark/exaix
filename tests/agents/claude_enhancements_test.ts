@@ -8,8 +8,8 @@
 // Unit tests to verify Step 10.5 Claude enhancements are properly implemented
 // Usage: deno test --allow-read tests/agents/claude_enhancements_test.ts
 
-import { assert, assertExists } from "https://deno.land/std@0.203.0/assert/mod.ts";
-import { parse } from "https://deno.land/std@0.203.0/yaml/mod.ts";
+import { assert, assertExists } from "@std/assert";
+import { parse } from "@std/yaml";
 import { inject } from "../../scripts/inject_agent_context.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 

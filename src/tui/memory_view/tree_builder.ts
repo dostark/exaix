@@ -20,7 +20,7 @@ import {
   TUI_TREE_RECENT_LIMIT,
 } from "../helpers/constants.ts";
 import type { IMemoryService, ITreeNode } from "./types.ts";
-import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
 
 export class TreeBuilder {
   /**
@@ -82,13 +82,13 @@ export class TreeBuilder {
 
     // 4. Pending Scope
     const pending = await service.listPending();
-    const pendingNodes: ITreeNode[] = pending.map((p: any) => ({
-      id: `${MemoryTuiScope.PENDING}:${p.id}`,
+    const pendingNodes: ITreeNode[] = pending.map((proposal: IMemoryUpdateProposal) => ({
+      id: `${MemoryTuiScope.PENDING}:${proposal.id}`,
       type: TuiNodeType.LEARNING,
-      label: p.learning.title,
+      label: proposal.learning.title,
       expanded: false,
       children: [],
-      data: p,
+      data: proposal,
     }));
     tree.push({
       id: MemoryTuiScope.PENDING,

@@ -9,16 +9,11 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { type IRequestEntry } from "../../shared/types/request.ts";
+import type { IRequestEntry } from "../../shared/types/request.ts";
 import { coerceRequestStatus, type RequestStatusType } from "../../shared/status/request_status.ts";
-import {
-  getWorkspaceArchiveDir,
-  getWorkspaceRejectedDir,
-  getWorkspaceRequestsDir,
-  REQUEST_CORE_FIELDS,
-} from "./request_paths.ts";
+import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./request_paths.ts";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "../../shared/constants.ts";
-import { RequestKind } from "../../shared/enums.ts";
+import { RequestKind, RequestPriority } from "../../shared/enums.ts";
 
 export class RequestListHandler extends BaseCommand {
   private workspaceRequestsDir: string;
@@ -98,25 +93,26 @@ export class RequestListHandler extends BaseCommand {
     frontmatter: Record<string, string | boolean | number>,
     status: RequestStatusType,
   ): IRequestEntry {
-    const entry: any = {
-      filename: filename,
+    const identityValue = String(frontmatter.identity || frontmatter.agent || DEFAULT_IDENTITY_ID);
+    const entry: IRequestEntry & { agent: string } = {
+      filename,
       path: filePath,
-      status: status,
+      status,
+      trace_id: String(frontmatter.trace_id || ""),
+      priority: String(frontmatter.priority || RequestPriority.NORMAL) as IRequestEntry["priority"],
+      identity: identityValue,
+      agent: identityValue,
+      created: String(frontmatter.created || ""),
+      created_by: String(frontmatter.created_by || "unknown"),
+      source: String(frontmatter.source || "unknown") as IRequestEntry["source"],
     };
 
-    for (const field of REQUEST_CORE_FIELDS) {
-      entry[field.key] = String(frontmatter[field.key] || field.fallback);
-    }
-
-    // Ensure reciprocal compatibility between identity and agent
-    const identityValue = String(frontmatter.identity || frontmatter.agent || DEFAULT_IDENTITY_ID);
-    entry.identity = identityValue;
-    entry.agent = identityValue;
-
-    const optionalKeys = [PORTAL_LABEL, "target_branch", "model", RequestKind.FLOW, "rejected_path", "subject"];
-    for (const key of optionalKeys) {
-      if (frontmatter[key]) entry[key] = String(frontmatter[key]);
-    }
+    if (frontmatter[PORTAL_LABEL]) entry.portal = String(frontmatter[PORTAL_LABEL]);
+    if (frontmatter.target_branch) entry.target_branch = String(frontmatter.target_branch);
+    if (frontmatter.model) entry.model = String(frontmatter.model);
+    if (frontmatter[RequestKind.FLOW]) entry.flow = String(frontmatter[RequestKind.FLOW]);
+    if (frontmatter.rejected_path) entry.rejected_path = String(frontmatter.rejected_path);
+    if (frontmatter.subject) entry.subject = String(frontmatter.subject);
 
     if (frontmatter.skills) entry.skills = JSON.parse(String(frontmatter.skills));
 

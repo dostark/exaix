@@ -17,8 +17,7 @@ import { basename } from "@std/path";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
 import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
-import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
 import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import {
@@ -40,6 +39,7 @@ import { TestEnvironment } from "./helpers/test_environment.ts";
 import { MockStrategy } from "../../src/shared/enums.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
 import { join } from "@std/path";
+import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -416,11 +416,11 @@ function buildProcessor(
 ): { processor: RequestProcessor } {
   const provider = env.createMockProvider(MockStrategy.RECORDED);
   const context: IApplicationContext = {
-    config: { get: () => env.config, getChecksum: () => "test" } as any,
+    config: createStubConfig(env.config),
     db: env.db,
     provider,
-    git: {} as any,
-    display: new EventLogger({ db: env.db, defaultActor: "test" }),
+    git: createStubGit(),
+    display: createStubDisplay(env.db),
   };
 
   const processor = new RequestProcessor({

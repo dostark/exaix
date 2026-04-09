@@ -6,10 +6,10 @@
  * * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
  */
 
-import { IRequestService } from "../../shared/interfaces/i_request_service.ts";
-import { type IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import { type RequestStatusType } from "../../shared/status/request_status.ts";
-import { AnalysisMode } from "../../shared/types/request.ts";
+import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { RequestStatusType } from "../../shared/status/request_status.ts";
+import type { AnalysisMode } from "../../shared/types/request.ts";
 import type { RequestSource } from "../../shared/enums.ts";
 import type {
   IRequestEntry,
@@ -18,8 +18,22 @@ import type {
   IRequestShowResult,
 } from "../../shared/types/request.ts";
 
+interface IRequestCommandService {
+  create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata>;
+  list(status?: RequestStatusType, includeArchived?: boolean): Promise<IRequestEntry[]>;
+  show(idOrFilename: string): Promise<IRequestShowResult>;
+  getRequestContent(requestId: string): Promise<string>;
+  updateRequestStatus?(requestId: string, status: RequestStatusType): Promise<boolean>;
+  getAnalysis?(requestId: string): Promise<IRequestAnalysis | null>;
+  analyze(
+    requestId: string,
+    options?: { mode?: AnalysisMode; force?: boolean } | AnalysisMode,
+    force?: boolean,
+  ): Promise<IRequestAnalysis>;
+}
+
 export class RequestAdapter implements IRequestService {
-  constructor(private service: any) {}
+  constructor(private service: IRequestCommandService) {}
 
   async create(
     description: string,

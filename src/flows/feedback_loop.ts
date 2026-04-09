@@ -7,12 +7,12 @@
  */
 
 import { z } from "zod";
-import { EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
+import { type EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
 import { FlowGateOnFail, GeneralStatus } from "../shared/enums.ts";
-import { GateEvaluator } from "./gate_evaluator.ts";
-import { IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
+import type { GateEvaluator } from "./gate_evaluator.ts";
+import type { IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../shared/constants.ts";
-import { CriterionResult } from "./evaluation_criteria.ts";
+import type { CriterionResult } from "./evaluation_criteria.ts";
 
 /**
  * Context data for agent requests

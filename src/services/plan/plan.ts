@@ -8,12 +8,12 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "../../shared/schemas/config.ts";
 import { PlanStatus, type PlanStatusType } from "../../shared/status/plan_status.ts";
-import { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
-import { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { IConfigService } from "../../shared/interfaces/i_config_service.ts";
-import { IDatabaseService } from "../../services/core/db.ts";
+import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
+import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type { IConfigService } from "../../shared/interfaces/i_config_service.ts";
+import type { IDatabaseService } from "../../services/core/db.ts";
 
 export class PlanService {
   private workspacePlansDir: string;

@@ -6,9 +6,9 @@
  * * @related-files [src/services/db.ts, src/shared/interfaces/i_journal_service.ts]
  */
 
-import { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import { IActivityRecord, IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "../../shared/types/database.ts";
 
 /**
  * Adapter that implements the IJournalService interface

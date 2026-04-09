@@ -8,22 +8,27 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "../../shared/schemas/config.ts";
 import { RequestStatus, type RequestStatusType } from "../../shared/status/request_status.ts";
 import { RequestPriority, RequestSource } from "../../shared/enums.ts";
-import { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "../../shared/types/request.ts";
-import { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { IConfigService } from "../../shared/interfaces/i_config_service.ts";
-import { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type {
+  IRequestEntry,
+  IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
+} from "../../shared/types/request.ts";
+import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type { IConfigService } from "../../shared/interfaces/i_config_service.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
-import { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "../core/db.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
-import { JSONValue } from "../../shared/types/json.ts";
-import { IModelProvider } from "../../ai/types.ts";
-import { IOutputValidator } from "../tool/output_validator.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
+import type { IModelProvider } from "../../ai/types.ts";
+import type { IOutputValidator } from "../tool/output_validator.ts";
 import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
 
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IRequestServiceConfig {
   config: Config;

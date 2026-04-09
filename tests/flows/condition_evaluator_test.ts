@@ -8,10 +8,10 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
-import { ConditionEvaluator, IConditionContext } from "../../src/flows/condition_evaluator.ts";
-import { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
-import { IStepResult } from "../../src/flows/flow_runner.ts";
-import { JSONValue } from "../../src/shared/types/json.ts";
+import { ConditionEvaluator, type IConditionContext } from "../../src/flows/condition_evaluator.ts";
+import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
+import type { IStepResult } from "../../src/flows/flow_runner.ts";
+import type { JSONValue } from "../../src/shared/types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 
 const createContext = (

@@ -7,21 +7,21 @@
  */
 
 import process from "node:process";
-import { type ITuiTheme as Theme } from "../helpers/colors.ts";
+import type { ITuiTheme } from "../helpers/colors.ts";
 import { TUI_MSG_DASHBOARD_HEADER, TUI_MSG_PRESS_CLOSE_HELP, TUI_STATUS_MSG_READY } from "../helpers/constants.ts";
 import { type IPane, renderGlobalHelpOverlay, renderPaneTitleBar, renderViewIndicator } from "../tui_dashboard.ts";
 import { renderNotificationPanel } from "../tui_helpers/notifications.ts";
-import { type IMemoryNotification } from "../../shared/types/notification.ts";
-import { type INotificationService } from "../../shared/interfaces/i_notification_service.ts";
-import { type IDashboardViewState } from "../tui_dashboard.ts";
-import { Table } from "https://deno.land/x/cliffy@v0.25.7/mod.ts";
+import type { IMemoryNotification } from "../../shared/types/notification.ts";
+import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";
+import type { IDashboardViewState } from "../tui_dashboard.ts";
+import { Table } from "@cliffy/table";
 import { KEYS } from "../helpers/keyboard.ts";
-import { type IPortalService } from "../../shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
 
 async function renderActivePaneContent(
   panes: IPane[],
   activePaneId: string,
-  theme: Theme,
+  theme: ITuiTheme,
   portalView: IPortalService,
 ): Promise<void> {
   const activePane = panes.find((p) => p.id === activePaneId);
@@ -78,7 +78,7 @@ export async function prodRender(
   panes: IPane[],
   activePaneId: string,
   state: IDashboardViewState,
-  theme: Theme,
+  theme: ITuiTheme,
   notificationService: INotificationService,
   portalView: IPortalService,
 ): Promise<void> {

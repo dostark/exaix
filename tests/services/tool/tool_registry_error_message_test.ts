@@ -5,8 +5,8 @@
  * denials include helpful context about allowed directory roots and portal boundaries.
  */
 
-import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
+import { assertEquals, assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { ToolName } from "../../../src/shared/enums.ts";

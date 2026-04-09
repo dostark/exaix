@@ -6,13 +6,19 @@
  * @related-files [src/services/agent/agent_executor.ts, src/services/agent/process_manager.ts, src/services/agent/agent_entrypoint.ts]
  */
 
-import { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, AgentExecutor, IAgentFileBlueprint } from "../agent_executor.ts";
-import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../../../shared/schemas/agent_executor.ts";
+import type { IExecutionStrategy } from "./execution_strategy.ts";
+import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
+import type {
+  IAgentExecutionOptions,
+  IChangesetResult,
+  IExecutionContext,
+} from "../../../shared/schemas/agent_executor.ts";
 import { SafeSubprocess } from "../../../helpers/subprocess.ts";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode, SystemCommand } from "../../../shared/enums.ts";
+import type { JSONValue } from "../../../shared/types/json.ts";
+import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
 
 import {
   DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS,
@@ -175,6 +181,18 @@ export class McpAgentStrategy implements IExecutionStrategy {
     return args;
   }
 
+  private buildParentContextQueryResult(context: IExecutionContext): Record<string, JSONValue> {
+    return {
+      trace_id: context.trace_id,
+      current_step: context.request,
+      portal: context.portal,
+      recent_activities: [],
+      memory_banks: [
+        { name: "main", path: "@memory/main.md" },
+      ],
+    };
+  }
+
   private async waitForReady(reader: ReadableStreamDefaultReader<string>): Promise<void> {
     let timeoutId: number | undefined;
 
@@ -201,26 +219,23 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
   }
 
-  private async handleQuery(tool: string, _params: any, context: IExecutionContext): Promise<any> {
+  private async handleQuery(
+    tool: string,
+    _params: Record<string, JSONValue>,
+    context: IExecutionContext,
+  ): Promise<Record<string, JSONValue>> {
     if (tool === "parent_context_query") {
       // Query real recent activities from the Activity Journal
       const recentActivities = await this.executor.getRecentActivitiesByTraceId(context.trace_id);
-
-      return {
-        trace_id: context.trace_id,
-        current_step: context.request,
-        portal: context.portal,
-        recent_activities: recentActivities,
-        memory_banks: [
-          { name: "main", path: "@memory/main.md" },
-        ],
-      };
+      const result = this.buildParentContextQueryResult(context);
+      result.recent_activities = recentActivities;
+      return result;
     }
 
     throw new Error(`Execution of unknown query tool: ${tool}`);
   }
 
-  private async handleToolCall(toolName: string, params: any): Promise<any> {
+  private async handleToolCall(toolName: string, params: Record<string, JSONValue>): Promise<IToolResult> {
     if (!this.executor.toolRegistry) {
       throw new Error("ToolRegistry not available in AgentExecutor");
     }

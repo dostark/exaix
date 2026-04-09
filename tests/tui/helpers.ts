@@ -6,18 +6,18 @@
  */
 
 import { RequestManagerView } from "../../src/tui/request_manager_view.ts";
-import {
-  type IRequestAnalysis,
-  type IRequestEntry as IRequest,
-  type IRequestMetadata as _IRequestMetadata,
-  type IRequestOptions,
-  type IRequestShowResult,
+import type {
+  IRequestAnalysis,
+  IRequestEntry as IRequest,
+  IRequestMetadata as _IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
 } from "../../src/shared/types/request.ts";
-import { AnalysisMode } from "../../src/shared/types/request.ts";
-import { type IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
+import type { AnalysisMode } from "../../src/shared/types/request.ts";
+import type { IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
 import { LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession } from "../../src/tui/request_manager_view.ts";
 import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
-import { ILogEntry, MonitorView } from "../../src/tui/monitor_view.ts";
+import { type ILogEntry, MonitorView } from "../../src/tui/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../../src/tui/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../helpers/test_utils.ts";
 import { RequestStatus, type RequestStatusType } from "../../src/shared/status/request_status.ts";
@@ -26,12 +26,12 @@ import type {
   IPortalInfo,
   IVerificationResult as _IVerificationResult,
 } from "../../src/shared/types/portal.ts";
-import { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
-import { IActivityRecord, IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import {
-  ISkillSummary,
+  type ISkillSummary,
   MinimalSkillsServiceMock,
-  SkillsManagerTuiSession,
+  type SkillsManagerTuiSession,
   SkillsManagerView,
 } from "../../src/tui/skills_manager_view.ts";
 import type {
@@ -42,7 +42,7 @@ import type {
   IProjectMemory,
   IProposalLearning,
 } from "../../src/shared/schemas/memory_bank.ts";
-import { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "../../src/shared/types/json.ts";
 import {
   ConfidenceLevel,
   EvaluationCategory,
@@ -56,12 +56,13 @@ import {
   RequestSource,
   SkillStatus,
 } from "../../src/shared/enums.ts";
-import { type IMemoryService } from "../../src/shared/interfaces/i_memory_service.ts";
+import type { IMemoryService } from "../../src/shared/interfaces/i_memory_service.ts";
 import { MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
-import { type ITreeNode } from "../../src/tui/helpers/tree_view.ts";
-import { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
-import { IJournalService } from "../../src/shared/interfaces/i_journal_service.ts";
+import type { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
+import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { IJournalService } from "../../src/shared/interfaces/i_journal_service.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
+import type { PortalAnalysisMode } from "../../src/shared/enums.ts";
 
 export interface IPortalInfoOverrides {
   alias?: string;
@@ -105,11 +106,11 @@ export const sampleRequest = (overrides: Partial<IRequest> = {}): IRequest => {
 };
 
 export const sampleRequests = (arr: Array<Partial<IRequest>>): IRequest[] => arr.map((a) => sampleRequest(a));
-export const sampleTestRequests = () => commonTestData.requests.basic() as IRequest[];
-export const sampleBasicRequest = () => commonTestData.requests.basic() as IRequest[];
-export const sampleTwoRequests = () => commonTestData.requests.two() as IRequest[];
-export const sampleGroupedRequests = () => commonTestData.requests.grouped() as IRequest[];
-export const sampleNewRequest = () => [sampleRequest({ trace_id: "new-req", subject: "New Request" })];
+export const sampleTestRequests = (): IRequest[] => commonTestData.requests.basic() as IRequest[];
+export const sampleBasicRequest = (): IRequest[] => commonTestData.requests.basic() as IRequest[];
+export const sampleTwoRequests = (): IRequest[] => commonTestData.requests.two() as IRequest[];
+export const sampleGroupedRequests = (): IRequest[] => commonTestData.requests.grouped() as IRequest[];
+export const sampleNewRequest = (): IRequest[] => [sampleRequest({ trace_id: "new-req", subject: "New Request" })];
 
 // Legacy aliases for backward compatibility
 export const sampleIRequest = sampleRequest;
@@ -117,17 +118,17 @@ export const sampleBasicIRequest = sampleBasicRequest;
 export const sampleNewIRequest = sampleNewRequest;
 
 // Plan helpers using shared utilities
-export const sampleBasicPlans = () => commonTestData.plans.basic();
-export const sampleSinglePlan = () => commonTestData.plans.single();
-export const samplePlansWithStatuses = () => commonTestData.plans.withStatuses();
-export const samplePendingPlans = () => commonTestData.plans.pending();
+export const sampleBasicPlans = (): IPlan[] => commonTestData.plans.basic();
+export const sampleSinglePlan = (): IPlan[] => commonTestData.plans.single();
+export const samplePlansWithStatuses = (): IPlan[] => commonTestData.plans.withStatuses();
+export const samplePendingPlans = (): IPlan[] => commonTestData.plans.pending();
 
 // Skill helpers using shared utilities
-export const sampleBasicSkills = () => commonTestData.skills.basic;
-export const sampleSingleSkill = () => commonTestData.skills.single;
-export const sampleSkillsWithStatuses = () => commonTestData.skills.withStatuses;
+export const sampleBasicSkills = (): ISkillSummary[] => commonTestData.skills.basic() as ISkillSummary[];
+export const sampleSingleSkill = (): ISkillSummary => commonTestData.skills.single()[0] as ISkillSummary;
+export const sampleSkillsWithStatuses = (): ISkillSummary[] => commonTestData.skills.withStatuses() as ISkillSummary[];
 
-export function createMockRequestService(initial: IRequest[] = []) {
+export function createMockRequestService(initial: IRequest[] = []): IRequestService & { requests: IRequest[] } {
   class MockRequestService implements IRequestService {
     requests: IRequest[];
     constructor(requests: IRequest[] = []) {
@@ -194,13 +195,20 @@ export function createMockRequestService(initial: IRequest[] = []) {
   return new MockRequestService(initial);
 }
 
-export function createViewWithRequests(arr: Array<Partial<IRequest>> = []) {
+export function createViewWithRequests(arr: Array<Partial<IRequest>> = []): {
+  service: IRequestService & { requests: IRequest[] };
+  view: RequestManagerView;
+} {
   const service = createMockRequestService(sampleRequests(arr));
   const view = new RequestManagerView(service);
   return { service, view };
 }
 
-export function createTuiWithRequests(arr: Array<Partial<IRequest>> = []) {
+export function createTuiWithRequests(arr: Array<Partial<IRequest>> = []): {
+  service: IRequestService & { requests: IRequest[] };
+  view: RequestManagerView;
+  tui: ReturnType<RequestManagerView["createTuiSession"]>;
+} {
   const { service, view } = createViewWithRequests(arr);
   const requests = sampleRequests(arr);
   const tui = view.createTuiSession(requests);
@@ -240,12 +248,12 @@ export function sampleLogEntry(overrides: ILogEntryOverrides = {}): ILogEntry {
   } as ILogEntry;
 }
 
-export function sampleLogEntries(arr: ILogEntryOverrides[]) {
+export function sampleLogEntries(arr: ILogEntryOverrides[]): ILogEntry[] {
   return arr.map((a) => sampleLogEntry(a));
 }
 
 /** Convenience: create two logs with different agents for filter tests */
-export function createTwoAgentLogs() {
+export function createTwoAgentLogs(): ILogEntry[] {
   return sampleLogEntries([
     { identity_id: "researcher", action_type: "request_created" },
     { identity_id: "architect", action_type: "plan_approved", target: "Workspace/Plans/test.md" },
@@ -253,7 +261,7 @@ export function createTwoAgentLogs() {
 }
 
 /** Convenience: create two logs with different action types for filter tests */
-export function createTwoActionLogs() {
+export function createTwoActionLogs(): ILogEntry[] {
   return sampleLogEntries([
     { action_type: "request_created" },
     { action_type: "plan_approved" },
@@ -261,7 +269,7 @@ export function createTwoActionLogs() {
 }
 
 /** Convenience: create basic monitor test logs */
-export function sampleMonitorLogs() {
+export function sampleMonitorLogs(): ILogEntry[] {
   return sampleLogEntries([
     {
       id: "1",
@@ -287,7 +295,7 @@ export function sampleMonitorLogs() {
 }
 
 /** Convenience: create single monitor test log */
-export function sampleSingleMonitorLog() {
+export function sampleSingleMonitorLog(): ILogEntry[] {
   return sampleLogEntries([
     {
       id: "1",
@@ -320,7 +328,10 @@ export function samplePortals(arr: IPortalInfoOverrides[]): IPortalInfo[] {
   return arr.map((a) => samplePortal(a));
 }
 
-export function createMockPortalService(initial: IPortalInfo[] = []) {
+export function createMockPortalService(initial: IPortalInfo[] = []): IPortalService & {
+  portals: IPortalInfo[];
+  actions: Array<{ type: string; id: string }>;
+} {
   class MockPortalService implements IPortalService {
     portals: IPortalInfo[];
     actions: { type: string; id: string }[];
@@ -401,7 +412,7 @@ export function createMockPortalService(initial: IPortalInfo[] = []) {
     getKnowledge(_alias: string) {
       return Promise.resolve(null);
     }
-    analyze(_alias: string, _options?: any): Promise<string> {
+    analyze(_alias: string, _options?: { mode?: PortalAnalysisMode; force?: boolean }): Promise<string> {
       return Promise.resolve("Mock analysis result");
     }
   }
@@ -409,13 +420,20 @@ export function createMockPortalService(initial: IPortalInfo[] = []) {
   return new MockPortalService(initial);
 }
 
-export function createPortalViewWithPortals(arr: IPortalInfoOverrides[] = []) {
+export function createPortalViewWithPortals(arr: IPortalInfoOverrides[] = []): {
+  service: IPortalService & { portals: IPortalInfo[]; actions: Array<{ type: string; id: string }> };
+  view: PortalManagerView;
+} {
   const service = createMockPortalService(samplePortals(arr));
   const view = new PortalManagerView(service);
   return { service, view };
 }
 
-export function createPortalTuiWithPortals(arr: IPortalInfoOverrides[] = []) {
+export function createPortalTuiWithPortals(arr: IPortalInfoOverrides[] = []): {
+  service: IPortalService & { portals: IPortalInfo[]; actions: Array<{ type: string; id: string }> };
+  view: PortalManagerView;
+  tui: ReturnType<PortalManagerView["createTuiSession"]>;
+} {
   const { service, view } = createPortalViewWithPortals(arr);
   // Pass the service's array reference so tests that mutate the service.portals array are reflected in the TUI session
   const tui = view.createTuiSession(service.portals as IPortalInfo[]);
@@ -506,7 +524,7 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   }
 }
 
-export function createMockDatabaseService(activityRecords: IActivityRecord[] = []) {
+export function createMockDatabaseService(activityRecords: IActivityRecord[] = []): IDatabaseService & IJournalService {
   return new MockDatabaseService(activityRecords);
 }
 
@@ -532,7 +550,10 @@ function createMockRequestShowResult(overrides?: Partial<IRequestShowResult>): I
   };
 }
 
-export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverrides> = []) {
+export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverrides> = []): {
+  db: IDatabaseService & IJournalService;
+  monitorView: MonitorView;
+} {
   const activityRecords: IActivityRecord[] = arr.map((a) => ({
     id: String(a.id ?? crypto.randomUUID()),
     trace_id: String(a.trace_id ?? `trace-${a.id ?? Math.floor(Math.random() * 1e6)}`),
@@ -567,7 +588,11 @@ export function createMonitorViewWithLogs(arr: Array<ILogEntry | ILogEntryOverri
   return { db, monitorView };
 }
 
-export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverrides> = []) {
+export function createMonitorTuiSession(arr: Array<ILogEntry | ILogEntryOverrides> = []): {
+  db: IDatabaseService & IJournalService;
+  monitorView: MonitorView;
+  session: ReturnType<MonitorView["createTuiSession"]>;
+} {
   const converted: ILogEntryOverrides[] = arr.map((a) => {
     // If the caller passed a ILogEntry, convert it to a plain record with stringified payload
     if ("action_type" in a && typeof a.action_type === "string") {
@@ -596,7 +621,10 @@ export const createMonitorViewSession = createMonitorTuiSession;
 // -------------------------
 // Plan reviewer helpers
 // -------------------------
-export function createPlanReviewerSession(plans: IPlan[] = []) {
+export function createPlanReviewerSession(plans: IPlan[] = []): {
+  mock: MinimalPlanServiceMock;
+  session: PlanReviewerTuiSession;
+} {
   const mock = new MinimalPlanServiceMock();
   const session = new PlanReviewerTuiSession(plans, mock);
   return { mock, session };
@@ -723,7 +751,7 @@ export function countLinesContaining(lines: string[], text: string): number {
 // -------------------------
 // Legacy request manager helpers
 // -------------------------
-export function createLegacyMockRequestService() {
+export function createLegacyMockRequestService(): IRequestService {
   return {
     list: () => Promise.resolve([]),
     listRequests: () => Promise.resolve([]),
@@ -737,12 +765,19 @@ export function createLegacyMockRequestService() {
   };
 }
 
-export function createLegacyTuiSession(requests: IRequest[] = []) {
+export function createLegacyTuiSession(
+  requests: IRequest[] = [],
+): InstanceType<typeof _LegacyRequestManagerTuiSession> {
   const mockService = createLegacyMockRequestService();
   return new _LegacyRequestManagerTuiSession(requests, mockService as IRequestService);
 }
 
-export function createLegacyTuiSessionWithTracking() {
+export function createLegacyTuiSessionWithTracking(): {
+  session: InstanceType<typeof _LegacyRequestManagerTuiSession>;
+  createCalled: () => boolean;
+  viewCalled: () => boolean;
+  deleteCalled: () => boolean;
+} {
   let createCalled = false;
   let viewCalled = false;
   let deleteCalled = false;
@@ -777,7 +812,7 @@ export function createLegacyTuiSessionWithTracking() {
   return { session, createCalled: () => createCalled, viewCalled: () => viewCalled, deleteCalled: () => deleteCalled };
 }
 
-export function createLegacyTuiSessionWithLongTraceId() {
+export function createLegacyTuiSessionWithLongTraceId(): InstanceType<typeof _LegacyRequestManagerTuiSession> {
   const mockService = {
     listRequests: () => Promise.resolve([]),
     list: () => Promise.resolve([]),
@@ -800,7 +835,7 @@ export function createLegacyTuiSessionWithLongTraceId() {
   return new _LegacyRequestManagerTuiSession(requests, mockService as IRequestService);
 }
 
-export function createLegacyTuiSessionWithErrors() {
+export function createLegacyTuiSessionWithErrors(): InstanceType<typeof _LegacyRequestManagerTuiSession> {
   const mockService = {
     listRequests: () => Promise.resolve([]),
     list: () => Promise.reject(new Error("List error")),
@@ -820,7 +855,11 @@ export function createLegacyTuiSessionWithErrors() {
 // -------------------------
 // Dialog test helpers
 // -------------------------
-export function createMockDialogRenderOptions(width: number = 60, height: number = 20) {
+export function createMockDialogRenderOptions(width: number = 60, height: number = 20): {
+  useColors: boolean;
+  width: number;
+  height: number;
+} {
   return {
     useColors: false,
     width,
@@ -929,17 +968,24 @@ export function createTestSkills(): ISkillSummary[] {
 
 // MinimalSkillsServiceMock is now imported from src/tui/skills_manager_view.ts
 
-export function createMockSkillsService(initial: ISkillSummaryOverrides[] = []) {
+export function createMockSkillsService(initial: ISkillSummaryOverrides[] = []): MinimalSkillsServiceMock {
   return new MinimalSkillsServiceMock(sampleSkills(initial));
 }
 
-export function createSkillsManagerViewWithMock(skills: ISkillSummary[] = sampleTestSkills()) {
+export function createSkillsManagerViewWithMock(skills: ISkillSummary[] = sampleTestSkills()): {
+  service: MinimalSkillsServiceMock;
+  view: SkillsManagerView;
+} {
   const service = new MinimalSkillsServiceMock(skills);
   const view = new SkillsManagerView(service);
   return { service, view };
 }
 
-export function createSkillsManagerTuiSession(skills: ISkillSummary[] = sampleTestSkills()) {
+export function createSkillsManagerTuiSession(skills: ISkillSummary[] = sampleTestSkills()): {
+  service: MinimalSkillsServiceMock;
+  view: SkillsManagerView;
+  session: ReturnType<SkillsManagerView["createTuiSession"]>;
+} {
   const { service, view } = createSkillsManagerViewWithMock(skills);
   const session = view.createTuiSession(false);
   return { service, view, session };
@@ -953,7 +999,7 @@ export function testSkillsSessionRender(
     skills?: ISkillSummary[];
     useColors?: boolean;
   } = {},
-) {
+): void {
   Deno.test(name, async () => {
     const { session } = createSkillsManagerTuiSession(options.skills);
     await session.initialize();
@@ -1036,13 +1082,19 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
   ];
 }
 
-export function createMemoryViewSession(proposals: IMemoryUpdateProposal[] = []) {
+export function createMemoryViewSession(proposals: IMemoryUpdateProposal[] = []): {
+  service: MinimalMemoryServiceMock;
+  session: MemoryViewTuiSession;
+} {
   const service = new MinimalMemoryServiceMock(proposals);
   const session = new MemoryViewTuiSession(service);
   return { service, session };
 }
 
-export async function createInitializedMemoryViewSession(proposals: IMemoryUpdateProposal[] = []) {
+export async function createInitializedMemoryViewSession(proposals: IMemoryUpdateProposal[] = []): Promise<{
+  service: MinimalMemoryServiceMock;
+  session: MemoryViewTuiSession;
+}> {
   const { service, session } = createMemoryViewSession(proposals);
   await session.initialize();
   return { service, session };

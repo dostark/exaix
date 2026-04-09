@@ -5,7 +5,7 @@
  * with local inference endpoints and stable request/response handling.
  */
 
-import { assertEquals, assertRejects, assertThrows } from "https://deno.land/std@0.203.0/testing/asserts.ts";
+import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { PlanSchema } from "../../src/shared/schemas/plan_schema.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 import { getProviderForModel } from "./helpers/test_config.ts";

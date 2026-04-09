@@ -25,13 +25,13 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import {
-  type IGateConfig as _GateConfig,
-  type IGateResult as _IGateResult,
+import type {
+  IGateConfig as _GateConfig,
+  IGateResult as _IGateResult,
 } from "../../src/shared/interfaces/i_gate_evaluator.ts";
-import { type EvaluationCriterion, type EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
-import { type ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";
+import type { ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
 import {
   type IRequestAnalysis,
@@ -269,7 +269,7 @@ Deno.test(
     ]);
     // Minimal confidence scorer mock for test
     const scorer = {
-      assess: (_req: string, _res: string, _ctx: any, critique: ICritique) =>
+      assess: (_req: string, _res: string, _ctx: unknown, critique: ICritique) =>
         Promise.resolve({
           confidence: { score: critique.confidence },
         }),

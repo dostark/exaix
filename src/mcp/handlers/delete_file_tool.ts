@@ -72,7 +72,7 @@ export class DeleteFileTool extends ToolHandler {
     };
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "delete_file",
       description: "Delete a single file from a portal. " +

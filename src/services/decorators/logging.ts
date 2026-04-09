@@ -5,10 +5,16 @@
  * @architectural-layer Services
  * * @related-files [src/services/core/event_logger.ts]
  */
-import { EventLogger } from "../core/event_logger.ts";
+import type { EventLogger } from "../core/event_logger.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
 import { toSafeJson } from "../../shared/types/json.ts";
-export function LogMethod(logger: EventLogger, action?: string) {
+
+type AsyncMethodDecorator = <This, Args extends unknown[], Return>(
+  target: (this: This, ...args: Args) => Promise<Return>,
+  context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,
+) => ((this: This, ...args: Args) => Promise<Return>) | void;
+
+export function LogMethod(logger: EventLogger, action?: string): AsyncMethodDecorator {
   return function <This, Args extends unknown[], Return>(
     target: (this: This, ...args: Args) => Promise<Return>,
     context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,

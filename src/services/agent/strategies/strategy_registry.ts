@@ -6,7 +6,7 @@
  * @related-files [src/services/agent/agent_executor.ts, src/services/agent/strategies/execution_strategy.ts]
  */
 
-import { IExecutionStrategy } from "./execution_strategy.ts";
+import type { IExecutionStrategy } from "./execution_strategy.ts";
 
 /**
  * Registry for agent execution strategies

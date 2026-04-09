@@ -5,20 +5,24 @@
  * @architectural-layer AI
  * * @related-files [src/flows/dynamic_step_executor.ts, src/ai/providers.ts]
  */
-import { ILlmClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
-import { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
+import type { ILlmClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
+import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
 import { McpToolName, ReActActionType } from "../shared/enums.ts";
 import { ModelFactory } from "./providers.ts";
-import { Config } from "../shared/schemas/config.ts";
+import type { Config } from "../shared/schemas/config.ts";
 import { z } from "zod";
-import { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "../shared/types/json.ts";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 const ReActResponseSchema = z.object({
   reasoning: z.string(),
   action: z.object({
     type: z.nativeEnum(ReActActionType),
     tool: z.nativeEnum(McpToolName).optional(),
-    args: z.record(z.string(), z.any()).optional(),
+    args: z.record(z.string(), z.unknown()).optional(),
     output: z.string().optional(),
   }),
 });
@@ -132,9 +136,9 @@ export class LlmClient implements ILlmClient {
       }
 
       throw new Error("Invalid reasoning response format: missing tool name for tool_call");
-    } catch (error: any) {
+    } catch (error: unknown) {
       // For now, fail loudly on schema validation
-      throw new Error(`Failed to parse LLM response: ${error.message}`);
+      throw new Error(`Failed to parse LLM response: ${getErrorMessage(error)}`);
     }
   }
 }

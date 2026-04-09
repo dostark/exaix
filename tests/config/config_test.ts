@@ -40,6 +40,27 @@ Deno.test("ConfigSchema rejects invalid log_level", () => {
   assertEquals(result.success, false);
 });
 
+Deno.test("ConfigSchema accepts budget_enforcement with cloud = false", () => {
+  const configWithBudgetEnforcement = {
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+    budget_enforcement: {
+      cloud: false,
+      local: true,
+    },
+  };
+
+  const result = ConfigSchema.safeParse(configWithBudgetEnforcement);
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.budget_enforcement?.cloud, false);
+    assertEquals(result.data.budget_enforcement?.local, true);
+  }
+});
+
 Deno.test("ConfigSchema applies defaults for missing agents section", () => {
   const configWithoutAgents = {
     system: {

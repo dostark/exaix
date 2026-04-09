@@ -5,8 +5,8 @@
  * @architectural-layer Journal
  * * @related-files [src/flows/dynamic_step_executor.ts, src/flows/flow_runner.ts]
  */
-import { IActivityJournal, JournalEntry } from "../flows/dynamic_step_executor.ts";
-import { IFlowEventLogger } from "../flows/flow_runner.ts";
+import type { IActivityJournal, JournalEntry } from "../flows/dynamic_step_executor.ts";
+import type { IFlowEventLogger } from "../flows/flow_runner.ts";
 
 export class ActivityJournal implements IActivityJournal {
   constructor(private readonly eventLogger: IFlowEventLogger) {}

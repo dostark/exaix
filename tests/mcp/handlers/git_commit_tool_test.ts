@@ -134,9 +134,12 @@ Deno.test("GitCommitTool: getToolDefinition returns correct definition", () => {
   const context = createStubContext();
   const handler = new GitCommitTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, "git_commit");
   assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(def.inputSchema.required.join(), "portal");
-  assertStringIncludes(def.inputSchema.required.join(), "message");
+  assertStringIncludes(required.join(), "portal");
+  assertStringIncludes(required.join(), "message");
 });

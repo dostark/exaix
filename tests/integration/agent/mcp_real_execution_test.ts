@@ -11,9 +11,11 @@ import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
+import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { SecurityMode } from "../../../src/shared/enums.ts";
+import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
 import { ToolRegistryTestHelper } from "../../helpers/tool_registry_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
@@ -65,29 +67,27 @@ Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => 
   }).output();
 
   // Update config with portal
-  const portalConfig = {
+  const registryState = { config: helper.config };
+  const portalConfig: IPortalPermissions = {
     alias: "test",
     target_path: portalPath,
     default_branch: TEST_DEFAULT_BRANCH,
     identities_allowed: ["*"],
     operations: [],
   };
-  helper.registry["config"].portals = [portalConfig as any];
+  registryState.config.portals = [portalConfig];
 
   const processManager = new ProcessManager();
-  const pathResolver = new PathResolver(helper.registry["config"]);
-  const permissions = new PortalPermissionsService([portalConfig as any]);
+  const pathResolver = new PathResolver(registryState.config);
+  const permissions = new PortalPermissionsService([portalConfig]);
 
   const strategyRegistry = new StrategyRegistry();
+  const logger = new EventLogger({ db: helper.db, defaultActor: "test" });
 
   const executor = new AgentExecutor(
-    helper.registry["config"],
+    registryState.config,
     helper.db,
-    {
-      info: (action: string, target: string, payload: any) => console.log(`[INFO] ${action} (${target}):`, payload),
-      error: (action: string, target: string, payload: any) => console.error(`[ERROR] ${action} (${target}):`, payload),
-      log: (event: any) => console.log(`[LOG]`, event),
-    } as any,
+    logger,
     pathResolver,
     permissions,
     undefined, // provider

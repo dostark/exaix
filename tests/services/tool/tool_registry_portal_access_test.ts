@@ -5,10 +5,10 @@
  * ensuring tools can safely access and manipulate files within approved portal targets.
  */
 
-import { assertEquals } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { join } from "https://deno.land/std@0.201.0/path/mod.ts";
+import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
-import { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { ToolName } from "../../../src/shared/enums.ts";
 

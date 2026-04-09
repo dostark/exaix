@@ -16,6 +16,7 @@ import type { JSONValue } from "../../src/shared/types/json.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { initTestDbService } from "../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
+import type { ActivityRecord } from "../../src/services/core/db.ts";
 
 // Test helper to cleanup
 async function cleanup(tempDir: string) {
@@ -172,13 +173,11 @@ Create a simple hello world function in src/utils.ts
     // Step 5: Verify IActivity Journal events
     await dbService.waitForFlush(); // Flush batched log entries
 
-    const events = dbService.instance
-      .prepare("SELECT * FROM activity WHERE trace_id = ? ORDER BY timestamp")
-      .all(traceId);
+    const events = dbService.getActivitiesByTrace(traceId);
 
     assert(events.length > 0, "Should have IActivity Journal events");
 
-    const reviewCreatedEvent = events.find((e: any) => e.action_type === "review.created");
+    const reviewCreatedEvent = events.find((e: ActivityRecord) => e.action_type === "review.created");
     assertExists(reviewCreatedEvent, "Should have review.created event");
 
     console.log("✅ Happy Path (Sandboxed) - All checks passed");
@@ -320,9 +319,7 @@ this is not valid yaml: [unclosed bracket
 
     await dbService.waitForFlush(); // Flush batched log entries
 
-    const events = dbService.instance
-      .prepare("SELECT * FROM activity WHERE action_type = ?")
-      .all("plan.invalid_frontmatter");
+    const events = dbService.getActivitiesByActionType("plan.invalid_frontmatter");
 
     assertEquals(events.length, 1, "Should log invalid frontmatter event");
 
@@ -834,13 +831,13 @@ Add usage examples to README
     // Verify step execution sequence
     const stepEvents = dbService.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'plan.step_%' ORDER BY timestamp")
-      .all(traceId);
+      .all(traceId) as ActivityRecord[];
 
     assertEquals(stepEvents.length, 6, "Should have 6 events (3 starts + 3 completions)");
 
     // Verify sequence
-    const startEvents = stepEvents.filter((e: any) => e.action_type === "plan.step_started");
-    const completeEvents = stepEvents.filter((e: any) => e.action_type === "plan.step_completed");
+    const startEvents = stepEvents.filter((e) => e.action_type === "plan.step_started");
+    const completeEvents = stepEvents.filter((e) => e.action_type === "plan.step_completed");
 
     assertEquals(startEvents.length, 3, "Should have 3 step starts");
     assertEquals(completeEvents.length, 3, "Should have 3 step completions");

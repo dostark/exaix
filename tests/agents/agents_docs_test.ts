@@ -5,7 +5,7 @@
  * implementations, ensuring that capabilities and triggers are accurately described.
  */
 
-import { assert } from "https://deno.land/std@0.203.0/assert/mod.ts";
+import { assert } from "@std/assert";
 import { validateFile } from "../../scripts/validate_agents_docs.ts";
 
 Deno.test("agent docs validate", async () => {

@@ -13,20 +13,20 @@ import {
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
-  MemoryType as _MemoryType,
+  type MemoryType as _MemoryType,
 } from "../../../src/shared/enums.ts";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { KEYS } from "../../../src/tui/helpers/keyboard.ts";
-import {
-  type IExecutionMemory,
-  type IGlobalMemory,
-  type IMemorySearchResult,
-  type IMemoryUpdateProposal,
-  type IProjectMemory,
+import type {
+  IExecutionMemory,
+  IGlobalMemory,
+  IMemorySearchResult,
+  IMemoryUpdateProposal,
+  IProjectMemory,
 } from "../../../src/shared/schemas/memory_bank.ts";
-import { type IMemoryService } from "../../../src/tui/memory_view/types.ts";
+import type { IMemoryService } from "../../../src/tui/memory_view/types.ts";
 import { MemoryViewTuiSession } from "../../../src/tui/memory_view.ts";
-import { DialogBase } from "../../../src/tui/helpers/dialog_base.ts";
+import type { DialogBase } from "../../../src/tui/helpers/dialog_base.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../../src/shared/constants.ts";
 // ===== Interfaces =====
 
@@ -306,7 +306,7 @@ export function testSessionRender(
   options: IMemoryViewServiceOptions,
   keys: string[],
   check?: (session: MemoryViewTuiSession) => void | Promise<void>,
-) {
+): void {
   Deno.test(name, async () => {
     const { session } = await setupSession(options);
     for (const key of keys) {
@@ -328,7 +328,7 @@ export function testDialogInteraction<T extends DialogBase>(
   name: string,
   setup: () => { dialog: T; keys: string[] },
   verify: (dialog: T, rendered: string) => void,
-) {
+): void {
   Deno.test(name, () => {
     const { dialog, keys } = setup();
 

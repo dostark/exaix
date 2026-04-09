@@ -76,7 +76,7 @@ export class WriteFileTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.WRITE_FILE,
       description: "Write a file to a portal (validated and logged)",

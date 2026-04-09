@@ -7,7 +7,7 @@
  */
 
 import { CircuitState } from "../shared/enums.ts";
-import { IModelOptions, IModelProvider } from "./types.ts";
+import type { IModelOptions, IModelProvider } from "./types.ts";
 
 export interface ICircuitBreakerOptions {
   /** Number of consecutive failures before opening circuit */

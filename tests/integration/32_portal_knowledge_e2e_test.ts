@@ -14,20 +14,20 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { MockStrategy, PortalAnalysisMode } from "../../src/shared/enums.ts";
+import { MockStrategy, PortalAnalysisMode, PortalOperation } from "../../src/shared/enums.ts";
 import { PortalKnowledgeService } from "../../src/services/portal_knowledge/portal_knowledge_service.ts";
 import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symbol_extractor.ts";
 import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";
 import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
-import { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
 import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
 import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import { initTestDbService } from "../helpers/db.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 // ---------------------------------------------------------------------------
@@ -303,16 +303,22 @@ Deno.test(
 
       const configWithPortal = {
         ...env.config,
-        portals: [{ alias: portalAlias, target_path: portalTargetPath }],
+        portals: [{
+          alias: portalAlias,
+          target_path: portalTargetPath,
+          default_branch: "main",
+          identities_allowed: ["*"],
+          operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
+        }],
       };
 
       const provider = new MockLLMProvider(MockStrategy.RECORDED, { recordings: [] });
       const context: IApplicationContext = {
-        config: { get: () => configWithPortal, getChecksum: () => "test" } as any,
+        config: createStubConfig(configWithPortal),
         db: env.db,
         provider,
-        git: {} as any,
-        display: new EventLogger({ db: env.db, defaultActor: "test" }),
+        git: createStubGit(),
+        display: createStubDisplay(env.db),
         portalKnowledge: spyService,
       };
 

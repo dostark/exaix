@@ -15,7 +15,7 @@
 
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import type {
   IBranchOptions,
   ICommitOptions,
@@ -50,7 +50,7 @@ export type {
   IWorktreeInfo,
 } from "../../shared/interfaces/i_git_service.ts";
 
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IGitServiceConfig {
   config: Config;
@@ -801,7 +801,7 @@ export class GitService implements IGitService {
   /**
    * Log activity to database
    */
-  private logActivity(actionType: string, payload: Record<string, JSONValue>) {
+  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
     if (!this.db) return;
 
     try {

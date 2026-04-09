@@ -4,8 +4,8 @@
  * @description Specifically validates .copilot/cross-reference.md relative links.
  */
 
-import { join, resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
-import { existsSync } from "https://deno.land/std@0.224.0/fs/mod.ts";
+import { existsSync } from "@std/fs";
+import { join, resolve } from "@std/path";
 
 const TARGET_FILE = ".copilot/cross-reference.md";
 

@@ -34,7 +34,15 @@ export async function initPortalTest(options?: {
   targetFiles?: Record<string, string>;
   portalKnowledge?: IPortalKnowledgeService;
   portalKnowledgeConfig?: IPortalKnowledgeConfig;
-}) {
+}): Promise<{
+  tempRoot: string;
+  targetDir: string;
+  config: ReturnType<typeof createMockConfig>;
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  commands: PortalCommands;
+  context: ICliApplicationContext;
+  cleanup: () => Promise<void>;
+}> {
   const tempRoot = await Deno.makeTempDir({ prefix: "portal-test-" });
   const targetDir = options?.createTarget !== false ? await Deno.makeTempDir({ prefix: "portal-target-" }) : "";
 
@@ -106,7 +114,7 @@ export async function createTestPortal(
   commands: PortalCommands,
   targetDir: string,
   alias: string,
-) {
+): Promise<void> {
   await commands.add(targetDir, alias);
   // Wait for async operations to complete
   await new Promise((resolve) => setTimeout(resolve, 50));
@@ -156,7 +164,14 @@ export function getPortalCardPath(tempRoot: string, alias: string): string {
  * Creates a unified CLI test context for tests.
  * Delegates to `initTestDbService()` and optionally creates extra directories.
  */
-export async function createCliTestContext(options?: { createDirs?: string[] }) {
+export async function createCliTestContext(options?: { createDirs?: string[] }): Promise<{
+  tempDir: string;
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  config: Awaited<ReturnType<typeof initTestDbService>>["config"];
+  configService: ConfigService;
+  context: ICliApplicationContext;
+  cleanup: () => Promise<void>;
+}> {
   // Set test mode for CLI operations to suppress warnings
   Deno.env.set("EXA_TEST_CLI_MODE", "1");
 

@@ -9,13 +9,13 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { type IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import { type IRequestShowResult } from "../../shared/types/request.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestShowResult } from "../../shared/types/request.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
-import { RequestKind } from "../../shared/enums.ts";
-import { getWorkspaceRequestsDir, REQUEST_CORE_FIELDS } from "./request_paths.ts";
+import { RequestKind, RequestPriority } from "../../shared/enums.ts";
+import { getWorkspaceRequestsDir } from "./request_paths.ts";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "../../shared/constants.ts";
 
 export class RequestShowHandler extends BaseCommand {
@@ -68,36 +68,61 @@ export class RequestShowHandler extends BaseCommand {
     matchingFrontmatter: Record<string, string | boolean | number>,
     planTokens: Record<string, string> | null,
   ): IRequestShowResult["metadata"] {
-    const metadata: any = {
+    const identityValue = String(matchingFrontmatter.identity || matchingFrontmatter.agent || DEFAULT_IDENTITY_ID);
+    const metadata: IRequestShowResult["metadata"] & { agent: string } = {
       path: matchingFile,
       filename: matchingFile.split("/").pop() || "",
       status: coerceRequestStatus(String(matchingFrontmatter.status || "")),
+      trace_id: String(matchingFrontmatter.trace_id || ""),
+      priority: String(
+        matchingFrontmatter.priority || RequestPriority.NORMAL,
+      ) as IRequestShowResult["metadata"]["priority"],
+      identity: identityValue,
+      agent: identityValue,
+      created: String(matchingFrontmatter.created || ""),
+      created_by: String(matchingFrontmatter.created_by || "unknown"),
+      source: String(matchingFrontmatter.source || "unknown") as IRequestShowResult["metadata"]["source"],
     };
 
-    for (const field of REQUEST_CORE_FIELDS) {
-      metadata[field.key] = String(matchingFrontmatter[field.key] || field.fallback);
-    }
+    type OptionalMetadataStringKey =
+      | "portal"
+      | "target_branch"
+      | "model"
+      | "flow"
+      | "error"
+      | "rejected_path"
+      | "subject";
 
-    // Ensure reciprocal compatibility between identity and agent
-    const identityValue = String(matchingFrontmatter.identity || matchingFrontmatter.agent || DEFAULT_IDENTITY_ID);
-    metadata.identity = identityValue;
-    metadata.agent = identityValue;
-
-    const optionalKeys = [
-      PORTAL_LABEL,
-      "target_branch",
-      "model",
-      RequestKind.FLOW,
-      PlanStatus.ERROR,
-      "rejected_path",
-      "subject",
+    const optionalFields: Array<{
+      sourceKey: string;
+      targetKey: OptionalMetadataStringKey;
+    }> = [
+      { sourceKey: PORTAL_LABEL, targetKey: "portal" },
+      { sourceKey: "target_branch", targetKey: "target_branch" },
+      { sourceKey: "model", targetKey: "model" },
+      { sourceKey: RequestKind.FLOW, targetKey: "flow" },
+      { sourceKey: PlanStatus.ERROR, targetKey: "error" },
+      { sourceKey: "rejected_path", targetKey: "rejected_path" },
+      { sourceKey: "subject", targetKey: "subject" },
     ];
-    for (const key of optionalKeys) {
-      if (matchingFrontmatter[key]) metadata[key] = String(matchingFrontmatter[key]);
+
+    for (const { sourceKey, targetKey } of optionalFields) {
+      const value = matchingFrontmatter[sourceKey];
+      if (value) {
+        (metadata as IRequestShowResult["metadata"] & Record<OptionalMetadataStringKey, string>)[targetKey] = String(
+          value,
+        );
+      }
     }
 
-    if (matchingFrontmatter.skills) metadata.skills = JSON.parse(String(matchingFrontmatter.skills));
-    if (planTokens) Object.assign(metadata, planTokens);
+    const skills = matchingFrontmatter.skills;
+    if (skills) {
+      metadata.skills = JSON.parse(String(skills));
+    }
+
+    if (planTokens) {
+      Object.assign(metadata, planTokens);
+    }
 
     return metadata;
   }

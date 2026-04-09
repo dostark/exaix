@@ -6,8 +6,8 @@
  * * @related-files [src/cli/commands/daemon_commands.ts, src/shared/interfaces/i_daemon_service.ts]
  */
 
-import { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
-import { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
+import type { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
+import type { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
 import { DaemonStatus } from "../../shared/enums.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";

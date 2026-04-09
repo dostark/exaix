@@ -13,8 +13,8 @@ import {
   TUI_LAYOUT_VALUE_WIDTH,
   TUI_MSG_PRESS_QUIT,
 } from "../helpers/constants.ts";
-import { IRequest } from "../../shared/types/request.ts";
-import { IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
+import type { IRequest } from "../../shared/types/request.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
 
 /**
  * Formatter for Request Manager View

@@ -22,9 +22,9 @@
  *   numeric 0, 1, -1
  */
 
-import * as ts from "https://esm.sh/typescript@5.3.3";
-import { walk } from "https://deno.land/std@0.200.0/fs/mod.ts";
-import { dirname, fromFileUrl, join, relative } from "https://deno.land/std@0.221.0/path/mod.ts";
+import ts from "typescript";
+import { walk } from "@std/fs";
+import { dirname, fromFileUrl, join, relative } from "@std/path";
 
 // ── CLI flags ────────────────────────────────────────────────────────────────
 

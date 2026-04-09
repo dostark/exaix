@@ -8,11 +8,11 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "../../src/shared/enums.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import { type IGateConfig as GateConfig } from "../../src/shared/interfaces/i_gate_evaluator.ts";
-import { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
-import { IStepResult } from "../../src/flows/flow_runner.ts";
+import type { IGateConfig } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import type { IStepResult } from "../../src/flows/flow_runner.ts";
 
-const DEFAULT_CONFIG: GateConfig = {
+const DEFAULT_CONFIG: IGateConfig = {
   identity: "judge-agent",
   criteria: ["CODE_CORRECTNESS"],
   threshold: 0.8,
@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: GateConfig = {
   includeRequestCriteria: false,
 };
 
-function setupEvaluator(score: number, configOverrides: Partial<GateConfig> = {}) {
+function setupEvaluator(score: number, configOverrides: Partial<IGateConfig> = {}) {
   const mockJudge = new MockJudgeInvoker();
   mockJudge.setDefaultScore(score);
   const evaluator = new GateEvaluator(mockJudge);
@@ -173,7 +173,7 @@ Deno.test("GateEvaluator: fails if required criteria fail even when overallScore
   };
 
   const evaluator = new GateEvaluator(judgeInvoker);
-  const config: GateConfig = {
+  const config: IGateConfig = {
     identity: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,
@@ -198,7 +198,7 @@ Deno.test("GateEvaluator: supports criteria objects in config.criteria", async (
     category: EvaluationCategory.QUALITY,
   };
 
-  const config: GateConfig = {
+  const config: IGateConfig = {
     identity: "judge-agent",
     criteria: [customCriterion],
     threshold: 0.8,
@@ -225,7 +225,7 @@ Deno.test("GateEvaluator: handles judge errors and returns halted by default", a
   };
 
   const evaluator = new GateEvaluator(judgeInvoker);
-  const config: GateConfig = {
+  const config: IGateConfig = {
     identity: "judge-agent",
     criteria: ["CODE_CORRECTNESS"],
     threshold: 0.8,

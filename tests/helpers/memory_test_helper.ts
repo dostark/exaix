@@ -15,7 +15,7 @@ import { MemoryReferenceType } from "../../src/shared/enums.ts";
 export async function createTestProject(memoryBank: MemoryBankService, portal: string, opts: {
   overview?: string;
   patternName?: string;
-} = {}) {
+} = {}): Promise<void> {
   const builder = new ProjectMemoryBuilder(portal);
 
   if (opts.overview) {
@@ -57,7 +57,7 @@ export async function createTestExecution(
     identity?: string;
     summary?: string;
   } = {},
-) {
+): Promise<void> {
   const builder = new ExecutionMemoryBuilder(portal, traceId);
 
   builder.withIdentity(opts.identity || "test-agent");

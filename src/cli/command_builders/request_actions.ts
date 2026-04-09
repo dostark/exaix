@@ -8,12 +8,12 @@
 
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
-import { FlowInputSource, RequestPriority } from "../../shared/enums.ts";
-import { isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "../../shared/status/request_status.ts";
+import { FlowInputSource, type RequestPriority } from "../../shared/enums.ts";
+import { isRequestStatus, REQUEST_STATUS_VALUES, type RequestStatus } from "../../shared/status/request_status.ts";
 import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
 import { PRIORITY_ICONS } from "../cli.config.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IRequestActionContext {
@@ -82,7 +82,7 @@ export async function handleRequestAnalyze(
 
       if (analysis.ambiguities.length > 0) {
         display.info("request.ambiguities", id, {
-          items: analysis.ambiguities.map((a: any) => `[${a.impact}] ${a.description}`),
+          items: analysis.ambiguities.map((ambiguity) => `[${ambiguity.impact}] ${ambiguity.description}`),
         });
       }
     }

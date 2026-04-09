@@ -5,8 +5,8 @@
  * consistent model names and base URLs for Mock/Live backend testing.
  */
 
-import { AiConfig, AiConfigSchema } from "../../../src/shared/schemas/ai_config.ts";
-import { Config } from "../../../src/shared/schemas/config.ts";
+import { type AiConfig, AiConfigSchema } from "../../../src/shared/schemas/ai_config.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import {
   LogLevel,
@@ -17,7 +17,7 @@ import {
   SqliteJournalMode,
 } from "../../../src/shared/enums.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import { ProviderFactory } from "../../../src/ai/provider_factory.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
 

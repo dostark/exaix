@@ -36,7 +36,7 @@ import {
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
 import { initializeRegistry } from "../../src/ai/provider_factory.ts";
 import { PricingTier, ProviderCostTier, ProviderType } from "../../src/shared/enums.ts";
-import { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
+import type { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
 import {
   TEST_AI_INVALID_URL,
   TEST_CUSTOM_PROVIDER_CAPABILITY,

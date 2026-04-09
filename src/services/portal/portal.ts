@@ -8,16 +8,24 @@
 
 import { join, resolve } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { Config } from "../../shared/schemas/config.ts";
-import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus, VerificationStatus } from "../../shared/enums.ts";
-import { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
+import type { Config } from "../../shared/schemas/config.ts";
+import {
+  type PortalAnalysisMode,
+  type PortalExecutionStrategy,
+  PortalStatus,
+  VerificationStatus,
+} from "../../shared/enums.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
 import { DEFAULT_PROJECTS_MEMORY_PATH, GIT_CMD_BRANCH, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
 import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
 import { loadKnowledge, saveKnowledge } from "../portal_knowledge/knowledge_persistence.ts";
-import { IPortalKnowledgeConfig, IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
-import { IContextCardGeneratorService } from "../../shared/interfaces/i_context_card_generator_service.ts";
-import { IConfigService } from "../../shared/interfaces/i_config_service.ts";
-import { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type {
+  IPortalKnowledgeConfig,
+  IPortalKnowledgeService,
+} from "../../shared/interfaces/i_portal_knowledge_service.ts";
+import type { IContextCardGeneratorService } from "../../shared/interfaces/i_context_card_generator_service.ts";
+import type { IConfigService } from "../../shared/interfaces/i_config_service.ts";
+import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 
 export class PortalService {
   private portalsDir: string;

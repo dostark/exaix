@@ -1,8 +1,8 @@
 // Simple validation script for .copilot/ docs
 // Usage: deno run --allow-read scripts/validate_agents_docs.ts
 
-import { parse } from "https://deno.land/std@0.203.0/yaml/mod.ts";
-import { walk } from "https://deno.land/std@0.203.0/fs/mod.ts";
+import { walk } from "@std/fs";
+import { parse } from "@std/yaml";
 import type { JSONObject } from "../src/shared/types/json.ts";
 
 const AGENTS_DIR = ".copilot";

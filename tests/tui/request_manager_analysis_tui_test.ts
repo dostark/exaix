@@ -4,13 +4,13 @@
  * @description TDD test for Phase 45 Step 13: TUI Analysis Display.
  */
 
-import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.220.0/assert/mod.ts";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MinimalRequestServiceMock, RequestManagerTuiSession } from "../../src/tui/request_manager_view.ts";
 import { RequestFormatter } from "../../src/tui/request_manager/formatters.ts";
 import {
   AmbiguityImpact,
   AnalysisMode,
-  IRequestAnalysis,
+  type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestTaskType,
 } from "../../src/shared/schemas/request_analysis.ts";

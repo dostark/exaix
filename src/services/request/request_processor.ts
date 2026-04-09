@@ -9,7 +9,7 @@
  */
 
 import { basename, dirname, join } from "@std/path";
-import { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "../../ai/types.ts";
 import { DatabaseService } from "../core/db.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import {
@@ -53,24 +53,27 @@ import { CircuitBreaker, CircuitBreakerProvider } from "../../ai/circuit_breaker
 import { LogMethod } from "../decorators/logging.ts";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
-import { IRequestFrontmatter, ParsedRequestFile } from "../request_processing/types.ts";
+import type { IRequestFrontmatter, ParsedRequestFile } from "../request_processing/types.ts";
 import { OutputValidator } from "../tool/output_validator.ts";
 import type { LogMetadata } from "../../shared/types/json.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import { IServiceContext } from "../common/types.ts";
+import type { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
-import { IRequestAnalyzerConfig, IRequestAnalyzerService } from "../../shared/interfaces/i_request_analyzer_service.ts";
+import type {
+  IRequestAnalyzerConfig,
+  IRequestAnalyzerService,
+} from "../../shared/interfaces/i_request_analyzer_service.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "../../shared/enums.ts";
 
-import { AnalysisMode } from "../../shared/types/request.ts";
+import type { AnalysisMode } from "../../shared/types/request.ts";
 import type { IRequestQualityGateService } from "../../shared/interfaces/i_request_quality_gate_service.ts";
 import { buildQualityGateConfig, RequestQualityGate } from "../quality_gate/request_quality_gate.ts";
 import { RequestQualityRecommendation } from "../../shared/schemas/request_quality_assessment.ts";
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
 import { ClarificationSessionStatus } from "../../shared/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "../../shared/schemas/request_specification.ts";
-import { type EnhancedRequest, SessionMemoryService } from "../memory/session_memory.ts";
+import type { EnhancedRequest, SessionMemoryService } from "../memory/session_memory.ts";
 
 export interface IRequestProcessingContext extends IServiceContext {
   filePath: string;
@@ -85,7 +88,7 @@ export interface IRequestProcessingContext extends IServiceContext {
   memoryContext?: EnhancedRequest;
 }
 
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IRequestProcessorConfig {
   workspacePath: string;
@@ -101,6 +104,7 @@ export interface IRequestProcessorConfig {
   portalKnowledgeService?: IPortalKnowledgeService;
   testQualityGate?: IRequestQualityGateService;
   sessionMemory?: SessionMemoryService;
+  testPipelineFactory?: () => MiddlewarePipeline<IRequestProcessingContext>;
 }
 
 // ============================================================================
@@ -259,7 +263,7 @@ export class RequestProcessor {
     const assessedBody = qgOutcome.enrichedBody ?? body;
     const clarificationSpec = qgOutcome.specification;
 
-    const pipeline = this.createRequestProcessingPipeline();
+    const pipeline = this.processorConfig.testPipelineFactory?.() ?? this.createRequestProcessingPipeline();
 
     // Enhance request with session memory context before analysis
     const memoryContext = this.sessionMemory
@@ -1020,7 +1024,7 @@ Raw Details: ${args.rawDetails}
     dir: string,
     currentDepth: number,
     context: { files: string[]; MAX_FILES: number; MAX_DEPTH: number },
-  ) {
+  ): Promise<void> {
     if (currentDepth > context.MAX_DEPTH || context.files.length >= context.MAX_FILES) return;
 
     try {

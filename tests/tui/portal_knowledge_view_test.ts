@@ -108,7 +108,7 @@ function makeMockService(knowledge: IPortalKnowledge | null = null): IPortalServ
       callCount++;
       return Promise.resolve(knowledge);
     },
-    analyze: (_alias: string, _options?: any) => Promise.resolve("Mock analysis"),
+    analyze: (_alias: string, _options?: Parameters<IPortalService["analyze"]>[1]) => Promise.resolve("Mock analysis"),
   };
 }
 

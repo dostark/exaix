@@ -14,6 +14,7 @@ import { ReviewRegistry } from "../../../src/services/artifact/review_registry.t
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
+import { PortalOperation } from "../../../src/shared/enums.ts";
 
 Deno.test("[regression] ExecutionLoop: targets portal directory and creates review", async () => {
   const rootDir = await Deno.makeTempDir({ prefix: "exec-portal-reg-" });
@@ -57,7 +58,7 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
       target_path: portalDir,
       default_branch: "master",
       identities_allowed: ["*"],
-      operations: ["read", "write", "git"] as any, // Cast to any to avoid enum import for now if it's too much work, wait! Code style forbids any!
+      operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
     const activeDir = join(rootDir, config.paths.workspace, "Active");

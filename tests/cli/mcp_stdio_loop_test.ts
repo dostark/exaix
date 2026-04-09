@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { runMcpStdioLoop } from "../../src/cli/commands/mcp_commands.ts";
+import { type IMcpStdioServer, runMcpStdioLoop } from "../../src/cli/commands/mcp_commands.ts";
 
 function streamFromText(text: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -22,9 +22,9 @@ Deno.test("runMcpStdioLoop: writes JSON responses and ignores blank lines", asyn
   const outputs: string[] = [];
   const decoder = new TextDecoder();
 
-  const server = {
+  const server: IMcpStdioServer = {
     start: () => {},
-    handleRequest: (req: any) => Promise.resolve({ ok: true, echo: req.id }),
+    handleRequest: (req: unknown) => Promise.resolve({ ok: true, echo: (req as { id?: number }).id }),
   };
 
   await runMcpStdioLoop(server, {
@@ -43,9 +43,9 @@ Deno.test("runMcpStdioLoop: writes JSON responses and ignores blank lines", asyn
 Deno.test("runMcpStdioLoop: reports parse errors via onError", async () => {
   const errors: string[] = [];
 
-  const server = {
+  const server: IMcpStdioServer = {
     start: () => {},
-    handleRequest: (_req: any) => Promise.resolve(null),
+    handleRequest: (_req: unknown) => Promise.resolve(null),
   };
 
   await runMcpStdioLoop(server, {

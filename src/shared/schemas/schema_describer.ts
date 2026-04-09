@@ -6,7 +6,7 @@
  * * @related-files [src/services/request_processor.ts]
  */
 
-import { ZodType, ZodTypeDef } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
 import type { JSONObject } from "../types/json.ts";
 
 /**

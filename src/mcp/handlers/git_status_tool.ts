@@ -6,7 +6,7 @@
  * * @related-files [src/mcp/tool_handler.ts, src/services/core/git_service.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
-import { type MCPToolResponse } from "../../shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "../../shared/schemas/mcp.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import { PortalOperation } from "../../shared/enums.ts";
 import { GitStatusToolArgsSchema } from "../../shared/schemas/mcp.ts";
@@ -68,7 +68,7 @@ export class GitStatusTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_status",
       description: "Query git repository status in a portal",

@@ -7,9 +7,9 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 
-import { CRITERIA, EvaluationResult as _EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import { CRITERIA, type EvaluationResult as _EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
-import { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { createJudgeEvaluator, JudgeEvaluator } from "../../src/flows/judge_evaluator.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 

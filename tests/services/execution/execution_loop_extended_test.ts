@@ -8,6 +8,9 @@ import { join } from "@std/path";
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import type { ActivityRecord, DatabaseService } from "../../../src/services/core/db.ts";
+import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { Config } from "../../../src/shared/schemas/config.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";
@@ -19,15 +22,16 @@ async function runExecutionTest(
   prefix: string,
   fn: (ctx: {
     tempDir: string;
-    config: any;
-    db: any;
+    config: Config;
+    db?: IDatabaseService;
     loop: ExecutionLoop;
     activeDir: string;
   }) => Promise<void>,
   options: { noDb?: boolean; createActiveDir?: boolean; identityId?: string } = {},
 ) {
   const tempDir = await Deno.makeTempDir({ prefix: `exec-ext-${prefix}-` });
-  let db, cleanup;
+  let db: DatabaseService | undefined;
+  let cleanup: (() => Promise<void>) | undefined;
 
   if (!options.noDb) {
     const dbService = await initTestDbService();
@@ -228,6 +232,7 @@ Should skip this block.
 
 Deno.test("ExecutionLoop: logs action with null result", async () => {
   await runExecutionTest("null-result", async ({ activeDir, db, loop }) => {
+    assertExists(db);
     const planContent = `---
 trace_id: "test-null-result"
 request_id: null-result-test
@@ -418,7 +423,7 @@ path = "existing.txt"
     // Check for no_changes log
     await new Promise((resolve) => setTimeout(resolve, 150));
     const activities = db.getActivitiesByTrace("test-no-changes");
-    const _noChangesLog = activities.find((a: any) => a.action_type === "execution.no_changes");
+    const _noChangesLog = activities.find((a: ActivityRecord) => a.action_type === "execution.no_changes");
     // This may or may not be present depending on whether the tool created any output
   } finally {
     await cleanup();

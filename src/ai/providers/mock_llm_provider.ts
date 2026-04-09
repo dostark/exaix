@@ -12,7 +12,7 @@
  */
 
 import { MockStrategy, ProviderType } from "../../shared/enums.ts";
-import { IModelOptions, IModelProvider } from "../types.ts";
+import type { IModelOptions, IModelProvider } from "../types.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "../../shared/constants.ts";
 import { ToolName } from "../../shared/enums.ts";
 

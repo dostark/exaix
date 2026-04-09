@@ -10,7 +10,7 @@
 
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "../schemas/request_quality_assessment.ts";
 import type { IClarificationSession } from "../schemas/clarification_session.ts";
-import { QualityGateMode } from "../enums.ts";
+import type { QualityGateMode } from "../enums.ts";
 
 /**
  * Score thresholds that drive quality gate routing decisions.

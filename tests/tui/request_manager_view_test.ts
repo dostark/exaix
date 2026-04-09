@@ -5,7 +5,7 @@
  * of the request list, content preview, and interactive status management.
  */
 
-import { assert, assertEquals } from "https://deno.land/std@0.192.0/testing/asserts.ts";
+import { assert, assertEquals } from "@std/assert";
 import { RequestGroupingMode, RequestPriority, RequestSource } from "../../src/shared/enums.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { commonTestData } from "../helpers/test_utils.ts";
@@ -19,13 +19,13 @@ import {
   STATUS_ICONS,
 } from "../../src/tui/request_manager_view.ts";
 import {
-  createMockRequestService as _createMockRequestService,
+  type createMockRequestService as _createMockRequestService,
   createTuiWithRequests,
   createViewWithRequests,
   sampleBasicRequest,
   sampleGroupedRequests,
   sampleNewRequest,
-  sampleRequest as _sampleRequest,
+  type sampleRequest as _sampleRequest,
   sampleRequests as _sampleRequests,
   sampleTestRequests,
   sampleTwoRequests,

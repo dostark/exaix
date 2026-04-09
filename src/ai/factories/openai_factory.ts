@@ -6,7 +6,7 @@
  * * @related-files [src/ai/providers/openai_provider.ts]
  */
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
-import { IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { OpenAIProvider } from "../providers/openai_provider.ts";
 
 export class OpenAIProviderFactory extends AbstractKeyBasedProviderFactory {

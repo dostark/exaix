@@ -16,7 +16,7 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import { type IGateConfig as GateConfig, type IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { IGateConfig, IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
@@ -61,7 +61,7 @@ class CapturingGateEvaluator extends GateEvaluator {
   capturedAnalysis?: IRequestAnalysis;
 
   override async evaluate(
-    config: GateConfig,
+    config: IGateConfig,
     contentToEvaluate: string,
     context?: string,
     previousAttempts: number = 0,

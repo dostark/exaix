@@ -8,8 +8,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { AgentHealth, LogLevel } from "../../src/shared/enums.ts";
 import { AgentStatus } from "../../src/shared/status/agent_status.ts";
-import { type AgentHealthData, type AgentLogEntry, type IAgentStatusItem } from "../../src/shared/types/agent.ts";
-import { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../src/shared/types/agent.ts";
+import type { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
 import { AgentStatusView } from "../../src/tui/agent_status_view.ts";
 
 class EmptyAgentService implements IAgentService {

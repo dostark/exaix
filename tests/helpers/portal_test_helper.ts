@@ -176,14 +176,14 @@ export class PortalConfigTestHelper {
   /**
    * List all portals
    */
-  async listPortals() {
+  async listPortals(): Promise<Awaited<ReturnType<PortalCommands["list"]>>> {
     return await this.commands.list();
   }
 
   /**
    * Verify portal(s)
    */
-  async verifyPortal(alias?: string) {
+  async verifyPortal(alias?: string): Promise<Awaited<ReturnType<PortalCommands["verify"]>>> {
     return await this.commands.verify(alias);
   }
 

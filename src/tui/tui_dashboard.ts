@@ -14,8 +14,8 @@
  * - Layout persistence
  */
 
-import { MessageType, SplitDirection } from "../shared/enums.ts";
-import { type INotificationService } from "../shared/interfaces/i_notification_service.ts";
+import { MessageType, type SplitDirection } from "../shared/enums.ts";
+import type { INotificationService } from "../shared/interfaces/i_notification_service.ts";
 import {
   TUI_DASHBOARD_ICONS,
   TUI_DASHBOARD_VIEW_PICKER_WIDTH,
@@ -31,19 +31,19 @@ import {
   type IDashboardContext,
   renderNotificationPanel,
 } from "./tui_helpers/notifications.ts";
-import { IPortalService } from "../shared/interfaces/i_portal_service.ts";
-import { IPortalInfo } from "../shared/types/portal.ts";
-import { type IMemoryNotification } from "../shared/types/notification.ts";
+import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
+import type { IPortalInfo } from "../shared/types/portal.ts";
+import type { IMemoryNotification } from "../shared/types/notification.ts";
 import {
   resetToDefault as helperResetToDefault,
   restoreLayout as helperRestoreLayout,
   saveLayout as helperSaveLayout,
 } from "./tui_helpers/layout_persistence.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { IKeyBinding, KEYS } from "./helpers/keyboard.ts";
+import { type IKeyBinding, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
-import { type Config } from "../shared/schemas/config.ts";
+import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
+import type { Config } from "../shared/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";
 import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "./helpers/layout_rendering.ts";

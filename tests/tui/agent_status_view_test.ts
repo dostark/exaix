@@ -12,12 +12,12 @@ import {
   AGENT_STATUS_ICONS,
   AgentAction,
   AgentStatusView,
-  IAgentViewState,
+  type IAgentViewState,
   LOG_LEVEL_ICONS,
   MinimalAgentServiceMock,
 } from "../../src/tui/agent_status_view.ts";
-import { type AgentHealthData, type AgentLogEntry, type IAgentStatusItem } from "../../src/shared/types/agent.ts";
-import { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../src/shared/types/agent.ts";
+import type { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
 import { TEST_MODEL_OPENAI } from "../config/constants.ts";
 import { AgentStatus } from "../../src/shared/status/agent_status.ts";
 import { AgentHealth, CritiqueSeverity, LogLevel, TuiGroupBy } from "../../src/shared/enums.ts";

@@ -5,7 +5,7 @@
  * correct Onion-model execution order and graceful short-circuiting.
  */
 
-import { assertEquals } from "https://deno.land/std@0.200.0/testing/asserts.ts";
+import { assertEquals } from "@std/assert";
 import { MiddlewarePipeline } from "../../../src/services/middleware/pipeline.ts";
 
 Deno.test("MiddlewarePipeline executes middlewares in correct order with around-next behavior", async () => {

@@ -188,7 +188,7 @@ Deno.test("GracefulShutdown: registerSignalHandlers registers SIGINT/SIGTERM", (
     shutdown.registerSignalHandlers();
 
     assertSpyCalls(addSignalSpy, 2);
-    const signals = addSignalSpy.calls.map((call: any) => call.args[0]);
+    const signals = addSignalSpy.calls.map((call) => call.args[0] as Deno.Signal);
     assert(signals.includes(TEST_SIGNAL_SIGINT));
     assert(signals.includes(TEST_SIGNAL_SIGTERM));
     assertEquals(mockLogger.info.calls[0].args[0], LOG_MSG_SIGNAL_HANDLERS_REGISTERED);
@@ -208,7 +208,7 @@ Deno.test("GracefulShutdown: registerErrorHandlers registers error listeners", (
     shutdown.registerErrorHandlers();
 
     assertSpyCalls(addEventSpy, 2);
-    const events = addEventSpy.calls.map((call: any) => call.args[0]);
+    const events = addEventSpy.calls.map((call) => call.args[0] as string);
     assert(events.includes(TEST_EVENT_UNHANDLED_REJECTION));
     assert(events.includes(TEST_EVENT_ERROR));
     assertEquals(mockLogger.info.calls[0].args[0], LOG_MSG_ERROR_HANDLERS_REGISTERED);

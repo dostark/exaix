@@ -9,7 +9,7 @@
 import { TuiSessionBase } from "./tui_common.ts";
 import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
+import { ConfirmDialog, type InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import {
   DaemonAction,
@@ -24,7 +24,7 @@ import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } fr
 import { ANSI } from "./helpers/colors.ts";
 import { TUI_SECTION } from "./helpers/decorations.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
+import type { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
 
 // ===== View State =====
 

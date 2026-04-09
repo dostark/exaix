@@ -14,11 +14,11 @@
 import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "../../shared/constants.ts";
-import { IDatabaseService } from "../core/db.ts";
-import { MemoryBankService } from "../memory/memory_bank.ts";
+import type { IDatabaseService } from "../core/db.ts";
+import type { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
 import { ActivityActor, ExecutionStatus } from "../../shared/enums.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 // ============================================================================
 // Types and Interfaces

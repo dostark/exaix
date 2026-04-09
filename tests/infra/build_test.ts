@@ -4,9 +4,9 @@
  * @description Module for build_test.
  */
 
-import { assert, assertEquals } from "https://deno.land/std@0.221.0/assert/mod.ts";
-import { join } from "https://deno.land/std@0.221.0/path/mod.ts";
-import { exists } from "https://deno.land/std@0.221.0/fs/mod.ts";
+import { assert, assertEquals } from "@std/assert";
+import { exists } from "@std/fs";
+import { join } from "@std/path";
 
 const REPO_ROOT = Deno.cwd();
 const DIST_DIR = join(REPO_ROOT, "dist", "bin");

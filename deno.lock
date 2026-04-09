@@ -37,6 +37,7 @@
     "jsr:@std/toml@0.221": "0.221.0",
     "jsr:@std/yaml@1": "1.0.12",
     "npm:@babel/parser@7.24.4": "7.24.4",
+    "npm:typescript@5.3.3": "5.3.3",
     "npm:zod@*": "4.3.6"
   },
   "jsr": {
@@ -203,6 +204,10 @@
   "npm": {
     "@babel/parser@7.24.4": {
       "integrity": "sha512-zTvEBcghmeBma9QIGunWevvBAp4/Qu9Bdq+2k0Ot4fVMD6v3dsC9WOcRSKk7tRRyBM/53yKMJko9xOatGQAwSg==",
+      "bin": true
+    },
+    "typescript@5.3.3": {
+      "integrity": "sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==",
       "bin": true
     },
     "zod@4.3.6": {
@@ -1050,7 +1055,9 @@
       "jsr:@std/testing@1",
       "jsr:@std/text@0.221",
       "jsr:@std/toml@0.221",
-      "jsr:@std/yaml@1"
+      "jsr:@std/yaml@1",
+      "npm:@babel/parser@7.24.4",
+      "npm:typescript@5.3.3"
     ]
   }
 }

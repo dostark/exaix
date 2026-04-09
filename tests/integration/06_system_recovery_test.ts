@@ -7,18 +7,20 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowStepType, McpToolName, MemoryOperation, PortalOperation } from "../../src/shared/enums.ts";
+import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { Config } from "../../src/shared/schemas/config.ts";
 
-import { join as _join } from "@std/path";
+import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 // Mock RecoveryService for testing (actual service not yet implemented)
 class RecoveryService {
-  private config: any;
-  private db: any;
+  private config: Config;
+  private db: DatabaseService;
   private leaseTimeoutMs: number;
 
-  constructor(options: { config: any; db: any; leaseTimeoutMs?: number }) {
+  constructor(options: { config: Config; db: DatabaseService; leaseTimeoutMs?: number }) {
     this.config = options.config;
     this.db = options.db;
     this.leaseTimeoutMs = options.leaseTimeoutMs ?? 30000;

@@ -5,7 +5,7 @@
  * simulating daemon state, lifecycle operations, and activity logs.
  */
 
-import { DaemonStatus } from "../../src/shared/enums.ts";
+import type { DaemonStatus } from "../../src/shared/enums.ts";
 import { DaemonControlView, MinimalDaemonServiceMock } from "../../src/tui/daemon_control_view.ts";
 
 export function setupDaemonTest(options: {
@@ -13,7 +13,11 @@ export function setupDaemonTest(options: {
   initialStatus?: DaemonStatus;
   logs?: string[];
   errors?: string[];
-} = {}) {
+} = {}): {
+  mock: MinimalDaemonServiceMock;
+  view: DaemonControlView;
+  session: ReturnType<DaemonControlView["createTuiSession"]>;
+} {
   // await Promise.resolve(); // Satisfy linter for async function if needed, but not strictly required
   const mock = new MinimalDaemonServiceMock();
   if (options.initialStatus) mock.setStatus(options.initialStatus);

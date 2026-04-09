@@ -4,49 +4,26 @@
  * @description Unit tests for ReActLoopStrategy.
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals, assertFalse } from "@std/assert";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
+import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "../../src/shared/enums.ts";
-import { Config } from "../../src/shared/schemas/config.ts";
-import { REACT_STATUS_COMPLETE, REACT_SUMMARY_PREFIX, REACT_THOUGHT_PREFIX } from "../../src/shared/constants.ts";
+import type {
+  IAgentExecutionOptions,
+  IChangesetResult,
+  IExecutionContext,
+} from "../../src/shared/schemas/agent_executor.ts";
+import {
+  REACT_STATUS_COMPLETE,
+  REACT_SUMMARY_PREFIX,
+  REACT_THOUGHT_PREFIX,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "../../src/shared/constants.ts";
+import type { JSONValue } from "../../src/shared/types/json.ts";
 
-// Mock dependencies
-const _mockConfig: Config = {
-  system: { root: "/tmp/react-test", log_level: "info", schema_version: "1.0.0" },
-  paths: {
-    workspace: "Workspace",
-    memory: "Memory",
-    blueprints: "Blueprints",
-    portals: "Portals",
-    identities: "Identities",
-    active: "Active",
-    archive: "Archive",
-    plans: "Plans",
-    requests: "Requests",
-    rejected: "Rejected",
-    runtime: "Runtime",
-    flows: "Flows",
-    memoryProjects: "Projects",
-    memoryExecution: "Execution",
-    memoryIndex: "Index",
-    memorySkills: "Skills",
-    memoryPending: "Pending",
-    memoryTasks: "Tasks",
-    memoryGlobal: "Global",
-  },
-  agents: { default_model: "mock:test", timeout_sec: 30, max_iterations: 10 },
-  portals: [
-    {
-      alias: "test",
-      target_path: "/tmp/react-test/portal-test",
-      identities_allowed: ["*"],
-      operations: ["read", "write"],
-    } as any,
-  ],
-  models: { "mock:test": { provider: "mock", model: "test" } },
-} as any;
-
-class MockModelProvider {
+class MockModelProvider implements IModelProvider {
+  readonly id = "mock-react-provider";
   private responses: string[] = [];
   private callCount = 0;
 
@@ -60,12 +37,42 @@ class MockModelProvider {
   }
 }
 
+type TestToolParams = Record<string, JSONValue>;
+type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+
+const testBlueprint = {
+  name: "test-agent",
+  model: "mock:test",
+  provider: "mock",
+  capabilities: [ExecutionStrategyName.REACT],
+  systemPrompt: "",
+} satisfies IAgentFileBlueprint;
+
+const testContext = {
+  trace_id: "trace-11111111-1111-4111-8111-111111111111",
+  request_id: "request-1",
+  request: "test",
+  plan: "test",
+  portal: "test",
+} satisfies IExecutionContext;
+
+function createOptions(portal: string): IAgentExecutionOptions {
+  return {
+    identity_id: "test-agent",
+    portal,
+    security_mode: SecurityMode.SANDBOXED,
+    timeout_ms: 300000,
+    max_tool_calls: 100,
+    audit_enabled: true,
+  };
+}
+
 const mockExecutor = {
   logAgentOutput: async () => {
     await Promise.resolve();
   },
-  validateReviewResult: (res: any) => res,
-  parseAgentResponse: (response: string, context: any, startTime: number) => {
+  validateReviewResult: (res: IChangesetResult): IChangesetResult => res,
+  parseAgentResponse: (response: string, context: IExecutionContext, startTime: number): IChangesetResult => {
     // Basic mock parser to satisfy strategy needs
     const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/) || response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -79,10 +86,11 @@ const mockExecutor = {
       };
     }
     try {
-      return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+      return JSON.parse(jsonMatch[1] || jsonMatch[0]) as IChangesetResult;
     } catch {
       return {
         branch: "fallback",
+        commit_sha: "0000000000000000000000000000000000000000",
         files_changed: [],
         tool_calls: 0,
         execution_time_ms: 0,
@@ -91,15 +99,16 @@ const mockExecutor = {
     }
   },
   toolRegistry: {
-    execute: async (tool: string, params: any) => {
+    execute: async (tool: string, params: TestToolParams) => {
       await Promise.resolve();
       if (tool === ToolName.WRITE_FILE) {
         return { success: true, data: `Wrote ${params.path}` };
       }
       return { success: false, error: "Unknown tool" };
     },
+    getTools: () => [],
   },
-} as any;
+};
 
 Deno.test("ReActLoopStrategy - Basic Execution", async () => {
   const provider = new MockModelProvider([
@@ -116,11 +125,11 @@ content = "world"
 ${REACT_SUMMARY_PREFIX}Task completed successfully after writing hello.txt`,
   ]);
 
-  const strategy = new ReActLoopStrategy(mockExecutor, provider as any);
+  const strategy = new ReActLoopStrategy(mockExecutor as ReActExecutor, provider);
   const result = await strategy.execute(
-    { name: "test-agent", capabilities: [ExecutionStrategyName.REACT] } as any,
-    { trace_id: "trace-1", request: "write hello world to hello.txt", plan: "Step 1" } as any,
-    { portal: "test", security_mode: SecurityMode.SANDBOXED } as any,
+    testBlueprint,
+    { ...testContext, request: "write hello world to hello.txt", plan: "Step 1" },
+    createOptions("test"),
   );
 
   assertEquals(result.description, "Task completed successfully after writing hello.txt");
@@ -128,15 +137,16 @@ ${REACT_SUMMARY_PREFIX}Task completed successfully after writing hello.txt`,
 });
 
 Deno.test("ReActLoopStrategy - Path Prefixing", async () => {
-  let capturedParams: any = null;
+  let capturedPath = "";
   const mockExecutorWithToolCapture = {
     ...mockExecutor,
     toolRegistry: {
-      execute: async (_tool: string, params: any) => {
+      execute: async (_tool: string, params: TestToolParams) => {
         await Promise.resolve();
-        capturedParams = params;
+        capturedPath = String(params.path ?? "");
         return { success: true };
       },
+      getTools: () => [],
     },
   };
 
@@ -154,13 +164,76 @@ content = "test"
 ${REACT_SUMMARY_PREFIX}Done`,
   ]);
 
-  const strategy = new ReActLoopStrategy(mockExecutorWithToolCapture as any, provider as any);
+  const strategy = new ReActLoopStrategy(mockExecutorWithToolCapture as ReActExecutor, provider);
   await strategy.execute(
-    { name: "test-agent", capabilities: [ExecutionStrategyName.REACT] } as any,
-    { trace_id: "trace-2", request: "test", plan: "test" } as any,
-    { portal: "test-portal", security_mode: SecurityMode.SANDBOXED } as any,
+    testBlueprint,
+    { ...testContext, trace_id: "trace-22222222-2222-4222-8222-222222222222" },
+    createOptions("test-portal"),
   );
 
   // Verify @portal/ prefix is added if portal is specified in options
-  assertEquals(capturedParams.path, "@test-portal/sub/file.txt");
+  assertEquals(capturedPath, "@test-portal/sub/file.txt");
+});
+
+Deno.test("ReActLoopStrategy - caps loop history to configured budget", async () => {
+  const capturedPrompts: string[] = [];
+  const provider: IModelProvider = {
+    id: "budgeted-react-provider",
+    async generate(prompt: string): Promise<string> {
+      await Promise.resolve();
+      capturedPrompts.push(prompt);
+
+      if (capturedPrompts.length === 1) {
+        return `${REACT_THOUGHT_PREFIX}${"OLD".repeat(40)}
+\`\`\`toml
+[[actions]]
+tool = "write_file"
+[actions.params]
+path = "hello.txt"
+content = "world"
+\`\`\`
+`;
+      }
+
+      return `${REACT_STATUS_COMPLETE}
+${REACT_SUMMARY_PREFIX}Done`;
+    },
+  };
+
+  const budgetedExecutor = {
+    ...mockExecutor,
+    currentPromptBudget: {
+      model: "openai:gpt-4o-mini",
+      totalBudgetTokens: 1000,
+      safetyBufferTokens: 0,
+      sections: {
+        system: 100,
+        plan: 100,
+        portalKnowledge: 50,
+        memory: 50,
+        skills: 10,
+        loopHistory: 10,
+      },
+    },
+    toolRegistry: {
+      execute: async () => {
+        await Promise.resolve();
+        return { success: true, data: "NEW".repeat(40) };
+      },
+      getTools: () => [],
+    },
+  };
+
+  const strategy = new ReActLoopStrategy(budgetedExecutor as ReActExecutor, provider);
+  await strategy.execute(
+    testBlueprint,
+    { ...testContext, trace_id: "trace-33333333-3333-4333-8333-333333333333" },
+    createOptions("test"),
+  );
+
+  assertEquals(capturedPrompts.length >= 2, true);
+  const historyMatch = capturedPrompts[1].match(/HISTORY:\n([\s\S]*?)\n\nINSTRUCTIONS:/);
+  assert(historyMatch, "Expected HISTORY block in second prompt");
+  assertEquals(historyMatch[1].length <= 10 * TOKEN_ESTIMATION_CHARS_PER_TOKEN, true);
+  assertFalse(historyMatch[1].includes("OLDOLDOLD"));
 });

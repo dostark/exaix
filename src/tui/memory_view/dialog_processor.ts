@@ -6,7 +6,7 @@
  * * @related-files [src/tui/dialogs/memory_dialogs.ts]
  */
 import { DialogStatus } from "../../shared/enums.ts";
-import {
+import type {
   AddLearningDialog,
   BulkApproveDialog,
   ConfirmApproveDialog,

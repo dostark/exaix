@@ -13,7 +13,7 @@ import {
   DatabaseHealthCheck,
   DiskSpaceHealthCheck,
   HealthCheckService,
-  IHealthCheck,
+  type IHealthCheck,
   initializeHealthChecks,
   LLMProviderHealthCheck,
   MemoryHealthCheck,

@@ -9,6 +9,8 @@ import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { initTestDbService } from "../../helpers/db.ts";
 
+type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];
+
 describe("DatabaseService - Journal Queries", () => {
   let db: Awaited<ReturnType<typeof initTestDbService>>["db"];
   let cleanup: () => Promise<void>;
@@ -37,7 +39,7 @@ describe("DatabaseService - Journal Queries", () => {
     await cleanup();
   });
 
-  async function seedActivity(db: any, actor: string, actionType: string, identityId: string, traceId: string) {
+  async function seedActivity(db: ITestDb, actor: string, actionType: string, identityId: string, traceId: string) {
     await db.logActivity(actor, actionType, "target", { foo: "bar" }, traceId, null, identityId);
   }
 
@@ -75,7 +77,7 @@ describe("DatabaseService - Journal Queries", () => {
     const results = await db.queryActivity({ identityId: "agent-1" });
     assertEquals(results.length, 3); // trace-1: request, plan.created; trace-3: error
     // Filter out user actions
-    const userAction = results.find((r: any) => r.actor === "user");
+    const userAction = results.find((r) => r.actor === "user");
     assertEquals(userAction, undefined);
   });
 

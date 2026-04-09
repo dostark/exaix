@@ -8,15 +8,15 @@
 
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { DialogBase } from "./helpers/dialog_base.ts";
+import type { DialogBase } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import type { ITreeViewState } from "./base/tree_view_state.ts";
-import {
+import type {
   ILogger as IStructuredLogger,
   ILogService as IStructuredLogService,
 } from "../shared/interfaces/i_log_service.ts";
-import { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
+import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import {
   TUI_ACTION_SEARCH,

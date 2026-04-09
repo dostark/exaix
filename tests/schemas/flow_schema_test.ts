@@ -7,7 +7,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../src/shared/enums.ts";
-import { z, ZodError } from "zod";
+import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "../../src/shared/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 

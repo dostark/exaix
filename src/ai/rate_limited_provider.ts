@@ -6,8 +6,8 @@
  * * @related-files [src/ai/providers.ts, src/services/cost_tracker.ts]
  */
 
-import { IModelProvider } from "./types.ts";
-import { CostTracker } from "../services/cost/cost_tracker.ts";
+import type { IModelProvider } from "./types.ts";
+import type { CostTracker } from "../services/cost/cost_tracker.ts";
 import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,

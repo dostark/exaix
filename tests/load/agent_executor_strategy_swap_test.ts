@@ -14,6 +14,7 @@ import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
@@ -34,7 +35,7 @@ const TEST_OPTIONS: IAgentExecutionOptions = {
   max_tool_calls: 10,
 };
 
-const TEST_BLUEPRINT = {
+const TEST_BLUEPRINT: IAgentFileBlueprint = {
   name: "test-agent",
   model: "mock-model",
   provider: "mock",
@@ -205,12 +206,12 @@ Deno.test("Strategy swap: Consecutive executions with same strategy maintain sta
 
     // Execute twice with same strategy
     const result1: IChangesetResult = await strategy.execute(
-      TEST_BLUEPRINT as any,
+      TEST_BLUEPRINT,
       context,
       TEST_OPTIONS,
     );
     const result2: IChangesetResult = await strategy.execute(
-      TEST_BLUEPRINT as any,
+      TEST_BLUEPRINT,
       { ...context, request_id: "run-2", request: "Second run" },
       TEST_OPTIONS,
     );

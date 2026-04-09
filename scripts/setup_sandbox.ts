@@ -5,7 +5,7 @@
  * following the workflow described in VALIDATION_GUIDE.md.
  */
 
-import { Command } from "jsr:@cliffy/command@^1.0.0-rc.8";
+import { Command } from "@cliffy/command";
 import { join, resolve } from "@std/path";
 import { ensureDir } from "@std/fs";
 

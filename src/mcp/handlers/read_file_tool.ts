@@ -76,7 +76,7 @@ export class ReadFileTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.READ_FILE,
       description: "Read a file from a portal (scoped to allowed portals)",

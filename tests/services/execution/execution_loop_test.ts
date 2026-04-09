@@ -23,7 +23,7 @@ import {
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
-import { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { EXECUTION_REPORT_FILENAME } from "../../../src/shared/constants.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
@@ -243,7 +243,7 @@ identity_id: test-identity
     // IActivity should log failure
     await new Promise((resolve) => setTimeout(resolve, 150));
     const activities = db.getActivitiesByTrace("test-trace-fail");
-    const failedLog = activities.find((a: any) => a.action_type === "execution.failed");
+    const failedLog = activities.find((a: ActivityRecord) => a.action_type === "execution.failed");
     assertExists(failedLog, "execution.failed should be logged");
   } finally {
     await cleanup();
@@ -833,7 +833,7 @@ This plan has two actions in TOML format.
     await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-toml");
 
-    const actionStarted = activities.filter((a: any) => a.action_type === "execution.action_started");
+    const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 2, "Should log 2 action starts");
   } finally {
     await cleanup();
@@ -882,7 +882,7 @@ This plan has one action in TOML format.
     await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-multi");
 
-    const actionStarted = activities.filter((a: any) => a.action_type === "execution.action_started");
+    const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 1, "Should log 1 action start");
   } finally {
     await cleanup();
@@ -979,7 +979,7 @@ Only the middle block should be parsed.
     await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-malformed");
 
-    const actionStarted = activities.filter((a: any) => a.action_type === "execution.action_started");
+    const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 1, "Should only parse 1 valid action");
   } finally {
     await cleanup();
@@ -1039,7 +1039,7 @@ Only the middle block with 'tool' field should be treated as an action.
     await db.waitForFlush();
     const activities = db.getActivitiesByTrace("test-trace-notool");
 
-    const actionStarted = activities.filter((a: any) => a.action_type === "execution.action_started");
+    const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 1, "Should only parse blocks with 'tool' field");
   } finally {
     await cleanup();

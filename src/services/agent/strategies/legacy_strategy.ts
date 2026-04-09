@@ -6,13 +6,18 @@
  * @related-files [src/services/agent/agent_executor.ts, src/services/agent/strategies/execution_strategy.ts]
  */
 
-import { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, AgentExecutor, IAgentFileBlueprint } from "../agent_executor.ts";
-import { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "../../../shared/schemas/agent_executor.ts";
-import { IModelProvider } from "../../../ai/types.ts";
+import type { IExecutionStrategy } from "./execution_strategy.ts";
+import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
+import type {
+  IAgentExecutionOptions,
+  IChangesetResult,
+  IExecutionContext,
+} from "../../../shared/schemas/agent_executor.ts";
+import type { IModelProvider } from "../../../ai/types.ts";
 import { parse as parseToml } from "@std/toml";
-import { JSONValue } from "../../../shared/types/json.ts";
-import { AgentExecutionErrorType, McpToolName } from "../../../shared/enums.ts";
+import type { JSONValue } from "../../../shared/types/json.ts";
+import { AgentExecutionErrorType, type McpToolName } from "../../../shared/enums.ts";
+import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
 import {
   LEGACY_EXECUTION_MAX_TOKENS,
   LEGACY_EXECUTION_TEMPERATURE,
@@ -115,7 +120,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
    */
   private trackFileChanges(
     action: { tool: string; params?: Record<string, JSONValue> },
-    toolResult: any,
+    toolResult: IToolResult,
     options: IAgentExecutionOptions,
     filesChanged: Set<string>,
   ): void {
@@ -160,7 +165,7 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     tool: string,
     params: Record<string, JSONValue>,
     options: IAgentExecutionOptions,
-  ): Promise<any> {
+  ): Promise<IToolResult> {
     if (!this.executor.toolRegistry) {
       throw new AgentExecutionError("ToolRegistry not available", AgentExecutionErrorType.CONFIGURATION_ERROR);
     }

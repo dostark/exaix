@@ -12,8 +12,8 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -57,11 +57,11 @@ You are a code analyst. portal context follows.`,
     });
 
     const context: IApplicationContext = {
-      config: { get: () => config, getChecksum: () => "test" } as any,
+      config: createStubConfig(config),
       db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(db),
     };
 
     const processor = new RequestProcessor({

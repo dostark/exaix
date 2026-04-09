@@ -8,8 +8,8 @@
 
 import { Table } from "@cliffy/table";
 import * as colors from "@std/fmt/colors";
-import { IActivityRecord } from "../../shared/types/database.ts";
-import { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IActivityRecord } from "../../shared/types/database.ts";
+import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 import { DataFormat, UIOutputFormat } from "../../shared/enums.ts";
 
 const ERR_KEYWORD = "error";
@@ -38,7 +38,7 @@ export class JournalFormatter {
     }
   }
 
-  private static renderTable(activities: IActivityRecord[], filter: IJournalFilterOptions) {
+  private static renderTable(activities: IActivityRecord[], filter: IJournalFilterOptions): void {
     // Handle different query types
     if (filter.distinct) {
       // DISTINCT query - show the distinct field values
@@ -98,7 +98,7 @@ export class JournalFormatter {
     table.render();
   }
 
-  private static renderText(activities: IActivityRecord[], filter: IJournalFilterOptions) {
+  private static renderText(activities: IActivityRecord[], filter: IJournalFilterOptions): void {
     // Handle different query types
     if (filter.distinct) {
       this.renderDistinctText(activities, filter.distinct);
@@ -147,14 +147,14 @@ export class JournalFormatter {
     }
   }
 
-  private static renderDistinctText(activities: IActivityRecord[], distinctField: string) {
+  private static renderDistinctText(activities: IActivityRecord[], distinctField: string): void {
     for (const activity of activities) {
       const value = activity[distinctField as keyof IActivityRecord] || "";
       console.log(value);
     }
   }
 
-  private static renderCountText(activities: IActivityRecord[]) {
+  private static renderCountText(activities: IActivityRecord[]): void {
     for (const activity of activities) {
       console.log(`${activity.action_type}: ${activity.count || 0}`);
     }

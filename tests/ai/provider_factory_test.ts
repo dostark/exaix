@@ -576,7 +576,8 @@ Deno.test("ProviderFactory: createWithFallback healthCheck calls validateConnect
   }
   // Patch ProviderFactory.createByName to return TestProvider for this test
   const originalCreateByName = ProviderFactory.createByName;
-  ProviderFactory.createByName = (_config: any, _name: string) => Promise.resolve(new TestProvider());
+  type ICreateByNameConfig = Parameters<typeof ProviderFactory.createByName>[0];
+  ProviderFactory.createByName = (_config: ICreateByNameConfig, _name: string) => Promise.resolve(new TestProvider());
   try {
     const config = createTestConfig();
     const provider = await ProviderFactory.createWithFallback(config, {

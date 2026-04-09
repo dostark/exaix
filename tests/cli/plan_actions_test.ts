@@ -19,15 +19,16 @@ import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
+import type { LogMetadata } from "../../src/shared/types/json.ts";
 
 function createDisplay() {
-  const calls: Array<{ level: LogLevel; a: string; b: string; c: any }> = [];
+  const calls: Array<{ level: LogLevel; a: string; b: string; c: LogMetadata }> = [];
   const display = Object.assign(Object.create(EventLogger.prototype), {
-    info: (a: string, b: string, c: any) => {
+    info: (a: string, b: string, c: LogMetadata = {}) => {
       calls.push({ level: LogLevel.INFO, a, b, c });
       return Promise.resolve();
     },
-    error: (a: string, b: string, c: any) => {
+    error: (a: string, b: string, c: LogMetadata = {}) => {
       calls.push({ level: LogLevel.ERROR, a, b, c });
       return Promise.resolve();
     },

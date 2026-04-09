@@ -5,10 +5,10 @@
  * ensuring queue integrity, race-condition prevention, and stable shared resource access.
  */
 
-import { assert, assertEquals, assertExists, assertNotEquals as _assertNotEquals } from "@std/assert";
+import { assert, assertEquals, assertExists, type assertNotEquals as _assertNotEquals } from "@std/assert";
 import { McpToolName } from "../../src/shared/enums.ts";
 
-import { join as _join } from "@std/path";
+import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 

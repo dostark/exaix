@@ -1,12 +1,24 @@
 // Usage: deno run --allow-read scripts/verify_manifest_fresh.ts
 import { generateManifestObject } from "./build_agents_index.ts";
 
-function normalize(obj: any) {
+interface IManifestDocLike {
+  path?: string;
+  chunks?: string[];
+  [key: string]: unknown;
+}
+
+interface IManifestLike {
+  generated_at?: string;
+  docs?: IManifestDocLike[];
+  [key: string]: unknown;
+}
+
+function normalize(obj: IManifestLike): IManifestLike {
   // remove generated_at and sort docs by path for deterministic comparison
-  const copy = JSON.parse(JSON.stringify(obj));
+  const copy = JSON.parse(JSON.stringify(obj)) as IManifestLike;
   delete copy.generated_at;
   if (Array.isArray(copy.docs)) {
-    copy.docs.sort((a: any, b: any) => String(a.path).localeCompare(String(b.path)));
+    copy.docs.sort((a, b) => String(a.path).localeCompare(String(b.path)));
     for (const d of copy.docs) {
       if (Array.isArray(d.chunks)) d.chunks.sort();
     }

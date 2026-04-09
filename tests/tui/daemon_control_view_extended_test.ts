@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus } from "../../src/shared/enums.ts";
-import { type IDaemonService } from "../../src/shared/interfaces/i_daemon_service.ts";
+import type { IDaemonService } from "../../src/shared/interfaces/i_daemon_service.ts";
 import {
   DaemonControlView,
   LegacyDaemonControlTuiSession,

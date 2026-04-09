@@ -5,7 +5,7 @@
  * @architectural-layer Services
  * * @related-files [src/services/db.ts, src/config/schema.ts]
  */
-import { DatabaseService, type SqliteParam } from "../core/db.ts";
+import type { DatabaseService, SqliteParam } from "../core/db.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import {
   COST_RATE_ANTHROPIC,

@@ -111,10 +111,13 @@ Deno.test("MoveFileTool: getToolDefinition returns correct definition", () => {
   const context = createStubContext();
   const handler = new MoveFileTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, "move_file");
   assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(def.inputSchema.required.join(), "portal");
-  assertStringIncludes(def.inputSchema.required.join(), "from");
-  assertStringIncludes(def.inputSchema.required.join(), "to");
+  assertStringIncludes(required.join(), "portal");
+  assertStringIncludes(required.join(), "from");
+  assertStringIncludes(required.join(), "to");
 });

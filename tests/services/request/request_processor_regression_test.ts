@@ -8,8 +8,7 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { DatabaseService } from "../../../src/services/core/db.ts";
 import { ConfigService } from "../../../src/config/service.ts";
 import { join } from "@std/path";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import {
   ConsoleOutput,
   initializeGlobalLogger,
@@ -18,6 +17,7 @@ import {
 import { REPO_ROOT } from "../../helpers/repo_root.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 
 /**
  * Regression test for: "Request processing fails with test-provider selection"
@@ -91,7 +91,7 @@ created: "${new Date().toISOString()}"
 status: "${RequestStatus.PENDING}"
 priority: "normal"
 identity: "test-agent"
-source: RequestSource.CLI
+source: cli
 created_by: "test-user"
 ---
 Test body`;
@@ -100,9 +100,9 @@ Test body`;
     const context: IApplicationContext = {
       config: configService,
       db,
-      provider: null as any,
-      git: {} as any,
-      display: new EventLogger({ db, defaultActor: "test" }),
+      provider: createStubProvider(),
+      git: createStubGit(),
+      display: createStubDisplay(db),
     };
 
     const processor = new RequestProcessor({

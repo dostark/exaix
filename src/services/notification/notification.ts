@@ -15,10 +15,10 @@
 import type { Config } from "../../shared/schemas/config.ts";
 import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 import { MemoryScope } from "../../shared/enums.ts";
-import { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
-import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
-import { IMemoryNotification } from "../../shared/types/notification.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import type { IMemoryNotification } from "../../shared/types/notification.ts";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */

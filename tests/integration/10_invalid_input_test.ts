@@ -7,9 +7,9 @@
 
 import {
   assert,
-  assertEquals as _assertEquals,
+  type assertEquals as _assertEquals,
   assertExists,
-  assertRejects as _assertRejects,
+  type assertRejects as _assertRejects,
   assertStringIncludes,
 } from "@std/assert";
 import { join } from "@std/path";

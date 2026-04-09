@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { DialogStatus, SkillStatus as _SkillStatus } from "../../../src/shared/enums.ts";
+import { DialogStatus, type SkillStatus as _SkillStatus } from "../../../src/shared/enums.ts";
 import {
   BOX,
   ConfirmDialog,

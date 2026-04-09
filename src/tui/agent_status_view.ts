@@ -25,7 +25,7 @@ import {
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
 import { TuiColorName } from "../shared/enums.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
+import { type ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { TUI_SECTION } from "./helpers/decorations.ts";
@@ -44,8 +44,8 @@ import { DEFAULT_QUERY_LIMIT, SECONDS_PER_HOUR } from "../shared/constants.ts";
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
 import { AgentHealth, DialogStatus, LogLevel, MessageType, TuiGroupBy } from "../shared/enums.ts";
-import { IAgentService } from "../shared/interfaces/i_agent_service.ts";
-import { type AgentHealthData, type AgentLogEntry, type IAgentStatusItem } from "../shared/types/agent.ts";
+import type { IAgentService } from "../shared/interfaces/i_agent_service.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
 
 // ===== View State =====
 

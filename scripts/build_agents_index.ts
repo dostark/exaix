@@ -1,8 +1,8 @@
 // Build a simple manifest.json and pre-chunk files for fast retrieval
 // Usage: deno run --allow-read --allow-write scripts/build_agents_index.ts
 
-import { parse } from "https://deno.land/std@0.203.0/yaml/mod.ts";
-import { walk } from "https://deno.land/std@0.203.0/fs/mod.ts";
+import { walk } from "@std/fs";
+import { parse } from "@std/yaml";
 import type { JSONObject } from "../src/shared/types/json.ts";
 
 const AGENTS_DIR = ".copilot";

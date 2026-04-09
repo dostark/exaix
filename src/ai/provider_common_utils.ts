@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * * @related-files [src/ai/providers.ts]
  */
-import { EventLogger } from "../services/core/event_logger.ts";
+import type { EventLogger } from "../services/core/event_logger.ts";
 import { AuthenticationError, ConnectionError, ModelProviderError, RateLimitError } from "./providers/common.ts";
 import type { IModelOptions } from "./types.ts";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS } from "../shared/constants.ts";
@@ -38,8 +38,10 @@ export type TokenMap = {
   provider?: string;
 };
 
+type ResponseTokenMapper<T> = (data: T, providerId?: string) => TokenMap | undefined;
+
 // Provider Response Interfaces
-export interface OllamaResponse {
+export type OllamaResponse = {
   model: string;
   response: string;
   done: boolean;
@@ -49,15 +51,15 @@ export interface OllamaResponse {
   prompt_eval_count?: number;
   eval_count?: number;
   eval_duration?: number;
-}
+};
 
-export interface OpenAIUsage {
+export type OpenAIUsage = {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens?: number;
-}
+};
 
-export interface OpenAIResponse {
+export type OpenAIResponse = {
   usage?: OpenAIUsage;
   choices?: Array<{
     message?: {
@@ -65,15 +67,15 @@ export interface OpenAIResponse {
     };
     text?: string;
   }>;
-}
+};
 
-export interface GoogleUsageMetadata {
+export type GoogleUsageMetadata = {
   promptTokenCount: number;
   candidatesTokenCount: number;
   totalTokenCount?: number;
-}
+};
 
-export interface GoogleResponse {
+export type GoogleResponse = {
   usageMetadata?: GoogleUsageMetadata;
   candidates?: Array<{
     content?: {
@@ -82,19 +84,19 @@ export interface GoogleResponse {
       }>;
     };
   }>;
-}
+};
 
-export interface AnthropicUsage {
+export type AnthropicUsage = {
   input_tokens?: number;
   output_tokens?: number;
-}
+};
 
-export interface AnthropicResponse {
+export type AnthropicResponse = {
   usage?: AnthropicUsage;
   content?: Array<{
     text?: string;
   }>;
-}
+};
 
 /**
  * Calculate cost for token usage based on provider
@@ -118,7 +120,7 @@ export async function handleProviderResponse<T>(
   response: Response,
   id: string,
   logger?: EventLogger,
-  tokenMapper?: (data: T, providerId?: string) => TokenMap | undefined,
+  tokenMapper?: ResponseTokenMapper<T>,
 ): Promise<T> {
   if (!response.ok) {
     // Include HTTP status code in messages so tests can assert on it (e.g. "HTTP 503").
@@ -171,7 +173,7 @@ export async function handleProviderResponse<T>(
 }
 
 /** Token mapper for OpenAI response shape */
-export function tokenMapperOpenAI(model: string) {
+export function tokenMapperOpenAI(model: string): ResponseTokenMapper<OpenAIResponse> {
   return (d: OpenAIResponse, providerId?: string): TokenMap | undefined => {
     if (!d.usage) return undefined;
 
@@ -217,7 +219,7 @@ export function createOpenAIChatCompletionsRequestInit(
 }
 
 /** Token mapper for Google response shape */
-export function tokenMapperGoogle(model: string) {
+export function tokenMapperGoogle(model: string): ResponseTokenMapper<GoogleResponse> {
   return (d: GoogleResponse, providerId?: string): TokenMap | undefined => {
     if (!d.usageMetadata) return undefined;
 
@@ -241,7 +243,7 @@ export function extractGoogleContent(d: GoogleResponse): string {
 }
 
 /** Token mapper for Anthropic response shape */
-export function tokenMapperAnthropic(model: string) {
+export function tokenMapperAnthropic(model: string): ResponseTokenMapper<AnthropicResponse> {
   return (d: AnthropicResponse, providerId?: string): TokenMap | undefined => {
     if (!d.usage) return undefined;
 

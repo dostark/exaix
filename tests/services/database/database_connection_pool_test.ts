@@ -9,15 +9,18 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { DatabaseConnectionPool } from "../../../src/services/core/database_connection_pool.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 
+type IDatabasePoolOptions = ConstructorParameters<typeof DatabaseConnectionPool>[0];
+type ITestConfig = ReturnType<typeof createMockConfig>;
+
 /**
  * Helpers for DatabaseConnectionPool tests
  */
 
 async function withPoolTest(
-  configOptions: any,
+  configOptions: IDatabasePoolOptions,
   testFn: (ctx: {
     pool: DatabaseConnectionPool;
-    config: any;
+    config: ITestConfig;
     tempDir: string;
   }) => Promise<void>,
 ) {

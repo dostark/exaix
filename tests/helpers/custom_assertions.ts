@@ -13,7 +13,7 @@ import { ExecutionStatus } from "../../src/shared/enums.ts";
 /**
  * Asserts that the command output contains all expected strings
  */
-export function assertOutputContains(output: string, expected: string[]) {
+export function assertOutputContains(output: string, expected: string[]): void {
   for (const str of expected) {
     assertStringIncludes(output, str);
   }
@@ -26,7 +26,7 @@ export async function assertProjectExists(
   memoryBank: MemoryBankService,
   portal: string,
   message?: string,
-) {
+): Promise<void> {
   const project = await memoryBank.getProjectMemory(portal);
   assertEquals(project !== null, true, message || `Project memory for ${portal} should exist`);
   assertEquals(project!.portal, portal);
@@ -39,7 +39,7 @@ export async function assertExecutionExists(
   memoryBank: MemoryBankService,
   traceId: string,
   expectedStatus: ExecutionStatus = ExecutionStatus.COMPLETED,
-) {
+): Promise<void> {
   const execution = await memoryBank.getExecutionByTraceId(traceId);
   assertEquals(execution !== null, true, `Execution memory for ${traceId} should exist`);
   if (execution) {
@@ -53,7 +53,7 @@ export async function assertExecutionExists(
 export async function assertPendingExists(
   extractor: MemoryExtractorService,
   proposalId: string,
-) {
+): Promise<void> {
   const pending = await extractor.listPending();
   const exists = pending.some((p) => p.id === proposalId);
   assertEquals(exists, true, `Pending proposal ${proposalId} should exist`);

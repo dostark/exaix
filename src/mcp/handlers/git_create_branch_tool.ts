@@ -6,7 +6,7 @@
  * * @related-files [src/mcp/tool_handler.ts, src/services/core/git_service.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
-import { type MCPToolResponse } from "../../shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "../../shared/schemas/mcp.ts";
 import { PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import { GitCreateBranchToolArgsSchema } from "../../shared/schemas/mcp.ts";
@@ -66,7 +66,7 @@ export class GitCreateBranchTool extends ToolHandler {
     }
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_create_branch",
       description: "Create a new git branch in a portal repository",

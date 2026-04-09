@@ -7,7 +7,7 @@
  * * @related-files [src/main.ts, src/services/db.ts]
  */
 import type { DatabaseService } from "../core/db.ts";
-import { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "../../ai/types.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import {
   BYTES_PER_KB,
@@ -23,7 +23,7 @@ import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 /**
  * Interface for individual health check implementations

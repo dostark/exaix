@@ -5,9 +5,9 @@
  * rollback of schema updates for the persistent journal.
  */
 
-import { assert, assertEquals, assertStringIncludes } from "https://deno.land/std@0.201.0/testing/asserts.ts";
-import { dirname, fromFileUrl, join } from "https://deno.land/std@0.201.0/path/mod.ts";
-import { exists } from "https://deno.land/std@0.201.0/fs/mod.ts";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { exists } from "@std/fs";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";

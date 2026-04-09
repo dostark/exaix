@@ -14,7 +14,7 @@ import { ProviderFactory } from "../ai/provider_factory.ts";
 import { FlowLoader } from "../flows/flow_loader.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
 import type { Config } from "../shared/schemas/config.ts";
-import { DatabaseService, IDatabaseService } from "../services/core/db.ts";
+import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";

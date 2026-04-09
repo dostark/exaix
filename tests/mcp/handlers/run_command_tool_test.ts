@@ -128,8 +128,11 @@ Deno.test("RunCommandTool: getToolDefinition returns correct definition", () => 
   const context = createStubContext();
   const handler = new RunCommandTool(context);
   const def = handler.getToolDefinition();
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
 
   assertEquals(def.name, McpToolName.RUN_COMMAND);
-  assertEquals(def.inputSchema.required.includes("portal"), true);
-  assertEquals(def.inputSchema.required.includes("command"), true);
+  assertEquals(required.includes("portal"), true);
+  assertEquals(required.includes("command"), true);
 });

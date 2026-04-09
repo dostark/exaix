@@ -15,14 +15,14 @@ import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import {
   ActivityActor,
   ActivityType,
   MemoryBankSource,
   MemoryReferenceType,
   MemoryScope,
-  MemoryType,
+  type MemoryType,
 } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import {

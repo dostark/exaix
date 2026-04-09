@@ -9,8 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import {
   type IRequestQualityAssessment,
@@ -22,6 +21,7 @@ import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";
 import type { IClarificationSession } from "../../../src/shared/schemas/clarification_session.ts";
 import { ClarificationSessionStatus } from "../../../src/shared/schemas/clarification_session.ts";
@@ -148,11 +148,11 @@ Deno.test("[RequestProcessor] quality gate runs before agent execution", async (
     const filePath = makeRequestFile(env.requestsDir, "Implement login feature in src/auth.ts");
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -177,11 +177,11 @@ Deno.test("[RequestProcessor] proceeds for high-quality requests", async () => {
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -209,11 +209,11 @@ Deno.test("[RequestProcessor] enriches underspecified requests", async () => {
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -239,11 +239,11 @@ Deno.test("[RequestProcessor] enters Q&A loop for poor requests", async () => {
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -278,11 +278,11 @@ Deno.test("[RequestProcessor] preserves original body when enriching", async () 
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -308,11 +308,11 @@ Deno.test("[RequestProcessor] handles disabled quality gate", async () => {
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
     };
     const processor = new RequestProcessor({
       ...env.processorConfig,
@@ -347,11 +347,11 @@ Deno.test("[RequestProcessor] gate failure does not block processing", async () 
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -402,11 +402,11 @@ Deno.test("[RequestProcessor] passes IRequestSpecification to buildParsedRequest
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => env.config, getChecksum: () => "test" } as any,
+      config: createStubConfig(env.config),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
       gateEvaluator: undefined,
     };
     const processor = new RequestProcessor({
@@ -458,11 +458,11 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
 
     const mockProvider = createMockProvider(["<content>{}</content>"]);
     const context: IApplicationContext = {
-      config: { get: () => cfgPatch, getChecksum: () => "test" } as any,
+      config: createStubConfig(cfgPatch),
       db: env.db,
       provider: mockProvider,
-      git: {} as any,
-      display: new EventLogger({ db: env.db, defaultActor: "test" }),
+      git: createStubGit(),
+      display: createStubDisplay(env.db),
     };
     const processor = new RequestProcessor({
       ...env.processorConfig,

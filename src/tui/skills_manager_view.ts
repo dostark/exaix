@@ -16,10 +16,10 @@ import {
   SkillStatus,
   TuiNodeType,
 } from "../shared/enums.ts";
-import { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
+import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
-import { type DialogBase } from "./helpers/dialog_base.ts";
-import { IKeyBinding, KeyBindingCategory } from "./helpers/keyboard.ts";
+import type { DialogBase } from "./helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
@@ -35,9 +35,9 @@ import {
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
 import { KEYS } from "./helpers/keyboard.ts";
-import { type ISkill, type SkillDefinition } from "../shared/schemas/memory_bank.ts";
-import { type ISkillMatchRequest } from "../shared/types/skill.ts";
-import { type ISkillMatch } from "../shared/schemas/memory_bank.ts";
+import type { ISkill, SkillDefinition } from "../shared/schemas/memory_bank.ts";
+import type { ISkillMatchRequest } from "../shared/types/skill.ts";
+import type { ISkillMatch } from "../shared/schemas/memory_bank.ts";
 
 // ===== Interfaces =====
 
@@ -891,7 +891,7 @@ export class SkillsManagerTuiSession extends BaseTreeView<ISkillSummary> {
     return this.state.selectedId;
   }
 
-  getState() {
+  getState(): typeof this.state & ISkillsViewExtensions & { selectedSkillId: string | null } {
     return {
       ...this.state,
       ...this.skillsViewExtensions,

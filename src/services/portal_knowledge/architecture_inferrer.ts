@@ -10,7 +10,7 @@
  * * @related-files [src/services/portal_knowledge/pattern_detector.ts, src/services/portal_knowledge/key_file_identifier.ts]
  */
 
-import { z, ZodType, ZodTypeDef } from "zod";
+import { z, type ZodType, type ZodTypeDef } from "zod";
 import type { IModelOptions, IModelProvider } from "../../ai/types.ts";
 import type { IValidationResult } from "../tool/output_validator.ts";
 import type { ICodeConvention, IFileSignificance } from "../../shared/schemas/portal_knowledge.ts";

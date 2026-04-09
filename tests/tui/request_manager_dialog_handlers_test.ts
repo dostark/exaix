@@ -10,7 +10,7 @@ import { ConfirmDialog, InputDialog } from "../../src/tui/helpers/dialog_base.ts
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { processDialogCompletion } from "../../src/tui/request_manager/dialog_handlers.ts";
 import { confirmInputDialog, createMockHandlers } from "./request_manager_test_helpers.ts";
-import { MessageType, RequestDialogType } from "../../src/shared/enums.ts";
+import { type MessageType, RequestDialogType } from "../../src/shared/enums.ts";
 
 Deno.test("processDialogCompletion: routes confirmed InputDialog results by dialogType", async () => {
   const calls: string[] = [];

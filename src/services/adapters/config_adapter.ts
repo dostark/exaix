@@ -6,10 +6,10 @@
  * * @related-files [src/config/service.ts, src/shared/interfaces/i_config_service.ts]
  */
 
-import { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
-import { ConfigService } from "../../config/service.ts";
-import { Config } from "../../shared/schemas/config.ts";
-import { PortalExecutionStrategy } from "../../shared/enums.ts";
+import type { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
+import type { ConfigService } from "../../config/service.ts";
+import type { Config } from "../../shared/schemas/config.ts";
+import type { PortalExecutionStrategy } from "../../shared/enums.ts";
 
 /**
  * Adapter that implements the IConfigService interface

@@ -14,7 +14,7 @@ import { MemoryFormatter } from "./memory_view/formatters.ts";
 import { TreeBuilder } from "./memory_view/tree_builder.ts";
 import { DialogProcessor } from "./memory_view/dialog_processor.ts";
 import { KeyHandler } from "./memory_view/key_handlers.ts";
-import { type IMemoryService, type ITreeNode } from "./memory_view/types.ts";
+import type { IMemoryService, ITreeNode } from "./memory_view/types.ts";
 import {
   AddLearningDialog,
   BulkApproveDialog,
@@ -22,7 +22,7 @@ import {
   ConfirmRejectDialog,
   PromoteDialog,
 } from "./dialogs/memory_dialogs.ts";
-import { type DialogBase } from "./helpers/dialog_base.ts";
+import type { DialogBase } from "./helpers/dialog_base.ts";
 import { renderSpinner } from "./helpers/markdown_renderer.ts";
 import { KEYS } from "./helpers/keyboard.ts";
 import { coerceMemoryTuiScope, type IMemoryTuiScopeType, MemoryTuiScope } from "./memory_view/memory_scope.ts";
@@ -389,7 +389,7 @@ export class MemoryViewTuiSession extends TuiSessionBase {
 
   // ===== Actions =====
 
-  private async fetchPendingProposal(action: string) {
+  private async fetchPendingProposal(action: string): Promise<Awaited<ReturnType<typeof this.service.getPending>>> {
     const node = this.findNodeById(this.state.selectedNodeId);
     if (!node || !node.id.startsWith("pending:")) {
       this.statusMessage = `Select a pending proposal to ${action}`;

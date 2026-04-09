@@ -15,7 +15,7 @@ import {
   ScenarioCiProfile,
   ScenarioSelectionSource,
 } from "./config.ts";
-import { type IScenarioStepExecutionResult } from "./step_executor.ts";
+import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { type IScenarioStep, ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { CI_EXCLUDED_TAGS } from "./scenario_catalog.ts";
 

@@ -17,14 +17,14 @@ import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
 import { parse as parseYaml } from "@std/yaml";
 import type { Config } from "../../shared/schemas/config.ts";
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import { IModelProvider } from "../../ai/types.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IModelProvider } from "../../ai/types.ts";
 import { GitService, type IGitService } from "../core/git_service.ts";
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
-import { ReviewRegistry } from "../artifact/review_registry.ts";
+import type { ReviewRegistry } from "../artifact/review_registry.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MissionReporter } from "../artifact/mission_reporter.ts";
 import { PlanExecutor } from "../plan/plan_executor.ts";
@@ -42,7 +42,7 @@ import {
   EXECUTION_REPORT_FILENAME,
   GIT_CMD_WORKTREE,
 } from "../../shared/constants.ts";
-import { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 export interface IExecutionLoopConfig {
   config: Config;
@@ -1198,7 +1198,7 @@ export class ExecutionLoop {
     actionType: string,
     traceId: string,
     payload: Record<string, JSONValue>,
-  ) {
+  ): void {
     if (!this.db) return;
 
     try {

@@ -9,7 +9,7 @@
 
 import { dirname, isAbsolute, resolve } from "@std/path";
 import type { ICriterionResult, IScenarioStep } from "../schema/step_schema.ts";
-import { type IScenarioStepOutcome } from "./assertions.ts";
+import type { IScenarioStepOutcome } from "./assertions.ts";
 
 export interface ICopyEvidenceArtifactOptions {
   outputDir: string;

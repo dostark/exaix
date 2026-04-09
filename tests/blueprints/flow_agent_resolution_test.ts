@@ -5,9 +5,9 @@
  * resolve to valid system identities or project blueprints.
  */
 
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
-import { parse as parseYaml } from "https://deno.land/std@0.224.0/yaml/mod.ts";
+import { assertEquals } from "@std/assert";
+import { join } from "@std/path";
+import { parse as parseYaml } from "@std/yaml";
 
 const BLUEPRINTS_DIR = "./Blueprints/Identities";
 const EXAMPLES_DIR = "./Blueprints/Identities/examples";

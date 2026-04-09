@@ -20,7 +20,12 @@ import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 /**
  * Creates test environment for notification tests
  */
-export async function initNotificationTest() {
+export async function initNotificationTest(): Promise<{
+  config: Awaited<ReturnType<typeof initTestDbService>>["config"];
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  notification: NotificationService;
+  cleanup: () => Promise<void>;
+}> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
   const notification = new NotificationService(config, db);
 
@@ -71,12 +76,17 @@ export function createTestProposal(idOrOverrides?: string | Partial<IMemoryUpdat
   };
 }
 
+type INotificationTestContext = Pick<
+  Awaited<ReturnType<typeof initNotificationTest>>,
+  "notification" | "db" | "config"
+>;
+
 /**
  * Helper wrapper for notification tests
  */
 export async function runNotificationTest(
-  fn: (ctx: { notification: NotificationService; db: any; config: any }) => Promise<void>,
-) {
+  fn: (ctx: INotificationTestContext) => Promise<void>,
+): Promise<void> {
   const { db, config, notification, cleanup } = await initNotificationTest();
   try {
     await fn({ notification, db, config });

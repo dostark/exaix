@@ -8,9 +8,9 @@
 import { Command, EnumType } from "@cliffy/command";
 import { resolve } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfile } from "./config.ts";
+import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfile } from "./config.ts";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
-import { IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
+import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 

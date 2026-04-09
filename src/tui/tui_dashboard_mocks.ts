@@ -19,63 +19,65 @@ import {
   MemoryRecordStatus,
   MemoryScope,
   MemoryType,
-  PortalAnalysisMode,
-  PortalExecutionStrategy,
+  type PortalAnalysisMode,
+  type PortalExecutionStrategy,
   PortalStatus,
   RequestPriority,
   RequestSource,
   SkillStatus,
   TuiIcon,
 } from "../shared/enums.ts";
-import { JSONValue as _JSONValue } from "../shared/types/json.ts";
-import { type IPortalDetails, type IPortalInfo, type IVerificationResult } from "../shared/types/portal.ts";
-import { type IPlanDetails, type IPlanMetadata } from "../shared/types/plan.ts";
-import {
-  type AnalysisMode,
-  type IRequestAnalysis,
-  type IRequestEntry,
-  type IRequestMetadata,
-  type IRequestOptions,
-  type IRequestShowResult,
+import type { JSONValue as _JSONValue } from "../shared/types/json.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
+import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
+import type {
+  AnalysisMode,
+  IRequestAnalysis,
+  IRequestEntry,
+  IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
 } from "../shared/types/request.ts";
-import { type AgentHealthData, type AgentLogEntry, type IAgentStatusItem } from "../shared/types/agent.ts";
-import { type IStructuredLogEntry, type LogQueryOptions } from "../shared/types/logging.ts";
-import {
-  type IActivitySummary,
-  type IDecision,
-  type IExecutionMemory,
-  type IGlobalMemory,
-  type ILearning,
-  type IMemorySearchResult,
-  type IMemoryUpdateProposal,
-  type IPattern,
-  type IProjectMemory,
-  type ISkill,
-  type ISkillMatch,
-  type SkillImmutableFields as _SkillImmutableFields,
-  type SkillManagedFields,
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
+import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
+import type { ILogContext } from "../shared/types/logging.ts";
+import type { LogMetadata } from "../shared/types/json.ts";
+import type {
+  IActivitySummary,
+  IDecision,
+  IExecutionMemory,
+  IGlobalMemory,
+  ILearning,
+  IMemorySearchResult,
+  IMemoryUpdateProposal,
+  IPattern,
+  IProjectMemory,
+  ISkill,
+  ISkillMatch,
+  SkillImmutableFields as _SkillImmutableFields,
+  SkillManagedFields,
 } from "../shared/schemas/memory_bank.ts";
-import { IPortalService } from "../shared/interfaces/i_portal_service.ts";
-import { IPlanService } from "../shared/interfaces/i_plan_service.ts";
-import { IRequestService } from "../shared/interfaces/i_request_service.ts";
-import { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
-import { IAgentService } from "../shared/interfaces/i_agent_service.ts";
-import { IMemoryBankService } from "../shared/interfaces/i_memory_bank_service.ts";
-import { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
-import { INotificationService } from "../shared/interfaces/i_notification_service.ts";
-import { ILogService, IStructuredLogger } from "../shared/interfaces/i_log_service.ts";
-import { IJournalService } from "../shared/interfaces/i_journal_service.ts";
-import { IMemoryService } from "../shared/interfaces/i_memory_service.ts";
+import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
+import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
+import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
+import type { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
+import type { IAgentService } from "../shared/interfaces/i_agent_service.ts";
+import type { IMemoryBankService } from "../shared/interfaces/i_memory_bank_service.ts";
+import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
+import type { INotificationService } from "../shared/interfaces/i_notification_service.ts";
+import type { ILogService, IStructuredLogger } from "../shared/interfaces/i_log_service.ts";
+import type { IJournalService } from "../shared/interfaces/i_journal_service.ts";
+import type { IMemoryService } from "../shared/interfaces/i_memory_service.ts";
 import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
 import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
 import { RequestStatus, type RequestStatusType } from "../shared/status/request_status.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
-import { MemoryStatus as _MemoryStatus, type MemoryStatusType } from "../shared/status/memory_status.ts";
-import { type IMemoryNotification } from "../shared/types/notification.ts";
-import { type ISkillMatchRequest } from "../shared/types/skill.ts";
-import { type IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";
-import { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
-import { type IActivityRecord, type IJournalFilterOptions, type SqliteParam } from "../shared/types/database.ts";
+import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "../shared/status/memory_status.ts";
+import type { IMemoryNotification } from "../shared/types/notification.ts";
+import type { ISkillMatchRequest } from "../shared/types/skill.ts";
+import type { IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";
+import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
+import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "../shared/types/database.ts";
 import { SECONDS_PER_HOUR } from "../shared/constants.ts";
 
 /** Default identity ID used across all mock service implementations */
@@ -443,7 +445,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
   createProjectMemory(_projectMem: IProjectMemory): Promise<void> {
     return Promise.resolve();
   }
-  updateProjectMemory(_portal: string, _updates: any): Promise<void> {
+  updateProjectMemory(_portal: string, _updates: Partial<Omit<IProjectMemory, "portal">>): Promise<void> {
     return Promise.resolve();
   }
   addPattern(_portal: string, _pattern: IPattern): Promise<void> {
@@ -522,7 +524,18 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
     return Promise.resolve();
   }
 
-  promoteLearning(_portal: string, _promotion: any): Promise<string> {
+  promoteLearning(
+    _portal: string,
+    _promotion: {
+      type: MemoryType.PATTERN | MemoryType.DECISION;
+      name: string;
+      title: string;
+      description: string;
+      category: ILearning["category"];
+      tags: string[];
+      confidence: ILearning["confidence"];
+    },
+  ): Promise<string> {
     return Promise.resolve("new-learning-id");
   }
 
@@ -912,15 +925,15 @@ export class MockSkillsService implements ISkillsService {
  * MockStructuredLogger
  */
 export class MockStructuredLogger implements IStructuredLogger {
-  setContext(_context: Partial<any>) {}
-  child(_additionalContext: Partial<any>): IStructuredLogger {
+  setContext(_context: Partial<ILogContext>): void {}
+  child(_additionalContext: Partial<ILogContext>): IStructuredLogger {
     return this;
   }
-  debug(_message: string, _metadata?: any) {}
-  info(_message: string, _metadata?: any) {}
-  warn(_message: string, _metadata?: any) {}
-  error(_message: string, _error?: Error, _metadata?: any) {}
-  fatal(_message: string, _error?: Error, _metadata?: any) {}
+  debug(_message: string, _metadata?: LogMetadata): void {}
+  info(_message: string, _metadata?: LogMetadata): void {}
+  warn(_message: string, _metadata?: LogMetadata): void {}
+  error(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
+  fatal(_message: string, _error?: Error, _metadata?: LogMetadata): void {}
   time<T>(_operation: string, fn: () => Promise<T>): Promise<T> {
     return fn();
   }

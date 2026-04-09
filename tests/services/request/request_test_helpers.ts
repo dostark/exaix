@@ -13,9 +13,9 @@ import {
 } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import {
-  type IRequestAnalysisContext,
-  type IRequestAnalyzerService,
+import type {
+  IRequestAnalysisContext,
+  IRequestAnalyzerService,
 } from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
@@ -63,7 +63,21 @@ export function makeThrowingAnalyzer(): IRequestAnalyzerService {
   };
 }
 
-export async function makeRequestProcessorEnv() {
+export async function makeRequestProcessorEnv(): Promise<{
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  config: Awaited<ReturnType<typeof initTestDbService>>["config"];
+  tempDir: string;
+  cleanup: Awaited<ReturnType<typeof initTestDbService>>["cleanup"];
+  workspacePath: string;
+  requestsDir: string;
+  blueprintsPath: string;
+  processorConfig: {
+    workspacePath: string;
+    requestsDir: string;
+    blueprintsPath: string;
+    includeReasoning: boolean;
+  };
+}> {
   const { db, config, tempDir, cleanup } = await initTestDbService();
 
   const workspacePath = join(tempDir, config.paths.workspace);

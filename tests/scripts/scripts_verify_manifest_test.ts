@@ -5,16 +5,26 @@
  * runtime manifest correctly matches the declared state in the repository.
  */
 
-import { assert } from "https://deno.land/std@0.203.0/assert/mod.ts";
-import { join } from "https://deno.land/std@0.203.0/path/mod.ts";
+import { assert } from "@std/assert";
+import { join } from "@std/path";
 import { generateManifestObject } from "../../scripts/build_agents_index.ts";
 import { REPO_ROOT, withRepoRoot } from "../helpers/repo_root.ts";
 
-function normalize(obj: any) {
-  const copy = JSON.parse(JSON.stringify(obj));
+interface IManifestDoc {
+  path?: string;
+  chunks?: string[];
+}
+
+interface IManifestLike {
+  generated_at?: string;
+  docs?: IManifestDoc[];
+}
+
+function normalize<T extends IManifestLike>(obj: T): T {
+  const copy = JSON.parse(JSON.stringify(obj)) as T;
   delete copy.generated_at;
   if (Array.isArray(copy.docs)) {
-    copy.docs.sort((a: any, b: any) => String(a.path).localeCompare(String(b.path)));
+    copy.docs.sort((a: IManifestDoc, b: IManifestDoc) => String(a.path).localeCompare(String(b.path)));
     for (const d of copy.docs) {
       if (Array.isArray(d.chunks)) d.chunks.sort();
     }

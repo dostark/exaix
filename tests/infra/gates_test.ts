@@ -4,7 +4,7 @@
  * @description Module for gates_test.
  */
 
-import { assertStringIncludes } from "https://deno.land/std@0.221.0/assert/mod.ts";
+import { assertStringIncludes } from "@std/assert";
 
 /**
  * Tests for CI Quality Gates (Step 10.3.3)

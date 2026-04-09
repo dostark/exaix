@@ -5,7 +5,7 @@
  * that all discovered agent metadata is correctly aggregated for runtime lookups.
  */
 
-import { assert, assertEquals, assertExists } from "https://deno.land/std@0.203.0/assert/mod.ts";
+import { assert, assertEquals, assertExists } from "@std/assert";
 import { PortalOperation } from "../../src/shared/enums.ts";
 
 import { buildIndex, chunkText, extractFrontmatter } from "../../scripts/build_agents_index.ts";

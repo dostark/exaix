@@ -22,18 +22,7 @@ Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt"
     await Deno.writeTextFile(join(portalPath, "src/cli/commands/plan.ts"), "// plan");
     await Deno.writeTextFile(join(portalPath, "src/index.ts"), "// index");
 
-    // 2. Setup MockLLMProvider to capture prompts
-    // Use MockStrategy.RECORDED to trigger default pattern fallbacks in MockLLMProvider
-    const { provider, processor } = env.createRequestProcessor({
-      providerMode: MockStrategy.RECORDED,
-    });
-
-    // 3. Create request with portal
-    const { filePath: requestPath } = await env.createRequest("Fix plan command", {
-      portal: "target-repo",
-    });
-
-    // Manually register portal in environment config
+    // 2. Register portal in environment config before constructing the processor.
     env.config.portals = [{
       alias: "target-repo",
       target_path: portalPath,
@@ -42,21 +31,30 @@ Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt"
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
 
-    // 4. Process request to generate a plan
+    // 3. Setup MockLLMProvider to capture prompts
+    // Use MockStrategy.RECORDED to trigger default pattern fallbacks in MockLLMProvider
+    const { provider, processor } = env.createRequestProcessor({
+      providerMode: MockStrategy.RECORDED,
+    });
+
+    // 4. Create request with portal
+    const { filePath: requestPath } = await env.createRequest("Fix plan command", {
+      portal: "target-repo",
+    });
+
+    // 5. Process request to generate a plan
     await processor.process(requestPath);
 
-    // 5. Inspect the prompt sent to LLM
-    const lastCall = provider.getLastCall();
-    assert(lastCall, "LLM should have been called during plan generation");
-
-    const prompt = lastCall.prompt;
+    // 6. Inspect prompts sent to the mock provider.
+    const promptHistory = provider.callHistory.map((call) => call.prompt).join("\n\n---\n\n");
+    assert(provider.callHistory.length > 0, "LLM should have been called during plan generation");
 
     // Verify that the deep file structure is present in the prompt's PORTAL REPOSITORY CONTEXT
     // Note: The tree view shows filenames relative to their parent
-    assertStringIncludes(prompt, "init.ts");
-    assertStringIncludes(prompt, "plan.ts");
-    assertStringIncludes(prompt, "commands");
-    assertStringIncludes(prompt, "src");
+    assertStringIncludes(promptHistory, "init.ts");
+    assertStringIncludes(promptHistory, "plan.ts");
+    assertStringIncludes(promptHistory, "commands");
+    assertStringIncludes(promptHistory, "src");
 
     console.log("✅ Grounding regression test passed: Deep portal structure detected in prompt");
   } finally {

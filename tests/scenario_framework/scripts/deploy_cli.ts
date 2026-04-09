@@ -7,8 +7,8 @@
 import { Command } from "@cliffy/command";
 import { resolve } from "@std/path";
 import { deployFrameworkToDirectory } from "./deploy_framework.ts";
-import { ScenarioExecutionMode } from "../schema/step_schema.ts";
-import { ScenarioCiProfile } from "../runner/config.ts";
+import type { ScenarioExecutionMode } from "../schema/step_schema.ts";
+import type { ScenarioCiProfile } from "../runner/config.ts";
 
 const defaultSource = resolve(new URL(".", import.meta.url).pathname, "..");
 

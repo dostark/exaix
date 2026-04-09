@@ -6,12 +6,20 @@
  * * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
  */
 
-import { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
-import { type IPlanDetails, type IPlanMetadata } from "../../shared/types/plan.ts";
+import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
+import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
 import { PlanStatus, type PlanStatusType } from "../../shared/status/plan_status.ts";
 
+interface IPlanCommandService {
+  approve(planId: string, skills?: string[]): Promise<void>;
+  reject(planId: string, reason?: string): Promise<void>;
+  revise(planId: string, comments: string[]): Promise<void>;
+  list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]>;
+  show(planId: string): Promise<IPlanDetails>;
+}
+
 export class PlanAdapter implements IPlanService {
-  constructor(private service: any) {}
+  constructor(private service: IPlanCommandService) {}
 
   async approve(planId: string, _reviewer?: string, skills?: string[]): Promise<boolean> {
     try {

@@ -5,7 +5,7 @@
  * coordinating mock signal emission and LIFO task execution checks.
  */
 
-import { Spy, spy } from "@std/testing/mock";
+import { type Spy, spy } from "@std/testing/mock";
 import type { IStructuredLogger } from "../../../src/services/logger/structured_logger.ts";
 
 /**

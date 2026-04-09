@@ -1,8 +1,8 @@
 // Given a query and an agent type, return the best matching short_summary + chunks
 // Usage: deno run --allow-read scripts/inject_agent_context.ts --query "fix tests" --agent copilot
 
-import { parse } from "https://deno.land/std@0.203.0/yaml/mod.ts";
-import { walk } from "https://deno.land/std@0.203.0/fs/mod.ts";
+import { walk } from "@std/fs";
+import { parse } from "@std/yaml";
 import type { JSONObject } from "../src/shared/types/json.ts";
 
 const AGENTS_DIR = ".copilot";

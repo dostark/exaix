@@ -5,8 +5,8 @@
  * verifying execution context state within TUI memory tests.
  */
 
-import { DialogStatus } from "../../../src/shared/enums.ts";
-import { type IMemoryService } from "../../../src/tui/memory_view/types.ts";
+import type { DialogStatus } from "../../../src/shared/enums.ts";
+import type { IMemoryService } from "../../../src/tui/memory_view/types.ts";
 
 export interface IMemoryViewTestContext {
   statuses: string[];
@@ -41,7 +41,7 @@ export function createMockService(overrides: Partial<IMemoryService> = {}): IMem
 export function createMockDialog<T>(
   result: { type: DialogStatus; value?: T },
   overrides: Partial<{ [K in keyof T]?: T[K] }> = {},
-) {
+): { getResult: () => { type: DialogStatus; value?: T } } {
   const dialog = { getResult: () => result };
   Object.assign(dialog, overrides);
   return dialog as { getResult: () => { type: DialogStatus; value?: T } };
@@ -92,7 +92,7 @@ export function testDialogProcess<T>(
     ) => Promise<void>;
   },
   verify: (ctx: IMemoryViewTestContext) => void | Promise<void>,
-) {
+): void {
   Deno.test(name, async () => {
     const { dialog, ctx, process } = setup();
     await process(dialog, ctx.ctx);

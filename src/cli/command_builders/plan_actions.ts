@@ -8,9 +8,9 @@
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
-import { PlanStatus } from "../../shared/status/plan_status.ts";
+import type { PlanStatus } from "../../shared/status/plan_status.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { JSONObject, JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IPlanActionContext {

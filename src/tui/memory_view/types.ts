@@ -6,9 +6,9 @@
  * * @related-files [src/services/memory_bank.ts, src/enums.ts]
  */
 
-import { TuiNodeType } from "../../shared/enums.ts";
+import type { TuiNodeType } from "../../shared/enums.ts";
 
-import { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
+import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
 
 export type ITreeNodeType = TuiNodeType;
 

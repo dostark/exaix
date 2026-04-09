@@ -11,7 +11,7 @@ import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { MemoryExtractorService } from "../../src/services/memory/memory_extractor.ts";
 import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
 import { SkillsService } from "../../src/services/skills/skills.ts";
-import { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import {
   MemoryBankAdapter,
   MemoryEmbeddingAdapter,

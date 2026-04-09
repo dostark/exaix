@@ -8,8 +8,8 @@
  */
 
 import type { Config } from "../../shared/schemas/config.ts";
-import { IModelProvider } from "../../ai/types.ts";
-import { DatabaseService } from "../core/db.ts";
+import type { IModelProvider } from "../../ai/types.ts";
+import type { DatabaseService } from "../core/db.ts";
 import { GitService } from "../core/git_service.ts";
 import { SafeSubprocess } from "../../helpers/subprocess.ts";
 import { EventLogger } from "../core/event_logger.ts";
@@ -28,9 +28,9 @@ import {
   REPORT_GENERATION_MAX_TOKENS,
   REPORT_GENERATION_TEMPERATURE,
 } from "../../shared/constants.ts";
-import { JSONValue } from "../../shared/types/json.ts";
-import { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-import { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 
 export interface IPlanStep {
   number: number;

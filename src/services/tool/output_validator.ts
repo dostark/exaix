@@ -14,12 +14,12 @@
  * * @related-files [src/services/agent_runner.ts, src/services/json_repair.ts]
  */
 
-import { z, ZodError, ZodType, ZodTypeDef } from "zod";
+import { z, ZodError, type ZodType, type ZodTypeDef } from "zod";
 import { PlanSchema, PlanStepSchema } from "../../shared/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "../../shared/enums.ts";
 import { repairJSON } from "../utils/json_repair.ts";
 import { describeSchema } from "../../shared/schemas/schema_describer.ts";
-import { JSONValue, JSONValueSchema } from "../../shared/types/json.ts";
+import { type JSONValue, JSONValueSchema } from "../../shared/types/json.ts";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 /**

@@ -49,7 +49,7 @@ export class FlowCommands extends BaseCommand {
     return Deno.exit(code);
   }
 
-  async listFlows(options: FlowListOptions = {}) {
+  async listFlows(options: FlowListOptions = {}): Promise<void> {
     try {
       const flows = await this.flowLoader.loadAllFlows();
 
@@ -94,7 +94,7 @@ export class FlowCommands extends BaseCommand {
     }
   }
 
-  async showFlow(flowId: string, options: FlowShowOptions = {}) {
+  async showFlow(flowId: string, options: FlowShowOptions = {}): Promise<void> {
     try {
       const flow = await this.flowLoader.loadFlow(flowId);
 
@@ -146,7 +146,7 @@ export class FlowCommands extends BaseCommand {
     }
   }
 
-  async validateFlow(flowId: string, options: FlowValidateOptions = {}) {
+  async validateFlow(flowId: string, options: FlowValidateOptions = {}): Promise<void> {
     try {
       const filePath = join(
         this.config.system.root,

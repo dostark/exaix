@@ -85,7 +85,7 @@ export class PatchFileTool extends ToolHandler {
     };
   }
 
-  getToolDefinition() {
+  getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.PATCH_FILE,
       description: "Apply a targeted string replacement to a file in a portal. " +

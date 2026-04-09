@@ -9,7 +9,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "../shared/schemas/request.ts";
 import type { DatabaseService } from "../services/core/db.ts";
 import { ActivityActor } from "../shared/enums.ts";
-import { JSONValue, toSafeJson } from "../shared/types/json.ts";
+import { type JSONValue, toSafeJson } from "../shared/types/json.ts";
 
 /**
  * Result of parsing a request markdown file
@@ -75,7 +75,7 @@ export class FrontmatterParser {
   /**
    * Log activity to the IActivity Journal (if database is available)
    */
-  private logActivity(actionType: string, payload: Record<string, JSONValue>) {
+  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
     if (!this.db) {
       return; // No database, skip logging
     }

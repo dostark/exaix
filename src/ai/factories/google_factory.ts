@@ -6,7 +6,7 @@
  * * @related-files [src/ai/providers/google_provider.ts]
  */
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
-import { IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { GoogleProvider } from "../providers/google_provider.ts";
 import { PROVIDER_GOOGLE } from "../../shared/constants.ts";
 

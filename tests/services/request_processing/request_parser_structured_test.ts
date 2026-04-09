@@ -11,6 +11,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { ParsedRequestFile } from "../../../src/services/request_processing/types.ts";
 
 // ---------------------------------------------------------------------------
 // Logger helpers
@@ -66,7 +67,7 @@ Request body text.
 
 async function parseRequestWithFields(
   extraFields: string,
-): Promise<{ frontmatter: any; logs: LogEntry[] }> {
+): Promise<{ frontmatter: ParsedRequestFile["frontmatter"]; logs: LogEntry[] }> {
   const logs: LogEntry[] = [];
   const parser = new RequestParser(createLogger(logs));
   const content = buildRequestContent(extraFields);

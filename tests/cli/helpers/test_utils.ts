@@ -22,7 +22,9 @@ function loadExaCtlModule(): Promise<typeof import("../../../src/cli/exactl.ts")
   return exactlModulePromise;
 }
 
-export async function withTestMod<T>(fn: (mod: typeof ExaCtlModule, ctx: ExaCtlTestContext) => Promise<T> | T) {
+export async function withTestMod<T>(
+  fn: (mod: typeof ExaCtlModule, ctx: ExaCtlTestContext) => Promise<T> | T,
+): Promise<T> {
   const origEnv = Deno.env.get("EXA_TEST_CLI_MODE") ?? Deno.env.get("EXA_TEST_MODE");
   Deno.env.set("EXA_TEST_CLI_MODE", "1");
   Deno.env.set("EXA_TEST_MODE", "1");
@@ -115,11 +117,17 @@ model = "test"
   }
 }
 
-export async function captureConsoleOutput(fn: () => Promise<void> | void, timeoutMs: number = 10000) {
+export async function captureConsoleOutput(
+  fn: () => Promise<void> | void,
+  timeoutMs: number = 10000,
+): Promise<string> {
   return await captureConsoleOutputShared(fn, timeoutMs);
 }
 
-export async function captureAllOutputs(fn: () => Promise<void> | void, timeoutMs: number = 10000) {
+export async function captureAllOutputs(
+  fn: () => Promise<void> | void,
+  timeoutMs: number = 10000,
+): Promise<{ logs: string[]; warns: string[]; errs: string[] }> {
   return await captureAllOutputsShared(fn, timeoutMs);
 }
 

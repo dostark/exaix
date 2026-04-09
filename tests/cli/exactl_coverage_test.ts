@@ -17,7 +17,7 @@ import {
   RequestPriority,
   RequestSource,
   ReviewType,
-  SkillStatus as _SkillStatus,
+  type SkillStatus as _SkillStatus,
   UIOutputFormat,
   VerificationStatus,
 } from "../../src/shared/enums.ts";
@@ -33,6 +33,8 @@ import type { RequestStatusType } from "../../src/shared/status/request_status.t
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import { TEST_MODEL_OPENAI } from "../config/constants.ts";
+
+type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
 
 // ===== Plan Command Error Handlers =====
 
@@ -308,9 +310,9 @@ Deno.test("git worktrees list uses repo option and prints entries", async () => 
 
 Deno.test("git worktrees prune passes options to GitService", async () => {
   const originalPrune = GitService.prototype.pruneWorktrees;
-  let received: any = null;
+  let received: IPruneWorktreesOptions | null = null;
 
-  GitService.prototype.pruneWorktrees = function (options: any) {
+  GitService.prototype.pruneWorktrees = function (options?: IPruneWorktreesOptions) {
     received = options;
     return Promise.resolve("pruned worktrees");
   };

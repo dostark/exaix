@@ -12,7 +12,11 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
-import { ITraceData, MissionReporter, ReportConfig } from "../../../src/services/artifact/mission_reporter.ts";
+import {
+  type ITraceData,
+  MissionReporter,
+  type ReportConfig,
+} from "../../../src/services/artifact/mission_reporter.ts";
 import { join } from "@std/path";
 
 // ============================================================================

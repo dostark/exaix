@@ -13,7 +13,7 @@ import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { ProviderFactory } from "../../../src/ai/provider_factory.ts";
 import { initializeGlobalLogger } from "../../../src/services/logger/structured_logger.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
-import { LogLevel, ProviderType } from "../../../src/shared/enums.ts";
+import { LogLevel, type ProviderType } from "../../../src/shared/enums.ts";
 
 /**
  * Reproduction Test for Issue 001: Daemon Plan Lifecycle (Zombie Plans)

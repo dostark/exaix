@@ -34,7 +34,7 @@ export class ArchiveService {
     this.indexPath = join(this.archiveRoot, "index.json");
   }
 
-  async archivePlan(entry: ArchiveEntry, planContent: string, requestContent: string) {
+  async archivePlan(entry: ArchiveEntry, planContent: string, requestContent: string): Promise<void> {
     const date = new Date(entry.archived_at);
     const year = date.getFullYear().toString();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -46,7 +46,7 @@ export class ArchiveService {
     await this.updateIndex(entry);
   }
 
-  async updateIndex(entry: ArchiveEntry) {
+  async updateIndex(entry: ArchiveEntry): Promise<void> {
     let index: ArchiveEntry[] = [];
     if (await exists(this.indexPath)) {
       const raw = await Deno.readTextFile(this.indexPath);

@@ -73,7 +73,7 @@ export class FileWatcher {
   /**
    * Start watching the directory
    */
-  async start() {
+  async start(): Promise<void> {
     this.abortController = new AbortController();
 
     try {
@@ -141,7 +141,7 @@ export class FileWatcher {
   /**
    * Stop watching
    */
-  async stop() {
+  async stop(): Promise<void> {
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = null;
@@ -173,7 +173,7 @@ export class FileWatcher {
   /**
    * Stage 1: Debounce file events
    */
-  private debounceFile(path: string) {
+  private debounceFile(path: string): void {
     // Clear existing timer for this file
     const existingTimer = this.debounceTimers.get(path);
     if (existingTimer) {
@@ -192,7 +192,7 @@ export class FileWatcher {
   /**
    * Stage 1.5: Queued file processing to prevent race conditions
    */
-  private async processFileQueued(path: string) {
+  private async processFileQueued(path: string): Promise<void> {
     // Prevent concurrent processing of the same file
     if (this.processingFiles.has(path)) {
       await this.logger.debug("watcher.file_already_processing", path, {
@@ -213,7 +213,7 @@ export class FileWatcher {
   /**
    * Stage 2: Process file after debounce
    */
-  private async processFile(path: string) {
+  private async processFile(path: string): Promise<void> {
     try {
       let content: string;
 
