@@ -71,6 +71,7 @@ graph TB
         GitSvc[Git Service]
         EventLog[Event Logger]
         ContextLoad[Context Loader]
+        PromptBudget[Prompt Budget Allocator<br/>budget_enforcement<br/>system / plan / portalKnowledge<br/>memory / skills / loopHistory]
         PlanWriter[Plan Writer]
         PlanAdapter[Plan Adapter]
         MissionRpt[Mission Reporter]
@@ -164,9 +165,11 @@ graph TB
 
     %% Services integration
     AgentRun --> ContextLoad
+    AgentRun --> PromptBudget
     AgentRun --> PlanWriter
     AgentRun --> MissionRpt
     AgentRun --> EventLog
+    PromptBudget --> ContextLoad
     ExecLoop --> ToolReg
     ExecLoop --> GitSvc
     ContextLoad --> Memory
@@ -200,6 +203,7 @@ graph TB
 
     %% Storage access
     ConfigSvc --> FS
+    ConfigSvc --> PromptBudget
     DBSvc --> DB
     ReqProc --> Blueprint
     PlanWatch --> System
@@ -215,7 +219,7 @@ graph TB
     class User,Agent actor
     class Exactl,ReqCmd,PlanCmd,ChangeCmd,GitCmd,DaemonCmd,PortalCmd,BlueprintCmd,DashCmd cli
     class Main,ReqWatch,PlanWatch,ReqProc,ReqAn,ReqRouter,PlanExec,AgentRun,FlowEng,FlowRun,ExecLoop core
-    class ConfigSvc,DBSvc,GitSvc,EventLog,ContextLoad,PlanWriter,MissionRpt,PathRes,ToolReg,CtxCard,OutputVal,RetryPol,ReflexAgt,ConfScore,SessMem,ToolRefl service
+    class ConfigSvc,DBSvc,GitSvc,EventLog,ContextLoad,PromptBudget,PlanWriter,MissionRpt,PathRes,ToolReg,CtxCard,OutputVal,RetryPol,ReflexAgt,ConfScore,SessMem,ToolRefl service
     class DB,FS,Workspace,Blueprint,Memory,Portals,System storage
     class Factory,Ollama,Claude,GPT,Gemini,Mock ai
 
@@ -1934,63 +1938,64 @@ graph LR
 
 ## Component Responsibilities
 
-| Component                | Responsibility                                    | Key Files                                            | Edition  |
-| ------------------------ | ------------------------------------------------- | ---------------------------------------------------- | -------- |
-| **CLI Layer**            | Human interface for system control                | `src/cli/*.ts`                                       | 🟢 All   |
-| **Daemon**               | Background orchestration engine                   | `src/main.ts:Daemon`                                 | 🟢 All   |
-| **Request Watcher**      | Detect new requests in Workspace/Requests         | `src/services/watcher.ts`                            | 🟢 All   |
-| **Plan Watcher**         | Detect approved plans                             | `src/services/watcher.ts`                            | 🟢 All   |
-| **Request Processor**    | Parse requests, generate plans                    | `src/services/request_processor.ts:RequestProcessor` | 🟢 All   |
-| **Request Router**       | Route requests to Agent/Flow runners              | `src/services/request_router.ts:RequestRouter`       | 🟢 All   |
-| **Request Analyzer**     | `src/services/request_analysis/`                  | Intent, requirements & complexity extraction         | 🟢 All   |
-| **Request Quality Gate** | Pre-execution quality scoring and Q&A refinement  | `src/services/quality_gate/request_quality_gate.ts`  | 🟢 All   |
-| **Clarification Engine** | Multi-turn Q&A loop for request refinement        | `src/services/quality_gate/clarification_engine.ts`  | 🟢 All   |
-| **Plan Executor**        | Execute approved plans                            | `src/services/plan_executor.ts`                      | 🟢 All   |
-| **Agent Runner**         | Execute agent logic with LLM                      | `src/services/agent_runner.ts:AgentRunner`           | 🟢 All   |
-| **Flow Runner**          | Execute multi-agent flows                         | `src/flows/flow_runner.ts:FlowRunner`                | 🟢 All   |
-| **Event Logger**         | Write to Activity Journal                         | `src/services/event_logger.ts:EventLogger`           | 🟢 All   |
-| **Config Service**       | Load and validate exa.config.toml                 | `src/config/service.ts:ConfigService`                | 🟢 All   |
-| **Workspace Execution**  | Agent environment and path resolution             | `src/services/workspace_execution_context.ts`        | 🟢 All   |
-| **Database Service**     | Edition-tiered journal operations                 | `src/services/db.ts`                                 | 🟢 All   |
-| **Git Service**          | Git operations with trace metadata                | `src/services/core/git_service.ts`                   | 🟢 All   |
-| **Provider Factory**     | Create LLM provider instances                     | `src/ai/provider_factory.ts`                         | 🟢 All   |
-| **Context Loader**       | Load context for agent execution                  | `src/services/context_loader.ts`                     | 🟢 All   |
-| **Portal Commands**      | Manage external project access                    | `src/cli/portal_commands.ts`                         | 🟢 All   |
-| **Blueprint Commands**   | Manage agent templates                            | `src/cli/blueprint_commands.ts`                      | 🟢 All   |
-| **Dashboard Commands**   | Launch terminal dashboard                         | `src/cli/dashboard_commands.ts`                      | 🟢 All   |
-| **TUI Dashboard**        | Multi-view terminal UI (7-9 views)                | `src/tui/*.ts`                                       | 🟢 All   |
-| **Web UI**               | Browser-based approval interface                  | `src/web/*`                                          | 🔵 Team+ |
-| **Parsers**              | Parse markdown + frontmatter                      | `src/parsers/*.ts`                                   | 🟢 All   |
-| **Plan Parser**          | Shared structured plan parsing utility            | `src/services/structured_plan_parser.ts`             | 🟢 All   |
-| **Schemas**              | Zod validation layer                              | `src/schemas/*.ts`                                   | 🟢 All   |
-| **MCP Client**           | Connect to external MCP servers                   | `src/mcp/client.ts`                                  | 🟢 All   |
-| **MCP Server**           | JSON-RPC server for tool execution                | `src/mcp/server.ts`                                  | 🔵 Team+ |
-| **Blueprint Loader**     | Unified blueprint parsing                         | `src/services/blueprint_loader.ts`                   | 🟢 All   |
-| **Output Validator**     | Schema validation with JSON repair                | `src/services/output_validator.ts`                   | 🟢 All   |
-| **Retry Policy**         | Exponential backoff with jitter                   | `src/services/retry_policy.ts`                       | 🟢 All   |
-| **Plan Adapter**         | JSON validation and markdown conversion           | `src/services/plan_adapter.ts`                       | 🟢 All   |
-| **Plan Writer**          | Format results into structured plans              | `src/services/plan_writer.ts`                        | 🟢 All   |
-| **Request Common**       | Blueprints and request building utilities         | `src/services/request_common.ts`                     | 🟢 All   |
-| **Review Registry**      | Agent-created review management                   | `src/services/review_registry.ts`                    | 🟢 All   |
-| **Path Resolver**        | Portal alias and security path resolution         | `src/services/path_resolver.ts`                      | 🟢 All   |
-| **Skills Service**       | Procedural memory (skills) management             | `src/services/skills.ts`                             | 🟢 All   |
-| **Mission Reporter**     | Execution reports and memory updates              | `src/services/mission_reporter.ts`                   | 🟢 All   |
-| **Prompt Context**       | Structured prompt building utilities              | `src/services/prompt_context.ts`                     | 🟢 All   |
-| **Reflexive Agent**      | Self-critique improvement loop                    | `src/services/reflexive_agent.ts`                    | 🟢 All   |
-| **Tool Reflector**       | Tool result evaluation and retry                  | `src/services/tool_reflector.ts`                     | 🟢 All   |
-| **Session Memory**       | Memory context injection                          | `src/services/session_memory.ts`                     | 🟢 All   |
-| **Confidence Scorer**    | Output confidence assessment                      | `src/services/confidence_scorer.ts`                  | 🟢 All   |
-| **Criteria Generator**   | Dynamic evaluation criteria from request analysis | `src/services/criteria_generator.ts`                 | 🟢 All   |
-| **Condition Evaluator**  | Flow condition expression eval                    | `src/flows/condition_evaluator.ts`                   | 🟢 All   |
-| **Gate Evaluator**       | Quality gate checkpoint validation                | `src/flows/gate_evaluator.ts`                        | 🟢 All   |
-| **Judge Evaluator**      | LLM-as-a-Judge assessment                         | `src/flows/judge_evaluator.ts`                       | 🟢 All   |
-| **Feedback Loop**        | Iterative refinement control                      | `src/flows/feedback_loop.ts`                         | 🟢 All   |
-| **Evaluation Criteria**  | Quality standards validation                      | `src/flows/evaluation_criteria.ts`                   | 🟢 All   |
-| **Notification Service** | Memory update and system notifications            | `src/services/notification.ts`                       | 🟢 All   |
-| **Health Check Service** | System health and resource monitoring             | `src/services/health_check_service.ts`               | 🟢 All   |
-| **Graceful Shutdown**    | Process termination and cleanup management        | `src/services/graceful_shutdown.ts`                  | 🟢 All   |
-| **Governance Dashboard** | Compliance monitoring and risk scoring            | `src/web/governance/*`                               | 🟣 Ent   |
-| **Compliance Reporter**  | Regulatory compliance exports                     | `src/services/compliance.ts`                         | 🟣 Ent   |
+| Component                   | Responsibility                                                                                                                                    | Key Files                                            | Edition  |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------- |
+| **CLI Layer**               | Human interface for system control                                                                                                                | `src/cli/*.ts`                                       | 🟢 All   |
+| **Daemon**                  | Background orchestration engine                                                                                                                   | `src/main.ts:Daemon`                                 | 🟢 All   |
+| **Request Watcher**         | Detect new requests in Workspace/Requests                                                                                                         | `src/services/watcher.ts`                            | 🟢 All   |
+| **Plan Watcher**            | Detect approved plans                                                                                                                             | `src/services/watcher.ts`                            | 🟢 All   |
+| **Request Processor**       | Parse requests, generate plans                                                                                                                    | `src/services/request_processor.ts:RequestProcessor` | 🟢 All   |
+| **Request Router**          | Route requests to Agent/Flow runners                                                                                                              | `src/services/request_router.ts:RequestRouter`       | 🟢 All   |
+| **Request Analyzer**        | `src/services/request_analysis/`                                                                                                                  | Intent, requirements & complexity extraction         | 🟢 All   |
+| **Request Quality Gate**    | Pre-execution quality scoring and Q&A refinement                                                                                                  | `src/services/quality_gate/request_quality_gate.ts`  | 🟢 All   |
+| **Clarification Engine**    | Multi-turn Q&A loop for request refinement                                                                                                        | `src/services/quality_gate/clarification_engine.ts`  | 🟢 All   |
+| **Plan Executor**           | Execute approved plans                                                                                                                            | `src/services/plan_executor.ts`                      | 🟢 All   |
+| **Agent Runner**            | Execute agent logic with LLM                                                                                                                      | `src/services/agent_runner.ts:AgentRunner`           | 🟢 All   |
+| **Flow Runner**             | Execute multi-agent flows                                                                                                                         | `src/flows/flow_runner.ts:FlowRunner`                | 🟢 All   |
+| **Event Logger**            | Write to Activity Journal                                                                                                                         | `src/services/event_logger.ts:EventLogger`           | 🟢 All   |
+| **Config Service**          | Load and validate exa.config.toml                                                                                                                 | `src/config/service.ts:ConfigService`                | 🟢 All   |
+| **Workspace Execution**     | Agent environment and path resolution                                                                                                             | `src/services/workspace_execution_context.ts`        | 🟢 All   |
+| **Database Service**        | Edition-tiered journal operations                                                                                                                 | `src/services/db.ts`                                 | 🟢 All   |
+| **Git Service**             | Git operations with trace metadata                                                                                                                | `src/services/core/git_service.ts`                   | 🟢 All   |
+| **Provider Factory**        | Create LLM provider instances                                                                                                                     | `src/ai/provider_factory.ts`                         | 🟢 All   |
+| **Context Loader**          | Load context for agent execution                                                                                                                  | `src/services/context_loader.ts`                     | 🟢 All   |
+| **Prompt Budget Allocator** | Derive prompt budgets from `budget_enforcement` config across `system`, `plan`, `portalKnowledge`, `memory`, `skills`, and `loopHistory` sections | `src/services/context/prompt_budget_allocator.ts`    | 🟢 All   |
+| **Portal Commands**         | Manage external project access                                                                                                                    | `src/cli/portal_commands.ts`                         | 🟢 All   |
+| **Blueprint Commands**      | Manage agent templates                                                                                                                            | `src/cli/blueprint_commands.ts`                      | 🟢 All   |
+| **Dashboard Commands**      | Launch terminal dashboard                                                                                                                         | `src/cli/dashboard_commands.ts`                      | 🟢 All   |
+| **TUI Dashboard**           | Multi-view terminal UI (7-9 views)                                                                                                                | `src/tui/*.ts`                                       | 🟢 All   |
+| **Web UI**                  | Browser-based approval interface                                                                                                                  | `src/web/*`                                          | 🔵 Team+ |
+| **Parsers**                 | Parse markdown + frontmatter                                                                                                                      | `src/parsers/*.ts`                                   | 🟢 All   |
+| **Plan Parser**             | Shared structured plan parsing utility                                                                                                            | `src/services/structured_plan_parser.ts`             | 🟢 All   |
+| **Schemas**                 | Zod validation layer                                                                                                                              | `src/schemas/*.ts`                                   | 🟢 All   |
+| **MCP Client**              | Connect to external MCP servers                                                                                                                   | `src/mcp/client.ts`                                  | 🟢 All   |
+| **MCP Server**              | JSON-RPC server for tool execution                                                                                                                | `src/mcp/server.ts`                                  | 🔵 Team+ |
+| **Blueprint Loader**        | Unified blueprint parsing                                                                                                                         | `src/services/blueprint_loader.ts`                   | 🟢 All   |
+| **Output Validator**        | Schema validation with JSON repair                                                                                                                | `src/services/output_validator.ts`                   | 🟢 All   |
+| **Retry Policy**            | Exponential backoff with jitter                                                                                                                   | `src/services/retry_policy.ts`                       | 🟢 All   |
+| **Plan Adapter**            | JSON validation and markdown conversion                                                                                                           | `src/services/plan_adapter.ts`                       | 🟢 All   |
+| **Plan Writer**             | Format results into structured plans                                                                                                              | `src/services/plan_writer.ts`                        | 🟢 All   |
+| **Request Common**          | Blueprints and request building utilities                                                                                                         | `src/services/request_common.ts`                     | 🟢 All   |
+| **Review Registry**         | Agent-created review management                                                                                                                   | `src/services/review_registry.ts`                    | 🟢 All   |
+| **Path Resolver**           | Portal alias and security path resolution                                                                                                         | `src/services/path_resolver.ts`                      | 🟢 All   |
+| **Skills Service**          | Procedural memory (skills) management                                                                                                             | `src/services/skills.ts`                             | 🟢 All   |
+| **Mission Reporter**        | Execution reports and memory updates                                                                                                              | `src/services/mission_reporter.ts`                   | 🟢 All   |
+| **Prompt Context**          | Structured prompt building utilities                                                                                                              | `src/services/prompt_context.ts`                     | 🟢 All   |
+| **Reflexive Agent**         | Self-critique improvement loop                                                                                                                    | `src/services/reflexive_agent.ts`                    | 🟢 All   |
+| **Tool Reflector**          | Tool result evaluation and retry                                                                                                                  | `src/services/tool_reflector.ts`                     | 🟢 All   |
+| **Session Memory**          | Memory context injection                                                                                                                          | `src/services/session_memory.ts`                     | 🟢 All   |
+| **Confidence Scorer**       | Output confidence assessment                                                                                                                      | `src/services/confidence_scorer.ts`                  | 🟢 All   |
+| **Criteria Generator**      | Dynamic evaluation criteria from request analysis                                                                                                 | `src/services/criteria_generator.ts`                 | 🟢 All   |
+| **Condition Evaluator**     | Flow condition expression eval                                                                                                                    | `src/flows/condition_evaluator.ts`                   | 🟢 All   |
+| **Gate Evaluator**          | Quality gate checkpoint validation                                                                                                                | `src/flows/gate_evaluator.ts`                        | 🟢 All   |
+| **Judge Evaluator**         | LLM-as-a-Judge assessment                                                                                                                         | `src/flows/judge_evaluator.ts`                       | 🟢 All   |
+| **Feedback Loop**           | Iterative refinement control                                                                                                                      | `src/flows/feedback_loop.ts`                         | 🟢 All   |
+| **Evaluation Criteria**     | Quality standards validation                                                                                                                      | `src/flows/evaluation_criteria.ts`                   | 🟢 All   |
+| **Notification Service**    | Memory update and system notifications                                                                                                            | `src/services/notification.ts`                       | 🟢 All   |
+| **Health Check Service**    | System health and resource monitoring                                                                                                             | `src/services/health_check_service.ts`               | 🟢 All   |
+| **Graceful Shutdown**       | Process termination and cleanup management                                                                                                        | `src/services/graceful_shutdown.ts`                  | 🟢 All   |
+| **Governance Dashboard**    | Compliance monitoring and risk scoring                                                                                                            | `src/web/governance/*`                               | 🟣 Ent   |
+| **Compliance Reporter**     | Regulatory compliance exports                                                                                                                     | `src/services/compliance.ts`                         | 🟣 Ent   |
 
 ---
 

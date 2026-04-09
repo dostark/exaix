@@ -93,7 +93,7 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 ### Step 62.1: Schema & Constants Foundation
 
 - **Action**: Define `IPromptBudget`, model-specific context limits, and budget policy config schema.
-- **Justification**: Establishes the source of truth for all allocation logic, including cloud/local policy defaults.
+- **Architecture Notes**: Establishes the source of truth for all allocation logic, including cloud/local policy defaults.
 
 **Success Criteria:**
 
@@ -115,16 +115,16 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 ### Step 62.2: PromptBudgetAllocator Implementation
 
 - **Action**: Create the centralized, policy-aware service to calculate and reallocate budgets.
-- **Justification**: The core engine for dynamic context management with cloud/local policy separation.
+- **Architecture Notes**: The core engine for dynamic context management with cloud/local policy separation.
 
 **Success Criteria:**
 
 - [x] `PromptBudgetAllocator.allocate()` correctly calculates base shares, enforcing `SECTION_FLOORS`.
 - [x] `Waterfall` logic successfully shifts surplus from empty Memory/Skills/History to the **Plan** and **System** sections.
-- [x] Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via `transformers.js` or `tiktoken` port).
+- [x] Token counting uses the 4:1 heuristic (`TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4`); BPE tokenization is deferred to a future phase.
 - [x] Allocator accepts a `BudgetPolicy` (`{ cloud: boolean, local: boolean }`) as a constructor or call-site option.
 - [x] Allocator detects provider type from `modelId` prefix using `LOCAL_PROVIDER_PREFIXES` to determine which policy applies.
-- [x] When local model + enforcement disabled (default): `allocate()` returns a **pass-through budget** — sections set to `Infinity` (or the local fallback window uncapped), waterfall skipped, `safetyBufferTokens = 0`.
+- [x] When local model + enforcement disabled (default): `allocate()` returns a **pass-through budget** — sections set to `totalTokens` (= `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768` for unknown local models), waterfall skipped, `safetyBufferTokens = 0`.
 - [x] When local model + enforcement enabled (opt-in): allocator uses `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK` (32k) instead of the cloud fallback (128k), applies same waterfall logic.
 - [x] When unknown model ID that is not local: allocator applies cloud strict mode with the cloud fallback window.
 - [x] Both policies are independently toggleable via config (Step 62.1 `ZBudgetPolicy`); runtime value can be passed from `exa.config.toml`.
@@ -144,7 +144,7 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 ### Step 62.3: Context Service Refactoring
 
 - **Action**: Update `SessionMemoryService` and `SkillsService` to respect dynamic budgets.
-- **Justification**: Enforces the allocated limits at the source of context generation.
+- **Architecture Notes**: Enforces the allocated limits at the source of context generation.
 
 **Success Criteria:**
 
@@ -161,7 +161,7 @@ Each weakness and its remediation is mapped across the three Exaix editions (Sol
 ### Step 62.4: Executor Integration & W15 Cost Logging
 
 - **Action**: Wire the allocator into `AgentExecutor` and log costs to the Activity Journal.
-- **Justification**: Completes the loop and provides user-facing cost transparency.
+- **Architecture Notes**: Completes the loop and provides user-facing cost transparency.
 
 **Success Criteria:**
 
@@ -236,7 +236,7 @@ All source files referenced by the implementation plan were read and inspected a
 
 ---
 
-#### G2 — Pass-through budget documented as "Infinity" but implementation caps at `LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK`
+#### G2: Pass-through budget documented as "Infinity" but implementation caps at the local fallback window
 
 **Where**: Step 62.2 success criterion — `"sections set to Infinity (or the local fallback window uncapped)"`.
 
@@ -286,65 +286,79 @@ All steps follow the TDD-First policy per .copilot/planning/README.md §F.
 ### Step 62.5 (G3): Wire `ZBudgetPolicy` into `ConfigSchema` and `AgentExecutor`
 
 - **Actions**:
-  - [ ] `src/shared/schemas/config.ts`: Add `budget_enforcement: ZBudgetPolicy.optional()` as a top-level field on `ConfigSchema` (mirrors other feature-flag sections like `quality_gate`).
-  - [ ] `src/services/agent/agent_executor.ts`: In the constructor default parameter, replace `new PromptBudgetAllocator()` with `new PromptBudgetAllocator(config.budget_enforcement ?? {})`.
-  - [ ] `templates/exa.config.sample.toml`: Add a commented `[budget_enforcement]` block with `cloud = true` and `local = false` and explanatory comments.
+  - [x] `src/shared/schemas/config.ts`: Add `budget_enforcement: ZBudgetPolicy.optional()` as a top-level field on `ConfigSchema` (mirrors other feature-flag sections like `quality_gate`).
+  - [x] `src/services/agent/agent_executor.ts`: In the constructor default parameter, replace `new PromptBudgetAllocator()` with `new PromptBudgetAllocator(config.budget_enforcement ?? {})`.
+  - [x] `templates/exa.config.sample.toml`: Add a commented `[budget_enforcement]` block with `cloud = true` and `local = false` and explanatory comments.
 - **Architecture Notes**: `ZBudgetPolicy.optional()` with no `.default()` preserves backward compatibility — existing configs that omit the section will continue using constant defaults inside `PromptBudgetAllocator`. No database migration is required. DI is already satisfied: `AgentExecutor` constructor accepts an injected allocator for tests.
 - **Planned Tests**:
-  - [ ] `tests/config/config_test.ts`: `"ConfigSchema accepts budget_enforcement with cloud = false"` — assert parse succeeds and `config.budget_enforcement.cloud === false`.
-  - [ ] `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: passes budget_enforcement policy to allocator from config"` — provide config with `budget_enforcement: { cloud: false }`, mock allocator, assert it receives `cloud: false`.
+  - ✅ `tests/config/config_test.ts`: `"ConfigSchema accepts budget_enforcement with cloud = false"` — assert parse succeeds and `config.budget_enforcement.cloud === false`.
+  - ✅ `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: passes budget_enforcement policy to allocator from config"` — provide config with `budget_enforcement: { cloud: false }`, mock allocator, assert it receives `cloud: false`.
+
+**✅ IMPLEMENTED** — `src/shared/schemas/config.ts`, `src/services/agent/agent_executor.ts`, `templates/exa.config.sample.toml`, `tests/config/config_test.ts`, `tests/services/agent/agent_executor_test.ts`; focused tests passed (`deno test --allow-all tests/config/config_test.ts tests/services/agent/agent_executor_test.ts`), plus `deno check`, `deno lint --rules-exclude=no-explicit-any`, `deno task check:style`, and `deno task check:arch`.
+
 - **Success Criteria**:
-  - [ ] `deno check src/shared/schemas/config.ts` passes.
-  - [ ] An `exa.config.toml` containing `[budget_enforcement]\ncloud = false` disables cloud enforcement at runtime.
-  - [ ] All existing config tests pass without modification.
+  - [x] `deno check src/shared/schemas/config.ts` passes.
+  - [x] An `exa.config.toml` containing `[budget_enforcement]\ncloud = false` disables cloud enforcement at runtime.
+  - [x] All existing config tests pass without modification.
 
 ---
 
 ### Step 62.6 (G5): Apply `sections.skills` and `sections.loopHistory` budgets in prompt assembly
 
 - **Actions**:
-  - [ ] `src/services/agent/agent_executor.ts`: In `buildExecutionPrompt`, expose the assembled skills context as a parameter (or retrieve it from the strategy context) and apply `applyTokenBudget(skillsBlock, this.currentPromptBudget?.sections.skills)` before inserting it into the prompt.
-  - [ ] `src/services/agent/agent_runner.ts`: In `matchAndApplySkills`, pass `contextBudgetChars: (allocatedSkillsTokens ?? 0) * TOKEN_ESTIMATION_CHARS_PER_TOKEN` to `skillsService.matchSkills()` when a budget is supplied via the new `IAgentRunOptions.skillsBudgetTokens` field.
-  - [ ] `src/services/agent/strategies/legacy_strategy.ts`: Thread `executor.currentPromptBudget?.sections.skills` into the runner invocation as `skillsBudgetTokens`.
-- **Architecture Notes**: `ISkillMatchRequest.contextBudgetChars` already supports budget filtering (Step 62.3). Conversion: `tokens × TOKEN_ESTIMATION_CHARS_PER_TOKEN`. For `loopHistory`, apply the budget cap inside `ReActLoopStrategy.buildPrompt` when appending the history block — truncate to `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars, trimming oldest entries first.
+  - [x] `src/shared/schemas/agent_executor.ts` and `src/shared/schemas/input_validation.ts`: Accept optional `skills_context` so prompt assembly can receive a pre-built skills block through the validated execution context.
+  - [x] `src/services/agent/agent_executor.ts`: In `buildExecutionPrompt`, apply `applyTokenBudget(skills_context, this.currentPromptBudget?.sections.skills)` before inserting the skills block into the prompt.
+  - [x] `src/services/agent/strategies/react_loop_strategy.ts`: Apply the `sections.loopHistory` cap inside `buildPrompt`, trimming oldest history entries first and clipping the newest remaining entry only when needed.
+- **Architecture Notes**: The original plan text assumed `AgentRunner` was still the active skills-injection seam for this flow, but the current executor path assembles legacy prompts directly from `IExecutionContext`. The minimal architecture-consistent fix was therefore to admit an optional `skills_context` field into validated execution context and enforce the budget at `AgentExecutor.buildExecutionPrompt()`. `loopHistory` enforcement remains in `ReActLoopStrategy.buildPrompt`, using `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` and dropping oldest entries first.
 - **Planned Tests**:
-  - [ ] `tests/integration/agent/context_overflow_recovery_test.ts`: Add assertion that skills content in the assembled prompt is ≤ `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars when the mock allocator provides `sections.skills = 10`.
-  - [ ] `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: skills block in prompt respects sections.skills budget"`.
+  - [x] `tests/integration/agent/context_overflow_recovery_test.ts`: Add assertion that skills content in the assembled prompt is ≤ `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars when the mock allocator provides `sections.skills = 10`.
+  - [x] `tests/services/agent/agent_executor_test.ts`: `"AgentExecutor: skills block in prompt respects sections.skills budget"`.
+  - [x] `tests/agents/react_loop_strategy_test.ts`: `"ReActLoopStrategy - caps loop history to configured budget"`.
 - **Success Criteria**:
-  - [ ] Skills content in the assembled prompt never exceeds `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
-  - [ ] Loop-history block in ReAct prompts never exceeds `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
-  - [ ] `context_overflow_recovery_test.ts` passes with the new assertions.
+  - [x] Skills content in the assembled prompt never exceeds `sections.skills × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
+  - [x] Loop-history block in ReAct prompts never exceeds `sections.loopHistory × TOKEN_ESTIMATION_CHARS_PER_TOKEN` chars.
+  - [x] `context_overflow_recovery_test.ts` passes with the new assertions.
+
+**✅ IMPLEMENTED**: Added validated `skills_context` prompt injection with `sections.skills` enforcement, capped ReAct loop history against `sections.loopHistory`, and verified with `deno test --allow-all tests/services/agent/agent_executor_test.ts tests/integration/agent/context_overflow_recovery_test.ts tests/agents/react_loop_strategy_test.ts`, `deno check`, `deno lint --rules-exclude=no-explicit-any ...`, `deno task check:style`, and `deno task check:arch`.
 
 ---
 
 ### Step 62.7 (G1, G2, G4): Correct plan documentation inaccuracies
 
 - **Actions**:
-  - [ ] `.copilot/planning/phase-62-context-window-management.md` Steps 62.1–62.4: Rename `- **Justification**:` → `- **Architecture Notes**:` in all four step headers.
-  - [ ] Step 62.2 success criterion: Replace `"sections set to Infinity (or the local fallback window uncapped)"` with `"sections set to totalTokens (= LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32 768 for unknown local models), safetyBufferTokens = 0"`.
-  - [ ] Step 62.2 success criterion: Replace `"Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via transformers.js or tiktoken port)"` with `"Token counting uses the 4:1 heuristic (TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4); BPE tokenization is deferred to a future phase"`.
+  - [x] `.copilot/planning/phase-62-context-window-management.md` Steps 62.1–62.4: Rename `- **Justification**:` → `- **Architecture Notes**:` in all four step headers.
+  - [x] Step 62.2 success criterion: Replace `"sections set to Infinity (or the local fallback window uncapped)"` with `"sections set to totalTokens (= LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768 for unknown local models), safetyBufferTokens = 0"`.
+  - [x] Step 62.2 success criterion: Replace `"Token counting logic supports both heuristic and (optional) fast local BPE tokenization (e.g. via transformers.js or tiktoken port)"` with `"Token counting uses the 4:1 heuristic (TOKEN_ESTIMATION_CHARS_PER_TOKEN = 4); BPE tokenization is deferred to a future phase"`.
 - **Architecture Notes**: Documentation-only edits. No source code or test changes required.
-- **Planned Tests**: No new tests needed — existing tests already assert the correct runtime behaviour.
-- **Success Criteria**:
-  - [ ] `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/phase-62-context-window-management.md` reports zero errors.
-  - [ ] All §F sub-section labels in Steps 62.1–62.4 read "Architecture Notes".
+- **Planned Tests**:
+
+  - ✅ `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/phase-62-context-window-management.md` — validates the corrected plan text and structure.
+
+**✅ IMPLEMENTED** — `.copilot/planning/phase-62-context-window-management.md`, markdown lint passing
+
+**Success Criteria**:
+
+- [x] `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/phase-62-context-window-management.md` reports zero errors.
+- [x] All §F sub-section labels in Steps 62.1–62.4 read "Architecture Notes".
 
 ---
 
 ### Step 62.8 (§3D Documentation): Update `ARCHITECTURE.md`, cross-reference, and sample config
 
 - **Actions**:
-  - [ ] `ARCHITECTURE.md`: Add `PromptBudgetAllocator` to the architecture diagram and key-service table, noting the `budget_enforcement` TOML config key and the six prompt sections.
-  - [ ] `.copilot/cross-reference.md`: Add keyword entries: `budget_enforcement` → `phase-62-context-window-management.md`; `skills_budget` → `phase-62-context-window-management.md`; `loopHistory_budget` → `phase-62-context-window-management.md`.
-  - [ ] `docs/Exaix_User_Guide.md` §11 (Cost Tracking): Update §11.2 to reference the `[budget_enforcement]` TOML section once Step 62.5 lands.
+  - [x] `ARCHITECTURE.md`: Add `PromptBudgetAllocator` to the architecture diagram and key-service table, noting the `budget_enforcement` TOML config key and the six prompt sections.
+  - [x] `.copilot/cross-reference.md`: Add keyword entries: `budget_enforcement` → `phase-62-context-window-management.md`; `skills_budget` → `phase-62-context-window-management.md`; `loopHistory_budget` → `phase-62-context-window-management.md`.
+  - [x] `docs/Exaix_User_Guide.md` §11 (Cost Tracking): Update §11.2 to reference the `[budget_enforcement]` TOML section once Step 62.5 lands.
 - **Architecture Notes**: §3D documentation update is mandatory when new TOML config keys are introduced. This step is sequenced after Step 62.5; it may be executed concurrently with Steps 62.6 and 62.7.
 - **Planned Tests**:
-  - [ ] `deno task docs-agent-validate` — verify no broken links introduced.
-  - [ ] `deno task check:arch` — architecture validation passes.
+  - ✅ `deno task docs-agent-validate` — verify no broken links introduced.
+  - ✅ `deno task check:arch` — architecture validation passes.
+
+**✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/Exaix_User_Guide.md`, and refreshed `.copilot/manifest.json`; `deno task docs-agent-validate` and `deno task check:arch` passing
 - **Success Criteria**:
-  - [ ] `deno task docs-agent-validate` reports zero errors.
-  - [ ] `.copilot/cross-reference.md` contains a `budget_enforcement` entry pointing to Phase 62.
-  - [ ] `deno task check:arch` passes.
+  - [x] `deno task docs-agent-validate` reports zero errors.
+  - [x] `.copilot/cross-reference.md` contains a `budget_enforcement` entry pointing to Phase 62.
+  - [x] `deno task check:arch` passes.
 
 ---
 
@@ -356,9 +370,9 @@ All steps follow the TDD-First policy per .copilot/planning/README.md §F.
 
 ### Phase 3c Gap Summary
 
-| ID | Gap (short) | Severity | Checklist Item | In Tests? |
-| -- | ----------- | -------- | -------------- | --------- |
-| G6 | No config validation test rejecting invalid `budget_enforcement` field values | 🟡 Configurability | Config validation tests | ❌ |
+| ID | Gap (short)                                                                   | Severity           | Checklist Item          | In Tests? |
+| -- | ----------------------------------------------------------------------------- | ------------------ | ----------------------- | --------- |
+| G6 | No config validation test rejecting invalid `budget_enforcement` field values | 🟡 Configurability | Config validation tests | ❌        |
 
 ### Phase 3c Detailed Gap Entry
 

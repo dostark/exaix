@@ -3070,6 +3070,20 @@ anthropic_claude_sonnet = 0.000015  # $15 per million tokens
 openai_gpt4 = 0.00003               # $30 per million tokens
 ```
 
+Prompt-window enforcement is configured separately through the Phase 62
+`[budget_enforcement]` section. This controls whether Exaix applies strict
+prompt-budget caps before execution; it does not replace monetary cost limits.
+
+```toml
+[budget_enforcement]
+cloud = true   # Enforce strict section budgets for hosted providers
+local = false  # Leave local/self-hosted models in relaxed mode by default
+```
+
+When enabled, Exaix derives section budgets for `system`, `plan`,
+`portalKnowledge`, `memory`, `skills`, and `loopHistory` before assembling the
+final prompt.
+
 ### 11.3 Budget Enforcement
 
 Before each agent execution, Exaix checks:
