@@ -36,6 +36,7 @@ import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
+  FLOW_CHECKPOINT_SCHEMA_VERSION,
 } from "../shared/constants.ts";
 
 /**
@@ -386,12 +387,51 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError("IFlow must have at least one step", flowRunId);
     }
 
+    const fallbackCycle = this.findCyclicFallbackChain(flow);
+    if (fallbackCycle) {
+      const errorMessage = `Cyclic fallback chain detected: ${fallbackCycle.join(" -> ")}`;
+      await this.eventLogger.log("flow.validation.failed", {
+        error: errorMessage,
+        ...this.getIFlowLogBase(flow, request),
+      });
+      throw new FlowExecutionError(errorMessage, flowRunId);
+    }
+
     // Log flow validation success
     await this.eventLogger.log("flow.validated", {
       maxParallelism: flow.settings?.maxParallelism ?? 3,
       failFast: flow.settings?.failFast ?? true,
       ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
     });
+  }
+
+  private findCyclicFallbackChain(flow: IFlow): string[] | null {
+    const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
+
+    for (const startStep of flow.steps) {
+      const path: string[] = [];
+      const seenAt = new Map<string, number>();
+      let currentStep: IFlowStep | undefined = startStep;
+
+      while (currentStep?.onError?.action === FlowStepOnErrorAction.FALLBACK && currentStep.onError.fallbackStep) {
+        seenAt.set(currentStep.id, path.length);
+        path.push(currentStep.id);
+
+        const nextStep = stepsById.get(currentStep.onError.fallbackStep);
+        if (!nextStep) {
+          break;
+        }
+
+        const cycleStartIndex = seenAt.get(nextStep.id);
+        if (cycleStartIndex !== undefined) {
+          return [...path.slice(cycleStartIndex), nextStep.id];
+        }
+
+        currentStep = nextStep;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -897,15 +937,19 @@ export class FlowRunner implements IFlowRunner {
         });
 
         try {
-          const result = await this.runStepAttempt(flowRunId, fallbackStep, flow, request, stepResults, startedAt);
-          return this.formatStepSuccess(
+          const fallbackResult = await this.executeStep(flowRunId, fallbackStep.id, flow, request, stepResults);
+          return this.mapFallbackResultToPrimaryResult(
             flowRunId,
-            { ...step, identity: fallbackStep.identity },
+            step,
+            fallbackStep,
             request,
-            result,
+            fallbackResult,
             startedAt,
           );
         } catch (fallbackError) {
+          if (fallbackError instanceof FlowAbortError) {
+            throw fallbackError;
+          }
           lastError = fallbackError;
         }
       }
@@ -927,6 +971,40 @@ export class FlowRunner implements IFlowRunner {
     }
 
     return failureResult;
+  }
+
+  private mapFallbackResultToPrimaryResult(
+    flowRunId: string,
+    step: IFlowStep,
+    fallbackStep: IFlowStep,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    fallbackResult: IStepResult,
+    startedAt: Date,
+  ): IStepResult {
+    if (!fallbackResult.success) {
+      return this.formatStepFailure(
+        flowRunId,
+        { ...step, identity: fallbackStep.identity },
+        request,
+        fallbackResult.error ?? DEFAULT_UNKNOWN_ERROR_MESSAGE,
+        startedAt,
+      );
+    }
+
+    if (fallbackResult.skipped || !fallbackResult.result) {
+      return {
+        ...fallbackResult,
+        stepId: step.id,
+      };
+    }
+
+    return this.formatStepSuccess(
+      flowRunId,
+      { ...step, identity: fallbackStep.identity },
+      request,
+      fallbackResult.result,
+      startedAt,
+    );
   }
 
   private async applyRetryBackoff(backoffMs: number, retryAttempt: number): Promise<void> {
@@ -1551,7 +1629,10 @@ export class FlowRunner implements IFlowRunner {
       return;
     }
 
-    if (checkpoint.flowContentHash !== flowContentHash) {
+    if (
+      checkpoint.schemaVersion !== FLOW_CHECKPOINT_SCHEMA_VERSION ||
+      checkpoint.flowContentHash !== flowContentHash
+    ) {
       await this.eventLogger.log("flow.checkpoint.stale", {
         flowRunId,
         flowId: flow.id,

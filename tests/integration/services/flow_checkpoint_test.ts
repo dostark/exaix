@@ -19,7 +19,7 @@ import {
 } from "../../../src/flows/flow_runner.ts";
 import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "../../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../../src/services/agent/agent_runner.ts";
-import { DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION, FLOW_CHECKPOINT_SCHEMA_VERSION } from "../../../src/shared/constants.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
@@ -122,6 +122,7 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     const checkpointRaw = await Deno.readTextFile(checkpointPath);
     const checkpoint = ZFlowCheckpoint.parse(JSON.parse(checkpointRaw));
     assertEquals(checkpoint.traceId, traceId);
+    assertEquals(checkpoint.schemaVersion, FLOW_CHECKPOINT_SCHEMA_VERSION);
     assertEquals(Object.keys(checkpoint.completedSteps).sort(), ["step1"]);
     assertEquals(firstRunLogger.events.some((entry) => entry.event === "flow.checkpoint.saved"), true);
 
@@ -157,6 +158,91 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     const loadedEvent = resumedLogger.events.find((entry) => entry.event === "flow.checkpoint.loaded");
     assertEquals(loadedEvent?.payload.restoredSteps, 1);
     assertEquals(resumedLogger.events.some((entry) => entry.event === "flow.checkpoint.saved"), true);
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[Step63.10] FlowRunner invalidates checkpoint when schemaVersion is stale", async () => {
+  const { config, tempDir, cleanup } = await initTestDbService();
+
+  try {
+    const traceId = "trace-flow-checkpoint-stale-version";
+    const requestId = "req-flow-checkpoint-stale-version";
+
+    const flow: IFlowInput = {
+      id: "checkpoint-flow-stale-version",
+      name: "Checkpoint Flow Stale Version",
+      description: "Flow checkpoint invalidation when schemaVersion is stale",
+      version: DEFAULT_FLOW_VERSION,
+      steps: [
+        {
+          id: "step1",
+          name: "Step 1",
+          identity: "agent1",
+          dependsOn: [],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: 1000 },
+        },
+        {
+          id: "step2",
+          name: "Step 2",
+          identity: "agent2",
+          dependsOn: ["step1"],
+          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: 1000 },
+        },
+      ],
+      output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 3, failFast: true },
+    };
+
+    const firstRunExecutor = new SequencedAgentExecutor({
+      agent1: ["stale-step1-result"],
+      agent2: [new Error("step2 exploded")],
+    });
+    const firstRunLogger = new RecordingFlowLogger();
+    const firstRunRunner = new FlowRunner({
+      agentExecutor: firstRunExecutor,
+      eventLogger: firstRunLogger,
+      config,
+    });
+
+    await assertRejects(
+      () => firstRunRunner.execute(flow as IFlow, { userPrompt: "checkpoint me", traceId, requestId }),
+      FlowExecutionError,
+    );
+
+    const checkpointPath = join(getMemoryExecutionDir(tempDir), traceId, "checkpoint.json");
+    const staleCheckpoint = {
+      ...JSON.parse(await Deno.readTextFile(checkpointPath)),
+      schemaVersion: "0",
+    };
+    await Deno.writeTextFile(checkpointPath, JSON.stringify(staleCheckpoint, null, 2));
+
+    const resumedExecutor = new SequencedAgentExecutor({
+      agent1: ["fresh-step1-result"],
+      agent2: ["fresh-step2-result"],
+    });
+    const resumedLogger = new RecordingFlowLogger();
+    const resumedRunner = new FlowRunner({
+      agentExecutor: resumedExecutor,
+      eventLogger: resumedLogger,
+      config,
+    });
+
+    const resumedResult = await resumedRunner.execute(
+      flow as IFlow,
+      { userPrompt: "checkpoint me", traceId, requestId },
+    );
+
+    assertEquals(resumedResult.success, true);
+    assertEquals(resumedResult.stepResults.get("step1")?.result?.content, "fresh-step1-result");
+    assertEquals(resumedExecutor.calls, ["agent1", "agent2"]);
+
+    const staleEvent = resumedLogger.events.find((entry) => entry.event === "flow.checkpoint.stale");
+    assert(staleEvent);
+    assertEquals(staleEvent.payload.traceId, traceId);
   } finally {
     await cleanup();
   }

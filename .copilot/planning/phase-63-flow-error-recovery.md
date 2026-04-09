@@ -241,7 +241,7 @@ steps:
 | Risk                                               | Impact | Likelihood | Mitigation                                                                                                            |
 | :------------------------------------------------- | :----- | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
 | **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                                     |
-| **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version.                     |
+| **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version. **Mitigated** in Step 63.10. |
 | **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts. **Mitigated** in Step 63.6. |
 | **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                                           |
 
@@ -420,13 +420,15 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] A fallback step configured with `onError: { action: RETRY, maxRetries: 2 }` retries up to 2 times when it itself fails.
-- [ ] A fallback step with no `onError` behaves identically to the current implementation.
-- [ ] Cyclic fallback detection (G2) blocks A→B→A chains at flow load time before this code path can loop.
+- [x] A fallback step configured with `onError: { action: RETRY, maxRetries: 2 }` retries up to 2 times when it itself fails.
+- [x] A fallback step with no `onError` behaves identically to the current implementation.
+- [x] Cyclic fallback detection (G2) blocks A→B→A chains at flow load time before this code path can loop.
 
 **Planned Tests:**
 
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: fallback step retries according to its own onError policy"` — primary fails, fallback fails twice, then succeeds on retry 2; assert `flow.step.retry` events reference the fallback step id.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: fallback step retries according to its own onError policy"` — primary fails, fallback fails twice, then succeeds on retry 2; assert `flow.step.retry` events reference the fallback step id.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`; fallback recovery now routes through the full step harness so fallback conditions and nested `onError` policies execute recursively, with focused FlowRunner coverage for fallback retry behavior. Validation passed via `deno test --allow-all tests/flows/flow_runner_test.ts`, `deno fmt src/flows/flow_runner.ts tests/flows/flow_runner_test.ts`, `deno lint src/flows/flow_runner.ts tests/flows/flow_runner_test.ts`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch`.
 
 ---
 
@@ -438,14 +440,16 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] A flow with `A.fallbackStep = "B", B.fallbackStep = "A"` fails at validation with a descriptive error naming both step ids.
-- [ ] A linear fallback chain `A → B → C` (no cycle) loads without error.
-- [ ] `flow.validation.failed` journal event is emitted with `error` payload naming the cycle.
+- [x] A flow with `A.fallbackStep = "B", B.fallbackStep = "A"` fails at validation with a descriptive error naming both step ids.
+- [x] A linear fallback chain `A → B → C` (no cycle) loads without error.
+- [x] `flow.validation.failed` journal event is emitted with `error` payload naming the cycle.
 
 **Planned Tests:**
 
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: rejects flow with cyclic fallback chain at validation"` — assert `FlowExecutionError` thrown with cycle-describing message.
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: accepts linear fallback chain A→B→C"` — assert flow loads and executes without validation error.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: rejects flow with cyclic fallback chain at validation"` — assert `FlowExecutionError` thrown with cycle-describing message.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — `"FlowRunner: accepts linear fallback chain A→B→C"` — assert flow loads and executes without validation error.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`; flow validation now rejects cyclic fallback graphs before execution and emits `flow.validation.failed` with the cycle-describing error payload, with focused linear-chain and cycle-regression coverage in the FlowRunner suite. Validation passed via `deno test --allow-all tests/flows/flow_runner_test.ts`, `deno fmt src/flows/flow_runner.ts tests/flows/flow_runner_test.ts`, `deno lint src/flows/flow_runner.ts tests/flows/flow_runner_test.ts`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch`.
 
 ---
 
@@ -456,15 +460,17 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] `ZFlowCheckpoint.parse({...})` without `schemaVersion` sets it to `"1"` (default).
-- [ ] `loadCheckpointIfAvailable` emits `flow.checkpoint.stale` and discards a checkpoint with `schemaVersion: "0"`.
-- [ ] `FLOW_CHECKPOINT_SCHEMA_VERSION` constant is defined in `src/constants.ts`.
-- [ ] R2 risk row updated to **Mitigated** in the Risks table above.
+- [x] `ZFlowCheckpoint.parse({...})` without `schemaVersion` sets it to `"1"` (default).
+- [x] `loadCheckpointIfAvailable` emits `flow.checkpoint.stale` and discards a checkpoint with `schemaVersion: "0"`.
+- [x] `FLOW_CHECKPOINT_SCHEMA_VERSION` constant is defined in `src/constants.ts`.
+- [x] R2 risk row updated to **Mitigated** in the Risks table above.
 
 **Planned Tests:**
 
-- [ ] **Unit**: schema test — assert `schemaVersion` defaults to `"1"` and round-trips through JSON.
-- [ ] **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — add case: write a checkpoint file with `schemaVersion: "0"`, start flow, assert `flow.checkpoint.stale` event fired and step was not restored.
+- [x] **Unit**: schema test — assert `schemaVersion` defaults to `"1"` and round-trips through JSON.
+- [x] **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — add case: write a checkpoint file with `schemaVersion: "0"`, start flow, assert `flow.checkpoint.stale` event fired and step was not restored.
+
+**✅ IMPLEMENTED** — `src/shared/constants.ts`, `src/shared/schemas/flow.ts`, `src/services/flow/flow_checkpoint_service.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_step_on_error_schema_test.ts`, `tests/integration/services/flow_checkpoint_test.ts`; checkpoints now persist `schemaVersion`, stale-version checkpoints are invalidated before restore, and focused validation passed via `deno test --allow-all tests/flows/flow_step_on_error_schema_test.ts tests/integration/services/flow_checkpoint_test.ts`, `deno fmt src/shared/constants.ts src/shared/schemas/flow.ts src/services/flow/flow_checkpoint_service.ts src/flows/flow_runner.ts tests/flows/flow_step_on_error_schema_test.ts tests/integration/services/flow_checkpoint_test.ts`, `deno lint src/shared/constants.ts src/shared/schemas/flow.ts src/services/flow/flow_checkpoint_service.ts src/flows/flow_runner.ts tests/flows/flow_step_on_error_schema_test.ts tests/integration/services/flow_checkpoint_test.ts`, `deno check src/main.ts`, `deno task check:style`, and `deno task check:arch`.
 
 ---
 

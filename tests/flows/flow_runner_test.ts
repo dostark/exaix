@@ -421,8 +421,8 @@ Deno.test("FlowRunner: falls back to a recovery step when primary step fails", a
       id: "fallback",
       name: "Fallback Step",
       identity: "fallback-agent",
-      dependsOn: [],
-      condition: "false",
+      dependsOn: ["primary"],
+      condition: "results['primary']?.success !== true",
       input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
       retry: { maxAttempts: 1, backoffMs: 1000 },
     },
@@ -457,6 +457,64 @@ Deno.test("FlowRunner: falls back to a recovery step when primary step fails", a
   assertEquals(fallbackEvents[0].payload.fallbackStepId, "fallback");
   assertEquals(fallbackEvents[0].payload.fallbackIdentityId, "fallback-agent");
   assertEquals(fallbackEvents[0].payload.error, "primary failed");
+});
+
+Deno.test("FlowRunner: fallback step retries according to its own onError policy", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "primary",
+      name: "Primary Step",
+      identity: "primary-agent",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "fallback" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+    {
+      id: "fallback",
+      name: "Fallback Step",
+      identity: "fallback-agent",
+      dependsOn: ["primary"],
+      condition: "results['primary']?.success !== true",
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.RETRY, maxRetries: 2 },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "fallback-retry-flow",
+    name: "Fallback Retry Flow",
+    description: "Fallback step retries when it fails",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "primary", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "primary-agent": [new Error("primary failed")],
+    "fallback-agent": [
+      new Error("fallback failed 1"),
+      new Error("fallback failed 2"),
+      "Recovered through fallback retry",
+    ],
+  });
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, "Recovered through fallback retry");
+  assertEquals(mockAgentRunner.calls, ["primary-agent", "fallback-agent", "fallback-agent", "fallback-agent"]);
+
+  const retryEvents = mockLogger.events.filter((event) => event.event === "flow.step.retry");
+  assertEquals(retryEvents.length, 2);
+  assertEquals(retryEvents[0].payload.stepId, "fallback");
+  assertEquals(retryEvents[0].payload.error, "fallback failed 1");
+  assertEquals(retryEvents[1].payload.stepId, "fallback");
+  assertEquals(retryEvents[1].payload.error, "fallback failed 2");
 });
 
 Deno.test("FlowRunner: abort action throws FlowAbortError with originating step id", async () => {
@@ -720,6 +778,114 @@ Deno.test("FlowRunner: handles empty flow", async () => {
     assert(error instanceof FlowExecutionError);
     assert(error.message.includes("Flow must have at least one step"));
   }
+});
+
+Deno.test("FlowRunner: rejects flow with cyclic fallback chain at validation", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step-a",
+      name: "Step A",
+      identity: "agent-a",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-b" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+    {
+      id: "step-b",
+      name: "Step B",
+      identity: "agent-b",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-a" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "cyclic-fallback-flow",
+    name: "Cyclic Fallback Flow",
+    description: "A flow with a cyclic fallback chain",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step-a", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new MockAgentRunner({
+    "agent-a": "unused",
+    "agent-b": "unused",
+  });
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+
+  await assertRejects(
+    async () => await runner.execute(flow as IFlow, { userPrompt: "test request" }),
+    FlowExecutionError,
+    "Cyclic fallback chain detected",
+  );
+
+  const validationFailedEvent = mockLogger.events.find((event) => event.event === "flow.validation.failed");
+  assert(validationFailedEvent);
+  assertEquals(validationFailedEvent.payload.error, "Cyclic fallback chain detected: step-a -> step-b -> step-a");
+});
+
+Deno.test("FlowRunner: accepts linear fallback chain A->B->C", async () => {
+  const steps: IFlowStepInput[] = [
+    {
+      id: "step-a",
+      name: "Step A",
+      identity: "agent-a",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-b" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+    {
+      id: "step-b",
+      name: "Step B",
+      identity: "agent-b",
+      dependsOn: ["step-a"],
+      condition: "results['step-a']?.success !== true",
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      onError: { action: FlowStepOnErrorAction.FALLBACK, fallbackStep: "step-c" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+    {
+      id: "step-c",
+      name: "Step C",
+      identity: "agent-c",
+      dependsOn: ["step-b"],
+      condition: "results['step-b']?.success !== true",
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: 1000 },
+    },
+  ];
+
+  const flow: IFlowInput = {
+    id: "linear-fallback-flow",
+    name: "Linear Fallback Flow",
+    description: "A flow with a linear fallback chain",
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: "step-a", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+
+  const mockAgentRunner = new SequencedMockAgentRunner({
+    "agent-a": ["Primary result"],
+    "agent-b": ["Unused fallback result"],
+    "agent-c": ["Unused terminal fallback result"],
+  });
+  const mockLogger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: mockAgentRunner, eventLogger: mockLogger });
+  const result = await runner.execute(flow as IFlow, { userPrompt: "test request" });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, "Primary result");
+  assertEquals(mockAgentRunner.calls, ["agent-a"]);
 });
 
 Deno.test("FlowRunner: handles step with invalid input source", async () => {

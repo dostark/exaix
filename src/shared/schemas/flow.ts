@@ -19,7 +19,7 @@ import {
   StepExecutionMode,
 } from "../enums.ts";
 import { JSONValueSchema } from "../types/json.ts";
-import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "../constants.ts";
+import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES, FLOW_CHECKPOINT_SCHEMA_VERSION } from "../constants.ts";
 
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
@@ -57,6 +57,7 @@ export const ZFlowStepResult = z.object({
 export const ZFlowCheckpoint = z.object({
   traceId: z.string().min(1),
   flowContentHash: z.string().min(1).describe("Hash of the flow YAML to prevent resume on stale definitions"),
+  schemaVersion: z.string().default(FLOW_CHECKPOINT_SCHEMA_VERSION),
   completedSteps: z.record(z.string(), ZFlowStepResult),
   savedAt: z.string().datetime(),
 });

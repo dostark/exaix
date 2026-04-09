@@ -796,6 +796,9 @@ export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 /** Semantic version for flows. Bump on breaking schema changes. */
 export const DEFAULT_FLOW_VERSION = "1.0.0";
 
+/** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
+export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
+
 /** Default max serialized size for a flow namespace artifact in bytes. */
 export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
 

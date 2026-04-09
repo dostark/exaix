@@ -8,6 +8,7 @@
 
 import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
+import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "../../shared/constants.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "../../shared/schemas/flow.ts";
 import { ZFlowCheckpoint } from "../../shared/schemas/flow.ts";
@@ -52,6 +53,7 @@ export class FlowCheckpointService implements IFlowCheckpointService {
     const checkpoint = ZFlowCheckpoint.parse({
       traceId,
       flowContentHash,
+      schemaVersion: FLOW_CHECKPOINT_SCHEMA_VERSION,
       completedSteps,
       savedAt: new Date().toISOString(),
     });
