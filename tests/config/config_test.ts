@@ -61,6 +61,53 @@ Deno.test("ConfigSchema accepts budget_enforcement with cloud = false", () => {
   }
 });
 
+Deno.test("ConfigSchema: rejects budget_enforcement.cloud as string", () => {
+  const result = ConfigSchema.safeParse({
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+    budget_enforcement: {
+      cloud: "yes",
+      local: false,
+    },
+  });
+
+  assertEquals(result.success, false);
+});
+
+Deno.test("ConfigSchema: rejects budget_enforcement.local as number", () => {
+  const result = ConfigSchema.safeParse({
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+    budget_enforcement: {
+      cloud: true,
+      local: 1,
+    },
+  });
+
+  assertEquals(result.success, false);
+});
+
+Deno.test("ConfigSchema: accepts omitted budget_enforcement (backward compat)", () => {
+  const result = ConfigSchema.safeParse({
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+  });
+
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.budget_enforcement, undefined);
+  }
+});
+
 Deno.test("ConfigSchema applies defaults for missing agents section", () => {
   const configWithoutAgents = {
     system: {

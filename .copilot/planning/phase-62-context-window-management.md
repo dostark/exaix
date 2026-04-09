@@ -401,12 +401,14 @@ All steps follow the TDD-First policy per .copilot/planning/README.md §F.
 - **Architecture Notes**: These tests are purely at the schema/parse boundary — no source code changes required. They validate that `ZBudgetPolicy` rejects non-boolean values before they reach `PromptBudgetAllocator`. Tests should be grouped under `"ConfigSchema: budget_enforcement validation"`.
 
 - **Planned Tests**:
-  - **Unit**: `tests/config/config_test.ts` — add three cases:
+  - ✅ **Unit**: `tests/config/config_test.ts` — add three cases:
     1. `"ConfigSchema: rejects budget_enforcement.cloud as string"` — parse `{ budget_enforcement: { cloud: "yes", local: false } }` → assert `success === false`.
     1. `"ConfigSchema: rejects budget_enforcement.local as number"` — parse `{ budget_enforcement: { cloud: true, local: 1 } }` → assert `success === false`.
     1. `"ConfigSchema: accepts omitted budget_enforcement (backward compat)"` — parse a config without `budget_enforcement` → assert `success === true` and `config.budget_enforcement === undefined`.
 
+**✅ IMPLEMENTED** — `tests/config/config_test.ts`; focused config tests passed (`deno test --allow-all tests/config/config_test.ts`), plus `deno task test`, `deno check src/main.ts`, `deno lint tests/config/config_test.ts`, `deno task check:style`, and `deno task check:arch`
+
 - **Success Criteria**:
-  - [ ] All three new test cases exist and pass `deno task test`.
-  - [ ] No source code changes are required for this step — purely additive test coverage.
-  - [ ] `tests/config/config_test.ts` uses `ConfigSchema.safeParse()` (not `.parse()`) to avoid thrown exceptions in the invalid-type cases.
+  - [x] All three new test cases exist and pass `deno task test`.
+  - [x] No source code changes are required for this step — purely additive test coverage.
+  - [x] `tests/config/config_test.ts` uses `ConfigSchema.safeParse()` (not `.parse()`) to avoid thrown exceptions in the invalid-type cases.
