@@ -5,7 +5,7 @@
  */
 import { assertEquals } from "@std/assert";
 import { ActivityJournal } from "../../src/journal/activity_journal.ts";
-import type { IFlowEventLogger } from "../../src/flows/flow_runner.ts";
+import type { IFlowEventLogger, IFlowEventPayloadMap } from "../../src/flows/flow_runner.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 
 interface ILoggedEvent {
@@ -35,4 +35,20 @@ Deno.test("ActivityJournal - logs entries with traceId", async () => {
   assertEquals(loggedEvent?.action, "test-event");
   assertEquals(loggedEvent?.target, "step-1");
   assertEquals(loggedEvent?.data, "some data");
+});
+
+Deno.test("ActivityJournal - exposes typed payloads for known flow events", () => {
+  const retryPayload: IFlowEventPayloadMap["flow.step.retry"] = {
+    flowRunId: "run-1",
+    stepId: "step-1",
+    identityId: "senior-coder",
+    attempt: 1,
+    maxRetries: 2,
+    error: "temporary failure",
+    traceId: "trace-1",
+    requestId: "request-1",
+  };
+
+  assertEquals(retryPayload.attempt, 1);
+  assertEquals(retryPayload.maxRetries, 2);
 });

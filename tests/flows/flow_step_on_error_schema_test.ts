@@ -6,16 +6,21 @@
  * @related-files [src/shared/schemas/flow.ts, .copilot/planning/phase-63-flow-error-recovery.md]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, McpToolName } from "../../src/shared/enums.ts";
 import { FlowSchema, ZFlowCheckpoint, ZFlowStepOnError } from "../../src/shared/schemas/flow.ts";
-import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_MAX_RETRIES,
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  FLOW_CHECKPOINT_SCHEMA_VERSION,
+  FLOW_MAX_RETRIES_MAX,
+} from "../../src/shared/constants.ts";
 
 Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
   const retryResult = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2 });
   assertEquals(retryResult.action, "retry");
   assertEquals(retryResult.maxRetries, 2);
-  assertEquals(retryResult.backoffMs, 1000);
+  assertEquals(retryResult.backoffMs, DEFAULT_FLOW_STEP_BACKOFF_MS);
 
   const retryWithBackoff = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2, backoffMs: 250 });
   assertEquals(retryWithBackoff.backoffMs, 250);
@@ -38,7 +43,8 @@ Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
 
   const abortResult = ZFlowStepOnError.parse({ action: "abort" });
   assertEquals(abortResult.action, "abort");
-  assertEquals(abortResult.maxRetries, 1);
+  assertEquals(abortResult.maxRetries, DEFAULT_FLOW_MAX_RETRIES);
+  assertThrows(() => ZFlowStepOnError.parse({ action: "retry", maxRetries: FLOW_MAX_RETRIES_MAX + 1 }));
 });
 
 Deno.test("FlowSchema keeps onError optional for existing flow definitions", () => {

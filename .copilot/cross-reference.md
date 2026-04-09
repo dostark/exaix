@@ -18,6 +18,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 | Update documentation                          | [docs/documentation.md](docs/documentation.md)                                             | -                                                                                                                                 |
 | Fix TypeScript errors                         | [source/exaix.md](source/exaix.md)                                                         | [copilot/exaix.md](copilot/exaix.md)                                                                                              |
 | Add new feature                               | [source/exaix.md](source/exaix.md) + [tests/testing.md](tests/testing.md)                  | [docs/documentation.md](docs/documentation.md)                                                                                    |
+| Flow error recovery / checkpointing           | [source/exaix.md](source/exaix.md)                                                         | [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)                                              |
 | Compose commit message                        | [prompts/commit-message.md](prompts/commit-message.md)                                     | [../Blueprints/Skills/commit-message.skill.md](../Blueprints/Skills/commit-message.skill.md)                                      |
 | Debug test failures                           | [tests/testing.md](tests/testing.md)                                                       | [source/exaix.md](source/exaix.md)                                                                                                |
 | Fix CI failures                               | [tests/testing.md](tests/testing.md) (#CI)                                                 | [source/exaix.md](source/exaix.md)                                                                                                |
@@ -43,6 +44,10 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`docs`** → [docs/documentation.md](docs/documentation.md)
 - **`patterns`** → [source/exaix.md](source/exaix.md) (Service Pattern, Module Documentation)
 - **`helpers`** → [tests/testing.md](tests/testing.md) (Test Organization, Helpers)
+- **`flow-error-recovery`** → [source/exaix.md](source/exaix.md), [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
+- **`checkpointing`** → [source/exaix.md](source/exaix.md), [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
+- **`compensation`** → [source/exaix.md](source/exaix.md), [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
+- **`onError`** → [source/exaix.md](source/exaix.md), [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
 - **`test-placement`** → [tests/testing.md](tests/testing.md) (Mandatory Test Placement Rules), [../tests/README.md](../tests/README.md)
 - **`openai`** → [providers/openai.md](providers/openai.md)
 - **`prompts`** → [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md)

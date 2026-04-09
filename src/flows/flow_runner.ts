@@ -34,9 +34,21 @@ import { FlowCheckpointService, type IFlowCheckpointService } from "../services/
 import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "../shared/schemas/flow.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
+  FLOW_EVENT_CHECKPOINT_CLEARED,
+  FLOW_EVENT_CHECKPOINT_LOADED,
+  FLOW_EVENT_CHECKPOINT_SAVED,
+  FLOW_EVENT_CHECKPOINT_STALE,
+  FLOW_EVENT_COMPLETED,
+  FLOW_EVENT_STEP_COMPENSATED,
+  FLOW_EVENT_STEP_COMPENSATION_FAILED,
+  FLOW_EVENT_STEP_FALLBACK,
+  FLOW_EVENT_STEP_RETRY,
+  FLOW_EVENT_STEP_SKIPPED,
+  FLOW_EVENT_VALIDATION_FAILED,
 } from "../shared/constants.ts";
 
 /**
@@ -114,7 +126,220 @@ export interface IStepResult {
   completedAt: Date;
   /** Zero-based wave number used for deterministic compensation ordering. */
   waveIndex?: number;
+  /** True when the logical step eventually succeeded after retry recovery. */
+  wasRetried?: boolean;
+  /** Number of retry recovery attempts consumed before success. */
+  retryCount?: number;
+  /** True when the logical step succeeded via a fallback step. */
+  fallbackUsed?: boolean;
+  /** True when compensation actions were executed for this completed step. */
+  compensationRan?: boolean;
 }
+
+interface IStepRecoveryMetadata {
+  wasRetried?: boolean;
+  retryCount?: number;
+  fallbackUsed?: boolean;
+  compensationRan?: boolean;
+}
+
+interface IFlowEventRequestContext {
+  traceId?: string;
+  requestId?: string;
+}
+
+interface IFlowEventLogBase extends IFlowEventRequestContext {
+  flowId: string;
+}
+
+interface IFlowProviderTokenStats {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+interface IFlowWaveErrorPayload {
+  stepId: string;
+  error: string;
+}
+
+export interface IFlowEventPayloadMap {
+  "flow.validating": IFlowEventLogBase & { stepCount: number };
+  "flow.validation.failed": IFlowEventLogBase & { error: string };
+  "flow.validated": IFlowEventLogBase & { stepCount: number; maxParallelism: number; failFast: boolean };
+  "flow.started": IFlowEventLogBase & {
+    flowRunId: string;
+    stepCount: number;
+    maxParallelism: number;
+    failFast: boolean;
+  };
+  "flow.dependencies.resolving": IFlowEventLogBase & { flowRunId: string };
+  "flow.dependencies.resolved": IFlowEventLogBase & { flowRunId: string; waveCount: number; totalSteps: number };
+  "flow.wave.started": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    waveSize: number;
+    stepIds: string[];
+  };
+  "flow.wave.resume.skipped": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    skippedStepIds: string[];
+  };
+  "flow.wave.completed": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    waveSize: number;
+    successCount: number;
+    failureCount: number;
+    failed: boolean;
+  };
+  "flow.wave.errors": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    errorCount: number;
+    errors: IFlowWaveErrorPayload[];
+  };
+  "flow.step.processing_error": IFlowEventRequestContext & { flowRunId: string; stepId: string; error: string };
+  "flow.output.aggregating": IFlowEventRequestContext & {
+    flowRunId: string;
+    flowId: string;
+    outputFrom: IFlow["output"]["from"];
+    outputFormat: IFlow["output"]["format"];
+    totalSteps: number;
+  };
+  "flow.output.aggregated": IFlowEventRequestContext & { flowRunId: string; flowId: string; outputLength: number };
+  "flow.completed": IFlowEventRequestContext & {
+    flowRunId: string;
+    flowId: string;
+    success: boolean;
+    duration: number;
+    stepsCompleted: number;
+    successfulSteps: number;
+    failedSteps: number;
+    outputLength: number;
+  };
+  "flow.failed": IFlowEventRequestContext & {
+    flowRunId: string;
+    flowId: string;
+    error: string;
+    errorType: string;
+    duration: number;
+    stepsAttempted: number;
+    successfulSteps: number;
+    failedSteps: number;
+  };
+  "flow.step.queued": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+    dependencies: string[];
+    inputSource: IFlowStep["input"]["source"];
+  };
+  "flow.step.started": IFlowEventRequestContext & { flowRunId: string; stepId: string; identityId: string };
+  "flow.step.retry": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+    attempt: number;
+    maxRetries: number;
+    error: string;
+  };
+  "flow.step.fallback": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+    fallbackStepId: string;
+    fallbackIdentityId: string;
+    error: string;
+  };
+  "flow.step.compensated": IFlowEventRequestContext & {
+    flowRunId: string;
+    failedStepId: string;
+    sourceStepId: string;
+    tool: string;
+    args: Record<string, JSONValue>;
+    success: boolean;
+    result?: JSONValue;
+    error?: string;
+  };
+  "flow.step.compensation_failed": IFlowEventRequestContext & {
+    flowRunId: string;
+    failedStepId: string;
+    sourceStepId: string;
+    tool: string;
+    args: Record<string, JSONValue>;
+    error: string;
+  };
+  "flow.step.condition.evaluated": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    condition: string;
+    shouldExecute: boolean;
+    error?: string;
+  };
+  "flow.step.skipped": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    condition: string;
+    reason: string;
+  };
+  "flow.gate.criteria.no_analysis": IFlowEventRequestContext & { flowRunId: string; stepId: string };
+  "flow.step.completed": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+    success: true;
+    duration: number;
+    outputLength: number;
+    hasThought: boolean;
+  };
+  "flow.step.failed": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+    error: string;
+    errorType: string;
+    duration: number;
+  };
+  "flow.step.transform.applied": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    transformName: string;
+    inputSize: number;
+    outputSize: number;
+    duration: number;
+  };
+  "flow.step.input.prepared": IFlowEventRequestContext & { flowRunId: string; stepId: string; hasSkills: boolean };
+  "flow.step.unexpected_error": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    error: string;
+    errorType: string;
+  };
+  "flow.checkpoint.stale": IFlowEventRequestContext & { flowRunId: string; flowId: string };
+  "flow.checkpoint.loaded": IFlowEventRequestContext & { flowRunId: string; flowId: string; restoredSteps: number };
+  "flow.checkpoint.saved": IFlowEventRequestContext & { flowRunId: string; flowId: string; completedSteps: number };
+  "flow.checkpoint.cleared": IFlowEventRequestContext & { flowRunId: string; flowId: string };
+  "flow.token_summary": {
+    flowRunId: string;
+    flowId: string;
+    totalLlmCalls: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalTokens: number;
+    totalCostUsd: number;
+    providers: Record<string, IFlowProviderTokenStats>;
+    traceId: string;
+    requestId?: string;
+  };
+  "flow.token_summary.error": { flowRunId: string; flowId: string; error: string; traceId: string; requestId?: string };
+}
+
+export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
+  ? IFlowEventPayloadMap[TEvent] & Record<string, JSONValue | undefined>
+  : Record<string, JSONValue | undefined>;
 
 /**
  * Result of executing a complete flow
@@ -149,7 +374,7 @@ export interface IFlowResult {
  * Interface for logging flow events
  */
 export interface IFlowEventLogger {
-  log(event: string, payload: Record<string, JSONValue | undefined>): void;
+  log<TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void;
 }
 
 /**
@@ -320,8 +545,18 @@ export class FlowRunner implements IFlowRunner {
   private getIFlowLogBase(
     flow: IFlow,
     request: { traceId?: string; requestId?: string },
+    options: { includeStepCount: true },
+  ): IFlowEventPayloadMap["flow.validating"];
+  private getIFlowLogBase(
+    flow: IFlow,
+    request: { traceId?: string; requestId?: string },
+    options?: { includeStepCount?: false },
+  ): IFlowEventLogBase;
+  private getIFlowLogBase(
+    flow: IFlow,
+    request: { traceId?: string; requestId?: string },
     options: { includeStepCount?: boolean } = {},
-  ): Record<string, JSONValue | undefined> {
+  ): IFlowEventLogBase | IFlowEventPayloadMap["flow.validating"] {
     return {
       flowId: flow.id,
       ...(options.includeStepCount ? { stepCount: flow.steps.length } : {}),
@@ -380,7 +615,7 @@ export class FlowRunner implements IFlowRunner {
 
     // Validate flow has steps
     if (flow.steps.length === 0) {
-      await this.eventLogger.log("flow.validation.failed", {
+      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
         error: "IFlow must have at least one step",
         ...this.getIFlowLogBase(flow, request),
       });
@@ -390,7 +625,7 @@ export class FlowRunner implements IFlowRunner {
     const fallbackCycle = this.findCyclicFallbackChain(flow);
     if (fallbackCycle) {
       const errorMessage = `Cyclic fallback chain detected: ${fallbackCycle.join(" -> ")}`;
-      await this.eventLogger.log("flow.validation.failed", {
+      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
         error: errorMessage,
         ...this.getIFlowLogBase(flow, request),
       });
@@ -734,7 +969,7 @@ export class FlowRunner implements IFlowRunner {
     await this.clearCheckpointOnSuccess(flow, request, flowRunId, success);
 
     // Log flow completion
-    await this.eventLogger.log("flow.completed", {
+    await this.eventLogger.log(FLOW_EVENT_COMPLETED, {
       flowRunId,
       flowId: flow.id,
       success,
@@ -889,12 +1124,12 @@ export class FlowRunner implements IFlowRunner {
 
     if (step.onError.action === FlowStepOnErrorAction.RETRY) {
       const maxRetries = step.onError.maxRetries ?? 1;
-      const retryBackoffMs = step.onError.backoffMs ?? 1000;
+      const retryBackoffMs = step.onError.backoffMs ?? DEFAULT_FLOW_STEP_BACKOFF_MS;
 
       for (let retryAttempt = 1; retryAttempt <= maxRetries; retryAttempt++) {
         await this.enforceRetryCostBudget(flowRunId, request);
 
-        await this.eventLogger.log("flow.step.retry", {
+        await this.eventLogger.log(FLOW_EVENT_STEP_RETRY, {
           flowRunId,
           stepId: step.id,
           identityId: step.identity,
@@ -909,7 +1144,10 @@ export class FlowRunner implements IFlowRunner {
 
         try {
           const result = await this.runStepAttempt(flowRunId, step, flow, request, stepResults, startedAt);
-          return this.formatStepSuccess(flowRunId, step, request, result, startedAt);
+          return this.formatStepSuccess(flowRunId, step, request, result, startedAt, {
+            wasRetried: true,
+            retryCount: retryAttempt,
+          });
         } catch (retryError) {
           lastError = retryError;
         }
@@ -925,7 +1163,7 @@ export class FlowRunner implements IFlowRunner {
           `Fallback step not found for ${step.id}: ${fallbackStepId ?? DEFAULT_UNKNOWN_LABEL}`,
         );
       } else {
-        await this.eventLogger.log("flow.step.fallback", {
+        await this.eventLogger.log(FLOW_EVENT_STEP_FALLBACK, {
           flowRunId,
           stepId: step.id,
           identityId: step.identity,
@@ -995,6 +1233,7 @@ export class FlowRunner implements IFlowRunner {
       return {
         ...fallbackResult,
         stepId: step.id,
+        fallbackUsed: true,
       };
     }
 
@@ -1004,6 +1243,11 @@ export class FlowRunner implements IFlowRunner {
       request,
       fallbackResult.result,
       startedAt,
+      {
+        fallbackUsed: true,
+        wasRetried: fallbackResult.wasRetried,
+        retryCount: fallbackResult.retryCount,
+      },
     );
   }
 
@@ -1099,6 +1343,16 @@ export class FlowRunner implements IFlowRunner {
       const completedStep = flow.steps.find((candidate) => candidate.id === completedStepId);
       const compensations = completedStep?.onError?.compensate ?? [];
 
+      if (compensations.length > 0) {
+        const completedResult = stepResults.get(completedStepId);
+        if (completedResult) {
+          stepResults.set(completedStepId, {
+            ...completedResult,
+            compensationRan: true,
+          });
+        }
+      }
+
       for (const compensation of compensations) {
         const compensationArgs = (compensation.args ?? compensation.params ?? {}) as Record<string, JSONValue>;
         const args: Record<string, JSONValue> = {
@@ -1110,7 +1364,7 @@ export class FlowRunner implements IFlowRunner {
         try {
           const result = await this.mcpClient.callTool(compensation.tool, args);
 
-          await this.eventLogger.log("flow.step.compensated", {
+          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATED, {
             flowRunId,
             failedStepId: failedStep.id,
             sourceStepId: completedStepId,
@@ -1122,7 +1376,7 @@ export class FlowRunner implements IFlowRunner {
             requestId: request.requestId,
           });
         } catch (error) {
-          await this.eventLogger.log("flow.step.compensated", {
+          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATED, {
             flowRunId,
             failedStepId: failedStep.id,
             sourceStepId: completedStepId,
@@ -1134,7 +1388,7 @@ export class FlowRunner implements IFlowRunner {
             requestId: request.requestId,
           });
 
-          await this.eventLogger.log("flow.step.compensation_failed", {
+          await this.eventLogger.log(FLOW_EVENT_STEP_COMPENSATION_FAILED, {
             flowRunId,
             failedStepId: failedStep.id,
             sourceStepId: completedStepId,
@@ -1180,7 +1434,7 @@ export class FlowRunner implements IFlowRunner {
       const completedAt = new Date();
       const duration = completedAt.getTime() - startedAt.getTime();
 
-      await this.eventLogger.log("flow.step.skipped", {
+      await this.eventLogger.log(FLOW_EVENT_STEP_SKIPPED, {
         flowRunId,
         stepId: step.id,
         condition: step.condition,
@@ -1331,6 +1585,7 @@ export class FlowRunner implements IFlowRunner {
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     result: IAgentExecutionResult,
     startedAt: Date,
+    recoveryMetadata?: IStepRecoveryMetadata,
   ): IStepResult {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
@@ -1354,6 +1609,7 @@ export class FlowRunner implements IFlowRunner {
       duration,
       startedAt,
       completedAt,
+      ...recoveryMetadata,
     };
   }
 
@@ -1633,7 +1889,7 @@ export class FlowRunner implements IFlowRunner {
       checkpoint.schemaVersion !== FLOW_CHECKPOINT_SCHEMA_VERSION ||
       checkpoint.flowContentHash !== flowContentHash
     ) {
-      await this.eventLogger.log("flow.checkpoint.stale", {
+      await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_STALE, {
         flowRunId,
         flowId: flow.id,
         traceId: request.traceId,
@@ -1648,7 +1904,7 @@ export class FlowRunner implements IFlowRunner {
       stepResults.set(stepId, result);
     }
 
-    await this.eventLogger.log("flow.checkpoint.loaded", {
+    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_LOADED, {
       flowRunId,
       flowId: flow.id,
       traceId: request.traceId,
@@ -1678,7 +1934,13 @@ export class FlowRunner implements IFlowRunner {
       }
 
       snapshot[stepId] = {
-        ...result,
+        stepId: result.stepId,
+        success: result.success,
+        skipped: result.skipped,
+        skipReason: result.skipReason,
+        result: result.result,
+        error: result.error,
+        duration: result.duration,
         startedAt: result.startedAt.toISOString(),
         completedAt: result.completedAt.toISOString(),
       };
@@ -1703,7 +1965,7 @@ export class FlowRunner implements IFlowRunner {
       this.buildCheckpointSnapshot(stepResults),
     );
 
-    await this.eventLogger.log("flow.checkpoint.saved", {
+    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_SAVED, {
       flowRunId,
       flowId: flow.id,
       traceId: request.traceId,
@@ -1723,7 +1985,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     await this.checkpointService.delete(request.traceId);
-    await this.eventLogger.log("flow.checkpoint.cleared", {
+    await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_CLEARED, {
       flowRunId,
       flowId: flow.id,
       traceId: request.traceId,

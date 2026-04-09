@@ -796,8 +796,33 @@ export const DEFAULT_SKILL_INDEX_VERSION = "1.0.0";
 /** Semantic version for flows. Bump on breaking schema changes. */
 export const DEFAULT_FLOW_VERSION = "1.0.0";
 
+/** Default backoff for flow step retries and onError retry recovery. */
+export const DEFAULT_FLOW_STEP_BACKOFF_MS = 1000;
+
+/** Lower bound for configurable flow retry counts. */
+export const FLOW_MAX_RETRIES_MIN = 1;
+
+/** Upper bound for configurable flow retry counts. */
+export const FLOW_MAX_RETRIES_MAX = 5;
+
+/** Default retry count for flow onError retry recovery. */
+export const DEFAULT_FLOW_MAX_RETRIES = 1;
+
 /** Schema version for flow checkpoints. Bump on breaking checkpoint shape changes. */
 export const FLOW_CHECKPOINT_SCHEMA_VERSION = "1";
+
+// Flow event names
+export const FLOW_EVENT_STEP_RETRY = "flow.step.retry";
+export const FLOW_EVENT_STEP_FALLBACK = "flow.step.fallback";
+export const FLOW_EVENT_STEP_SKIPPED = "flow.step.skipped";
+export const FLOW_EVENT_STEP_COMPENSATED = "flow.step.compensated";
+export const FLOW_EVENT_STEP_COMPENSATION_FAILED = "flow.step.compensation_failed";
+export const FLOW_EVENT_CHECKPOINT_SAVED = "flow.checkpoint.saved";
+export const FLOW_EVENT_CHECKPOINT_LOADED = "flow.checkpoint.loaded";
+export const FLOW_EVENT_CHECKPOINT_CLEARED = "flow.checkpoint.cleared";
+export const FLOW_EVENT_CHECKPOINT_STALE = "flow.checkpoint.stale";
+export const FLOW_EVENT_COMPLETED = "flow.completed";
+export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 
 /** Default max serialized size for a flow namespace artifact in bytes. */
 export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;

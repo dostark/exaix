@@ -19,7 +19,15 @@ import {
   StepExecutionMode,
 } from "../enums.ts";
 import { JSONValueSchema } from "../types/json.ts";
-import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES, FLOW_CHECKPOINT_SCHEMA_VERSION } from "../constants.ts";
+import {
+  DEFAULT_FLOW_MAX_RETRIES,
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  DEFAULT_NAMESPACE_MAX_BYTES,
+  FLOW_CHECKPOINT_SCHEMA_VERSION,
+  FLOW_MAX_RETRIES_MAX,
+  FLOW_MAX_RETRIES_MIN,
+} from "../constants.ts";
 
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;
@@ -37,8 +45,10 @@ export const ZToolCall = z.object({
 export const ZFlowStepOnError = z.object({
   action: z.nativeEnum(FlowStepOnErrorAction),
   fallbackStep: z.string().optional(),
-  maxRetries: z.number().int().min(1).max(5).optional().default(1),
-  backoffMs: z.number().int().positive().optional().default(1000),
+  maxRetries: z.number().int().min(FLOW_MAX_RETRIES_MIN).max(FLOW_MAX_RETRIES_MAX).optional().default(
+    DEFAULT_FLOW_MAX_RETRIES,
+  ),
+  backoffMs: z.number().int().positive().optional().default(DEFAULT_FLOW_STEP_BACKOFF_MS),
   compensate: z.array(ZToolCall).optional(),
 });
 
@@ -162,7 +172,7 @@ export const FlowStepSchema = z.object({
   timeout: z.number().positive().optional(),
   retry: z.object({
     maxAttempts: z.number().int().min(1).default(1),
-    backoffMs: z.number().int().min(0).default(1000),
+    backoffMs: z.number().int().min(0).default(DEFAULT_FLOW_STEP_BACKOFF_MS),
   }).default({}),
   onError: ZFlowStepOnError.optional(),
   /** Gate evaluation config (for type: "gate") */

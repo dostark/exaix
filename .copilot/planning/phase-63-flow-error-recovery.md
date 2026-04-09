@@ -16,7 +16,7 @@ topics:
 
 ## Phase 63: Flow-Level Error Recovery & Checkpointing
 
-## Status: 🚧 Gap Remediation In Progress
+## Status: ✅ Complete
 
 **Author**: Comet Assistant (via senior-coder Blueprint)
 **Date**: 2026-04-02
@@ -238,12 +238,12 @@ steps:
 
 ## Risks & Mitigations
 
-| Risk                                               | Impact | Likelihood | Mitigation                                                                                                            |
-| :------------------------------------------------- | :----- | :--------- | :-------------------------------------------------------------------------------------------------------------------- |
-| **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                                     |
+| Risk                                               | Impact | Likelihood | Mitigation                                                                                                                     |
+| :------------------------------------------------- | :----- | :--------- | :----------------------------------------------------------------------------------------------------------------------------- |
+| **R1: Compensation tool-call fails**               | Medium | Low        | Log and continue; emit `flow.compensation.partial_failure` event.                                                              |
 | **R2: Checkpoint grows stale across code changes** | Medium | Low        | Include a `schemaVersion` field in `ZFlowCheckpoint`; reject checkpoints with mismatched version. **Mitigated** in Step 63.10. |
-| **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts. **Mitigated** in Step 63.6. |
-| **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                                           |
+| **R3: Retry storms on transient LLM errors**       | High   | Medium     | Cap `maxRetries` at 5 in schema; apply exponential backoff (1s, 2s, 4s) between attempts. **Mitigated** in Step 63.6.          |
+| **R4: Fallback step creates infinite loop**        | Medium | Low        | Detect and reject cyclic fallback chains at flow load time.                                                                    |
 
 ---
 
@@ -502,15 +502,18 @@ The nine gaps above are addressed by Steps 63.6 – 63.14 below. Steps are order
 
 **Success Criteria:**
 
-- [ ] A step that succeeded after 2 retries has `wasRetried: true, retryCount: 2` in its `IStepResult`.
-- [ ] A step that succeeded via its fallback has `fallbackUsed: true`.
-- [ ] A step whose compensations ran has `compensationRan: true`.
-- [ ] A step that succeeded on the first attempt has all three fields `undefined`.
+- [x] A step that succeeded after 2 retries has `wasRetried: true, retryCount: 2` in its `IStepResult`.
+- [x] A step that succeeded via its fallback has `fallbackUsed: true`.
+- [x] A step whose compensations ran has `compensationRan: true`.
+- [x] A step that succeeded on the first attempt has all three fields `undefined`.
 
 **Planned Tests:**
 
-- [ ] **Unit**: `tests/flows/flow_runner_test.ts` — extend the existing retry test to assert `result.stepResults.get("step1")?.wasRetried === true` and `retryCount === 2`.
-- [ ] **Unit**: extend the existing fallback test to assert `fallbackUsed === true` on the primary step result.
+- [x] **Unit**: `tests/flows/flow_runner_test.ts` — extend the existing retry test to assert `result.stepResults.get("step1")?.wasRetried === true` and `retryCount === 2`.
+- [x] **Unit**: extend the existing fallback test to assert `fallbackUsed === true` on the primary step result.
+- [x] **Integration**: `tests/integration/services/flow_compensation_test.ts` — assert successful compensated steps are marked with `compensationRan === true` while first-attempt/fallback metadata remains unset.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`, `tests/integration/services/flow_compensation_test.ts`; focused Step 63.12 validation passed via `deno test --allow-all tests/flows/flow_runner_test.ts tests/integration/services/flow_compensation_test.ts`, `deno check src/flows/flow_runner.ts`, `deno lint src/flows/flow_runner.ts tests/flows/flow_runner_test.ts tests/integration/services/flow_compensation_test.ts`, `deno task check:style`, and `deno task check:arch`.
 
 ---
 
@@ -537,13 +540,15 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 
 **Success Criteria:**
 
-- [ ] `flow.checkpoint.cleared` is asserted in the resume test.
-- [ ] A flow restart with a changed definition triggers `flow.checkpoint.stale` and full re-execution.
-- [ ] Both new test cases pass `deno task test`.
+- [x] `flow.checkpoint.cleared` is asserted in the resume test.
+- [x] A flow restart with a changed definition triggers `flow.checkpoint.stale` and full re-execution.
+- [x] Both new test cases pass `deno task test`.
 
 **Planned Tests:**
 
-- [ ] See test cases above — no new files; amendments to `tests/integration/services/flow_checkpoint_test.ts`.
+- [x] See test cases above — no new files; amendments to `tests/integration/services/flow_checkpoint_test.ts`.
+
+**✅ IMPLEMENTED** — `tests/integration/services/flow_checkpoint_test.ts`; focused Step 63.13 checkpoint coverage passed via `deno test --allow-all tests/integration/services/flow_checkpoint_test.ts`, and remained green in the combined validation run with `deno task check:style`, `deno task check:arch`, `deno task check:docs`, and `deno task docs-agent-validate`.
 
 ---
 
@@ -555,12 +560,14 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 
 **Success Criteria:**
 
-- [ ] Test exists (even if skipped/failing) before Step 63.8 begins — ensuring the gap is documented in the test suite.
-- [ ] Test passes after Step 63.8 is complete.
+- [x] Test exists (even if skipped/failing) before Step 63.8 begins — ensuring the gap is documented in the test suite.
+- [x] Test passes after Step 63.8 is complete.
 
 **Planned Tests:**
 
-- [ ] **Unit**: `"FlowRunner: fallback step with onError.RETRY fires retries (Step 63.8)"` in `tests/flows/flow_runner_test.ts`.
+- [x] **Unit**: `"FlowRunner: fallback step with onError.RETRY fires retries (Step 63.8)"` in `tests/flows/flow_runner_test.ts`.
+
+**✅ IMPLEMENTED** — `tests/flows/flow_runner_test.ts`; the existing fallback regression coverage added during Step 63.8 satisfies this gap and continued passing in the focused FlowRunner validation run.
 
 ---
 
@@ -575,7 +582,7 @@ Modify the flow definition after the first run (e.g., add a step), re-run `FlowR
 | ID  | Gap (short)                                                                                           | Severity           | Checklist Item              | In Tests? |
 | --- | ----------------------------------------------------------------------------------------------------- | ------------------ | --------------------------- | --------- |
 | G10 | All flow event name strings are inline literals — at least 11 strings, no constants in `constants.ts` | 🟡 Traceability    | Event naming constants      | ❌        |
-| G11 | `IFlowEventLogger.log()` payload type is an untyped string-keyed JSONValue-or-undefined record        | 🟡 Traceability    | Event payload typing        | ❌        |
+| G11 | `IFlowEventLogger.log()` payload type is an untyped string-keyed JSONValue-or-undefined record        | 🟡 Traceability    | Event payload typing        | ✅        |
 | G12 | `backoffMs: 1000` inline default in `ZFlowStep` schema and test fixtures — no named constant          | 🟡 Configurability | Config-driven vs. hardcoded | ❌        |
 | G13 | `maxRetries` bounds `min(1).max(5)` inline in `ZFlowStepOnError` — no named constants                 | 🟡 Configurability | Config-driven vs. hardcoded | ❌        |
 | G14 | No test asserting checkpoint event payload fields (saved/loaded)                                      | 🟠 Traceability    | Event assertions in tests   | ❌        |
@@ -687,13 +694,15 @@ The planned Step 63.13 (G7 + G9) adds a `flow.checkpoint.cleared` assertion but 
 - **Architecture Notes**: Follows the `DEFAULT_AGENT_*` / `AGENT_EVENT_*` pattern established by Phase 61 Step 61.10. Constants must be importable from `src/shared/constants.ts` (not from a flow-specific module) so that test files and other services can reference them without importing `FlowRunner`. This step must be completed before Step 63.9 (`validateIFlow`) emits `FLOW_EVENT_VALIDATION_FAILED`.
 
 - **Planned Tests**:
-  - **Unit**: `tests/flows/flow_runner_test.ts` — import `FLOW_EVENT_STEP_RETRY` and convert `retryEvents[0].event === "flow.step.retry"` to `retryEvents[0].event === FLOW_EVENT_STEP_RETRY` (type-safe constant reference).
-  - **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — replace inline `"flow.checkpoint.saved"` and `"flow.checkpoint.loaded"` string comparisons with `FLOW_EVENT_CHECKPOINT_SAVED` / `FLOW_EVENT_CHECKPOINT_LOADED` constants.
+  - [x] **Unit**: `tests/flows/flow_runner_test.ts` — import `FLOW_EVENT_STEP_RETRY` and convert `retryEvents[0].event === "flow.step.retry"` to `retryEvents[0].event === FLOW_EVENT_STEP_RETRY` (type-safe constant reference).
+  - [x] **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — replace inline `"flow.checkpoint.saved"` and `"flow.checkpoint.loaded"` string comparisons with `FLOW_EVENT_CHECKPOINT_SAVED` / `FLOW_EVENT_CHECKPOINT_LOADED` constants.
 
 - **Success Criteria**:
-  - [ ] All 11 flow event name constants are exported from `src/shared/constants.ts`.
-  - [ ] Zero inline flow event name string literals remain in `src/flows/flow_runner.ts`.
-  - [ ] All existing event-assertion tests pass after the constant substitution.
+  - [x] All 11 flow event name constants are exported from `src/shared/constants.ts`.
+  - [x] Zero inline flow event name string literals remain in `src/flows/flow_runner.ts`.
+  - [x] All existing event-assertion tests pass after the constant substitution.
+
+**✅ IMPLEMENTED** — `src/shared/constants.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_runner_test.ts`, `tests/integration/services/flow_checkpoint_test.ts`; focused flow/checkpoint suites passed after substituting the shared event constants, with `deno task check:style` and `deno task check:arch` also passing.
 
 ---
 
@@ -719,12 +728,14 @@ The planned Step 63.13 (G7 + G9) adds a `flow.checkpoint.cleared` assertion but 
 - **Architecture Notes**: The `backoffMs: 1000` default in `ZFlowStep.retry` (the step-execution retry — distinct from `ZFlowStepOnError` retry) should also use `DEFAULT_FLOW_STEP_BACKOFF_MS`. This step must be coordinated with Step 63.6 (which adds `backoffMs` to `ZFlowStepOnError`) to avoid introducing a new inline default.
 
 - **Planned Tests**:
-  - **Unit**: `tests/flows/flow_step_on_error_schema_test.ts` — add assertion that `ZFlowStepOnError.parse({ action: "retry" }).backoffMs === DEFAULT_FLOW_STEP_BACKOFF_MS` and `ZFlowStepOnError.parse({ action: "retry", maxRetries: 10 })` fails (above `FLOW_MAX_RETRIES_MAX`).
+  - [x] **Unit**: `tests/flows/flow_step_on_error_schema_test.ts` — add assertion that `ZFlowStepOnError.parse({ action: "retry" }).backoffMs === DEFAULT_FLOW_STEP_BACKOFF_MS` and `ZFlowStepOnError.parse({ action: "retry", maxRetries: 10 })` fails (above `FLOW_MAX_RETRIES_MAX`).
 
 - **Success Criteria**:
-  - [ ] `src/shared/constants.ts` exports `DEFAULT_FLOW_STEP_BACKOFF_MS`, `FLOW_MAX_RETRIES_MIN`, `FLOW_MAX_RETRIES_MAX`, `DEFAULT_FLOW_MAX_RETRIES`.
-  - [ ] `ZFlowStepOnError` uses constants for all `.min()`, `.max()`, and `.default()` values.
-  - [ ] Zero inline `1000` backoff literals and zero inline `1`/`5` retry-bound literals remain in `src/shared/schemas/flow.ts`.
+  - [x] `src/shared/constants.ts` exports `DEFAULT_FLOW_STEP_BACKOFF_MS`, `FLOW_MAX_RETRIES_MIN`, `FLOW_MAX_RETRIES_MAX`, `DEFAULT_FLOW_MAX_RETRIES`.
+  - [x] `ZFlowStepOnError` uses constants for all `.min()`, `.max()`, and `.default()` values.
+  - [x] Zero inline `1000` backoff literals and zero inline `1`/`5` retry-bound literals remain in `src/shared/schemas/flow.ts`.
+
+**✅ IMPLEMENTED** — `src/shared/constants.ts`, `src/shared/schemas/flow.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_step_on_error_schema_test.ts`, `tests/flows/flow_runner_test.ts`, `tests/integration/services/flow_checkpoint_test.ts`, `tests/integration/services/flow_compensation_test.ts`; shared retry defaults now drive schema/runtime/test fixtures, with focused schema/flow/integration suites all passing.
 
 ---
 
@@ -756,12 +767,38 @@ The planned Step 63.13 (G7 + G9) adds a `flow.checkpoint.cleared` assertion but 
 - **Architecture Notes**: No source code changes required — payloads are already emitted with the expected fields. This step adds test coverage only. Coordinate with Step 63.13 (G7+G9) which adds the `cleared` and stale-hash tests — all three can land in the same PR.
 
 - **Planned Tests**:
-  - **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — extend existing test with payload field assertions shown above.
+  - [x] **Integration**: `tests/integration/services/flow_checkpoint_test.ts` — extend existing test with payload field assertions shown above.
 
 - **Success Criteria**:
-  - [ ] `flow.checkpoint.saved` payload fields `flowRunId`, `traceId`, `completedSteps` are asserted.
-  - [ ] `flow.checkpoint.loaded` payload fields `traceId`, `restoredSteps` are asserted.
-  - [ ] Tests pass `deno task test` without modification to `src/flows/flow_runner.ts`.
+  - [x] `flow.checkpoint.saved` payload fields `flowRunId`, `traceId`, `completedSteps` are asserted.
+  - [x] `flow.checkpoint.loaded` payload fields `traceId`, `restoredSteps` are asserted.
+  - [x] Tests pass `deno task test` without modification to `src/flows/flow_runner.ts`.
+
+**✅ IMPLEMENTED** — `tests/integration/services/flow_checkpoint_test.ts`; checkpoint save/load payload assertions now accompany the clear/stale coverage, with the focused checkpoint suite passing unchanged against the existing runtime implementation.
+
+---
+
+#### Step 63.18 (G11): Type Known Flow Event Payloads
+
+- **Action**: Replace the untyped `IFlowEventLogger.log()` payload record with a known-event payload map plus a typed fallback for arbitrary event names.
+- **Justification**: FlowRunner event payloads are part of the audit trail. Typing the known event set catches field drift during refactors while preserving compatibility for dynamic events emitted through `ActivityJournal`.
+
+**Implementation Notes:**
+
+- Export `IFlowEventPayloadMap` from `src/flows/flow_runner.ts` for the known FlowRunner event surface.
+- Define `IFlowEventPayload<TEvent>` so known event names resolve to typed payloads while unknown event names still accept `Record<string, JSONValue | undefined>`.
+- Update `IFlowEventLogger` to use a generic `log<TEvent extends string>(event, payload)` signature.
+- Keep `ActivityJournal` compatible by relying on the unknown-event fallback path for dynamic step events.
+
+- **Planned Tests**:
+  - [x] **Unit**: `tests/journal/activity_journal_test.ts` — add a compile-level assertion that `IFlowEventPayloadMap["flow.step.retry"]` exposes the expected typed payload fields.
+
+- **Success Criteria**:
+  - [x] `src/flows/flow_runner.ts` exports `IFlowEventPayloadMap` for known FlowRunner events.
+  - [x] `IFlowEventLogger.log()` uses typed payloads for known event names and a record fallback for arbitrary event names.
+  - [x] `ActivityJournal` and focused Phase 63 suites continue to compile and pass without runtime behavior changes.
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/journal/activity_journal_test.ts`; known FlowRunner events now have typed payload contracts while dynamic journal events still flow through the generic fallback, with focused journal and Phase 63 suites passing.
 
 ---
 
@@ -810,8 +847,10 @@ Create a developer-facing reference covering:
 
 **Success Criteria:**
 
-- [ ] `ARCHITECTURE.md` component table contains all three new rows.
-- [ ] `ARCHITECTURE.md` has a `## Flow Error Recovery` subsection.
-- [ ] `.copilot/cross-reference.md` has the new task-row and four topic entries.
-- [ ] `docs/dev/flow_error_recovery.md` exists and passes `deno task check:docs`.
-- [ ] `deno task docs-agent-validate` exits 0.
+- [x] `ARCHITECTURE.md` component table contains all three new rows.
+- [x] `ARCHITECTURE.md` has a `## Flow Error Recovery` subsection.
+- [x] `.copilot/cross-reference.md` has the new task-row and four topic entries.
+- [x] `docs/dev/flow_error_recovery.md` exists and passes `deno task check:docs`.
+- [x] `deno task docs-agent-validate` exits 0.
+
+**✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/dev/flow_error_recovery.md`; documentation validation passed via `deno task check:docs` and `deno task docs-agent-validate`, and architecture grounding remained clean via `deno task check:arch`.
