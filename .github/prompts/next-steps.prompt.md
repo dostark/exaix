@@ -30,6 +30,8 @@ Execution requirements:
 1. Do not skip failing tests, lint/type/style/arch checks, or planning-doc status updates.
 1. Keep scope to one step per cycle unless explicitly requested otherwise.
 1. Keep edits minimal and behavior-preserving beyond the targeted step.
+1. Default to focused validation for the touched files and tests; do not usually run full-suite commands such as `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all`.
+1. Use full-suite test commands only for exclusive cases: massive cross-cutting changes, changes that touch shared execution/runtime foundations with broad blast radius, or when the user explicitly requests a full run.
 
 Output format:
 

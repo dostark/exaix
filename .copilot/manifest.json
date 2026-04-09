@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-09T12:55:39.071Z",
+  "generated_at": "2026-04-09T14:01:44.272Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -380,7 +380,9 @@
         ".copilot/chunks/tdd-phase-steps.md.chunk2.txt",
         ".copilot/chunks/tdd-phase-steps.md.chunk3.txt",
         ".copilot/chunks/tdd-phase-steps.md.chunk4.txt",
-        ".copilot/chunks/tdd-phase-steps.md.chunk5.txt"
+        ".copilot/chunks/tdd-phase-steps.md.chunk5.txt",
+        ".copilot/chunks/tdd-phase-steps.md.chunk6.txt",
+        ".copilot/chunks/tdd-phase-steps.md.chunk7.txt"
       ]
     },
     {

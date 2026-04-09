@@ -13,6 +13,7 @@ Key points
 - Each step follows strict RED → GREEN → REFACTOR cycle
 - After each step: mark success criteria ✅, run fast CI gates, commit
 - Never skip ahead — complete and commit each step before starting the next
+- Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
 
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
@@ -22,6 +23,15 @@ with nice detailed messages describing rationale and what was changed/added."
 
 Workflow per step
 ─────────────────
+Validation policy
+   0. Default to file-scoped validation. Prefer `deno test --allow-all <test-file>` or a small set of touched test files.
+   0. Do not usually run full-suite commands such as `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a normal one-step cycle.
+   0. Use full-suite test commands only in exclusive cases:
+       - the change is massive or cross-cutting
+       - the blast radius spans multiple subsystems or shared runtime foundations
+       - the user explicitly requests a full run
+       - a planning document explicitly requires repository-wide validation and the step is broad enough to justify it
+
 RED phase
   1. Read the step's "Architecture notes", "Success criteria", and "Planned tests"
      from the .copilot/planning/ doc.
@@ -46,17 +56,18 @@ REFACTOR + CI gates
  12. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
  13. deno fmt <src-file> <test-file>  (run before commit, not after)
  14. (optional) deno task check:complexity  if implementation is non-trivial
+ 15. (exception only) run a full-suite command only when the validation policy above says it is warranted
 
 Planning doc update
- 15. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
+ 16. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
      criterion now met.
- 16. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
- 17. Add a line immediately after the test list:
+ 17. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
+ 18. Add a line immediately after the test list:
        **✅ IMPLEMENTED** — `<src/path>`, N/N tests passing
 
 Commit
- 18. Stage: src file, test file, planning doc.
- 19. Commit message format:
+ 19. Stage: src file, test file, planning doc.
+ 20. Commit message format:
        feat(<scope>): implement <What> (Step N)
 
        <Short rationale paragraph>
@@ -79,11 +90,13 @@ Do / Don't
 - ✅ Do mark planning doc checkboxes and add ✅ IMPLEMENTED after commit
 - ✅ Do use IFoo interface naming (not Foo) — enforced by check:style
 - ✅ Do use ICodeConvention["confidence"] instead of "low"|"medium"|"high" literal union
+- ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
 - ❌ Don't proceed to the next step if any CI gate fails
 - ❌ Don't use Record<string, unknown> — define a specific interface instead
 - ❌ Don't commit without running deno fmt first
+- ❌ Don't usually run `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a narrow step
 
 Related templates
 - #plan   — Create or extend a .copilot/planning/ document
