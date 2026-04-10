@@ -10,7 +10,13 @@ import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  FLOW_EVENT_NAMESPACE_INITIALIZED,
+  FLOW_EVENT_NAMESPACE_READ,
+  FLOW_EVENT_NAMESPACE_WRITE,
+} from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "../helpers/paths_helper.ts";
@@ -81,9 +87,9 @@ Deno.test("[Step64.3] FlowRunner hydrates sharedNamespace and reports namespace 
       result.namespaceArtifactPath,
       join(getMemoryExecutionDir(tempDir), traceId, "namespace.md"),
     );
-    assertEquals(logger.events.some((entry) => entry.event === "flow.namespace.initialized"), true);
-    assertEquals(logger.events.some((entry) => entry.event === "flow.namespace.read"), true);
-    assertEquals(logger.events.some((entry) => entry.event === "flow.namespace.write"), true);
+    assertEquals(logger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_INITIALIZED), true);
+    assertEquals(logger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_READ), true);
+    assertEquals(logger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_WRITE), true);
   } finally {
     await cleanup();
   }

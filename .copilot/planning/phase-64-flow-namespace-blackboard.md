@@ -349,7 +349,7 @@ Validated with:
    private async initializeNamespace(namespaceId: string, flow: IFlow): Promise<void> {
      if (!this.namespaceService || !flow.namespace?.enabled) return;
      await this.namespaceService.initialize(namespaceId);
-     await this.eventLogger.log("flow.namespace.initialized", { namespaceId, flowId: flow.id });
+     await this.eventLogger.log(FLOW_EVENT_NAMESPACE_INITIALIZED, { namespaceId, flowId: flow.id });
    }
    ```
 
@@ -360,7 +360,7 @@ Validated with:
 1. **`prepareStepRequest()`** — after building the base `IFlowStepRequest`, resolve
    `step.namespace?.reads` by calling
    `namespaceService.readKeys(originalRequest.traceId ?? flowRunId, readKeys)`, emit
-   `flow.namespace.read` event, and set `sharedNamespace` on the returned request object.
+   `FLOW_EVENT_NAMESPACE_READ` event, and set `sharedNamespace` on the returned request object.
 
 1. **`runStepAttempt()`** — after `executeStepLogic()` returns successfully, attach write intents to the step result rather than persisting immediately:
 
@@ -381,13 +381,13 @@ Validated with:
        result.namespaceWrites.writes,
        result.namespaceWrites.stepOutput,
      );
-     await this.eventLogger.log("flow.namespace.write", { namespaceId, stepId, ... });
+     await this.eventLogger.log(FLOW_EVENT_NAMESPACE_WRITE, { namespaceId, stepId, ... });
    }
    ```
 
 1. **`aggregateAndFinalize()`** — set `namespaceArtifactPath: this.namespaceService?.getNamespacePath(request.traceId ?? flowRunId)` on the returned `IFlowResult` when namespace is enabled for the flow.
 
-1. Emit events: `flow.namespace.initialized`, `flow.namespace.read`, `flow.namespace.write`.
+1. Emit events: `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, `FLOW_EVENT_NAMESPACE_WRITE`.
 
 #### Architecture Notes
 
@@ -825,9 +825,19 @@ Resolve in order before writing any implementation code:
 
 #### Step 64.6 (G9, G10): Extract Namespace Constants
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/shared/constants_test.ts tests/flows/flow_runner_namespace_integration_test.ts tests/integration/38_flow_namespace_checkpoint_resume_test.ts`
+- `deno check src/shared/constants.ts src/flows/flow_runner.ts tests/shared/constants_test.ts tests/flows/flow_runner_namespace_integration_test.ts tests/integration/38_flow_namespace_checkpoint_resume_test.ts`
+- `deno lint src/shared/constants.ts src/flows/flow_runner.ts tests/shared/constants_test.ts tests/flows/flow_runner_namespace_integration_test.ts tests/integration/38_flow_namespace_checkpoint_resume_test.ts`
+- `deno fmt src/shared/constants.ts src/flows/flow_runner.ts tests/shared/constants_test.ts tests/flows/flow_runner_namespace_integration_test.ts tests/integration/38_flow_namespace_checkpoint_resume_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- [ ] `src/shared/constants.ts`: Add below the `// Flow event names` block (Phase 63 Step 63.15):
+- [x] `src/shared/constants.ts`: Add below the `// Flow event names` block (Phase 63 Step 63.15):
 
   ```typescript
   // Namespace event names (Phase 64)
@@ -838,9 +848,9 @@ Resolve in order before writing any implementation code:
   export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
   ```
 
-- [ ] `src/services/flow/flow_namespace_service.ts` (Step 64.2): Import and use the three `FLOW_EVENT_NAMESPACE_*` constants instead of inline string literals.
+- [x] `src/flows/flow_runner.ts` (Step 64.3): Import and use the three `FLOW_EVENT_NAMESPACE_*` constants instead of inline namespace event string literals.
 - [x] `src/shared/schemas/flow.ts` (Step 64.1): Change `.default(65536)` to `.default(DEFAULT_NAMESPACE_MAX_BYTES)` in `ZFlowNamespaceConfig`.
-- [ ] Step 64.3 pseudocode (this plan): Replace all three quoted event strings with the constant names.
+- [x] Step 64.3 pseudocode (this plan): Replace all three quoted event strings with the constant names.
 
 #### Architecture Notes
 
@@ -848,21 +858,33 @@ Follows the `FLOW_EVENT_*` / `DEFAULT_*` patterns established by Phase 63 Steps 
 
 #### Planned Tests
 
-- [ ] `tests/shared/constants_test.ts`: `"FLOW_EVENT_NAMESPACE_* and DEFAULT_NAMESPACE_MAX_BYTES exported with correct values"` — imports and asserts all four new symbols.
+- [x] `tests/shared/constants_test.ts`: `"FLOW_EVENT_NAMESPACE_* and DEFAULT_NAMESPACE_MAX_BYTES exported with correct values"` — imports and asserts all four new symbols.
 
 #### Success Criteria
 
-- [ ] `src/shared/constants.ts` exports `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, `FLOW_EVENT_NAMESPACE_WRITE`, and `DEFAULT_NAMESPACE_MAX_BYTES`.
-- [ ] No inline `"flow.namespace.*"` string literals remain in implementation files.
-- [ ] `ZFlowNamespaceConfig.maxBytes.default(DEFAULT_NAMESPACE_MAX_BYTES)` compiles without error.
+- [x] `src/shared/constants.ts` exports `FLOW_EVENT_NAMESPACE_INITIALIZED`, `FLOW_EVENT_NAMESPACE_READ`, `FLOW_EVENT_NAMESPACE_WRITE`, and `DEFAULT_NAMESPACE_MAX_BYTES`.
+- [x] No inline `"flow.namespace.*"` string literals remain in implementation files.
+- [x] `ZFlowNamespaceConfig.maxBytes.default(DEFAULT_NAMESPACE_MAX_BYTES)` compiles without error.
+
+**✅ IMPLEMENTED** — `src/shared/constants.ts`, `src/flows/flow_runner.ts`, `tests/shared/constants_test.ts`, `tests/flows/flow_runner_namespace_integration_test.ts`, `tests/integration/38_flow_namespace_checkpoint_resume_test.ts`; Phase 64 namespace event names now follow the shared `FLOW_EVENT_*` pattern, the namespace quota default remains centralized, and focused constants plus namespace integration tests validate the exported symbols and their use in FlowRunner.
 
 ---
 
 #### Step 64.7 (G11): Assert Namespace Event Payload Fields
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/flows/flow_runner_namespace_test.ts`
+- `deno check src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_test.ts`
+- `deno lint src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_test.ts`
+- `deno fmt tests/flows/flow_runner_namespace_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- [ ] `tests/flows/flow_runner_namespace_test.ts`: Add two test cases using `MockEventLogger`:
+- [x] `tests/flows/flow_runner_namespace_test.ts`: Add two test cases using `MockEventLogger`:
   - Assert `flow.namespace.initialized` payload carries `namespaceId` (non-empty string) and `flowId`.
   - Assert `flow.namespace.write` payload carries `namespaceId` and `stepId`.
 
@@ -872,10 +894,12 @@ Reuse the `MockEventLogger` pattern from `tests/flows/flow_runner_test.ts`. Asse
 
 #### Planned Tests
 
-- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.initialized event carries namespaceId and flowId"` — payload assertion
-- [ ] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.write event carries namespaceId and stepId"` — payload assertion
+- [x] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.initialized event carries namespaceId and flowId"` — payload assertion
+- [x] `tests/flows/flow_runner_namespace_test.ts`: `"flow.namespace.write event carries namespaceId and stepId"` — payload assertion
 
 #### Success Criteria
 
-- [ ] Both tests pass with `deno test --allow-all`.
-- [ ] Renaming `namespaceId` in the service without updating the constant causes a test failure.
+- [x] Both tests pass with `deno test --allow-all`.
+- [x] Renaming `namespaceId` in the service without updating the constant causes a test failure.
+
+**✅ IMPLEMENTED** — `tests/flows/flow_runner_namespace_test.ts`; Phase 64 now has dedicated regression coverage for namespace event payload fields, explicitly asserting `namespaceId` plus `flowId` on initialization events and `namespaceId` plus `stepId` on namespace write events.

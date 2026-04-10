@@ -821,6 +821,9 @@ export const FLOW_EVENT_CHECKPOINT_SAVED = "flow.checkpoint.saved";
 export const FLOW_EVENT_CHECKPOINT_LOADED = "flow.checkpoint.loaded";
 export const FLOW_EVENT_CHECKPOINT_CLEARED = "flow.checkpoint.cleared";
 export const FLOW_EVENT_CHECKPOINT_STALE = "flow.checkpoint.stale";
+export const FLOW_EVENT_NAMESPACE_INITIALIZED = "flow.namespace.initialized";
+export const FLOW_EVENT_NAMESPACE_READ = "flow.namespace.read";
+export const FLOW_EVENT_NAMESPACE_WRITE = "flow.namespace.write";
 export const FLOW_EVENT_COMPLETED = "flow.completed";
 export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 

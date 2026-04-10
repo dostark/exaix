@@ -44,6 +44,9 @@ import {
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
   FLOW_EVENT_COMPLETED,
+  FLOW_EVENT_NAMESPACE_INITIALIZED,
+  FLOW_EVENT_NAMESPACE_READ,
+  FLOW_EVENT_NAMESPACE_WRITE,
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
@@ -990,7 +993,7 @@ export class FlowRunner implements IFlowRunner {
       result.namespaceWrites.writes,
       result.namespaceWrites.stepOutput,
     );
-    await this.eventLogger.log("flow.namespace.write", {
+    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_WRITE, {
       namespaceId,
       stepId,
       keys: result.namespaceWrites.writes.map((write) => write.key),
@@ -1962,7 +1965,7 @@ export class FlowRunner implements IFlowRunner {
       );
     }
 
-    await this.eventLogger.log("flow.namespace.read", {
+    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_READ, {
       namespaceId,
       stepId: step.id,
       keys: readKeys,
@@ -2159,7 +2162,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     await this.namespaceService.initialize(namespaceId);
-    await this.eventLogger.log("flow.namespace.initialized", {
+    await this.eventLogger.log(FLOW_EVENT_NAMESPACE_INITIALIZED, {
       namespaceId,
       flowId: flow.id,
     });

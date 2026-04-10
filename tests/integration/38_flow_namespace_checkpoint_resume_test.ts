@@ -12,7 +12,11 @@ import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowExecutionError, FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  FLOW_EVENT_NAMESPACE_READ,
+} from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "../helpers/paths_helper.ts";
@@ -105,7 +109,7 @@ Deno.test("[Step64.3] FlowRunner resumes with persisted namespace state and skip
     assertEquals(resumedResult.output, "reader:persisted-summary");
     assertEquals(resumedExecutor.calls.includes("agent1"), false);
     assertEquals(resumedResult.namespaceArtifactPath, namespacePath);
-    assertEquals(resumedLogger.events.some((entry) => entry.event === "flow.namespace.read"), true);
+    assertEquals(resumedLogger.events.some((entry) => entry.event === FLOW_EVENT_NAMESPACE_READ), true);
   } finally {
     await cleanup();
   }
