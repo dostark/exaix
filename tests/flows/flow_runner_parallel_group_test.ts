@@ -11,7 +11,12 @@ import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowRunner, type IAgentExecutor, type IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
+  FLOW_EVENT_PARALLEL_GROUP_STARTED,
+} from "../../src/shared/constants.ts";
 import { RecordingFlowLogger } from "../helpers/flow_namespace_test_helper.ts";
 
 interface IStartWaiter {
@@ -141,7 +146,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
 
   await executor.waitForStarts(["reviewer-a", "reviewer-b"]);
 
-  const startedEvent = logger.events.find((entry) => entry.event === "flow.parallel_group.started");
+  const startedEvent = logger.events.find((entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_STARTED);
   assertExists(startedEvent);
   assertEquals(startedEvent.payload.groupId, "reviewers");
   assertEquals(startedEvent.payload.stepIds, ["review-a", "review-b"]);
@@ -152,7 +157,7 @@ Deno.test("FlowRunner: emits parallel group lifecycle events for same-wave group
 
   const result = await execution;
 
-  const completedEvent = logger.events.find((entry) => entry.event === "flow.parallel_group.completed");
+  const completedEvent = logger.events.find((entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_COMPLETED);
   assertExists(completedEvent);
   assertEquals(completedEvent.payload.groupId, "reviewers");
   assertEquals(completedEvent.payload.stepIds, ["review-a", "review-b"]);

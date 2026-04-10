@@ -381,9 +381,19 @@ Implementation guidance for this step followed `.copilot/source/exaix.md` and `.
 
 #### Step 65.5 (G11, G12, G13): Extract Parallel Group Event Constants and Specify Payloads
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/flows/flow_runner_parallel_group_test.ts tests/flows/parallel_group_merge_test.ts tests/integration/40_parallel_group_execution_test.ts`
+- `deno check src/flows/flow_runner.ts src/shared/constants.ts tests/flows/flow_runner_parallel_group_test.ts tests/flows/parallel_group_merge_test.ts tests/integration/40_parallel_group_execution_test.ts`
+- `deno lint src/flows/flow_runner.ts src/shared/constants.ts tests/flows/flow_runner_parallel_group_test.ts tests/flows/parallel_group_merge_test.ts tests/integration/40_parallel_group_execution_test.ts`
+- `deno fmt src/flows/flow_runner.ts src/shared/constants.ts tests/flows/flow_runner_parallel_group_test.ts tests/flows/parallel_group_merge_test.ts tests/integration/40_parallel_group_execution_test.ts .copilot/planning/phase-65-parallel-execution-groups.md`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- [ ] `src/shared/constants.ts`: Add to the `// Flow event names` block (after Phase 63/64 constants):
+- [x] `src/shared/constants.ts`: Add to the `// Flow event names` block (after Phase 63/64 constants):
 
   ```typescript
   // Parallel group event names (Phase 65)
@@ -392,11 +402,11 @@ Implementation guidance for this step followed `.copilot/source/exaix.md` and `.
   export const FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED = "flow.parallel_group.merge_failed";
   ```
 
-- [ ] Step 65.2 Architecture Notes (this plan): Add payload specification:
+- [x] Step 65.2 Architecture Notes (this plan): Add payload specification:
   - `flow.parallel_group.started` payload: `{ groupId: string; stepIds: string[]; waveIndex: number; traceId?: string }`
   - `flow.parallel_group.completed` payload: `{ groupId: string; successCount: number; failureCount: number; durationMs: number; traceId?: string }`
-- [ ] Step 65.3 Architecture Notes (this plan): Specify `flow.parallel_group.merge_failed` as the canonical merge failure event; payload: `{ groupId: string; mergeMode: string; error: string; traceId?: string }`.
-- [ ] `src/flows/flow_runner.ts` (Steps 65.2, 65.3): Use constants wherever inline group event strings appear.
+- [x] Step 65.3 Architecture Notes (this plan): Specify `flow.parallel_group.merge_failed` as the canonical merge failure event; payload: `{ groupId: string; mergeMode: string; error: string; traceId?: string }`.
+- [x] `src/flows/flow_runner.ts` (Steps 65.2, 65.3): Use constants wherever inline group event strings appear.
 
 #### Architecture Notes
 
@@ -404,12 +414,14 @@ Follows `FLOW_EVENT_*` pattern from Phase 63 Step 63.15 and Phase 64 Step 64.6. 
 
 #### Planned Tests
 
-- [ ] `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.started with groupId and stepIds"` — payload assertion via `MockEventLogger`
-- [ ] `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.completed with successCount"` — payload assertion
-- [ ] `tests/unit/services/parallel_group_merge_test.ts`: `"merge failure emits flow.parallel_group.merge_failed with groupId and error"` — event name and payload assertion
+- ✅ `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.started with groupId and stepIds"` — payload assertion via `MockEventLogger`
+- ✅ `tests/flows/flow_runner_parallel_group_test.ts`: `"group execution emits flow.parallel_group.completed with successCount"` — payload assertion
+- ✅ `tests/flows/parallel_group_merge_test.ts`: `"merge failure emits flow.parallel_group.merge_failed with groupId and error"` — event name and payload assertion
+
+**✅ IMPLEMENTED** — `src/shared/constants.ts`, `src/flows/flow_runner.ts`, `tests/flows/flow_runner_parallel_group_test.ts`, `tests/flows/parallel_group_merge_test.ts`, `tests/integration/40_parallel_group_execution_test.ts`; Phase 65 parallel group event names now follow the shared `FLOW_EVENT_*` pattern, all inline literals replaced with constants across FlowRunner and tests, and focused payload assertions verify field contracts for started, completed, and merge_failed events.
 
 #### Success Criteria
 
-- [ ] `src/shared/constants.ts` exports all three `FLOW_EVENT_PARALLEL_GROUP_*` symbols.
-- [ ] No inline `"flow.parallel_group.*"` literals remain in implementation files.
-- [ ] All three event payload tests pass; a payload field rename causes the relevant test to fail.
+- [x] `src/shared/constants.ts` exports all three `FLOW_EVENT_PARALLEL_GROUP_*` symbols.
+- [x] No inline `"flow.parallel_group.*"` literals remain in implementation files.
+- [x] All three event payload tests pass; a payload field rename causes the relevant test to fail.

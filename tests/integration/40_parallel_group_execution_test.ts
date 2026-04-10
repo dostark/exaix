@@ -10,7 +10,12 @@ import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
+  FLOW_EVENT_PARALLEL_GROUP_STARTED,
+} from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 
@@ -78,8 +83,12 @@ Deno.test("[Step65.2] FlowRunner logs grouped wave lifecycle before downstream j
       requestId: "req-65-2-integration",
     });
 
-    const startedEventIndex = logger.events.findIndex((entry) => entry.event === "flow.parallel_group.started");
-    const completedEventIndex = logger.events.findIndex((entry) => entry.event === "flow.parallel_group.completed");
+    const startedEventIndex = logger.events.findIndex(
+      (entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_STARTED,
+    );
+    const completedEventIndex = logger.events.findIndex(
+      (entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
+    );
     const mergeStartedIndex = logger.events.findIndex((entry) => {
       return entry.event === "flow.step.started" && entry.payload.stepId === "merge";
     });

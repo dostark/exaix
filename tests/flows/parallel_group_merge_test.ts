@@ -16,7 +16,11 @@ import {
 } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import {
+  DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_FLOW_VERSION,
+  FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
+} from "../../src/shared/constants.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 
 class CapturingExecutor implements IAgentExecutor {
@@ -322,8 +326,16 @@ Deno.test("[Step65.3] FlowRunner journals merge failures for automatic fan-in mo
     result.stepResults.get("merge")?.error?.includes("Parallel group 'writers' cannot be merged"),
     true,
   );
-  const mergeFailureEvent = logger.events.find((entry) => entry.event === "flow.parallel_group.merge_failed");
+  const mergeFailureEvent = logger.events.find(
+    (entry) => entry.event === FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
+  );
   assertExists(mergeFailureEvent);
   assertEquals(mergeFailureEvent.payload.groupId, "writers");
   assertEquals(mergeFailureEvent.payload.mergeMode, "all");
+  assertEquals(mergeFailureEvent.payload.stepId, "merge");
+  assertEquals(typeof mergeFailureEvent.payload.error, "string");
+  assertEquals(
+    String(mergeFailureEvent.payload.error).includes("Parallel group 'writers' cannot be merged"),
+    true,
+  );
 });
