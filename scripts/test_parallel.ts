@@ -203,9 +203,24 @@ function getTerminalWidth(_dest: typeof Deno.stdout): number {
  * Parse the Deno test runner summary line in two formats:
  *   ok | 4213 passed (981 steps) | 0 failed | 57 ignored (59s)
  *   ok |    8 passed              | 0 failed            (3s)
+ *   ok |   50 passed              | 0 failed | 1 ignored (696ms)
  */
 function parseSummaryLine(output: string): TestCounts {
   const clean = stripAnsi(output);
+  // Try milliseconds-first (sub-second runs like "696ms")
+  const msMatch = clean.match(
+    /\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)ms\)/,
+  );
+  if (msMatch) {
+    const [, mp, mf, mIgn] = msMatch;
+    return {
+      passed: parseInt(mp),
+      failed: parseInt(mf),
+      ignored: mIgn !== undefined ? parseInt(mIgn) : 0,
+      durationSec: 0, // sub-second, rounds to 0
+    };
+  }
+  // Try seconds/minutes format like "1m23s" or "59s"
   const m = clean.match(
     /\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)(?:m(\d+))?s\)/,
   );
