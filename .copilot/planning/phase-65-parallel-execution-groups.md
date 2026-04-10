@@ -123,11 +123,21 @@ flowchart TD
 
 ### Step 65.1: Schema & Validation Foundation
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/flows/parallel_group_schema_test.ts tests/flows/parallel_group_validation_test.ts`
+- `deno check src/shared/schemas/flow.ts src/flows/flow_runner.ts tests/flows/parallel_group_schema_test.ts tests/flows/parallel_group_validation_test.ts`
+- `deno lint src/shared/schemas/flow.ts src/flows/flow_runner.ts tests/flows/parallel_group_schema_test.ts tests/flows/parallel_group_validation_test.ts`
+- `deno fmt src/shared/schemas/flow.ts src/flows/flow_runner.ts tests/flows/parallel_group_schema_test.ts tests/flows/parallel_group_validation_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- Extend `src/shared/schemas/flow.ts:FlowStepSchema` with three optional fields: `parallel?: ZFlowParallelConfig`, `mergeFromGroups?: z.array(z.string())`, `mergeMode?: ZParallelMergeMode`.
-- Drop `ZFlowFanInStep` — fan-in steps are regular `FlowStepSchema` steps with `mergeFromGroups` set; no separate schema type is needed.
-- Add validation preventing illegal configurations such as mixed group IDs on mutually dependent steps.
+- [x] Extend `src/shared/schemas/flow.ts:FlowStepSchema` with three optional fields: `parallel?: ZFlowParallelConfig`, `mergeFromGroups?: z.array(z.string())`, `mergeMode?: ZParallelMergeMode`.
+- [x] Drop `ZFlowFanInStep` — fan-in steps are regular `FlowStepSchema` steps with `mergeFromGroups` set; no separate schema type is needed.
+- [x] Add validation preventing illegal configurations such as mixed group IDs on mutually dependent steps.
 
 #### Architecture Notes
 
@@ -139,22 +149,34 @@ flowchart TD
 
 #### Planned Tests
 
-- `tests/flows/parallel_group_schema_test.ts`
-- `tests/flows/parallel_group_validation_test.ts`
+- ✅ `tests/flows/parallel_group_schema_test.ts`
+- ✅ `tests/flows/parallel_group_validation_test.ts`
+
+**✅ IMPLEMENTED** — `src/shared/schemas/flow.ts`, `src/flows/flow_runner.ts`, `tests/flows/parallel_group_schema_test.ts`, `tests/flows/parallel_group_validation_test.ts`; Step 65.1 now adds the explicit parallel-group schema fields, preserves legacy flow parsing, and validates unknown group references plus invalid `parallel.order` step IDs during `FlowRunner.validateIFlow()`.
 
 #### Success Criteria
 
-- Valid grouped steps parse successfully.
-- Invalid merge references fail validation with clear errors.
-- Unknown step IDs in `parallel.order` throw `FlowExecutionError` during `validateIFlow()`.
-- Legacy flow YAML remains valid.
+- [x] Valid grouped steps parse successfully.
+- [x] Invalid merge references fail validation with clear errors.
+- [x] Unknown step IDs in `parallel.order` throw `FlowExecutionError` during `validateIFlow()`.
+- [x] Legacy flow YAML remains valid.
 
 ### Step 65.2: Scheduler Grouping in FlowRunner
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/flows/flow_runner_parallel_group_test.ts tests/integration/65_parallel_group_execution_test.ts`
+- `deno check src/flows/flow_runner.ts tests/flows/flow_runner_parallel_group_test.ts tests/integration/65_parallel_group_execution_test.ts`
+- `deno lint src/flows/flow_runner.ts tests/flows/flow_runner_parallel_group_test.ts tests/integration/65_parallel_group_execution_test.ts`
+- `deno fmt src/flows/flow_runner.ts tests/flows/flow_runner_parallel_group_test.ts tests/integration/65_parallel_group_execution_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- Update `src/flows/flow_runner.ts` to detect steps in the same ready wave that share a `parallel.group`.
-- Execute grouped steps via `Promise.allSettled` to preserve per-step outcome visibility.
+- [x] Update `src/flows/flow_runner.ts` to detect steps in the same ready wave that share a `parallel.group`.
+- [x] Execute grouped steps via `Promise.allSettled` to preserve per-step outcome visibility.
 
 #### Architecture Notes
 
@@ -163,14 +185,16 @@ flowchart TD
 
 #### Planned Tests
 
-- `tests/flows/flow_runner_parallel_group_test.ts`
-- `tests/integration/65_parallel_group_execution_test.ts`
+- ✅ `tests/flows/flow_runner_parallel_group_test.ts`
+- ✅ `tests/integration/65_parallel_group_execution_test.ts`
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_parallel_group_test.ts`, `tests/integration/65_parallel_group_execution_test.ts`; Step 65.2 now partitions same-wave grouped steps into explicit execution units, emits `flow.parallel_group.started` / `flow.parallel_group.completed`, and preserves the existing per-step wave result handling for downstream processing.
 
 #### Success Criteria
 
-- Independent grouped steps execute concurrently.
-- Non-grouped steps continue to execute under current semantics.
-- Group execution emits `flow.parallel_group.started` and `flow.parallel_group.completed`.
+- [x] Independent grouped steps execute concurrently.
+- [x] Non-grouped steps continue to execute under current semantics.
+- [x] Group execution emits `flow.parallel_group.started` and `flow.parallel_group.completed`.
 
 ### Step 65.3: Fan-In Merge Semantics
 
@@ -307,11 +331,11 @@ flowchart TD
 
 ### Phase 3c Gap Summary
 
-| ID  | Gap (short)                                                                                                                              | Severity        | Checklist Item           | In Tests? |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------ | --------- |
-| G11 | `flow.parallel_group.started` and `flow.parallel_group.completed` are inline literals — no `FLOW_EVENT_PARALLEL_GROUP_*` constants       | 🟡 Traceability | Event naming constants   | ❌        |
-| G12 | Payload fields for `flow.parallel_group.started/completed` are unspecified — no typed interface or field list                            | 🟡 Traceability | Event payload typing     | ❌        |
-| G13 | Fan-in merge failure event name unspecified — "merge failures are typed and journaled" (Step 65.3) but no event name given               | 🟡 Traceability | Audit chain completeness | ❌        |
+| ID  | Gap (short)                                                                                                                        | Severity        | Checklist Item           | In Tests? |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------------------------ | --------- |
+| G11 | `flow.parallel_group.started` and `flow.parallel_group.completed` are inline literals — no `FLOW_EVENT_PARALLEL_GROUP_*` constants | 🟡 Traceability | Event naming constants   | ❌        |
+| G12 | Payload fields for `flow.parallel_group.started/completed` are unspecified — no typed interface or field list                      | 🟡 Traceability | Event payload typing     | ❌        |
+| G13 | Fan-in merge failure event name unspecified — "merge failures are typed and journaled" (Step 65.3) but no event name given         | 🟡 Traceability | Audit chain completeness | ❌        |
 
 ### Phase 3c Detailed Gap Entries
 

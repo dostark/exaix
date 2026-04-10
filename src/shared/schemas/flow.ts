@@ -101,6 +101,16 @@ export const ZFlowNamespaceEntry = z.object({
   updatedAt: z.string().datetime(),
 });
 
+export const ZParallelMergeMode = z.enum(["all", "ordered", "concat", "manual"]);
+
+export const ZFlowParallelConfig = z.object({
+  group: z.string().min(1),
+  mergeMode: ZParallelMergeMode.default("all"),
+  order: z.array(z.string()).optional().describe(
+    "Step IDs within this group; used for ordered fan-in merge. Validated against actual group member IDs in validateIFlow().",
+  ),
+});
+
 // Gate evaluation configuration schema
 export const GateEvaluateSchema = z.object({
   /** Judge identity ID */
@@ -188,6 +198,9 @@ export const FlowStepSchema = z.object({
   /** Skills to apply for this step (Phase 17) */
   skills: z.array(z.string()).optional(),
   namespace: ZFlowStepNamespace.optional(),
+  parallel: ZFlowParallelConfig.optional(),
+  mergeFromGroups: z.array(z.string()).optional(),
+  mergeMode: ZParallelMergeMode.optional(),
 });
 
 // Flow schema definition
@@ -231,6 +244,8 @@ export type IFlowNamespaceRead = z.infer<typeof ZFlowNamespaceRead>;
 export type IFlowNamespaceWrite = z.infer<typeof ZFlowNamespaceWrite>;
 export type IFlowStepNamespace = z.infer<typeof ZFlowStepNamespace>;
 export type IFlowNamespaceEntry = z.infer<typeof ZFlowNamespaceEntry>;
+export type IParallelMergeMode = z.infer<typeof ZParallelMergeMode>;
+export type IFlowParallelConfig = z.infer<typeof ZFlowParallelConfig>;
 export type IGateEvaluate = z.infer<typeof GateEvaluateSchema>;
 export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
 export type IBranchCondition = z.infer<typeof BranchConditionSchema>;

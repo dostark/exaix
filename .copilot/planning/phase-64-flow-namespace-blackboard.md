@@ -22,9 +22,11 @@ topics: [
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: ✅ Complete
 **Phase Dependencies**: Phase 63
 **Risk Level**: M — touches core flow orchestration and shared state persistence, but is additive and can remain optional per flow.
+
+All implementation steps and Phase 3c remediation steps in Phase 64 are complete as of 2026-04-10.
 
 ## Executive Summary
 
@@ -217,13 +219,6 @@ flowchart TD
 
 ### Step 64.1: Schema & Runtime Contracts ✅ COMPLETE
 
-Implemented 2026-04-08.
-Validated with:
-
-- `deno test --allow-all tests/schemas/flow_namespace_schema_test.ts tests/services/flow/flow_namespace_service_contract_test.ts`
-- `deno check tests/schemas/flow_namespace_schema_test.ts tests/services/flow/flow_namespace_service_contract_test.ts`
-- `deno fmt --check src/shared/constants.ts src/shared/schemas/flow.ts src/services/flow/flow_namespace_service.ts src/services/flow/mod.ts tests/schemas/flow_namespace_schema_test.ts tests/services/flow/flow_namespace_service_contract_test.ts`
-
 #### Actions
 
 - Modify `src/shared/schemas/flow.ts` to add:
@@ -259,15 +254,6 @@ Validated with:
 - All inferred namespace types importable from `src/shared/schemas/flow.ts`; no `src/shared/types/flow_namespace.ts` file created.
 
 ### Step 64.2: Namespace Persistence & Formatting
-
-Implemented 2026-04-09.
-Validated with:
-
-- `deno test --allow-all tests/services/flow/flow_namespace_service_contract_test.ts tests/services/flow/flow_namespace_markdown_render_test.ts tests/services/flow/flow_namespace_quota_test.ts tests/services/flow/flow_namespace_dotpath_safety_test.ts tests/integration/services/flow_namespace_persistence_test.ts`
-- `deno check src/services/flow/flow_namespace_service.ts tests/services/flow/flow_namespace_service_contract_test.ts tests/services/flow/flow_namespace_markdown_render_test.ts tests/services/flow/flow_namespace_quota_test.ts tests/services/flow/flow_namespace_dotpath_safety_test.ts tests/integration/services/flow_namespace_persistence_test.ts`
-- `deno lint src/services/flow/flow_namespace_service.ts tests/services/flow/flow_namespace_service_contract_test.ts tests/services/flow/flow_namespace_markdown_render_test.ts tests/services/flow/flow_namespace_quota_test.ts tests/services/flow/flow_namespace_dotpath_safety_test.ts tests/integration/services/flow_namespace_persistence_test.ts`
-- `deno task check:style`
-- `deno task check:arch`
 
 #### Actions
 
@@ -417,16 +403,6 @@ Validated with:
 **✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/helpers/flow_namespace_test_helper.ts`, `tests/flows/flow_runner_namespace_integration_test.ts`, `tests/flows/flow_runner_namespace_no_regression_test.ts`, `tests/integration/64_flow_namespace_end_to_end_test.ts`, `tests/integration/64_flow_namespace_checkpoint_resume_test.ts`; FlowRunner now initializes the per-trace namespace, hydrates `sharedNamespace` reads into step requests, defers namespace writes until serial post-wave flushing, preserves namespace state across checkpoint resume, and returns `namespaceArtifactPath` when namespace support is enabled.
 
 ### Step 64.4: Reporting Surface
-
-Implemented 2026-04-10.
-Validated with:
-
-- `deno test --allow-all tests/services/flow/flow_reporter_test.ts`
-- `deno check src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
-- `deno lint src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
-- `deno fmt src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
-- `deno task check:style`
-- `deno task check:arch`
 
 #### Actions
 

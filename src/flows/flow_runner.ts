@@ -156,6 +156,16 @@ interface IWaveProcessingOutcome {
   waveError?: { stepId: string; error: Error | string };
 }
 
+interface IWaveExecutionUnit {
+  stepIds: string[];
+  groupId?: string;
+}
+
+interface IWaveExecutionResult {
+  stepIds: string[];
+  results: PromiseSettledResult<IStepResult>[];
+}
+
 interface IStepRecoveryMetadata {
   wasRetried?: boolean;
   retryCount?: number;
@@ -211,6 +221,21 @@ export interface IFlowEventPayloadMap {
     flowRunId: string;
     waveNumber: number;
     waveSize: number;
+    successCount: number;
+    failureCount: number;
+    failed: boolean;
+  };
+  "flow.parallel_group.started": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    groupId: string;
+    stepIds: string[];
+  };
+  "flow.parallel_group.completed": IFlowEventRequestContext & {
+    flowRunId: string;
+    waveNumber: number;
+    groupId: string;
+    stepIds: string[];
     successCount: number;
     failureCount: number;
     failed: boolean;
@@ -513,6 +538,12 @@ export class FlowRunner implements IFlowRunner {
     return result.status === "rejected";
   }
 
+  private isPromiseFulfilledResult(
+    result: PromiseSettledResult<IStepResult>,
+  ): result is PromiseFulfilledResult<IStepResult> {
+    return result.status === "fulfilled";
+  }
+
   constructor(
     private readonly options: IFlowRunnerConfig,
   ) {
@@ -657,6 +688,15 @@ export class FlowRunner implements IFlowRunner {
       throw new FlowExecutionError(errorMessage, flowRunId);
     }
 
+    const parallelValidationError = this.validateParallelGroups(flow);
+    if (parallelValidationError) {
+      await this.eventLogger.log(FLOW_EVENT_VALIDATION_FAILED, {
+        error: parallelValidationError,
+        ...this.getIFlowLogBase(flow, request),
+      });
+      throw new FlowExecutionError(parallelValidationError, flowRunId);
+    }
+
     // Log flow validation success
     await this.eventLogger.log("flow.validated", {
       maxParallelism: flow.settings?.maxParallelism ?? 3,
@@ -688,6 +728,54 @@ export class FlowRunner implements IFlowRunner {
         }
 
         currentStep = nextStep;
+      }
+    }
+
+    return null;
+  }
+
+  private validateParallelGroups(flow: IFlow): string | null {
+    const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
+    const groupMembers = new Map<string, Set<string>>();
+
+    for (const step of flow.steps) {
+      const groupId = step.parallel?.group;
+      if (!groupId) {
+        continue;
+      }
+
+      const members = groupMembers.get(groupId) ?? new Set<string>();
+      members.add(step.id);
+      groupMembers.set(groupId, members);
+    }
+
+    for (const step of flow.steps) {
+      for (const groupId of step.mergeFromGroups ?? []) {
+        if (!groupMembers.has(groupId)) {
+          return `Step '${step.id}' references unknown parallel group '${groupId}'`;
+        }
+      }
+
+      const order = step.parallel?.order;
+      const groupId = step.parallel?.group;
+      if (groupId && order) {
+        const members = groupMembers.get(groupId) ?? new Set<string>();
+        for (const orderedStepId of order) {
+          if (!members.has(orderedStepId)) {
+            return `Parallel group '${groupId}' order entry '${orderedStepId}' does not match any group member step ID`;
+          }
+        }
+      }
+
+      for (const dependencyId of step.dependsOn ?? []) {
+        const dependency = stepsById.get(dependencyId);
+        if (!dependency?.parallel?.group || !step.parallel?.group) {
+          continue;
+        }
+
+        if (dependency.parallel.group !== step.parallel.group) {
+          return `Steps '${dependency.id}' and '${step.id}' cannot declare different parallel groups across a dependency edge`;
+        }
       }
     }
 
@@ -752,49 +840,28 @@ export class FlowRunner implements IFlowRunner {
   ): Promise<void> {
     const waveNumber = waveIndex + 1;
 
-    // Log wave start
-    await this.eventLogger.log("flow.wave.started", {
-      flowRunId,
-      waveNumber,
-      waveSize: wave.length,
-      stepIds: wave,
-      traceId: request.traceId,
-      requestId: request.requestId,
-    });
+    await this.logWaveStart(flowRunId, request, waveNumber, wave);
 
     const pendingStepIds = wave.filter((stepId) => !stepResults.has(stepId));
 
     if (pendingStepIds.length !== wave.length) {
-      await this.eventLogger.log("flow.wave.resume.skipped", {
-        flowRunId,
-        waveNumber,
-        skippedStepIds: wave.filter((stepId) => stepResults.has(stepId)),
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
+      await this.logSkippedWaveSteps(flowRunId, request, waveNumber, wave, stepResults);
     }
 
     if (pendingStepIds.length === 0) {
-      await this.eventLogger.log("flow.wave.completed", {
-        flowRunId,
-        waveNumber,
-        waveSize: wave.length,
-        successCount: wave.length,
-        failureCount: 0,
-        failed: false,
-        traceId: request.traceId,
-        requestId: request.requestId,
-      });
+      await this.logCompletedEmptyWave(flowRunId, request, waveNumber, wave.length);
       return;
     }
 
-    // Execute steps in this wave in parallel
-    const wavePromises = pendingStepIds.map((stepId) =>
-      this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)
+    const waveResults = await this.collectWaveResults(
+      flow,
+      request,
+      flowRunId,
+      pendingStepIds,
+      stepResults,
+      waveNumber,
     );
-    const waveResults = await Promise.allSettled(wavePromises);
 
-    // Process wave results
     const waveFailed = await this.processWaveResults(
       flow,
       request,
@@ -807,6 +874,95 @@ export class FlowRunner implements IFlowRunner {
       failFast,
     );
 
+    this.throwIfWaveCannotContinue(flowRunId, pendingStepIds, waveResults, waveFailed, failFast);
+  }
+
+  private async logWaveStart(
+    flowRunId: string,
+    request: { traceId?: string; requestId?: string },
+    waveNumber: number,
+    wave: string[],
+  ): Promise<void> {
+    await this.eventLogger.log("flow.wave.started", {
+      flowRunId,
+      waveNumber,
+      waveSize: wave.length,
+      stepIds: wave,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+  }
+
+  private async logSkippedWaveSteps(
+    flowRunId: string,
+    request: { traceId?: string; requestId?: string },
+    waveNumber: number,
+    wave: string[],
+    stepResults: Map<string, IStepResult>,
+  ): Promise<void> {
+    await this.eventLogger.log("flow.wave.resume.skipped", {
+      flowRunId,
+      waveNumber,
+      skippedStepIds: wave.filter((stepId) => stepResults.has(stepId)),
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+  }
+
+  private async logCompletedEmptyWave(
+    flowRunId: string,
+    request: { traceId?: string; requestId?: string },
+    waveNumber: number,
+    waveSize: number,
+  ): Promise<void> {
+    await this.eventLogger.log("flow.wave.completed", {
+      flowRunId,
+      waveNumber,
+      waveSize,
+      successCount: waveSize,
+      failureCount: 0,
+      failed: false,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+  }
+
+  private async collectWaveResults(
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    flowRunId: string,
+    pendingStepIds: string[],
+    stepResults: Map<string, IStepResult>,
+    waveNumber: number,
+  ): Promise<PromiseSettledResult<IStepResult>[]> {
+    const executionUnits = this.buildWaveExecutionUnits(flow, pendingStepIds);
+    const executionResults = await Promise.all(
+      executionUnits.map((unit) => this.executeWaveUnit(unit, flowRunId, flow, request, stepResults, waveNumber)),
+    );
+    const waveResultsByStepId = new Map<string, PromiseSettledResult<IStepResult>>();
+
+    for (const executionResult of executionResults) {
+      for (let index = 0; index < executionResult.stepIds.length; index++) {
+        waveResultsByStepId.set(executionResult.stepIds[index], executionResult.results[index]);
+      }
+    }
+
+    return pendingStepIds.map((stepId) => {
+      const waveResult = waveResultsByStepId.get(stepId);
+      if (!waveResult) {
+        throw new FlowExecutionError(`Missing execution result for step ${stepId}`, flowRunId);
+      }
+      return waveResult;
+    });
+  }
+
+  private throwIfWaveCannotContinue(
+    flowRunId: string,
+    pendingStepIds: string[],
+    waveResults: PromiseSettledResult<IStepResult>[],
+    waveFailed: boolean,
+    failFast: boolean,
+  ): void {
     const abortResult = waveResults.find(
       (result): result is PromiseRejectedResult => {
         return this.isPromiseRejectedResult(result) && result.reason instanceof FlowAbortError;
@@ -817,22 +973,113 @@ export class FlowRunner implements IFlowRunner {
       throw abortResult.reason;
     }
 
-    // If failFast is enabled and wave failed, stop execution
-    if (waveFailed && failFast) {
-      const failedStepIndex = pendingStepIds.findIndex((_stepId, i) => {
-        const result = waveResults[i];
-        return this.isPromiseRejectedResult(result) ||
-          (result.status === "fulfilled" && !result.value.success);
-      });
-      const failedStepId = pendingStepIds[failedStepIndex];
-      const failedResult = waveResults[failedStepIndex];
-      const errorMessage = failedResult.status === "fulfilled"
-        ? failedResult.value.error || DEFAULT_UNKNOWN_ERROR_MESSAGE
-        : (this.isPromiseRejectedResult(failedResult) && failedResult.reason instanceof Error
-          ? failedResult.reason.message
-          : String((failedResult as PromiseRejectedResult).reason ?? DEFAULT_UNKNOWN_ERROR_MESSAGE));
-      throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId);
+    if (!waveFailed || !failFast) {
+      return;
     }
+
+    const failedStepIndex = pendingStepIds.findIndex((_stepId, index) => {
+      const result = waveResults[index];
+      return this.isPromiseRejectedResult(result) ||
+        (this.isPromiseFulfilledResult(result) && !result.value.success);
+    });
+    const failedStepId = pendingStepIds[failedStepIndex];
+    const failedResult = waveResults[failedStepIndex];
+    const errorMessage = this.getWaveFailureMessage(failedResult);
+    throw new FlowExecutionError(`Step ${failedStepId} failed: ${errorMessage}`, flowRunId);
+  }
+
+  private getWaveFailureMessage(failedResult: PromiseSettledResult<IStepResult>): string {
+    if (this.isPromiseFulfilledResult(failedResult)) {
+      return failedResult.value.error || DEFAULT_UNKNOWN_ERROR_MESSAGE;
+    }
+
+    if (this.isPromiseRejectedResult(failedResult) && failedResult.reason instanceof Error) {
+      return failedResult.reason.message;
+    }
+
+    return String((failedResult as PromiseRejectedResult).reason ?? DEFAULT_UNKNOWN_ERROR_MESSAGE);
+  }
+
+  private buildWaveExecutionUnits(flow: IFlow, pendingStepIds: string[]): IWaveExecutionUnit[] {
+    const stepsById = new Map(flow.steps.map((step) => [step.id, step]));
+    const units: IWaveExecutionUnit[] = [];
+    const groupedMembers = new Map<string, string[]>();
+    const groupOrder: string[] = [];
+
+    for (const stepId of pendingStepIds) {
+      const step = stepsById.get(stepId);
+      const groupId = step?.parallel?.group;
+      if (!groupId) {
+        units.push({ stepIds: [stepId] });
+        continue;
+      }
+
+      const members = groupedMembers.get(groupId);
+      if (members) {
+        members.push(stepId);
+        continue;
+      }
+
+      groupedMembers.set(groupId, [stepId]);
+      groupOrder.push(groupId);
+    }
+
+    for (const groupId of groupOrder) {
+      const members = groupedMembers.get(groupId) ?? [];
+      if (members.length <= 1) {
+        units.push({ stepIds: members });
+        continue;
+      }
+      units.push({ stepIds: members, groupId });
+    }
+
+    return units;
+  }
+
+  private async executeWaveUnit(
+    unit: IWaveExecutionUnit,
+    flowRunId: string,
+    flow: IFlow,
+    request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
+    stepResults: Map<string, IStepResult>,
+    waveNumber: number,
+  ): Promise<IWaveExecutionResult> {
+    if (!unit.groupId) {
+      const result = await Promise.allSettled([
+        this.executeStepSafe(flowRunId, unit.stepIds[0], flow, request, stepResults),
+      ]);
+      return { stepIds: unit.stepIds, results: result };
+    }
+
+    await this.eventLogger.log("flow.parallel_group.started", {
+      flowRunId,
+      waveNumber,
+      groupId: unit.groupId,
+      stepIds: unit.stepIds,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    const results = await Promise.allSettled(
+      unit.stepIds.map((stepId) => this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)),
+    );
+    const successCount = results.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
+      .length;
+    const failureCount = results.length - successCount;
+
+    await this.eventLogger.log("flow.parallel_group.completed", {
+      flowRunId,
+      waveNumber,
+      groupId: unit.groupId,
+      stepIds: unit.stepIds,
+      successCount,
+      failureCount,
+      failed: failureCount > 0,
+      traceId: request.traceId,
+      requestId: request.requestId,
+    });
+
+    return { stepIds: unit.stepIds, results };
   }
 
   /**
@@ -920,7 +1167,7 @@ export class FlowRunner implements IFlowRunner {
     namespaceId: string,
   ): Promise<IWaveProcessingOutcome> {
     try {
-      if (promiseResult.status === "fulfilled") {
+      if (this.isPromiseFulfilledResult(promiseResult)) {
         return await this.handleFulfilledWaveResult(
           flow,
           request,
