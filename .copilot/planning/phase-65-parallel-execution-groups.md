@@ -233,10 +233,19 @@ Implementation guidance for this step followed `.copilot/source/exaix.md` and `.
 
 ### Step 65.4: Checkpoint & Recovery Integration
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/integration/42_parallel_group_checkpoint_test.ts tests/integration/43_parallel_group_recovery_test.ts`
+- `deno check tests/integration/42_parallel_group_checkpoint_test.ts tests/integration/43_parallel_group_recovery_test.ts`
+- `deno lint tests/integration/42_parallel_group_checkpoint_test.ts tests/integration/43_parallel_group_recovery_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
-- Verify `FlowCheckpointService.save()` correctly captures each group member step individually in `ZFlowCheckpoint.completedSteps` (keyed by step ID) — no schema changes needed.
-- Ensure Phase 63 retry/fallback behavior remains step-scoped inside grouped execution.
+- [x] Verify `FlowCheckpointService.save()` correctly captures each group member step individually in `ZFlowCheckpoint.completedSteps` (keyed by step ID) — no schema changes needed.
+- [x] Ensure Phase 63 retry/fallback behavior remains step-scoped inside grouped execution.
 
 #### Architecture Notes
 
@@ -246,14 +255,16 @@ Implementation guidance for this step followed `.copilot/source/exaix.md` and `.
 
 #### Planned Tests
 
-- `tests/integration/services/parallel_group_checkpoint_test.ts`
-- `tests/integration/services/parallel_group_recovery_test.ts`
+- ✅ `tests/integration/42_parallel_group_checkpoint_test.ts`
+- ✅ `tests/integration/43_parallel_group_recovery_test.ts`
+
+**✅ IMPLEMENTED** — `tests/integration/42_parallel_group_checkpoint_test.ts`, `tests/integration/43_parallel_group_recovery_test.ts`; Step 65.4 confirms that checkpoint persistence captures individual parallel group members by step ID, resume skips successful members, and recovered failed members do not corrupt sibling results — with full group merge succeeding across runs.
 
 #### Success Criteria
 
-- Resumed flows do not re-run successful group members.
-- Group-level reporting remains correct after resume.
-- Failed group member recovery does not corrupt sibling results.
+- [x] Resumed flows do not re-run successful group members.
+- [x] Group-level reporting remains correct after resume.
+- [x] Failed group member recovery does not corrupt sibling results.
 
 ## Risks & Mitigations
 
