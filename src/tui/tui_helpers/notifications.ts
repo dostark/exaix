@@ -45,11 +45,15 @@ export async function renderNotificationPanel(
   const messageColorByType: Record<string, string> = {
     error: theme.error,
     memory_rejected: theme.error,
+    amendment_rejected: theme.error,
+    amendment_expired: theme.error,
     warning: theme.warning,
     success: theme.success,
     memory_approved: theme.success,
+    amendment_approved: theme.success,
     info: theme.primary,
     memory_update_pending: theme.primary,
+    amendment_pending: theme.primary,
   };
 
   if (state.showMemoryNotifications) {

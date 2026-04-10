@@ -55,6 +55,7 @@ const PLAN_ICONS: Record<PlanStatusType | "folder", string> = {
   [PlanStatus.ERROR]: "⚠️",
   [PlanStatus.NEEDS_REVISION]: "✍️",
   [PlanStatus.PENDING]: "⏳",
+  [PlanStatus.AMENDMENT_PENDING]: "🏗️",
   folder: "📁",
 } as const;
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-10T14:22:16.659Z",
+  "generated_at": "2026-04-10T15:44:38.401Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1631,6 +1631,11 @@
       ]
     },
     {
+      "path": ".copilot/rules/commit.md",
+      "short_summary": "",
+      "chunks": []
+    },
+    {
       "path": ".copilot/cross-reference.md",
       "scope": "dev",
       "title": "Agent Documentation Cross-Reference Map",
@@ -1684,6 +1689,53 @@
       ],
       "chunks": [
         ".copilot/chunks/summary.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/refactor-check-magic.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/refactor-check-magic.md.chunk0.txt",
+        ".copilot/chunks/refactor-check-magic.md.chunk1.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/next-steps.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/next-steps.md.chunk0.txt",
+        ".copilot/chunks/next-steps.md.chunk1.txt",
+        ".copilot/chunks/next-steps.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/pre-gap-analysis.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/pre-gap-analysis.md.chunk0.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk1.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk2.txt",
+        ".copilot/chunks/pre-gap-analysis.md.chunk3.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/commit.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/commit.md.chunk0.txt",
+        ".copilot/chunks/commit.md.chunk1.txt",
+        ".copilot/chunks/commit.md.chunk2.txt",
+        ".copilot/chunks/commit.md.chunk3.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/post-gap-analysis.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/post-gap-analysis.md.chunk0.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk1.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk2.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk3.txt"
       ]
     },
     {

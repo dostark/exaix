@@ -64,6 +64,11 @@ export const ExaPathDefaults = {
   memoryGlobal: `${DEFAULT_MEMORY_PATH}/${DEFAULT_GLOBAL_MEMORY_PATH}`,
 };
 
+// Plan amendment constants (Phase 66)
+export const AMENDMENT_ARTIFACTS_DIR = "amendments";
+export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000; // 24 hours
+export const DEFAULT_AMENDMENT_THRESHOLD = 60; // ConfidenceScorer 0-100
+
 // ============================================================================
 // Database Validation Limits
 // ============================================================================
@@ -129,6 +134,14 @@ export const AGENT_EVENT_EXECUTION_STARTED = "agent.execution_started";
 export const AGENT_EVENT_EXECUTION_COMPLETED = "agent.execution_completed";
 export const AGENT_EVENT_OUTPUT = "agent.output";
 export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
+
+// Plan amendment event names (Phase 66)
+export const PLAN_AMENDMENT_EVENT_PROPOSED = "plan.amendment.proposed";
+export const PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL = "plan.amendment.awaiting_approval";
+export const PLAN_AMENDMENT_EVENT_APPROVED = "plan.amendment.approved";
+export const PLAN_AMENDMENT_EVENT_REJECTED = "plan.amendment.rejected";
+export const PLAN_AMENDMENT_EVENT_EXPIRED = "plan.amendment.expired";
+export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;

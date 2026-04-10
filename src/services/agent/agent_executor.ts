@@ -335,7 +335,7 @@ export class AgentExecutor {
         .slice(frontmatterMatch[0].length)
         .trim();
 
-      const sanitizedPrompt = this.sanitizePrompt(systemPrompt);
+      const sanitizedPrompt = AgentExecutor.sanitizePrompt(systemPrompt);
 
       // 6. Handle model/provider splitting if using canonical format (provider:model)
       let model = validatedFrontmatter.model;
@@ -427,7 +427,7 @@ export class AgentExecutor {
   /**
    * Sanitize system prompt to prevent XSS and injection attacks
    */
-  private sanitizePrompt(prompt: string): string {
+  public static sanitizePrompt(prompt: string): string {
     return prompt
       // Remove potential script tags
       .replace(/<script[^>]*>.*?<\/script>/gis, "[REMOVED SCRIPT]")

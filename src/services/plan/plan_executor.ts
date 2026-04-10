@@ -7,6 +7,7 @@
  * * @related-files [src/services/tool_registry.ts, src/services/execution_loop.ts]
  */
 
+import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
@@ -16,12 +17,15 @@ import { EventLogger } from "../core/event_logger.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";
+import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
 import { ActivityActor, ExecutionStatus, SecurityMode } from "../../shared/enums.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
+  AMENDMENT_ARTIFACTS_DIR,
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   GIT_CMD_REV_PARSE,
   GIT_ERROR_NOTHING_TO_COMMIT,
+  PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
   PORTAL_ALIAS_WORKSPACE,
   PROMPT_PLAN_STEP_REASONING_PREFIX,
   PROMPT_PLAN_STEP_TASK_PREFIX,
@@ -31,6 +35,10 @@ import {
 import type { JSONValue } from "../../shared/types/json.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import { type IPlanAmendmentService, PlanAmendmentService } from "./plan_amendment_service.ts";
+import type { IPlanAmendmentTrigger } from "../../shared/schemas/plan_amendment.ts";
+import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
+import { PlanAmendmentPendingError } from "./errors.ts";
 
 export interface IPlanStep {
   number: number;
@@ -55,6 +63,8 @@ export interface IPlanExecutorOptions {
   enableGit?: boolean;
   generateReport?: boolean;
   context?: IApplicationContext;
+  confidenceScorer?: ConfidenceScorer;
+  amendmentService?: IPlanAmendmentService;
 }
 
 export interface IPlanActionReport {
@@ -85,7 +95,7 @@ export class PlanExecutor {
     private llmProvider: IModelProvider,
     db: IDatabaseService,
     private repoPath: string,
-    options: IPlanExecutorOptions = {},
+    private options: IPlanExecutorOptions = {},
   ) {
     const ctx = options.context;
     this.config = ctx?.config.get() || config;
@@ -224,35 +234,70 @@ export class PlanExecutor {
     let lastCommitSha: string | null = null;
 
     for (const step of context.steps) {
-      const result = await agentExecutor.executeStep(
-        {
-          trace_id: traceId,
-          request_id: requestId,
-          request: step.content,
-          plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
-          portal: portalName,
-        },
-        {
-          identity_id: context.identity,
-          portal: portalName,
-          security_mode: SecurityMode.HYBRID,
-          audit_enabled: true,
-        },
-      );
+      try {
+        const result = await agentExecutor.executeStep(
+          {
+            trace_id: traceId,
+            request_id: requestId,
+            request: step.content,
+            plan: `${PROMPT_PLAN_STEP_TASK_PREFIX}${step.title}${PROMPT_PLAN_STEP_REASONING_PREFIX}${step.content}`,
+            portal: portalName,
+          },
+          {
+            identity_id: context.identity,
+            portal: portalName,
+            security_mode: SecurityMode.HYBRID,
+            audit_enabled: true,
+          },
+        );
 
-      if (git) {
-        await this.commitStepChanges(git, step, result, traceId, requestId);
-        lastCommitSha = await this.getPortalHeadSha(this.repoPath);
+        // Step 66.2: Low Confidence Trigger Detection
+        if (this.options.confidenceScorer && this.config.amendment?.enabled) {
+          const assessment = this.options.confidenceScorer.assessQuick(result.description);
+          const threshold = this.config.amendment.threshold ?? DEFAULT_AMENDMENT_THRESHOLD;
+
+          if (assessment.score < threshold) {
+            await this.handleAmendmentTrigger(
+              {
+                source: "low_confidence",
+                stepId: String(step.number),
+                reason: assessment.reasoning || "Low confidence score",
+                confidenceScore: assessment.score,
+              },
+              context,
+              step,
+            );
+          }
+        }
+
+        if (git) {
+          await this.commitStepChanges(git, step, result, traceId, requestId);
+          lastCommitSha = await this.getPortalHeadSha(this.repoPath);
+        }
+
+        actionReports.push({
+          stepNumber: step.number,
+          stepTitle: step.title,
+          tool: ACTIVITY_ACTOR_AGENT,
+          params: { request: step.content },
+          success: true,
+          output: result.description,
+        });
+      } catch (error) {
+        // Step 66.2: Tool Error Trigger Detection
+        if (this.config.amendment?.enabled && !(error instanceof PlanAmendmentPendingError)) {
+          await this.handleAmendmentTrigger(
+            {
+              source: "tool_error",
+              stepId: String(step.number),
+              reason: error instanceof Error ? error.message : String(error),
+            },
+            context,
+            step,
+          );
+        }
+        throw error;
       }
-
-      actionReports.push({
-        stepNumber: step.number,
-        stepTitle: step.title,
-        tool: ACTIVITY_ACTOR_AGENT,
-        params: { request: step.content },
-        success: true,
-        output: result.description,
-      });
     }
 
     return lastCommitSha;
@@ -318,6 +363,64 @@ export class PlanExecutor {
       temperature: REPORT_GENERATION_TEMPERATURE,
       max_tokens: REPORT_GENERATION_MAX_TOKENS,
     });
+  }
+
+  /**
+   * Handle an amendment trigger by evaluating policy and proposing changes.
+   */
+  private async handleAmendmentTrigger(
+    trigger: IPlanAmendmentTrigger,
+    context: IPlanContext,
+    _currentStep: IPlanStep,
+  ): Promise<void> {
+    const service = this.options.amendmentService || new PlanAmendmentService(this.config, this.llmProvider);
+
+    if (await service.shouldAmend(trigger)) {
+      await this.logger.info("plan.amendment_triggered", context.trace_id, {
+        source: trigger.source,
+        reason: trigger.reason,
+        stepId: trigger.stepId,
+      });
+
+      // 1. Compute remaining steps
+      const remainingSteps = context.steps.filter((s) => s.number > _currentStep.number);
+
+      // 2. Propose amendment
+      const patch = await service.proposeAmendment({
+        planId: context.request_id, // request_id is used as planId in some contexts
+        remainingSteps,
+        trigger,
+      });
+
+      // 3. Persist amendment artifact
+      const executionRoot = this.config.paths.memoryExecution.includes("/")
+        ? this.config.paths.memoryExecution
+        : join(this.config.paths.memory, this.config.paths.memoryExecution);
+
+      const amendmentsDir = join(
+        this.config.system.root,
+        executionRoot,
+        context.trace_id,
+        AMENDMENT_ARTIFACTS_DIR,
+      );
+      await Deno.mkdir(amendmentsDir, { recursive: true });
+      await Deno.writeTextFile(
+        join(amendmentsDir, `${patch.amendmentId}.json`),
+        JSON.stringify(patch, null, 2),
+      );
+
+      // 4. Emit event for TUI/Notification
+      await this.logger.info(PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL, context.trace_id, {
+        amendmentId: patch.amendmentId,
+        planId: patch.planId,
+        triggerSource: trigger.source,
+        affectedStepCount: patch.affectedRemainingStepIds.length,
+        createdAt: patch.createdAt,
+      });
+
+      // 5. Throw error to pause execution loop
+      throw new PlanAmendmentPendingError(patch.amendmentId, patch.planId);
+    }
   }
 
   /**

@@ -33,6 +33,9 @@ import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/structured_plan_parser.ts";
 import { isReadOnlyAgentCapabilities } from "./agent_capabilities.ts";
 import { ArtifactRegistry } from "../artifact/artifact_registry.ts";
+import { PlanAmendmentPendingError } from "../plan/errors.ts";
+import { ConfidenceScorer } from "../utils/confidence_scorer.ts";
+import { PlanAmendmentService } from "../plan/plan_amendment_service.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
   DEFAULT_EXECUTION_MEMORY_PATH,
@@ -98,6 +101,8 @@ export class ExecutionLoop {
   private context?: IApplicationContext;
   private reviewRegistry?: ReviewRegistry;
   private llmProvider?: IModelProvider;
+  private confidenceScorer?: ConfidenceScorer;
+  private amendmentService?: PlanAmendmentService;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -113,6 +118,13 @@ export class ExecutionLoop {
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
     });
+
+    if (this.llmProvider) {
+      this.confidenceScorer = new ConfidenceScorer(this.llmProvider, {
+        lowConfidenceThreshold: this.config.amendment?.threshold,
+      });
+      this.amendmentService = new PlanAmendmentService(this.config, this.llmProvider);
+    }
   }
 
   private async isReadOnlyAgentId(identityId: string | undefined): Promise<boolean> {
@@ -257,6 +269,11 @@ export class ExecutionLoop {
 
       return { success: true, traceId };
     } catch (error) {
+      if (error instanceof PlanAmendmentPendingError) {
+        await this.handleAmendmentPending(planPath, traceId!, requestId!, error);
+        return { success: true, traceId };
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (traceId && requestId) {
         await this.handleFailure(planPath, traceId, requestId, errorMessage, {
@@ -709,7 +726,12 @@ export class ExecutionLoop {
       this.llmProvider,
       this.db,
       executionRoot,
-      { ...options, context: this.context },
+      {
+        ...options,
+        context: this.context,
+        confidenceScorer: this.confidenceScorer,
+        amendmentService: this.amendmentService,
+      },
     );
 
     // Create plan context
@@ -1012,6 +1034,33 @@ export class ExecutionLoop {
       request_id: requestId,
       error,
       moved_to: targetRejectedPath,
+    });
+  }
+
+  /**
+   * Handle plan amendment pending state
+   */
+  private async handleAmendmentPending(
+    planPath: string,
+    traceId: string,
+    requestId: string,
+    error: PlanAmendmentPendingError,
+  ): Promise<void> {
+    // Update plan status to AMENDMENT_PENDING
+    try {
+      const content = await Deno.readTextFile(planPath);
+      const updatedContent = content.replace(
+        /status: "?(active|approved|review)"?/,
+        `status: ${PlanStatus.AMENDMENT_PENDING}`,
+      );
+      await Deno.writeTextFile(planPath, updatedContent);
+    } catch (e) {
+      console.error("Failed to update plan status for amendment:", e);
+    }
+
+    this.logActivity("execution.amendment_pending", traceId, {
+      request_id: requestId,
+      amendment_id: error.amendmentId,
     });
   }
 

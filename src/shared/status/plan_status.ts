@@ -15,6 +15,7 @@ export const PlanStatus = {
   REJECTED: "rejected",
   NEEDS_REVISION: "needs_revision",
   PENDING: "pending",
+  AMENDMENT_PENDING: "amendment_pending",
 } as const;
 
 export type PlanStatus = typeof PlanStatus[keyof typeof PlanStatus];
@@ -30,6 +31,7 @@ export const PLAN_STATUS_VALUES = [
   PlanStatus.REJECTED,
   PlanStatus.NEEDS_REVISION,
   PlanStatus.PENDING,
+  PlanStatus.AMENDMENT_PENDING,
 ] as const;
 
 export function isPlanStatus(value: unknown): value is PlanStatus {

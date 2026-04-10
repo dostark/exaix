@@ -186,6 +186,11 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
       max_clarification_rounds: 5,
       thresholds: { minimum: 20, enrichment: 50, proceed: 70 },
     },
+    amendment: {
+      enabled: true,
+      threshold: 80,
+      expiryMs: 3600000,
+    },
   };
 }
 

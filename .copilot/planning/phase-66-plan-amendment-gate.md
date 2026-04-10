@@ -139,9 +139,9 @@ flowchart TD
 
 #### Actions
 
-- Add amendment schemas and types in `src/shared/schemas/plan_amendment.ts`.
-- Create `src/services/plan/plan_amendment_service.ts`.
-- Define an approval adapter contract for CLI/TUI integration.
+- [x] Add amendment schemas and types in `src/shared/schemas/plan_amendment.ts`.
+- [x] Create `src/services/plan/plan_amendment_service.ts`.
+- [x] Define an approval adapter contract for CLI/TUI integration.
 
 #### Architecture Notes
 
@@ -156,9 +156,9 @@ flowchart TD
 
 #### Success Criteria
 
-- All amendment schemas validate correctly.
-- Decision lifecycle supports approved, rejected, and expired outcomes.
-- Types compile with no `any`.
+- [x] All amendment schemas validate correctly.
+- [x] Decision lifecycle supports approved, rejected, and expired outcomes.
+- [x] Types compile with no `any`.
 
 ### Step 66.2: Trigger Detection in Execution Path
 
@@ -172,7 +172,7 @@ flowchart TD
 - Trigger policy should be config-driven, not hardcoded.
 - Low-confidence triggers should include the score and failed criterion summary.
 - **Remaining steps computation (G4):** The amendment trigger receives the full `IPlanContext.steps` and the current step's number; remaining steps are computed as `context.steps.filter(s => s.number > currentStep.number)`. No change to `PlanExecutor`'s public API is required.
-- **`ConfidenceScorer` injection (G5):** `ConfidenceScorer` is injected into `PlanExecutor` via `IPlanExecutorOptions` as optional `confidenceScorer?: ConfidenceScorer`. After each `agentExecutor.executeStep()` call, `PlanExecutor.executeSteps()` calls `this.options.confidenceScorer?.assessQuick(result.description)` and compares `score` against the config-driven `amendmentThreshold`. `AgentExecutor` itself is not modified.
+- **`ConfidenceScorer` injection (G5):** `ConfidenceScorer` is injected into `PlanExecutor` via `IPlanExecutorOptions` as optional `confidenceScorer?: ConfidenceScorer`. After each `agentExecutor.executeStep()` call, `PlanExecutor.executeSteps()` calls `this.options.confidenceScorer?.assessQuick(result.description)` and compares `score` against the config-driven `amendmentThreshold` (`config.amendment?.threshold ?? DEFAULT_AMENDMENT_THRESHOLD`). `AgentExecutor` itself is not modified.
 
 #### Planned Tests
 
@@ -196,7 +196,7 @@ flowchart TD
 #### Architecture Notes
 
 - Proposed patch should include a concise human-readable summary plus exact structural diff.
-- **Execution pause/resume (G2):** Execution pause is implemented as checkpoint-then-halt: when an amendment is proposed, `PlanExecutor` saves a checkpoint (Phase 63 semantics), writes the amendment artifact, emits `plan.amendment.awaiting_approval`, and throws `PlanAmendmentPendingError`. `ExecutionLoop` catches this, leaves the plan in `Workspace/Active/` with status `amendment_pending`, and exits. Resume: `exactl plan amendment approve <amendmentId>` applies the patch and re-queues the plan. Next `ExecutionLoop` invocation picks up from the checkpoint.
+- **Execution pause/resume (G2):** Execution pause is implemented as checkpoint-then-halt: when an amendment is proposed, `PlanExecutor` saves a checkpoint (Phase 63 semantics), writes the amendment artifact, emits `PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL`, and throws `PlanAmendmentPendingError`. Payload for `PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL`: `{ amendmentId: string; planId: string; triggerSource: string; affectedStepCount: number; createdAt: string }`. `ExecutionLoop` catches this, leaves the plan in `Workspace/Active/` with status `amendment_pending`, and exits. Resume: `exactl plan amendment approve <amendmentId>` applies the patch and re-queues the plan. Next `ExecutionLoop` invocation picks up from the checkpoint.
 - **Amendment artifact storage (G6):** Amendment artifacts are stored at `Memory/Execution/{traceId}/amendments/{amendmentId}.json`. New constant `AMENDMENT_ARTIFACTS_DIR = 'amendments'` in `src/shared/constants.ts`. Path construction uses the same defensive join pattern as `FlowCheckpointService.getCheckpointPath()`.
 - **LLM summary sanitization (G9):** The LLM-generated `summary` field must be sanitized before storage or display: strip YAML front-matter delimiters (`---`), null bytes (`\x00`), and limit to 500 characters. Reference the existing `sanitizePrompt()` pattern in `src/services/agent/agent_executor.ts` (OWASP A8).
 
@@ -222,7 +222,11 @@ flowchart TD
 #### Architecture Notes
 
 - Resume path must integrate with Phase 63 checkpointing.
-- Expired amendments should produce deterministic policy behavior: abort by default in v1.
+- Expired amendments should produce deterministic policy behavior: abort by default in v1. Use `config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS`.
+- **Amendment events (G14):**
+  - `PLAN_AMENDMENT_EVENT_PROPOSED`: emitted in `proposeAmendment()` before approval gate; payload: `{ amendmentId, planId, stepId, triggerSource }`.
+  - `PLAN_AMENDMENT_EVENT_APPROVED/REJECTED/EXPIRED`: payload: `{ amendmentId, planId, decidedBy, decidedAt }`.
+  - `PLAN_AMENDMENT_EVENT_APPLIED`: emitted on successful resume; payload: `{ amendmentId, planId, appliedStepCount }`.
 
 #### Planned Tests
 
@@ -341,11 +345,11 @@ the document. Not part of the standard planning doc format. Section removed.
 
 ## Pre-Implementation Actions
 
-- [ ] Verify `sanitizePrompt()` exists and is exported from `src/services/agent/agent_executor.ts`
-- [ ] Confirm `FlowCheckpointService.getCheckpointPath()` pattern for use in artifact storage
-- [ ] Add `AMENDMENT_ARTIFACTS_DIR` constant to `src/shared/constants.ts` before Step 66.3
-- [ ] Extend `IMemoryNotification` type union and `messageColorByType` map before Step 66.3
-- [ ] Ensure `IPlanExecutorOptions` interface is exported; add `confidenceScorer?` field in Step 66.2
+- [x] Verify `sanitizePrompt()` exists and is exported from `src/services/agent/agent_executor.ts`
+- [x] Confirm `FlowCheckpointService.getCheckpointPath()` pattern for use in artifact storage
+- [x] Add `AMENDMENT_ARTIFACTS_DIR` constant to `src/shared/constants.ts` before Step 66.3
+- [x] Extend `IMemoryNotification` type union and `messageColorByType` map before Step 66.3
+- [x] Ensure `IPlanExecutorOptions` interface is exported; add `confidenceScorer?` field in Step 66.2
 
 ---
 

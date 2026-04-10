@@ -318,6 +318,16 @@ export const ConfigSchema = z.object({
       proceed: DEFAULTS.DEFAULT_QG_PROCEED_THRESHOLD,
     },
   }),
+  /** Plan amendment configuration (Phase 66) */
+  amendment: z.object({
+    enabled: z.boolean().default(false),
+    threshold: z.number().min(0).max(100).default(DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD),
+    expiryMs: z.number().int().positive().default(DEFAULTS.DEFAULT_AMENDMENT_EXPIRY_MS),
+  }).optional().default({
+    enabled: false,
+    threshold: DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD,
+    expiryMs: DEFAULTS.DEFAULT_AMENDMENT_EXPIRY_MS,
+  }),
   /** Prompt budget enforcement policy overrides (Phase 62) */
   budget_enforcement: ZBudgetPolicy.optional(),
   /** Flow retry cost budget guard (Phase 63). Omit or set to 0 to disable. */
