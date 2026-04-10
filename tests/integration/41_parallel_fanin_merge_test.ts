@@ -1,0 +1,112 @@
+/**
+ * @module ParallelFanInMergeIntegrationTest
+ * @path tests/integration/41_parallel_fanin_merge_test.ts
+ * @description Verifies downstream fan-in steps receive JSON-safe parallelGroupResults.
+ * @architectural-layer Tests
+ * @related-files [src/flows/flow_runner.ts]
+ */
+
+import { assertEquals, assertExists } from "@std/assert";
+import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import { initTestDbService } from "../helpers/db.ts";
+import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
+
+Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downstream fan-in steps", async () => {
+  const { config, cleanup } = await initTestDbService();
+
+  try {
+    const executor = new ScriptedAgentExecutor({
+      starter: ["start result"],
+      writerA: ["alpha output"],
+      writerB: ["beta output"],
+      merger: [(request) => JSON.stringify(request.parallelGroupResults)],
+    });
+    const runner = new FlowRunner({
+      agentExecutor: executor,
+      eventLogger: new RecordingFlowLogger(),
+      config,
+    });
+
+    const flow: IFlowInput = {
+      id: "parallel-fanin-merge-flow",
+      name: "Parallel Fan-In Merge Flow",
+      description: "Downstream fan-in requests should receive JSON-safe group summaries",
+      version: DEFAULT_FLOW_VERSION,
+      steps: [
+        {
+          id: "start",
+          name: "Start",
+          identity: "starter",
+          dependsOn: [],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+        },
+        {
+          id: "draft-a",
+          name: "Draft A",
+          identity: "writerA",
+          dependsOn: ["start"],
+          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+          parallel: { group: "writers" },
+        },
+        {
+          id: "draft-b",
+          name: "Draft B",
+          identity: "writerB",
+          dependsOn: ["start"],
+          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+          parallel: { group: "writers" },
+        },
+        {
+          id: "merge",
+          name: "Merge",
+          identity: "merger",
+          dependsOn: ["draft-a", "draft-b"],
+          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+          mergeFromGroups: ["writers"],
+        },
+      ],
+      output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
+      settings: { maxParallelism: 4, failFast: true },
+    };
+
+    const result = await runner.execute(flow as IFlow, {
+      userPrompt: "run fan-in merge",
+      traceId: "trace-65-3-integration",
+      requestId: "req-65-3-integration",
+    });
+
+    assertEquals(result.success, true);
+    const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
+    assertExists(mergeRequest);
+    assertExists(mergeRequest.request.parallelGroupResults);
+    assertEquals(typeof mergeRequest.request.parallelGroupResults.writers.completedAt, "string");
+
+    const parsed = JSON.parse(result.output) as {
+      writers: {
+        groupId: string;
+        mergedOutput: string;
+        memberCount: number;
+        successCount: number;
+        completedAt: string;
+      };
+    };
+
+    assertEquals(parsed.writers.groupId, "writers");
+    assertEquals(parsed.writers.memberCount, 2);
+    assertEquals(parsed.writers.successCount, 2);
+    assertEquals(Number.isNaN(Date.parse(parsed.writers.completedAt)), false);
+    assertEquals(
+      parsed.writers.mergedOutput,
+      "## Step 1\nalpha output\n\n## Step 2\nbeta output",
+    );
+  } finally {
+    await cleanup();
+  }
+});

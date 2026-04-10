@@ -186,7 +186,7 @@ Validated with:
 #### Planned Tests
 
 - ✅ `tests/flows/flow_runner_parallel_group_test.ts`
-- ✅ `tests/integration/65_parallel_group_execution_test.ts`
+- ✅ `tests/integration/40_parallel_group_execution_test.ts`
 
 **✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `tests/flows/flow_runner_parallel_group_test.ts`, `tests/integration/65_parallel_group_execution_test.ts`; Step 65.2 now partitions same-wave grouped steps into explicit execution units, emits `flow.parallel_group.started` / `flow.parallel_group.completed`, and preserves the existing per-step wave result handling for downstream processing.
 
@@ -198,12 +198,18 @@ Validated with:
 
 ### Step 65.3: Fan-In Merge Semantics
 
+Implementation guidance for this step followed `.copilot/source/exaix.md` and `.copilot/tests/testing.md`: TDD-first, focused runtime changes in `FlowRunner`, and new tests placed under `tests/flows/` and `tests/integration/`.
+
+- `deno test --allow-all tests/flows/parallel_group_merge_test.ts tests/integration/41_parallel_fanin_merge_test.ts`
+- `deno lint src/flows/flow_runner.ts src/shared/constants.ts tests/flows/parallel_group_merge_test.ts tests/integration/41_parallel_fanin_merge_test.ts`
+- `deno check src/flows/flow_runner.ts tests/flows/parallel_group_merge_test.ts tests/integration/41_parallel_fanin_merge_test.ts`
+
 #### Actions
 
-- Implement fan-in aggregation logic for `all`, `ordered`, and `concat` merge modes.
-- Expose merged output as downstream step context via a new `parallelGroupResults` top-level field on `IFlowStepRequest` (not inside `context`).
-- Extend `IFlowStepRequest` with: `parallelGroupResults?: Record<string, IParallelGroupSummary>`.
-- `prepareStepRequest()` populates `parallelGroupResults` when the step has `mergeFromGroups` set.
+- [x] Implement fan-in aggregation logic for `all`, `ordered`, and `concat` merge modes.
+- [x] Expose merged output as downstream step context via a new `parallelGroupResults` top-level field on `IFlowStepRequest` (not inside `context`).
+- [x] Extend `IFlowStepRequest` with: `parallelGroupResults?: Record<string, IParallelGroupSummary>`.
+- [x] `prepareStepRequest()` populates `parallelGroupResults` when the step has `mergeFromGroups` set.
 
 #### Architecture Notes
 
@@ -214,14 +220,16 @@ Validated with:
 
 #### Planned Tests
 
-- `tests/unit/services/parallel_group_merge_test.ts`
-- `tests/integration/65_parallel_fanin_merge_test.ts`
+- ✅ `tests/flows/parallel_group_merge_test.ts`
+- ✅ `tests/integration/41_parallel_fanin_merge_test.ts`
+
+**✅ IMPLEMENTED** — `src/flows/flow_runner.ts`, `src/shared/constants.ts`, `tests/flows/parallel_group_merge_test.ts`, and `tests/integration/41_parallel_fanin_merge_test.ts`; Step 65.3 now injects deterministic `parallelGroupResults` into downstream step requests, uses explicit group order or lexicographic fallback, leaves `manual` fan-in unmerged, and journals automatic merge failures via `flow.parallel_group.merge_failed`.
 
 #### Success Criteria
 
-- Merged outputs are deterministic across runs.
-- Downstream steps can consume both grouped aggregate data and raw step results.
-- Merge failures are typed and journaled.
+- [x] Merged outputs are deterministic across runs.
+- [x] Downstream steps can consume both grouped aggregate data and raw step results.
+- [x] Merge failures are typed and journaled.
 
 ### Step 65.4: Checkpoint & Recovery Integration
 

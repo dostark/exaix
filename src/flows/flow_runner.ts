@@ -3,10 +3,16 @@
  * @path src/flows/flow_runner.ts
  * @description Core orchestrator for multi-agent flow execution.
  * @architectural-layer Flows
- * * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
+ * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
  */
 
-import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate } from "../shared/schemas/flow.ts";
+import type {
+  IFlow,
+  IFlowNamespaceWrite,
+  IFlowStep,
+  IGateEvaluate,
+  IParallelMergeMode,
+} from "../shared/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
@@ -47,6 +53,9 @@ import {
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,
+  FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
+  FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
+  FLOW_EVENT_PARALLEL_GROUP_STARTED,
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
@@ -93,6 +102,16 @@ export interface IFlowStepRequest {
   requestAnalysis?: IRequestAnalysis;
   /** Resolved namespace reads for this step, keyed by binding key (Phase 64) */
   sharedNamespace?: Record<string, string>;
+  /** Deterministic summaries for requested parallel groups (Phase 65) */
+  parallelGroupResults?: Record<string, IParallelGroupSummary>;
+}
+
+export interface IParallelGroupSummary {
+  groupId: string;
+  mergedOutput: string;
+  memberCount: number;
+  successCount: number;
+  completedAt: string;
 }
 
 /**
@@ -239,6 +258,13 @@ export interface IFlowEventPayloadMap {
     successCount: number;
     failureCount: number;
     failed: boolean;
+  };
+  "flow.parallel_group.merge_failed": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    groupId: string;
+    mergeMode: string;
+    error: string;
   };
   "flow.wave.errors": IFlowEventRequestContext & {
     flowRunId: string;
@@ -1051,7 +1077,7 @@ export class FlowRunner implements IFlowRunner {
       return { stepIds: unit.stepIds, results: result };
     }
 
-    await this.eventLogger.log("flow.parallel_group.started", {
+    await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_STARTED, {
       flowRunId,
       waveNumber,
       groupId: unit.groupId,
@@ -1067,7 +1093,7 @@ export class FlowRunner implements IFlowRunner {
       .length;
     const failureCount = results.length - successCount;
 
-    await this.eventLogger.log("flow.parallel_group.completed", {
+    await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_COMPLETED, {
       flowRunId,
       waveNumber,
       groupId: unit.groupId,
@@ -2104,7 +2130,16 @@ export class FlowRunner implements IFlowRunner {
       requestAnalysis: originalRequest.requestAnalysis,
     };
 
-    return await this.attachSharedNamespace(stepRequest, flowRunId, step, flow, originalRequest);
+    const stepRequestWithParallelGroups = this.attachParallelGroupResults(
+      stepRequest,
+      flowRunId,
+      step,
+      flow,
+      originalRequest,
+      stepResults,
+    );
+
+    return await this.attachSharedNamespace(stepRequestWithParallelGroups, flowRunId, step, flow, originalRequest);
   }
 
   private collectStepInputData(
@@ -2186,6 +2221,192 @@ export class FlowRunner implements IFlowRunner {
     });
 
     return userPrompt;
+  }
+
+  private attachParallelGroupResults(
+    stepRequest: IFlowStepRequest,
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    originalRequest: { traceId?: string; requestId?: string },
+    stepResults: Map<string, IStepResult>,
+  ): IFlowStepRequest {
+    if (!step.mergeFromGroups?.length) {
+      return stepRequest;
+    }
+
+    const parallelGroupResults = this.buildParallelGroupSummaries(
+      flowRunId,
+      step,
+      flow,
+      originalRequest,
+      stepResults,
+    );
+
+    return { ...stepRequest, parallelGroupResults };
+  }
+
+  private buildParallelGroupSummaries(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    originalRequest: { traceId?: string; requestId?: string },
+    stepResults: Map<string, IStepResult>,
+  ): Record<string, IParallelGroupSummary> {
+    const summaries: Record<string, IParallelGroupSummary> = {};
+
+    for (const groupId of step.mergeFromGroups ?? []) {
+      summaries[groupId] = this.buildParallelGroupSummary(
+        flowRunId,
+        step,
+        flow,
+        groupId,
+        originalRequest,
+        stepResults,
+      );
+    }
+
+    return summaries;
+  }
+
+  private buildParallelGroupSummary(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    groupId: string,
+    originalRequest: { traceId?: string; requestId?: string },
+    stepResults: Map<string, IStepResult>,
+  ): IParallelGroupSummary {
+    const memberStepIds = this.getParallelGroupMemberStepIds(flow, groupId);
+    const mergeMode = this.getParallelGroupMergeMode(step, flow, groupId);
+    const memberResults = memberStepIds.map((memberStepId) => {
+      const memberResult = stepResults.get(memberStepId);
+      if (!memberResult) {
+        return this.throwParallelGroupMergeFailure(
+          flowRunId,
+          step,
+          groupId,
+          mergeMode,
+          originalRequest,
+          `Parallel group '${groupId}' is missing result data for step '${memberStepId}'`,
+        );
+      }
+      return { memberStepId, memberResult };
+    });
+
+    const completedAt = new Date(
+      Math.max(...memberResults.map(({ memberResult }) => memberResult.completedAt.getTime())),
+    ).toISOString();
+    const successfulResults = memberResults.filter(({ memberResult }) => {
+      return memberResult.success && !!memberResult.result?.content;
+    });
+    const successCount = successfulResults.length;
+
+    const mergedOutput = mergeMode === "manual" ? "" : this.buildAutomaticParallelMergeOutput(
+      flowRunId,
+      step,
+      flow,
+      groupId,
+      mergeMode,
+      originalRequest,
+      memberStepIds,
+      successfulResults,
+    );
+
+    return {
+      groupId,
+      mergedOutput,
+      memberCount: memberStepIds.length,
+      successCount,
+      completedAt,
+    };
+  }
+
+  private buildAutomaticParallelMergeOutput(
+    flowRunId: string,
+    step: IFlowStep,
+    flow: IFlow,
+    groupId: string,
+    mergeMode: IParallelMergeMode,
+    originalRequest: { traceId?: string; requestId?: string },
+    memberStepIds: string[],
+    successfulResults: Array<{ memberStepId: string; memberResult: IStepResult }>,
+  ): string {
+    if (successfulResults.length !== memberStepIds.length) {
+      return this.throwParallelGroupMergeFailure(
+        flowRunId,
+        step,
+        groupId,
+        mergeMode,
+        originalRequest,
+        `Parallel group '${groupId}' cannot be merged automatically because not all members produced successful outputs`,
+      );
+    }
+
+    const orderedStepIds = this.getOrderedParallelGroupMemberStepIds(flow, groupId, memberStepIds);
+    const resultsByStepId = new Map(successfulResults.map((entry) => [entry.memberStepId, entry.memberResult]));
+    const orderedOutputs = orderedStepIds.map((memberStepId) => {
+      const result = resultsByStepId.get(memberStepId);
+      if (!result?.result?.content) {
+        return this.throwParallelGroupMergeFailure(
+          flowRunId,
+          step,
+          groupId,
+          mergeMode,
+          originalRequest,
+          `Parallel group '${groupId}' is missing merged output content for step '${memberStepId}'`,
+        );
+      }
+      return result.result.content;
+    });
+
+    return mergeMode === "concat" ? orderedOutputs.join("\n\n") : mergeAsContext(orderedOutputs);
+  }
+
+  private getParallelGroupMemberStepIds(flow: IFlow, groupId: string): string[] {
+    return flow.steps
+      .filter((candidateStep) => candidateStep.parallel?.group === groupId)
+      .map((candidateStep) => candidateStep.id);
+  }
+
+  private getParallelGroupMergeMode(
+    step: IFlowStep,
+    flow: IFlow,
+    groupId: string,
+  ): IParallelMergeMode {
+    const groupStep = flow.steps.find((candidateStep) => candidateStep.parallel?.group === groupId);
+    return (step.mergeMode ?? groupStep?.parallel?.mergeMode ?? "all") as IParallelMergeMode;
+  }
+
+  private getOrderedParallelGroupMemberStepIds(flow: IFlow, groupId: string, memberStepIds: string[]): string[] {
+    const explicitOrder = flow.steps.find((candidateStep) => candidateStep.parallel?.group === groupId)?.parallel
+      ?.order;
+    if (explicitOrder?.length) {
+      return [...explicitOrder];
+    }
+
+    return [...memberStepIds].sort((left, right) => left.localeCompare(right));
+  }
+
+  private throwParallelGroupMergeFailure(
+    flowRunId: string,
+    step: IFlowStep,
+    groupId: string,
+    mergeMode: string,
+    originalRequest: { traceId?: string; requestId?: string },
+    error: string,
+  ): never {
+    this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED, {
+      flowRunId,
+      stepId: step.id,
+      groupId,
+      mergeMode,
+      error,
+      traceId: originalRequest.traceId,
+      requestId: originalRequest.requestId,
+    });
+
+    throw new FlowExecutionError(error, flowRunId);
   }
 
   private async attachSharedNamespace(
