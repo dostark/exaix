@@ -57,6 +57,10 @@ import {
   type RequestListOptions,
 } from "./command_builders/request_actions.ts";
 import {
+  handlePlanAmendmentApprove,
+  handlePlanAmendmentList,
+  handlePlanAmendmentReject,
+  handlePlanAmendmentShow,
   handlePlanApprove,
   handlePlanList,
   handlePlanReject,
@@ -79,6 +83,8 @@ const DEFAULT_CAPABILITIES_LABEL = "general";
 const CLI_LIMIT_OPTION = "-l, --limit <limit:number>";
 const CLI_LIMIT_HELP = "Maximum results";
 const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
+const CLI_CMD_SHOW_ID = "show <id>";
+const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -342,7 +348,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "show <id>",
+        CLI_CMD_SHOW_ID,
         new Command()
           .description("Show request details")
           .action(async (_options: void, ...args: string[]) => {
@@ -378,7 +384,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "show <id>",
+        CLI_CMD_SHOW_ID,
         new Command()
           .description("Show details of a specific plan")
           .action(async (_options, ...args: string[]) => {
@@ -398,7 +404,7 @@ export const __test_command = new Command()
         "reject <id>",
         new Command()
           .description("Reject a plan with a reason")
-          .option("-r, --reason <reason:string>", "Rejection reason (required)", { required: true })
+          .option(CLI_OPTION_REASON, "Rejection reason (required)", { required: true })
           .action(async (options, ...args: string[]) => {
             await handlePlanReject({ planCommands, display }, args[0] as string, options.reason);
           }),
@@ -414,6 +420,44 @@ export const __test_command = new Command()
           .action(async (options, ...args: string[]) => {
             await handlePlanRevise({ planCommands, display }, args[0] as string, options.comment);
           }),
+      )
+      .command(
+        "amendment",
+        new Command()
+          .description("Manage plan amendments for paused executions")
+          .command(
+            "list",
+            new Command()
+              .description("List plans awaiting amendment approval")
+              .action(async () => {
+                await handlePlanAmendmentList({ planCommands, display });
+              }),
+          )
+          .command(
+            CLI_CMD_SHOW_ID,
+            new Command()
+              .description("Show details of a proposed amendment")
+              .action(async (_options, ...args: string[]) => {
+                await handlePlanAmendmentShow({ planCommands, display }, args[0] as string);
+              }),
+          )
+          .command(
+            "approve <id>",
+            new Command()
+              .description("Approve amendment and resume execution")
+              .action(async (_options, ...args: string[]) => {
+                await handlePlanAmendmentApprove({ planCommands, display }, args[0] as string);
+              }),
+          )
+          .command(
+            "reject <id>",
+            new Command()
+              .description("Reject a proposed amendment")
+              .option(CLI_OPTION_REASON, "Rejection reason (required)", { required: true })
+              .action(async (options, ...args: string[]) => {
+                await handlePlanAmendmentReject({ planCommands, display }, args[0] as string, options.reason);
+              }),
+          ),
       ),
   )
   // Review commands (replaces review commands)
@@ -430,7 +474,7 @@ export const __test_command = new Command()
           .action(async (options) => await handleReviewListAction(options)),
       )
       .command(
-        "show <id>",
+        CLI_CMD_SHOW_ID,
         new Command()
           .description("Show review details including diff")
           .option("-d, --diff", "Show only the diff for the review")
@@ -456,7 +500,7 @@ export const __test_command = new Command()
         "reject <id>",
         new Command()
           .description("Reject review and delete branch (for code changes) or mark as rejected (for artifacts)")
-          .option("-r, --reason <reason:string>", "Rejection reason (required)", { required: true })
+          .option(CLI_OPTION_REASON, "Rejection reason (required)", { required: true })
           .action(async (options, ...args: string[]) => {
             const id = args[0];
             try {
@@ -1534,7 +1578,7 @@ export const __test_command = new Command()
             "reject <proposalId:string>",
             new Command()
               .description("Reject a pending proposal")
-              .option("-r, --reason <reason:string>", "Rejection reason", { required: true })
+              .option(CLI_OPTION_REASON, "Rejection reason", { required: true })
               .action(async (options, ...args: string[]) => {
                 const proposalId = args[0];
                 const result = await memoryCommands.pendingReject(proposalId, options.reason);

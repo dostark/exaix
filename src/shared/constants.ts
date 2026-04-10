@@ -841,6 +841,8 @@ export const FLOW_EVENT_PARALLEL_GROUP_STARTED = "flow.parallel_group.started";
 export const FLOW_EVENT_PARALLEL_GROUP_COMPLETED = "flow.parallel_group.completed";
 export const FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED = "flow.parallel_group.merge_failed";
 export const FLOW_EVENT_COMPLETED = "flow.completed";
+export const FLOW_EVENT_ABORTED = "flow.aborted";
+export const FLOW_EVENT_FAILED = "flow.failed";
 export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 
 /** Default max serialized size for a flow namespace artifact in bytes. */

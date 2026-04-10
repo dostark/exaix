@@ -1,0 +1,36 @@
+/**
+ * @module PlanAmendmentAdapter
+ * @path src/services/adapters/plan_amendment_adapter.ts
+ * @description Adapter for the PlanAmendmentService to expose it to the application context.
+ * @architectural-layer Services/Adapters
+ * @related-files [src/services/plan/plan_amendment_service.ts, src/shared/interfaces/i_plan_amendment_service.ts]
+ */
+
+import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
+import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "../../shared/schemas/plan_amendment.ts";
+import type { IPlanStep } from "../plan/plan_executor.ts";
+import type { JSONObject } from "../../shared/types/json.ts";
+
+/**
+ * Adapter implementation of IPlanAmendmentService
+ */
+export class PlanAmendmentAdapter implements IPlanAmendmentService {
+  constructor(private readonly service: IPlanAmendmentService) {}
+
+  shouldAmend(trigger: IPlanAmendmentTrigger): Promise<boolean> {
+    return this.service.shouldAmend(trigger);
+  }
+
+  proposeAmendment(input: {
+    planId: string;
+    remainingSteps: IPlanStep[];
+    trigger: IPlanAmendmentTrigger;
+    sharedContext?: JSONObject;
+  }): Promise<IPlanAmendmentPatch> {
+    return this.service.proposeAmendment(input);
+  }
+
+  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): string {
+    return this.service.applyApprovedAmendment(planContent, patch);
+  }
+}

@@ -35,7 +35,8 @@ import {
 import type { JSONValue } from "../../shared/types/json.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import { type IPlanAmendmentService, PlanAmendmentService } from "./plan_amendment_service.ts";
+import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
+import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "../../shared/schemas/plan_amendment.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
 import { PlanAmendmentPendingError } from "./errors.ts";
@@ -419,7 +420,11 @@ export class PlanExecutor {
       });
 
       // 5. Throw error to pause execution loop
-      throw new PlanAmendmentPendingError(patch.amendmentId, patch.planId);
+      throw new PlanAmendmentPendingError(
+        patch.planId,
+        patch.amendmentId,
+        `Plan amendment ${patch.amendmentId} proposed for plan ${patch.planId}`,
+      );
     }
   }
 

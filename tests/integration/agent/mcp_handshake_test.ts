@@ -15,13 +15,17 @@ import type {
 } from "../../../src/shared/schemas/agent_executor.ts";
 import { SecurityMode } from "../../../src/shared/enums.ts";
 
-type IMcpHandshakeExecutor = Pick<AgentExecutor, "validateReviewResult" | "getRecentActivitiesByTraceId">;
+type IMcpHandshakeExecutor = Pick<
+  AgentExecutor,
+  "validateReviewResult" | "getRecentActivitiesByTraceId" | "logAgentOutput"
+>;
 
 Deno.test("McpAgentStrategy - Subprocess Spawn and Handshake", async () => {
   const processManager = new ProcessManager();
   const mockExecutor: IMcpHandshakeExecutor = {
     validateReviewResult: (res: IChangesetResult) => res,
     getRecentActivitiesByTraceId: () => Promise.resolve([]),
+    logAgentOutput: () => Promise.resolve(),
   };
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);
@@ -65,6 +69,7 @@ Deno.test("McpAgentStrategy - Parent Context Query", async () => {
   const mockExecutor: IMcpHandshakeExecutor = {
     validateReviewResult: (res: IChangesetResult) => res,
     getRecentActivitiesByTraceId: (_traceId: string) => Promise.resolve([]),
+    logAgentOutput: () => Promise.resolve(),
   };
 
   const strategy = new McpAgentStrategy(mockExecutor as AgentExecutor, processManager);

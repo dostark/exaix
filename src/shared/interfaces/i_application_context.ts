@@ -23,6 +23,7 @@ import type { ISkillsService } from "./i_skills_service.ts";
 import type { IPortalService } from "./i_portal_service.ts";
 import type { IRequestService } from "./i_request_service.ts";
 import type { IPlanService } from "./i_plan_service.ts";
+import type { IPlanAmendmentService } from "./i_plan_amendment_service.ts";
 import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
@@ -82,6 +83,9 @@ export interface IApplicationContext {
   /** Optional plan management service */
   plans?: IPlanService;
 
+  /** Optional plan amendment service */
+  amendments?: IPlanAmendmentService;
+
   /** Optional quality gate evaluator */
   gateEvaluator?: IGateEvaluator;
 
@@ -106,6 +110,7 @@ export type {
   IMemoryEmbeddingService,
   IMemoryExtractorService,
   IMemoryService,
+  IPlanAmendmentService,
   IPlanService,
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,

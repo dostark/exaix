@@ -38,12 +38,14 @@ import { ConfidenceScorer } from "../utils/confidence_scorer.ts";
 import { PlanAmendmentService } from "../plan/plan_amendment_service.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
+  DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
   EXECUTION_REPORT_FILENAME,
   GIT_CMD_WORKTREE,
+  PLAN_AMENDMENT_EVENT_EXPIRED,
 } from "../../shared/constants.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
@@ -554,6 +556,9 @@ export class ExecutionLoop {
    * Find the next available plan file to execute
    */
   private async findNextPlan(): Promise<string | null> {
+    // 1. Check for expired amendments first
+    await this.checkExpiredAmendments();
+
     try {
       const entries = await Array.fromAsync(Deno.readDir(this.plansDir));
       const planFiles = entries
@@ -1049,10 +1054,18 @@ export class ExecutionLoop {
     // Update plan status to AMENDMENT_PENDING
     try {
       const content = await Deno.readTextFile(planPath);
-      const updatedContent = content.replace(
+      let updatedContent = content.replace(
         /status: "?(active|approved|review)"?/,
         `status: ${PlanStatus.AMENDMENT_PENDING}`,
       );
+      // Also inject amendment_id and timestamp for CLI discovery and expiry checks
+      if (!updatedContent.includes("amendment_id:")) {
+        const now = new Date().toISOString();
+        updatedContent = updatedContent.replace(
+          /trace_id: (.*)/,
+          `trace_id: $1\namendment_id: "${error.amendmentId}"\namendment_proposed_at: "${now}"`,
+        );
+      }
       await Deno.writeTextFile(planPath, updatedContent);
     } catch (e) {
       console.error("Failed to update plan status for amendment:", e);
@@ -1062,6 +1075,52 @@ export class ExecutionLoop {
       request_id: requestId,
       amendment_id: error.amendmentId,
     });
+  }
+
+  /**
+   * Scan for expired amendments and abort their plans
+   */
+  private async checkExpiredAmendments(): Promise<void> {
+    try {
+      const entries = await Array.fromAsync(Deno.readDir(this.plansDir));
+      const planFiles = entries
+        .filter((entry) => entry.isFile && entry.name.endsWith(".md"))
+        .map((entry) => join(this.plansDir, entry.name));
+
+      const expiryMs = this.config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS;
+      const now = Date.now();
+
+      for (const planPath of planFiles) {
+        try {
+          const frontmatter = await this.parsePlan(planPath);
+
+          if (frontmatter.status === PlanStatus.AMENDMENT_PENDING) {
+            const proposedAtStr = frontmatter.amendment_proposed_at;
+            if (proposedAtStr) {
+              const proposedAt = new Date(proposedAtStr).getTime();
+              if (now - proposedAt > expiryMs) {
+                console.log(`[ExecutionLoop] Amendment for ${frontmatter.request_id} expired. Aborting plan.`);
+                await this.handleFailure(
+                  planPath,
+                  frontmatter.trace_id!,
+                  frontmatter.request_id!,
+                  "Plan amendment request expired (timeout).",
+                );
+                // Emit expiry event
+                this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, frontmatter.trace_id!, {
+                  request_id: frontmatter.request_id,
+                  amendment_id: frontmatter.amendment_id ?? null,
+                });
+              }
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check for expired amendments:", error);
+    }
   }
 
   /**

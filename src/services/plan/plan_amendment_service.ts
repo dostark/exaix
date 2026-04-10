@@ -19,32 +19,8 @@ import { AgentExecutor } from "../agent/agent_executor.ts";
 import { ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
+import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
-
-/**
- * Interface for the Plan Amendment Service
- */
-export interface IPlanAmendmentService {
-  /**
-   * Evaluates if an amendment should be proposed based on a trigger
-   */
-  shouldAmend(trigger: IPlanAmendmentTrigger): Promise<boolean>;
-
-  /**
-   * Generates a structural patch (amendment proposal) against remaining steps
-   */
-  proposeAmendment(input: {
-    planId: string;
-    remainingSteps: IPlanStep[];
-    trigger: IPlanAmendmentTrigger;
-    sharedContext?: JSONObject;
-  }): Promise<IPlanAmendmentPatch>;
-
-  /**
-   * Applies an approved amendment patch to the target plan
-   */
-  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): string;
-}
 
 /**
  * Interface for adapters that request human-in-loop decisions on amendments

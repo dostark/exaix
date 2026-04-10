@@ -18,11 +18,15 @@ import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";
 import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import {
+  AMENDMENT_ARTIFACTS_DIR,
+  PLAN_AMENDMENT_EVENT_APPROVED,
+  PLAN_AMENDMENT_EVENT_REJECTED,
   PLAN_REVIEW_COMMENT_PREFIX,
   PLAN_REVIEW_COMMENTS_HEADER,
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
 } from "../../shared/constants.ts";
+import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
 
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
 
@@ -641,5 +645,138 @@ export class PlanCommands extends BaseCommand {
     const now = new Date().toISOString();
 
     return { actor, now };
+  }
+
+  /**
+   * List all pending amendments
+   */
+  async listAmendments(): Promise<IPlanMetadata[]> {
+    return await this.list(PlanStatus.AMENDMENT_PENDING);
+  }
+
+  /**
+   * Get amendment details for a plan
+   */
+  async getAmendment(planId: string): Promise<IPlanAmendmentPatch> {
+    const { metadata } = await this.show(planId);
+    if (!metadata.trace_id) {
+      throw new Error(`Plan ${planId} has no trace_id; cannot find amendment artifact.`);
+    }
+
+    // Load plan file content to find amendment_id in frontmatter
+    const searchPaths = [
+      join(this.workspaceActiveDir, `${planId}.md`),
+      join(this.workspacePlansDir, `${planId}.md`),
+    ];
+
+    let planFile: { frontmatter: PlanFrontmatter } | null = null;
+    for (const p of searchPaths) {
+      if (await exists(p)) {
+        planFile = await this.loadPlan(p);
+        break;
+      }
+    }
+
+    if (!planFile) {
+      throw new Error(`Plan ${planId} not found in Workspace/Active or Workspace/Plans`);
+    }
+
+    const amendmentId = planFile.frontmatter.amendment_id;
+    if (!amendmentId) {
+      throw new Error(`Plan ${planId} has no amendment_id in frontmatter.`);
+    }
+
+    const config = this.context.config.getAll();
+    const executionRoot = config.paths.memoryExecution.includes("/")
+      ? config.paths.memoryExecution
+      : join(config.paths.memory, config.paths.memoryExecution);
+
+    const artifactPath = join(
+      config.system.root,
+      executionRoot,
+      metadata.trace_id,
+      AMENDMENT_ARTIFACTS_DIR,
+      `${amendmentId}.json`,
+    );
+
+    if (!(await exists(artifactPath))) {
+      throw new Error(`Amendment artifact not found: ${artifactPath}`);
+    }
+
+    const content = await Deno.readTextFile(artifactPath);
+    const patch = JSON.parse(content);
+    return ZPlanAmendmentPatch.parse(patch);
+  }
+
+  /**
+   * Approve an amendment and resume execution
+   */
+  async approveAmendment(planId: string): Promise<void> {
+    try {
+      const patch = await this.getAmendment(planId);
+      const planPath = join(this.workspaceActiveDir, `${planId}.md`);
+      const { content, frontmatter } = await this.loadPlan(planPath);
+
+      if (!this.context.amendments) {
+        throw new Error("Amendment service not available in context.");
+      }
+
+      // Apply patch via service (updates steps and status in markdown)
+      let updatedContent = this.context.amendments.applyApprovedAmendment(content, patch);
+
+      // Final polish: update reviewer metadata and clear amendment_id
+      const { actor, now } = await this.getUserContext();
+
+      // Clear amendment_id and update approval info using regex to preserve other formatting
+      updatedContent = updatedContent.replace(/^amendment_id: .*\n/m, "");
+      updatedContent = updatedContent.replace(/^approved_by: .*\n/m, `approved_by: ${actor}\n`);
+      updatedContent = updatedContent.replace(/^approved_at: .*\n/m, `approved_at: ${now}\n`);
+
+      if (!updatedContent.includes("approved_by:")) {
+        updatedContent = updatedContent.replace(/---\n/, `---\napproved_by: ${actor}\napproved_at: ${now}\n`);
+      }
+
+      await Deno.writeTextFile(planPath, updatedContent);
+
+      // Log activity
+      await this.display.info(PLAN_AMENDMENT_EVENT_APPROVED, planId, {
+        amendmentId: patch.amendmentId,
+        approved_at: now,
+        approved_by: actor,
+        trace_id: frontmatter.trace_id,
+      });
+
+      console.log(`[PlanCommands] Amendment ${patch.amendmentId} approved and applied to ${planId}`);
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "PlanCommands.approveAmendment",
+        args: { planId },
+        error,
+      });
+    }
+  }
+
+  /**
+   * Reject an amendment and abort execution
+   */
+  async rejectAmendment(planId: string, reason: string): Promise<void> {
+    try {
+      // Rejection of amendment usually means aborting the plan entirely or reverting to previous state.
+      // In Exaix, we move the plan to Rejected.
+      await this.reject(planId, `Amendment Rejected: ${reason}`);
+
+      const { actor, now } = await this.getUserContext();
+      await this.display.info(PLAN_AMENDMENT_EVENT_REJECTED, planId, {
+        rejected_at: now,
+        rejected_by: actor,
+        reason,
+      });
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "PlanCommands.rejectAmendment",
+        args: { planId, reason },
+        error,
+      });
+    }
   }
 }

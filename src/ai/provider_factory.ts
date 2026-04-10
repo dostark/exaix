@@ -450,9 +450,10 @@ export class ProviderFactory {
  * Initialize default provider factories in registry with metadata (lazy initialization)
  */
 export function initializeRegistry(): void {
-  // Only initialize if not already done
-  if (ProviderRegistry.getSupportedProviders().length === 0) {
-    // Mock provider - for testing and development
+  const supported = ProviderRegistry.getSupportedProviders();
+
+  // Mock provider - for testing and development
+  if (!supported.includes(DEFAULTS.PROVIDER_MOCK)) {
     const mockMetadata: IProviderMetadata = {
       name: DEFAULTS.PROVIDER_MOCK,
       description: DEFAULTS.PROVIDER_MOCK_DESCRIPTION,
@@ -462,8 +463,10 @@ export function initializeRegistry(): void {
       strengths: DEFAULTS.PROVIDER_MOCK_STRENGTHS,
     };
     ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_MOCK, new MockProviderFactory(), mockMetadata);
+  }
 
-    // Ollama provider - local open-source models
+  // Ollama provider - local open-source models
+  if (!supported.includes(DEFAULTS.PROVIDER_OLLAMA)) {
     const ollamaMetadata: IProviderMetadata = {
       name: DEFAULTS.PROVIDER_OLLAMA,
       description: DEFAULTS.PROVIDER_OLLAMA_DESCRIPTION,
@@ -473,8 +476,10 @@ export function initializeRegistry(): void {
       strengths: DEFAULTS.PROVIDER_OLLAMA_STRENGTHS,
     };
     ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_OLLAMA, new OllamaProviderFactory(), ollamaMetadata);
+  }
 
-    // Anthropic provider - Claude models
+  // Anthropic provider - Claude models
+  if (!supported.includes(DEFAULTS.PROVIDER_ANTHROPIC)) {
     const anthropicMetadata: IProviderMetadata = {
       name: DEFAULTS.PROVIDER_ANTHROPIC,
       description: DEFAULTS.PROVIDER_ANTHROPIC_DESCRIPTION,
@@ -488,8 +493,10 @@ export function initializeRegistry(): void {
       new AnthropicProviderFactory(),
       anthropicMetadata,
     );
+  }
 
-    // OpenAI provider - GPT models
+  // OpenAI provider - GPT models
+  if (!supported.includes(DEFAULTS.PROVIDER_OPENAI)) {
     const openaiMetadata: IProviderMetadata = {
       name: DEFAULTS.PROVIDER_OPENAI,
       description: DEFAULTS.PROVIDER_OPENAI_DESCRIPTION,
@@ -503,8 +510,10 @@ export function initializeRegistry(): void {
       new OpenAIProviderFactory(),
       openaiMetadata,
     );
+  }
 
-    // Google provider - Gemini models
+  // Google provider - Gemini models
+  if (!supported.includes(DEFAULTS.PROVIDER_GOOGLE)) {
     const googleMetadata: IProviderMetadata = {
       name: DEFAULTS.PROVIDER_GOOGLE,
       description: DEFAULTS.PROVIDER_GOOGLE_DESCRIPTION,

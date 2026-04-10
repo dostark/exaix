@@ -190,3 +190,109 @@ export async function handlePlanRevise(
     Deno.exit(1);
   }
 }
+
+/**
+ * Handle plan amendment list action
+ */
+export async function handlePlanAmendmentList(
+  context: IPlanActionContext,
+): Promise<void> {
+  const { planCommands, display } = context;
+
+  try {
+    const plans = await planCommands.listAmendments();
+    if (plans.length === 0) {
+      display.info("plan.amendment.list", "amendments", { count: 0, message: "No pending amendments found" });
+      return;
+    }
+    display.info("plan.amendment.list", "amendments", { count: plans.length });
+    for (const plan of plans) {
+      display.info(`⚠️ amendment_pending: ${plan.id}`, plan.id, {
+        trace: plan.trace_id ? `${plan.trace_id.substring(0, 8)}...` : undefined,
+      });
+    }
+  } catch (error) {
+    display.error("cli.error", "plan amendment list", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
+  }
+}
+
+/**
+ * Handle plan amendment show action
+ */
+export async function handlePlanAmendmentShow(
+  context: IPlanActionContext,
+  id: string,
+): Promise<void> {
+  const { planCommands, display } = context;
+
+  try {
+    const patch = await planCommands.getAmendment(id);
+    display.info("plan.amendment.show", id, {
+      amendment_id: patch.amendmentId,
+      summary: patch.summary,
+      affected_steps: patch.affectedRemainingStepIds.length,
+      created_at: patch.createdAt,
+    });
+
+    if (patch.adds.length > 0) {
+      display.info("Adds", "", {});
+      patch.adds.forEach((a) => display.info(`+ Step ${a.number}`, a.title, { content: a.content }));
+    }
+    if (patch.updates.length > 0) {
+      display.info("Updates", "", {});
+      patch.updates.forEach((u) => display.info(`~ Step ${u.number}`, u.title, { content: u.content }));
+    }
+    if (patch.removes.length > 0) {
+      display.info("Removes", "", { steps: patch.removes.join(", ") });
+    }
+  } catch (error) {
+    display.error("cli.error", "plan amendment show", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
+  }
+}
+
+/**
+ * Handle plan amendment approve action
+ */
+export async function handlePlanAmendmentApprove(
+  context: IPlanActionContext,
+  id: string,
+): Promise<void> {
+  const { planCommands, display } = context;
+
+  try {
+    await planCommands.approveAmendment(id);
+    display.info("plan.amendment.approved", id, { message: "Amendment applied. Plan status updated to 'approved'." });
+  } catch (error) {
+    display.error("cli.error", "plan amendment approve", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
+  }
+}
+
+/**
+ * Handle plan amendment reject action
+ */
+export async function handlePlanAmendmentReject(
+  context: IPlanActionContext,
+  id: string,
+  reason: string,
+): Promise<void> {
+  const { planCommands, display } = context;
+
+  try {
+    await planCommands.rejectAmendment(id, reason);
+    display.info("plan.amendment.rejected", id, { message: "Amendment rejected and execution aborted." });
+  } catch (error) {
+    display.error("cli.error", "plan amendment reject", {
+      message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+    });
+    Deno.exit(1);
+  }
+}

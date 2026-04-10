@@ -23,3 +23,4 @@ export * from "./context_card_adapter.ts";
 export * from "./skills_adapter.ts";
 export * from "./memory_extractor_adapter.ts";
 export * from "./memory_embedding_adapter.ts";
+export * from "./plan_amendment_adapter.ts";

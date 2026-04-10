@@ -32,6 +32,7 @@ import { ContextCardGenerator } from "../services/context/context_card_generator
 import { PortalService } from "../services/portal/portal.ts";
 import { RequestService } from "../services/request/request.ts";
 import { PlanService } from "../services/plan/plan.ts";
+import { PlanAmendmentService } from "../services/plan/plan_amendment_service.ts";
 import { PortalKnowledgeService } from "../services/portal_knowledge/portal_knowledge_service.ts";
 
 // Adapters
@@ -45,6 +46,7 @@ import {
   MemoryEmbeddingAdapter,
   MemoryExtractorAdapter,
   PlanAdapter,
+  PlanAmendmentAdapter,
   PortalAdapter,
   RequestAdapter,
   SkillsAdapter,
@@ -197,10 +199,12 @@ export async function initializeServices(
     });
 
     const plans = new PlanService(cfg, configAdapter, dbLocal, displayAdapter, userIdentityGetter);
+    const amendments = new PlanAmendmentService(cfg, providerLocal);
 
     context.requests = new RequestAdapter(requests);
     context.portals = new PortalAdapter(portals);
     context.plans = new PlanAdapter(plans);
+    context.amendments = new PlanAmendmentAdapter(amendments);
     context.memoryBank = new MemoryBankAdapter(memoryBank);
     context.extractor = new MemoryExtractorAdapter(extractor);
     context.embeddings = new MemoryEmbeddingAdapter(embedding);

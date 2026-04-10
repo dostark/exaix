@@ -117,6 +117,13 @@ export const ChangesSchema = z.object({
   files_deleted: z.array(z.string()).describe("Files deleted during execution"),
 });
 
+export const AmendmentSummarySchema = z.object({
+  id: z.string().uuid().describe("Unique amendment ID"),
+  trigger: z.string().describe("Source/reason for the amendment"),
+  summary: z.string().describe("Human-readable summary of changes"),
+  decision: z.string().describe("Whether it was approved, rejected, or expired"),
+});
+
 export const ExecutionMemorySchema = z.object({
   trace_id: z.string().uuid().describe("Unique execution trace ID"),
   request_id: z.string().describe("Request ID that triggered this execution"),
@@ -135,6 +142,7 @@ export const ExecutionMemorySchema = z.object({
 
   lessons_learned: z.array(z.string()).optional().describe("Insights and learnings from this execution"),
   error_message: z.string().optional().describe("Error message if execution failed"),
+  amendments: z.array(AmendmentSummarySchema).optional().describe("Amendments proposed during execution"),
 });
 
 export type IChanges = z.infer<typeof ChangesSchema>;

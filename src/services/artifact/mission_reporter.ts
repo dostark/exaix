@@ -13,12 +13,19 @@
  */
 import { join } from "@std/path";
 import type { Config } from "../../shared/schemas/config.ts";
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH, DEFAULT_PORTALS_PATH } from "../../shared/constants.ts";
+import {
+  AMENDMENT_ARTIFACTS_DIR,
+  DEFAULT_EXECUTION_MEMORY_PATH,
+  DEFAULT_MEMORY_PATH,
+  DEFAULT_PORTALS_PATH,
+} from "../../shared/constants.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
 import { ActivityActor, ExecutionStatus } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
+import { ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
+import { exists } from "@std/fs";
 
 // ============================================================================
 // Types and Interfaces
@@ -54,6 +61,14 @@ export interface ITraceData {
 
   /** Summary of what was accomplished */
   summary: string;
+
+  /** Optional list of plan amendments during execution */
+  amendments?: Array<{
+    id: string;
+    trigger: string;
+    summary: string;
+    decision: string;
+  }>;
 }
 
 /**
@@ -138,6 +153,9 @@ export class MissionReporter {
       // Extract lessons learned from reasoning and summary
       const lessonsLearned = this.extractLessonsLearned(traceData.reasoning, traceData.summary);
 
+      // Discover amendments if not explicitly provided
+      const amendments = traceData.amendments || await this.discoverAmendments(traceData.traceId);
+
       // Create execution memory record
       const executionMemory: IExecutionMemory = {
         trace_id: traceData.traceId,
@@ -157,6 +175,7 @@ export class MissionReporter {
         },
         lessons_learned: lessonsLearned,
         error_message: traceData.status === ExecutionStatus.FAILED ? "Execution failed" : undefined,
+        amendments: amendments.length > 0 ? amendments : undefined,
       };
 
       // Create execution record using Memory Bank service
@@ -368,5 +387,52 @@ export class MissionReporter {
     } catch {
       return "";
     }
+  }
+
+  /**
+   * Discover and parse amendment artifacts for a trace
+   */
+  private async discoverAmendments(traceId: string): Promise<NonNullable<ITraceData["amendments"]>> {
+    const amendments: NonNullable<ITraceData["amendments"]> = [];
+
+    try {
+      const executionRoot = this.config.paths.memoryExecution.includes("/")
+        ? this.config.paths.memoryExecution
+        : join(this.config.paths.memory, this.config.paths.memoryExecution);
+
+      const amendmentsDir = join(
+        this.config.system.root,
+        executionRoot,
+        traceId,
+        AMENDMENT_ARTIFACTS_DIR,
+      );
+
+      if (!(await exists(amendmentsDir))) {
+        return amendments;
+      }
+
+      for await (const entry of Deno.readDir(amendmentsDir)) {
+        if (entry.isFile && entry.name.endsWith(".json")) {
+          try {
+            const content = await Deno.readTextFile(join(amendmentsDir, entry.name));
+            const patch = ZPlanAmendmentPatch.parse(JSON.parse(content));
+            // Note: In v1 we don't track the decision in the artifact itself (it's in the journal)
+            // But for reporting, we can at least show the proposal was made.
+            amendments.push({
+              id: patch.amendmentId,
+              trigger: patch.summary.substring(0, 50), // Fallback summary part
+              summary: patch.summary,
+              decision: "recorded", // TODO: Query journal for actual decision
+            });
+          } catch (e) {
+            console.warn(`Failed to parse amendment artifact ${entry.name}:`, e);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to discover amendments:", error);
+    }
+
+    return amendments;
   }
 }

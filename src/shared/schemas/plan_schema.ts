@@ -49,6 +49,9 @@ export const PlanFrontmatterSchema = z.object({
   skills: z.string().optional(),
   request_analysis: RequestAnalysisSchema.optional(),
   subject: z.string().optional(),
+  // Amendment fields (Phase 66)
+  amendment_id: z.string().uuid().optional(),
+  amendment_proposed_at: z.string().optional(),
 }).passthrough();
 
 export type PlanFrontmatter = z.infer<typeof PlanFrontmatterSchema>;
