@@ -850,7 +850,7 @@ Create a developer-facing reference covering:
 - [x] `ARCHITECTURE.md` component table contains all three new rows.
 - [x] `ARCHITECTURE.md` has a `## Flow Error Recovery` subsection.
 - [x] `.copilot/cross-reference.md` has the new task-row and four topic entries.
-- [x] `docs/dev/flow_error_recovery.md` exists and passes `deno task check:docs`.
+- [x] `docs/dev/Exaix_Flows.md` documents error recovery and passes `deno task check:docs`.
 - [x] `deno task docs-agent-validate` exits 0.
 
-**✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/dev/flow_error_recovery.md`; documentation validation passed via `deno task check:docs` and `deno task docs-agent-validate`, and architecture grounding remained clean via `deno task check:arch`.
+**✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/dev/Exaix_Flows.md`; documentation validation passed via `deno task check:docs` and `deno task docs-agent-validate`, and architecture grounding remained clean via `deno task check:arch`.

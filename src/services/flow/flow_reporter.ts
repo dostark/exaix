@@ -117,7 +117,12 @@ export class FlowReporter {
     // 4. Step Outputs
     sections.push(this.buildStepOutputs(flowResult));
 
-    // 5. Dependency Graph
+    // 5. Shared Namespace
+    if (flowResult.namespaceArtifactPath) {
+      sections.push(this.buildSharedNamespace(flowResult.namespaceArtifactPath));
+    }
+
+    // 6. Dependency Graph
     sections.push(this.buildDependencyGraph(flow));
 
     return await sections.join("\n");
@@ -165,6 +170,10 @@ export class FlowReporter {
 
     if (requestId) {
       frontmatter.request_id = requestId;
+    }
+
+    if (flowResult.namespaceArtifactPath) {
+      frontmatter.namespace_artifact_path = flowResult.namespaceArtifactPath;
     }
 
     // Convert to YAML format
@@ -244,6 +253,13 @@ export class FlowReporter {
     }
 
     return outputs;
+  }
+
+  /**
+   * Build shared namespace section
+   */
+  private buildSharedNamespace(namespaceArtifactPath: string): string {
+    return `## Shared Namespace\n\n${namespaceArtifactPath}\n\n`;
   }
 
   /**

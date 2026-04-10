@@ -1953,6 +1953,8 @@ graph LR
 | **Agent Runner**              | Execute agent logic with LLM                                                                                                                      | `src/services/agent_runner.ts:AgentRunner`                            | 🟢 All   |
 | **Flow Runner**               | Execute multi-agent flows                                                                                                                         | `src/flows/flow_runner.ts:FlowRunner`                                 | 🟢 All   |
 | **Flow Checkpoint Service**   | Persist and resume completed flow steps                                                                                                           | `src/services/flow/flow_checkpoint_service.ts:FlowCheckpointService`  | 🟢 All   |
+| **Flow Namespace Service**    | Shared blackboard persistence and key-based flow coordination                                                                                     | `src/services/flow/flow_namespace_service.ts:FlowNamespaceService`    | 🟢 All   |
+| **Flow Reporter**             | Markdown execution report generation per flow run                                                                                                 | `src/services/flow/flow_reporter.ts:FlowReporter`                     | 🟢 All   |
 | **Flow Step On-Error**        | Per-step RETRY/FALLBACK/COMPENSATE/ABORT policy                                                                                                   | `src/shared/schemas/flow.ts:ZFlowStepOnError`                         | 🟢 All   |
 | **Compensating Transactions** | LIFO rollback tool-calls on step failure                                                                                                          | `src/flows/flow_runner.ts:FlowRunner.executeCompensatingTransactions` | 🟢 All   |
 | **Event Logger**              | Write to Activity Journal                                                                                                                         | `src/services/event_logger.ts:EventLogger`                            | 🟢 All   |
@@ -2092,6 +2094,21 @@ jitterFactor = 0.5
 
 See User Guide Section 6 for detailed configuration reference.
 
+## Flow Namespace & Shared Blackboard
+
+Phase 64 adds a flow-scoped shared blackboard so steps can exchange structured findings without threading every value through transforms. `FlowRunner` delegates persistence to `FlowNamespaceService`, and the namespace artifact lives alongside other execution state under `Memory/Execution/{traceId}/`.
+
+At the architecture level, the important boundary is:
+
+- `FlowRunner` owns wave scheduling and when namespace reads and writes occur.
+- `FlowNamespaceService` owns persistence and artifact serialization.
+- Flow definitions opt into namespace coordination explicitly rather than enabling implicit global state.
+
+For configuration shape, runtime semantics, storage details, and YAML examples, see:
+
+- `docs/dev/Exaix_Flows.md#shared-namespace-and-blackboard-coordination`
+- `docs/dev/Exaix_Flows.md#flow-reporting`
+
 ---
 
 ## Flow Orchestration Architecture
@@ -2100,34 +2117,20 @@ Phase 15 introduced advanced flow orchestration capabilities for conditional log
 
 ## Flow Error Recovery
 
-Phase 63 extends `FlowRunner` with runtime recovery controls so a multi-step flow can preserve completed work, retry transient failures, and clean up partial side effects without resuming from scratch.
+Phase 63 extends `FlowRunner` with recovery controls so a multi-step flow can preserve completed work, retry transient failures, or unwind prior side effects instead of always restarting from scratch.
 
-### Recovery Actions
+At the architecture level, the important boundary is:
 
-- `retry`: reruns the failing step through the same execution harness, honoring capped retries and exponential backoff.
-- `fallback`: routes execution to another step in the same flow and maps the fallback result back onto the primary logical step.
-- `compensate`: executes rollback tool calls in last-in, first-out order against the isolated worktree or portal context.
-- `abort`: terminates the flow with a typed `FlowAbortError` that retains the originating step id and failure payload.
+- `FlowRunner` selects and applies recovery strategy during execution.
+- `FlowCheckpointService` owns resume snapshots and stale-checkpoint invalidation.
+- Recovery metadata is runtime state on step results rather than part of the persisted flow definition.
 
-### Checkpoint Lifecycle
+For supported `onError` actions, checkpoint lifecycle, compensation ordering, and recovery metadata details, see:
 
-- Completed successful steps are snapshotted to `Memory/Execution/{traceId}/checkpoint.json` by `FlowCheckpointService`.
-- `FlowRunner` reloads checkpoints only when the current flow content hash and `FLOW_CHECKPOINT_SCHEMA_VERSION` still match.
-- Stale checkpoints are logged with `flow.checkpoint.stale`, deleted, and ignored so the flow reruns from step one.
-- Successful flow completion clears the checkpoint and emits `flow.checkpoint.cleared`.
-
-### Compensation Semantics
-
-- Compensation inspects previously successful step results and replays each step's declared rollback tool calls in reverse completion order.
-- Same-wave successful steps break ties by reverse declaration order, preserving deterministic LIFO behavior under parallel execution.
-- Portal-aware rollback arguments are injected before tool execution, ensuring cleanup runs inside the same isolated workspace context as the original step.
-
-### Recovery Metadata
-
-- `IStepResult.wasRetried` and `IStepResult.retryCount` indicate a successful retry recovery path.
-- `IStepResult.fallbackUsed` indicates the primary logical step succeeded via a fallback step.
-- `IStepResult.compensationRan` indicates a previously successful step later participated in compensation.
-- These fields are runtime-only and intentionally excluded from checkpoint snapshots.
+- `docs/dev/Exaix_Flows.md#error-recovery`
+- `docs/dev/Exaix_Flows.md#checkpointing`
+- `docs/dev/Exaix_Flows.md#compensation-ordering-and-context-injection`
+- `docs/dev/Exaix_Flows.md#recovery-metadata-on-istepresult`
 
 ### Flow Evaluation Components
 

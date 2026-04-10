@@ -329,16 +329,6 @@ Validated with:
 
 ### Step 64.3: FlowRunner Integration
 
-Implemented 2026-04-09.
-Validated with:
-
-- `deno test --allow-all tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
-- `deno fmt src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
-- `deno check src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
-- `deno lint src/flows/flow_runner.ts tests/helpers/flow_namespace_test_helper.ts tests/flows/flow_runner_namespace_integration_test.ts tests/flows/flow_runner_namespace_no_regression_test.ts tests/integration/64_flow_namespace_end_to_end_test.ts tests/integration/64_flow_namespace_checkpoint_resume_test.ts`
-- `deno task check:style`
-- `deno task check:arch`
-
 #### Actions
 
 1. **Constructor** — add `private namespaceService?: IFlowNamespaceService` field. After the `checkpointService` line in the constructor body:
@@ -428,6 +418,16 @@ Validated with:
 
 ### Step 64.4: Reporting Surface
 
+Implemented 2026-04-10.
+Validated with:
+
+- `deno test --allow-all tests/services/flow/flow_reporter_test.ts`
+- `deno check src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
+- `deno lint src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
+- `deno fmt src/services/flow/flow_reporter.ts tests/services/flow/flow_reporter_test.ts`
+- `deno task check:style`
+- `deno task check:arch`
+
 #### Actions
 
 - Modify `src/services/flow/flow_reporter.ts:FlowReporter.buildFrontmatter()` to include
@@ -448,16 +448,25 @@ Validated with:
 
 #### Planned Tests
 
-- `tests/unit/services/flow_reporter_namespace_summary_test.ts` — report includes `namespace_artifact_path` in frontmatter when set; section omitted when `namespaceArtifactPath` is undefined
+- ✅ `tests/services/flow/flow_reporter_test.ts` — report includes `namespace_artifact_path` in frontmatter and a `## Shared Namespace` section when set; section omitted when `namespaceArtifactPath` is undefined
 
 #### Success Criteria
 
-- Completed flow reports include `namespace_artifact_path` in YAML frontmatter when namespace is enabled.
-- Report includes `## Shared Namespace` section with the namespace file path; key count is omitted
-  (no file I/O in the reporter).
-- Reports for non-namespace flows are byte-for-byte unchanged.
+- [x] Completed flow reports include `namespace_artifact_path` in YAML frontmatter when namespace is enabled.
+- [x] Report includes `## Shared Namespace` section with the namespace file path; key count is omitted
+      (no file I/O in the reporter).
+- [x] Reports for non-namespace flows are byte-for-byte unchanged.
+
+**✅ IMPLEMENTED** — `src/services/flow/flow_reporter.ts`, `tests/services/flow/flow_reporter_test.ts`; FlowReporter now emits `namespace_artifact_path` in frontmatter and appends a path-only `## Shared Namespace` section when namespace reporting is available, while leaving non-namespace reports unchanged.
 
 ### Step 64.5: Documentation Updates
+
+Implemented 2026-04-10.
+Validated with:
+
+- `deno task docs-agent-validate`
+- `deno task check:docs`
+- `deno task check:arch`
 
 #### Actions
 
@@ -475,26 +484,28 @@ Also add a `## Flow Namespace & Shared Blackboard` subsection under the Agent Or
   - Task row: `Implement / debug flow namespace / blackboard` → primary `planning/phase-64-flow-namespace-blackboard.md`, secondary `source/exaix.md`
   - Topics: `namespace`, `blackboard`, `shared-state`, `flow-coordination` → same doc
 
-- **`docs/dev/`** — create `docs/dev/flow_namespace.md` documenting the feature for developers: YAML syntax for enabling the namespace, read/write binding fields, storage location, size limit, and `sharedNamespace` context injection.
+- **`docs/dev/`** — update the consolidated `docs/dev/Exaix_Flows.md` guide with namespace coverage: YAML syntax for enabling the namespace, read/write binding fields, storage location, size limit, and `sharedNamespace` context injection.
 
 #### Architecture Notes
 
 - `ARCHITECTURE.md` already documents flow components by component name and file path; the new rows follow the same format.
-- The `docs/dev/flow_namespace.md` file does not need a mirror in `tests/`; it is documentation only.
+- The consolidated `docs/dev/Exaix_Flows.md` file does not need a mirror in `tests/`; it is documentation only.
 - Run `deno task docs-agent-validate` after updating `cross-reference.md` to verify internal link integrity.
 
 #### Planned Tests
 
 - None — documentation steps do not require code tests.
-- `deno task docs-agent-validate` and `deno task check:docs` must pass.
+- ✅ `deno task docs-agent-validate` and `deno task check:docs` pass.
 
 #### Success Criteria
 
-- `ARCHITECTURE.md` component table includes `Flow Namespace Service` with correct path and role.
-- `ARCHITECTURE.md` includes a `## Flow Namespace & Shared Blackboard` subsection in the Agent Orchestration Architecture section.
-- `.copilot/cross-reference.md` routes `namespace`, `blackboard`, and `flow-coordination` topics to `phase-64-flow-namespace-blackboard.md`.
-- `docs/dev/flow_namespace.md` exists and documents YAML syntax, storage path, and `sharedNamespace` injection.
-- `deno task docs-agent-validate` passes with no broken links.
+- [x] `ARCHITECTURE.md` component table includes `Flow Namespace Service` with correct path and role.
+- [x] `ARCHITECTURE.md` includes a `## Flow Namespace & Shared Blackboard` subsection in the Agent Orchestration Architecture section.
+- [x] `.copilot/cross-reference.md` routes `namespace`, `blackboard`, and `flow-coordination` topics to `phase-64-flow-namespace-blackboard.md`.
+- [x] `docs/dev/Exaix_Flows.md` documents YAML syntax, storage path, and `sharedNamespace` injection.
+- [x] `deno task docs-agent-validate` passes with no broken links.
+
+**✅ IMPLEMENTED** — `ARCHITECTURE.md`, `.copilot/cross-reference.md`, `docs/dev/Exaix_Flows.md`; Phase 64 namespace documentation now covers the component map, blackboard runtime semantics, agent-doc discovery routes, and the consolidated developer-facing flow reference for YAML bindings, storage, and `sharedNamespace` injection.
 
 | Risk                                       | Impact | Likelihood | Mitigation Strategy                                                                                                                                |
 | ------------------------------------------ | ------ | ---------: | -------------------------------------------------------------------------------------------------------------------------------------------------- |

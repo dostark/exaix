@@ -7,7 +7,7 @@
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts";
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow/flow_reporter.ts";
@@ -255,6 +255,144 @@ describe("FlowReporter", () => {
       assertStringIncludes(result.content, "steps_completed: 0");
       assertStringIncludes(result.content, "❌ Failed");
       assertStringIncludes(result.content, "Agent execution failed");
+    });
+
+    it("should include namespace artifact metadata when present", async () => {
+      const flow: IFlowInput = {
+        id: "namespace-flow",
+        name: "Namespace Flow",
+        description: "A flow with shared namespace output",
+        version: DEFAULT_FLOW_VERSION,
+        steps: [{
+          id: "step1",
+          name: "Step 1",
+          identity: "test-agent",
+          dependsOn: [],
+          input: {
+            source: FlowInputSource.REQUEST,
+            transform: "passthrough",
+          },
+          retry: {
+            maxAttempts: 1,
+            backoffMs: 1000,
+          },
+        }],
+        output: {
+          from: "step1",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism: 1,
+          failFast: true,
+        },
+      };
+
+      const stepResults = new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: true,
+            duration: 100,
+            startedAt: new Date("2025-01-01T10:00:00Z"),
+            completedAt: new Date("2025-01-01T10:00:00.100Z"),
+            result: {
+              thought: "Completed",
+              content: "Namespace-enabled output",
+              raw: "raw namespace output",
+            },
+          },
+        ],
+      ]);
+
+      const namespaceArtifactPath = join(
+        tempDir,
+        "Memory",
+        "Execution",
+        "trace-123",
+        "namespace.md",
+      );
+
+      const flowResult: IFlowResult = {
+        flowRunId: "run-namespace-123",
+        success: true,
+        stepResults,
+        output: "Namespace-enabled output",
+        duration: 100,
+        startedAt: new Date("2025-01-01T10:00:00Z"),
+        completedAt: new Date("2025-01-01T10:00:00.100Z"),
+        namespaceArtifactPath,
+      };
+
+      const result = await reporter.generate(flow as IFlow, flowResult);
+
+      assertStringIncludes(result.content, `namespace_artifact_path: "${namespaceArtifactPath}"`);
+      assertStringIncludes(result.content, "## Shared Namespace");
+      assertStringIncludes(result.content, namespaceArtifactPath);
+    });
+
+    it("should omit shared namespace section when namespace artifact is absent", async () => {
+      const flow: IFlowInput = {
+        id: "no-namespace-flow",
+        name: "No Namespace Flow",
+        description: "A flow without shared namespace output",
+        version: DEFAULT_FLOW_VERSION,
+        steps: [{
+          id: "step1",
+          name: "Step 1",
+          identity: "test-agent",
+          dependsOn: [],
+          input: {
+            source: FlowInputSource.REQUEST,
+            transform: "passthrough",
+          },
+          retry: {
+            maxAttempts: 1,
+            backoffMs: 1000,
+          },
+        }],
+        output: {
+          from: "step1",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism: 1,
+          failFast: true,
+        },
+      };
+
+      const stepResults = new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: true,
+            duration: 100,
+            startedAt: new Date("2025-01-01T10:00:00Z"),
+            completedAt: new Date("2025-01-01T10:00:00.100Z"),
+            result: {
+              thought: "Completed",
+              content: "Output without namespace",
+              raw: "raw output",
+            },
+          },
+        ],
+      ]);
+
+      const flowResult: IFlowResult = {
+        flowRunId: "run-no-namespace-123",
+        success: true,
+        stepResults,
+        output: "Output without namespace",
+        duration: 100,
+        startedAt: new Date("2025-01-01T10:00:00Z"),
+        completedAt: new Date("2025-01-01T10:00:00.100Z"),
+      };
+
+      const result = await reporter.generate(flow as IFlow, flowResult);
+
+      assert(!result.content.includes("namespace_artifact_path:"));
+      assert(!result.content.includes("## Shared Namespace"));
     });
 
     it("should generate correct filename format", async () => {
