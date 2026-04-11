@@ -452,9 +452,258 @@ export class MockLLMProvider implements IModelProvider {
    */
   private getDefaultPatterns(): PatternMatcher[] {
     return [
-      // Execution patterns (checked first) - these generate tool actions
+      // Specialist patterns (hit first)
       {
-        pattern: /executing a plan|autonomous coding agent|Step \d+/i,
+        pattern: /Plan Amendment specialist/i,
+        response: `{
+  "summary": "Adjust remaining steps due to detected environmental drift.",
+  "affectedRemainingStepIds": ["1", "2"],
+  "adds": [
+    { "number": 3, "title": "Verification", "content": "Verify the fix." }
+  ],
+  "updates": [
+    { "number": 1, "title": "Analyze Requirements", "content": "Review the request and identify key requirements (amended)." },
+    { "number": 2, "title": "Corrected Refactor", "content": "Perform the refactor with corrected paths." }
+  ],
+  "removes": []
+}`,
+      },
+      {
+        pattern: /SIMULATE_DRIFT_TRIGGER/i,
+        response: (_match, prompt) => {
+          // 1. Intent Analysis Phase
+          if (prompt.includes("request intent analyzer") || prompt.includes("intent analysis")) {
+            return `<thought>
+I see the drift instructions in the analysis phase.
+</thought>
+
+<content>
+{
+  "goals": [
+    {
+      "description": "Implementation with SIMULATE_DRIFT_TRIGGER",
+      "explicit": true,
+      "priority": 1
+    }
+  ],
+  "requirements": [],
+  "constraints": [],
+  "acceptanceCriteria": [],
+  "ambiguities": [],
+  "actionabilityScore": 100,
+  "complexity": "medium",
+  "taskType": "refactor",
+  "tags": ["drift"],
+  "referencedFiles": ["src/main.ts"]
+}
+</content>`;
+          }
+
+          // 2. Execution Phase
+          if (prompt.includes("## Execution Context (SYSTEM CONTROLLED)")) {
+            // If the plan has been amended, the new steps will be present in the prompt's plan body.
+            // In that case, we succeed confidently for all subsequent executions to prevent loops.
+            if (prompt.includes("Corrected Refactor") || prompt.includes("Verification")) {
+              return `<thought>
+Executing the amended step successfully.
+</thought>
+
+<content>
+{
+  "branch": "feat/drift-fix",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "description": "Executed the amended step with absolute certainty and high confidence. Everything is perfectly fine.",
+  "status": "completed",
+  "files_changed": ["src/main.ts"],
+  "tool_calls": 1,
+  "execution_time_ms": 100
+}
+</content>`;
+            }
+
+            return `<thought>
+I see some drift in the environment. I am not sure perhaps uncertain maybe. SIMULATE_DRIFT_TRIGGER
+</thought>
+
+<content>
+{
+  "branch": "feat/drift-fix",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "description": "I encountered some drift. I am not sure perhaps uncertain maybe. SIMULATE_DRIFT_TRIGGER",
+  "status": "completed",
+  "files_changed": [],
+  "tool_calls": 0,
+  "execution_time_ms": 100
+}
+</content>`;
+          }
+
+          // 3. Planning Phase (Fallback)
+          return `<thought>
+I see the drift instructions in the planning phase. I will pass them to the execution phase.
+</thought>
+
+<content>
+{
+  "subject": "Implementation Plan",
+  "description": "Based on the request, I will implement the required functionality with a structured approach. SIMULATE_DRIFT_TRIGGER",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Analyze Requirements",
+      "description": "Review the request and identify key requirements. SIMULATE_DRIFT_TRIGGER"
+    },
+    {
+      "step": 2,
+      "title": "Implement Code",
+      "description": "Write the necessary code changes. SIMULATE_DRIFT_TRIGGER",
+      "tools": ["write_file"]
+    }
+  ],
+  "estimatedDuration": "2-4 hours",
+  "risks": []
+}
+</content>`;
+        },
+      },
+
+      // Planning patterns (for plan generation requests)
+      {
+        pattern: /intent analyzer/i,
+        response: `<thought>
+I will analyze the request and provide a detailed architectural assessment.
+</thought>
+
+<content>
+{
+  "goals": [
+    {
+      "description": "Analyze the core architecture of the Exaix Scenario Framework",
+      "explicit": true,
+      "priority": 1
+    }
+  ],
+  "requirements": [],
+  "constraints": [],
+  "acceptanceCriteria": [],
+  "ambiguities": [],
+  "actionabilityScore": 100,
+  "complexity": "medium",
+  "taskType": "analysis",
+  "tags": ["smoke", "framework"],
+  "referencedFiles": [],
+  "metadata": {
+    "analyzedAt": "2026-03-20T18:00:00Z",
+    "durationMs": 100,
+    "mode": "llm",
+    "analyzerVersion": "1.0.0"
+  }
+}
+</content>`,
+      },
+      {
+        pattern: /implement|add|create/i,
+        response: (_match, prompt) => {
+          const includeDrift = /SIMULATE_DRIFT_TRIGGER/i.test(prompt);
+          const step1Content = includeDrift
+            ? "Review the request and identify key requirements. SIMULATE_DRIFT_TRIGGER"
+            : "Review the request and identify key requirements for the implementation.";
+
+          return `<thought>
+I need to analyze the request and create a plan for implementation.
+</thought>
+
+<content>
+{
+  "subject": "Implementation Plan",
+  "description": "Based on the request, I will implement the required functionality with a structured approach.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Analyze Requirements",
+      "description": "${step1Content}"
+    },
+    {
+      "step": 2,
+      "title": "Design Solution",
+      "description": "Create a technical design for the implementation, considering architecture and patterns."
+    },
+    {
+      "step": 3,
+      "title": "Implement Code",
+      "description": "Write the necessary code changes to implement the feature.",
+      "tools": ["write_file"]
+    },
+    {
+      "step": 4,
+      "title": "Write Tests",
+      "description": "Add unit tests to verify the implementation works correctly.",
+      "tools": ["write_file"],
+      "dependencies": [3]
+    },
+    {
+      "step": 5,
+      "title": "Review",
+      "description": "Self-review the changes for quality and ensure all requirements are met."
+    }
+  ],
+  "estimatedDuration": "2-4 hours"
+}
+</content>`;
+        },
+      },
+      {
+        pattern: /fix|bug|error|issue/i,
+        response: `<thought>
+I need to investigate and fix the reported issue.
+</thought>
+
+<content>
+{
+  "subject": "Bug Fix Plan",
+  "description": "I will investigate and fix the reported issue systematically.",
+  "steps": [
+    {
+      "step": 1,
+      "title": "Reproduce Issue",
+      "description": "Verify the bug exists and understand the exact conditions that trigger it."
+    },
+    {
+      "step": 2,
+      "title": "Root Cause Analysis",
+      "description": "Identify why the bug occurs by analyzing the relevant code paths.",
+      "tools": ["read_file"]
+    },
+    {
+      "step": 3,
+      "title": "Implement Fix",
+      "description": "Apply the necessary correction to resolve the issue.",
+      "tools": ["write_file"],
+      "dependencies": [2]
+    },
+    {
+      "step": 4,
+      "title": "Test Fix",
+      "description": "Verify the bug is resolved and the fix works as expected.",
+      "tools": ["write_file"],
+      "dependencies": [3]
+    },
+    {
+      "step": 5,
+      "title": "Regression Test",
+      "description": "Ensure no new issues are introduced by the fix.",
+      "dependencies": [4]
+    }
+  ],
+  "estimatedDuration": "1-2 hours",
+  "risks": ["Fix may have unintended side effects on related functionality"]
+}
+</content>`,
+      },
+
+      // Execution patterns (specific triggers)
+      {
+        pattern: /executing a plan|Performing step|Action required:|Step \d+ of \d+|Execution Context/i,
         response: (_match, prompt) => {
           // Check what kind of action is being requested
           const needsFileWrite = /write|create|add|implement|modify|update/i.test(prompt);
@@ -511,164 +760,7 @@ I will execute this step according to the plan.
         },
       },
 
-      // Planning patterns (for plan generation requests)
-      {
-        pattern: /intent analyzer/i,
-        response: `<thought>
-I will analyze the request and provide a detailed architectural assessment.
-</thought>
-
-<content>
-{
-  "goals": [
-    {
-      "description": "Analyze the core architecture of the Exaix Scenario Framework",
-      "explicit": true,
-      "priority": 1
-    }
-  ],
-  "requirements": [],
-  "constraints": [],
-  "acceptanceCriteria": [],
-  "ambiguities": [],
-  "actionabilityScore": 100,
-  "complexity": "medium",
-  "taskType": "analysis",
-  "tags": ["smoke", "framework"],
-  "referencedFiles": [],
-  "metadata": {
-    "analyzedAt": "2026-03-20T18:00:00Z",
-    "durationMs": 100,
-    "mode": "llm",
-    "analyzerVersion": "1.0.0"
-  }
-}
-</content>`,
-      },
-      {
-        pattern: /implement|add|create/i,
-        response: `<thought>
-I need to analyze the request and create a plan for implementation.
-</thought>
-
-<content>
-{
-  "subject": "Implementation Plan",
-  "description": "Based on the request, I will implement the required functionality with a structured approach.",
-  "steps": [
-    {
-      "step": 1,
-      "title": "Analyze Requirements",
-      "description": "Review the request and identify key requirements for the implementation."
-    },
-    {
-      "step": 2,
-      "title": "Design Solution",
-      "description": "Create a technical design for the implementation, considering architecture and patterns."
-    },
-    {
-      "step": 3,
-      "title": "Implement Code",
-      "description": "Write the necessary code changes to implement the feature.",
-      "tools": ["write_file"]
-    },
-    {
-      "step": 4,
-      "title": "Write Tests",
-      "description": "Add unit tests to verify the implementation works correctly.",
-      "tools": ["write_file"],
-      "dependencies": [3]
-    },
-    {
-      "step": 5,
-      "title": "Review",
-      "description": "Self-review the changes for quality and ensure all requirements are met."
-    }
-  ],
-  "estimatedDuration": "2-4 hours"
-}
-</content>`,
-      },
-      {
-        pattern: /fix|bug|error|issue/i,
-        response: `<thought>
-I need to investigate and fix the reported issue.
-</thought>
-
-<content>
-{
-  "subject": "Bug Fix Plan",
-  "description": "I will investigate and fix the reported issue systematically.",
-  "steps": [
-    {
-      "step": 1,
-      "title": "Reproduce Issue",
-      "description": "Verify the bug exists and understand the exact conditions that trigger it."
-    },
-    {
-      "step": 2,
-      "title": "Root Cause Analysis",
-      "description": "Identify why the bug occurs by analyzing the relevant code paths.",
-      "tools": ["read_file"]
-    },
-    {
-      "step": 3,
-      "title": "Implement Fix",
-      "description": "Apply the necessary correction to resolve the issue.",
-      "tools": ["write_file"],
-      "dependencies": [2]
-    },
-    {
-      "step": 4,
-      "title": "Test Fix",
-      "description": "Verify the bug is resolved and the fix works as expected.",
-      "tools": ["write_file"],
-      "dependencies": [3]
-    },
-    {
-      "step": 5,
-      "title": "Regression Test",
-      "description": "Ensure no new issues are introduced by the fix.",
-      "dependencies": [4]
-    }
-  ],
-  "estimatedDuration": "1-2 hours",
-  "risks": ["Fix may have unintended side effects on related functionality"]
-}
-</content>`,
-      },
-      {
-        pattern: /SIMULATE_DRIFT_TRIGGER(?![\s\S]*REQUEST_ANALYSIS)/i,
-        response: `<thought>
-I see some drift in the environment. I am not sure perhaps uncertain maybe.
-</thought>
-
-<actions>
-[]
-</actions>
-
-<content>
-{
-  "description": "I encountered some drift. I am not sure perhaps uncertain maybe.",
-  "status": "completed",
-  "files_changed": []
-}
-</content>`,
-      },
-      {
-        pattern: /Plan Amendment specialist/i,
-        response: `{
-  "summary": "Adjust remaining steps due to detected environmental drift.",
-  "affectedRemainingStepIds": ["2"],
-  "adds": [
-    { "number": 3, "title": "Verification", "content": "Verify the fix." }
-  ],
-  "updates": [
-    { "number": 2, "title": "Corrected Refactor", "content": "Perform the refactor with corrected paths." }
-  ],
-  "removes": []
-}`,
-      },
+      // Fallback pattern
       {
         pattern: /.*/,
         response: `<thought>
