@@ -31,6 +31,98 @@ Flows execute in dependency waves.
 - Successful step results are retained in memory for transforms, output
   aggregation, recovery, and reporting.
 
+### Parallel Execution Groups
+
+Phase 65 adds explicit parallel group declarations and fan-in merge semantics
+to the flow schema and execution engine. This turns implicit concurrency into
+explicit, auditable, testable orchestration.
+
+#### Group Declaration
+
+Steps that share a `parallel.group` ID and are in the same dependency wave
+execute concurrently via `Promise.allSettled`:
+
+```yaml
+steps:
+  - id: review-security
+    name: Security review
+    identity: security-reviewer
+    parallel:
+      group: review
+    input:
+      source: request
+
+  - id: review-style
+    name: Code style review
+    identity: technical-writer
+    parallel:
+      group: review
+    input:
+      source: request
+```
+
+#### Fan-In Merge
+
+Downstream steps collect results from named groups via `mergeFromGroups`. The
+`mergeMode` controls how per-step outputs are aggregated:
+
+| Mode      | Behavior                                              |
+| --------- | ----------------------------------------------------- |
+| `all`     | Concatenates all successful step outputs (default)    |
+| `ordered` | Concatenates in explicit `parallel.order` sequence    |
+| `concat`  | Same as `all` — retained for backward compatibility   |
+| `manual`  | No automatic merge; raw per-step results exposed only |
+
+```yaml
+- id: synthesize-review
+  name: Synthesize review report
+  identity: technical-writer
+  dependsOn: [review-security, review-style]
+  mergeFromGroups: [review]
+  mergeMode: ordered
+  parallel:
+    order: [review-security, review-style]
+  input:
+    source: request
+```
+
+#### Merged Output Injection
+
+When a step declares `mergeFromGroups`, `FlowRunner.prepareStepRequest()`
+injects a `parallelGroupResults` top-level field on `IFlowStepRequest`:
+
+```typescript
+interface IParallelGroupSummary {
+  groupId: string;
+  mergedOutput: string;
+  memberCount: number;
+  successCount: number;
+  completedAt: string; // ISO string
+}
+
+parallelGroupResults: Record<string, IParallelGroupSummary>;
+```
+
+Date fields (`startedAt`, `completedAt`) from `IStepResult` are serialized to
+ISO strings before injection — `IFlowStepRequest.context` (typed as
+`Record<string, JSONValue>`) is not used for group results.
+
+#### Group Lifecycle Events
+
+Group execution emits journal events via `IFlowEventLogger`:
+
+| Event                              | Payload                                                         |
+| ---------------------------------- | --------------------------------------------------------------- |
+| `flow.parallel_group.started`      | `{ groupId, stepIds, waveIndex, traceId? }`                     |
+| `flow.parallel_group.completed`    | `{ groupId, successCount, failureCount, durationMs, traceId? }` |
+| `flow.parallel_group.merge_failed` | `{ groupId, mergeMode, error, traceId? }`                       |
+
+Event names are defined as constants in `src/shared/constants.ts`:
+`FLOW_EVENT_PARALLEL_GROUP_STARTED`, `FLOW_EVENT_PARALLEL_GROUP_COMPLETED`,
+`FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED`.
+
+#### Execution Artifacts
+
 Execution artifacts are stored under:
 
 ```text
@@ -334,5 +426,7 @@ Flow reports are written per run and summarize:
 - `src/services/flow/flow_namespace_service.ts`
 - `src/services/flow/flow_reporter.ts`
 - `src/shared/schemas/flow.ts`
+- `src/shared/constants.ts`
 - `.copilot/planning/phase-63-flow-error-recovery.md`
 - `.copilot/planning/phase-64-flow-namespace-blackboard.md`
+- `.copilot/planning/phase-65-parallel-execution-groups.md`

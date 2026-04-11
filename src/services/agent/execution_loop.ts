@@ -15,13 +15,14 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseToml } from "@std/toml";
-import { parse as parseYaml } from "@std/yaml";
+import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import { GitService, type IGitService } from "../core/git_service.ts";
-import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
+import { PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
+import type { PlanFrontmatter } from "../../shared/schemas/plan_schema.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
 import type { ReviewRegistry } from "../artifact/review_registry.ts";
@@ -48,6 +49,14 @@ import {
   PLAN_AMENDMENT_EVENT_EXPIRED,
 } from "../../shared/constants.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
+
+/** Represents raw YAML frontmatter before validation */
+interface RawFrontmatter {
+  status?: string;
+  amendment_id?: string;
+  amendment_proposed_at?: string;
+  [key: string]: unknown;
+}
 
 export interface IExecutionLoopConfig {
   config: Config;
@@ -194,6 +203,13 @@ export class ExecutionLoop {
     try {
       // Parse plan frontmatter first (validates before lease)
       const frontmatter = await this.parsePlan(planPath);
+      if (frontmatter.status === PlanStatus.AMENDMENT_PENDING) {
+        this.logActivity("execution.skipped", frontmatter.trace_id, {
+          request_id: frontmatter.request_id,
+          reason: "Plan is pending amendment approval",
+        });
+        return { success: true, traceId: frontmatter.trace_id };
+      }
       traceId = frontmatter.trace_id;
       requestId = frontmatter.request_id;
 
@@ -232,6 +248,7 @@ export class ExecutionLoop {
         requireActions,
         traceId,
         requestId,
+        frontmatter,
         executionRoot: gitSetup.executionRoot,
         executionGitService: gitSetup.executionGitService,
       });
@@ -484,6 +501,7 @@ export class ExecutionLoop {
     requestId: string;
     executionRoot: string;
     executionGitService: IGitService;
+    frontmatter: PlanFrontmatter;
   }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string }> {
     if (args.structuredPlan) {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
@@ -498,6 +516,7 @@ export class ExecutionLoop {
         args.structuredPlan,
         args.executionRoot,
         args.executionGitService,
+        args.frontmatter,
         { enableGit: !args.isReadOnly, generateReport: args.isReadOnly },
       );
 
@@ -618,6 +637,19 @@ export class ExecutionLoop {
   }
 
   /**
+   * Convert raw frontmatter to safe JSON-compatible Record for PlanContext.
+   */
+  private toSafeFrontmatter(frontmatter: PlanFrontmatter): Record<string, JSONValue> {
+    const result: Record<string, JSONValue> = {};
+    for (const [key, value] of Object.entries(frontmatter)) {
+      if (value !== undefined && value !== null) {
+        result[key] = value as JSONValue;
+      }
+    }
+    return result;
+  }
+
+  /**
    * Parse action blocks from plan content
    * Looks for code blocks with tool invocations in TOML format
    */
@@ -716,6 +748,7 @@ export class ExecutionLoop {
     plan: IStructuredPlan,
     executionRoot: string,
     _gitService: IGitService,
+    frontmatter: PlanFrontmatter,
     options?: { enableGit?: boolean; generateReport?: boolean },
   ): Promise<{ report?: string }> {
     if (!this.llmProvider) {
@@ -744,7 +777,7 @@ export class ExecutionLoop {
       trace_id: plan.trace_id,
       request_id: plan.request_id,
       identity: (plan as { identity?: string; agent?: string }).identity ?? plan.agent,
-      frontmatter: {},
+      frontmatter: this.toSafeFrontmatter(frontmatter),
       steps: plan.steps,
     };
 
@@ -1008,7 +1041,8 @@ export class ExecutionLoop {
 
     // Append error to frontmatter if possible
     if (!updatedContent.includes("error:")) {
-      updatedContent = updatedContent.replace(/---\n/, `---\nerror: "${error.replace(/"/g, '\\"')}"\n`);
+      const displayError = (error || "Unknown error").replace(/"/g, '\\"');
+      updatedContent = updatedContent.replace(/---\n/, `---\nerror: "${displayError}"\n`);
     }
 
     await Deno.writeTextFile(targetRejectedPath, updatedContent);
@@ -1051,21 +1085,24 @@ export class ExecutionLoop {
     requestId: string,
     error: PlanAmendmentPendingError,
   ): Promise<void> {
-    // Update plan status to AMENDMENT_PENDING
     try {
       const content = await Deno.readTextFile(planPath);
-      let updatedContent = content.replace(
-        /status: "?(active|approved|review)"?/,
-        `status: ${PlanStatus.AMENDMENT_PENDING}`,
-      );
-      // Also inject amendment_id and timestamp for CLI discovery and expiry checks
-      if (!updatedContent.includes("amendment_id:")) {
-        const now = new Date().toISOString();
-        updatedContent = updatedContent.replace(
-          /trace_id: (.*)/,
-          `trace_id: $1\namendment_id: "${error.amendmentId}"\namendment_proposed_at: "${now}"`,
-        );
+      const match = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!match) throw new Error("Could not find frontmatter in plan");
+
+      const frontmatter: RawFrontmatter = parseYaml(match[1]) as RawFrontmatter;
+      const body = content.substring(match[0].length).trimStart();
+
+      // Update status
+      frontmatter.status = PlanStatus.AMENDMENT_PENDING;
+
+      // Inject amendment metadata
+      if (!frontmatter.amendment_id) {
+        frontmatter.amendment_id = error.amendmentId;
+        frontmatter.amendment_proposed_at = new Date().toISOString();
       }
+
+      const updatedContent = `---\n${stringifyYaml(frontmatter)}---\n\n${body}`;
       await Deno.writeTextFile(planPath, updatedContent);
     } catch (e) {
       console.error("Failed to update plan status for amendment:", e);

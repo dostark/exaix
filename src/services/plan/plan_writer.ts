@@ -13,8 +13,10 @@
  */
 
 import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "../../shared/constants.ts";
+import { stringify as stringifyYaml } from "@std/yaml";
 import type { DatabaseService } from "../core/db.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
+import type { PlanFrontmatter } from "../../shared/schemas/plan_schema.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
@@ -248,56 +250,54 @@ export class PlanWriter {
    * Generate YAML frontmatter
    */
   private generateFrontmatter(metadata: IRequestMetadata, tokenSummary?: ITokenUsageSummary | null): string {
-    const lines = [
-      "---",
-      `trace_id: "${metadata.traceId}"`,
-      `request_id: "${metadata.requestId}"`,
-      `status: ${PlanStatus.REVIEW}`,
-      `created_at: ${metadata.createdAt.toISOString()}`,
-    ];
+    const frontmatter: PlanFrontmatter = {
+      trace_id: metadata.traceId,
+      request_id: metadata.requestId,
+      status: PlanStatus.REVIEW,
+      created_at: metadata.createdAt,
+    };
 
     if (metadata.identityId) {
-      lines.push(`identity_id: "${metadata.identityId}"`);
+      frontmatter.identity_id = metadata.identityId;
     }
 
     if (metadata.model) {
-      lines.push(`model: "${metadata.model}"`);
+      frontmatter.model = metadata.model;
     }
 
     if (metadata.portal) {
-      lines.push(`portal: "${metadata.portal}"`);
+      frontmatter.portal = metadata.portal;
     }
 
     if (metadata.targetBranch) {
-      lines.push(`target_branch: "${metadata.targetBranch}"`);
+      frontmatter.target_branch = metadata.targetBranch;
     }
 
     if (metadata.subject) {
-      lines.push(`subject: "${metadata.subject}"`);
+      frontmatter.subject = metadata.subject;
     }
 
     if (metadata.requestAnalysis) {
-      lines.push(`request_analysis: ${JSON.stringify(metadata.requestAnalysis)}`);
+      frontmatter.request_analysis = metadata.requestAnalysis;
     }
 
     if (tokenSummary) {
-      lines.push(`input_tokens: ${tokenSummary.inputTokens}`);
-      lines.push(`output_tokens: ${tokenSummary.outputTokens}`);
-      lines.push(`total_tokens: ${tokenSummary.totalTokens}`);
+      frontmatter.input_tokens = tokenSummary.inputTokens;
+      frontmatter.output_tokens = tokenSummary.outputTokens;
+      frontmatter.total_tokens = tokenSummary.totalTokens;
       if (tokenSummary.provider) {
-        lines.push(`token_provider: "${tokenSummary.provider}"`);
+        frontmatter.token_provider = tokenSummary.provider;
       }
       if (tokenSummary.model) {
-        lines.push(`token_model: "${tokenSummary.model}"`);
+        frontmatter.token_model = tokenSummary.model;
       }
       if (typeof tokenSummary.costUsd === "number") {
-        lines.push(`token_cost_usd: ${tokenSummary.costUsd}`);
+        frontmatter.token_cost_usd = tokenSummary.costUsd;
       }
     }
 
-    lines.push("---");
-    lines.push("");
-    return lines.join("\n");
+    const yamlContent = stringifyYaml(frontmatter);
+    return `---\n${yamlContent}---\n\n`;
   }
 
   private async getTokenUsageSummary(traceId: string): Promise<ITokenUsageSummary | null> {

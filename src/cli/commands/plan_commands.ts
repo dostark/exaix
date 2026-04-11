@@ -8,6 +8,7 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
+import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { FrontmatterParser } from "../../parsers/markdown.ts";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import { PlanStatus, type PlanStatusType } from "../../shared/status/plan_status.ts";
@@ -29,6 +30,7 @@ import {
 import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
 
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
 
@@ -177,6 +179,30 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approve",
         args: { planId, skills },
+        error,
+      });
+    }
+  }
+
+  /**
+   * Approve all plans awaiting review.
+   */
+  async approveAll(skills?: string[]): Promise<void> {
+    try {
+      const plans = await this.list(PlanStatus.REVIEW);
+      if (plans.length === 0) {
+        await this.display.info("plan.approve_all", "none", { message: "No plans found with status='review'" });
+        return;
+      }
+
+      await this.display.info("plan.approve_all", "starting", { count: plans.length });
+      for (const plan of plans) {
+        await this.approve(plan.id, skills);
+      }
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "PlanCommands.approveAll",
+        args: { skills },
         error,
       });
     }
@@ -443,27 +469,7 @@ export class PlanCommands extends BaseCommand {
    */
   async list(statusFilter?: PlanStatusType): Promise<IPlanMetadata[]> {
     const plans: IPlanMetadata[] = [];
-
-    // Determine which directories to scan based on status filter
-    const dirsToScan: string[] = [];
-
-    if (!statusFilter) {
-      // No filter: scan all directories
-      dirsToScan.push(
-        this.workspacePlansDir,
-        this.workspaceActiveDir,
-        this.workspaceRejectedDir,
-        this.workspaceArchiveDir,
-      );
-    } else if (statusFilter === PlanStatus.APPROVED) {
-      // Approved plans can be in Active (running) or Archive (completed)
-      dirsToScan.push(this.workspaceActiveDir, this.workspaceArchiveDir);
-    } else if (statusFilter === PlanStatus.REJECTED) {
-      dirsToScan.push(this.workspaceRejectedDir);
-    } else {
-      // review, needs_revision, or other statuses are in Plans
-      dirsToScan.push(this.workspacePlansDir);
-    }
+    const dirsToScan = this.resolvePlanDirectories(statusFilter);
 
     for (const dir of dirsToScan) {
       try {
@@ -559,23 +565,8 @@ export class PlanCommands extends BaseCommand {
    * Serialize frontmatter and body back to markdown format (YAML)
    */
   private serializePlan(frontmatter: PlanFrontmatter, body: string): string {
-    const lines: string[] = [];
-    for (const [key, value] of Object.entries(frontmatter)) {
-      if (value === null || value === undefined) {
-        continue;
-      }
-      const strValue = String(value);
-      // Quote values with colons or UUIDs
-      const needsQuotes = strValue.includes(":") ||
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(strValue);
-      if (needsQuotes) {
-        lines.push(`${key}: "${strValue}"`);
-      } else {
-        lines.push(`${key}: ${strValue}`);
-      }
-    }
-
-    return `---\n${lines.join("\n")}\n---\n\n${body}`;
+    const yamlContent = stringifyYaml(frontmatter as Record<string, JSONValue>);
+    return `---\n${yamlContent}---\n\n${body}`;
   }
 
   /**
@@ -593,24 +584,12 @@ export class PlanCommands extends BaseCommand {
     const yamlContent = match[1];
     const body = match[2] || "";
 
-    // Simple YAML parsing for key-value pairs
-    const frontmatter: PlanFrontmatter = {} as PlanFrontmatter;
-    const lines = yamlContent.split("\n");
-
-    for (const line of lines) {
-      const colonIndex = line.indexOf(":");
-      if (colonIndex > 0) {
-        const key = line.substring(0, colonIndex).trim();
-        let value = line.substring(colonIndex + 1).trim();
-        // Remove quotes if present
-        if (value.startsWith('"') && value.endsWith('"')) {
-          value = value.slice(1, -1);
-        }
-        (frontmatter as Record<string, string>)[key] = value;
-      }
+    try {
+      const frontmatter = parseYaml(yamlContent) as PlanFrontmatter;
+      return { frontmatter, body };
+    } catch (error) {
+      throw new Error(`Failed to parse YAML frontmatter: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    return { frontmatter, body };
   }
 
   /**
@@ -709,6 +688,25 @@ export class PlanCommands extends BaseCommand {
   }
 
   /**
+   * Get all pending amendments with patches
+   */
+  async getAmendments(): Promise<{ id: string; patch: IPlanAmendmentPatch }[]> {
+    const plans = await this.listAmendments();
+    const results: { id: string; patch: IPlanAmendmentPatch }[] = [];
+
+    for (const plan of plans) {
+      try {
+        const patch = await this.getAmendment(plan.id);
+        results.push({ id: plan.id, patch });
+      } catch (err) {
+        console.warn(`Warning: Could not load amendment for ${plan.id}:`, err);
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Approve an amendment and resume execution
    */
   async approveAmendment(planId: string): Promise<void> {
@@ -722,25 +720,29 @@ export class PlanCommands extends BaseCommand {
       }
 
       // Apply patch via service (updates steps and status in markdown)
-      let updatedContent = this.context.amendments.applyApprovedAmendment(content, patch);
+      const appliedContent = this.context.amendments.applyApprovedAmendment(content, patch);
 
-      // Final polish: update reviewer metadata and clear amendment_id
+      // Re-parse to get updated frontmatter/body
+      const { frontmatter: updatedFm, body: updatedBody } = this.extractFrontmatterWithBody(appliedContent);
+
+      // Final polish: update reviewer metadata and clear amendment fields
       const { actor, now } = await this.getUserContext();
+      const finalFm: Record<string, JSONValue> = {
+        ...updatedFm,
+        approved_by: actor,
+        approved_at: now,
+      };
+      // Clear amendment tracking fields
+      delete finalFm.amendment_id;
+      delete finalFm.amendment_proposed_at;
 
-      // Clear amendment_id and update approval info using regex to preserve other formatting
-      updatedContent = updatedContent.replace(/^amendment_id: .*\n/m, "");
-      updatedContent = updatedContent.replace(/^approved_by: .*\n/m, `approved_by: ${actor}\n`);
-      updatedContent = updatedContent.replace(/^approved_at: .*\n/m, `approved_at: ${now}\n`);
-
-      if (!updatedContent.includes("approved_by:")) {
-        updatedContent = updatedContent.replace(/---\n/, `---\napproved_by: ${actor}\napproved_at: ${now}\n`);
-      }
-
+      const updatedContent = this.serializePlan(finalFm as PlanFrontmatter, updatedBody);
       await Deno.writeTextFile(planPath, updatedContent);
 
       // Log activity
       await this.display.info(PLAN_AMENDMENT_EVENT_APPROVED, planId, {
         amendmentId: patch.amendmentId,
+        message: `Amendment approved and applied to ${planId}`,
         approved_at: now,
         approved_by: actor,
         trace_id: frontmatter.trace_id,
@@ -778,5 +780,57 @@ export class PlanCommands extends BaseCommand {
         error,
       });
     }
+  }
+
+  /**
+   * Approve all pending amendments
+   */
+  async approveAllAmendments(): Promise<void> {
+    try {
+      const plans = await this.listAmendments();
+      if (plans.length === 0) {
+        await this.display.info("plan.amendment.approve_all", "none", { message: "No pending amendments found" });
+        return;
+      }
+
+      await this.display.info("plan.amendment.approve_all", "starting", { count: plans.length });
+      for (const plan of plans) {
+        await this.approveAmendment(plan.id);
+      }
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "PlanCommands.approveAllAmendments",
+        args: {},
+        error,
+      });
+    }
+  }
+
+  /**
+   * Resolve which directories to scan based on status filter.
+   */
+  private resolvePlanDirectories(statusFilter?: PlanStatusType): string[] {
+    if (!statusFilter) {
+      return [
+        this.workspacePlansDir,
+        this.workspaceActiveDir,
+        this.workspaceRejectedDir,
+        this.workspaceArchiveDir,
+      ];
+    }
+
+    if (
+      statusFilter === PlanStatus.APPROVED ||
+      statusFilter === PlanStatus.ACTIVE ||
+      statusFilter === PlanStatus.AMENDMENT_PENDING
+    ) {
+      return [this.workspaceActiveDir, this.workspaceArchiveDir];
+    }
+
+    if (statusFilter === PlanStatus.REJECTED) {
+      return [this.workspaceRejectedDir];
+    }
+
+    return [this.workspacePlansDir];
   }
 }

@@ -21,6 +21,13 @@ import type { JSONObject } from "../../shared/types/json.ts";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
+import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
+
+/** Raw YAML frontmatter before validation */
+interface RawFrontmatter {
+  status?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Interface for adapters that request human-in-loop decisions on amendments
@@ -108,7 +115,7 @@ RESPONSE FORMAT (JSON):
       ...patch,
       amendmentId: crypto.randomUUID(),
       planId: input.planId,
-      summary: AgentExecutor.sanitizePrompt(patch.summary).slice(0, 500),
+      summary: AgentExecutor.sanitizePrompt(patch?.summary || "No summary provided.").slice(0, 500),
       createdAt: new Date().toISOString(),
     });
   }
@@ -169,14 +176,20 @@ RESPONSE FORMAT (JSON):
       ? lastStepHeaderIndex + lastStepHeader.length + nextHeaderMatch.index!
       : planContent.length;
 
-    let updatedContent = planContent.substring(0, startIndex) + newStepsMarkdown + "\n\n" +
-      planContent.substring(endIndex).trimStart();
+    // Use parse/stringify for the final frontmatter/body assembly to ensure valid YAML
+    const fmMatch = planContent.match(/^---\n([\s\S]*?)\n---/);
+    if (!fmMatch) throw new Error("Could not find frontmatter in plan");
+
+    const frontmatterObj: RawFrontmatter = parseYaml(fmMatch[1]) as RawFrontmatter;
+    const bodyPrefix = planContent.substring(0, startIndex);
+    const bodySuffix = planContent.substring(endIndex).trimStart();
 
     // Update status to approved
-    updatedContent = updatedContent.replace(
-      /status: "?amendment_pending"?/,
-      `status: ${PlanStatus.APPROVED}`,
-    );
+    frontmatterObj.status = PlanStatus.APPROVED;
+
+    // Reconstrct final content
+    const updatedBody = bodyPrefix.substring(fmMatch[0].length) + newStepsMarkdown + "\n\n" + bodySuffix;
+    const updatedContent = `---\n${stringifyYaml(frontmatterObj)}---\n\n${updatedBody.trimStart()}`;
 
     return updatedContent;
   }
