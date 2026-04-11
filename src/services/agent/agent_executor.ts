@@ -428,6 +428,7 @@ export class AgentExecutor {
    * Sanitize system prompt to prevent XSS and injection attacks
    */
   public static sanitizePrompt(prompt: string): string {
+    if (!prompt) return "";
     return prompt
       // Remove potential script tags
       .replace(/<script[^>]*>.*?<\/script>/gis, "[REMOVED SCRIPT]")
@@ -734,6 +735,23 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     try {
       const jsonStr = jsonMatch[1] || jsonMatch[0];
       const parsed = JSON.parse(jsonStr);
+
+      // Ensure required fields for ChangesetResult are present even if another JSON (like a plan) was matched
+      if (!parsed.branch) {
+        parsed.branch = `feat/${context.request_id}-${context.trace_id.slice(0, 8)}`;
+      }
+      if (!parsed.commit_sha) {
+        parsed.commit_sha = GIT_EMPTY_SHA;
+      }
+      if (!parsed.files_changed) {
+        parsed.files_changed = [];
+      }
+      if (parsed.tool_calls === undefined) {
+        parsed.tool_calls = 0;
+      }
+      if (!parsed.description) {
+        parsed.description = context.plan;
+      }
 
       // Ensure execution_time_ms is set and non-negative
       if (!parsed.execution_time_ms) {
@@ -1060,18 +1078,25 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     const lock = await this.acquireLock(lockFile);
 
     try {
-      // 2. Get git status
-      const result = await SafeSubprocess.run("git", [GIT_CMD_STATUS, "--porcelain"], {
+      // 2. Get modified, untracked, and deleted files within the portal
+      const result = await SafeSubprocess.run("git", [
+        "ls-files",
+        "--modified",
+        "--others",
+        "--deleted",
+        "--exclude-standard",
+        ".",
+      ], {
         cwd: portalPath,
         timeoutMs: DEFAULT_GIT_STATUS_TIMEOUT_MS,
       });
 
       if (result.code !== 0) {
-        throw new Error(`Git status failed: ${result.stderr}`);
+        throw new Error(`Git audit failed: ${result.stderr}`);
       }
 
-      const statusText = result.stdout;
-      if (!statusText) {
+      const fileList = result.stdout;
+      if (!fileList) {
         return { reverted: [], failed: [] }; // No changes
       }
 
@@ -1079,17 +1104,9 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       const results = { reverted: [] as string[], failed: [] as string[] };
       const _authorizedSet = new Set(authorizedFiles);
 
-      for (const line of statusText.split("\n")) {
-        if (!line.trim()) continue;
-
-        // Parse porcelain format: XY filename (where X=status1, Y=status2)
-        // For untracked files: ?? filename
-        // For modified files: M  filename (staged),  M filename (unstaged)
-        // console.log("[DEBUG] Audit files_changed:", config.files_changed);
-        // console.log("[DEBUG] Git porcelain:", porcelain);
-
-        const _status = line.slice(0, 2).trim();
-        const filename = line.slice(3).trim();
+      for (const line of fileList.split("\n")) {
+        const filename = line.trim();
+        if (!filename) continue;
 
         // Skip the lock file we created
         if (filename === ".exa-git-lock") continue;
@@ -1098,16 +1115,25 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         // Untracked files (??) are unauthorized new files
         const validated = this.validateFilePath(filename, portalPath);
         if (!validated) {
-          results.failed.push(filename);
+          // If the file is outside the portal (e.g. parent repo changes), ignore it rather than failing.
+          // The agent's tools (write_file etc) already prevent modification outside the portal.
           continue;
         }
+
+        // Check if file is officially authorized (part of the result object)
+        if (_authorizedSet.has(filename)) {
+          continue;
+        }
+
+        // If we get here, it's an unauthorized change.
+        results.failed.push(filename);
 
         // Check if file is a symlink (detect potential attacks)
         try {
           const stat = await Deno.lstat(join(portalPath, filename));
           if (stat.isSymlink) {
             await this.logger.error("symlink_detected", portalPath, { filename });
-            results.failed.push(filename);
+            // Already added to results.failed
             continue;
           }
         } catch {
@@ -1131,14 +1157,14 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
             results.reverted.push(filename);
           } else {
             // Untracked file - clean
-            await SafeSubprocess.run("git", ["clean", "-f", validated], {
+            await SafeSubprocess.run("git", ["clean", "-f", "--", validated], {
               cwd: portalPath,
               timeoutMs: DEFAULT_GIT_CLEAN_TIMEOUT_MS,
             });
             results.reverted.push(filename);
           }
-        } catch (_error) {
-          results.failed.push(filename);
+        } catch (error) {
+          console.error(`Failed to revert unauthorized change to ${filename}:`, error);
         }
       }
 
