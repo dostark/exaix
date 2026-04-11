@@ -1375,7 +1375,7 @@ readinessProbe:
     "disk_space": {
       "status": "pass",
       "metadata": {
-        "path": "/home/dkasymov/git/Exaix",
+        "path": "$HOME/git/Exaix",
         "used_percent": 4,
         "warn_threshold": 80,
         "critical_threshold": 95

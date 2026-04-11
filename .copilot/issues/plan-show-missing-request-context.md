@@ -89,7 +89,6 @@ exactl plan show <plan-id>
    portal: original-repo
    created: 2026-01-25T16:46:24Z
    priority: normal
-   created_by: dkasymov@gmail.com
 ✅ plan.content: request-f493fe2a_plan
    content: [plan content...]
 ```text

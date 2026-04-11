@@ -42,7 +42,6 @@ Example `exactl plan show` output (excerpt):
    agent: product-manager
    portal: portal-exaix
    priority: normal
-   created_by: dkasymov@gmail.com
 ✅ plan.content: request-b9d04499
    content:
 # Rejected Plan Output

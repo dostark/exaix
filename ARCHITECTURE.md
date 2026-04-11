@@ -2132,6 +2132,24 @@ For supported `onError` actions, checkpoint lifecycle, compensation ordering, an
 - `docs/dev/Exaix_Flows.md#compensation-ordering-and-context-injection`
 - `docs/dev/Exaix_Flows.md#recovery-metadata-on-istepresult`
 
+---
+
+## Flow Parallel Execution Groups
+
+Phase 65 extends `FlowRunner` with explicit parallel group declarations and deterministic fan-in merge semantics. Steps that share a `parallel.group` ID within the same dependency wave execute concurrently via `Promise.allSettled`, and downstream steps aggregate results through `mergeFromGroups` with configurable merge modes (`all`, `ordered`, `concat`, `manual`).
+
+At the architecture level, the important boundary is:
+
+- `FlowRunner` owns group detection, concurrent execution, and fan-in aggregation.
+- `FlowCheckpointService` captures individual group members by step ID — no schema changes needed; group membership is re-derived from the flow definition at resume.
+- Merged outputs are injected via `parallelGroupResults` on `IFlowStepRequest` (not inside `context`), with dates serialized to ISO strings.
+- Group lifecycle events (`flow.parallel_group.started`, `flow.parallel_group.completed`, `flow.parallel_group.merge_failed`) use constants from `src/shared/constants.ts`.
+
+For schema definitions, merge mode behavior, event payloads, and YAML examples, see:
+
+- `docs/dev/Exaix_Flows.md#parallel-execution-groups`
+- `.copilot/planning/phase-65-parallel-execution-groups.md`
+
 ### Flow Evaluation Components
 
 ```mermaid

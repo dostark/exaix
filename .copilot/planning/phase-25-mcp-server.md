@@ -34,7 +34,7 @@ We have implemented the MCP Foundation (Server, Transport) and FileSystem/Git to
 
 **Updates:**
 
-- [x] Use `exa.config.toml` for enabling/disabling tools (refer to [src/config/schema.ts](file:///home/dkasymov/git/Exaix/src/config/schema.ts)).
+- [x] Use `exa.config.toml` for enabling/disabling tools (refer to [src/config/schema.ts](file://$HOME/git/Exaix/src/config/schema.ts)).
 - [x] Enforce `agent_id` tracking for all tool calls.
 
 ### Step 25.3: Verification

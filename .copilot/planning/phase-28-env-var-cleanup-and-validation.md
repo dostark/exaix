@@ -876,7 +876,7 @@ EXA_TEST_ENABLE_PAID_LLM=1 deno task test:integration
 ## Related Documents
 
 - [Phase 27: Magic Number & Magic Word Externalization](./phase-27-magic-number-and-word-externaliztion.md)
-- [Configuration System Audit](/home/dkasymov/.gemini/antigravity/brain/2ddd808a-26ac-486e-bf4c-fe113040b5fb/configuration_audit.md)
+- [Configuration System Audit]($HOME/.gemini/antigravity/brain/2ddd808a-26ac-486e-bf4c-fe113040b5fb/configuration_audit.md)
 - [Exaix User Guide](../../docs/Exaix_User_Guide.md)
 - [Contributing Guidelines](../../CONTRIBUTING.md)
 

@@ -61,6 +61,8 @@ Do / Don't
 - ✅ Do use any additionally supplied documents as context.
 - ✅ Do run Phase 3c traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
+- ✅ Do run Phase 3d scenario framework coverage verification on every step that
+  affects the request → plan → execution → review → memory → update flow.
 - ❌ Don't mark a plan step as gap-free unless you verified its test files.
 - ❌ Don't skip Phase 3b for steps that handle external data or file paths —
   even if the plan did not mention security.
@@ -152,6 +154,46 @@ For **every step not yet marked complete**:
    Was there a documentation update step (or sub-task) for each step that
    introduced or changed interfaces, schemas, CLI behaviour, or architecture?
    If not, add one gap per missing update.
+
+---
+
+### Phase 3d — Scenario Framework Coverage Verification
+
+For **every step** that affects the **request → plan → execution → review → memory → update**
+flow (or any sub-path of it), verify whether the scenario framework at
+`tests/scenario_framework/` provides end-to-end coverage for the implemented behaviour:
+
+1. **Review existing scenarios**: Check `tests/scenario_framework/scenarios/agent_flows/`. The
+   `plan-amendment-lifecycle` scenario covers request → plan → amendment → execution → archive but
+   does **not** verify memory bank updates or review/quality gate phases. Determine whether any
+   existing scenario exercises the step's new behaviour.
+
+1. **Verify observability**: Confirm the step's behaviour produces observable outputs (CLI/daemon
+   output, journal events, file-system artifacts) that scenario steps can assert on. If not, flag a
+   gap.
+
+1. **Check scenario assertions**: If existing scenarios cover the flow path, verify they assert on
+   the new behaviour (e.g., parallel group journal events, checkpoint resume state, namespace
+   artifact paths). Missing assertions are gaps.
+
+1. **Determine if new scenarios are needed**: If the implemented behaviour adds a distinct
+   observable phase (e.g., `parallel-group-merge`, `flow-checkpoint-resume`) not exercised by
+   `plan-amendment-lifecycle`, flag a gap to create a new scenario under
+   `tests/scenario_framework/scenarios/agent_flows/`.
+
+1. **Check integration test coverage**: Verify whether `plan_amendment_scenario_test.ts` or the
+   synthetic runner tests have been extended if the implementation changes end-to-end behaviour.
+
+For each gap found, produce an entry:
+
+```text
+#### G{N}: {short title}  🟠 Testing
+- **Checklist item:** Scenario framework coverage verification
+- **Plan claim:** "{quoted sentence from plan}"
+- **Actual state:** {what scenarios currently exercise / do not exercise}
+- **Impact:** {end-to-end regression risk if left untested at scenario level}
+- **Resolved by:** Step {PhaseNN.M} below
+```
 
 ---
 

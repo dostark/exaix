@@ -59,7 +59,7 @@ When an AI plan execution fails, the `ExecutionLoop` incorrectly moves the plan 
    The `getPortalFileSummary` method uses a very shallow depth limit (max 100 files, limited subdirectory traversal). For mature codebases, this misses most interior files, forcing agents to rely on prompt-suggested paths which may be hallucinations or outdated.
 
 1.
-   Execution logs show `plan.md` being used in the project root (`/home/dkasymov/git/Exaix/plan.md`). This indicates a path resolution fallback that bypasses the isolated worktree/workspace structure.
+   Execution logs show `plan.md` being used in the project root (`$HOME/git/Exaix/plan.md`). This indicates a path resolution fallback that bypasses the isolated worktree/workspace structure.
 
 1.
 

@@ -30,7 +30,7 @@ cd ~/Exaix && ls -la Memory/Execution/
 
 ## Observed Behavior
 
-- Execution folder appears in workspace root (`/home/dkasymov/git/Exaix/Execution/`)
+- Execution folder appears in workspace root (`$HOME/git/Exaix/Execution/`)
 - Memory/Execution/ directory may be empty or missing expected trace folders
 - Memory bank service creates execution records but in wrong location
 

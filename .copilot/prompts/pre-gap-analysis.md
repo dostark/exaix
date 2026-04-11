@@ -56,6 +56,8 @@ Do / Don't
 - ✅ Do use any additionally supplied documents as context.
 - ✅ Do run Phase 3c traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
+- ✅ Do run Phase 3d scenario framework coverage checks on every step that
+  affects the request → plan → execution → review → memory → update flow.
 - ❌ Don't mark a step gap-free unless its data sources, types, and tests are
   fully specified.
 - ❌ Don't skip Phase 3b for steps that handle external data or file paths —
@@ -179,6 +181,47 @@ document provided. Your output has two parts:
 1. **Identify missing constants.**
    Flag every literal string or number in the plan (threshold, mode name, file
    name, timeout) that belongs in `src/shared/constants.ts`.
+
+---
+
+### Phase 3d — Scenario Framework Coverage Check
+
+For **every step** that affects the **request → plan → execution → review → memory → update**
+flow (or any sub-path of it), assess whether the scenario framework at
+`tests/scenario_framework/` needs new or updated coverage:
+
+1. **Review existing scenarios**: Check `tests/scenario_framework/scenarios/agent_flows/`. The
+   `plan-amendment-lifecycle` scenario covers request → plan → amendment → execution → archive but
+   does **not** verify memory bank updates or review/quality gate phases. Identify whether the step's
+   behaviour is exercised by any existing scenario.
+
+1. **Determine observability**: Can the step's new behaviour be observed via CLI/daemon output,
+   journal events, or file-system artifacts that a scenario step can assert on? If not, flag a gap.
+
+1. **Add scenario steps** if the new behaviour introduces observable checkpoints (e.g., parallel
+   group execution events in journal output, checkpoint recovery paths, namespace artifact
+   persistence) that existing scenarios do not cover.
+
+1. **Create a new scenario** under `tests/scenario_framework/scenarios/agent_flows/` if the change
+   adds a distinct observable phase (e.g., `parallel-group-merge`, `flow-checkpoint-resume`) not
+   exercised by `plan-amendment-lifecycle`.
+
+1. **Check test integration**: Determine whether `plan_amendment_scenario_test.ts` or the
+   synthetic runner tests need extension to cover the new behaviour.
+
+1. **Tag appropriately**: New scenarios involving live LLM providers should use `provider-live` tag
+   (excluded from CI auto). Scenarios validating correctness invariants should use `safety-gate`.
+
+For each gap found, produce an entry:
+
+```text
+#### G{N}: {short title}  🟠 Testing
+- **Checklist item:** Scenario framework coverage
+- **Location in plan:** Step N.M — "{quoted sentence from plan}"
+- **Problem:** {what the step adds that no scenario exercises}
+- **Impact:** {end-to-end regression risk if left untested at scenario level}
+- **To fix:** {concrete instruction — e.g., "Add scenario steps to plan-amendment-lifecycle" or "Create new scenario under agent_flows/"}
+```
 
 ---
 

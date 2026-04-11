@@ -31,7 +31,7 @@ Automate the enforcement of architectural grounding and module header standards 
 
 ## Proposed Changes
 
-### [NEW] [validate*architecture.ts](file:///home/dkasymov/git/Exaix/scripts/validate*architecture.ts)
+### [NEW] [validate*architecture.ts](file://$HOME/git/Exaix/scripts/validate*architecture.ts)
 
 The script will use the following logic:
 
@@ -45,7 +45,7 @@ The script will use the following logic:
    - Traverse links (related-files, dependencies) to find all reachable files.
    - Flag any file in `src/` that is NOT reachable from the root set.
 
-### [MODIFY] [deno.json](file:///home/dkasymov/git/Exaix/deno.json)
+### [MODIFY] [deno.json](file://$HOME/git/Exaix/deno.json)
 
 ```json
 "tasks": {
@@ -53,7 +53,7 @@ The script will use the following logic:
 }
 ```
 
-### [MODIFY] [.github/workflows/code-quality.yml](file:///home/dkasymov/git/Exaix/.github/workflows/code-quality.yml)
+### [MODIFY] [.github/workflows/code-quality.yml](file://$HOME/git/Exaix/.github/workflows/code-quality.yml)
 
 Add a step to run the architecture validation.
 

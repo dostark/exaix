@@ -87,6 +87,26 @@ Include a final **Step N (§3D): Update Documentation** that covers:
 - `TOOLS.md`: If MCP tool schemas changed (`deno task docs-sync-schemas`).
 - `CODE_STYLE.md`: If new patterns (e.g., specific error handling) are established.
 
+### 3E. Scenario Framework Coverage
+
+If the implementation affects the **request → plan → execution → review → memory → update** flow
+(or any sub-path of it), assess whether `tests/scenario_framework/` scenarios need new or updated
+coverage:
+
+- **Review existing scenarios**: Check `tests/scenario_framework/scenarios/agent_flows/` — the
+  `plan-amendment-lifecycle` scenario covers request → plan → amendment → execution → archive but
+  does **not** verify memory bank updates or review/quality gate phases.
+- **Add scenario steps** if the new behaviour introduces observable CLI/daemon checkpoints in the
+  end-to-end flow (e.g., parallel group execution events visible in journal output, new checkpoint
+  recovery paths, namespace artifact persistence).
+- **Create a new scenario** under `tests/scenario_framework/scenarios/agent_flows/` if the change
+  adds a distinct observable phase (e.g., `parallel-group-merge`, `flow-checkpoint-resume`) that
+  the existing `plan-amendment-lifecycle` does not exercise.
+- **Update `plan_amendment_scenario_test.ts`** if the existing integration test's verification
+  points need extension (e.g., asserting group lifecycle journal events, namespace artifact paths).
+- **Tag appropriately**: Use `provider-live` for LLM-dependent scenarios and omit from CI auto
+  runs. Use `safety-gate` for scenarios that validate correctness invariants.
+
 ### 4. Derived Best Practices
 
 - **Phase Dependencies**: Explicitly list required prior phases.
