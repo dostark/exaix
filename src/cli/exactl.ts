@@ -58,10 +58,13 @@ import {
 } from "./command_builders/request_actions.ts";
 import {
   handlePlanAmendmentApprove,
+  handlePlanAmendmentApproveAll,
   handlePlanAmendmentList,
   handlePlanAmendmentReject,
   handlePlanAmendmentShow,
+  handlePlanAmendmentShowAll,
   handlePlanApprove,
+  handlePlanApproveAll,
   handlePlanList,
   handlePlanReject,
   handlePlanRevise,
@@ -401,6 +404,15 @@ export const __test_command = new Command()
           }),
       )
       .command(
+        "approve-all",
+        new Command()
+          .description("Approve all plans awaiting review")
+          .option("--skills <skills:string>", "Comma-separated list of skills to inject during execution")
+          .action(async (options) => {
+            await handlePlanApproveAll({ planCommands, display }, options as PlanApproveOptions);
+          }),
+      )
+      .command(
         "reject <id>",
         new Command()
           .description("Reject a plan with a reason")
@@ -442,11 +454,27 @@ export const __test_command = new Command()
               }),
           )
           .command(
+            "show-all",
+            new Command()
+              .description("Show details of all proposed amendments")
+              .action(async () => {
+                await handlePlanAmendmentShowAll({ planCommands, display });
+              }),
+          )
+          .command(
             "approve <id>",
             new Command()
               .description("Approve amendment and resume execution")
               .action(async (_options, ...args: string[]) => {
                 await handlePlanAmendmentApprove({ planCommands, display }, args[0] as string);
+              }),
+          )
+          .command(
+            "approve-all",
+            new Command()
+              .description("Approve all pending amendments and resume execution")
+              .action(async () => {
+                await handlePlanAmendmentApproveAll({ planCommands, display });
               }),
           )
           .command(
