@@ -19,25 +19,25 @@ Implementation Plan workflow:
    - Find relevant Phase and Step
    - If no step exists, create one following existing format
 
-2. UNDERSTAND REQUIREMENTS:
+1. UNDERSTAND REQUIREMENTS:
    - Read step's "Action" section
    - Review "Success Criteria"
    - Check any referenced docs or examples
 
-3. INJECT CONTEXT:
+1. INJECT CONTEXT:
    deno run --allow-read scripts/inject_agent_context.ts claude "[step topic] [component]" 6
 
-4. IMPLEMENT:
+1. IMPLEMENT:
    - Follow TDD if code changes
    - Update docs if needed
    - Follow patterns from agents/
 
-5. VERIFY:
+1. VERIFY:
    - Check all success criteria met [x]
    - Run tests
    - Update step status
 
-6. MARK COMPLETE:
+1. MARK COMPLETE:
    - Update Implementation Plan step checkboxes
    - Note any deviations or learnings
 
@@ -60,7 +60,7 @@ Implementation Plan workflow:
    - Find Phase 8, Step 8.3
    - Read the full step definition
 
-2. UNDERSTAND REQUIREMENTS:
+1. UNDERSTAND REQUIREMENTS:
    Action: Add Zod schema for Flow parameter validation
    Success Criteria:
    - [ ] Schema validates required/optional parameters
@@ -68,21 +68,21 @@ Implementation Plan workflow:
    - [ ] Tests cover invalid parameter cases
    - [ ] Error messages are user-friendly
 
-3. INJECT CONTEXT:
+1. INJECT CONTEXT:
    deno run --allow-read scripts/inject_agent_context.ts claude "Zod schema validation Flow parameters" 6
 
-4. IMPLEMENT:
+1. IMPLEMENT:
    - Write failing tests first (invalid parameters should fail)
    - Create Zod schema in src/schemas/flow.ts
    - Implement validation in Flow executor
    - Verify tests pass
 
-5. VERIFY:
+1. VERIFY:
    - All success criteria met
    - Run: deno test tests/flows/
    - Coverage maintained
 
-6. MARK COMPLETE:
+1. MARK COMPLETE:
    - Update Implementation Plan with [x] for all criteria
    - Note: Schema follows existing pattern from src/schemas/
 
@@ -105,7 +105,7 @@ Implementation Plan workflow:
    - Find appropriate Phase (Phase 7: Activity Logging)
    - No existing step for export feature
 
-2. CREATE NEW STEP:
+1. CREATE NEW STEP:
    Add Step 7.5 between 7.4 and 7.6:
 
    #### Step 7.5: Activity Log Export
@@ -123,21 +123,21 @@ Implementation Plan workflow:
    - [ ] Tests verify export format matches schema
    - [ ] Large logs handled efficiently (streaming)
 
-3. INJECT CONTEXT:
+1. INJECT CONTEXT:
    deno run --allow-read scripts/inject_agent_context.ts claude "activity logging export JSON EventLogger" 6
 
-4. IMPLEMENT:
+1. IMPLEMENT:
    - Write tests for export functionality
    - Add export() method to EventLogger
    - Create CLI command
    - Verify tests pass
 
-5. VERIFY:
+1. VERIFY:
    - All success criteria met
    - Run: deno test tests/event_logger_test.ts
    - Manual test: exactl export-activity --format json
 
-6. MARK COMPLETE:
+1. MARK COMPLETE:
    - Update Implementation Plan step 7.5 checkboxes
    - Note: Used streaming for memory efficiency
 
@@ -160,7 +160,7 @@ Implementation Plan workflow:
    - Look for security testing step
    - Found Step 6.7: Portal Security Testing
 
-2. UNDERSTAND REQUIREMENTS:
+1. UNDERSTAND REQUIREMENTS:
    Step 6.7 has multiple success criteria:
    - [ ] Path traversal tests (../)
    - [ ] Symlink escape tests
@@ -168,14 +168,14 @@ Implementation Plan workflow:
    - [ ] Cross-portal access tests
    - [ ] All tests pass
 
-3. INJECT CONTEXT (per test type):
+1. INJECT CONTEXT (per test type):
    # For path traversal:
    deno run --allow-read scripts/inject_agent_context.ts claude "security testing path traversal Portal" 4
 
    # For symlink escape:
    deno run --allow-read scripts/inject_agent_context.ts claude "security testing symlink escape Portal" 4
 
-4. IMPLEMENT (one criterion at a time):
+1. IMPLEMENT (one criterion at a time):
    FIRST: Path traversal tests
    - Write test for ../ attempts
    - Verify PathResolver blocks them
@@ -188,7 +188,7 @@ Implementation Plan workflow:
 
    (Continue for each criterion...)
 
-5. VERIFY:
+1. VERIFY:
    After each criterion:
    - Run: deno test tests/portal_permissions_test.ts
    - Check that specific test passes
@@ -197,7 +197,7 @@ Implementation Plan workflow:
    - Run full test suite
    - Verify coverage ≥80%
 
-6. MARK COMPLETE:
+1. MARK COMPLETE:
    - Update all checkboxes in Step 6.7
    - Note: Added helper assertPathBlocked() for reuse
 
@@ -211,12 +211,12 @@ Feature: Portal security testing
 ```text
 Claude should:
 1. Open and read Implementation Plan
-2. Navigate to specific Phase and Step
-3. Quote the success criteria
-4. Inject context related to the step
-5. Implement following TDD
-6. Verify each success criterion met
-7. Update Implementation Plan with [x] marks
-8. Note any deviations or learnings
-9. Reference Implementation Plan step number in commit message
+1. Navigate to specific Phase and Step
+1. Quote the success criteria
+1. Inject context related to the step
+1. Implement following TDD
+1. Verify each success criterion met
+1. Update Implementation Plan with [x] marks
+1. Note any deviations or learnings
+1. Reference Implementation Plan step number in commit message
 ```

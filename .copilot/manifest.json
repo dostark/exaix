@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-10T16:16:36.627Z",
+  "generated_at": "2026-04-11T08:34:23.080Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -455,20 +455,27 @@
     },
     {
       "path": ".copilot/prompts/plan.md",
-      "agent": "general",
+      "agent": "senior-coder",
       "scope": "dev",
-      "title": "Feature Planning Template (#plan)",
-      "short_summary": "Template for systematically planning new features with steps, tests, and success criteria.",
-      "version": "0.1",
+      "title": "Phase Planning Document Lifecycle (#plan)",
+      "short_summary": "Canonical prompt for drafting and justifying high-quality, architecturally rigorous implementation plans built for Exaix's human-in-loop philosophy.",
+      "version": "1.2",
       "topics": [
         "planning",
-        "features",
+        "architecture",
         "tdd",
-        "requirements"
+        "security",
+        "traceability",
+        "configurability"
       ],
       "chunks": [
         ".copilot/chunks/plan.md.chunk0.txt",
-        ".copilot/chunks/plan.md.chunk1.txt"
+        ".copilot/chunks/plan.md.chunk1.txt",
+        ".copilot/chunks/plan.md.chunk2.txt",
+        ".copilot/chunks/plan.md.chunk3.txt",
+        ".copilot/chunks/plan.md.chunk4.txt",
+        ".copilot/chunks/plan.md.chunk5.txt",
+        ".copilot/chunks/plan.md.chunk6.txt"
       ]
     },
     {
@@ -1735,7 +1742,17 @@
         ".copilot/chunks/post-gap-analysis.md.chunk0.txt",
         ".copilot/chunks/post-gap-analysis.md.chunk1.txt",
         ".copilot/chunks/post-gap-analysis.md.chunk2.txt",
-        ".copilot/chunks/post-gap-analysis.md.chunk3.txt"
+        ".copilot/chunks/post-gap-analysis.md.chunk3.txt",
+        ".copilot/chunks/post-gap-analysis.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/plan.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/plan.md.chunk0.txt",
+        ".copilot/chunks/plan.md.chunk1.txt",
+        ".copilot/chunks/plan.md.chunk2.txt"
       ]
     },
     {

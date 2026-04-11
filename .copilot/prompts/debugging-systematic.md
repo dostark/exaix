@@ -22,8 +22,7 @@ Use systematic debugging approach:
    - Run test to confirm failure
    - Show exact error message
 
-1.
-   <thinking>
+1. <thinking>
    - What's the expected behavior?
    - What's the actual behavior?
    - Where's the gap?
@@ -56,12 +55,10 @@ Use systematic debugging approach:
 1. CONTEXT INJECTION:
    deno run --allow-read scripts/inject_agent_context.ts claude "debugging database cleanup testing" 6
 
-1.
-   Run: deno test --allow-read --allow-write tests/config_test.ts
+1. Run: deno test --allow-read --allow-write tests/config_test.ts
    Show the exact error message and stack trace
 
-1.
-   <thinking>
+1. <thinking>
    - Expected: cleanup() called in finally block
    - Actual: cleanup() might be missing or called conditionally
    - Gap: Test setup doesn't guarantee cleanup
@@ -98,8 +95,7 @@ Use systematic debugging approach:
    - Run test to confirm "Permission denied" error
    - Show exact error message and path that fails
 
-1.
-   <thinking>
+1. <thinking>
    - Expected: Valid paths within Portal should resolve
    - Actual: Permission denied even for valid paths
    - Gap: Permission check logic might be too restrictive
@@ -137,8 +133,7 @@ Use systematic debugging approach:
    - Show the line causing the issue
    - Show the type definition
 
-1.
-   <thinking>
+1. <thinking>
    - Expected: temperature property should exist on config type
    - Actual: Type definition doesn't include temperature
    - Gap: Schema mismatch or wrong type imported

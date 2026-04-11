@@ -638,6 +638,38 @@ I need to investigate and fix the reported issue.
 </content>`,
       },
       {
+        pattern: /SIMULATE_DRIFT_TRIGGER(?![\s\S]*REQUEST_ANALYSIS)/i,
+        response: `<thought>
+I see some drift in the environment. I am not sure perhaps uncertain maybe.
+</thought>
+
+<actions>
+[]
+</actions>
+
+<content>
+{
+  "description": "I encountered some drift. I am not sure perhaps uncertain maybe.",
+  "status": "completed",
+  "files_changed": []
+}
+</content>`,
+      },
+      {
+        pattern: /Plan Amendment specialist/i,
+        response: `{
+  "summary": "Adjust remaining steps due to detected environmental drift.",
+  "affectedRemainingStepIds": ["2"],
+  "adds": [
+    { "number": 3, "title": "Verification", "content": "Verify the fix." }
+  ],
+  "updates": [
+    { "number": 2, "title": "Corrected Refactor", "content": "Perform the refactor with corrected paths." }
+  ],
+  "removes": []
+}`,
+      },
+      {
         pattern: /.*/,
         response: `<thought>
 I will create a plan to address this request.

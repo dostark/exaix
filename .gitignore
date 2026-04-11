@@ -21,6 +21,7 @@ report/
 test-*.toml
 cov_profile/
 .duplication_report/
+tests/scenario_framework/output/
 
 # Allow agent-facing coverage snapshot (new location)
 !.copilot/coverage/
@@ -63,3 +64,4 @@ exa.config.toml
 .qwen/
 .copilot/chunks/
 .copilot/manifest.json
+Memory/

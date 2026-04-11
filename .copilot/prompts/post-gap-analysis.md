@@ -273,13 +273,13 @@ For each unresolved item, produce a gap entry:
 
 1. **Classify every gap** using the severity taxonomy:
 
-| Symbol | Meaning |
-| --- | --- |
-| 🔴 Critical | Blocks correctness — code diverges from plan in a breaking way |
-| � Security | Security vulnerability or missing security control (OWASP Top 10) |
-| �🟡 Feasibility | Plan claim is unverifiable or implementation-risky |
-| 🟠 Testing | Missing or under-specified test; implementation may ship uncovered |
-| 🔵 Conceptual | Minor mismatch, missing doc marker, or style divergence |
+| Symbol          | Meaning                                                            |
+| --------------- | ------------------------------------------------------------------ |
+| 🔴 Critical     | Blocks correctness — code diverges from plan in a breaking way     |
+| � Security      | Security vulnerability or missing security control (OWASP Top 10)  |
+| �🟡 Feasibility | Plan claim is unverifiable or implementation-risky                 |
+| 🟠 Testing      | Missing or under-specified test; implementation may ship uncovered |
+| 🔵 Conceptual   | Minor mismatch, missing doc marker, or style divergence            |
 
 1. **Build the gap summary table** (required):
 
@@ -311,7 +311,7 @@ Append the following sections **at the end of the planning document** in order:
 #### 5b. Detailed gap entries (one per gap)
 
 ```markdown
-#### G{N}: {short title}  {severity symbol}
+#### G{N}: {short title} {severity symbol}
 
 - **Plan claim:** "{quoted sentence from plan}"
 - **Actual state:** {what the code/test really contains}

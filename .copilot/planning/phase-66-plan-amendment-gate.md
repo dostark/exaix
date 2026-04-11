@@ -517,3 +517,54 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 - [ ] `config.amendment?.enabled` is falsy when no `amendment` block is present.
 - [ ] Invalid threshold and expiry values are rejected by the config schema.
 - [ ] Amendment service returns early (no proposal created) when `config.amendment?.enabled !== true`.
+
+### Step 66.7: CLI Command Suite for Amendment Management
+
+#### Actions
+
+- [ ] Implement `exoctl plan amendment list` to discover pending amendments across active traces.
+- [ ] Implement `exoctl plan amendment show <amendmentId>` to fetch and display the structural JSON patch as a human-readable diff.
+- [ ] Implement `exoctl plan amendment approve <amendmentId>` to apply the patch to the target plan and update status to `planned` for resumption.
+- [ ] Implement `exoctl plan amendment reject <amendmentId> --reason <reason>` to mark the amendment as rejected and set the plan status to `failed` or `rejected`.
+
+#### Architecture Notes
+
+- CLI uses `PlanAmendmentAdapter` to interact with the service layer.
+- Discovery logic scans `Workspace/Active` for plans with `amendment_id` frontmatter fields.
+- Approval/Rejection triggers `PLAN_AMENDMENT_EVENT_APPROVED/REJECTED` and `PLAN_AMENDMENT_EVENT_APPLIED`.
+- **Atomic Application**: Patch application must be atomic; any failure during `applyApprovedAmendment` should leave the plan file unchanged.
+
+#### Planned Tests
+
+- `tests/cli/exoctl_plan_amendment_test.ts`
+- `tests/unit/cli/plan_amendment_actions_test.ts`
+
+#### Success Criteria
+
+- [ ] `exoctl plan amendment list` correctly identifies plans in `AMENDMENT_PENDING` state.
+- [ ] `show` command displays the `summary` and structural changes clearly.
+- [ ] `approve` command successfully updates the plan file on disk.
+- [ ] `reject` command properly fails the plan and records the reason.
+
+### Step 66.8: Documentation & Scenario-Based Validation
+
+#### Actions
+
+- [ ] Create `docs/user/plan-amendments.md` with operational guidelines, CLI usage examples, and configuration reference.
+- [ ] Implement scenario `tests/scenario_framework/scenarios/plan_amendments/amendment_lifecycle.scenario.yaml`.
+- [ ] Update `README.md` highlighting the new Replanning Safety Gate feature.
+
+#### Architecture Notes
+
+- Scenario test must use a `mock` provider that returns a "low confidence" result to trigger the amendment flow naturally.
+- Documentation must explain the `amendment_id` and `amendment_proposed_at` frontmatter fields for power users.
+
+#### Planned Tests
+
+- `tests/scenario_framework/tests/plan_amendment_scenario_test.ts`
+
+#### Success Criteria
+
+- [ ] User documentation is comprehensive and verified for link integrity.
+- [ ] E2E scenario test passes: Trigger -> Pause -> Approve -> Resume -> Completion.
+- [ ] CLI help strings are consistent with the user guide.

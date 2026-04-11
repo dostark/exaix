@@ -92,8 +92,8 @@ Do / Don't:
 
 Expected Response Pattern:
 1. Review and summarize both staged and unstaged changes, then decide whether one commit or multiple logical batches are required.
-2. Run and summarize the relevant pre-commit checks, or clearly identify what still must be run.
-3. Show `git add` commands for the full intended scope, or one `git add` sequence per logical batch.
-4. Show the corresponding structured `git commit` command for each batch using heredoc or multiple `-m` flags to ensure the full structured body is included.
-5. Verify all mandatory headers are present and correctly filled for every proposed commit, and list any blocking validation issue.
+1. Run and summarize the relevant pre-commit checks, or clearly identify what still must be run.
+1. Show `git add` commands for the full intended scope, or one `git add` sequence per logical batch.
+1. Show the corresponding structured `git commit` command for each batch using heredoc or multiple `-m` flags to ensure the full structured body is included.
+1. Verify all mandatory headers are present and correctly filled for every proposed commit, and list any blocking validation issue.
 ```

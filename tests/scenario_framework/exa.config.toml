@@ -27,3 +27,7 @@ memoryGlobal = "Memory/Global"
 [watcher]
 debounce_ms = 200
 stability_check = true
+
+[amendment]
+enabled = true
+threshold = 60

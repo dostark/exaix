@@ -294,11 +294,11 @@ When you discover better patterns:
 1.
 1.
 
-   ```bash
-   deno run --allow-read --allow-write scripts/build_agents_index.ts
-   deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
-   deno run --allow-read scripts/validate_agents_docs.ts
-   ```
+```bash
+deno run --allow-read --allow-write scripts/build_agents_index.ts
+deno run --allow-read --allow-write scripts/build_agents_embeddings.ts --mode mock
+deno run --allow-read scripts/validate_agents_docs.ts
+```
 
 ## Meta Note
 

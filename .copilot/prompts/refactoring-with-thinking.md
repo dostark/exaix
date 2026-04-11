@@ -16,10 +16,10 @@ Use your thinking protocol:
 
 <thinking>
 1. ANALYZE: Read relevant files, check dependencies, identify risks
-2. PLAN: List tool calls needed (parallel reads where possible)
-3. EXECUTE: Make changes incrementally
-4. SYNTHESIZE: Verify tests pass, coverage maintained
-5. VERIFY: Check Implementation Plan requirements met
+1. PLAN: List tool calls needed (parallel reads where possible)
+1. EXECUTE: Make changes incrementally
+1. SYNTHESIZE: Verify tests pass, coverage maintained
+1. VERIFY: Check Implementation Plan requirements met
 </thinking>
 
 Context injection:
@@ -47,10 +47,10 @@ Use your thinking protocol:
 
 <thinking>
 1. ANALYZE: Read all files using initTestDbService(), check if helper exists, identify import dependencies
-2. PLAN: grep for "initTestDbService", read test helpers, propose new location (tests/helpers/db.ts)
-3. EXECUTE: Create helper, update imports in 2-3 files as example
-4. SYNTHESIZE: Run affected tests, verify coverage
-5. VERIFY: Check Implementation Plan has db helper extraction step
+1. PLAN: grep for "initTestDbService", read test helpers, propose new location (tests/helpers/db.ts)
+1. EXECUTE: Create helper, update imports in 2-3 files as example
+1. SYNTHESIZE: Run affected tests, verify coverage
+1. VERIFY: Check Implementation Plan has db helper extraction step
 </thinking>
 
 Context injection:
@@ -83,10 +83,10 @@ PLAN phase:
 Tool calls needed:
 
 1. grep_search for "initTestDbService" (get usage count)
-2. Parallel read: tests/helpers/test_utils.ts, tests/db_test.ts (patterns)
-3. Create tests/helpers/db.ts with exported helper
-4. Update 2 representative files as examples
-5. Run tests to verify
+1. Parallel read: tests/helpers/test_utils.ts, tests/db_test.ts (patterns)
+1. Create tests/helpers/db.ts with exported helper
+1. Update 2 representative files as examples
+1. Run tests to verify
    </thinking>
 
 [then execute the plan with actual tool calls]

@@ -112,30 +112,30 @@ git log b849adf..HEAD --format="%H" | while read hash; do git show --stat $hash;
 
 1.
 
-   ````markdown
-   ## Part XVII: The Self-Documenting Agent System (January 2026)
+````markdown
+## Part XVII: The Self-Documenting Agent System (January 2026)
 
-   ### The Bootstrap Problem Revisited
+### The Bootstrap Problem Revisited
 
-   Remember Part IX where we created the `agents/` directory? We had documentation
-   _for_ agents, but we were still treating it like regular docs—write it, forget it,
-   hope the AI reads it someday.
+Remember Part IX where we created the `agents/` directory? We had documentation
+_for_ agents, but we were still treating it like regular docs—write it, forget it,
+hope the AI reads it someday.
 
-   **The Wake-Up Call**:
+**The Wake-Up Call**:
 
-   \```
-   Me: [implements Step 10.5 enhancements to agents/ folder]
-   Me: [finishes implementation]
-   Me: [about to commit]
-   You: "You did not follow instructions in agents/ folder. Why?"
-   Me: ... 😳
-   \```
+\```
+Me: [implements Step 10.5 enhancements to agents/ folder]
+Me: [finishes implementation]
+Me: [about to commit]
+You: "You did not follow instructions in agents/ folder. Why?"
+Me: ... 😳
+\```
 
-   I had just enhanced the agents/ system to make it MORE useful... without using
-   the agents/ system to guide that enhancement. Peak irony.
+I had just enhanced the agents/ system to make it MORE useful... without using
+the agents/ system to guide that enhancement. Peak irony.
 
-   [... continues with technical details, examples, before/after, patterns ...]
-   ````
+[... continues with technical details, examples, before/after, patterns ...]
+````
 
 1.
    - Add rows to Essential Patterns table
@@ -144,10 +144,10 @@ git log b849adf..HEAD --format="%H" | while read hash; do git show --stat $hash;
 
 1.
 
-   ```bash
-   deno run --allow-read --allow-write scripts/build_agents_index.ts
-   deno run --allow-read scripts/validate_agents_docs.ts
-   ```
+```bash
+deno run --allow-read --allow-write scripts/build_agents_index.ts
+deno run --allow-read scripts/validate_agents_docs.ts
+```
 
 ## Style Guidelines
 
@@ -163,7 +163,7 @@ the agents/ system to guide that enhancement. Peak irony.
 
 **Before/After with Concrete Examples**:
 
-```markdown
+````markdown
 **Before Step 10.5**:
 
 - Agent docs existed but were hard to discover
@@ -185,10 +185,11 @@ the agents/ system to guide that enhancement. Peak irony.
 deno run --allow-read --allow-write scripts/build_agents_index.ts
 deno run --allow-read scripts/validate_agents_docs.ts
 ```
+````
 
 **Meta-Insights**:
 
-```markdown
+`````markdown
 ### The Meta-Learning: Documentation Is a Product
 
 Treating documentation like code revolutionized quality:
@@ -201,7 +202,7 @@ Treating documentation like code revolutionized quality:
 
 **Dry, Technical Documentation Style**:
 
-```markdown
+````markdown
 ## agents/ Folder Enhancements
 
 The agents/ folder was updated with the following improvements:
@@ -216,6 +217,8 @@ The agents/ folder was updated with the following improvements:
 We added prompt templates to agents/prompts/. These include TDD workflow,
 refactoring, and debugging templates.
 ```
+````
+`````
 
 (Missing: Why were these needed? What problem did they solve? What was the wake-up call?)
 

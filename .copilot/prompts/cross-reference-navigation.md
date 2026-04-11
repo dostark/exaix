@@ -55,7 +55,7 @@ Then proceed with:
 
 ### Security Audit
 
-```text
+````text
 I want to perform a security audit on Portal permission boundaries.
 
 First, consult `.copilot/cross-reference.md` for the workflow:
@@ -110,7 +110,7 @@ Read `claude-rag.md` sections:
 - Token budget strategies
 
 Then answer my questions about using embeddings.
-```
+````
 
 ---
 

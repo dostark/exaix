@@ -815,6 +815,32 @@ exactl plan revise <plan-id> \
   --comment "Include unit tests"
 ```
 
+#### **Plan Amendment Commands** - Manage paused executions
+
+The Plan Amendment Safety Gate allows agents to propose structural changes to an execution plan mid-mission. This is triggered when the agent detects environmental drift or tool failures.
+
+```bash
+# List all plans awaiting amendment approval
+exactl plan amendment list
+
+# Show proposed changes for a specific plan
+exactl plan amendment show <plan-id>
+
+# Approve amendment and resume execution
+exactl plan amendment approve <plan-id>
+
+# Reject amendment and abort execution
+exactl plan amendment reject <plan-id> --reason "Incorrect approach"
+```
+
+**Workflow:**
+
+1. **Trigger**: Agent detects drift and pauses execution. Status becomes `amendment_pending`.
+2. **Review**: You review the proposal using `plan amendment show`.
+3. **Decision**: You approve to apply changes and resume, or reject to abort.
+
+For more details, see the **Safety Gates** section.
+
 **Example workflow:**
 
 ```bash
@@ -3128,6 +3154,39 @@ Cost tracking supports all major AI providers:
 | Google    | ✅             | ✅              | ✅                 |
 | Ollama    | ✅             | ❌ (free)       | ❌                 |
 | Mock      | ✅             | ❌              | ❌                 |
+
+## 12. Safety Gates & Plan Amendments
+
+The **Plan Amendment Safety Gate** is a human-in-the-loop safeguard that allows the Exaix agent to propose structural changes to an execution plan mid-mission.
+
+### 12.1 When Amendments Trigger
+
+An amendment is automatically proposed by the agent when:
+
+- **Environmental Drift**: The workspace environment changed since the plan was created.
+- **Tool Failures**: A critical tool fails in a way that makes downstream steps impossible.
+- **Low Confidence**: The agent's reasoning confidence falls below the configured threshold.
+
+### 12.2 The Amendment Workflow
+
+1. **Pause**: Execution is immediately paused. A checkpoint is saved.
+2. **Proposal**: The agent generates a "Plan Amendment Patch" with a summary of changes.
+3. **Wait**: The plan status becomes `amendment_pending`.
+4. **Human Review**: Use CLI commands to review and decide:
+   - `exactl plan amendment show` to see the proposed diff.
+   - `exactl plan amendment approve` to apply and resume.
+   - `exactl plan amendment reject` to abort the plan.
+
+### 12.3 Configuration
+
+Configure the safety gate in `exa.config.toml`:
+
+```toml
+[amendment]
+enabled = true             # Enable the safety gate (default: false)
+threshold = 60            # Confidence threshold (0-100) (default: 60)
+expiry_ms = 86400000       # How long an amendment can stay pending (default: 24h)
+```
 
 ---
 

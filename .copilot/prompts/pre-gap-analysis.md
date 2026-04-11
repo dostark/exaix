@@ -304,13 +304,13 @@ For each unspecified item, produce a gap entry:
 
 1. **Classify every gap** using the severity taxonomy:
 
-| Symbol | Meaning |
-| --- | --- |
-| 🔴 Critical | Blocks implementation — plan is contradictory or a required symbol is missing |
-| 🔒 Security | Security control unspecified or missing (OWASP Top 10) |
-| 🟡 Feasibility | Risky assumption or unspecified algorithm — needs a design decision |
-| 🟠 Testing | Missing or under-specified test — step may ship without coverage |
-| 🔵 Conceptual | Minor ambiguity or style issue — low risk, but should be clarified |
+| Symbol         | Meaning                                                                       |
+| -------------- | ----------------------------------------------------------------------------- |
+| 🔴 Critical    | Blocks implementation — plan is contradictory or a required symbol is missing |
+| 🔒 Security    | Security control unspecified or missing (OWASP Top 10)                        |
+| 🟡 Feasibility | Risky assumption or unspecified algorithm — needs a design decision           |
+| 🟠 Testing     | Missing or under-specified test — step may ship without coverage              |
+| 🔵 Conceptual  | Minor ambiguity or style issue — low risk, but should be clarified            |
 
 1. **Build the gap summary table** (required):
 
@@ -344,7 +344,7 @@ Append the following sections **at the end of the planning document** in order:
 #### 5b. Detailed gap entries (one per gap)
 
 ```markdown
-#### G{N}: {short title}  {severity symbol}
+#### G{N}: {short title} {severity symbol}
 
 - **Location in plan:** Step N.M — "{quoted sentence from plan}"
 - **Problem:** {what is undefined, missing, or contradictory}
@@ -363,7 +363,7 @@ Resolve in order before writing any implementation code:
 
 1. {fix for highest-severity gap}
 1. {fix for next gap}
-...
+   ...
 ```
 
 ---

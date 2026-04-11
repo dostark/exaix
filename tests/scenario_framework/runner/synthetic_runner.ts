@@ -8,6 +8,7 @@
  * * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
+import { join } from "@std/path";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeRunManifest } from "./evidence_collector.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
@@ -128,6 +129,7 @@ async function executeSyntheticStep(
     REQUEST_FIXTURE: options.requestFixturePath,
     WORKSPACE_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
+    EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
   };
 
   const resolvedStep = expandVariablesInStep(options.step, env);
