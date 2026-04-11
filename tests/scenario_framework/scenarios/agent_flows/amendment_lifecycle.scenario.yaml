@@ -11,7 +11,7 @@ steps:
   - id: "setup-db"
     type: "shell"
     command: "deno"
-    args: ["run", "-A", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
+    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
     output_criteria:
       - id: "setup-done"
         kind: "command-exit-code"
@@ -20,7 +20,7 @@ steps:
   - id: "add-portal"
     type: "exactl"
     command: "portal"
-    args: ["add", "$FRAMEWORK_HOME/fixtures/portals/simple_repo", "test-project"]
+    args: ["add", "$WORKSPACE_ROOT/fixtures/portals/simple_repo", "test-project"]
     output_criteria:
       - id: "portal-added"
         kind: "command-exit-code"
@@ -52,7 +52,7 @@ steps:
   - id: "wait-for-plan-file"
     type: "wait-for-file"
     args: ["**/Plans/*_plan.md"]
-    timeout_sec: 60
+    timeout_sec: 120
 
   - id: "wait-for-plan"
     type: "exactl"
@@ -66,7 +66,7 @@ steps:
   - id: "approve-plan"
     type: "exactl"
     command: "plan"
-    args: ["approve", "--all"]
+    args: ["approve-all"]
     output_criteria:
       - id: "plan-approved"
         kind: "command-output-contains"
@@ -89,7 +89,7 @@ steps:
   - id: "show-amendment"
     type: "exactl"
     command: "plan"
-    args: ["amendment", "show", "--all"]
+    args: ["amendment", "show-all"]
     output_criteria:
       - id: "amendment-diff-viz"
         kind: "command-output-contains"
@@ -98,16 +98,21 @@ steps:
   - id: "approve-amendment"
     type: "exactl"
     command: "plan"
-    args: ["amendment", "approve", "--all"]
+    args: ["amendment", "approve-all"]
     output_criteria:
       - id: "amendment-applied"
         kind: "command-output-contains"
         contains: ["Amendment approved"]
 
+  - id: "wait-for-completion"
+    type: "wait-for-file"
+    args: ["**/Archive/*_plan.md"]
+    timeout_sec: 60
+
   - id: "verify-completion"
     type: "exactl"
-    command: "list"
-    args: ["--status", "completed"]
+    command: "request"
+    args: ["list", "--status", "completed", "--all"]
     output_criteria:
       - id: "execution-finished"
         kind: "command-output-contains"

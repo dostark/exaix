@@ -8,7 +8,7 @@ mode_support: [auto]
 
 portals:
   - alias: portal-exaix
-    source_path: "/home/dkasymov/git/Exaix"
+    source_path: "$HOME/git/Exaix"
 
 steps:
   - id: cleanup-workspace

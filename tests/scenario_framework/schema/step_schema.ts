@@ -79,7 +79,7 @@ const CriterionStatusSchema = z.nativeEnum(CriterionStatus);
 
 export const PortalMountSchema = z.object({
   alias: NON_EMPTY_STRING,
-  source_path: z.string().min(1).startsWith("/"),
+  source_path: z.string().min(1),
 }).strict();
 
 export type IPortalMount = z.infer<typeof PortalMountSchema>;

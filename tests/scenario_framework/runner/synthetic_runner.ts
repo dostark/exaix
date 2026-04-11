@@ -54,6 +54,21 @@ export async function runSyntheticScenario(
     frameworkHome: options.frameworkHome,
     scenarioPath: options.scenarioPath,
   });
+
+  const envForExpansion = {
+    ...Deno.env.toObject(),
+    ...(options.env ?? {}),
+    WORKSPACE_ROOT: options.workspaceRoot,
+    FRAMEWORK_HOME: options.frameworkHome,
+    EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
+  };
+
+  // Expand top-level portals for portability (e.g., using $FRAMEWORK_HOME)
+  loadedScenario.scenario.portals = loadedScenario.scenario.portals.map((p) => ({
+    ...p,
+    source_path: expandInString(p.source_path, envForExpansion),
+  }));
+
   const stepOutcomes: IScenarioStepOutcome[] = [];
 
   const runResult = await runScenarioInMode({
@@ -128,6 +143,7 @@ async function executeSyntheticStep(
     ...(options.step.env ?? {}),
     REQUEST_FIXTURE: options.requestFixturePath,
     WORKSPACE_ROOT: options.workspaceRoot,
+    EXA_SYSTEM_ROOT: options.workspaceRoot,
     FRAMEWORK_HOME: options.frameworkHome,
     EXA_CONFIG_PATH: join(options.workspaceRoot, "exa.config.toml"),
   };
@@ -288,34 +304,38 @@ function mapExecutionStatus(outcome: IScenarioStepOutcome): string {
 }
 
 function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>): IScenarioStep {
-  const expand = (str: string) => {
-    if (!str) return str;
-    let res = str;
-    for (const [key, value] of Object.entries(env)) {
-      res = res.replaceAll(`$${key}`, value);
-    }
-    return res;
-  };
-
   return {
     ...step,
-    command: step.command ? expand(step.command) : step.command,
-    args: step.args?.map(expand),
+    command: step.command ? expandInString(step.command, env) : step.command,
+    args: step.args?.map((arg) => expandInString(arg, env)),
     input_criteria: step.input_criteria.map((criterion: ICriterion) => {
       const updates: Partial<Record<"path" | "target_file", string>> = {};
-      if ("path" in criterion && typeof criterion.path === "string") updates.path = expand(criterion.path);
+      if ("path" in criterion && typeof criterion.path === "string") {
+        updates.path = expandInString(criterion.path, env);
+      }
       if ("target_file" in criterion && typeof criterion.target_file === "string") {
-        updates.target_file = expand(criterion.target_file);
+        updates.target_file = expandInString(criterion.target_file, env);
       }
       return { ...criterion, ...updates } as ICriterion;
     }),
     output_criteria: step.output_criteria.map((criterion: ICriterion) => {
       const updates: Partial<Record<"path" | "target_file", string>> = {};
-      if ("path" in criterion && typeof criterion.path === "string") updates.path = expand(criterion.path);
+      if ("path" in criterion && typeof criterion.path === "string") {
+        updates.path = expandInString(criterion.path, env);
+      }
       if ("target_file" in criterion && typeof criterion.target_file === "string") {
-        updates.target_file = expand(criterion.target_file);
+        updates.target_file = expandInString(criterion.target_file, env);
       }
       return { ...criterion, ...updates } as ICriterion;
     }),
   } as IScenarioStep;
+}
+
+function expandInString(str: string, env: Record<string, string>): string {
+  if (!str) return str;
+  let res = str;
+  for (const [key, value] of Object.entries(env)) {
+    res = res.replaceAll(`$${key}`, value);
+  }
+  return res;
 }

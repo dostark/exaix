@@ -10,7 +10,7 @@
  */
 
 import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
-import { globToRegExp, resolve } from "@std/path";
+import { globToRegExp, relative, resolve } from "@std/path";
 
 export interface IExecuteScenarioStepOptions {
   step: IScenarioStep;
@@ -147,10 +147,11 @@ async function executeWaitForFileStep(
 
 async function findMatchingFiles(root: string, pattern: RegExp): Promise<string[]> {
   const matches: string[] = [];
+  const workspaceRoot = root;
 
   try {
     for await (const entry of Deno.readDir(root)) {
-      await checkEntry(entry, root, pattern, matches);
+      await checkEntry(entry, root, pattern, matches, workspaceRoot);
     }
   } catch {
     // Directory not accessible
@@ -164,10 +165,12 @@ async function checkEntry(
   basePath: string,
   pattern: RegExp,
   matches: string[],
+  workspaceRoot: string,
 ): Promise<void> {
   const fullPath = resolve(basePath, entry.name);
+  const relPath = relative(workspaceRoot, fullPath);
 
-  if (entry.isFile && pattern.test(entry.name)) {
+  if (entry.isFile && (pattern.test(entry.name) || pattern.test(relPath))) {
     matches.push(fullPath);
     return;
   }
@@ -175,7 +178,7 @@ async function checkEntry(
   if (entry.isDirectory && !entry.name.startsWith(".")) {
     try {
       for await (const subEntry of Deno.readDir(fullPath)) {
-        await checkEntry(subEntry, fullPath, pattern, matches);
+        await checkEntry(subEntry, fullPath, pattern, matches, workspaceRoot);
       }
     } catch {
       // Directory not accessible

@@ -7,7 +7,7 @@ request_fixture: "fixtures/requests/provider_live/api_documenter.md"
 mode_support: ["auto", "step"]
 portals:
   - alias: "portal-exaix"
-    source_path: "/home/dkasymov/git/Exaix"
+    source_path: "$FRAMEWORK_HOME/../.."
 steps:
   - id: "create-plan-request"
     type: "exactl"
