@@ -69,7 +69,7 @@
     "typescript": "npm:typescript@5.3.3",
     "@babel/parser": "npm:@babel/parser@7.24.4",
     "@std/flags": "jsr:@std/flags@^0.221.0",
-    "@std/streams": "jsr:@std/streams@^0.221.0"
+    "@std/streams": "jsr:@std/streams@^1.0.17"
   },
   "exclude": [
     "cov_profile",

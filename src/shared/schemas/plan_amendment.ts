@@ -26,7 +26,7 @@ export type IPlanAmendmentTrigger = z.infer<typeof ZPlanAmendmentTrigger>;
  */
 export const ZPlanAmendmentPatch = z.object({
   amendmentId: z.string().uuid(),
-  planId: z.string().uuid(),
+  planId: z.string(),
   affectedRemainingStepIds: z.array(z.string()).min(1),
   summary: z.string().min(1),
   adds: z.array(z.object({
