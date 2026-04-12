@@ -1,0 +1,1 @@
+../../.copilot/workflows/plan.md
