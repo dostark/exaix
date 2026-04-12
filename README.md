@@ -29,15 +29,16 @@ Exaix enables secure, auditable multi-agent workflows with human-in-the-loop sup
 
 ## Key Concepts
 
-| Term            | Description                                                       |
-| --------------- | ----------------------------------------------------------------- |
-| **Request**     | User task input triggering agent workflows.                       |
-| **Plan**        | Agent's proposed steps/changes for human review.                  |
-| **Changeset**   | Approved, atomic file modifications from Plans.                   |
-| **Safety Gate** | Mid-execution replanning approval for dynamic missions.           |
-| **Blueprint**   | Reusable agent identity/persona definitions.                      |
-| **Portal**      | Symlink to external project repos for context.                    |
-| **Memory**      | Persistent vector store for agent recall/search. [cite:3][cite:4] |
+| Term               | Description                                                       |
+| ------------------ | ----------------------------------------------------------------- |
+| **Request**        | User task input triggering agent workflows.                       |
+| **Plan**           | Agent's proposed steps/changes for human review.                  |
+| **Changeset**      | Approved, atomic file modifications from Plans.                   |
+| **Plan Amendment** | Mid-execution replanning with human approval when triggers fire.  |
+| **Safety Gate**    | Approval checkpoint for dynamic mission adjustments.              |
+| **Blueprint**      | Reusable agent identity/persona definitions.                      |
+| **Portal**         | Symlink to external project repos for context.                    |
+| **Memory**         | Persistent vector store for agent recall/search. [cite:3][cite:4] |
 
 ## Architecture Overview
 

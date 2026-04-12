@@ -20,6 +20,7 @@ import { CommandUtils } from "../helpers/command_utils.ts";
 import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import {
   AMENDMENT_ARTIFACTS_DIR,
+  PLAN_AMENDMENT_EVENT_APPLIED,
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_REJECTED,
   PLAN_REVIEW_COMMENT_PREFIX,
@@ -746,6 +747,14 @@ export class PlanCommands extends BaseCommand {
         approved_at: now,
         approved_by: actor,
         trace_id: frontmatter.trace_id,
+      });
+
+      // Emit APPLIED event for resume tracking
+      const appliedStepCount = patch.adds.length + patch.updates.length;
+      await this.display.info(PLAN_AMENDMENT_EVENT_APPLIED, planId, {
+        amendmentId: patch.amendmentId,
+        planId,
+        appliedStepCount,
       });
 
       console.log(`[PlanCommands] Amendment ${patch.amendmentId} approved and applied to ${planId}`);

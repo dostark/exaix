@@ -26,6 +26,7 @@ import {
   GIT_CMD_REV_PARSE,
   GIT_ERROR_NOTHING_TO_COMMIT,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
+  PLAN_AMENDMENT_EVENT_PROPOSED,
   PORTAL_ALIAS_WORKSPACE,
   PROMPT_PLAN_STEP_REASONING_PREFIX,
   PROMPT_PLAN_STEP_TASK_PREFIX,
@@ -393,7 +394,15 @@ export class PlanExecutor {
         trigger,
       });
 
-      // 3. Persist amendment artifact
+      // 3. Emit PROPOSED event before approval gate
+      await this.logger.info(PLAN_AMENDMENT_EVENT_PROPOSED, context.trace_id, {
+        amendmentId: patch.amendmentId,
+        planId: patch.planId,
+        stepId: trigger.stepId,
+        triggerSource: trigger.source,
+      });
+
+      // 4. Persist amendment artifact
       const executionRoot = this.config.paths.memoryExecution.includes("/")
         ? this.config.paths.memoryExecution
         : join(this.config.paths.memory, this.config.paths.memoryExecution);
@@ -410,7 +419,7 @@ export class PlanExecutor {
         JSON.stringify(patch, null, 2),
       );
 
-      // 4. Emit event for TUI/Notification
+      // 5. Emit event for TUI/Notification
       await this.logger.info(PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL, context.trace_id, {
         amendmentId: patch.amendmentId,
         planId: patch.planId,
@@ -419,7 +428,7 @@ export class PlanExecutor {
         createdAt: patch.createdAt,
       });
 
-      // 5. Throw error to pause execution loop
+      // 6. Throw error to pause execution loop
       throw new PlanAmendmentPendingError(
         patch.planId,
         patch.amendmentId,

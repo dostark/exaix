@@ -254,7 +254,7 @@ export class PlanWriter {
       trace_id: metadata.traceId,
       request_id: metadata.requestId,
       status: PlanStatus.REVIEW,
-      created_at: metadata.createdAt,
+      created_at: metadata.createdAt.toISOString(),
     };
 
     if (metadata.identityId) {

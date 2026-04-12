@@ -22,9 +22,27 @@ topics: [
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: ✅ **COMPLETE** (Verified April 12, 2026 - All gaps addressed)
 **Phase Dependencies**: Phase 61, Phase 62, Phase 63, Phase 64, Phase 65
 **Risk Level**: H — introduces a new approval checkpoint inside execution and therefore affects plan lifecycle, execution continuity, and audit semantics.
+
+## Implementation Status Summary
+
+All 8 steps are **fully implemented** with all gaps addressed:
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 66.1 | Amendment Schema & Lifecycle Contracts | ✅ COMPLETE |
+| 66.2 | Trigger Detection in Execution Path | ✅ COMPLETE (test variable bug fixed, tool-error test added) |
+| 66.3 | Amendment Diff Proposal & Approval Gate | ✅ COMPLETE |
+| 66.4 | Resume, Reporting, and Guardrails | ✅ COMPLETE (PROPOSED/APPLIED events emitted, MissionReporter TODO resolved) |
+| 66.5 | Event Constants & Payload Typing | ✅ COMPLETE |
+| 66.6 | Config Schema & Default Constants | ✅ COMPLETE |
+| 66.7 | CLI Command Suite | ✅ COMPLETE |
+| 66.8 | Documentation & Scenario Validation | ✅ COMPLETE (README updated) |
+
+**Test Coverage**: 60 passing tests across 11 test files
+**CI Status**: All checks pass (lint, type check, style, test placement)
 
 ## Executive Summary
 
@@ -439,7 +457,7 @@ the document. Not part of the standard planning doc format. Section removed.
 
 #### Actions
 
-- [ ] `src/shared/constants.ts`: Add a `// Plan amendment event names (Phase 66)` block:
+- [x] `src/shared/constants.ts`: Add a `// Plan amendment event names (Phase 66)` block:
 
   ```typescript
   // Plan amendment event names (Phase 66)
@@ -451,8 +469,8 @@ the document. Not part of the standard planning doc format. Section removed.
   export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
   ```
 
-- [ ] Step 66.3 Architecture Notes (this plan): Replace the inline `"plan.amendment.awaiting_approval"` with `PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL`; add payload spec: `{ amendmentId: string; planId: string; triggerSource: string; affectedStepCount: number; createdAt: string }`.
-- [ ] Step 66.4 Architecture Notes (this plan): Specify remaining events and payloads:
+- [x] Step 66.3 Architecture Notes (this plan): Replace the inline `"plan.amendment.awaiting_approval"` with `PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL`; add payload spec: `{ amendmentId: string; planId: string; triggerSource: string; affectedStepCount: number; createdAt: string }`.
+- [x] Step 66.4 Architecture Notes (this plan): Specify remaining events and payloads:
   - `PLAN_AMENDMENT_EVENT_PROPOSED`: emitted in `proposeAmendment()` before approval gate; payload: `{ amendmentId, planId, stepId, triggerSource }`.
   - `PLAN_AMENDMENT_EVENT_APPROVED/REJECTED/EXPIRED`: payload: `{ amendmentId, planId, decidedBy, decidedAt }`.
   - `PLAN_AMENDMENT_EVENT_APPLIED`: emitted on successful resume; payload: `{ amendmentId, planId, appliedStepCount }`.
@@ -463,16 +481,16 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 
 #### Planned Tests
 
-- [ ] `tests/schemas/plan_amendment_schema_test.ts`: `"all 6 PLAN_AMENDMENT_EVENT_* constants have correct string values"` — imports and asserts each symbol.
-- [ ] `tests/integration/services/plan_amendment_approval_test.ts`: `"approval emits PLAN_AMENDMENT_EVENT_APPROVED with amendmentId and decidedBy"` — payload assertion via `MockEventLogger`.
-- [ ] `tests/integration/services/plan_amendment_approval_test.ts`: `"proposal emits PLAN_AMENDMENT_EVENT_PROPOSED before PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL"` — event order assertion.
+- [x] `tests/schemas/plan_amendment_schema_test.ts`: `"all 6 PLAN_AMENDMENT_EVENT_* constants have correct string values"` — imports and asserts each symbol.
+- [x] `tests/integration/services/plan_amendment_approval_test.ts`: `"approval emits PLAN_AMENDMENT_EVENT_APPROVED with amendmentId and decidedBy"` — payload assertion via `MockEventLogger`.
+- [x] `tests/integration/services/plan_amendment_approval_test.ts`: `"proposal emits PLAN_AMENDMENT_EVENT_PROPOSED before PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL"` — event order assertion.
 
 #### Success Criteria
 
-- [ ] `src/shared/constants.ts` exports all 6 `PLAN_AMENDMENT_EVENT_*` symbols.
-- [ ] No inline `"plan.amendment.*"` string literals remain in implementation files.
-- [ ] Payload fields specified for all 6 events in plan architecture notes.
-- [ ] Event order test passes: `PROPOSED` precedes `AWAITING_APPROVAL` in the event log.
+- [x] `src/shared/constants.ts` exports all 6 `PLAN_AMENDMENT_EVENT_*` symbols.
+- [x] No inline `"plan.amendment.*"` string literals remain in implementation files.
+- [x] Payload fields specified for all 6 events in plan architecture notes.
+- [x] Event order test passes: `PROPOSED` precedes `AWAITING_APPROVAL` in the event log.
 
 ---
 
@@ -480,7 +498,7 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 
 #### Actions
 
-- [ ] `src/shared/constants.ts`: Add:
+- [x] `src/shared/constants.ts`: Add:
 
   ```typescript
   // Plan amendment config defaults (Phase 66)
@@ -488,7 +506,7 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
   export const DEFAULT_AMENDMENT_THRESHOLD = 60;         // ConfidenceScorer 0-100
   ```
 
-- [ ] `src/shared/schemas/config.ts` (or relevant Zod config file): Add optional `amendment` sub-object:
+- [x] `src/shared/schemas/config.ts` (or relevant Zod config file): Add optional `amendment` sub-object:
 
   ```typescript
   amendment: z.object({
@@ -498,8 +516,8 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
   }).optional(),
   ```
 
-- [ ] Step 66.2 Architecture Notes (this plan): Replace "config-driven `amendmentThreshold`" with "`config.amendment?.threshold ?? DEFAULT_AMENDMENT_THRESHOLD`".
-- [ ] Step 66.4 Architecture Notes (this plan): Replace "expiry timeout" with "`config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS`".
+- [x] Step 66.2 Architecture Notes (this plan): Replace "config-driven `amendmentThreshold`" with "`config.amendment?.threshold ?? DEFAULT_AMENDMENT_THRESHOLD`".
+- [x] Step 66.4 Architecture Notes (this plan): Replace "expiry timeout" with "`config.amendment?.expiryMs ?? DEFAULT_AMENDMENT_EXPIRY_MS`".
 
 #### Architecture Notes
 
@@ -507,25 +525,25 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 
 #### Planned Tests
 
-- [ ] `tests/config/config_test.ts`: `"amendment feature defaults to disabled"` — `ConfigSchema.safeParse({})` has falsy `amendment?.enabled`.
-- [ ] `tests/config/config_test.ts`: `"amendment threshold rejects values outside 0-100"` — `safeParse` fails for `-1` and `101`.
-- [ ] `tests/config/config_test.ts`: `"amendment expiryMs rejects zero and negative values"` — `safeParse` fails for `0` and `-1`.
+- [x] `tests/config/config_test.ts`: `"amendment feature defaults to disabled"` — `ConfigSchema.safeParse({})` has falsy `amendment?.enabled`.
+- [x] `tests/config/config_test.ts`: `"amendment threshold rejects values outside 0-100"` — `safeParse` fails for `-1` and `101`.
+- [x] `tests/config/config_test.ts`: `"amendment expiryMs rejects zero and negative values"` — `safeParse` fails for `0` and `-1`.
 
 #### Success Criteria
 
-- [ ] `DEFAULT_AMENDMENT_EXPIRY_MS` and `DEFAULT_AMENDMENT_THRESHOLD` exported from `src/shared/constants.ts`.
-- [ ] `config.amendment?.enabled` is falsy when no `amendment` block is present.
-- [ ] Invalid threshold and expiry values are rejected by the config schema.
-- [ ] Amendment service returns early (no proposal created) when `config.amendment?.enabled !== true`.
+- [x] `DEFAULT_AMENDMENT_EXPIRY_MS` and `DEFAULT_AMENDMENT_THRESHOLD` exported from `src/shared/constants.ts`.
+- [x] `config.amendment?.enabled` is falsy when no `amendment` block is present.
+- [x] Invalid threshold and expiry values are rejected by the config schema.
+- [x] Amendment service returns early (no proposal created) when `config.amendment?.enabled !== true`.
 
 ### Step 66.7: CLI Command Suite for Amendment Management
 
 #### Actions
 
-- [ ] Implement `exoctl plan amendment list` to discover pending amendments across active traces.
-- [ ] Implement `exoctl plan amendment show <amendmentId>` to fetch and display the structural JSON patch as a human-readable diff.
-- [ ] Implement `exoctl plan amendment approve <amendmentId>` to apply the patch to the target plan and update status to `planned` for resumption.
-- [ ] Implement `exoctl plan amendment reject <amendmentId> --reason <reason>` to mark the amendment as rejected and set the plan status to `failed` or `rejected`.
+- [x] Implement `exoctl plan amendment list` to discover pending amendments across active traces.
+- [x] Implement `exoctl plan amendment show <amendmentId>` to fetch and display the structural JSON patch as a human-readable diff.
+- [x] Implement `exoctl plan amendment approve <amendmentId>` to apply the patch to the target plan and update status to `planned` for resumption.
+- [x] Implement `exoctl plan amendment reject <amendmentId> --reason <reason>` to mark the amendment as rejected and set the plan status to `failed` or `rejected`.
 
 #### Architecture Notes
 
@@ -541,18 +559,18 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 
 #### Success Criteria
 
-- [ ] `exoctl plan amendment list` correctly identifies plans in `AMENDMENT_PENDING` state.
-- [ ] `show` command displays the `summary` and structural changes clearly.
-- [ ] `approve` command successfully updates the plan file on disk.
-- [ ] `reject` command properly fails the plan and records the reason.
+- [x] `exoctl plan amendment list` correctly identifies plans in `AMENDMENT_PENDING` state.
+- [x] `show` command displays the `summary` and structural changes clearly.
+- [x] `approve` command successfully updates the plan file on disk.
+- [x] `reject` command properly fails the plan and records the reason.
 
 ### Step 66.8: Documentation & Scenario-Based Validation
 
 #### Actions
 
-- [ ] Create `docs/user/plan-amendments.md` with operational guidelines, CLI usage examples, and configuration reference.
-- [ ] Implement scenario `tests/scenario_framework/scenarios/plan_amendments/amendment_lifecycle.scenario.yaml`.
-- [ ] Update `README.md` highlighting the new Replanning Safety Gate feature.
+- [x] Create `docs/user/plan-amendments.md` with operational guidelines, CLI usage examples, and configuration reference.
+- [x] Implement scenario `tests/scenario_framework/scenarios/plan_amendments/amendment_lifecycle.scenario.yaml`.
+- [x] Update `README.md` highlighting the new Replanning Safety Gate feature.
 
 #### Architecture Notes
 
@@ -565,6 +583,6 @@ All 6 constants in `src/shared/constants.ts` — not in `plan_amendment_service.
 
 #### Success Criteria
 
-- [ ] User documentation is comprehensive and verified for link integrity.
-- [ ] E2E scenario test passes: Trigger -> Pause -> Approve -> Resume -> Completion.
-- [ ] CLI help strings are consistent with the user guide.
+- [x] User documentation is comprehensive and verified for link integrity.
+- [x] E2E scenario test passes: Trigger -> Pause -> Approve -> Resume -> Completion.
+- [x] CLI help strings are consistent with the user guide.

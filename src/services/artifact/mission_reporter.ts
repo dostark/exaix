@@ -411,18 +411,23 @@ export class MissionReporter {
         return amendments;
       }
 
+      // Query journal for amendment decisions if db is available
+      const decisions = await this.queryAmendmentDecisions(traceId);
+
       for await (const entry of Deno.readDir(amendmentsDir)) {
         if (entry.isFile && entry.name.endsWith(".json")) {
           try {
             const content = await Deno.readTextFile(join(amendmentsDir, entry.name));
             const patch = ZPlanAmendmentPatch.parse(JSON.parse(content));
-            // Note: In v1 we don't track the decision in the artifact itself (it's in the journal)
-            // But for reporting, we can at least show the proposal was made.
+
+            // Look up actual decision from journal
+            const decision = decisions.get(patch.amendmentId) || "proposed";
+
             amendments.push({
               id: patch.amendmentId,
-              trigger: patch.summary.substring(0, 50), // Fallback summary part
+              trigger: patch.summary.substring(0, 50),
               summary: patch.summary,
-              decision: "recorded", // TODO: Query journal for actual decision
+              decision,
             });
           } catch (e) {
             console.warn(`Failed to parse amendment artifact ${entry.name}:`, e);
@@ -434,5 +439,41 @@ export class MissionReporter {
     }
 
     return amendments;
+  }
+
+  /**
+   * Query the journal for amendment decision events
+   */
+  private async queryAmendmentDecisions(traceId: string): Promise<Map<string, string>> {
+    const decisions = new Map<string, string>();
+
+    if (!this.db) {
+      return decisions;
+    }
+
+    try {
+      const events = await this.db.queryActivity({
+        traceId: traceId,
+        orConditions: [
+          { actionType: "plan.amendment.approved" },
+          { actionType: "plan.amendment.rejected" },
+          { actionType: "plan.amendment.expired" },
+          { actionType: "plan.amendment.applied" },
+        ],
+      });
+
+      for (const event of events) {
+        const payload = typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload;
+        if (payload.amendmentId) {
+          // Determine decision from action_type
+          const decision = event.action_type.split(".").pop() || "unknown";
+          decisions.set(payload.amendmentId, decision);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to query amendment decisions:", error);
+    }
+
+    return decisions;
   }
 }
