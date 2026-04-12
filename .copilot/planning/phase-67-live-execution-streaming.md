@@ -12,9 +12,26 @@ topics: ["planning", "roadmap", "architecture", "tdd", "observability", "sse", "
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: ✅ **READY FOR IMPLEMENTATION** (Pre-implementation gaps resolved April 12, 2026)
 **Phase Dependencies**: Phase 61, Phase 63
 **Risk Level**: M — introduces a local event bus and long-lived CLI connections, requiring careful resource cleanup and memory leak prevention.
+
+## Pre-Implementation Gap Resolution Summary
+
+All 8 pre-implementation gaps have been resolved:
+
+| Gap | Description | Status | Resolution |
+| ----- | ------------- | -------- | ------------ |
+| G1 | `event_logger.ts` path corrected | ✅ RESOLVED | Plan updated to `src/services/core/event_logger.ts` |
+| G2 | `execution_loop.ts` path corrected | ✅ RESOLVED | Plan updated to `src/services/agent/execution_loop.ts` |
+| G3 | Heartbeat injection site corrected | ✅ RESOLVED | Step 67.2 targets `ReActLoopStrategy.execute()` |
+| G4 | `eventBus?` field added to `IEventLoggerConfig` | ✅ RESOLVED | Field added with no-op default |
+| G5 | Test paths use `tests/services/` convention | ✅ RESOLVED | All planned test paths updated |
+| G6 | Step 67.3 security notes added | ✅ RESOLVED | UUID validation, localhost binding, negative test documented |
+| G7 | `STREAMING_EVENT_*` constants defined | ✅ RESOLVED | All 5 constants added to `src/shared/constants.ts` |
+| G8 | Heartbeat interval and backpressure constants | ✅ RESOLVED | `EXECUTION_HEARTBEAT_INTERVAL_MS` and `EVENT_BUS_MAX_SUBSCRIBER_QUEUE` added |
+
+**Implementation can now proceed with Step 67.0.**
 
 ## Executive Summary
 
@@ -146,8 +163,16 @@ flowchart TD
 
 1. **Success Criteria**
 
-- Subscribers receive events matching their requested `traceId`.
-- Unsubscribing successfully removes the listener and prevents memory leaks.
+- [x] Subscribers receive events matching their requested `traceId`.
+- [x] Unsubscribing successfully removes the listener and prevents memory leaks.
+- [x] `eventBus?: IEventBusService` properly typed in `IEventLoggerConfig` (no `unknown`).
+- [x] `EventLogger.log()` publishes to event bus when configured.
+
+1. **Planned Tests**
+
+- ✅ `tests/services/observability/event_bus_service_test.ts`
+
+1. **✅ IMPLEMENTED** — `src/services/observability/event_bus_service.ts`, `src/shared/schemas/streaming_event.ts`, `src/services/core/event_logger.ts` updated, 10/10 tests passing
 
 ### Step 67.2: Execution Heartbeat
 
@@ -168,8 +193,16 @@ flowchart TD
 
 1. **Success Criteria**
 
-- Heartbeats are emitted exactly every `EXECUTION_HEARTBEAT_INTERVAL_MS` during mocked long-running LLM calls.
-- Timer is rigorously cleared on success, failure, and cancellation.
+- [x] Heartbeats are emitted exactly every `EXECUTION_HEARTBEAT_INTERVAL_MS` during mocked long-running LLM calls.
+- [x] Timer is rigorously cleared on success, failure, and cancellation.
+- [x] Heartbeat payload includes `step` (plan name) and `elapsed_ms`.
+- [x] No errors when no eventBus is configured (backward compatible).
+
+1. **Planned Tests**
+
+- ✅ `tests/services/agent/strategies/react_loop_strategy_heartbeat_test.ts`
+
+1. **✅ IMPLEMENTED** — `src/services/agent/strategies/react_loop_strategy.ts` updated with `withHeartbeat()` wrapper, 5/5 tests passing
 
 ### Step 67.3: Local SSE Endpoint
 
@@ -190,8 +223,18 @@ flowchart TD
 
 1. **Success Criteria**
 
-- HTTP clients receive well-formatted `text/event-stream` payloads.
-- Connections close cleanly without dangling listeners.
+- [x] HTTP clients receive well-formatted `text/event-stream` payloads.
+- [x] Connections close cleanly without dangling listeners.
+- [x] Non-UUID `traceId` returns HTTP 400 (OWASP A03).
+- [x] Non-GET methods return HTTP 405.
+- [x] Non-matching routes return HTTP 404.
+- [x] Published events appear in the SSE stream body.
+
+1. **Planned Tests**
+
+- ✅ `tests/integration/api/sse_handler_test.ts` — includes negative test asserting HTTP 400 for non-UUID `traceId`
+
+1. **✅ IMPLEMENTED** — `src/api/sse_handler.ts`, 13/13 tests passing
 
 ### Step 67.4: CLI Watch Command
 
@@ -211,8 +254,16 @@ flowchart TD
 
 1. **Success Criteria**
 
-- CLI successfully tails an active execution in real-time.
-- Falls back gracefully for completed traces.
+- [x] CLI successfully tails an active execution in real-time (via SSE).
+- [x] Falls back gracefully for completed traces (historical DB query).
+- [x] Color-coded output: dim heartbeats, cyan tools, white LLM, green flow status.
+- [x] Rejects non-UUID traceId with error.
+
+1. **Planned Tests**
+
+- ✅ `tests/cli/watch_command_test.ts`
+
+1. **✅ IMPLEMENTED** — `src/cli/commands/watch.ts`, 8/8 tests passing
 
 ## Risks & Mitigations
 

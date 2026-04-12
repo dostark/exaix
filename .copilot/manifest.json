@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "generated_at": "2026-04-12T10:04:32.879Z",
+=======
+  "generated_at": "2026-04-13T09:03:17.115Z",
+>>>>>>> 1c450b62 (fix(tests): fix 9 test failures from YAML quoting, MockLLM pattern ordering, and skills type)
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",

@@ -1557,6 +1557,39 @@ exactl memory search --project MyProject "API changes"
 - **Structured Data:** JSON metadata alongside human-readable summaries
 - **No Dependencies:** Direct CLI access without external tools
 
+#### **Watch Command** - Live Execution Streaming
+
+The `exactl watch` command provides real-time, `docker logs -f` style observability for agent executions. It connects to the local SSE stream and tails execution events as they happen, with color-coded output for different event types.
+
+```bash
+# Watch a live execution by trace ID
+exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+# Watch with a custom SSE port (if not using default 8765)
+EXA_SSE_PORT=9000 exactl watch a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Output format (color-coded):**
+
+| Event Type  | Color    | Example Output                                        |
+| ----------- | -------- | ----------------------------------------------------- |
+| Heartbeat   | Dim gray | `[14:30:15] ♥ heartbeat step="Step 1" elapsed=5000ms` |
+| Tool Start  | Cyan     | `[14:30:16] ▶ tool.start tool="read_file"`            |
+| Tool End    | Cyan     | `[14:30:17] ◀ tool.end tool="read_file"`              |
+| LLM Stream  | White    | `[14:30:18] ◈ llm.stream Thinking about...`           |
+| Flow Status | Green    | `[14:30:19] ◆ flow.status status="running"`           |
+
+**How it works:**
+
+1. **Live mode:** If the daemon's SSE server is running, `watch` connects to `http://127.0.0.1:8765/api/v1/traces/:id/stream` and streams events in real time.
+2. **Fallback mode:** If the SSE server is unavailable (daemon stopped, execution finished), `watch` queries the Activity Journal database and displays historical events for that trace, then exits.
+
+**Behavior:**
+
+- Heartbeats fire every 5 seconds during long-running LLM calls, confirming the agent is still active.
+- Press `Ctrl+C` to stop watching at any time.
+- The command validates the trace ID (must be a valid UUID) before connecting.
+
 ---
 
 **Example workflow:**

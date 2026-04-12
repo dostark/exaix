@@ -928,8 +928,9 @@ Raw Details: ${args.rawDetails}
     const planResult = await this.ioBreaker.execute(() => this.planWriter.writePlan(result, metadata));
 
     // Update request status and potentially "upgrade" the subject if agent suggested a better one
+    // Only upgrade if the current subject was a fallback (not explicitly set by the user)
     const extraRequestFields: Record<string, string> = {};
-    if (planResult.subject && planResult.subject !== metadata.subject) {
+    if (metadata.subjectIsFallback && planResult.subject && planResult.subject !== metadata.subject) {
       extraRequestFields.subject = planResult.subject;
     }
 

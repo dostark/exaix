@@ -94,10 +94,10 @@ Return an analysis-only plan.
     assertExists(planPath, "RequestProcessor should generate a plan");
 
     const planContent = await Deno.readTextFile(planPath);
-    assertStringIncludes(planContent, `trace_id: "${traceId}"`);
-    assertStringIncludes(planContent, `request_id: "${requestId}"`);
-    assertStringIncludes(planContent, `identity_id: "code-analyst"`);
-    assertStringIncludes(planContent, `portal: "${portalConfig.alias}"`);
+    assertStringIncludes(planContent, `trace_id: ${traceId}`);
+    assertStringIncludes(planContent, `request_id: ${requestId}`);
+    assertStringIncludes(planContent, `identity_id: code-analyst`);
+    assertStringIncludes(planContent, `portal: ${portalConfig.alias}`);
 
     const activePlanPath = await env.approvePlan(planPath);
 

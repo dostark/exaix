@@ -601,6 +601,68 @@ I will analyze the request and provide a detailed architectural assessment.
 }
 </content>`,
       },
+
+      // Execution patterns (specific triggers) — must come BEFORE planning patterns
+      // so that "Step N" prompts are caught before generic "implement" patterns
+      {
+        pattern: /executing a plan|Performing step|Action required:|Step \d+|Execution Context/i,
+        response: (_match, prompt) => {
+          // Check what kind of action is being requested
+          const needsFileWrite = /write|create|add|implement|modify|update/i.test(prompt);
+          const needsFileRead = /read|analyze|review|check/i.test(prompt);
+          if (needsFileWrite) {
+            return `<thought>
+I will implement this step by creating or modifying the necessary files.
+</thought>
+
+<actions>
+[
+  {
+    "tool": "write_file",
+    "params": {
+      "path": "src/utils.ts",
+      "content": "// Mock implementation\\nexport function helloWorld(): string {\\n  return 'Hello, World!';\\n}\\n"
+    }
+  }
+]
+</actions>`;
+          } else if (needsFileRead) {
+            return `<thought>
+I will read the relevant files to understand the current implementation.
+</thought>
+
+<actions>
+[
+  {
+    "tool": "read_file",
+    "params": {
+      "path": "src/index.ts"
+    }
+  }
+]
+</actions>`;
+          } else {
+            // Generic execution response
+            return `<thought>
+I will execute this step according to the plan.
+</thought>
+
+<actions>
+[
+  {
+    "tool": "write_file",
+    "params": {
+      "path": "src/output.txt",
+      "content": "Step completed successfully"
+    }
+  }
+]
+</actions>`;
+          }
+        },
+      },
+
+      // Planning patterns
       {
         pattern: /implement|add|create/i,
         response: (_match, prompt) => {
@@ -699,65 +761,6 @@ I need to investigate and fix the reported issue.
   "risks": ["Fix may have unintended side effects on related functionality"]
 }
 </content>`,
-      },
-
-      // Execution patterns (specific triggers)
-      {
-        pattern: /executing a plan|Performing step|Action required:|Step \d+ of \d+|Execution Context/i,
-        response: (_match, prompt) => {
-          // Check what kind of action is being requested
-          const needsFileWrite = /write|create|add|implement|modify|update/i.test(prompt);
-          const needsFileRead = /read|analyze|review|check/i.test(prompt);
-          if (needsFileWrite) {
-            return `<thought>
-I will implement this step by creating or modifying the necessary files.
-</thought>
-
-<actions>
-[
-  {
-    "tool": "write_file",
-    "params": {
-      "path": "src/utils.ts",
-      "content": "// Mock implementation\\nexport function helloWorld(): string {\\n  return 'Hello, World!';\\n}\\n"
-    }
-  }
-]
-</actions>`;
-          } else if (needsFileRead) {
-            return `<thought>
-I will read the relevant files to understand the current implementation.
-</thought>
-
-<actions>
-[
-  {
-    "tool": "read_file",
-    "params": {
-      "path": "src/index.ts"
-    }
-  }
-]
-</actions>`;
-          } else {
-            // Generic execution response
-            return `<thought>
-I will execute this step according to the plan.
-</thought>
-
-<actions>
-[
-  {
-    "tool": "write_file",
-    "params": {
-      "path": "src/output.txt",
-      "content": "Step completed successfully"
-    }
-  }
-]
-</actions>`;
-          }
-        },
       },
 
       // Fallback pattern

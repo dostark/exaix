@@ -140,8 +140,8 @@ describe("PlanWriter - JSON Integration", () => {
 
       // Check frontmatter structure
       assert(result.content.startsWith("---\n"));
-      assertStringIncludes(result.content, 'trace_id: "trace-123"');
-      assertStringIncludes(result.content, 'request_id: "test-id"');
+      assertStringIncludes(result.content, "trace_id: trace-123");
+      assertStringIncludes(result.content, "request_id: test-id");
       assertStringIncludes(result.content, "status: review");
     });
 

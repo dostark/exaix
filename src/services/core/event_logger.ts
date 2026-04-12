@@ -12,6 +12,15 @@ import type { ActivityRepository } from "../../repositories/activity_repository.
 import { ActivityActor, LogLevel } from "../../shared/enums.ts";
 import type { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
+import type { IEventBusService } from "../observability/event_bus_service.ts";
+import type { IStreamingEvent } from "../../shared/schemas/streaming_event.ts";
+import {
+  STREAMING_EVENT_FLOW_STATUS,
+  STREAMING_EVENT_HEARTBEAT,
+  STREAMING_EVENT_LLM_STREAM,
+  STREAMING_EVENT_TOOL_END,
+  STREAMING_EVENT_TOOL_START,
+} from "../../shared/constants.ts";
 import { type JSONValue, type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
 
 /**
@@ -23,6 +32,9 @@ export interface IEventLoggerConfig {
 
   /** DatabaseService instance (optional - allows console-only mode) - DEPRECATED: use activityRepo */
   db?: IDatabaseService;
+
+  /** Event bus for live streaming (optional - defaults to no-op; only callers wanting live streaming need to pass) */
+  eventBus?: IEventBusService;
 
   /** Prefix for console messages (e.g., "[Exaix]") */
   prefix?: string;
@@ -93,6 +105,7 @@ let cachedUserIdentity: string | null = null;
 export class EventLogger implements IEventLogger {
   private readonly activityRepo?: ActivityRepository;
   private readonly db?: IDatabaseService; // DEPRECATED
+  private readonly eventBus?: IEventBusService;
   private readonly prefix: string;
   private readonly minLevel: LogLevel;
   private readonly showTimestamp: boolean;
@@ -102,6 +115,7 @@ export class EventLogger implements IEventLogger {
   constructor(config: IEventLoggerConfig, defaults: Partial<ILogEvent> = {}) {
     this.activityRepo = config.activityRepo;
     this.db = config.db; // DEPRECATED
+    this.eventBus = config.eventBus;
     this.prefix = config.prefix ?? "";
     this.minLevel = config.minLevel ?? LogLevel.INFO;
     this.showTimestamp = config.showTimestamp ?? false;
@@ -160,6 +174,18 @@ export class EventLogger implements IEventLogger {
 
     // Log to IActivity Journal
     await this.logToDatabase(mergedEvent);
+
+    // Publish to event bus for live streaming (non-blocking, no-op if no bus)
+    if (this.eventBus && mergedEvent.traceId) {
+      const streamingEvent: IStreamingEvent = {
+        eventId: crypto.randomUUID(),
+        traceId: mergedEvent.traceId,
+        timestamp: new Date().toISOString(),
+        type: this.resolveStreamingEventType(mergedEvent.action),
+        payload: mergedEvent.payload ?? {},
+      };
+      this.eventBus.publish(streamingEvent);
+    }
   }
 
   /**
@@ -394,5 +420,26 @@ export class EventLogger implements IEventLogger {
   private formatTimestamp(): string {
     const now = new Date();
     return now.toISOString().slice(11, 19); // HH:MM:SS
+  }
+
+  /**
+   * Map an ILogEvent action to a streaming event type.
+   * Uses heuristics based on action name patterns.
+   */
+  private resolveStreamingEventType(action: string): IStreamingEvent["type"] {
+    const lower = action.toLowerCase();
+    if (lower.includes("heartbeat") || lower.includes("alive")) {
+      return STREAMING_EVENT_HEARTBEAT;
+    }
+    if (lower.includes("tool") && (lower.includes("start") || lower.includes("call"))) {
+      return STREAMING_EVENT_TOOL_START;
+    }
+    if (lower.includes("tool") && (lower.includes("end") || lower.includes("done") || lower.includes("complete"))) {
+      return STREAMING_EVENT_TOOL_END;
+    }
+    if (lower.includes("llm") || lower.includes("stream") || lower.includes("generate")) {
+      return STREAMING_EVENT_LLM_STREAM;
+    }
+    return STREAMING_EVENT_FLOW_STATUS;
   }
 }

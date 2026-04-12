@@ -159,7 +159,7 @@ export class PlanCommands extends BaseCommand {
 
       // Add skills if provided
       if (skills && skills.length > 0) {
-        updatedFrontmatter.skills = JSON.stringify(skills);
+        updatedFrontmatter.skills = skills;
       }
 
       // Write updated plan to target

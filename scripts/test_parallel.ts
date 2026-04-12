@@ -34,6 +34,7 @@ type TestReporter = typeof SUPPORTED_REPORTERS[number];
  * sub-processes that are sensitive to environment variable cross-contamination.
  */
 const SEQUENTIAL_FILES: string[] = [
+  "tests/scenario_framework/tests/plan_amendment_scenario_test.ts",
   "tests/integration/18_cli_commands_integration_test.ts",
   "tests/integration/24_portal_e2e_workflow_test.ts",
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",

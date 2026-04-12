@@ -200,7 +200,7 @@ Always respond with:
     assertExists(planPath, "RequestProcessor should generate plan");
 
     const planContent = await Deno.readTextFile(planPath);
-    assertStringIncludes(planContent, `target_branch: "${targetBranch}"`);
+    assertStringIncludes(planContent, `target_branch: ${targetBranch}`);
   } finally {
     await env.cleanup();
   }

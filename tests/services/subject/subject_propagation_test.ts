@@ -4,7 +4,7 @@
  * @description Integration tests for subject propagation from Request to Plan.
  */
 
-import { assertExists } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { DatabaseService } from "../../../src/services/core/db.ts";
@@ -168,9 +168,10 @@ Fix the database please.`,
 
     // 3. Verify the plan has the agent's subject in frontmatter
     const planContent = await Deno.readTextFile(planPath);
-    assertExists(planContent.match(new RegExp(`subject: "${agentSubject}"`)));
+    assertExists(planContent.match(new RegExp(`subject: ${agentSubject}`)));
 
     // 4. Verify the request file was "upgraded" with the agent's subject
+    // StatusManager writes extra fields as quoted strings: subject: "Refactor Database Schema"
     const updatedRequestContent = await Deno.readTextFile(requestFilePath);
     assertExists(updatedRequestContent.match(new RegExp(`subject: "${agentSubject}"`)));
   });
@@ -236,10 +237,12 @@ Request content.`,
 
     // 1. Verify the plan has the EXPLICIT subject in frontmatter, NOT the agent's
     const planContent = await Deno.readTextFile(planPath);
-    assertExists(planContent.match(new RegExp(`subject: "${explicitSubject}"`)));
+    assertExists(planContent.match(new RegExp(`subject: ${explicitSubject}`)));
 
-    // 2. Verify the request remains with the explicit subject (no upgrade needed)
+    // 2. Verify the request was NOT upgraded (explicit subject wins over agent suggestion)
     const updatedRequestContent = await Deno.readTextFile(requestFilePath);
     assertExists(updatedRequestContent.match(new RegExp(`subject: "${explicitSubject}"`)));
+    // Agent's suggested subject should NOT appear
+    assertEquals(updatedRequestContent.includes(`subject: "${agentSubject}"`), false);
   });
 });

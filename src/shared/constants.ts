@@ -69,6 +69,15 @@ export const AMENDMENT_ARTIFACTS_DIR = "amendments";
 export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000; // 24 hours
 export const DEFAULT_AMENDMENT_THRESHOLD = 60; // ConfidenceScorer 0-100
 
+// Live execution streaming constants (Phase 67)
+export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";
+export const STREAMING_EVENT_TOOL_START = "tool.start";
+export const STREAMING_EVENT_TOOL_END = "tool.end";
+export const STREAMING_EVENT_LLM_STREAM = "llm.stream";
+export const STREAMING_EVENT_FLOW_STATUS = "flow.status";
+export const EXECUTION_HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds
+export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE = 1000; // events before backpressure drop
+
 // ============================================================================
 // Database Validation Limits
 // ============================================================================

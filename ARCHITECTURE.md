@@ -2569,6 +2569,57 @@ This section provides explicit grounding for core infrastructure modules and hel
 
 ---
 
+## Live Execution Streaming (Phase 67)
+
+Phase 67 adds real-time execution observability via an in-memory event bus, execution heartbeats, an SSE HTTP endpoint, and a CLI watch command.
+
+### Architecture
+
+```text
+ReActLoopStrategy ──heartbeat──▶ EventBusService ◀── EventLogger.publish()
+                                        │
+                                        ▼
+                                  SseHandler (GET /api/v1/traces/:id/stream)
+                                        │
+                                        ▼
+                                  WatchCommand (exactl watch <trace_id>)
+                                        │
+                                        ▼
+                              Color-coded terminal output
+```
+
+### Component Responsibilities
+
+| Component             | Purpose                                      | Key File                                               |
+| --------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| **EventBusService**   | In-memory pub/sub routed by `traceId`        | `src/services/observability/event_bus_service.ts`      |
+| **EventLogger**       | Publishes `IStreamingEvent` to event bus     | `src/services/core/event_logger.ts`                    |
+| **ReActLoopStrategy** | Emits heartbeat via `setInterval` during LLM | `src/services/agent/strategies/react_loop_strategy.ts` |
+| **SseHandler**        | Bridges HTTP SSE to `EventBusService`        | `src/api/sse_handler.ts`                               |
+| **WatchCommand**      | CLI `exactl watch <trace_id>` with colors    | `src/cli/commands/watch.ts`                            |
+
+### Key Design Decisions
+
+- **traceId routing**: Subscribers receive only events matching their requested `traceId`; wildcard (`*`) subscribes to all.
+- **Backpressure**: Events dropped for a subscriber if its queue exceeds `EVENT_BUS_MAX_SUBSCRIBER_QUEUE` (1 000).
+- **Heartbeat interval**: `EXECUTION_HEARTBEAT_INTERVAL_MS` (5 000 ms) fires only while `provider.generate()` is in flight; cleared in `finally` on success, failure, or cancellation.
+- **Security**: SSE endpoint validates `traceId` against UUID schema (OWASP A03); bound to `127.0.0.1` only (OWASP A10); client disconnect triggers unsubscription via `AbortController`.
+- **Fallback**: `watch` command queries historical DB events when SSE server is unavailable.
+
+### Streaming Event Types
+
+| Constant                      | Value             | Emitted When                  |
+| ----------------------------- | ----------------- | ----------------------------- |
+| `STREAMING_EVENT_HEARTBEAT`   | `agent.heartbeat` | Every 5s during LLM wait      |
+| `STREAMING_EVENT_TOOL_START`  | `tool.start`      | Tool execution begins         |
+| `STREAMING_EVENT_TOOL_END`    | `tool.end`        | Tool execution completes      |
+| `STREAMING_EVENT_LLM_STREAM`  | `llm.stream`      | LLM produces streaming output |
+| `STREAMING_EVENT_FLOW_STATUS` | `flow.status`     | Flow state changes            |
+
+All constants are defined in `src/shared/constants.ts` and imported by all streaming consumers.
+
+---
+
 ## Related Documentation
 
 - **[Implementation Plan](Exaix_Implementation_Plan.md)** - Detailed development roadmap

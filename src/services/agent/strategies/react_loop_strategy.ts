@@ -18,8 +18,11 @@ import type { IModelProvider } from "../../../ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "../../../shared/types/json.ts";
+import type { IEventBusService } from "../../observability/event_bus_service.ts";
+import type { IStreamingEvent } from "../../../shared/schemas/streaming_event.ts";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
+  EXECUTION_HEARTBEAT_INTERVAL_MS,
   REACT_CALLING_TOOL_PREFIX,
   REACT_DEFAULT_MAX_TOKENS,
   REACT_DEFAULT_TEMPERATURE,
@@ -27,6 +30,7 @@ import {
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
+  STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "../../../shared/constants.ts";
 
@@ -35,6 +39,7 @@ interface IReActLoopExecutor {
   validateReviewResult: AgentExecutor["validateReviewResult"];
   parseAgentResponse: AgentExecutor["parseAgentResponse"];
   toolRegistry: AgentExecutor["toolRegistry"];
+  eventBus?: IEventBusService;
 }
 
 export interface IReActAction {
@@ -92,11 +97,12 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       // 1. Build prompt with history
       const prompt = this.buildPrompt(blueprint, context, options, history);
 
-      // 2. Generate next step
-      const response = await this.provider.generate(prompt, {
-        temperature: REACT_DEFAULT_TEMPERATURE,
-        max_tokens: REACT_DEFAULT_MAX_TOKENS,
-      });
+      // 2. Generate next step with heartbeat during long LLM waits
+      const response = await this.withHeartbeat(context, () =>
+        this.provider!.generate(prompt, {
+          temperature: REACT_DEFAULT_TEMPERATURE,
+          max_tokens: REACT_DEFAULT_MAX_TOKENS,
+        }));
 
       // 3. Parse thought and actions
       const { thought, actions, isComplete } = this.parseResponse(response);
@@ -169,6 +175,45 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }
 
     return await this.executor.toolRegistry.execute(action.tool, enrichedParams) as IToolExecutionResult;
+  }
+
+  /**
+   * Wraps an async operation with a heartbeat timer.
+   * Emits STREAMING_EVENT_HEARTBEAT every EXECUTION_HEARTBEAT_INTERVAL_MS
+   * while the operation is in flight. Timer is always cleared in finally.
+   */
+  private async withHeartbeat<T>(
+    context: IExecutionContext,
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const bus = this.executor.eventBus;
+    const stepName = context.plan;
+    const loopStart = Date.now();
+
+    let heartbeatId: number | undefined;
+    if (bus) {
+      heartbeatId = setInterval(() => {
+        const event: IStreamingEvent = {
+          eventId: crypto.randomUUID(),
+          traceId: context.trace_id,
+          timestamp: new Date().toISOString(),
+          type: STREAMING_EVENT_HEARTBEAT,
+          payload: {
+            step: stepName,
+            elapsed_ms: Date.now() - loopStart,
+          },
+        };
+        bus.publish(event);
+      }, EXECUTION_HEARTBEAT_INTERVAL_MS);
+    }
+
+    try {
+      return await operation();
+    } finally {
+      if (heartbeatId !== undefined) {
+        clearInterval(heartbeatId);
+      }
+    }
   }
 
   private buildPrompt(

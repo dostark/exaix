@@ -46,7 +46,7 @@ export const PlanFrontmatterSchema = z.object({
   rejected_at: z.string().optional(),
   rejection_reason: z.string().optional(),
   reviewed_by: z.string().optional(),
-  skills: z.string().optional(),
+  skills: z.array(z.string()).optional(),
   request_analysis: RequestAnalysisSchema.optional(),
   subject: z.string().optional(),
   // Amendment fields (Phase 66)

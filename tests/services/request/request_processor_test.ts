@@ -281,8 +281,8 @@ Do something
       const planContent = await Deno.readTextFile(planPath!);
 
       // Verify frontmatter structure
-      assertStringIncludes(planContent, `trace_id: "${traceId}"`);
-      assertStringIncludes(planContent, `request_id: "${requestId}"`);
+      assertStringIncludes(planContent, `trace_id: ${traceId}`);
+      assertStringIncludes(planContent, `request_id: ${requestId}`);
       assertStringIncludes(planContent, "status: review");
     });
   });
@@ -532,7 +532,7 @@ Review this pull request for security issues.`;
       assert(planPath !== null, "Should process flow requests");
 
       const planContent = await Deno.readTextFile(planPath!);
-      assertStringIncludes(planContent, `trace_id: "${traceId}"`);
+      assertStringIncludes(planContent, `trace_id: ${traceId}`);
       assertStringIncludes(planContent, "status: review");
     });
 
