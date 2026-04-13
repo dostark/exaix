@@ -146,24 +146,66 @@ echo "✅ Pre-commit checks passed!\n"
 `;
 
 const PRE_PUSH_CONTENT = `#!/bin/sh
+# ============================================
 # Exaix Pre-push Hook
-echo "\n🚀 Running Pre-push Gates..."
+# ============================================
+# Runs on \`git push\` to any remote.
+# Ensures the codebase passes type checking, focused tests, and
+# security regression tests before code leaves the local machine.
+# ============================================
 
-# 1. Type Check
-deno task check
+echo "
+🚀 Running Pre-push Gates..."
+
+# 1. Full Type Check (all source AND test files)
+#    The pre-commit hook only checks src/main.ts for speed.
+#    Pre-push must catch TS errors in every file that will be pushed.
+deno check src/ tests/
 if [ $? -ne 0 ]; then
-  echo "❌ Error: Type checking failed."
+  echo "❌ Error: Type checking failed (src/ or tests/)."
   exit 1
 fi
 
-# 2. Security Tests
+# 2. Focused Test Run — run tests for files that changed
+#    If any test files were modified, run them.
+#    If any source files were modified, run their mirrored test files.
+CHANGED_FILES=$(git diff --name-only origin/main..HEAD 2>/dev/null || git diff --name-only HEAD~5..HEAD 2>/dev/null || echo "")
+if [ -n "$CHANGED_FILES" ]; then
+  TEST_FILES=""
+  for f in $CHANGED_FILES; do
+    case "$f" in
+      src/*.ts)
+        # Map src/foo/bar.ts → tests/foo/bar_test.ts
+        test_path=$(echo "$f" | sed 's|^src/|tests/|; s|\\.ts$|_test.ts|')
+        if [ -f "$test_path" ]; then
+          TEST_FILES="$TEST_FILES $test_path"
+        fi
+        ;;
+      tests/*.ts)
+        TEST_FILES="$TEST_FILES $f"
+        ;;
+    esac
+  done
+
+  if [ -n "$TEST_FILES" ]; then
+    echo "🧪 Running tests for changed files:$TEST_FILES"
+    deno test --allow-all $TEST_FILES
+    if [ $? -ne 0 ]; then
+      echo "❌ Error: Focused tests failed for changed files."
+      exit 1
+    fi
+  fi
+fi
+
+# 3. Security Regression Tests (always run — small, fast, critical)
 deno task test:security
 if [ $? -ne 0 ]; then
   echo "❌ Error: Security regression tests failed."
   exit 1
 fi
 
-echo "✅ Pre-push checks passed!\n"
+echo "✅ Pre-push checks passed!
+"
 `;
 
 const COMMIT_MSG_CONTENT = `#!/bin/sh

@@ -100,13 +100,22 @@ deno task hooks:install
 This writes hooks to `.git/hooks/` from `scripts/setup_hooks.ts`. The hooks
 are:
 
-| Hook                      | Purpose                                      |
-| ------------------------- | -------------------------------------------- |
-| `pre-commit` (Gate 0)     | Blocks direct commits on `main`              |
-| `pre-commit` (Gates 1-11) | Format, lint, style, tests, docs, complexity |
-| `pre-rebase`              | Blocks rebase with dirty working tree        |
-| `pre-push`                | Type check + security regression tests       |
-| `commit-msg`              | Structured commit message validation         |
+| Hook                      | Purpose                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------- |
+| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                             |
+| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                 |
+| `pre-push`                | Full type-check (src/ + tests/), focused tests for changed files, security regression tests |
+
+The `pre-push` hook is the last gate before code leaves your machine. It runs
+`deno check src/ tests/` to catch type errors in ALL files (not just
+`src/main.ts`), runs the test files that correspond to your changes, and
+always runs security regression tests. If any of these fail, the push is
+blocked.
+
+| Hook         | Purpose                               |
+| ------------ | ------------------------------------- |
+| `pre-rebase` | Blocks rebase with dirty working tree |
+| `commit-msg` | Structured commit message validation  |
 
 The `pre-rebase` hook prevents data loss by blocking `git rebase` when the
 working tree is dirty. Bypass: `HOOK_BYPASS_REBASE=1 git rebase <target>`
