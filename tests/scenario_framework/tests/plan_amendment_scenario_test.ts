@@ -22,6 +22,18 @@ Deno.test({
       const tempRoot = await Deno.makeTempDir({ prefix: "exaix-scenario-test-" });
       const workspacePath = tempRoot; // The deploy script expects the root, but let's just use it as the workspace
 
+      // Pre-test cleanup: ensure no leftover daemon interferes
+      try {
+        const stopDaemon = new Deno.Command(Deno.execPath(), {
+          args: ["run", "-A", join(Deno.cwd(), "src/cli/exactl.ts"), "daemon", "stop"],
+          stdout: "null",
+          stderr: "null",
+        });
+        await stopDaemon.output();
+      } catch {
+        // Ignore — daemon may not have been running
+      }
+
       // We need migrations and blueprints for the daemon and setup_db to work
       await ensureDir(workspacePath);
       await ensureDir(join(workspacePath, "Requests"));
