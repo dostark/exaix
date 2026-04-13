@@ -41,11 +41,7 @@ const originalFetch = globalThis.fetch;
 
 Deno.test("OllamaEmbeddingClient: embed returns number[][] for valid response", async () => {
   const mockEmbeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]];
-  globalThis.fetch = (input: URL | Request | string, _init?: RequestInit) => {
-    void input;
-    void _init;
-    return new Response(JSON.stringify({ embeddings: mockEmbeddings }));
-  };
+  globalThis.fetch = () => Promise.resolve(new Response(JSON.stringify({ embeddings: mockEmbeddings })));
 
   try {
     const client = new OllamaEmbeddingClient();
@@ -60,7 +56,8 @@ Deno.test("OllamaEmbeddingClient: embed returns number[][] for valid response", 
 });
 
 Deno.test("OllamaEmbeddingClient: embed throws on model not found", async () => {
-  globalThis.fetch = () => new Response(JSON.stringify({ error: "model 'missing-model' not found" }), { status: 404 });
+  globalThis.fetch = () =>
+    Promise.resolve(new Response(JSON.stringify({ error: "model 'missing-model' not found" }), { status: 404 }));
 
   try {
     const client = new OllamaEmbeddingClient();
@@ -75,7 +72,7 @@ Deno.test("OllamaEmbeddingClient: embed throws on model not found", async () => 
 });
 
 Deno.test("OllamaEmbeddingClient: embed throws on non-conforming response", async () => {
-  globalThis.fetch = () => new Response(JSON.stringify({ wrong_field: true }));
+  globalThis.fetch = () => Promise.resolve(new Response(JSON.stringify({ wrong_field: true })));
 
   try {
     const client = new OllamaEmbeddingClient();
@@ -90,7 +87,7 @@ Deno.test("OllamaEmbeddingClient: embed throws on non-conforming response", asyn
 });
 
 Deno.test("OllamaEmbeddingClient: embed throws on invalid embeddings entry", async () => {
-  globalThis.fetch = () => new Response(JSON.stringify({ embeddings: [[0.1], "not-a-number"] }));
+  globalThis.fetch = () => Promise.resolve(new Response(JSON.stringify({ embeddings: [[0.1], "not-a-number"] })));
 
   try {
     const client = new OllamaEmbeddingClient();
