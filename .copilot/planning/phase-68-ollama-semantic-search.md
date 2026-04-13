@@ -1,10 +1,10 @@
 ---
 agent: senior-coder
 scope: dev
-title: "Phase 68: Ollama Embedding & Local Semantic Search"
-short_summary: "Integrate a local embedding model via Ollama to bring zero-cost semantic vector search to the Solo edition, replacing the noisy TF-IDF keyword fallback."
-version: "1.2"
-topics: ["planning", "roadmap", "architecture", "tdd", "memory", "embeddings", "search", "ollama", "solo-tier"]
+title: "Phase 68: Local Embedding & Semantic Memory Search"
+short_summary: "Introduce a provider-agnostic embedding layer with Ollama as the first implementation, enabling zero-cost semantic vector search for the Solo edition and a pluggable interface for cloud providers (OpenAI, Google) and local alternatives (llama.cpp)."
+version: "2.0"
+topics: ["planning", "roadmap", "architecture", "tdd", "memory", "embeddings", "search", "ollama", "openai", "llamacpp", "solo-tier", "provider-agnostic"]
 ---
 
 > [!TIP]
@@ -12,15 +12,15 @@ topics: ["planning", "roadmap", "architecture", "tdd", "memory", "embeddings", "
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: 🚧 Planning (Generalized from Ollama-only → Provider-Agnostic)
 **Phase Dependencies**: None
-**Risk Level**: L — plugs into an existing `IMemoryEmbeddingService` interface.
+**Risk Level**: M — introduces a new `IEmbeddingProvider` abstraction and first concrete implementation.
 
 ## Executive Summary
 
 - **The Problem**: In the Solo edition, `MemoryBank` falls back to frequency-based keyword scoring (TF-IDF) because vector embeddings are gated to Team+ (Weakness 1). As memory grows, keyword search produces noisy, irrelevant context, degrading agent performance.
-- **The Solution**: Wire `nomic-embed-text` (or similar) through the local Ollama provider to implement a zero-cost `IMemoryEmbeddingService` for the Solo tier.
-- **The Goal**: Provide high-quality semantic memory matching for all editions, utilizing existing local LLM infrastructure.
+- **The Solution**: Introduce a provider-agnostic `IEmbeddingProvider` interface with Ollama as the first implementation. Any provider that supports embeddings (Ollama, OpenAI, llama.cpp, Google) can be wired in via configuration.
+- **The Goal**: Provide high-quality semantic memory matching for all editions, with a pluggable architecture that avoids future "Phase 68.5 generalize embeddings" refactors.
 
 ## Current State Analysis
 
@@ -28,60 +28,62 @@ topics: ["planning", "roadmap", "architecture", "tdd", "memory", "embeddings", "
 
 | File | Current Role | Gap |
 | ---------------------------------- | --------------------------------- | ------------------------------------------------------------ |
-| `src/services/memory/memory_embedding.ts` | Defines `IMemoryEmbeddingService` | Lacks local Ollama implementation |
-| `src/services/memory/memory_bank.ts` | Searches memory | Relies on keyword frequency if no embedding service is bound |
+| `src/services/memory/memory_embedding.ts` | Defines `IMemoryEmbeddingService` (mock/deterministic) | No live LLM embedding backend |
+| `src/services/memory/memory_bank.ts` | Searches memory via `MemoryBankService` | Falls back to TF-IDF when no embedding service bound |
+| `src/ai/providers.ts` | LLM text-generation providers | No embedding-specific interface |
+| `src/shared/interfaces/i_memory_embedding_service.ts` | `IMemoryEmbeddingService` contract | Provider-agnostic — correct abstraction, needs concrete implementations |
 | `src/config/exa.config.toml` | System config | Lacks `[memory.embedding]` provider definitions |
 
 ### Constraints
 
-- Must fail gracefully if Ollama is offline or the embedding model is not pulled.
-- Must chunk large documents before embedding to respect the `nomic-embed-text` context limit (usually 8192 tokens).
+- Must fail gracefully if the embedding provider is offline or the model is not available.
+- Must chunk large documents before embedding to respect model context limits.
+- Cloud providers (OpenAI, Google) require API keys and incur per-token costs; local providers (Ollama, llama.cpp) are free but require local infrastructure.
 
 ### Interfaces Affected
 
-- `src/shared/interfaces/i_memory_embedding_service.ts:IMemoryEmbeddingService`
-- `src/services/memory/memory_embedding.ts:MemoryEmbeddingService` (existing implementation)
-- `src/ai/providers.ts:OllamaProvider` (to be extended via new `src/ai/providers/ollama_embedding_client.ts`)
+- `src/shared/interfaces/i_memory_embedding_service.ts:IMemoryEmbeddingService` (existing, provider-agnostic — **DO NOT CHANGE**)
+- `src/services/memory/memory_embedding.ts:MemoryEmbeddingService` (existing mock — **EXTEND**, don't replace)
+- `src/ai/providers.ts` — new `IEmbeddingProvider` interface to be added here or in a new `src/ai/embeddings/` module
 
 ## Technical Architecture & Detailed Design
 
-### Schemas
+### Embedding Provider Interface
 
 ```ts
-// Constants imported from src/shared/constants.ts (defined in Step 68.0):
-// DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, OLLAMA_EMBED_CACHE_MAX_ENTRIES
-export const ZOllamaEmbeddingConfig = z.object({
-  provider: z.literal("ollama"),
-  model: z.string().default("nomic-embed-text"),
-  baseUrl: z.string().url()
-    .refine(
-      (url) => {
-        const host = new URL(url).hostname;
-        return host === "localhost" || host === "127.0.0.1" || host === "::1";
-      },
-      { message: "baseUrl must resolve to localhost only (SSRF mitigation — OWASP A10)" },
-    )
-    .default(DEFAULT_OLLAMA_BASE_URL),
-  chunkSize: z.number().int().default(DEFAULT_OLLAMA_EMBED_CHUNK_SIZE),
-});
+// src/ai/embeddings/embedding_provider.ts
+export interface IEmbeddingProvider {
+  /**
+   * Generate embedding vectors for one or more input texts.
+   * Returns an array of vectors, one per input text.
+   */
+  embed(texts: string[]): Promise<number[][]>;
 
-// Validates Ollama /api/embed HTTP response before vectors are consumed (OWASP A08)
-export const ZOllamaEmbedResponse = z.object({
-  embeddings: z.array(z.array(z.number())),
-});
+  /**
+   * Provider identifier (e.g., "ollama", "openai", "llamacpp").
+   */
+  readonly providerId: string;
+
+  /**
+   * Embedding dimension for the configured model.
+   */
+  readonly dimension: number;
+}
 ```
 
-### Interfaces
+### Memory Embedding Service (Provider-Agnostic)
 
 ```ts
-export interface IOllamaClient {
-  // Existing generation methods...
-  generateEmbeddings(model: string, texts: string[]): Promise<number[][]>;
-}
-
-// Implements the full IMemoryEmbeddingService contract
+// src/services/memory/ollama_embedding_service.ts (first implementation)
 export class OllamaEmbeddingService implements IMemoryEmbeddingService {
-  // --- Public contract (required by IMemoryEmbeddingService) ---
+  constructor(
+    private config: Config,
+    private db: IDatabaseService,
+    private provider: IEmbeddingProvider,
+    private cache: LruCache<string, number[]>,
+  ) {}
+
+  // --- Implements IMemoryEmbeddingService ---
   async initializeManifest(): Promise<void>;
   async embedLearning(learning: ILearning): Promise<void>;
   async searchByEmbedding(
@@ -91,11 +93,89 @@ export class OllamaEmbeddingService implements IMemoryEmbeddingService {
   async getEmbedding(id: string): Promise<number[] | null>;
   async deleteEmbedding(id: string): Promise<void>;
   async getStats(): Promise<{ total: number; generated_at: string }>;
+
   // --- Private helpers ---
   private async embedText(text: string): Promise<number[]>;
   private async embedBatch(texts: string[]): Promise<number[][]>;
-  private cosineSimilarity(vecA: number[], vecB: number[]): number;
 }
+```
+
+**Key design decision**: The service is **not** hardcoded to Ollama. It accepts an `IEmbeddingProvider` via constructor DI. `OllamaEmbeddingService` is the first concrete instantiation; `OpenAIEmbeddingService` and `LlamaCppEmbeddingService` can reuse the same class with different providers.
+
+### Embedding Provider Factory
+
+```ts
+// src/ai/embeddings/embedding_provider_factory.ts
+export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbeddingProvider {
+  switch (config.provider) {
+    case "ollama":
+      return new OllamaEmbeddingClient(config);
+    case "openai":
+      return new OpenAIEmbeddingClient(config);
+    case "llamacpp":
+      return new LlamaCppEmbeddingClient(config);
+    default:
+      throw new Error(`Unknown embedding provider: ${config.provider}`);
+  }
+}
+```
+
+### Schemas
+
+```ts
+// Discriminated union for embedding provider configs
+export const ZEmbeddingProviderConfig = z.discriminatedUnion("provider", [
+  // Local: Ollama — localhost only (SSRF mitigation — OWASP A10)
+  z.object({
+    provider: z.literal("ollama"),
+    model: z.string().default("nomic-embed-text"),
+    baseUrl: z.string().url()
+      .refine(
+        (url) => {
+          const host = new URL(url).hostname;
+          return host === "localhost" || host === "127.0.0.1" || host === "::1";
+        },
+        { message: "Ollama baseUrl must resolve to localhost only (SSRF mitigation)" },
+      )
+      .default(DEFAULT_OLLAMA_BASE_URL),
+    chunkSize: z.number().int().default(DEFAULT_OLLAMA_EMBED_CHUNK_SIZE),
+  }),
+  // Cloud: OpenAI — API key required
+  z.object({
+    provider: z.literal("openai"),
+    model: z.string().default("text-embedding-3-small"),
+    apiKey: z.string().min(1, "OpenAI API key is required"),
+    baseUrl: z.string().url().default(DEFAULT_OPENAI_EMBED_BASE_URL),
+    chunkSize: z.number().int().default(DEFAULT_OPENAI_EMBED_CHUNK_SIZE),
+  }),
+  // Local: llama.cpp — can be localhost or remote
+  z.object({
+    provider: z.literal("llamacpp"),
+    model: z.string().default("nomic-embed-text"),
+    baseUrl: z.string().url().default(DEFAULT_LLAMACPP_EMBED_BASE_URL),
+    chunkSize: z.number().int().default(DEFAULT_LLAMACPP_EMBED_CHUNK_SIZE),
+  }),
+]);
+
+export type IEmbeddingProviderConfig = z.infer<typeof ZEmbeddingProviderConfig>;
+
+// Validates Ollama /api/embed response (OWASP A08)
+export const ZOllamaEmbedResponse = z.object({
+  embeddings: z.array(z.array(z.number())),
+});
+
+// Validates OpenAI /v1/embeddings response
+export const ZOpenAIEmbedResponse = z.object({
+  data: z.array(z.object({
+    embedding: z.array(z.number()),
+    index: z.number(),
+  })),
+  model: z.string(),
+  usage: z.object({
+    prompt_tokens: z.number(),
+    total_tokens: z.number(),
+  }),
+});
 ```
 
 ### Logic Flow
@@ -104,17 +184,46 @@ export class OllamaEmbeddingService implements IMemoryEmbeddingService {
 flowchart TD
     A[Memory Extractor saves new Learning] --> B[MemoryBankService.addGlobalLearning]
     B --> C{Embedding Configured?}
-    C -- Yes --> D[OllamaEmbeddingService.embedLearning]
-    D --> E[Ollama API /api/embed — validated by ZOllamaEmbedResponse]
-    E --> F[Save vector to SQLite-vss / Memory JSON]
-    C -- No --> G[Save text only]
+    C -- Yes --> D[EmbeddingFactory.createProvider(config)]
+    D --> E[OllamaEmbeddingService.embedLearning]
+    E --> F[IEmbeddingProvider.embed(texts)]
+    F --> G{Provider}
+    G --> G1[Ollama /api/embed]
+    G --> G2[OpenAI /v1/embeddings]
+    G --> G3[llama.cpp /embedding]
+    G1 --> H[Validate response with Zod schema]
+    G2 --> H
+    G3 --> H
+    H --> I[Save vector to SQLite-vss / Memory JSON]
+    C -- No --> J[Save text only — TF-IDF fallback]
 ```
 
 ### Design Decisions
 
-- **Cosine Similarity**: Standard cosine similarity is already implemented in `src/services/memory/memory_embedding.ts`; `OllamaEmbeddingService` reuses it as a private helper rather than reimplementing it, allowing purely local in-memory vector matching before SQLite-vss is introduced in Phase 78.
-- **Embedding Cache**: `OllamaEmbeddingService` maintains an LRU cache bounded by `OLLAMA_EMBED_CACHE_MAX_ENTRIES` (512, defined in Step 68.0 / `src/shared/constants.ts`), keyed on the raw input text string. The oldest entry is evicted when the limit is exceeded to prevent unbounded memory growth in long-running daemons.
-- **Auto-Pull**: If the model isn't found, the service should log a warning suggesting `ollama pull nomic-embed-text`, but gracefully fallback to keyword search.
+| Decision | Rationale |
+|----------|-----------|
+| **Single `MemoryEmbeddingService` class with DI** | Avoids duplicating storage/caching/search logic across `OllamaEmbeddingService`, `OpenAIEmbeddingService`, etc. The provider handles HTTP specifics; the service handles persistence. |
+| **Ollama localhost-only validation** | Ollama is a local daemon — SSRF risk if `baseUrl` is user-configurable. Cloud providers (OpenAI, Google) use fixed endpoints with API key auth instead. |
+| **LLM providers without embeddings (Anthropic)** | Anthropic has no embedding API. Users pairing Claude with Exaix should configure `embedding.provider: "ollama"` alongside `llm.provider: "anthropic"`. This is already supported by `IApplicationContext.embeddings` being a separate optional field. |
+| **Vercel AI SDK not used** | Exaix already has its own provider abstraction. Adding Vercel AI SDK would create a third abstraction layer — unnecessary complexity for this phase. |
+| **Cosine similarity reused from `memory_embedding.ts`** | Standard cosine similarity is vector-agnostic — works with embeddings from any provider. |
+| **LRU cache bounded by `OLLAMA_EMBED_CACHE_MAX_ENTRIES` (512)** | Prevents unbounded memory growth in long-running daemons. Evicts oldest entry when limit is exceeded. |
+
+### Config Schema (exa.config.toml)
+
+```toml
+[memory.embedding]
+provider = "ollama"
+model = "nomic-embed-text"
+base_url = "http://127.0.0.1:11434"
+chunk_size = 1000
+
+# Alternative: OpenAI cloud embedding
+# [memory.embedding]
+# provider = "openai"
+# model = "text-embedding-3-small"
+# api_key = "${OPENAI_API_KEY}"
+```
 
 ## Implementation Plan (Step-by-Step)
 
@@ -124,7 +233,11 @@ flowchart TD
 
 - Add the following constants to `src/shared/constants.ts`:
   - `DEFAULT_OLLAMA_EMBED_CHUNK_SIZE = 1000`
+  - `DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000` (OpenAI handles up to 8191 tokens)
+  - `DEFAULT_LLAMACPP_EMBED_CHUNK_SIZE = 1000`
   - `OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512`
+  - `DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1"`
+  - `DEFAULT_LLAMACPP_EMBED_BASE_URL = "http://127.0.0.1:8080"`
 
 1. **Architecture Notes**
 
@@ -133,215 +246,201 @@ flowchart TD
 
 1. **Planned Tests**
 
-- No dedicated test file; constants are exercised by tests in Steps 68.1–68.3.
+- No dedicated test file; constants are exercised by tests in Steps 68.1–68.4.
 
 1. **Success Criteria**
 
-- `src/shared/constants.ts` exports both new constants without compile errors.
-- No inline numeric literal `1000` or `512` appears in Steps 68.1–68.3 implementation files.
+- `src/shared/constants.ts` exports all new constants without compile errors.
+- No inline numeric literals for chunk sizes or cache bounds in implementation files.
 
-### Step 68.1: Extend Ollama Provider
+### Step 68.1: Create IEmbeddingProvider Interface & Factory
 
 1. **Actions**
 
-- Create `src/ai/providers/ollama_embedding_client.ts` — a thin HTTP client that calls Ollama's `/api/embed` endpoint with the model name and input texts.
-- Validate every HTTP response with `ZOllamaEmbedResponse.parse(body)` before returning the `embeddings` array (OWASP A08 — Software and Data Integrity Failures).
+- Create `src/ai/embeddings/embedding_provider.ts` with `IEmbeddingProvider` interface.
+- Create `src/ai/embeddings/embedding_provider_factory.ts` with `createEmbeddingProvider()` factory function (starts with Ollama case, scaffold for OpenAI and llama.cpp).
+- Create `src/ai/embeddings/embedding_errors.ts` with `EmbeddingError` class and error codes.
 
 1. **Architecture Notes**
 
-- Handle batching if the texts array exceeds the model context limit.
-- `baseUrl` is sourced from `ZOllamaEmbeddingConfig` and validated at construction time against the localhost-only allowlist (OWASP A10 — SSRF).
+- The factory returns `IEmbeddingProvider`, not a concrete class. This enables swapping providers without changing service code.
+- `EmbeddingError` extends `Error` with a `code` field: `"PROVIDER_UNAVAILABLE"`, `"MODEL_NOT_FOUND"`, `"EMBEDDING_FAILED"`, `"TIMEOUT"`.
 
 1. **Planned Tests**
 
-- `tests/ai/providers/ollama_embedding_client_test.ts` — include a negative test asserting a typed error is thrown when the mock Ollama returns `{"error":"model not found"}`.
+- `tests/ai/embeddings/embedding_provider_factory_test.ts` — factory returns correct provider type for each config; throws on unknown provider.
+- `tests/ai/embeddings/embedding_errors_test.ts` — error codes and messages.
+
+1. **Success Criteria**
+
+- Factory creates `IEmbeddingProvider` instances from discriminated config.
+- Unknown provider throws `EmbeddingError` with `"UNKNOWN_PROVIDER"` code.
+- TypeScript compiles with strict mode — no `any` types.
+
+### Step 68.2: Implement Ollama Embedding Client
+
+1. **Actions**
+
+- Create `src/ai/providers/ollama_embedding_client.ts` — implements `IEmbeddingProvider` by calling Ollama's `/api/embed` endpoint.
+- Validate every HTTP response with `ZOllamaEmbedResponse.parse(body)` before returning embeddings (OWASP A08).
+- Handle batching if the texts array exceeds the model context limit.
+- `baseUrl` validated at construction time against localhost-only allowlist (OWASP A10 — SSRF).
+
+1. **Architecture Notes**
+
+- Ollama's `/api/embed` accepts `input: string | string[]` — use batch mode when possible.
+- Timeout: 30s per batch (configurable via `chunkSize`).
+- If Ollama returns `{"error":"model not found"}`, throw `EmbeddingError` with `"MODEL_NOT_FOUND"` code.
+
+1. **Planned Tests**
+
+- `tests/ai/providers/ollama_embedding_client_test.ts` — include:
+  - Positive test: returns `number[][]` for input texts.
+  - Negative test: typed error thrown when mock Ollama returns `{"error":"model not found"}`.
+  - Negative test: non-conforming response (missing `embeddings` field) throws typed error.
+  - Batch test: large text array split into multiple API calls.
 
 1. **Success Criteria**
 
 - Provider successfully returns `number[][]` for input texts.
 - Non-conforming Ollama responses throw a typed error before vectors are used.
+- Localhost validation rejects non-localhost URLs at construction.
 
-### Step 68.2: Implement Embedding Service
+### Step 68.3: Implement Ollama Embedding Service
 
 1. **Actions**
 
 - Create `src/services/memory/ollama_embedding_service.ts` implementing the full `IMemoryEmbeddingService` contract: `initializeManifest`, `embedLearning`, `searchByEmbedding`, `getEmbedding`, `deleteEmbedding`, `getStats`.
-- Use `embedText`/`embedBatch` as private helpers calling `OllamaEmbeddingClient`. Reuse `cosineSimilarity` from `src/services/memory/memory_embedding.ts` — do not reimplement it.
+- Constructor accepts `IEmbeddingProvider` (not hardcoded to Ollama), `Config`, `IDatabaseService`, and LRU cache.
+- Use `embedText`/`embedBatch` as private helpers calling `IEmbeddingProvider.embed()`.
+- Reuse `cosineSimilarity` from `src/services/memory/memory_embedding.ts` — do not reimplement it.
 
 1. **Architecture Notes**
 
-- Add LRU caching for duplicate embedding inputs bounded by `OLLAMA_EMBED_CACHE_MAX_ENTRIES` from `src/shared/constants.ts`; evict the oldest entry when the limit is reached.
+- LRU caching for duplicate embedding inputs bounded by `OLLAMA_EMBED_CACHE_MAX_ENTRIES` from `src/shared/constants.ts`; evict oldest entry when limit reached.
+- Embeddings stored in a separate `.embeddings.json` adjacent to the memory file (per Risk R2) until SQLite-vss migration in Phase 78.
 
 1. **Planned Tests**
 
-- `tests/services/memory/ollama_embedding_service_test.ts` — cover all six `IMemoryEmbeddingService` methods; include a cache-eviction boundary test asserting entries beyond `OLLAMA_EMBED_CACHE_MAX_ENTRIES` are evicted without error
+- `tests/services/memory/ollama_embedding_service_test.ts` — cover all six `IMemoryEmbeddingService` methods:
+  - `embedLearning` stores vector and caches result.
+  - `searchByEmbedding` returns results ordered by cosine similarity.
+  - Cache-eviction boundary test: entries beyond `OLLAMA_EMBED_CACHE_MAX_ENTRIES` are evicted without error.
+  - Graceful degradation test: provider failure falls back to empty result (not a crash).
 
 1. **Success Criteria**
 
-- Embeddings are generated correctly.
-- Similarity scores correlate highly with semantic similarity.
+- Embeddings are generated correctly and stored persistently.
+- Similarity scores correlate with semantic similarity.
+- Cache prevents redundant API calls for duplicate inputs.
 
-### Step 68.3: MemoryBank Integration
+### Step 68.4: MemoryBank Integration & Config Binding
 
 1. **Actions**
 
-- Update `src/services/memory/memory_bank.ts` (`MemoryBankService`) and `exa.config.toml` binding.
-- When `memoryBank.searchMemory()` is called, embed the query and calculate cosine similarity against stored patterns/decisions.
+- Update `src/services/memory/memory_bank.ts` (`MemoryBankService`) to accept an optional `IMemoryEmbeddingService` in its constructor or via setter.
+- When `memoryBank.searchMemory()` is called, embed the query via the service and calculate cosine similarity against stored vectors.
+- Add `[memory.embedding]` section to `src/config/exa.config.toml` schema and loader.
+- Wire `createEmbeddingProvider()` → `OllamaEmbeddingService` → `MemoryBankService` in `src/cli/init.ts`.
 
 1. **Architecture Notes**
 
-- If an embedding call fails, catch the error, log a warning, and fall back to the existing `calculateRelevance` TF-IDF logic seamlessly.
+- If an embedding call fails (Ollama offline, model not found, timeout), catch the error, log a warning, and fall back to the existing `calculateRelevance` TF-IDF logic seamlessly.
+- `MemoryBankService.searchMemory()` should try embedding first; on failure, gracefully degrade to keyword search.
 
 1. **Planned Tests**
 
-- `tests/integration/services/memory_bank_semantic_search_test.ts`
+- `tests/integration/services/memory_bank_semantic_search_test.ts` — end-to-end test:
+  - Add learnings with embeddings.
+  - Search with a query that shares no keywords but is semantically related.
+  - Assert semantically relevant results rank higher than keyword-only matches.
+  - Stop Ollama mock, verify fallback to TF-IDF without crash.
 
 1. **Success Criteria**
 
 - Semantic search surfaces conceptually relevant memories that share no exact keywords.
 - Graceful degradation works when Ollama is stopped.
+- Config `[memory.embedding]` section loads correctly from TOML.
+
+### Step 68.5: *(Future)* OpenAI Embedding Client
+
+> **NOT IN SCOPE for initial implementation.** This step is planned for when Team-tier cloud embedding support is needed.
+
+1. **Actions**
+
+- Create `src/ai/providers/openai_embedding_client.ts` — implements `IEmbeddingProvider` via OpenAI `/v1/embeddings`.
+- Validate responses with `ZOpenAIEmbedResponse`.
+- API key sourced from `OPENAI_API_KEY` env var or config.
+
+1. **Planned Tests**
+
+- `tests/ai/providers/openai_embedding_client_test.ts`
+
+1. **Success Criteria**
+
+- Returns `number[][]` with correct dimensions for `text-embedding-3-small`.
+- Invalid API key returns typed `EmbeddingError`.
+
+### Step 68.6: *(Future)* llama.cpp Embedding Client
+
+> **NOT IN SCOPE for initial implementation.** This step is planned as a local alternative to Ollama for users who prefer llama.cpp's GGUF ecosystem.
+
+1. **Actions**
+
+- Create `src/ai/providers/llamacpp_embedding_client.ts` — implements `IEmbeddingProvider` via llama.cpp server `/embedding` endpoint.
+- Note: llama.cpp also supports OpenAI-compatible `/v1/embeddings`, so this client can reuse much of the OpenAI client logic with a different `baseUrl`.
+
+1. **Planned Tests**
+
+- `tests/ai/providers/llamacpp_embedding_client_test.ts`
+
+## Provider Roadmap
+
+| Phase | Provider | Tier | Cost | Status |
+| ----- | -------- | ---- | ---- | ------ |
+| **68.2–68.4** | Ollama (`nomic-embed-text`) | Solo | Free (local) | **This phase** |
+| **68.5** | OpenAI (`text-embedding-3-small`) | Team | $0.02/1M tokens | Future |
+| **68.6** | llama.cpp (any GGUF embedding model) | Solo | Free (local) | Future |
+| **68.7** | Google (`text-embedding-004`) | Team | Freemium | Future |
 
 ## Risks & Mitigations
 
 | Risk | Impact | Likelihood | Mitigation Strategy |
 | ---------------------------------------------- | ------ | ---------: | ----------------------------------------------------------------------------------------------------- |
-| R1: Ollama API latency blocks memory retrieval | Medium | Medium | Set strict timeouts (e.g., 2000ms) on embedding calls; fallback to keywords if exceeded |
+| R1: Embedding provider latency blocks memory retrieval | Medium | Medium | Set strict timeouts (e.g., 2000ms) on embedding calls; fallback to keywords if exceeded |
 | R2: Memory bank JSON bloats with vectors | High | High | Store vectors in a separate `.embeddings.json` adjacent to the memory file until SQLite-vss migration |
+| R3: Ollama model not pulled | Medium | High | Log warning suggesting `ollama pull nomic-embed-text`; gracefully fallback to keyword search |
+| R4: Cloud provider API key exposed | Critical | Low | API key sourced from env var, never stored in config file; redact in logs |
 
 ## Success Metrics (Quantitative)
 
-- Semantic search precision (Top-3 retrieval) on test fixtures increases from baseline TF-IDF.
-- Embedding generation latency is < 150ms per query.
-- Zero crashes if Ollama daemon is absent.
+- Semantic search precision (Top-3 retrieval) on test fixtures increases from baseline TF-IDF by ≥ 30%.
+- Embedding generation latency is < 150ms per query (Ollama local).
+- Zero crashes if embedding provider daemon is absent.
+- Switching providers via config requires zero code changes — only config update.
 
 ## Backward Compatibility
 
 - Fully transparent. Existing memory banks without vectors will trigger asynchronous backfilling or gracefully rely on keyword search until embedded.
+- If no `[memory.embedding]` section exists in config, behavior is identical to current (TF-IDF only).
 
 ---
 
-## Pre-Gap Analysis — 2026-04-08
+## Pre-Implementation Gap Notes
 
-### Assessment: 4 critical path/interface errors + 2 security gaps must be resolved before coding
+> This section will be populated by a `#pre-gap-analysis` run once the plan is finalized.
 
-> This section was added by pre-gap analysis on 2026-04-08. All gaps must be
-> resolved and the plan updated before implementation of any affected step.
+### Anticipated Gaps (from Phase 68 v1.2 pre-gap analysis, carried forward)
 
-### Gap Summary
-
-| ID | Gap (short) | Severity | Plan Section | Blocks Coding? |
-| --- | ----------- | -------- | ------------ | -------------- |
-| G1 | `src/services/memory*embedding.ts` wrong path — actual `src/services/memory/memory*embedding.ts` | 🔴 Critical | Key Files / Interfaces Affected | ✅ Yes |
-| G2 | `src/services/memory*bank.ts` wrong path — actual `src/services/memory/memory*bank.ts` | 🔴 Critical | Key Files / Step 68.3 | ✅ Yes |
-| G3 | `src/services/providers/ollama_provider.ts` doesn't exist — Ollama provider is `src/ai/providers.ts:OllamaProvider` | 🔴 Critical | Key Files / Interfaces Affected / Step 68.1 | ✅ Yes |
-| G4 | `OllamaEmbeddingService` declares `embedText`, `embedBatch`, `calculateSimilarity` — none satisfy `IMemoryEmbeddingService` | 🔴 Critical | Technical Architecture / Interfaces | ✅ Yes |
-| G5 | Logic Flow diagram shows `MemoryBank.addPattern` as embedding trigger — `addPattern` takes `IPattern`, not raw text | 🟡 Feasibility | Logic Flow | ⚠️ Conditionally |
-| G6 | Cache design for duplicate strings is unspecified — no size bound or eviction policy | 🟡 Feasibility | Step 68.2 Architecture Notes | ❌ No |
-| G7 | Ollama `/api/embed` response parsed without Zod schema — untyped external data | 🔒 Security | Step 68.1 | ⚠️ Conditionally |
-| G8 | `baseUrl: z.string().url()` accepts any URL including external hosts — SSRF risk | 🔒 Security | Schemas | ⚠️ Conditionally |
-| G9 | `tests/unit/utils/cosine*similarity*test.ts` duplicates existing `tests/services/memory/memory*embedding*test.ts` coverage | 🟠 Testing | Step 68.2 | ❌ No |
-| G10 | `chunkSize` default `1000` is an inline literal — no `DEFAULT*OLLAMA*EMBED*CHUNK*SIZE` constant; `baseUrl` should reuse `DEFAULT*OLLAMA*BASE_URL` | 🟡 Configurability | Schemas | ❌ No |
-
-### Detailed Gap Entries
-
-#### G1 — 🔴 Critical: `src/services/memory_embedding.ts` wrong path
-
-- **Location in plan:** Key Files table — "`src/services/memory*embedding.ts`"; Interfaces Affected — "`src/services/memory*embedding.ts:IMemoryEmbeddingService`"
-- **Problem:** The file does not exist at the stated path. The actual module is `src/services/memory/memory*embedding.ts`. The canonical `IMemoryEmbeddingService` interface is at `src/shared/interfaces/i*memory*embedding*service.ts`.
-- **Impact:** Any step importing from or modifying the stated path would create a rogue file instead of extending the real module.
-- **To fix:** Replace all plan references to `src/services/memory*embedding.ts` with `src/services/memory/memory*embedding.ts`; update Interfaces Affected to reference `src/shared/interfaces/i*memory*embedding_service.ts:IMemoryEmbeddingService`.
-
----
-
-#### G2 — 🔴 Critical: `src/services/memory_bank.ts` wrong path
-
-- **Location in plan:** Key Files table — "`src/services/memory_bank.ts`"; Step 68.3 Actions
-- **Problem:** The actual module is `src/services/memory/memory_bank.ts` (class `MemoryBankService`).
-- **Impact:** Step 68.3 would create a new file at the wrong path rather than modifying `MemoryBankService.searchMemory()`.
-- **To fix:** Replace all plan references to `src/services/memory*bank.ts` with `src/services/memory/memory*bank.ts`.
-
----
-
-#### G3 — 🔴 Critical: `src/services/providers/ollama_provider.ts` does not exist
-
-- **Location in plan:** Key Files table — "`src/services/providers/ollama*provider.ts`"; Interfaces Affected; Step 68.1 — "Extend `src/services/providers/ollama*provider.ts`"
-- **Problem:** There is no file at this path. The Ollama generation provider lives at `src/ai/providers.ts:OllamaProvider`; a Llama/CodeLlama variant is at `src/ai/providers/llama*provider.ts:LlamaProvider`. Neither exposes an embedding endpoint. The `OllamaProviderFactory` at `src/ai/factories/ollama*factory.ts` wraps `OllamaProvider`.
-- **Impact:** Step 68.1 would create a ghost file. The existing `OllamaProvider` would be left unmodified, and no embedding capability would be wired in.
-- **To fix:** Update Step 68.1 to reference `src/ai/providers.ts:OllamaProvider` or a new dedicated `src/ai/providers/ollama*embedding*client.ts` as the `/api/embed` caller.
-
----
-
-#### G4 — 🔴 Critical: `OllamaEmbeddingService` interface does not satisfy `IMemoryEmbeddingService`
-
-- **Location in plan:** Technical Architecture / Interfaces — `OllamaEmbeddingService implements IMemoryEmbeddingService` with methods `embedText`, `embedBatch`, `calculateSimilarity`
-- **Problem:** `IMemoryEmbeddingService` (at `src/shared/interfaces/i*memory*embedding_service.ts`) requires: `initializeManifest()`, `embedLearning(learning)`, `searchByEmbedding(query, opts?)`, `getEmbedding(id)`, `deleteEmbedding(id)`, `getStats()`. The plan's proposed interface exposes only `embedText`, `embedBatch`, and `calculateSimilarity` — none of which match the required contract. A class with only these three methods fails to compile as `implements IMemoryEmbeddingService`.
-- **Impact:** Step 68.2 produces a TypeScript compile error from the first line.
-- **To fix:** Rewrite the `OllamaEmbeddingService` interface in the plan to implement all six methods of `IMemoryEmbeddingService`. Use `embedText`/`embedBatch` as private internal helpers. Add `searchByEmbedding` that embeds the query via Ollama and computes cosine similarity against stored vectors.
-
----
-
-#### G5 — 🟡 Feasibility: Logic Flow diagram shows wrong embedding trigger
-
-- **Location in plan:** Logic Flow — `A[Memory Extractor saves new Pattern] --> B[MemoryBank.addPattern]`
-- **Problem:** `MemoryBankService.addPattern()` takes an `IPattern` object (with `name`, `description`, `examples`, `tags`) — not raw text. Embedding is triggered via `embedLearning(ILearning)` in the existing architecture. The flow diagram conflates pattern storage with learning embedding, which are separate write paths.
-- **Impact:** The proposed integration hook would produce a type mismatch and cannot be implemented as shown.
-- **To fix:** Update the flow diagram to show `OllamaEmbeddingService.embedLearning(ILearning)` as the embedding trigger — called from `MemoryBankService.addGlobalLearning()` or a background indexer step. Remove `addPattern` from the embedding flow.
-
----
-
-#### G6 — 🟡 Feasibility: Cache design is unspecified — unbounded cache is a memory leak
-
-- **Location in plan:** Step 68.2 Architecture Notes — "Add caching for duplicate strings to save API calls."
-- **Problem:** No cache structure (Map, LRU, etc.), size bound, or eviction policy is specified. An unbounded `Map<string, number[]>` grows indefinitely with unique inputs in a long-running daemon.
-- **Impact:** Memory leak in production over time.
-- **To fix:** Specify LRU cache with a constant `OLLAMA*EMBED*CACHE*MAX*ENTRIES = 512` in `src/shared/constants.ts`; add a cache-eviction boundary test to Step 68.2's test spec.
-
----
-
-#### G7 — 🔒 Security: Ollama embedding response parsed without Zod validation
-
-- **Location in plan:** Step 68.1 — calls Ollama `/api/embed` endpoint
-- **Problem:** The plan does not specify Zod (or equivalent) validation of the HTTP response body before using the `embeddings` array. An error response from Ollama (e.g., `{"error":"model not found"}`) would be silently treated as a valid `number[][]`, producing `undefined`/`NaN` vectors. OWASP A08 (Software and Data Integrity Failures).
-- **Impact:** Silent production of invalid embeddings propagated into `cosineSimilarity()`, causing `NaN` relevance scores and potentially crashing downstream consumers.
-- **To fix:** Define `ZOllamaEmbedResponse = z.object({ embeddings: z.array(z.array(z.number())) })` and call `.parse()` on the raw response before using vectors. Add a negative test asserting a typed error is thrown when the mock returns an error payload.
-
----
-
-#### G8 — 🔒 Security: `baseUrl` accepts any URL — Server-Side Request Forgery risk
-
-- **Location in plan:** Schemas — `baseUrl: z.string().url().default("http://127.0.0.1:11434")`
-- **Problem:** `z.string().url()` accepts any valid URL, including `https://internal-metadata-service/`, enabling a misconfigured or attacker-supplied `baseUrl` to redirect embedding calls to arbitrary internal services. OWASP A10 (SSRF).
-- **Impact:** In shared/team deployments, a crafted `baseUrl` could exfiltrate embedding payloads to an external server or probe internal network services.
-- **To fix:** Add a `z.refine()` check restricting `baseUrl` to `localhost` / `127.0.0.1` / `::1` hostnames, or validate the parsed URL hostname against that allowlist at service construction time. Document the restriction in Architecture Notes.
-
----
-
-#### G9 — 🟠 Testing: `tests/unit/utils/cosine*similarity*test.ts` duplicates existing coverage and uses wrong path
-
-- **Location in plan:** Step 68.2 Planned Tests — `tests/unit/utils/cosine*similarity*test.ts`
-- **Problem:** `cosineSimilarity` is already exported from `src/services/memory/memory*embedding.ts` and comprehensively tested in `tests/services/memory/memory*embedding_test.ts` (identical/orthogonal/similar vectors, length-mismatch error). Additionally, `tests/unit/` does not exist in the project.
-- **Impact:** Duplicated test effort; wrong path prevents CI discovery.
-- **To fix:** Remove this planned test file. If the new `OllamaEmbeddingService` wraps `calculateSimilarity` in a new way, add those assertions to the already-planned `tests/services/memory/ollama*embedding*service_test.ts`.
-
----
-
-#### G10 — 🟡 Configurability: `chunkSize` default is an inline literal; `baseUrl` should reuse existing constant
-
-- **Location in plan:** Schemas — `chunkSize: z.number().int().default(1000)`, `baseUrl: z.string().url().default("http://127.0.0.1:11434")`
-- **Problem:** The `chunkSize` default `1000` is an inline literal with no corresponding constant. The `baseUrl` default re-hardcodes the Ollama base URL when `DEFAULT*OLLAMA*BASE_URL` already exists in `src/shared/constants.ts`.
-- **Impact:** Changing the Ollama endpoint default in `constants.ts` would not propagate to the embedding config schema.
-- **To fix:** Add `DEFAULT*OLLAMA*EMBED*CHUNK*SIZE = 1000` to `src/shared/constants.ts` and use `DEFAULT*OLLAMA*BASE_URL` for the `baseUrl` default.
-
----
-
-## Pre-Implementation Actions
-
-Resolve in order before writing any implementation code:
-
-1. **(G1 + G2 + G3)** Correct all file paths in Key Files, Interfaces Affected, and step Actions — use `src/services/memory/memory*embedding.ts`, `src/services/memory/memory*bank.ts`, and `src/ai/providers.ts:OllamaProvider` (or a new `src/ai/providers/ollama*embedding*client.ts`).
-1. **(G4)** Rewrite the `OllamaEmbeddingService` interface in Technical Architecture to implement the full `IMemoryEmbeddingService` contract (`initializeManifest`, `embedLearning`, `searchByEmbedding`, `getEmbedding`, `deleteEmbedding`, `getStats`).
-1. **(G5)** Correct the Logic Flow diagram — replace `MemoryBank.addPattern` with `OllamaEmbeddingService.embedLearning(ILearning)` as the embedding trigger.
-1. **(G7)** Add `ZOllamaEmbedResponse` Zod schema and validate Ollama HTTP responses before use; add a negative test to Step 68.1 spec.
-1. **(G8)** Add a `z.refine()` localhost-only validator on `baseUrl`; document in Architecture Notes.
-1. **(G6)** Specify LRU cache with `OLLAMA*EMBED*CACHE*MAX*ENTRIES` constant before Step 68.2 implementation.
-1. **(G9 + G10)** Remove duplicate test path; add `DEFAULT*OLLAMA*EMBED*CHUNK*SIZE` constant and reference `DEFAULT*OLLAMA*BASE_URL` in the schema.
+| ID | Gap | Status | Notes |
+| --- | --- | ------ | ----- |
+| G1 | `src/services/memory_embedding.ts` wrong path | ✅ RESOLVED in v2.0 | Corrected to `src/services/memory/memory_embedding.ts` |
+| G2 | `src/services/memory_bank.ts` wrong path | ✅ RESOLVED in v2.0 | Corrected to `src/services/memory/memory_bank.ts` |
+| G3 | Ollama provider path wrong | ✅ RESOLVED in v2.0 | Now `src/ai/providers/ollama_embedding_client.ts` |
+| G4 | Interface doesn't satisfy `IMemoryEmbeddingService` | ✅ RESOLVED in v2.0 | Service implements all 6 required methods |
+| G5 | Logic flow shows wrong embedding trigger | ✅ RESOLVED in v2.0 | Flow now shows `embedLearning(ILearning)` |
+| G6 | Cache design unspecified | ✅ RESOLVED in v2.0 | LRU with `OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512` |
+| G7 | No Zod validation of embedding response | ✅ RESOLVED in v2.0 | `ZOllamaEmbedResponse` + `ZOpenAIEmbedResponse` |
+| G8 | `baseUrl` SSRF risk | ✅ RESOLVED in v2.0 | Localhost-only `.refine()` for Ollama |
+| G9 | Duplicate cosine similarity test | ✅ RESOLVED in v2.0 | Reuse existing `cosineSimilarity` tests |
+| G10 | Inline literals for chunk sizes | ✅ RESOLVED in v2.0 | Constants defined in Step 68.0 |

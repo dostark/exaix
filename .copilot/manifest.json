@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-13T14:51:42.774Z",
+  "generated_at": "2026-04-13T16:56:20.772Z",
   "docs": [
     {
       "path": ".copilot/docs/documentation.md",
@@ -1072,9 +1072,9 @@
       "path": ".copilot/planning/phase-68-ollama-semantic-search.md",
       "agent": "senior-coder",
       "scope": "dev",
-      "title": "Phase 68: Ollama Embedding & Local Semantic Search",
-      "short_summary": "Integrate a local embedding model via Ollama to bring zero-cost semantic vector search to the Solo edition, replacing the noisy TF-IDF keyword fallback.",
-      "version": "1.2",
+      "title": "Phase 68: Local Embedding & Semantic Memory Search",
+      "short_summary": "Introduce a provider-agnostic embedding layer with Ollama as the first implementation, enabling zero-cost semantic vector search for the Solo edition and a pluggable interface for cloud providers (OpenAI, Google) and local alternatives (llama.cpp).",
+      "version": "2.0",
       "topics": [
         "planning",
         "roadmap",
@@ -1084,7 +1084,10 @@
         "embeddings",
         "search",
         "ollama",
-        "solo-tier"
+        "openai",
+        "llamacpp",
+        "solo-tier",
+        "provider-agnostic"
       ],
       "chunks": [
         ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk0.txt",
