@@ -232,6 +232,16 @@ export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
 export const DEFAULT_GOOGLE_MODEL = "gemini-flash-latest";
 
 // ============================================================================
+// Embedding Provider Constants (Phase 68)
+// ============================================================================
+export const DEFAULT_OLLAMA_EMBED_CHUNK_SIZE = 1000;
+export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
+export const DEFAULT_LLAMACPP_EMBED_CHUNK_SIZE = 1000;
+export const OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512;
+export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
+export const DEFAULT_LLAMACPP_EMBED_BASE_URL = "http://127.0.0.1:8080";
+
+// ============================================================================
 // Mock Provider Validation Limits
 // ============================================================================
 export const MOCK_DELAY_MS_MIN = 0;

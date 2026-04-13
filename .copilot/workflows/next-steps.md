@@ -26,6 +26,8 @@ Thin slash-command wrapper for the canonical plan-driven TDD workflow.
 1. Keep edits minimal and behavior-preserving beyond the targeted step.
 1. Default to focused validation for the touched files and tests; do not usually run full-suite commands such as `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all`.
 1. Use full-suite test commands only for exclusive cases: massive cross-cutting changes, changes that touch shared execution/runtime foundations with broad blast radius, or when the user explicitly requests a full run.
+1. **Git state check**: Before rebasing or pulling, verify clean working tree with `git status --porcelain`. The pre-rebase hook blocks rebasing with dirty state. If dirty, make a WIP commit first.
+1. **Branch safety**: Do not commit directly to `main`. Work on a feature branch.
 
 ## Output format
 

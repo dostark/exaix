@@ -75,9 +75,111 @@ All available agent documentation is indexed in `.copilot/manifest.json`. Use th
 
 **Failure to consult `.copilot/` documentation is considered a project standards violation.**
 
-## 5. Pull Request Checklist
+## 5. Safe Git Workflow
 
-### 5.1 Commit Message Guidelines
+### 5.1 Golden Rule: Feature Branches Only
+
+**Never commit directly to `main`.** A pre-commit hook (Gate 0) blocks direct
+commits on `main` to protect branch history. Always work on a feature branch:
+
+```bash
+git checkout main && git pull --rebase origin main
+git checkout -b phase-XX-short-description
+```
+
+Bypass (only if intentional): `HOOK_BYPASS_MAIN=1 git commit -m "..."`
+
+### 5.2 Hooks
+
+All hooks are installed by running:
+
+```bash
+deno task hooks:install
+```
+
+This writes hooks to `.git/hooks/` from `scripts/setup_hooks.ts`. The hooks
+are:
+
+| Hook                      | Purpose                                      |
+| ------------------------- | -------------------------------------------- |
+| `pre-commit` (Gate 0)     | Blocks direct commits on `main`              |
+| `pre-commit` (Gates 1-11) | Format, lint, style, tests, docs, complexity |
+| `pre-rebase`              | Blocks rebase with dirty working tree        |
+| `pre-push`                | Type check + security regression tests       |
+| `commit-msg`              | Structured commit message validation         |
+
+The `pre-rebase` hook prevents data loss by blocking `git rebase` when the
+working tree is dirty. Bypass: `HOOK_BYPASS_REBASE=1 git rebase <target>`
+
+### 5.3 WIP Commits Before Dangerous Operations
+
+Before running `git rebase`, `git pull --rebase`, or `git checkout`:
+
+```bash
+git add -A && git commit -m "WIP: save work before rebase"
+git rebase origin/main
+```
+
+### 5.4 Agent Git State Check
+
+AI agents **MUST** verify git state before multi-step operations:
+
+```bash
+git status --porcelain && git rev-parse --abbrev-ref HEAD
+```
+
+- If uncommitted changes exist: commit them first with a WIP commit
+- If a rebase is in progress: complete or abort it before starting new work
+- If on `main`: create a feature branch first
+
+### 5.5 CI Bug Fix Workflow
+
+When CI fails on a PR branch or on `main`:
+
+**PR branch CI failure** — push fixes directly to the feature branch:
+
+```bash
+git checkout feature-branch
+# fix the issue
+git add -A && git commit -m "fix: resolve CI failure"
+git push origin feature-branch
+```
+
+**Main branch CI failure** — create a hotfix branch:
+
+```bash
+git checkout main && git pull --rebase origin main
+git checkout -b hotfix/ci-fix main
+# fix the issue, verify locally
+deno run -A scripts/ci.ts check
+git add -A && git commit -m "fix: resolve CI failure in X"
+git push origin hotfix/ci-fix
+# Open PR, merge via review
+```
+
+The pre-commit hook allows **merge commits** on `main` (PR merges are unaffected).
+Only direct commits are blocked.
+
+**Emergency bypass** — only when main is broken and immediate fix needed:
+
+```bash
+git checkout main && git pull --rebase origin main
+# fix the issue
+git add -A && HOOK_BYPASS_MAIN=1 git commit -m "fix: emergency CI hotfix for X"
+git push origin main
+```
+
+### 5.6 Squash Before Merging
+
+Clean up WIP commits before merging to main:
+
+```bash
+git rebase -i origin/main
+```
+
+## 6. Pull Request Checklist
+
+### 6.1 Commit Message Guidelines
 
 Use Conventional Commits for all changes:
 
@@ -147,7 +249,7 @@ Authoritative guidance:
 - [ ] All tests pass (`deno task test`).
 - [ ] Code formatted (`deno task fmt`).
 
-## 6. Architecture
+## 7. Architecture
 
 For a comprehensive overview of the system architecture, component interactions, and code organization, please refer to [ARCHITECTURE.md](../ARCHITECTURE.md) in the project root. This document is the ground truth for understanding how Exaix works.
 
@@ -159,3 +261,4 @@ For a comprehensive overview of the system architecture, component interactions,
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
 - **Planning**: [.copilot/planning/](./.copilot/planning/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
+  x

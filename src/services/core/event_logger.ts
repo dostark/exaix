@@ -12,7 +12,7 @@ import type { ActivityRepository } from "../../repositories/activity_repository.
 import { ActivityActor, LogLevel } from "../../shared/enums.ts";
 import type { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
-import type { IEventBusService } from "../observability/event_bus_service.ts";
+import { EventBusService, type IEventBusService } from "../observability/event_bus_service.ts";
 import type { IStreamingEvent } from "../../shared/schemas/streaming_event.ts";
 import {
   STREAMING_EVENT_FLOW_STATUS,
@@ -115,7 +115,8 @@ export class EventLogger implements IEventLogger {
   constructor(config: IEventLoggerConfig, defaults: Partial<ILogEvent> = {}) {
     this.activityRepo = config.activityRepo;
     this.db = config.db; // DEPRECATED
-    this.eventBus = config.eventBus;
+    // Use explicitly provided eventBus, or fall back to the global singleton
+    this.eventBus = config.eventBus ?? EventBusService.getInstance();
     this.prefix = config.prefix ?? "";
     this.minLevel = config.minLevel ?? LogLevel.INFO;
     this.showTimestamp = config.showTimestamp ?? false;
@@ -279,6 +280,7 @@ export class EventLogger implements IEventLogger {
       minLevel: this.minLevel,
       showTimestamp: this.showTimestamp,
       defaultActor: this.defaultActor,
+      eventBus: this.eventBus,
     };
 
     return new EventLogger(childConfig, mergedDefaults);

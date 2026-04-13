@@ -499,5 +499,7 @@ async function process() {
 - [ ] Constants used instead of magic numbers
 - [ ] Injectable services implement an `IFoo` interface; constructors accept interfaces, not concrete classes
 - [ ] All tests pass with >90% coverage
+- [ ] **On a feature branch, not `main`** (Gate 0 blocks direct commits on `main`)
+- [ ] **Working tree is clean before any rebase/pull** (pre-rebase hook enforces this)
 
 ---

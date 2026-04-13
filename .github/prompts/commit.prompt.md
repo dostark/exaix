@@ -35,6 +35,8 @@ Execution requirements:
 1. Unless the prompt explicitly narrows scope, treat both staged and unstaged task changes as part of the commit workflow.
 1. If multiple logical batches are needed, provide one structured commit message and one exact commit command per batch.
 1. If required checks fail or were not run, report that as a blocking issue and do not present the commit as ready.
+1. **Branch safety**: Direct commits on `main` are blocked by a pre-commit hook (Gate 0). Always work on a feature branch.
+1. **Git state check**: Before committing, verify branch name and working tree state with `git status --porcelain && git rev-parse --abbrev-ref HEAD`.
 
 Output format:
 
