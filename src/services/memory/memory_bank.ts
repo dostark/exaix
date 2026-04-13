@@ -81,6 +81,7 @@ export class MemoryBankService implements IMemoryBankService {
   private tasksDir!: string;
   private indexDir!: string;
   private globalDir!: string;
+  private embeddingService?: IMemoryEmbeddingService;
 
   /**
    * Create a new Memory Bank Service instance
@@ -99,6 +100,15 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Ensure directory structure exists
     this.initializeDirectories();
+  }
+
+  /**
+   * Set the embedding service for semantic search support.
+   * Called during application initialization after the embedding
+   * provider is constructed.
+   */
+  setEmbeddingService(service: IMemoryEmbeddingService): void {
+    this.embeddingService = service;
   }
 
   /**
