@@ -24,6 +24,12 @@ Default commit scope and batching
 - Only keep changes out of the commit when the prompt explicitly excludes them or the user has clearly indicated they are unrelated and should remain separate.
 - When splitting into batches, each batch must still satisfy the full structured commit schema below.
 
+⚠️ Branch safety
+- Direct commits on `main` are blocked by a pre-commit hook (Gate 0).
+- Always work on a feature branch: `git checkout -b <branch> main`.
+- For CI hotfixes, create a `hotfix/<name>` branch from main, fix, PR, and merge.
+- Only bypass the guard when main is already broken: `HOOK_BYPASS_MAIN=1 git commit -m "..."`
+
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
 - At minimum, include applicable formatting, linting, type-checking, and tests required by the repository or touched area.

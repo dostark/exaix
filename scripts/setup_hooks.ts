@@ -13,8 +13,37 @@ const REPO_ROOT = Deno.cwd();
 const HOOKS_DIR = join(REPO_ROOT, ".git", "hooks");
 
 const PRE_COMMIT_CONTENT = `#!/bin/sh
+# ============================================
 # Exaix Pre-commit Hook
-echo "\n🔍 Running Pre-commit Gates..."
+# ============================================
+# Gate 0: Block direct commits on 'main'
+#         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
+# Gates 1-11: Format, lint, style, magic, docs, complexity, arch
+# ============================================
+
+# --- Gate 0: Main branch guard ---
+if [ "\${HOOK_BYPASS_MAIN:-}" != "1" ]; then
+  BRANCH=\$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "detached")
+  if [ "$BRANCH" = "main" ]; then
+    if [ ! -f ".git/MERGE_HEAD" ]; then
+      echo "" >&2
+      echo "⚠️  Pre-commit hook: Direct commits on 'main' are blocked." >&2
+      echo "" >&2
+      echo "Please create a feature branch instead:" >&2
+      echo "" >&2
+      echo "  git checkout -b <feature-branch> main" >&2
+      echo "" >&2
+      echo "If this is intentional, bypass with:" >&2
+      echo "" >&2
+      echo "  HOOK_BYPASS_MAIN=1 git commit -m \\"...\\"" >&2
+      echo "" >&2
+      exit 1
+    fi
+  fi
+fi
+
+echo "
+🔍 Running Pre-commit Gates..."
 
 # 1. Format Check
 deno task fmt:check
@@ -151,6 +180,41 @@ fi
 echo "✅ Commit message valid!\n"
 `;
 
+const PRE_REBASE_CONTENT = `#!/bin/sh
+# Exaix Pre-rebase Guard
+# Blocks rebase if the working tree is dirty to prevent data loss.
+# Bypass: HOOK_BYPASS_REBASE=1 git rebase ...
+
+if [ "\${HOOK_BYPASS_REBASE:-}" = "1" ]; then
+  exit 0
+fi
+
+DIRTY=\$(git status --porcelain 2>/dev/null || echo "")
+
+if [ -n "$DIRTY" ]; then
+  echo "" >&2
+  echo "⚠️  Pre-rebase hook: Uncommitted changes detected." >&2
+  echo "" >&2
+  echo "Rebasing with a dirty working tree can destroy uncommitted work." >&2
+  echo "" >&2
+  echo "Options:" >&2
+  echo "" >&2
+  echo "  1. Commit first (recommended):" >&2
+  echo "     git add -A && git commit -m \\"WIP: <description>\\"" >&2
+  echo "" >&2
+  echo "  2. Stash first:" >&2
+  echo "     git stash push -m \\"WIP: <description>\\"" >&2
+  echo "" >&2
+  echo "  3. Bypass (danger):" >&2
+  echo "     HOOK_BYPASS_REBASE=1 git rebase <target>" >&2
+  echo "" >&2
+  echo "Changed files:" >&2
+  echo "$DIRTY" >&2
+  echo "" >&2
+  exit 1
+fi
+`;
+
 async function installHooks() {
   console.log("🛠️ Installing Exaix Git Hooks...");
 
@@ -168,24 +232,28 @@ async function installHooks() {
   const preCommitPath = join(HOOKS_DIR, "pre-commit");
   const prePushPath = join(HOOKS_DIR, "pre-push");
   const commitMsgPath = join(HOOKS_DIR, "commit-msg");
+  const preRebasePath = join(HOOKS_DIR, "pre-rebase");
 
   await Deno.writeTextFile(preCommitPath, PRE_COMMIT_CONTENT);
   await Deno.writeTextFile(prePushPath, PRE_PUSH_CONTENT);
   await Deno.writeTextFile(commitMsgPath, COMMIT_MSG_CONTENT);
+  await Deno.writeTextFile(preRebasePath, PRE_REBASE_CONTENT);
 
   // Make them executable
   if (Deno.build.os !== "windows") {
     await Deno.chmod(preCommitPath, 0o755);
     await Deno.chmod(prePushPath, 0o755);
     await Deno.chmod(commitMsgPath, 0o755);
+    await Deno.chmod(preRebasePath, 0o755);
   }
 
   console.log("✅ Hooks installed successfully in .git/hooks/");
   console.log(
-    "   - pre-commit: fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
+    "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
   );
   console.log("   - pre-push: type-check, security tests");
   console.log("   - commit-msg: structured commit message validation");
+  console.log("   - pre-rebase: blocks rebase with dirty working tree");
 }
 
 if (import.meta.main) {
