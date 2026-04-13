@@ -9,6 +9,9 @@ import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@
 import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
+import { EventBusService } from "../../../src/services/observability/event_bus_service.ts";
+import type { IStreamingEvent } from "../../../src/shared/schemas/streaming_event.ts";
+import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "../../../src/shared/constants.ts";
 
 type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];
 type IEventLoggerOptions = ConstructorParameters<typeof EventLogger>[0];
@@ -352,4 +355,62 @@ Deno.test("EventLogger: full integration with database and console", async () =>
     assertStringIncludes(fullOutput, "context.truncated");
     assertStringIncludes(fullOutput, "provider.failed");
   }, { prefix: "[Exaix]" });
+});
+
+// ============================================================================
+// Event Bus Integration Tests
+// ============================================================================
+
+Deno.test("EventLogger: should publish events to event bus when configured", async () => {
+  EventBusService.resetInstance();
+
+  const eventBus = EventBusService.getInstance();
+  const { db, cleanup } = await initTestDbService();
+  const traceId = crypto.randomUUID();
+
+  const receivedEvents: IStreamingEvent[] = [];
+  const unsubscribe = eventBus.subscribe(traceId, (event: IStreamingEvent) => {
+    receivedEvents.push(event);
+  });
+
+  try {
+    const logger = new EventLogger({ db, eventBus, prefix: "[Test]" });
+
+    await logger.info("daemon.starting", "main", { mode: "development" }, traceId);
+    await logger.info("tool.start", "read_file", { path: "hello.txt" }, traceId);
+
+    assertEquals(receivedEvents.length, 2);
+    assertEquals(receivedEvents[0].traceId, traceId);
+    assertEquals(receivedEvents[1].traceId, traceId);
+    assertEquals(receivedEvents[0].type, STREAMING_EVENT_FLOW_STATUS);
+    assertEquals(receivedEvents[1].type, STREAMING_EVENT_TOOL_START);
+  } finally {
+    unsubscribe();
+    await cleanup();
+  }
+});
+
+Deno.test("EventLogger: should use singleton event bus when not explicitly provided", async () => {
+  EventBusService.resetInstance();
+
+  const eventBus = EventBusService.getInstance();
+  const { db, cleanup } = await initTestDbService();
+  const traceId = crypto.randomUUID();
+
+  const receivedEvents: IStreamingEvent[] = [];
+  const unsubscribe = eventBus.subscribe(traceId, (event: IStreamingEvent) => {
+    receivedEvents.push(event);
+  });
+
+  try {
+    const logger = new EventLogger({ db, prefix: "[Test]" });
+
+    await logger.info("daemon.starting", "main", { mode: "development" }, traceId);
+
+    assertEquals(receivedEvents.length, 1);
+    assertEquals(receivedEvents[0].traceId, traceId);
+  } finally {
+    unsubscribe();
+    await cleanup();
+  }
 });

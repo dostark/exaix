@@ -33,6 +33,19 @@ export interface IEventBusService {
  * exceeds EVENT_BUS_MAX_SUBSCRIBER_QUEUE entries.
  */
 export class EventBusService implements IEventBusService {
+  private static instance: EventBusService | null = null;
+
+  static getInstance(): EventBusService {
+    if (!EventBusService.instance) {
+      EventBusService.instance = new EventBusService();
+    }
+    return EventBusService.instance;
+  }
+
+  static resetInstance(): void {
+    EventBusService.instance = null;
+  }
+
   private readonly subscribers = new Map<string, Set<ISubscriberEntry>>();
   private closed = false;
 

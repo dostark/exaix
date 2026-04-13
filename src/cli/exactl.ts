@@ -45,6 +45,7 @@ import {
   GIT_CMD_STATUS,
   PORTAL_LABEL,
 } from "../shared/constants.ts";
+import { WatchCommand } from "./commands/watch.ts";
 
 // Extracted action handlers
 import {
@@ -106,6 +107,7 @@ const blueprintCommands = new BlueprintCommands(fullContext);
 const flowCommands = new FlowCommands(fullContext);
 const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
+const watchCommandInstance = new WatchCommand(fullContext);
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
 export function __test_getContext(): {
@@ -126,6 +128,7 @@ export function __test_getContext(): {
   flowCommands: typeof flowCommands;
   dashboardCommands: typeof dashboardCommands;
   memoryCommands: typeof memoryCommands;
+  watchCommand: typeof watchCommandInstance;
 } {
   return {
     IN_TEST_MODE: isTestMode(),
@@ -145,6 +148,7 @@ export function __test_getContext(): {
     flowCommands,
     dashboardCommands,
     memoryCommands,
+    watchCommand: watchCommandInstance,
   };
 }
 
@@ -1875,6 +1879,26 @@ const migrateCommand = new Command()
   );
 
 __test_command.command("migrate", migrateCommand);
+
+// ---------------------------------------------------------------------------
+// watch subcommand (Phase 67: Live Execution Streaming)
+// ---------------------------------------------------------------------------
+
+const watchCommand = new Command()
+  .description("Tail live execution events for a trace (SSE stream with historical fallback)")
+  .arguments("<trace_id:string>")
+  .action(async (_options, traceId: string) => {
+    try {
+      await watchCommandInstance.watch(traceId);
+    } catch (error) {
+      display.error("cli.error", "watch", {
+        message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+      });
+      Deno.exit(1);
+    }
+  });
+
+__test_command.command("watch", watchCommand);
 
 if (!isTestMode()) {
   await __test_command.parse(Deno.args);

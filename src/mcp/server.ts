@@ -10,8 +10,10 @@ import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import { MCPConfigSchema, type MCPTool } from "../shared/schemas/mcp.ts";
 import type { JSONValue } from "../shared/types/json.ts";
-import { JsonRpcErrorCode, type McpTransportType } from "../shared/enums.ts";
+import { JsonRpcErrorCode, McpTransportType } from "../shared/enums.ts";
 import type { ToolHandler } from "./tool_handler.ts";
+import { EventBusService } from "../services/observability/event_bus_service.ts";
+import { SseHandler } from "../api/sse_handler.ts";
 import { GitCommitTool } from "./handlers/git_commit_tool.ts";
 import { GitCreateBranchTool } from "./handlers/git_create_branch_tool.ts";
 import { GitStatusTool } from "./handlers/git_status_tool.ts";
@@ -110,12 +112,19 @@ export class MCPServer {
   private serverName: string;
   private serverVersion: string;
   private tools: Map<string, ToolHandler> = new Map();
+  private sseHandler?: SseHandler;
 
   constructor(options: MCPServerOptions) {
     this.context = options.context;
     this.config = options.context.config.getAll();
     this.db = options.context.db;
     this.transport = options.transport;
+
+    // Auto-create EventBusService for SSE transport and wire SSE handler
+    if (this.transport === McpTransportType.SSE) {
+      const eventBus = EventBusService.getInstance();
+      this.sseHandler = new SseHandler(eventBus);
+    }
 
     // Validate MCP config
     const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
@@ -715,6 +724,14 @@ export class MCPServer {
    */
   async handleHTTPRequest(request: Request): Promise<Response> {
     try {
+      // Delegate to SSE handler for SSE routes
+      if (this.sseHandler) {
+        const url = new URL(request.url);
+        if (SseHandler.matchesTraceIdRoute(url.pathname)) {
+          return this.addSecurityHeaders(this.sseHandler.handleRequest(request));
+        }
+      }
+
       // Only allow POST requests for JSON-RPC
       if (request.method !== "POST") {
         const response = new Response("Method not allowed", { status: 405 });
