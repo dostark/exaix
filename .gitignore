@@ -67,4 +67,5 @@ exa.config.toml
 # Agent doc pre-chunks (auto-generated)
 .copilot/chunks/
 .copilot/manifest.json
-Memory/
+/Memory/*
+!/Memory/**/.gitkeep

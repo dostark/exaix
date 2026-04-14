@@ -14,7 +14,7 @@
 
 import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "../../shared/constants.ts";
 import { stringify as stringifyYaml } from "@std/yaml";
-import type { DatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "../../shared/schemas/plan_schema.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
@@ -43,7 +43,7 @@ export interface IPlanWriterConfig {
   includeReasoning: boolean;
   generateWikiLinks: boolean;
   runtimeRoot: string;
-  db?: DatabaseService;
+  db?: IDatabaseService;
 }
 
 export interface IPlanWriteResult {

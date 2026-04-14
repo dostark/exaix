@@ -6,20 +6,24 @@
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { assert, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { spy, type SpyCall } from "@std/testing/mock";
 
 import { PlanWriter } from "../../../src/services/plan/plan_writer.ts";
-import type { IPlanWriterConfig, IRequestMetadata } from "../../../src/services/plan/plan_writer.ts";
-
-interface IAgentExecutionResult {
-  thought: string;
-  content: string;
-  raw: string;
-}
+import type {
+  IAgentExecutionResult,
+  IPlanWriterConfig,
+  IRequestMetadata,
+} from "../../../src/services/plan/plan_writer.ts";
+import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { IActivityRecord } from "../../../src/shared/types/database.ts";
 
 /**
- * Helper: Create a minimal valid JSON plan
+ * Helper: Retrieve calls from a spy
  */
+function getSpyCalls(fn: unknown): SpyCall[] {
+  return (fn as { calls: SpyCall[] })?.calls ?? [];
+}
 function createJsonPlan(
   subject: string,
   description: string,
@@ -247,6 +251,212 @@ describe("PlanWriter - JSON Integration", () => {
         .catch(() => false);
 
       assert(fileExists, "Plan file should exist");
+    });
+  });
+
+  describe("Token Usage and Database Integration", () => {
+    it("should aggregate token usage from database", async () => {
+      const traceId = "usage-trace";
+      const db: Partial<IDatabaseService> = {
+        queryActivity: spy(() =>
+          Promise.resolve([
+            {
+              id: "ev1",
+              trace_id: traceId,
+              actor: "agent",
+              actor_type: "agent",
+              action_type: "llm.usage",
+              target: "p1",
+              payload: JSON.stringify({
+                input_tokens: 100,
+                output_tokens: 50,
+                cost_usd: 0.001,
+                provider: "p1",
+                model: "m1",
+              }),
+              timestamp: new Date().toISOString(),
+              identity_id: null,
+            },
+            {
+              id: "ev2",
+              trace_id: traceId,
+              actor: "agent",
+              actor_type: "agent",
+              action_type: "llm.usage",
+              target: "p2",
+              payload: JSON.stringify({
+                prompt_tokens: 200,
+                completion_tokens: 100,
+                cost_usd: 0.002,
+                provider: "p2",
+                model: "m2",
+              }),
+              timestamp: new Date().toISOString(),
+              identity_id: null,
+            },
+          ] as IActivityRecord[])
+        ),
+        logActivity: spy(() => Promise.resolve()),
+      };
+
+      const planWriterWithDb = new PlanWriter({ ...config, db: db as IDatabaseService });
+
+      const agentResult: IAgentExecutionResult = {
+        thought: "test",
+        content: createJsonPlan("Test", "Desc"),
+        raw: "",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "req-1",
+        traceId,
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+      };
+
+      const result = await planWriterWithDb.writePlan(agentResult, metadata);
+
+      assertStringIncludes(result.content, "input_tokens: 300");
+      assertStringIncludes(result.content, "output_tokens: 150");
+      assertStringIncludes(result.content, "total_tokens: 450");
+      assertStringIncludes(result.content, "token_cost_usd: 0.003");
+      // Providers and models are aggregated
+      assertStringIncludes(result.content, "p1, p2");
+      assertStringIncludes(result.content, "m1, m2");
+    });
+  });
+
+  describe("Plan Validation Errors", () => {
+    it("should log and throw PlanValidationError on invalid JSON", async () => {
+      const db: Partial<IDatabaseService> = {
+        logActivity: spy(() => Promise.resolve()),
+      };
+      const planWriterWithDb = new PlanWriter({ ...config, db: db as IDatabaseService });
+
+      const agentResult: IAgentExecutionResult = {
+        thought: "bad plan",
+        content: "invalid json",
+        raw: "RAW_DATA",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "bad-req",
+        traceId: "trace-bad",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+      };
+
+      try {
+        await planWriterWithDb.writePlan(agentResult, metadata);
+        assert(false, "Should have thrown PlanValidationError");
+      } catch (e: unknown) {
+        assertEquals((e as Error).name, "PlanValidationError");
+        // Verify enrichment
+        const details = (e as { details?: { fullRawResponse?: string } }).details;
+        if (details?.fullRawResponse) {
+          assertEquals(details.fullRawResponse, "RAW_DATA");
+        } else {
+          throw new Error("Missing fullRawResponse in error details");
+        }
+      }
+
+      // Verify failure was logged
+      const failureLog = getSpyCalls(db.logActivity).find((c) => (c.args[1] as string) === "plan.validation.failed");
+      assert(failureLog, "Failure should be logged");
+    });
+  });
+
+  describe("Subject Priority", () => {
+    it("should use agent subject if request subject is fallback", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "test",
+        content: createJsonPlan("Agent Subject", "Desc"),
+        raw: "",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "id",
+        traceId: "t",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+        subject: "Fallback Request Subject",
+        subjectIsFallback: true,
+      };
+
+      const result = await planWriter.writePlan(agentResult, metadata);
+      assertStringIncludes(result.content, "# Agent Subject");
+      assertEquals(result.subject, "Agent Subject");
+    });
+
+    it("should prefer explicit request subject over agent subject", async () => {
+      const agentResult: IAgentExecutionResult = {
+        thought: "test",
+        content: createJsonPlan("Agent Subject", "Desc"),
+        raw: "",
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId: "id",
+        traceId: "t",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+        subject: "Explicit Request Subject",
+        subjectIsFallback: false,
+      };
+
+      const result = await planWriter.writePlan(agentResult, metadata);
+      // It should be in frontmatter
+      assertStringIncludes(result.content, "subject: Explicit Request Subject");
+      assertEquals(result.subject, "Explicit Request Subject");
+      // Note: Current implementation renders agentSubject in markdown header even if overridden in frontmatter
+      // This is expected given the current PlanWriter logic
+      assertStringIncludes(result.content, "# Agent Subject");
+    });
+  });
+
+  describe("Configuration Options", () => {
+    it("should respect includeReasoning: false", async () => {
+      const pwNoReasoning = new PlanWriter({ ...config, includeReasoning: false });
+      const agentResult: IAgentExecutionResult = {
+        thought: "MY REASONING",
+        content: createJsonPlan("Plan", "Desc"),
+        raw: "",
+      };
+      const metadata: IRequestMetadata = {
+        requestId: "id",
+        traceId: "t",
+        createdAt: new Date(),
+        contextFiles: [],
+        contextWarnings: [],
+      };
+
+      const result = await pwNoReasoning.writePlan(agentResult, metadata);
+      assert(!result.content.includes("## Reasoning"), "Should NOT include reasoning");
+      assert(!result.content.includes("MY REASONING"), "Should NOT include reasoning text");
+    });
+
+    it("should respect generateWikiLinks: false", async () => {
+      const pwNoWiki = new PlanWriter({ ...config, generateWikiLinks: false });
+      const agentResult: IAgentExecutionResult = {
+        thought: "test",
+        content: createJsonPlan("Plan", "Desc"),
+        raw: "",
+      };
+      const metadata: IRequestMetadata = {
+        requestId: "id",
+        traceId: "t",
+        createdAt: new Date(),
+        contextFiles: ["path/to/File.md"],
+        contextWarnings: [],
+      };
+
+      const result = await pwNoWiki.writePlan(agentResult, metadata);
+      assertStringIncludes(result.content, "- path/to/File.md");
+      assert(!result.content.includes("[[File]]"), "Should NOT use wiki links");
     });
   });
 });

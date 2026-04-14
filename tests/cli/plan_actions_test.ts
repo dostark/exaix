@@ -8,7 +8,14 @@
 import { assertEquals } from "@std/assert";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../config/constants.ts";
 import {
+  handlePlanAmendmentApprove,
+  handlePlanAmendmentApproveAll,
+  handlePlanAmendmentList,
+  handlePlanAmendmentReject,
+  handlePlanAmendmentShow,
+  handlePlanAmendmentShowAll,
   handlePlanApprove,
+  handlePlanApproveAll,
   handlePlanList,
   handlePlanReject,
   handlePlanRevise,
@@ -16,6 +23,7 @@ import {
   type IPlanActionContext,
 } from "../../src/cli/command_builders/plan_actions.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { stub } from "@std/testing/mock";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
@@ -164,4 +172,186 @@ Deno.test("handlePlanReject/Revise: delegates", async () => {
   await handlePlanRevise(context, "p", ["c"]);
 
   assertEquals(calls, ["reject", "revise"]);
+});
+
+Deno.test("handlePlanApproveAll: delegates to approveAll", async () => {
+  const { display } = createDisplay();
+  const calls: Array<{ skills?: string[] }> = [];
+  const planCommands = {
+    approveAll: (skills?: string[]) => {
+      calls.push({ skills });
+      return Promise.resolve();
+    },
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanApproveAll(context, { skills: "x,y" });
+  assertEquals(calls[0].skills, ["x", "y"]);
+});
+
+Deno.test("handlePlanAmendmentList: displays amendments", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    listAmendments: () =>
+      Promise.resolve([
+        { id: "a1", trace_id: "trace123" },
+      ]),
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentList(context);
+
+  assertEquals(calls.length, 2);
+  assertEquals(calls[0].a, "plan.amendment.list");
+  assertEquals(calls[1].a.includes("amendment_pending: a1"), true);
+});
+
+Deno.test("handlePlanAmendmentList: handles empty list", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    listAmendments: () => Promise.resolve([]),
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentList(context);
+
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].a, "plan.amendment.list");
+  assertEquals(calls[0].c.count, 0);
+});
+
+Deno.test("handlePlanAmendmentShow: displays patch details", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    getAmendment: () =>
+      Promise.resolve({
+        amendmentId: "am1",
+        summary: "Sum",
+        affectedRemainingStepIds: ["s1"],
+        createdAt: "2024-01-01",
+        adds: [{ number: 2, title: "Add", content: "C" }],
+        updates: [{ number: 1, title: "Upd", content: "C" }],
+        removes: [3],
+      }),
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentShow(context, "a1");
+
+  assertEquals(calls.some((c) => c.a === "Adds"), true);
+  assertEquals(calls.some((c) => c.a === "Updates"), true);
+  assertEquals(calls.some((c) => c.a === "Removes"), true);
+});
+
+Deno.test("handlePlanAmendmentApprove/Reject: delegates", async () => {
+  const { display, calls } = createDisplay();
+  const cmdCalls: string[] = [];
+  const planCommands = {
+    approveAmendment: () => {
+      cmdCalls.push("approve");
+      return Promise.resolve();
+    },
+    rejectAmendment: () => {
+      cmdCalls.push("reject");
+      return Promise.resolve();
+    },
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentApprove(context, "a1");
+  await handlePlanAmendmentReject(context, "a1", "reason");
+
+  assertEquals(cmdCalls, ["approve", "reject"]);
+  assertEquals(calls.some((c) => c.a === "plan.amendment.approved"), true);
+  assertEquals(calls.some((c) => c.a === "plan.amendment.rejected"), true);
+});
+
+Deno.test("handlePlanAmendmentApproveAll: delegates", async () => {
+  const { display } = createDisplay();
+  let called = false;
+  const planCommands = {
+    approveAllAmendments: () => {
+      called = true;
+      return Promise.resolve();
+    },
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentApproveAll(context);
+  assertEquals(called, true);
+});
+
+Deno.test("handlePlanAmendmentShowAll: displays all amendments", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    getAmendments: () =>
+      Promise.resolve([
+        {
+          id: "a1",
+          patch: {
+            amendmentId: "am1",
+            summary: "Sum",
+            affectedRemainingStepIds: ["s1"],
+            adds: [],
+            updates: [],
+            removes: [],
+          },
+        },
+      ]),
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+  await handlePlanAmendmentShowAll(context);
+
+  assertEquals(calls.length > 1, true);
+  assertEquals(calls[0].a, "plan.amendment.show_all");
+});
+
+Deno.test("Error Handling: handlePlanList calls Deno.exit(1) on failure", async () => {
+  const { display, calls } = createDisplay();
+  const planCommands = {
+    list: () => Promise.reject(new Error("Failure")),
+  };
+
+  const context: IPlanActionContext = {
+    planCommands: Object.assign(Object.create(PlanCommands.prototype), planCommands),
+    display,
+  };
+
+  const exitStub = stub(Deno, "exit", () => {
+    throw new Error("Deno.exit called");
+  });
+
+  try {
+    try {
+      await handlePlanList(context, {});
+    } catch (e) {
+      assertEquals((e as Error).message, "Deno.exit called");
+    }
+    assertEquals(calls.length, 1);
+    assertEquals(calls[0].level, LogLevel.ERROR);
+  } finally {
+    exitStub.restore();
+  }
 });
