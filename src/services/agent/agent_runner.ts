@@ -14,6 +14,7 @@
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
+import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
@@ -266,7 +267,8 @@ export class AgentRunner implements IAgentRunner {
     }
 
     // Step 3: Parse the response to extract thought and content
-    const rawResponse = retryResult.value!;
+    const generateResult = retryResult.value;
+    const rawResponse = generateResult?.content || "";
     const result = this.parseResponse(rawResponse);
 
     // Log successful execution
@@ -379,7 +381,7 @@ export class AgentRunner implements IAgentRunner {
   private async executeWithRetry(
     combinedPrompt: string,
     startTime: number,
-  ): Promise<IRetryResult<string>> {
+  ): Promise<IRetryResult<IGenerateResult>> {
     if (this.disableRetry) {
       // Direct execution without retry
       try {
@@ -412,7 +414,7 @@ export class AgentRunner implements IAgentRunner {
    * Handle execution failure by logging and throwing
    */
   private handleExecutionFailure(
-    retryResult: IRetryResult<string>,
+    retryResult: IRetryResult<IGenerateResult>,
     requestId: string | undefined,
     identityId: string,
     traceId: string | undefined,
@@ -443,7 +445,7 @@ export class AgentRunner implements IAgentRunner {
   private logExecutionCompletion(args: {
     result: { thought: string; content: string };
     rawResponse: string;
-    retryResult: IRetryResult<string>;
+    retryResult: IRetryResult<IGenerateResult>;
     requestId: string | undefined;
     identityId: string;
     traceId: string | undefined;

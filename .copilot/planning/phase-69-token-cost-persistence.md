@@ -117,11 +117,12 @@ flowchart TD
 1. **Planned Tests**
 
 - No dedicated test file; the constant is exercised by tests in Steps 69.3 and 69.4.
+**✅ IMPLEMENTED** — `src/constants.ts`, N/A tests passing
 
 1. **Success Criteria**
 
-- `src/constants.ts` exports `AGENT_GENERATION_COMPLETED` without compile errors.
-- No inline string `"agent.generation_completed"` appears in Steps 69.1–69.4 implementation files.
+- [x] `src/constants.ts` exports `AGENT_GENERATION_COMPLETED` without compile errors.
+- [x] No inline string `"agent.generation_completed"` appears in Steps 69.1–69.4 implementation files.
 
 ### Step 69.1: Provider Return Type Updates
 

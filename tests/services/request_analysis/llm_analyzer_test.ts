@@ -8,6 +8,7 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "../../../src/ai/providers.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import {
   createOutputValidator,
@@ -50,10 +51,16 @@ function createCapturingProvider(responseJson: string): { provider: IModelProvid
     capturedPrompt: () => capturedPrompt,
     provider: {
       id: "capturing",
-      generate: async (prompt: string) => {
+      generate: async (prompt: string): Promise<IGenerateResult> => {
         capturedPrompt = prompt;
         await Promise.resolve();
-        return responseJson;
+        return {
+          content: responseJson,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "capturing-mock",
+          provider: "mock",
+          cost_usd: 0,
+        };
       },
     },
   };

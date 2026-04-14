@@ -179,7 +179,7 @@ async function testProviderTokenMetrics(
   try {
     const response = await provider.generate(TEST_CONST.TOKEN_METRICS_TEST_PROMPT);
     assertExists(response, TEST_CONST.ASSERT_MSG_RESPONSE_EXISTS);
-    assert(response.length > 0, TEST_CONST.ASSERT_MSG_RESPONSE_NOT_EMPTY);
+    assert(response.content.length > 0, TEST_CONST.ASSERT_MSG_RESPONSE_NOT_EMPTY);
   } catch (error) {
     // Handle common API errors gracefully
     const shouldSkip = handleApiError(error as Error, providerName, skipMessages);

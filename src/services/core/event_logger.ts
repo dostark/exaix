@@ -391,6 +391,9 @@ export class EventLogger implements IEventLogger {
           traceId: event.traceId,
           identityId: event.identityId ?? null,
           agentKind: event.agentKind ?? null,
+          promptTokens: event.promptTokens,
+          completionTokens: event.completionTokens,
+          costUsd: event.costUsd,
         });
       } catch (error) {
         // Database write failed - log warning but don't crash
@@ -408,6 +411,9 @@ export class EventLogger implements IEventLogger {
           event.actorType ?? null,
           event.identityId ?? null,
           event.agentKind ?? null,
+          event.promptTokens,
+          event.completionTokens,
+          event.costUsd,
         );
       } catch (error) {
         // Database write failed - log warning but don't crash

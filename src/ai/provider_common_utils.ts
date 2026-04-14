@@ -9,9 +9,7 @@ import type { EventLogger } from "../services/core/event_logger.ts";
 import { AuthenticationError, ConnectionError, ModelProviderError, RateLimitError } from "./providers/common.ts";
 import type { IModelOptions } from "./types.ts";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS } from "../shared/constants.ts";
-import { withRetry } from "./providers/common.ts";
-
-// No re-exporting withRetry here. Use direct import from providers/common.ts.
+import { type IGenerateResult, withRetry } from "./providers/common.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
@@ -101,7 +99,7 @@ export type AnthropicResponse = {
 /**
  * Calculate cost for token usage based on provider
  */
-function calculateCost(provider: string, totalTokens: number): number {
+export function calculateCost(provider: string, totalTokens: number): number {
   const rates: Record<string, number> = {
     [PROVIDER_OPENAI]: COST_RATE_OPENAI,
     [PROVIDER_ANTHROPIC]: COST_RATE_ANTHROPIC,
@@ -337,7 +335,7 @@ export async function performProviderCall<T>(
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
   },
-): Promise<string> {
+): Promise<IGenerateResult> {
   const data = await fetchJsonWithRetries<T>(url, fetchOptions, {
     id,
     maxAttempts,
@@ -349,5 +347,17 @@ export async function performProviderCall<T>(
   const content = extractor
     ? extractor(data)
     : ((data as OpenAIResponse)?.choices?.[0]?.message?.content ?? (data as OpenAIResponse)?.choices?.[0]?.text ?? "");
-  return content ?? "";
+
+  const tokens = tokenMapper ? tokenMapper(data, id) : undefined;
+  return {
+    content: content ?? "",
+    usage: {
+      promptTokens: tokens?.prompt_tokens ?? 0,
+      completionTokens: tokens?.completion_tokens ?? 0,
+      totalTokens: tokens?.total_tokens ?? 0,
+    },
+    cost_usd: tokens?.cost_usd,
+    model: tokens?.model ?? "unknown",
+    provider: tokens?.provider ?? id,
+  };
 }

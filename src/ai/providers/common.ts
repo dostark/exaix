@@ -18,6 +18,7 @@ export interface IGenerateResult {
   };
   model: string;
   provider: string;
+  cost_usd?: number;
 }
 /**
  * Base error class for model provider errors.

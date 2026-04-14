@@ -8,6 +8,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { MockProvider } from "../../../src/ai/providers.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
@@ -33,10 +34,16 @@ Deno.test("[RequestAnalyzer] heuristic mode never calls provider", async () => {
   let generateCalled = false;
   const trackingProvider = {
     id: "tracking",
-    generate: async (_p: string) => {
+    generate: async (_p: string): Promise<IGenerateResult> => {
       generateCalled = true;
       await Promise.resolve();
-      return makeValidJson();
+      return {
+        content: makeValidJson(),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "tracking-model",
+        provider: "mock",
+        cost_usd: 0,
+      };
     },
   };
   const analyzer = new RequestAnalyzer(
@@ -75,10 +82,16 @@ Deno.test("[RequestAnalyzer] hybrid mode skips LLM for high-actionability reques
   let llmCalled = false;
   const trackingProvider = {
     id: "tracking",
-    generate: async (_p: string) => {
+    generate: async (_p: string): Promise<IGenerateResult> => {
       llmCalled = true;
       await Promise.resolve();
-      return makeValidJson({ score: 90 });
+      return {
+        content: makeValidJson({ score: 90 }),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "tracking-model",
+        provider: "mock",
+        cost_usd: 0,
+      };
     },
   };
   const analyzer = new RequestAnalyzer(
@@ -95,10 +108,16 @@ Deno.test("[RequestAnalyzer] hybrid mode calls LLM for low-actionability request
   let llmCalled = false;
   const trackingProvider = {
     id: "tracking",
-    generate: async (_p: string) => {
+    generate: async (_p: string): Promise<IGenerateResult> => {
       llmCalled = true;
       await Promise.resolve();
-      return makeValidJson({ score: 90 });
+      return {
+        content: makeValidJson({ score: 90 }),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "tracking-model",
+        provider: "mock",
+        cost_usd: 0,
+      };
     },
   };
   const validator = createOutputValidator({ autoRepair: false });
@@ -202,7 +221,7 @@ Deno.test("[RequestAnalyzer] merges heuristic file refs into LLM results", async
 Deno.test("[RequestAnalyzer] handles LLM failure gracefully in hybrid mode (falls back to heuristic)", async () => {
   const failingProvider = {
     id: "failing",
-    generate: (_p: string): Promise<string> => Promise.reject(new Error("network error")),
+    generate: (_p: string): Promise<IGenerateResult> => Promise.reject(new Error("network error")),
   };
   const analyzer = new RequestAnalyzer(
     { mode: AnalysisMode.HYBRID, actionabilityThreshold: 100 }, // would normally escalate

@@ -8,6 +8,7 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { PlanSchema } from "../../src/shared/schemas/plan_schema.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { getProviderForModel } from "./helpers/test_config.ts";
 
 // Check if LlamaProvider tests should run
@@ -25,18 +26,18 @@ function llamaTest(name: string, fn: () => void | Promise<void>) {
 llamaTest("LlamaProvider responds to trivial prompt", async () => {
   const provider = new LlamaProvider({ model: "llama3.2:1b" });
   const prompt = "Hello";
-  let response = "";
+  let response: IGenerateResult | undefined;
   try {
     response = await provider.generate(prompt);
-    console.log("[DEBUG] Trivial prompt response:\n", response);
+    console.log("[DEBUG] Trivial prompt response:\n", response.content);
     // Just check that we got a non-empty string
-    if (!response || typeof response !== "string" || response.length === 0) {
+    if (!response.content || response.content.length === 0) {
       throw new Error("No response or empty response from model");
     }
   } catch (err) {
     console.error("[ERROR] Trivial prompt test failed:", err);
     if (response) {
-      console.error("[ERROR] Full response:\n", response);
+      console.error("[ERROR] Full response:\n", response.content);
     }
     throw err;
   }
@@ -68,9 +69,10 @@ llamaTest("LlamaProvider generates valid plan for simple prompt (with senior-cod
   const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
   console.log("[DEBUG] Using prompt for LlamaProvider:\n", fullPrompt);
   const provider = new LlamaProvider({ model: "llama3.2:1b" });
-  let planJson = "";
+  let response: IGenerateResult | undefined;
   try {
-    planJson = await provider.generate(fullPrompt);
+    response = await provider.generate(fullPrompt);
+    const planJson = response.content;
     console.log("[DEBUG] LlamaProvider raw response:\n", planJson.slice(0, 500));
     const plan = JSON.parse(planJson);
     const result = PlanSchema.safeParse(plan);
@@ -78,8 +80,8 @@ llamaTest("LlamaProvider generates valid plan for simple prompt (with senior-cod
     assertEquals(result.success, true);
   } catch (err) {
     console.error("[ERROR] LlamaProvider test failed:", err);
-    if (planJson) {
-      console.error("[ERROR] Full Ollama response:\n", planJson);
+    if (response) {
+      console.error("[ERROR] Full Ollama response:\n", response.content);
     }
     throw err;
   }
@@ -112,15 +114,21 @@ llamaTest("LlamaProvider returns error for invalid JSON output", async () => {
     constructor() {
       super({ model: "codellama:7b-instruct" });
     }
-    override generate(): Promise<string> {
-      return Promise.resolve("not a json");
+    override generate(): Promise<IGenerateResult> {
+      return Promise.resolve({
+        content: "not a json",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "codellama:7b-instruct",
+        provider: "llama",
+        cost_usd: 0,
+      });
     }
   }
   const provider = new BadLlamaProvider();
   await assertRejects(
     async () => {
-      const planJson = await provider.generate();
-      JSON.parse(planJson);
+      const response = await provider.generate();
+      JSON.parse(response.content);
     },
     SyntaxError,
   );

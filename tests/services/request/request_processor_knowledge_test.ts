@@ -16,6 +16,7 @@ import type { IApplicationContext } from "../../../src/shared/interfaces/i_appli
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { PortalOperation } from "../../../src/shared/enums.ts";
 import {
@@ -46,9 +47,15 @@ function makeCapturingProvider(response?: string): {
 </content>`;
   const provider: IModelProvider = {
     id: "capturing-mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompts.push(prompt);
-      return Promise.resolve(validResponse);
+      return Promise.resolve({
+        content: validResponse,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "capturing-mock",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   return { provider, capturedPrompts };

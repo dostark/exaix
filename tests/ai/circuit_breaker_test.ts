@@ -9,6 +9,17 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { EvaluationVerdict } from "../../src/shared/enums.ts";
 import { CircuitBreaker, CircuitBreakerProvider } from "../../src/ai/circuit_breaker.ts";
 import type { IModelOptions } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
+}
 
 // ============================================================================
 // Unit Tests for CircuitBreaker State Management
@@ -166,7 +177,7 @@ Deno.test("CircuitBreakerProvider: recovers after service restoration", async ()
       if (shouldFail) {
         return Promise.reject(new Error("Service temporarily down"));
       }
-      return Promise.resolve("Recovered response");
+      return Promise.resolve(makeResult("Recovered response"));
     },
   };
 
@@ -190,20 +201,20 @@ Deno.test("CircuitBreakerProvider: recovers after service restoration", async ()
 
   // Should eventually succeed
   const result = await resilientProvider.generate("test");
-  assertEquals(result, "Recovered response");
+  assertEquals(result.content, "Recovered response");
   assertEquals(resilientProvider.getCircuitState(), "closed");
 });
 
 Deno.test("CircuitBr(e)akerProvider: preserves successful responses", async () => {
   const mockProvider = {
     id: "mock-provider",
-    generate: () => Promise.resolve("Success response"),
+    generate: () => Promise.resolve(makeResult("Success response")),
   };
 
   const resilientProvider = new CircuitBreakerProvider(mockProvider);
 
   const result = await resilientProvider.generate("test prompt");
-  assertEquals(result, "Success response");
+  assertEquals(result.content, "Success response");
   assertEquals(resilientProvider.getCircuitState(), "closed");
   assertEquals(resilientProvider.getFailureCount(), 0);
 });
@@ -212,9 +223,9 @@ Deno.test("CircuitBreakerProvider: forwards options to inner provider", async ()
   let receivedOptions: IModelOptions | undefined = undefined;
   const mockProvider = {
     id: "mock-provider",
-    generate: (_prompt: string, options?: IModelOptions) => {
+    generate: (_prompt: string, options?: IModelOptions): Promise<IGenerateResult> => {
       receivedOptions = options;
-      return Promise.resolve("Response");
+      return Promise.resolve(makeResult("Response"));
     },
   };
 
@@ -229,7 +240,7 @@ Deno.test("CircuitBreakerProvider: forwards options to inner provider", async ()
 Deno.test("CircuitBreakerProvider: generates correct ID", () => {
   const mockProvider = {
     id: "test-provider",
-    generate: () => Promise.resolve("response"),
+    generate: (): Promise<IGenerateResult> => Promise.resolve(makeResult("response")),
   };
 
   const resilientProvider = new CircuitBreakerProvider(mockProvider);

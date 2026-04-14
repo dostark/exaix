@@ -8,6 +8,7 @@
 
 import { ProviderRegistry } from "./provider_registry.ts";
 import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "./types.ts";
+import type { IGenerateResult } from "./providers/common.ts";
 import {
   createOpenAIChatCompletionsRequestInit,
   extractOpenAIContent,
@@ -20,6 +21,8 @@ import {
 import { initializeRegistry } from "./provider_factory.ts";
 import {
   DEFAULT_AI_TIMEOUT_MS,
+  DEFAULT_MOCK_MODEL,
+  DEFAULT_MOCK_PROVIDER_ID,
   DEFAULT_OLLAMA_BASE_URL,
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
@@ -58,15 +61,25 @@ export class MockProvider implements IModelProvider {
 
   constructor(
     private readonly response: string,
-    id: string = "mock-provider",
+    id: string = DEFAULT_MOCK_PROVIDER_ID,
   ) {
     this.id = id;
   }
 
-  async generate(_prompt: string, _options?: IModelOptions): Promise<string> {
+  async generate(_prompt: string, _options?: IModelOptions): Promise<IGenerateResult> {
     // Simulate async behavior
     await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
-    return this.response;
+    return {
+      content: this.response,
+      usage: {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+      },
+      model: DEFAULT_MOCK_MODEL,
+      provider: DEFAULT_MOCK_PROVIDER_ID,
+      cost_usd: 0,
+    };
   }
 }
 
@@ -98,7 +111,7 @@ export class OllamaProvider implements IModelProvider {
     this.id = options.id ?? `ollama-${this.defaultModel}`;
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     try {
       // Import helper dynamically to avoid module cycles
       const data = await fetchJsonWithRetries<OllamaResponse>(
@@ -135,7 +148,17 @@ export class OllamaProvider implements IModelProvider {
         );
       }
 
-      return data.response;
+      return {
+        content: data.response,
+        usage: {
+          promptTokens: data.prompt_eval_count ?? 0,
+          completionTokens: data.eval_count ?? 0,
+          totalTokens: (data.prompt_eval_count ?? 0) + (data.eval_count ?? 0),
+        },
+        model: this.defaultModel,
+        provider: "ollama",
+        cost_usd: 0,
+      };
     } catch (error) {
       if (error instanceof ModelProviderError) {
         throw error;
@@ -193,7 +216,7 @@ class OpenAIShim implements IModelProvider {
     this.id = options.id ?? `openai-${this.model}`;
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     const url = `${this.baseUrl}/v1/chat/completions`;
 
     // Use default retry parameters
@@ -217,7 +240,18 @@ class OpenAIShim implements IModelProvider {
     if (!content) {
       throw new ModelProviderError("Invalid response from OpenAI-compatible endpoint", this.id);
     }
-    return content;
+
+    return {
+      content,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens ?? 0,
+        completionTokens: data.usage?.completion_tokens ?? 0,
+        totalTokens: data.usage?.total_tokens ?? 0,
+      },
+      model: this.model,
+      provider: "openai-shim",
+      cost_usd: 0,
+    };
   }
 }
 

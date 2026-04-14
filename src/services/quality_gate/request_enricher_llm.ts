@@ -80,8 +80,8 @@ export async function enrichRequest(
       .replace("{body}", body)
       .replace("{issues}", formatIssuesForPrompt(issues));
 
-    const enriched = await provider.generate(prompt);
-    const trimmed = enriched.trim();
+    const result = await provider.generate(prompt);
+    const trimmed = result.content.trim();
     return trimmed.length > 0 ? trimmed : body;
   } catch {
     return body;

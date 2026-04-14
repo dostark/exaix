@@ -22,7 +22,7 @@ Deno.test("OpenAIShim retries on 429 and returns content", async () => {
 
   if (isCiGuardActive()) {
     // In CI without opt-in, ModelFactory intentionally returns a mock provider.
-    const res = await provider.generate("Hello");
+    const res = (await provider.generate("Hello")).content;
     const ok = res === "CI-protectedmock" || res === "CI-protected mock";
     assertEquals(ok, true);
     return;
@@ -44,7 +44,7 @@ Deno.test("OpenAIShim retries on 429 and returns content", async () => {
 
   try {
     const res = await provider.generate("Hello");
-    assertEquals(res, "ok-response");
+    assertEquals(res.content, "ok-response");
     assertEquals(calls, 2);
   } finally {
     // Restore global fetch
@@ -69,8 +69,8 @@ Deno.test({ name: "OpenAIShim: sanity check against real LLM (manual)", ignore: 
 
   try {
     const res = await provider.generate("Sanity check: are you available? Reply with 'ok'.");
-    assertExists(res, "Provider should return a non-empty response");
-    console.log("LLM sanity check succeeded: response length=" + (res as string).length);
+    assertExists(res.content, "Provider should return a non-empty response");
+    console.log("LLM sanity check succeeded: response length=" + res.content.length);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
 

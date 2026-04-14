@@ -17,6 +17,7 @@ export interface ICliApplicationContext extends IApplicationContext {}
 export type {
   IArchiveService,
   IContextCardGeneratorService,
+  ICostTracker,
   IFlowValidatorService,
   IMemoryBankService,
   IMemoryEmbeddingService,

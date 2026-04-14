@@ -24,6 +24,7 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
 import type {
   IGateConfig as _GateConfig,
@@ -153,11 +154,17 @@ function makeCapturingProvider(responses: string[]): { provider: IModelProvider;
   let callCount = 0;
   const provider: IModelProvider = {
     id: "capturing-mock",
-    generate: (prompt: string): Promise<string> => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       prompts.push(prompt);
       const response = responses[Math.min(callCount, responses.length - 1)];
       callCount++;
-      return Promise.resolve(response);
+      return Promise.resolve({
+        content: response,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "capturing-mock",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   return { provider, prompts };

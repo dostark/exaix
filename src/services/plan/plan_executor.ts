@@ -361,10 +361,11 @@ export class PlanExecutor {
     const prompt =
       `### EXECUTION REPORT SUMMARY ###\n\nGenerate a concise Markdown report for the following plan execution:\n\n${reportSummary}`;
 
-    return await this.llmProvider.generate(prompt, {
+    const result = await this.llmProvider.generate(prompt, {
       temperature: REPORT_GENERATION_TEMPERATURE,
       max_tokens: REPORT_GENERATION_MAX_TOKENS,
     });
+    return result.content;
   }
 
   /**

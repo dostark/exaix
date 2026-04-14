@@ -23,6 +23,7 @@ import {
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { EXECUTION_REPORT_FILENAME } from "../../../src/shared/constants.ts";
@@ -264,20 +265,28 @@ Deno.test("[regression] ExecutionLoop: read-only structured plan writes analysis
   class ReadOnlyReportProvider implements IModelProvider {
     id = "readonly-report-provider";
 
-    generate(prompt: string): Promise<string> {
+    generate(prompt: string): Promise<IGenerateResult> {
+      let content = "";
       if (prompt.includes("EXECUTION REPORT")) {
-        return Promise.resolve("## Summary\n\nRead-only analysis report.");
-      }
-
-      return Promise.resolve(`
-\
+        content = "## Summary\n\nRead-only analysis report.";
+      } else {
+        content = `
 \`\`\`toml
 [[actions]]
 tool = "read_file"
 [actions.params]
 path = "analysis-target.txt"
 \`\`\`
-`);
+`;
+      }
+
+      return Promise.resolve({
+        content,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "readonly-mock",
+        provider: "mock",
+        cost_usd: 0,
+      });
     }
   }
 

@@ -10,6 +10,7 @@ import { CritiqueSeverity, McpToolName } from "../../../src/shared/enums.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import {
   createFastToolReflector,
   createStrictToolReflector,
@@ -28,10 +29,16 @@ function createMockProvider(responses: string[]): IModelProvider {
   let callCount = 0;
   return {
     id: "mock-provider",
-    generate: (_prompt: string): Promise<string> => {
+    generate: (_prompt: string): Promise<IGenerateResult> => {
       const response = responses[Math.min(callCount, responses.length - 1)];
       callCount++;
-      return Promise.resolve(response);
+      return Promise.resolve({
+        content: response,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
 }

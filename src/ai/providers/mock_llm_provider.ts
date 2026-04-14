@@ -13,6 +13,7 @@
 
 import { MockStrategy, ProviderType } from "../../shared/enums.ts";
 import type { IModelOptions, IModelProvider } from "../types.ts";
+import type { IGenerateResult } from "./common.ts";
 import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "../../shared/constants.ts";
 import { ToolName } from "../../shared/enums.ts";
 
@@ -173,7 +174,7 @@ export class MockLLMProvider implements IModelProvider {
    * @param prompt The prompt to generate a response for
    * @param options Optional model options
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     if (this.strategy === "failing") {
       this._callCount++;
       this._callHistory.push({
@@ -213,7 +214,17 @@ export class MockLLMProvider implements IModelProvider {
     });
     this._totalTokens.input += this.tokensPerResponse.input;
     this._totalTokens.output += this.tokensPerResponse.output;
-    return response;
+    return {
+      content: response,
+      usage: {
+        promptTokens: this.tokensPerResponse.input,
+        completionTokens: this.tokensPerResponse.output,
+        totalTokens: this.tokensPerResponse.input + this.tokensPerResponse.output,
+      },
+      model: "mock-model",
+      provider: this.id,
+      cost_usd: 0,
+    };
   }
 
   // ============================================================================

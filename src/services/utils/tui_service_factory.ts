@@ -110,7 +110,14 @@ export function createTuiServices(
 
   const providerStub: IModelProvider = {
     id: "tui-provider-stub",
-    generate: () => Promise.resolve(""),
+    generate: () =>
+      Promise.resolve({
+        content: "",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "stub-model",
+        provider: "mock",
+        cost_usd: 0,
+      }),
   };
 
   const gitStub = createGitServiceStub({

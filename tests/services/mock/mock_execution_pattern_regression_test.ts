@@ -32,16 +32,16 @@ You are an expert software engineer. Create a plan for:
 User request: "Add a hello world function to src/utils.ts"
 `;
 
-  const response = await provider.generate(planningPrompt);
+  const { content: responseText } = await provider.generate(planningPrompt);
 
   // Should contain planning response with <content> and plan JSON
-  assertStringIncludes(response, TAG_THOUGHT);
-  assertStringIncludes(response, TAG_CONTENT);
-  assertStringIncludes(response, '"title"');
-  assertStringIncludes(response, KEY_STEPS);
+  assertStringIncludes(responseText, TAG_THOUGHT);
+  assertStringIncludes(responseText, TAG_CONTENT);
+  assertStringIncludes(responseText, '"title"');
+  assertStringIncludes(responseText, KEY_STEPS);
 
   // Should NOT contain execution actions
-  assertEquals(response.includes(TAG_ACTIONS), false, "Planning response should not contain <actions>");
+  assertEquals(responseText.includes(TAG_ACTIONS), false, "Planning response should not contain <actions>");
 });
 
 Deno.test("[regression] MockLLMProvider generates execution response for execution prompts", async () => {
@@ -62,19 +62,19 @@ Context: User wants to add a hello world function
 Execute this step now.
 `;
 
-  const response = await provider.generate(executionPrompt);
+  const { content: responseText } = await provider.generate(executionPrompt);
 
   // Should contain execution response with <actions>
-  assertStringIncludes(response, TAG_THOUGHT);
-  assertStringIncludes(response, TAG_ACTIONS);
+  assertStringIncludes(responseText, TAG_THOUGHT);
+  assertStringIncludes(responseText, TAG_ACTIONS);
 
   // Should contain tool calls (JSON array)
-  assertStringIncludes(response, KEY_TOOL);
-  assertStringIncludes(response, KEY_PARAMS);
+  assertStringIncludes(responseText, KEY_TOOL);
+  assertStringIncludes(responseText, KEY_PARAMS);
 
   // Should NOT contain planning JSON
-  assertEquals(response.includes(KEY_STEPS), false, "Execution response should not contain plan steps");
-  assertEquals(response.includes(TAG_CONTENT), false, "Execution response should use <actions> not <content>");
+  assertEquals(responseText.includes(KEY_STEPS), false, "Execution response should not contain plan steps");
+  assertEquals(responseText.includes(TAG_CONTENT), false, "Execution response should use <actions> not <content>");
 });
 
 Deno.test("[regression] MockLLMProvider execution pattern generates write_file action for write prompts", async () => {
@@ -90,12 +90,12 @@ Step 5: Write the implementation file
 Create src/hello.ts with the hello world function.
 `;
 
-  const response = await provider.generate(writePrompt);
+  const { content: responseText } = await provider.generate(writePrompt);
 
   // Should generate write_file action
-  assertStringIncludes(response, TOOL_WRITE_FILE);
-  assertStringIncludes(response, '"path":');
-  assertStringIncludes(response, '"content":');
+  assertStringIncludes(responseText, TOOL_WRITE_FILE);
+  assertStringIncludes(responseText, '"path":');
+  assertStringIncludes(responseText, '"content":');
 });
 
 Deno.test("[regression] MockLLMProvider execution pattern generates actions for execution prompts", async () => {
@@ -111,17 +111,17 @@ Step 2: Analyze the current implementation
 Read src/index.ts to understand the structure.
 `;
 
-  const response = await provider.generate(executionPrompt);
+  const { content: responseText } = await provider.generate(executionPrompt);
 
   // The key fix: should generate <actions> (not planning <content>)
   // The specific tool doesn't matter as much as generating actions vs planning
-  assertStringIncludes(response, TAG_ACTIONS);
-  assertStringIncludes(response, KEY_TOOL);
-  assertStringIncludes(response, KEY_PARAMS);
+  assertStringIncludes(responseText, TAG_ACTIONS);
+  assertStringIncludes(responseText, KEY_TOOL);
+  assertStringIncludes(responseText, KEY_PARAMS);
 
   // Should NOT be a planning response
-  assertEquals(response.includes(KEY_STEPS), false, "Should not contain planning steps");
-  assertEquals(response.includes(TAG_CONTENT), false, "Should use <actions> not <content>");
+  assertEquals(responseText.includes(KEY_STEPS), false, "Should not contain planning steps");
+  assertEquals(responseText.includes(TAG_CONTENT), false, "Should use <actions> not <content>");
 });
 
 Deno.test("[regression] MockLLMProvider pattern recognition handles 'Step N' format", async () => {
@@ -137,15 +137,15 @@ Deno.test("[regression] MockLLMProvider pattern recognition handles 'Step N' for
   ];
 
   for (const prompt of prompts) {
-    const response = await provider.generate(prompt);
+    const { content: responseText } = await provider.generate(prompt);
 
     assertStringIncludes(
-      response,
+      responseText,
       TAG_ACTIONS,
       `Prompt "${prompt}" should generate execution response with <actions>`,
     );
     assertEquals(
-      response.includes(TAG_CONTENT),
+      responseText.includes(TAG_CONTENT),
       false,
       `Prompt "${prompt}" should not generate planning response with <content>`,
     );
@@ -159,15 +159,15 @@ Deno.test("[regression] MockLLMProvider distinguishes execution from planning ke
 
   // Planning keywords (implement, add, create) in planning context
   const planningPrompt = "Create a plan to implement the new feature";
-  const planningResponse = await provider.generate(planningPrompt);
+  const { content: planningResponseText } = await provider.generate(planningPrompt);
 
-  assertStringIncludes(planningResponse, TAG_CONTENT);
-  assertStringIncludes(planningResponse, KEY_STEPS);
+  assertStringIncludes(planningResponseText, TAG_CONTENT);
+  assertStringIncludes(planningResponseText, KEY_STEPS);
 
   // Same keywords in execution context
   const executionPrompt = "You are an autonomous coding agent executing Step 1: Create the file";
-  const executionResponse = await provider.generate(executionPrompt);
+  const { content: executionResponseText } = await provider.generate(executionPrompt);
 
-  assertStringIncludes(executionResponse, TAG_ACTIONS);
-  assertEquals(executionResponse.includes(KEY_STEPS), false);
+  assertStringIncludes(executionResponseText, TAG_ACTIONS);
+  assertEquals(executionResponseText.includes(KEY_STEPS), false);
 });

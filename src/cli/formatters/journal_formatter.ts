@@ -89,7 +89,7 @@ export class JournalFormatter {
             a.identity_id || a.actor || "-",
             colors.gray(a.trace_id.slice(0, 8)), // Truncate trace ID
             this.truncateText(a.target || "-", 30),
-            this.extractCostDisplay(a.payload),
+            this.formatCostDisplay(a.cost_usd, a.payload),
           ];
         }),
       )
@@ -118,18 +118,28 @@ export class JournalFormatter {
 
       // Color code action
       const action = this.styleAction(activity.action_type);
-      const costText = this.extractCostDisplay(activity.payload);
+      const costText = this.formatCostDisplay(activity.cost_usd, activity.payload);
       const costSuffix = costText === "-" ? "" : ` ${colors.dim("cost=")}${colors.yellow(costText)}`;
+
+      // Token metrics if available
+      const tokens = (activity.prompt_tokens || 0) + (activity.completion_tokens || 0);
+      const tokenSuffix = tokens > 0 ? ` ${colors.dim("tokens=")}${colors.cyan(String(tokens))}` : "";
 
       console.log(
         `${colors.gray(timestamp)} ${action} ${colors.dim("agent=")}${agent} ${colors.dim("trace=")}${
           colors.gray(traceId)
-        } ${colors.dim("target=")}${activity.target || "-"}${costSuffix}`,
+        } ${colors.dim("target=")}${activity.target || "-"}${costSuffix}${tokenSuffix}`,
       );
     }
   }
 
-  private static extractCostDisplay(payload: string): string {
+  private static formatCostDisplay(costUsd: number | undefined, payload: string): string {
+    // Prioritize the native cost column
+    if (typeof costUsd === "number" && costUsd > 0) {
+      return `$${costUsd.toFixed(COST_PRECISION)}`;
+    }
+
+    // Fallback to legacy payload extraction
     try {
       const parsed = JSON.parse(payload) as {
         usage?: { cost_usd_estimate?: number };
@@ -137,7 +147,7 @@ export class JournalFormatter {
       };
 
       const rawCost = parsed.usage?.cost_usd_estimate ?? parsed.cost_usd_estimate;
-      if (typeof rawCost !== "number" || Number.isNaN(rawCost)) {
+      if (typeof rawCost !== "number" || Number.isNaN(rawCost) || rawCost <= 0) {
         return "-";
       }
 

@@ -14,6 +14,7 @@ import {
 } from "../../../src/services/agent/reflexive_agent.ts";
 import type { IAgentExecutionResult, IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IAgentRunner } from "../../../src/services/agent/agent_runner.ts";
 import type {
   IOutputValidator,
@@ -56,7 +57,14 @@ function createMockValidator(overrides: Partial<IOutputValidator> = {}): IOutput
 
 const stubProvider: IModelProvider = {
   id: "stub",
-  generate: (_prompt: string) => Promise.resolve("ok"),
+  generate: (_prompt: string): Promise<IGenerateResult> =>
+    Promise.resolve({
+      content: "ok",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "stub-model",
+      provider: "stub",
+      cost_usd: 0,
+    }),
 };
 
 Deno.test("ReflexiveAgent.shouldAccept: rejects critical issues regardless", () => {

@@ -101,7 +101,8 @@ RESPONSE FORMAT (JSON):
 }
 `;
 
-    const response = await this.llm.generate(prompt);
+    const result = await this.llm.generate(prompt);
+    const response = result.content;
     let patch;
     try {
       // Find JSON block if LLM returned markdown

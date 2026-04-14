@@ -52,6 +52,15 @@ export interface ILogEvent {
 
   /** Custom emoji/icon for console output */
   icon?: string;
+
+  /** Count of tokens in prompt */
+  promptTokens?: number;
+
+  /** Count of tokens in completion */
+  completionTokens?: number;
+
+  /** Estimated cost in USD */
+  costUsd?: number;
 }
 
 /**

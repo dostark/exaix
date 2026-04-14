@@ -8,6 +8,7 @@
 
 import { CircuitState } from "../shared/enums.ts";
 import type { IModelOptions, IModelProvider } from "./types.ts";
+import type { IGenerateResult } from "./providers/common.ts";
 
 export interface ICircuitBreakerOptions {
   /** Number of consecutive failures before opening circuit */
@@ -124,7 +125,7 @@ export class CircuitBreakerProvider implements IModelProvider {
     this.circuitBreaker = new CircuitBreaker(options);
   }
 
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     return await this.circuitBreaker.execute(() => this.inner.generate(prompt, options));
   }
 

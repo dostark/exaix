@@ -8,6 +8,7 @@ import { assert, assertEquals, assertFalse } from "@std/assert";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "../../src/shared/enums.ts";
 import type {
   IAgentExecutionOptions,
@@ -31,9 +32,17 @@ class MockModelProvider implements IModelProvider {
     this.responses = responses;
   }
 
-  async generate(_prompt: string): Promise<string> {
+  async generate(_prompt: string): Promise<IGenerateResult> {
     await Promise.resolve();
-    return this.responses[this.callCount++] || `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Task finished`;
+    const content = this.responses[this.callCount++] ||
+      `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Task finished`;
+    return {
+      content,
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "mock-model",
+      provider: "mock",
+      cost_usd: 0,
+    };
   }
 }
 
@@ -97,6 +106,9 @@ const mockExecutor = {
         description: "error",
       };
     }
+  },
+  logGeneration: async () => {
+    await Promise.resolve();
   },
   toolRegistry: {
     execute: async (tool: string, params: TestToolParams) => {
@@ -179,12 +191,13 @@ Deno.test("ReActLoopStrategy - caps loop history to configured budget", async ()
   const capturedPrompts: string[] = [];
   const provider: IModelProvider = {
     id: "budgeted-react-provider",
-    async generate(prompt: string): Promise<string> {
+    async generate(prompt: string): Promise<IGenerateResult> {
       await Promise.resolve();
       capturedPrompts.push(prompt);
 
+      let content = `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`;
       if (capturedPrompts.length === 1) {
-        return `${REACT_THOUGHT_PREFIX}${"OLD".repeat(40)}
+        content = `${REACT_THOUGHT_PREFIX}${"OLD".repeat(40)}
 \`\`\`toml
 [[actions]]
 tool = "write_file"
@@ -195,8 +208,13 @@ content = "world"
 `;
       }
 
-      return `${REACT_STATUS_COMPLETE}
-${REACT_SUMMARY_PREFIX}Done`;
+      return {
+        content,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "budgeted-mock",
+        provider: "mock",
+        cost_usd: 0,
+      };
     },
   };
 

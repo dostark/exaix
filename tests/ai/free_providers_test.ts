@@ -61,7 +61,7 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
     const provider = new OpenAIProvider({ apiKey: "test-key", model, baseUrl: "https://api.test" });
     const res = await provider.generate("Test prompt", { temperature: 0.1, max_tokens: 50 });
 
-    assertEquals(res, `Hello from ${modelDisplay}`);
+    assertEquals(res.content, `Hello from ${modelDisplay}`);
     // OpenAIProvider uses the provided baseUrl verbatim (caller may provide full endpoint)
     assertEquals(capturedUrl, "https://api.test");
 

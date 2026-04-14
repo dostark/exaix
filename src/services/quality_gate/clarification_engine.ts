@@ -226,7 +226,8 @@ export class ClarificationEngine {
 
     let raw: string;
     try {
-      raw = await this.provider.generate(prompt);
+      const result = await this.provider.generate(prompt);
+      raw = result.content;
     } catch {
       return { satisfied: false, questions: [] };
     }

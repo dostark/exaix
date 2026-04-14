@@ -85,6 +85,33 @@ Deno.test("EventLogger: should write event to IActivity Journal", async () => {
   });
 });
 
+Deno.test("EventLogger: should persist token and cost metrics to IActivity Journal", async () => {
+  await withEventLoggerTest(async ({ db, logger }) => {
+    const traceId = crypto.randomUUID();
+
+    await logger.log({
+      action: "llm.generate",
+      target: "gpt-4",
+      payload: { prompt: "hello" },
+      actor: "agent",
+      traceId,
+      promptTokens: 10,
+      completionTokens: 20,
+      costUsd: 0.0006,
+    });
+
+    // Wait for batched write
+    await db.waitForFlush();
+
+    const activities = db.getActivitiesByTrace(traceId);
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].action_type, "llm.generate");
+    assertEquals(activities[0].prompt_tokens, 10);
+    assertEquals(activities[0].completion_tokens, 20);
+    assertEquals(activities[0].cost_usd, 0.0006);
+  });
+});
+
 Deno.test("EventLogger: should print formatted message to console", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.info("config.loaded", "exa.config.toml", { checksum: "abc123" });
@@ -411,6 +438,36 @@ Deno.test("EventLogger: should use singleton event bus when not explicitly provi
     assertEquals(receivedEvents[0].traceId, traceId);
   } finally {
     unsubscribe();
+    await cleanup();
+  }
+});
+
+Deno.test("EventLogger: should persist token and cost metrics to native columns", async () => {
+  const { db, cleanup } = await initTestDbService();
+  const traceId = crypto.randomUUID();
+
+  try {
+    const logger = new EventLogger({ db, prefix: "[Test]" });
+
+    await logger.log({
+      action: "agent.generation_completed",
+      target: "gpt-4o",
+      traceId,
+      promptTokens: 100,
+      completionTokens: 50,
+      costUsd: 0.0015,
+      payload: { model: "gpt-4o", provider: "openai" },
+    });
+
+    // Wait for batch flush
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    const activities = await db.getActivitiesByTraceSafe(traceId);
+    assertEquals(activities.length, 1);
+    assertEquals(activities[0].prompt_tokens, 100);
+    assertEquals(activities[0].completion_tokens, 50);
+    assertEquals(activities[0].cost_usd, 0.0015);
+  } finally {
     await cleanup();
   }
 });

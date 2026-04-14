@@ -55,10 +55,10 @@ Deno.test({
       });
       const response = await Promise.race([provider.generate(TEST_PROMPT), timeoutPromise]);
       clearTimeout(timeoutId!);
-      assert(response.length > 0, "Response should not be empty");
+      assert(response.content.length > 0, "Response should not be empty");
       console.log(
         `${TEST_CONSTANTS.LOG_PREFIX_GOOGLE_RESPONSE} ${
-          response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
+          response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
     } catch (error: unknown) {
@@ -93,10 +93,10 @@ Deno.test({
       });
       const response = await Promise.race([provider.generate(TEST_PROMPT), timeoutPromise]);
       clearTimeout(timeoutId!);
-      assert(response.length > 0, "Response should not be empty");
+      assert(response.content.length > 0, "Response should not be empty");
       console.log(
         `${TEST_CONSTANTS.LOG_PREFIX_OPENAI_RESPONSE} ${
-          response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
+          response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
     } catch (error: unknown) {
@@ -131,10 +131,10 @@ Deno.test({
       });
       const response = await Promise.race([provider.generate(TEST_PROMPT), timeoutPromise]);
       clearTimeout(timeoutId!);
-      assert(response.length > 0, "Response should not be empty");
+      assert(response.content.length > 0, "Response should not be empty");
       console.log(
         `${TEST_CONSTANTS.LOG_PREFIX_ANTHROPIC_RESPONSE} ${
-          response.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
+          response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
     } catch (error: unknown) {

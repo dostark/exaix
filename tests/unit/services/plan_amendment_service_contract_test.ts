@@ -8,7 +8,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "../../../src/shared/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
@@ -18,6 +18,16 @@ import { createMockConfig } from "../../helpers/config.ts";
  */
 function castTo<T>(val: unknown): T {
   return val as T;
+}
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
 }
 
 Deno.test("PlanAmendmentService implements IPlanAmendmentService interface", () => {
@@ -135,13 +145,17 @@ Deno.test("proposeAmendment generates valid patch from LLM response", async () =
 
   const mockLlm = castTo<IModelProvider>({
     generate: () =>
-      JSON.stringify({
-        summary: "Adjusted remaining steps based on tool output",
-        affectedRemainingStepIds: ["2", "3"],
-        adds: [{ number: 4, title: "New Step", content: "New content" }],
-        updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
-        removes: ["3"],
-      }),
+      Promise.resolve(
+        makeResult(
+          JSON.stringify({
+            summary: "Adjusted remaining steps based on tool output",
+            affectedRemainingStepIds: ["2", "3"],
+            adds: [{ number: 4, title: "New Step", content: "New content" }],
+            updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
+            removes: ["3"],
+          }),
+        ),
+      ),
   });
 
   const service = new PlanAmendmentService(config, mockLlm);
@@ -177,7 +191,9 @@ Deno.test("proposeAmendment handles markdown-wrapped JSON from LLM", async () =>
 
   const mockLlm = castTo<IModelProvider>({
     generate: () =>
-      `\`\`\`json
+      Promise.resolve(
+        makeResult(
+          `\`\`\`json
 {
   "summary": "Markdown wrapped response",
   "affectedRemainingStepIds": ["2"],
@@ -186,6 +202,8 @@ Deno.test("proposeAmendment handles markdown-wrapped JSON from LLM", async () =>
   "removes": []
 }
 \`\`\``,
+        ),
+      ),
   });
 
   const service = new PlanAmendmentService(config, mockLlm);
@@ -220,13 +238,17 @@ Deno.test("proposeAmendment sanitizes summary field", async () => {
 
   const mockLlm = castTo<IModelProvider>({
     generate: () =>
-      JSON.stringify({
-        summary: longSummary,
-        affectedRemainingStepIds: ["2"],
-        adds: [],
-        updates: [],
-        removes: [],
-      }),
+      Promise.resolve(
+        makeResult(
+          JSON.stringify({
+            summary: longSummary,
+            affectedRemainingStepIds: ["2"],
+            adds: [],
+            updates: [],
+            removes: [],
+          }),
+        ),
+      ),
   });
 
   const service = new PlanAmendmentService(config, mockLlm);
@@ -256,7 +278,7 @@ Deno.test("proposeAmendment rejects invalid LLM JSON", async () => {
   config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
 
   const mockLlm = castTo<IModelProvider>({
-    generate: () => "invalid json response",
+    generate: () => Promise.resolve(makeResult("invalid json response")),
   });
 
   const service = new PlanAmendmentService(config, mockLlm);

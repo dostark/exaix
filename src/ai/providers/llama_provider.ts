@@ -8,7 +8,8 @@
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import * as DEFAULTS from "../../shared/constants.ts";
-import { fetchJsonWithRetries, type OllamaResponse } from "../provider_common_utils.ts";
+import { calculateCost, fetchJsonWithRetries, type OllamaResponse } from "../provider_common_utils.ts";
+import type { IGenerateResult } from "./common.ts";
 
 /**
  * Options for LlamaProvider.
@@ -71,7 +72,7 @@ export class LlamaProvider implements IModelProvider {
   /**
    * Generate a completion from the model.
    */
-  async generate(prompt: string, _options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, _options?: IModelOptions): Promise<IGenerateResult> {
     const body = {
       model: this.model,
       prompt,
@@ -109,13 +110,26 @@ export class LlamaProvider implements IModelProvider {
       }
     }
 
+    const generateResult = (content: string): IGenerateResult => {
+      const promptTokens = data.prompt_eval_count ?? 0;
+      const completionTokens = data.eval_count ?? 0;
+      const totalTokens = promptTokens + completionTokens;
+      return {
+        content,
+        usage: { promptTokens, completionTokens, totalTokens },
+        model: this.model,
+        provider: this.id,
+        cost_usd: calculateCost(this.id, totalTokens),
+      };
+    };
+
     // Try to parse as JSON
     try {
       JSON.parse(jsonText);
-      return jsonText;
+      return generateResult(jsonText);
     } catch (_parseError) {
       // If not valid JSON, return the raw response and let caller handle it
-      return data.response;
+      return generateResult(data.response);
     }
   }
 }

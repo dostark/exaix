@@ -13,6 +13,7 @@ import {
   type IArchitectureValidator,
 } from "../../../src/services/portal_knowledge/architecture_inferrer.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IValidationResult } from "../../../src/services/tool/output_validator.ts";
 import type { ICodeConvention, IFileSignificance } from "../../../src/shared/schemas/portal_knowledge.ts";
 import {
@@ -27,7 +28,14 @@ import {
 function makeMockProvider(response: string): IModelProvider {
   return {
     id: "mock",
-    generate: (_prompt: string) => Promise.resolve(response),
+    generate: (_prompt: string): Promise<IGenerateResult> =>
+      Promise.resolve({
+        content: response,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      }),
   };
 }
 
@@ -100,9 +108,15 @@ Deno.test("[ArchitectureInferrer] passes directory tree in prompt", async () => 
   let capturedPrompt = "";
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(MOCK_OVERVIEW);
+      return Promise.resolve({
+        content: MOCK_OVERVIEW,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
@@ -121,9 +135,15 @@ Deno.test("[ArchitectureInferrer] passes key files and patterns in prompt", asyn
   let capturedPrompt = "";
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(MOCK_OVERVIEW);
+      return Promise.resolve({
+        content: MOCK_OVERVIEW,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
@@ -143,7 +163,7 @@ Deno.test("[ArchitectureInferrer] passes key files and patterns in prompt", asyn
 Deno.test("[ArchitectureInferrer] handles LLM failure gracefully", async () => {
   const failingProvider: IModelProvider = {
     id: "mock",
-    generate: () => Promise.reject(new Error("network error")),
+    generate: (): Promise<IGenerateResult> => Promise.reject(new Error("network error")),
   };
   const inferrer = new ArchitectureInferrer(failingProvider, new MockOutputValidator(true));
   const result = await inferrer.infer({
@@ -190,9 +210,15 @@ Deno.test("[ArchitectureInferrer] truncates long files to ARCHITECTURE_INFERRER_
   let capturedPrompt = "";
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(MOCK_OVERVIEW);
+      return Promise.resolve({
+        content: MOCK_OVERVIEW,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
@@ -228,9 +254,15 @@ Deno.test("[ArchitectureInferrer] stays within ARCHITECTURE_INFERRER_TOKEN_BUDGE
   let capturedPrompt = "";
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(MOCK_OVERVIEW);
+      return Promise.resolve({
+        content: MOCK_OVERVIEW,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));

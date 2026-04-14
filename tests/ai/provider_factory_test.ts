@@ -9,6 +9,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { ProviderFactory } from "../../src/ai/provider_factory.ts";
 import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI } from "../config/constants.ts";
 import { ProviderFactoryError } from "../../src/ai/errors.ts";
+import type { IGenerateResult } from "../../src/ai/types.ts";
 import { RateLimitError } from "../../src/ai/rate_limited_provider.ts";
 import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
 import { DaemonStatus, MockStrategy, ProviderType } from "../../src/shared/enums.ts";
@@ -332,7 +333,7 @@ Deno.test("ProviderFactory: created provider implements IModelProvider", async (
 
   // Should be able to generate
   const response = await provider.generate("Test prompt");
-  assertEquals(typeof response, "string");
+  assertEquals(typeof response.content, "string");
 });
 
 Deno.test("ProviderFactory: provider can be used for plan generation", async () => {
@@ -342,7 +343,7 @@ Deno.test("ProviderFactory: provider can be used for plan generation", async () 
 
   const response = await provider.generate("Implement a feature for user authentication");
   assertExists(response);
-  assertEquals(typeof response, "string");
+  assertEquals(typeof response.content, "string");
 });
 
 // ============================================================================
@@ -570,8 +571,14 @@ Deno.test("ProviderFactory: createWithFallback healthCheck calls validateConnect
     validateConnection() {
       return true;
     }
-    generate() {
-      return Promise.resolve("ok");
+    generate(): Promise<IGenerateResult> {
+      return Promise.resolve({
+        content: "ok",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "test-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     }
   }
   // Patch ProviderFactory.createByName to return TestProvider for this test

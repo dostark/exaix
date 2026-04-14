@@ -84,7 +84,12 @@ You are an expert developer. Provide detailed technical analysis and implementat
       );
 
       // Manually track a free provider request to simulate usage
-      await costTracker.trackRequest("ollama", 100); // Free provider
+      await costTracker.trackGeneration(
+        "ollama",
+        "ollama/llama3.2:1b",
+        { promptTokens: 50, completionTokens: 50, totalTokens: 100 },
+        "trace-1",
+      );
 
       // Select provider for simple task
       const simpleProvider = await selector.selectProvider({
@@ -126,7 +131,12 @@ You are an expert developer. Provide detailed technical analysis and implementat
       const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
 
       // Track high cost for openai provider type
-      await costTracker.trackRequest("openai", 10000); // High token usage
+      await costTracker.trackGeneration(
+        "openai",
+        "gpt-4o",
+        { promptTokens: 5000, completionTokens: 5000, totalTokens: 10000 },
+        "trace-2",
+      );
 
       // Try to select provider with low budget - should avoid openai
       const provider = await selector.selectProvider({
@@ -222,10 +232,26 @@ Deno.test("Provider Strategy: Multi-provider concurrent requests", async (t) => 
 
       // Track some usage to verify cost tracking works
       await Promise.all([
-        costTracker.trackRequest("ollama", 50),
-        costTracker.trackRequest("ollama", 60),
-        costTracker.trackRequest("openai", 200),
-        costTracker.trackRequest("ollama", 40),
+        costTracker.trackGeneration("ollama", "ollama/llama3.2:1b", {
+          promptTokens: 25,
+          completionTokens: 25,
+          totalTokens: 50,
+        }, "trace-c1"),
+        costTracker.trackGeneration("ollama", "ollama/llama3.2:1b", {
+          promptTokens: 30,
+          completionTokens: 30,
+          totalTokens: 60,
+        }, "trace-c2"),
+        costTracker.trackGeneration("openai", "openai/gpt-4o-mini", {
+          promptTokens: 100,
+          completionTokens: 100,
+          totalTokens: 200,
+        }, "trace-c3"),
+        costTracker.trackGeneration("ollama", "ollama/llama3.2:1b", {
+          promptTokens: 20,
+          completionTokens: 20,
+          totalTokens: 40,
+        }, "trace-c4"),
       ]);
 
       // Verify costs are tracked

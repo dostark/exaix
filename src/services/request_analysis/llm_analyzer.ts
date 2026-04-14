@@ -153,7 +153,8 @@ export class LlmAnalyzer {
 
     let raw: string;
     try {
-      raw = await this.provider.generate(prompt, { temperature: 0, max_tokens: 1500 });
+      const genResult = await this.provider.generate(prompt, { temperature: 0, max_tokens: 1500 });
+      raw = genResult.content;
     } catch {
       const fallback = buildFallback(requestText);
       fallback.metadata.durationMs = Date.now() - startMs;
@@ -170,8 +171,8 @@ export class LlmAnalyzer {
         .replace("{CONTEXT_SECTION}", context ? buildContextSection(context) : "");
 
       try {
-        const refinedRaw = await this.provider.generate(reviewPrompt, { temperature: 0, max_tokens: 1500 });
-        const refinedResult = this.validator.parseAndValidate(refinedRaw, RequestAnalysisCoreSchema);
+        const refinedResult2 = await this.provider.generate(reviewPrompt, { temperature: 0, max_tokens: 1500 });
+        const refinedResult = this.validator.parseAndValidate(refinedResult2.content, RequestAnalysisCoreSchema);
         if (refinedResult.success && refinedResult.value) {
           result = refinedResult;
         }

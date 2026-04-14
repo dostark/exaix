@@ -6,7 +6,8 @@
  * * @related-files [src/services/db.ts, src/services/event_logger.ts]
  */
 
-import type { ActivityRecord, IDatabaseService } from "../services/core/db.ts";
+import type { IDatabaseService } from "../services/core/db.ts";
+import type { IActivityRecord } from "../shared/types/database.ts";
 import type { JSONValue } from "../shared/types/json.ts";
 
 /**
@@ -23,6 +24,9 @@ export interface IActivity {
   actionType: string;
   target: string | null;
   payload: Record<string, JSONValue>;
+  promptTokens?: number;
+  completionTokens?: number;
+  costUsd?: number;
   timestamp: string;
 }
 
@@ -39,6 +43,9 @@ export interface LogActivityRequest {
   actorType?: string | null;
   agentKind?: string | null;
   identityId?: string | null;
+  promptTokens?: number;
+  completionTokens?: number;
+  costUsd?: number;
 }
 
 /**
@@ -82,6 +89,9 @@ export class DatabaseActivityRepository implements ActivityRepository {
       request.actorType,
       request.identityId,
       request.agentKind,
+      request.promptTokens,
+      request.completionTokens,
+      request.costUsd,
     );
 
     // Wait for the activity to be flushed to ensure it's persisted
@@ -107,7 +117,7 @@ export class DatabaseActivityRepository implements ActivityRepository {
   /**
    * Map database record to domain entity
    */
-  private mapRecordToActivity(record: ActivityRecord): IActivity {
+  private mapRecordToActivity(record: IActivityRecord): IActivity {
     let payload: Record<string, JSONValue> = {};
     try {
       payload = JSON.parse(record.payload);
@@ -127,6 +137,9 @@ export class DatabaseActivityRepository implements ActivityRepository {
       actionType: record.action_type,
       target: record.target,
       payload,
+      promptTokens: record.prompt_tokens ?? 0,
+      completionTokens: record.completion_tokens ?? 0,
+      costUsd: record.cost_usd ?? 0,
       timestamp: record.timestamp,
     };
   }

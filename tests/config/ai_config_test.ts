@@ -52,11 +52,20 @@ import {
   TEST_RETRY_MAX_ATTEMPTS_SINGLE,
 } from "./constants.ts";
 
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
+
 const customProviderFactory: IProviderFactory = {
   create: () =>
     Promise.resolve({
       id: TEST_CUSTOM_PROVIDER_ID,
-      generate: () => Promise.resolve(TEST_CUSTOM_PROVIDER_RESPONSE),
+      generate: (): Promise<IGenerateResult> =>
+        Promise.resolve({
+          content: TEST_CUSTOM_PROVIDER_RESPONSE,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: TEST_CUSTOM_PROVIDER_MODEL,
+          provider: TEST_CUSTOM_PROVIDER_NAME,
+          cost_usd: 0,
+        }),
     }),
 };
 

@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpToolName, MockStrategy } from "../../src/shared/enums.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import { TEST_MODEL_ANTHROPIC } from "../config/constants.ts";
 
@@ -53,9 +54,9 @@ Deno.test("Scripted: returns responses in order", async () => {
     responses: ["First response", "Second response", "Third response"],
   });
 
-  assertEquals(await provider.generate("prompt 1"), "First response");
-  assertEquals(await provider.generate("prompt 2"), "Second response");
-  assertEquals(await provider.generate("prompt 3"), "Third response");
+  assertEquals((await provider.generate("prompt 1")).content, "First response");
+  assertEquals((await provider.generate("prompt 2")).content, "Second response");
+  assertEquals((await provider.generate("prompt 3")).content, "Third response");
 });
 
 Deno.test("Scripted: cycles back to first response when exhausted", async () => {
@@ -63,16 +64,16 @@ Deno.test("Scripted: cycles back to first response when exhausted", async () => 
     responses: ["A", "B"],
   });
 
-  assertEquals(await provider.generate("1"), "A");
-  assertEquals(await provider.generate("2"), "B");
-  assertEquals(await provider.generate("3"), "A"); // Cycles back
-  assertEquals(await provider.generate("4"), "B");
+  assertEquals((await provider.generate("1")).content, "A");
+  assertEquals((await provider.generate("2")).content, "B");
+  assertEquals((await provider.generate("3")).content, "A"); // Cycles back
+  assertEquals((await provider.generate("4")).content, "B");
 });
 
 Deno.test("Scripted: uses default response when no responses configured", async () => {
   const provider = new MockLLMProvider(MockStrategy.SCRIPTED);
 
-  const result = await provider.generate("test");
+  const result = (await provider.generate("test")).content;
   assertExists(result);
   assertEquals(typeof result, "string");
 });
@@ -122,7 +123,7 @@ Deno.test("Recorded: returns response matching prompt hash", async () => {
 
   // The provider should hash "You are a senior..." and find a match
   const result = await provider.generate("You are a senior...");
-  assertEquals(result, "## Plan\n\n1. First step");
+  assertEquals(result.content, "## Plan\n\n1. First step");
 });
 
 Deno.test("Recorded: throws error when no matching recording found", async () => {
@@ -179,10 +180,10 @@ Deno.test("IPattern: matches prompt and returns configured response", async () =
 
   const provider = new MockLLMProvider(MockStrategy.PATTERN, { patterns });
 
-  const result1 = await provider.generate("Please implement user authentication");
+  const result1 = (await provider.generate("Please implement user authentication")).content;
   assertStringIncludes(result1, "Authentication");
 
-  const result2 = await provider.generate("Fix the login bug");
+  const result2 = (await provider.generate("Fix the login bug")).content;
   assertStringIncludes(result2, "Bug Fix");
 });
 
@@ -193,7 +194,7 @@ Deno.test("IPattern: uses first matching pattern", async () => {
   ];
 
   const provider = new MockLLMProvider(MockStrategy.PATTERN, { patterns });
-  const result = await provider.generate("test");
+  const result = (await provider.generate("test")).content;
 
   assertEquals(result, "First match");
 });
@@ -221,7 +222,7 @@ Deno.test("IPattern: supports dynamic response generation", async () => {
   ];
 
   const provider = new MockLLMProvider(MockStrategy.PATTERN, { patterns });
-  const result = await provider.generate("Add hello function to utils.ts");
+  const result = (await provider.generate("Add hello function to utils.ts")).content;
 
   assertStringIncludes(result, "Add hello Function");
 });
@@ -380,7 +381,7 @@ Deno.test("MockLLMProvider reset() clears all state", async () => {
   assertEquals(provider.totalTokens.output, 0);
 
   // Should start from first response again
-  assertEquals(await provider.generate("1"), "A");
+  assertEquals((await provider.generate("1")).content, "A");
 });
 
 Deno.test("MockLLMProvider getLastCall returns most recent call", async () => {
@@ -427,7 +428,7 @@ The feature will be implemented according to specifications.`,
     ],
   });
 
-  const result = await provider.generate("Implement feature X");
+  const result = (await provider.generate("Implement feature X")).content;
 
   assertStringIncludes(result, "title");
   assertStringIncludes(result, "### Steps");
@@ -440,7 +441,7 @@ The feature will be implemented according to specifications.`,
 
 Deno.test("MockLLMProvider can be used as IModelProvider", async () => {
   // Function that accepts any IModelProvider
-  async function useProvider(provider: IModelProvider): Promise<string> {
+  async function useProvider(provider: IModelProvider): Promise<IGenerateResult> {
     return await provider.generate("test prompt");
   }
 
@@ -449,7 +450,7 @@ Deno.test("MockLLMProvider can be used as IModelProvider", async () => {
   });
 
   const result = await useProvider(mockProvider);
-  assertEquals(result, "mock response");
+  assertEquals(result.content, "mock response");
 });
 
 Deno.test("MockLLMProvider supports ModelOptions parameter", async () => {
@@ -463,7 +464,7 @@ Deno.test("MockLLMProvider supports ModelOptions parameter", async () => {
     max_tokens: 1000,
   });
 
-  assertEquals(result, "response");
+  assertEquals(result.content, "response");
 
   // Options should be captured in call history
   const lastCall = provider.getLastCall();
@@ -490,7 +491,7 @@ Deno.test("Recorded: falls back to patterns when no recording found", async () =
 
   // Should use pattern fallback instead of throwing error
   const result = await provider.generate("Please implement feature X");
-  assertEquals(result, "Fallback plan for implementation");
+  assertEquals(result.content, "Fallback plan for implementation");
 });
 
 Deno.test("Recorded: prefers exact recording over pattern fallback", async () => {
@@ -522,7 +523,7 @@ Deno.test("Recorded: prefers exact recording over pattern fallback", async () =>
   recordings[0].promptHash = hash;
 
   const result = await provider.generate("specific prompt");
-  assertEquals(result, "Recorded response");
+  assertEquals(result.content, "Recorded response");
 });
 
 Deno.test("Recorded: auto-initializes default patterns when empty", async () => {
@@ -532,9 +533,9 @@ Deno.test("Recorded: auto-initializes default patterns when empty", async () => 
 
   // Should not throw error due to auto-initialized default patterns
   const result = await provider.generate("Please implement authentication");
-  assertExists(result);
-  assertStringIncludes(result, "<thought>");
-  assertStringIncludes(result, "<content>");
+  assertExists(result.content);
+  assertStringIncludes(result.content, "<thought>");
+  assertStringIncludes(result.content, "<content>");
 });
 
 // ============================================================================
@@ -546,7 +547,7 @@ Deno.test("Default patterns: handles 'implement' requests", async () => {
     recordings: [], // Triggers default patterns
   });
 
-  const result = await provider.generate("Implement user authentication system");
+  const result = (await provider.generate("Implement user authentication system")).content;
 
   assertStringIncludes(result, "<thought>");
   assertStringIncludes(result, "<content>");
@@ -561,7 +562,7 @@ Deno.test("Default patterns: handles 'add' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("Add pagination to the API");
+  const result = (await provider.generate("Add pagination to the API")).content;
 
   assertStringIncludes(result, '"title"');
   assertStringIncludes(result, '"step": 1');
@@ -573,7 +574,7 @@ Deno.test("Default patterns: handles 'create' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("Create a new dashboard component");
+  const result = (await provider.generate("Create a new dashboard component")).content;
 
   assertStringIncludes(result, '"title"');
   assertStringIncludes(result, '"step": 1');
@@ -586,7 +587,7 @@ Deno.test("Default patterns: handles 'fix' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("Fix the memory leak in the cache module");
+  const result = (await provider.generate("Fix the memory leak in the cache module")).content;
 
   assertStringIncludes(result, "<thought>");
   assertStringIncludes(result, "<content>");
@@ -601,7 +602,7 @@ Deno.test("Default patterns: handles 'bug' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("There's a bug in the login flow");
+  const result = (await provider.generate("There's a bug in the login flow")).content;
 
   assertStringIncludes(result, '"title"');
   assertStringIncludes(result, "Reproduce Issue");
@@ -613,7 +614,7 @@ Deno.test("Default patterns: handles 'error' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("Error handling is broken in API module");
+  const result = (await provider.generate("Error handling is broken in API module")).content;
 
   assertStringIncludes(result, '"title"');
   assertStringIncludes(result, "Fix");
@@ -624,7 +625,7 @@ Deno.test("Default patterns: handles 'issue' requests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("There's an issue with the database connection");
+  const result = (await provider.generate("There's an issue with the database connection")).content;
 
   assertStringIncludes(result, '"title"');
   assertStringIncludes(result, '"step": 1');
@@ -635,7 +636,7 @@ Deno.test("Default patterns: handles generic requests with catch-all", async () 
     recordings: [],
   });
 
-  const result = await provider.generate("Update the documentation for the API");
+  const result = (await provider.generate("Update the documentation for the API")).content;
 
   assertStringIncludes(result, "<thought>");
   assertStringIncludes(result, "<content>");
@@ -662,8 +663,8 @@ Deno.test("Default patterns: responses include required <thought> tags", async (
 
   for (const prompt of prompts) {
     const result = await provider.generate(prompt);
-    assert(result.includes("<thought>"), `Missing <thought> tag in response to: ${prompt}`);
-    assert(result.includes("</thought>"), `Missing </thought> tag in response to: ${prompt}`);
+    assert(result.content.includes("<thought>"), `Missing <thought> tag in response to: ${prompt}`);
+    assert(result.content.includes("</thought>"), `Missing </thought> tag in response to: ${prompt}`);
   }
 });
 
@@ -680,8 +681,8 @@ Deno.test("Default patterns: responses include required <content> tags", async (
 
   for (const prompt of prompts) {
     const result = await provider.generate(prompt);
-    assert(result.includes("<content>"), `Missing <content> tag in response to: ${prompt}`);
-    assert(result.includes("</content>"), `Missing </content> tag in response to: ${prompt}`);
+    assert(result.content.includes("<content>"), `Missing <content> tag in response to: ${prompt}`);
+    assert(result.content.includes("</content>"), `Missing </content> tag in response to: ${prompt}`);
   }
 });
 
@@ -690,7 +691,7 @@ Deno.test("Default patterns: implementation plans mention tests", async () => {
     recordings: [],
   });
 
-  const result = await provider.generate("Implement user profile feature");
+  const result = (await provider.generate("Implement user profile feature")).content;
 
   assertStringIncludes(result, "test");
 });
@@ -700,7 +701,7 @@ Deno.test("Default patterns: bug fix plans mention regression testing", async ()
     recordings: [],
   });
 
-  const result = await provider.generate("Fix the null pointer exception");
+  const result = (await provider.generate("Fix the null pointer exception")).content;
 
   assertStringIncludes(result, "Regression Test");
 });
@@ -722,7 +723,7 @@ Implement a REST API endpoint for user registration.
 
 Create a detailed plan with clear steps.`;
 
-  const result = await provider.generate(requestPrompt);
+  const result = (await provider.generate(requestPrompt)).content;
 
   // Verify it has all required elements for a valid plan
   assertExists(result);
@@ -739,9 +740,9 @@ Deno.test("Mock provider handles multiple sequential plan generations", async ()
   });
 
   // Generate multiple plans
-  const result1 = await provider.generate("Implement feature A");
-  const result2 = await provider.generate("Fix bug B");
-  const result3 = await provider.generate("Add tests for C");
+  const result1 = (await provider.generate("Implement feature A")).content;
+  const result2 = (await provider.generate("Fix bug B")).content;
+  const result3 = (await provider.generate("Add tests for C")).content;
 
   // All should be valid plans
   for (const result of [result1, result2, result3]) {
@@ -762,7 +763,7 @@ Deno.test("Mock provider handles multiple sequential plan generations", async ()
 Deno.test("createPlanGeneratorMock helper creates working provider", async () => {
   const provider = createPlanGeneratorMock();
 
-  const result = await provider.generate("Implement authentication");
+  const result = (await provider.generate("Implement authentication")).content;
 
   assertStringIncludes(result, '"title":');
   assertStringIncludes(result, '"step":1');
@@ -798,9 +799,9 @@ Deno.test("Scripted: handles single response correctly", async () => {
     responses: ["Only response"],
   });
 
-  assertEquals(await provider.generate("test1"), "Only response");
-  assertEquals(await provider.generate("test2"), "Only response");
-  assertEquals(await provider.generate("test3"), "Only response");
+  assertEquals((await provider.generate("test1")).content, "Only response");
+  assertEquals((await provider.generate("test2")).content, "Only response");
+  assertEquals((await provider.generate("test3")).content, "Only response");
 });
 
 Deno.test("Scripted: reset clears response index", async () => {
@@ -808,13 +809,13 @@ Deno.test("Scripted: reset clears response index", async () => {
     responses: ["A", "B", "C"],
   });
 
-  assertEquals(await provider.generate("1"), "A");
-  assertEquals(await provider.generate("2"), "B");
+  assertEquals((await provider.generate("1")).content, "A");
+  assertEquals((await provider.generate("2")).content, "B");
 
   provider.reset();
 
-  assertEquals(await provider.generate("3"), "A"); // Back to first
-  assertEquals(await provider.generate("4"), "B");
+  assertEquals((await provider.generate("3")).content, "A"); // Back to first
+  assertEquals((await provider.generate("4")).content, "B");
 });
 
 Deno.test("Scripted: works with empty prompt strings", async () => {
@@ -822,7 +823,7 @@ Deno.test("Scripted: works with empty prompt strings", async () => {
     responses: ["Response"],
   });
 
-  const result = await provider.generate("");
+  const result = (await provider.generate("")).content;
   assertEquals(result, "Response");
   assertEquals(provider.callCount, 1);
 });
@@ -833,7 +834,7 @@ Deno.test("Scripted: works with very long prompts", async () => {
   });
 
   const longPrompt = "A".repeat(10000);
-  const result = await provider.generate(longPrompt);
+  const result = (await provider.generate(longPrompt)).content;
 
   assertEquals(result, "Response");
   assertEquals(provider.callHistory[0].prompt.length, 10000);
@@ -845,16 +846,16 @@ Deno.test("Scripted: preserves response order across multiple cycles", async () 
   });
 
   // First cycle
-  assertEquals(await provider.generate("1"), "First");
-  assertEquals(await provider.generate("2"), "Second");
+  assertEquals((await provider.generate("1")).content, "First");
+  assertEquals((await provider.generate("2")).content, "Second");
 
   // Second cycle
-  assertEquals(await provider.generate("3"), "First");
-  assertEquals(await provider.generate("4"), "Second");
+  assertEquals((await provider.generate("3")).content, "First");
+  assertEquals((await provider.generate("4")).content, "Second");
 
   // Third cycle
-  assertEquals(await provider.generate("5"), "First");
-  assertEquals(await provider.generate("6"), "Second");
+  assertEquals((await provider.generate("5")).content, "First");
+  assertEquals((await provider.generate("6")).content, "Second");
 });
 
 Deno.test("Scripted: response with special characters and unicode", async () => {
@@ -862,9 +863,9 @@ Deno.test("Scripted: response with special characters and unicode", async () => 
     responses: ["Hello 世界", "Emoji 🎉🚀", "Special <>&\"'"],
   });
 
-  assertEquals(await provider.generate("1"), "Hello 世界");
-  assertEquals(await provider.generate("2"), "Emoji 🎉🚀");
-  assertEquals(await provider.generate("3"), "Special <>&\"'");
+  assertEquals((await provider.generate("1")).content, "Hello 世界");
+  assertEquals((await provider.generate("2")).content, "Emoji 🎉🚀");
+  assertEquals((await provider.generate("3")).content, "Special <>&\"'");
 });
 
 // ============================================================================
@@ -878,9 +879,9 @@ Deno.test("IPattern: matches case-insensitive patterns", async () => {
     ],
   });
 
-  assertEquals(await provider.generate("IMPLEMENT feature"), "Implementation");
-  assertEquals(await provider.generate("implement feature"), "Implementation");
-  assertEquals(await provider.generate("ImPlEmEnT feature"), "Implementation");
+  assertEquals((await provider.generate("IMPLEMENT feature")).content, "Implementation");
+  assertEquals((await provider.generate("implement feature")).content, "Implementation");
+  assertEquals((await provider.generate("ImPlEmEnT feature")).content, "Implementation");
 });
 
 Deno.test("IPattern: dynamic response with multiple capture groups", async () => {
@@ -894,11 +895,11 @@ Deno.test("IPattern: dynamic response with multiple capture groups", async () =>
   });
 
   assertEquals(
-    await provider.generate("add authentication to users"),
+    (await provider.generate("add authentication to users")).content,
     "Adding authentication to users",
   );
   assertEquals(
-    await provider.generate("add validation to forms"),
+    (await provider.generate("add validation to forms")).content,
     "Adding validation to forms",
   );
 });
@@ -911,9 +912,9 @@ Deno.test("IPattern: handles complex regex patterns", async () => {
     ],
   });
 
-  assertEquals(await provider.generate("fix bug #123"), "Fixing bug 123");
-  assertEquals(await provider.generate("version 1.2.3"), "Version 1.2.3");
-  assertEquals(await provider.generate("version v2.0.0"), "Version v2.0.0");
+  assertEquals((await provider.generate("fix bug #123")).content, "Fixing bug 123");
+  assertEquals((await provider.generate("version 1.2.3")).content, "Version 1.2.3");
+  assertEquals((await provider.generate("version v2.0.0")).content, "Version v2.0.0");
 });
 
 Deno.test("IPattern: respects pattern priority order", async () => {
@@ -926,10 +927,10 @@ Deno.test("IPattern: respects pattern priority order", async () => {
   });
 
   // First pattern matches
-  assertEquals(await provider.generate("implement authentication"), "First: Implement");
+  assertEquals((await provider.generate("implement authentication")).content, "First: Implement");
 
   // Catch-all matches
-  assertEquals(await provider.generate("something else"), "Catch-all");
+  assertEquals((await provider.generate("something else")).content, "Catch-all");
 });
 
 Deno.test("IPattern: dynamic response can access provider state", async () => {
@@ -945,9 +946,9 @@ Deno.test("IPattern: dynamic response can access provider state", async () => {
     ],
   });
 
-  assertEquals(await provider.generate("test"), "Call number 1");
-  assertEquals(await provider.generate("test"), "Call number 2");
-  assertEquals(await provider.generate("test"), "Call number 3");
+  assertEquals((await provider.generate("test")).content, "Call number 1");
+  assertEquals((await provider.generate("test")).content, "Call number 2");
+  assertEquals((await provider.generate("test")).content, "Call number 3");
 });
 
 Deno.test("IPattern: empty patterns array throws error", async () => {
@@ -976,7 +977,7 @@ Deno.test("IPattern: multiline prompt matching", async () => {
 user authentication
 with OAuth2`;
 
-  assertEquals(await provider.generate(multilinePrompt), "Authentication plan");
+  assertEquals((await provider.generate(multilinePrompt)).content, "Authentication plan");
 });
 
 Deno.test("IPattern: tracks calls even when pattern doesn't match", async () => {
@@ -1154,10 +1155,10 @@ Deno.test("Slow: cycles through responses after delay", async () => {
     responses: ["First", "Second", "Third"],
   });
 
-  assertEquals(await provider.generate("1"), "First");
-  assertEquals(await provider.generate("2"), "Second");
-  assertEquals(await provider.generate("3"), "Third");
-  assertEquals(await provider.generate("4"), "First"); // Cycles
+  assertEquals((await provider.generate("1")).content, "First");
+  assertEquals((await provider.generate("2")).content, "Second");
+  assertEquals((await provider.generate("3")).content, "Third");
+  assertEquals((await provider.generate("4")).content, "First"); // Cycles;
 });
 
 Deno.test("Slow: tracks timing in call history", async () => {
@@ -1186,7 +1187,7 @@ Deno.test("Slow: can simulate very slow responses", async () => {
   const result = await provider.generate("test");
   const elapsed = Date.now() - start;
 
-  assertEquals(result, "Slow response");
+  assertEquals(result.content, "Slow response");
   // Use a slightly lower threshold for reliability across environments
   assert(elapsed >= 900, `Expected at least 900ms, got ${elapsed}ms`);
 });
@@ -1197,8 +1198,8 @@ Deno.test("Slow: reset clears response index but keeps delay", async () => {
     responses: ["A", "B", "C"],
   });
 
-  assertEquals(await provider.generate("1"), "A");
-  assertEquals(await provider.generate("2"), "B");
+  assertEquals((await provider.generate("1")).content, "A");
+  assertEquals((await provider.generate("2")).content, "B");
 
   provider.reset();
 
@@ -1207,7 +1208,7 @@ Deno.test("Slow: reset clears response index but keeps delay", async () => {
   const result = await provider.generate("3");
   const elapsed = Date.now() - start;
 
-  assertEquals(result, "A");
+  assertEquals(result.content, "A");
   assert(elapsed >= 50, "Delay should still apply after reset");
 });
 
@@ -1217,9 +1218,9 @@ Deno.test("Slow: works with single response", async () => {
     responses: ["Only response"],
   });
 
-  assertEquals(await provider.generate("1"), "Only response");
-  assertEquals(await provider.generate("2"), "Only response");
-  assertEquals(await provider.generate("3"), "Only response");
+  assertEquals((await provider.generate("1")).content, "Only response");
+  assertEquals((await provider.generate("2")).content, "Only response");
+  assertEquals((await provider.generate("3")).content, "Only response");
 });
 
 Deno.test("Slow: multiple concurrent calls each wait full delay", async () => {

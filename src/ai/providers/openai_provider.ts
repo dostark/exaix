@@ -14,6 +14,7 @@ import {
 } from "../provider_common_utils.ts";
 import * as DEFAULTS from "../../shared/constants.ts";
 import { BaseProvider, type IBaseProviderOptions } from "./base_provider.ts";
+import type { IGenerateResult } from "./common.ts";
 
 /**
  * Options for OpenAIProvider
@@ -49,7 +50,7 @@ export class OpenAIProvider extends BaseProvider {
   /**
    * Internal: attempt a single completion call.
    */
-  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<string> {
+  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     const data = await performProviderCall<OpenAIResponse>(
       this.baseUrl,
       createOpenAIChatCompletionsRequestInit(

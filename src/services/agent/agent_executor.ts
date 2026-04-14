@@ -21,10 +21,13 @@ import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
+  AGENT_EVENT_EXECUTION_FAILED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_OUTPUT,
   AGENT_EVENT_SECURITY_VIOLATION,
   AGENT_EXECUTION_EXAMPLE_TIME_MS,
+  AGENT_EXECUTOR_ID,
+  AGENT_GENERATION_COMPLETED,
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
   DEFAULT_GIT_DIFF_TIMEOUT_MS,
@@ -498,7 +501,16 @@ export class AgentExecutor {
     try {
       const strategy = this.strategyRegistry!.resolve(strategyName);
       const validated = await strategy.execute(_blueprint, context, options);
-      const usage = this.estimateExecutionUsage(_blueprint, context, validated);
+
+      // Prioritize real usage from strategy if available, fallback to estimate
+      const usage = validated.usage
+        ? {
+          tokens: validated.usage.prompt_tokens + validated.usage.completion_tokens,
+          cost_usd_estimate: validated.usage.cost_usd,
+          prompt_tokens: validated.usage.prompt_tokens,
+          completion_tokens: validated.usage.completion_tokens,
+        }
+        : this.estimateExecutionUsage(_blueprint, context, validated);
 
       // Step 61.3/61.4: Real SHA and Audit
       const portalPath = portal.target_path;
@@ -1300,7 +1312,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
       traceId: traceId,
-      agentId: "agent-executor",
+      agentId: AGENT_EXECUTOR_ID,
       agentKind: AgentKind.AGENT_EXECUTOR,
       identityId: identityId,
       payload: {
@@ -1317,11 +1329,13 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     traceId: string,
     identityId: string,
     result: IChangesetResult,
-    usage?: { tokens: number; cost_usd_estimate: number },
+    usage?: { tokens: number; cost_usd_estimate: number; prompt_tokens?: number; completion_tokens?: number },
   ): Promise<void> {
     const usagePayload = usage ?? {
       tokens: Math.max(1, Math.ceil(result.description.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN)),
       cost_usd_estimate: 0,
+      prompt_tokens: 0,
+      completion_tokens: 0,
     };
 
     await this.logger.log({
@@ -1333,6 +1347,9 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       agentId: "agent-executor",
       agentKind: AgentKind.AGENT_EXECUTOR,
       identityId: identityId,
+      promptTokens: usagePayload.prompt_tokens ?? Math.floor(usagePayload.tokens / 2),
+      completionTokens: usagePayload.completion_tokens ?? Math.ceil(usagePayload.tokens / 2),
+      costUsd: usagePayload.cost_usd_estimate,
       payload: {
         branch: result.branch,
         commit_sha: result.commit_sha,
@@ -1354,7 +1371,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     error: { type: string; message: string; trace_id?: string },
   ): Promise<void> {
     await this.logger.log({
-      action: "agent.execution_failed",
+      action: AGENT_EVENT_EXECUTION_FAILED,
       target: identityId,
       actor: DEFAULT_MCP_IDENTITY_ID,
       actorType: ActorType.SERVICE,
@@ -1367,6 +1384,40 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         error_type: error.type,
         error_message: error.message,
         failed_at: new Date().toISOString(),
+      },
+    });
+  }
+
+  /**
+   * Log LLM generation metrics to IActivity Journal
+   */
+  async logGeneration(
+    traceId: string,
+    identityId: string,
+    model: string,
+    providerStr: string,
+    usage: { promptTokens: number; completionTokens: number; totalTokens: number },
+    costUsd: number,
+  ): Promise<void> {
+    await this.logger.log({
+      action: AGENT_GENERATION_COMPLETED,
+      target: model,
+      actor: DEFAULT_MCP_IDENTITY_ID,
+      actorType: ActorType.SERVICE,
+      traceId: traceId,
+      agentId: "agent-executor",
+      agentKind: AgentKind.AGENT_EXECUTOR,
+      identityId: identityId,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      costUsd: costUsd,
+      payload: {
+        model,
+        provider: providerStr,
+        prompt_tokens: usage.promptTokens,
+        completion_tokens: usage.completionTokens,
+        total_tokens: usage.totalTokens,
+        cost_usd: costUsd,
       },
     });
   }

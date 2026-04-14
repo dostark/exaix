@@ -6,6 +6,8 @@
  */
 
 import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
+import { makeGenerateResult } from "./test_helpers.ts";
 
 /**
  * Creates a mock LLM provider that returns predefined responses.
@@ -15,10 +17,10 @@ export function createMockProvider(responses: string[]): IModelProvider {
   let callCount = 0;
   return {
     id: "mock-provider",
-    generate: (_prompt: string): Promise<string> => {
+    generate: (_prompt: string): Promise<IGenerateResult> => {
       const response = responses[Math.min(callCount, responses.length - 1)];
       callCount++;
-      return Promise.resolve(response);
+      return Promise.resolve(makeGenerateResult(response));
     },
   };
 }

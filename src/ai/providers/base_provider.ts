@@ -9,8 +9,7 @@
 import type { EventLogger } from "../../services/core/event_logger.ts";
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IModelOptions, IModelProvider } from "../types.ts";
-import { withRetry } from "./common.ts";
-
+import { type IGenerateResult, withRetry } from "./common.ts";
 /**
  * Options for base provider.
  */
@@ -61,7 +60,7 @@ export abstract class BaseProvider implements IModelProvider {
   /**
    * Generate a completion from the model.
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     return await withRetry(
       () => this.attemptGenerate(prompt, options),
       { maxRetries: this.maxRetries, baseDelayMs: this.retryDelayMs },
@@ -71,5 +70,5 @@ export abstract class BaseProvider implements IModelProvider {
   /**
    * Internal: attempt a single completion call.
    */
-  protected abstract attemptGenerate(prompt: string, options?: IModelOptions): Promise<string>;
+  protected abstract attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
 }
