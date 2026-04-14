@@ -202,8 +202,8 @@ Deno.test("[Step62.3] SkillsService.matchSkills respects provided context budget
       keywords: ["budget"],
     });
 
-    assertEquals(capped.length, 1);
-    assertEquals(uncapped.length, 2);
+    assertEquals(capped.matches.length, 1);
+    assertEquals(uncapped.matches.length, 2);
   } finally {
     await cleanup();
   }

@@ -671,7 +671,7 @@ export class MemoryCommands extends BaseCommand {
         tags: options.tags,
       };
 
-      const matches = await this.skills.matchSkills(matchRequest);
+      const { matches } = await this.skills.matchSkills(matchRequest);
       const limitedMatches = options.limit ? matches.slice(0, options.limit) : matches;
 
       if (limitedMatches.length === 0) {

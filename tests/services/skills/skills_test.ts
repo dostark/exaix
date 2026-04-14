@@ -243,7 +243,7 @@ Deno.test("SkillsService: matchSkills returns skills matching keywords", async (
       instructions: "Keyword matching test",
     });
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       keywords: ["implement", "new", "feature"],
     });
 
@@ -270,7 +270,7 @@ Deno.test("SkillsService: matchSkills returns skills matching task types", async
       instructions: "Task type matching test",
     });
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       taskType: "bugfix",
     });
 
@@ -296,7 +296,7 @@ Deno.test("SkillsService: matchSkills returns skills matching file patterns", as
       instructions: "File pattern matching test",
     });
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       filePaths: ["test.ts", "other.py"],
     });
 
@@ -322,7 +322,7 @@ Deno.test("SkillsService: matchSkills excludes non-active skills", async () => {
       instructions: "Should not match",
     });
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       keywords: [SkillStatus.DRAFT, "exclusive", "unique-keyword-xyz"],
     });
 
@@ -347,7 +347,7 @@ Deno.test("SkillsService: matchSkills extracts keywords from request text", asyn
       instructions: "Text extraction test",
     });
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       requestText: "Please implement authentication for the login page",
     });
 
@@ -375,7 +375,7 @@ Deno.test("SkillsService: matchSkills respects maxSkillsPerRequest limit", async
       });
     }
 
-    const matches = await service.matchSkills({
+    const { matches } = await service.matchSkills({
       keywords: ["limitspecial", "testspecial"],
     });
 
