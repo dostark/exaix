@@ -423,3 +423,43 @@ Resolve in order before writing any implementation code:
 1. **(G6)** Remove "create `src/cli/commands/skills.ts`" from Step 70.4; scope step to verifying and optionally aliasing the existing `exactl memory skill` commands.
 1. **(G7)** Fix all Planned Tests paths to follow the project convention (remove `unit/` prefix; use `tests/agents/` for agent runner tests).
 1. **(G8)** Commit `SKILL_EVENT_MATCH_COMPLETED`, `SKILL_EVENT_RETRIEVAL_TIMEOUT`, `SKILL_EVENT_RETRIEVAL_FAILED` to `src/shared/constants.ts` before Step 70.5.
+
+---
+
+## Post-Implementation Gap Analysis
+
+### Implementation Coverage
+
+| Step | Requirement | Implementation Status | Note |
+| :--- | :--- | :----------- | :--- |
+| **70.1** | Zod Schema & Config Structure | ✅ **Complete** | Added `ISkillsContext`, `ZSkillsContext` to `src/shared/types/prompt_context.ts`, relocated to satisfied style rule. Added `[skills]` config block to `ConfigSchema`. |
+| **70.2** | AgentRunner Skills Retrieval | ✅ **Complete** | Integrated matching into `AgentRunner.matchAndApplySkills`. Consumer global config properly. Implemented 500ms timeout guard. |
+| **70.3** | Context Rendering (Prompts) | ✅ **Complete** | Created `src/services/agent/prompt_formatter.ts` with `renderSkillsSection`. Follows project layout patterns instead of separate context file. |
+| **70.4** | CLI Alias for Skill Discovery | ✅ **Complete** | Added `exactl skills` top-level alias in `src/cli/exactl.ts`. Reuse of `MemoryCommands` ensures code stability. |
+| **70.5** | Journalism & Observability | ✅ **Complete** | Integrated `skills.match_completed`, `skills.retrieval_timeout`, and `skills.retrieval_failed` via global constants. Enriched `agent.prompt_assembled`. |
+
+### Discovered Gaps & Deviations (G9–G12)
+
+#### G9 — 🔴 Cognitive Load: Complexity Breach in matchAndApplySkills
+
+- **Discovery:** The initial implementation of `AgentRunner.matchAndApplySkills` reached a cyclomatic complexity of 18 (project threshold: 15).
+- **Resolution:** Refactored the method by extracting `performDynamicSkillMatching` (timeout logic) and `hydrateSkills` (validation and mapping) into private methods. Complexity reduced to 5.
+
+#### G10 — 🟡 Architecture: Missing Module Headers
+
+- **Discovery:** New files `src/services/agent/prompt_formatter.ts` and `src/shared/types/prompt_context.ts` lacked mandatory `@architectural-layer` and `@related-files` headers.
+- **Resolution:** Headers added to satisfy `deno task check:arch`.
+
+#### G11 — 🟢 Style: Documentation Formatting
+
+- **Discovery:** Manual edits to `ARCHITECTURE.md` table indentation violated `deno fmt` rules.
+- **Resolution:** Ran project-wide formatting before final commit.
+
+#### G12 — 🟡 Workflow: Strict Commit Structure
+
+- **Discovery:** The project enforces a machine-readable structured commit format (`what/rationale/tests/who/impact`) which is stricter than standard conventional commits.
+- **Resolution:** Adopted the full structured format for the phase completion commit.
+
+### Conclusion
+
+Phase 70 is **successfully closed**. The system now possesses a robust, fail-safe procedural memory injection mechanism. No outstanding blockers remain from this phase.
