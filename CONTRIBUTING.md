@@ -6,7 +6,7 @@ copilot_knowledge_base: true
 version: 1.1
 capabilities: [pr_workflow, workspace_deployment, regression_testing]
 links:
-  - "scripts/deploy_workspace.sh"
+  - "scripts/deploy_workspace.ts"
   - "scripts/ci.ts"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---

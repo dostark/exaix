@@ -1,10 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
  * @module CheckCommitMsg
  * @path scripts/check_commit_msg.ts
- * @description Script to validate structured commit messages against Exaix guidelines.
- * @architectural-layer Scripts
- * @dependencies []
- * @related-files [tests/scripts/check_commit_msg_test.ts]
+ * @description Validates structured commit messages against Exaix guidelines.
+ *
+ * Usage:
+ *   deno run -A scripts/check_commit_msg.ts <commit_msg_file>
  */
 
 /** Standard conventional commit types. */

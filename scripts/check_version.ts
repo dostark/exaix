@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-all
+#!/usr/bin/env -S deno run -A
 /**
  * @module CheckVersion
  * @path scripts/check_version.ts
@@ -8,10 +8,6 @@
  *   - If any Minor Bump Trigger file is staged/changed → bump WORKSPACE_SCHEMA_VERSION MINOR.
  *   - If date has advanced since last bump → bump BINARY_VERSION PATCH.
  *   - If nothing changed → exit 0 with no modifications.
- *
- * Minor Bump Trigger files:
- *   src/shared/schemas/config.ts, migrations\/*.sql, src/services/db.ts,
- *   src/shared/constants.ts, scripts/setup_db.ts
  *
  * Usage:
  *   deno run -A scripts/check_version.ts              # pre-commit: inspect --cached diff

@@ -1,4 +1,12 @@
-// Usage: deno run --allow-read scripts/verify_manifest_fresh.ts
+#!/usr/bin/env -S deno run -A
+/**
+ * @module VerifyManifestFresh
+ * @path scripts/verify_manifest_fresh.ts
+ * @description Checks if the agent manifest is up to date with the current .copilot/ folder state.
+ *
+ * Usage:
+ *   deno run -A scripts/verify_manifest_fresh.ts
+ */
 import { generateManifestObject } from "./build_agents_index.ts";
 
 interface IManifestDocLike {

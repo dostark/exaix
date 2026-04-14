@@ -1,6 +1,19 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module ci
- * @description Script: ci
+ * @module CI
+ * @path scripts/ci.ts
+ * @description Main CI orchestration script that runs all checks, tests, and coverage reporting.
+ *
+ * Usage:
+ *   deno run -A scripts/ci.ts [command]
+ *
+ * Commands:
+ *   check      Run all static analysis (formatter, lint, style, placement, docs)
+ *   test       Run standard unit and integration tests
+ *   coverage   Run tests with coverage tracking and threshold enforcement
+ *   build      Compile standalone binaries for multiple platforms
+ *   all        Execute the entire pipeline (check -> test -> coverage -> build)
+ *   scenarios  Run the full E2E scenario-framework validation
  */
 import { Command } from "@cliffy/command";
 import { join, resolve } from "@std/path";

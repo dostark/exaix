@@ -1,7 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module validate_doc_links
+ * @module ValidateDocLinks
  * @path scripts/validate_doc_links.ts
- * @description Validates that symbol-based links in Markdown files point to existing symbols in source files.
+ * @description Checks for broken internal and external links in the project's markdown documentation.
+ *
+ * Usage:
+ *   deno run -A scripts/validate_doc_links.ts
  */
 
 import { join, resolve } from "@std/path";

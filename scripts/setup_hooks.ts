@@ -1,13 +1,13 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module setup_hooks
- * @description Script: setup_hooks
+ * @module SetupHooks
+ * @path scripts/setup_hooks.ts
+ * @description Configures Git hooks (like pre-commit) to run validations before commits.
+ *
+ * Usage:
+ *   deno run -A scripts/setup_hooks.ts
  */
 import { join } from "@std/path";
-
-/**
- * setup_hooks.ts
- * Automates the installation of git hooks for Exaix.
- */
 
 const REPO_ROOT = Deno.cwd();
 const HOOKS_DIR = join(REPO_ROOT, ".git", "hooks");

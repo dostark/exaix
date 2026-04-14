@@ -1,8 +1,15 @@
+#!/usr/bin/env -S deno run -A
 /**
  * @module SetupSandbox
  * @path scripts/setup_sandbox.ts
- * @description Automates the creation of a persistent Exaix validation sandbox,
- * following the workflow described in VALIDATION_GUIDE.md.
+ * @description Automates the creation of a persistent Exaix validation sandbox.
+ *
+ * Usage:
+ *   deno run -A scripts/setup_sandbox.ts [options]
+ *
+ * Options:
+ *   --path <path>  Target directory for the sandbox
+ *   --name <name>  Custom name for the sandbox instance
  */
 
 import { Command } from "@cliffy/command";
@@ -59,7 +66,9 @@ const setupCommand = new Command()
     };
 
     // 2. Deploy Workspace
-    if (!await run(["bash", "./scripts/deploy_workspace.sh", workspaceDir], "Deploying Workspace", { env })) {
+    if (
+      !await run(["deno", "run", "-A", "./scripts/deploy_workspace.ts", workspaceDir], "Deploying Workspace", { env })
+    ) {
       Deno.exit(1);
     }
 

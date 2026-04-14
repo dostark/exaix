@@ -77,7 +77,7 @@ Deploy a fresh Exaix runtime. This installs the necessary directory structure (`
 # to $EXA_BIN_PATH/exactl instead of installing globally. The shim will
 # automatically export EXA_CONFIG_PATH so that binary always targets this
 # sandbox workspace regardless of the current working directory.
-./scripts/deploy_workspace.sh "$WORKSPACE_DIR"
+deno run -A ./scripts/deploy_workspace.ts "$WORKSPACE_DIR"
 
 # After deployment, add your sandbox bin folder to PATH so the sandbox
 # binary takes precedence in this shell session:

@@ -1,4 +1,12 @@
-#!/usr/bin/env -S deno run
+#!/usr/bin/env -S deno run -A
+/**
+ * @module CheckCodeStyle
+ * @path scripts/check_code_style.ts
+ * @description Scans all .ts and .tsx files for code style violations defined in CODE_STYLE.md.
+ *
+ * Usage:
+ *   deno run -A scripts/check_code_style.ts [path]
+ */
 // Copyright 2026 Exaix authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
@@ -467,13 +475,36 @@ async function checkFile(path: string) {
     );
     if (convertWarnings) errorCount++;
     else warnCount++;
-  } else if (!path.includes("scripts/")) {
-    // Basic verification of header tags for non-script files
-    const headerLines = lines.slice(0, 10).join("\n");
+  } else if (!path.includes("/tests/")) {
+    // Basic verification of header tags for ALL production and utility files
+    const headerLines = lines.slice(0, 15).join("\n");
     const tags = ["@module", "@path", "@description"];
     for (const tag of tags) {
       if (!headerLines.includes(tag)) {
         console.log(`ERROR [module-header-tag] ${path}:1 – Header is missing mandatory '${tag}' tag.`);
+        errorCount++;
+      }
+    }
+
+    // Special checks for maintenance scripts in the top-level scripts/ directory
+    if (path.includes("/scripts/") && !path.includes("/tests/")) {
+      if (!lines[0].startsWith("#!/usr/bin/env -S deno run -A")) {
+        console.log(
+          `ERROR [script-shebang] ${path}:1 – Maintenance scripts must start with '#!/usr/bin/env -S deno run -A'.`,
+        );
+        errorCount++;
+      }
+      if (!headerLines.includes("Usage:")) {
+        console.log(
+          `ERROR [script-usage] ${path}:1 – Maintenance scripts must include a 'Usage:' section in the header.`,
+        );
+        errorCount++;
+      }
+      const fileName = path.split("/").pop() || "";
+      if (fileName.startsWith("debug_") || fileName.startsWith("tmp_")) {
+        console.log(
+          `ERROR [script-placement] ${path}:1 – Debug or temporary scripts must be located outside the 'scripts/' directory.`,
+        );
         errorCount++;
       }
     }

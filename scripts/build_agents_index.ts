@@ -1,5 +1,12 @@
-// Build a simple manifest.json and pre-chunk files for fast retrieval
-// Usage: deno run --allow-read --allow-write scripts/build_agents_index.ts
+#!/usr/bin/env -S deno run -A
+/**
+ * @module BuildAgentsIndex
+ * @path scripts/build_agents_index.ts
+ * @description Build a simple manifest.json and pre-chunk files for fast retrieval.
+ *
+ * Usage:
+ *   deno run -A scripts/build_agents_index.ts
+ */
 
 import { walk } from "@std/fs";
 import { parse } from "@std/yaml";

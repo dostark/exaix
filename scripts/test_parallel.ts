@@ -1,15 +1,14 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module test_parallel
+ * @module TestParallel
+ * @path scripts/test_parallel.ts
  * @description Two-batch test runner that maximises parallel throughput while
  * still executing CLI-subprocess-heavy tests that are unsafe to run concurrently.
  *
  * Batch 1 – the whole test suite run with DENO_JOBS=8 and --parallel for
- *            maximum speed. The sequential files are included but their
- *            guarded tests self-skip when DENO_JOBS is set.
+ *            maximum speed.
  * Batch 2 – the sequential files run one after another without DENO_JOBS so
  *            their skipInParallel guards evaluate to false and every test runs.
- *
- * A combined summary is printed at the end of both batches.
  *
  * Usage:
  *   deno task test_parallel

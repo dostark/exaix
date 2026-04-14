@@ -1,5 +1,12 @@
-// Given a query and an agent type, return the best matching short_summary + chunks
-// Usage: deno run --allow-read scripts/inject_agent_context.ts --query "fix tests" --agent copilot
+#!/usr/bin/env -S deno run -A
+/**
+ * @module InjectAgentContext
+ * @path scripts/inject_agent_context.ts
+ * @description RAG utility to inject relevant document chunks and agent instructions into a prompt context.
+ *
+ * Usage:
+ *   deno run --allow-read scripts/inject_agent_context.ts --query <text> --agent <type>
+ */
 
 import { walk } from "@std/fs";
 import { parse } from "@std/yaml";

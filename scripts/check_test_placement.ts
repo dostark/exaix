@@ -1,13 +1,13 @@
-#!/usr/bin/env -S deno run --allow-read --allow-run
+#!/usr/bin/env -S deno run -A
 /**
  * @module CheckTestPlacement
  * @path scripts/check_test_placement.ts
  * @description Enforces repository test-file placement conventions for Exaix.
  *
  * Rules:
- * - Test files matching `*_test.ts(x)` or `*_test.js(x)` must live under `tests/`.
- * - Service tests must live under `tests/services/<domain>/`, not directly under
- *   `tests/services/`.
+ * - Test files matching `*_test.ts(x)` must live under `tests/`.
+ * - Service tests must live under `tests/services/<domain>/`, not directly
+ *   under `tests/services/`.
  *
  * Usage:
  *   deno run -A scripts/check_test_placement.ts          # inspect staged files

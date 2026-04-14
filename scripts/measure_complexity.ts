@@ -1,32 +1,32 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module measure_complexity
- * @description Script: measure_complexity
+ * @module MeasureComplexity
+ * @path scripts/measure_complexity.ts
+ * @description Analyzes code complexity across the src/ tree using AST-based or heuristic analysis.
+ *
+ * Usage:
+ *   deno run --allow-run --allow-read scripts/measure_complexity.ts [options]
+ *
+ * Options:
+ *   --threshold <num>   Numeric threshold for flagging files/functions (default 10)
+ *   --topFiles <n>      How many top files to display (default 5)
+ *   --topFns <n>        How many top functions per file to display (default 5)
+ *   --json              Print full results as JSON
+ *   --fail              Exit with code 1 if any breaches are found (useful for CI)
+ *
+ * Example:
+ *   # Human-readable output with custom threshold
+ *   deno run --allow-run --allow-read scripts/measure_complexity.ts --threshold 15 --topFiles 10
  */
 import { walk } from "@std/fs";
 import { parse } from "@std/flags";
 import type { JSONObject } from "../src/shared/types/json.ts";
-// Top-level dynamic imports for parser loading (see CODE_STYLE.md for rationale)
 // Import all parser candidates at the top-level (see CODE_STYLE.md for rationale)
 // Only use local or npm imports that are available and versioned
 import * as BabelParser1 from "@babel/parser";
-// The following remote imports are commented out due to uncached or missing remote URLs
-// import * as DenoAst1 from "https://deno.land/x/deno_ast@0.5.0/mod.ts";
-// import * as DenoAst2 from "https://deno.land/x/deno_ast@0.4.0/mod.ts";
-// import * as BabelParserCDN1 from "https://esm.sh/@babel/parser@7.22.9";
-// import * as BabelParserCDN2 from "https://cdn.skypack.dev/@babel/parser@7.22.9";
-// import * as BabelParserCDN3 from "https://cdn.jsdelivr.net/npm/@babel/parser@7.22.9/lib/index.js";
-// import * as BabelParserCDN4 from "https://unpkg.com/@babel/parser@7.22.9/lib/index.js";
-// import * as BabelParserCDN5 from "https://esm.sh/@babel/parser";
 
 const parserCandidates = [
   BabelParser1,
-  // DenoAst1,
-  // DenoAst2,
-  // BabelParserCDN1,
-  // BabelParserCDN2,
-  // BabelParserCDN3,
-  // BabelParserCDN4,
-  // BabelParserCDN5,
 ];
 
 type ParserOptions = JSONObject;
@@ -90,14 +90,15 @@ export function getBabelParse(): BabelParseFn {
 
 const flags = parse(Deno.args, {
   string: ["threshold", "topFiles", "topFns"],
-  boolean: ["json"],
-  default: { threshold: "10", topFiles: "5", topFns: "5", json: false },
+  boolean: ["json", "fail"],
+  default: { threshold: "10", topFiles: "5", topFns: "5", json: false, fail: false },
 });
 
 const THRESHOLD = parseFloat(flags.threshold);
 const TOP_FILES = parseInt(String(flags.topFiles || "5"), 10) || 5;
 const TOP_FNS = parseInt(String(flags.topFns || "5"), 10) || 5;
 const OUTPUT_JSON = !!flags.json;
+const SHOULD_FAIL = !!flags.fail;
 
 // AST-based cyclomatic complexity per-function using Babel parser.
 // Cyclomatic complexity heuristic:
@@ -434,6 +435,16 @@ async function runComplexityCheck() {
 
   if (OUTPUT_JSON) {
     console.log(JSON.stringify(result, null, 2));
+  }
+
+  // Handle exit behavior for CI/CD
+  if (SHOULD_FAIL && (exceeding.files.length > 0 || exceeding.functions.length > 0)) {
+    if (!OUTPUT_JSON) {
+      console.error(
+        `\n❌ Complexity check failed: ${exceeding.files.length} file(s) and ${exceeding.functions.length} function(s) exceed threshold.`,
+      );
+    }
+    Deno.exit(1);
   }
 }
 

@@ -1,7 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module validate_cross_reference
+ * @module ValidateCrossReference
  * @path scripts/validate_cross_reference.ts
- * @description Specifically validates .copilot/cross-reference.md relative links.
+ * @description Validates that all internal cross-references in .copilot/ documentation are valid.
+ *
+ * Usage:
+ *   deno run -A scripts/validate_cross_reference.ts
  */
 
 import { existsSync } from "@std/fs";

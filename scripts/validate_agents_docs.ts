@@ -1,5 +1,12 @@
-// Simple validation script for .copilot/ docs
-// Usage: deno run --allow-read scripts/validate_agents_docs.ts
+#!/usr/bin/env -S deno run -A
+/**
+ * @module ValidateAgentsDocs
+ * @path scripts/validate_agents_docs.ts
+ * @description Ensures all agent-related documentation adheres to project schemas and cross-reference rules.
+ *
+ * Usage:
+ *   deno run -A scripts/validate_agents_docs.ts
+ */
 
 import { walk } from "@std/fs";
 import { parse } from "@std/yaml";

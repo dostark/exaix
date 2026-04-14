@@ -1,19 +1,23 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module measure_coverage
- * @description Script: measure_coverage
+ * @module MeasureCoverage
+ * @path scripts/measure_coverage.ts
+ * @description Test coverage orchestrator that runs tests and enforces coverage thresholds.
+ *
+ * Usage:
+ *   deno run -A scripts/measure_coverage.ts [options]
+ *
+ * Options:
+ *   --limit <num>      Percentage threshold to fail below (default: 80)
+ *   --full             Run the entire suite (ignore self-skipping tests)
+ *   --parallel         Run tests in parallel (can be sensitive to DB/shared state)
+ *   --with-llama       Run with Llama-specific filters (self-skips if missing)
  */
 import { parse } from "@std/flags";
 
-/**
- * Script to measure test coverage
- *
- * Usage:
- * deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts [--threshold <num>]
- */
-
 const flags = parse(Deno.args, {
   string: ["limit"],
-  boolean: ["full", "parallel"],
+  boolean: ["full", "parallel", "with-llama"],
 });
 
 const LINE_THRESHOLD = 70;
@@ -139,6 +143,7 @@ async function runCoverageCheck() {
       "--allow-all",
       ...(flags.parallel ? ["--parallel"] : []),
       `--coverage=${COVERAGE_DIR}`,
+      ...(flags["with-llama"] ? [] : ["--ignore=tests/llama_provider_test.ts"]),
       "tests/",
     ],
     stdout: "inherit",

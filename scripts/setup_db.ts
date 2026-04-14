@@ -1,6 +1,12 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-ffi
-// Minimal DB setup script for Exaix
-// Wrapper around the migration system to initialize the database.
+#!/usr/bin/env -S deno run -A
+/**
+ * @module SetupDB
+ * @path scripts/setup_db.ts
+ * @description Database initialization script that ensures the schema is up to date in the runtime environment.
+ *
+ * Usage:
+ *   deno run -A scripts/setup_db.ts
+ */
 
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";

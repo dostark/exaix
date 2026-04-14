@@ -13,9 +13,9 @@ const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 
 async function runDeploy(target: string) {
-  const scriptPath = join(REPO_ROOT, "scripts", "deploy_workspace.sh");
-  const cmd = new Deno.Command("bash", {
-    args: [scriptPath, "--no-run", target],
+  const scriptPath = join(REPO_ROOT, "scripts", "deploy_workspace.ts");
+  const cmd = new Deno.Command("deno", {
+    args: ["run", "-A", scriptPath, "--no-run", target],
     cwd: REPO_ROOT,
     stdout: "piped",
     stderr: "piped",
@@ -29,7 +29,7 @@ async function runDeploy(target: string) {
   };
 }
 
-Deno.test("deploy_workspace.sh copies Memory, Blueprints, and not docs subfolders", async () => {
+Deno.test("deploy_workspace.ts copies Memory, Blueprints, and not docs subfolders", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-deploy-test-" });
   try {
     const result = await runDeploy(tmp);

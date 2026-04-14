@@ -17,9 +17,9 @@ const REPO_ROOT = join(__dirname, "..", "..");
 async function runScaffold(
   target: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  const scriptPath = join(REPO_ROOT, "scripts", "scaffold.sh");
-  const cmd = new Deno.Command("bash", {
-    args: [scriptPath, target],
+  const scriptPath = join(REPO_ROOT, "scripts", "scaffold.ts");
+  const cmd = new Deno.Command("deno", {
+    args: ["run", "-A", scriptPath, target],
     cwd: REPO_ROOT,
     stdout: "piped",
     stderr: "piped",
@@ -33,7 +33,7 @@ async function runScaffold(
   };
 }
 
-Deno.test("scaffold.sh creates required directory structure", async () => {
+Deno.test("scaffold.ts creates required directory structure", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
@@ -43,7 +43,7 @@ Deno.test("scaffold.sh creates required directory structure", async () => {
       console.error("scaffold failed stderr:", result.stderr);
     }
 
-    assert(result.code === 0, `scaffold.sh exited with code ${result.code}`);
+    assert(result.code === 0, `scaffold.ts exited with code ${result.code}`);
 
     // Verify all required directories exist
     const requiredDirs = [
@@ -71,11 +71,11 @@ Deno.test("scaffold.sh creates required directory structure", async () => {
   }
 });
 
-Deno.test("scaffold.sh creates .gitkeep files", async () => {
+Deno.test("scaffold.ts creates .gitkeep files", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     // Verify .gitkeep files exist
     const gitkeepPaths = [
@@ -101,11 +101,11 @@ Deno.test("scaffold.sh creates .gitkeep files", async () => {
   }
 });
 
-Deno.test("scaffold.sh copies exa.config.sample.toml template", async () => {
+Deno.test("scaffold.ts copies exa.config.sample.toml template", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
     assertStringIncludes(result.stdout, "Copied exa.config.sample.toml");
 
     const configPath = join(tmp, "exa.config.sample.toml");
@@ -122,11 +122,11 @@ Deno.test("scaffold.sh copies exa.config.sample.toml template", async () => {
   }
 });
 
-Deno.test("scaffold.sh does not create src directory", async () => {
+Deno.test("scaffold.ts does not create src directory", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     const srcPath = join(tmp, "src");
     assert(
@@ -138,11 +138,11 @@ Deno.test("scaffold.sh does not create src directory", async () => {
   }
 });
 
-Deno.test("scaffold.sh creates Memory/Projects directory and README placeholder", async () => {
+Deno.test("scaffold.ts creates Memory/Projects directory and README placeholder", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     const projectsPath = join(tmp, ExaPathDefaults.memoryProjects);
     assert(
@@ -164,7 +164,7 @@ Deno.test("scaffold.sh creates Memory/Projects directory and README placeholder"
   }
 });
 
-Deno.test("scaffold.sh does not overwrite existing config file", async () => {
+Deno.test("scaffold.ts does not overwrite existing config file", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     // Create an existing config file
@@ -172,7 +172,7 @@ Deno.test("scaffold.sh does not overwrite existing config file", async () => {
     await Deno.writeTextFile(join(tmp, "exa.config.sample.toml"), existingContent);
 
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     // Verify the existing file was not overwritten
     const content = await Deno.readTextFile(join(tmp, "exa.config.sample.toml"));
@@ -185,7 +185,7 @@ Deno.test("scaffold.sh does not overwrite existing config file", async () => {
 
 // Test removed: src/main.ts template no longer exists
 
-Deno.test("scaffold.sh is idempotent", async () => {
+Deno.test("scaffold.ts is idempotent", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     // Run scaffold twice
@@ -215,11 +215,11 @@ Deno.test("scaffold.sh is idempotent", async () => {
   }
 });
 
-Deno.test("scaffold.sh outputs completion message", async () => {
+Deno.test("scaffold.ts outputs completion message", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     const result = await runScaffold(tmp);
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     assertStringIncludes(result.stdout, "Scaffold complete");
     assertStringIncludes(result.stdout, "deno task cache");
@@ -229,13 +229,13 @@ Deno.test("scaffold.sh outputs completion message", async () => {
   }
 });
 
-Deno.test("scaffold.sh uses current directory if no target provided", async () => {
+Deno.test("scaffold.ts uses current directory if no target provided", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-scaffold-test-" });
   try {
     // Run scaffold without target argument (from tmp directory)
-    const scriptPath = join(REPO_ROOT, "scripts", "scaffold.sh");
-    const cmd = new Deno.Command("bash", {
-      args: [scriptPath],
+    const scriptPath = join(REPO_ROOT, "scripts", "scaffold.ts");
+    const cmd = new Deno.Command("deno", {
+      args: ["run", "-A", scriptPath],
       cwd: tmp, // Run from tmp directory
       stdout: "piped",
       stderr: "piped",
@@ -248,7 +248,7 @@ Deno.test("scaffold.sh uses current directory if no target provided", async () =
       stderr: new TextDecoder().decode(res.stderr),
     };
 
-    assert(result.code === 0, `scaffold.sh failed: ${result.stderr}`);
+    assert(result.code === 0, `scaffold.ts failed: ${result.stderr}`);
 
     // Verify structure was created in current directory
     assert(

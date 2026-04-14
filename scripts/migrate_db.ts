@@ -1,6 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module migrate_db
- * @description Script: migrate_db
+ * @module MigrateDB
+ * @path scripts/migrate_db.ts
+ * @description Database migration runner for applying and reverting schema changes.
+ *
+ * Usage:
+ *   deno run -A scripts/migrate_db.ts [up|down|status]
  */
 import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";

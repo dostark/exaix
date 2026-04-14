@@ -1,11 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
- * validate_architecture.ts
+ * @module ValidateArchitecture
+ * @path scripts/validate_architecture.ts
+ * @description Verifies architectural boundary compliance and documentation grounding.
  *
- * Enforces architectural standards:
- * 1. Every .ts file in src/ must have a standardized @module header.
- * 2. Every .ts file in src/ must be "grounded" by ARCHITECTURE.md (directly or transitively).
- * 3. @path in header must match the actual file path.
- * 4. Dependencies are automated from imports (manual @dependencies is deprecated).
+ * Usage:
+ *   deno run -A scripts/validate_architecture.ts
  */
 
 import { join, relative, resolve } from "@std/path";

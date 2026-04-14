@@ -32,13 +32,13 @@ const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..", "..");
 const _paths = getDefaultPaths(REPO_ROOT);
 
-parallelSafeTest("deploy_workspace.sh --no-run creates deploy files", async () => {
+parallelSafeTest("deploy_workspace.ts --no-run creates deploy files", async () => {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-deploy-test-" });
   try {
-    const deployScript = join(REPO_ROOT, "scripts", "deploy_workspace.sh");
+    const deployScript = join(REPO_ROOT, "scripts", "deploy_workspace.ts");
 
-    const cmd = new Deno.Command("bash", {
-      args: [deployScript, "--no-run", tmp],
+    const cmd = new Deno.Command("deno", {
+      args: ["run", "-A", deployScript, "--no-run", tmp],
       cwd: REPO_ROOT,
       stdout: "piped",
       stderr: "piped",
@@ -51,7 +51,7 @@ parallelSafeTest("deploy_workspace.sh --no-run creates deploy files", async () =
       console.error("deploy failed stderr:\n", err);
     }
 
-    assert(res.code === 0, `deploy_workspace.sh exited with code ${res.code}`);
+    assert(res.code === 0, `deploy_workspace.ts exited with code ${res.code}`);
 
     // Basic expectations: README.md exists and scripts/setup_db.ts was copied
     const readme = join(tmp, "README.md");
@@ -185,11 +185,11 @@ async function runExactl(
 async function deployTestWorkspace(): Promise<string> {
   const tmp = await Deno.makeTempDir({ prefix: "exaix-daemon-test-" });
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..", "..");
-  const deployScript = join(repoRoot, "scripts", "deploy_workspace.sh");
+  const deployScript = join(repoRoot, "scripts", "deploy_workspace.ts");
 
   // Deploy with --no-run (we'll run setup manually)
-  const deployCmd = new Deno.Command("bash", {
-    args: [deployScript, "--no-run", tmp],
+  const deployCmd = new Deno.Command("deno", {
+    args: ["run", "-A", deployScript, "--no-run", tmp],
     cwd: repoRoot,
     stdout: "piped",
     stderr: "piped",

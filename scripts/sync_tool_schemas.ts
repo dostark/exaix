@@ -1,7 +1,11 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module sync_tool_schemas
+ * @module SyncToolSchemas
  * @path scripts/sync_tool_schemas.ts
- * @description Extracts MCP tool definitions from source code and syncs them into TOOLS.md
+ * @description Extracts MCP tool definitions from source and updates TOOLS.md.
+ *
+ * Usage:
+ *   deno run -A scripts/sync_tool_schemas.ts
  */
 
 import { walk } from "@std/fs";

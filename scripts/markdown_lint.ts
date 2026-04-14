@@ -1,9 +1,8 @@
+#!/usr/bin/env -S deno run -A
 /**
- * Markdown Lint
- *
- * A lightweight markdown linter used by dev-time agents and repo tooling.
- *
- * Default behavior is READ-ONLY (no writes), so it can run with `--allow-read`.
+ * @module MarkdownLint
+ * @path scripts/markdown_lint.ts
+ * @description A lightweight markdown linter used by dev-time agents and repo tooling.
  *
  * Usage:
  *   deno run --allow-read scripts/markdown_lint.ts

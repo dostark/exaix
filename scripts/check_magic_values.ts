@@ -1,10 +1,8 @@
-#!/usr/bin/env -S deno run --allow-read
-// Copyright 2026 Exaix authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
+#!/usr/bin/env -S deno run -A
 /**
- * Magic Value Detector — scans TypeScript sources using the compiler API
+ * @module CheckMagicValues
+ * @path scripts/check_magic_values.ts
+ * @description Magic Value Detector — scans TypeScript sources using the compiler API
  * AST to find repeated string/number literals that should be extracted
  * into named constants or enums.
  *
@@ -16,10 +14,6 @@
  * Thresholds (per-module / global):
  *   strings:  occurrences > 3  (local)  / > 5  (global)
  *   numbers:  occurrences > 4  (local)  / > 6  (global)
- *
- * Whitelisted values (never flagged):
- *   "", " ", "0", "1", "-1", "true", "false", "null", "undefined",
- *   numeric 0, 1, -1
  */
 
 import ts from "typescript";

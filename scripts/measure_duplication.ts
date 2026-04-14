@@ -1,16 +1,14 @@
+#!/usr/bin/env -S deno run -A
 /**
- * @module measure_duplication
- * @description Script: measure_duplication
+ * @module MeasureDuplication
+ * @path scripts/measure_duplication.ts
+ * @description Scans the codebase for cloned code blocks using jscpd to help reduce redundancy.
+ *
+ * Usage:
+ *   deno run -A scripts/measure_duplication.ts [--threshold <num>]
  */
 import { parse } from "@std/flags";
 import { join } from "@std/path";
-
-/**
- * Script to measure code duplication using jscpd
- *
- * Usage:
- * deno run --allow-run --allow-read --allow-write scripts/measure_duplication.ts [--threshold <num>]
- */
 
 const flags = parse(Deno.args, {
   string: ["threshold"],

@@ -417,6 +417,35 @@ location changes.
 
 ---
 
+## 11. Utility Scripting & Headers {#utility-scripts}
+
+- **Preferred Runtime**: Deno TypeScript is the strictly preferred runtime for all repository maintenance, automation, and CI/CD utility scripts. Avoid Bash or standalone Node.js scripts to leverage type safety and the Deno standard library.
+- **Shebang**: Every script in `scripts/` must begin with the standard Deno shebang:
+  `#!/usr/bin/env -S deno run -A`
+- **Standardized Header**: All scripts must feature a unified JSDoc-style header immediately following the shebang.
+- **Mandatory Metadata Tags**:
+  - `@module [Name]`: The logical name of the utility.
+  - `@path scripts/[filename].ts`: The relative path to the script.
+  - `@description [Text]`: A concise summary of the script's purpose.
+- **Usage Context**: Following the metadata, a script must include a clear `Usage:` section providing at least one example command (e.g., `deno run -A scripts/foo.ts`). For complex utilities, also include `Options:` and `Commands:` blocks.
+- **Temporary & Debug Scripts**: All scripts intended for one-off debugging or temporary use must be created outside of the `scripts/` directory (e.g., in the repository root or a dedicated `tmp/` folder) and must clearly indicate their ephemeral purpose in the filename (e.g., `debug_test_failure.ts` or `tmp_fix_metadata.ts`). The `scripts/` directory is reserved for permanent, well-documented repository utilities that are integrated into the project's quality gates.
+
+Example:
+
+```typescript
+#!/usr/bin/env -S deno run -A
+/**
+ * @module MyUtility
+ * @path scripts/my_utility.ts
+ * @description Performs a specific maintenance task.
+ *
+ * Usage:
+ *   deno run -A scripts/my_utility.ts [options]
+ */
+```
+
+---
+
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/source/exaix.md`) and **are not** repeated here unless they
