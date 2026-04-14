@@ -842,8 +842,10 @@ export class MockSkillsService implements ISkillsService {
     } as ISkill);
   }
 
-  matchSkills(_request: ISkillMatchRequest): Promise<ISkillMatch[]> {
-    return Promise.resolve([]);
+  matchSkills(
+    _request: ISkillMatchRequest,
+  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+    return Promise.resolve({ matches: [], totalAvailable: 0 });
   }
 
   buildSkillContext(_skillIds: string[]): Promise<string> {

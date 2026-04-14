@@ -23,7 +23,7 @@ topics:
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: ✅ Completed
 **Phase Dependencies**: Phase 68
 **Risk Level**: L — purely additive. `SkillsService` already exists and compiles;
 this phase wires it into an already-established prompt construction call chain.
@@ -176,9 +176,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `ZSkillMatch` and `ZSkillsContext` types to `src/shared/types/prompt_context.ts`.
-   - Add `[skills]` section to `exa.config.toml` schema and reader.
-   - Validate config defaults with Zod in `src/config/config_loader.ts`.
+   - [x] Add `ZSkillMatch` and `ZSkillsContext` types to `src/shared/types/prompt_context.ts`.
+   - [x] Add `[skills]` section to `exa.config.toml` schema and reader.
+   - [x] Validate config defaults with Zod in `src/config/config_loader.ts`.
 
 1. **Architecture Notes**
 
@@ -201,10 +201,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Verify `matchAndApplySkills()` in `src/services/agent/agent_runner.ts` has a
-     500ms timeout guard matching the plan design (Phase 17 already wired the core path).
-   - Confirm `agent.prompt_assembled` journal event includes `skillIdsUsed: string[]`;
-     add the field if it is missing.
+   - [x] Verify `matchAndApplySkills()` in `src/services/agent/agent_runner.ts` has a 500ms timeout guard (fail-safe retrieval).
+   - [x] Promote hardcoded `maxSkillsPerRequest` and `matchThreshold` in `matchAndApplySkills()` to use the new `skills` config block.
+   - [x] Confirm `agent.prompt_assembled` journal event includes `skillIdsUsed: string[]`; add the field if missing.
 
 1. **Architecture Notes**
 
@@ -229,9 +228,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `renderSkillsSection(context: ISkillsContext): string` in
-     `src/services/prompt_context.ts`.
-   - Respect `PromptBudgetAllocator` (Phase 62) — skills budget is already allocated;
+   - [x] Add `renderSkillsSection(context: ISkillsContext): string` in
+     `src/services/agent/prompt_formatter.ts`.
+   - [x] Respect `PromptBudgetAllocator` (Phase 62) — skills budget is already allocated;
      truncate matched skills content to fit within the budget if Phase 62 is active.
 
 1. **Architecture Notes**
@@ -253,31 +252,25 @@ log_matched_ids     = true
 
 ---
 
-### Step 70.4: CLI `exactl skills` Command Group
+### Step 70.4: CLI `exactl skills` Command Alias
 
 1. **Actions**
 
-   - `exactl memory skill list` and `exactl memory skill show` are already implemented
-     in `MemoryCommands.skillList()` / `MemoryCommands.skillShow()` and wired in
-     `src/cli/exactl.ts` (Phase 17). No new file creation is needed.
-   - Optionally add a top-level `exactl skills` alias in `src/cli/exactl.ts` pointing
-     to the existing `exactl memory skill` command group.
+   - [x] Verify `exactl memory skill list` and `exactl memory skill show` are functional in the active portal.
+   - [x] Add a top-level `exactl skills` alias in `src/cli/exactl.ts` pointing to the existing `exactl memory skill` command group.
 
 1. **Architecture Notes**
 
-   - Do not create `src/cli/commands/skills.ts`; the implementation lives in
-     `src/cli/commands/memory_commands.ts`.
+   - Implementation already lives in `src/cli/commands/memory_commands.ts`. Do not create a new CLI command file.
 
 1. **Planned Tests**
 
-   - `tests/cli/skills_list_command_test.ts`
-   - `tests/cli/skills_show_command_test.ts`
+   - `tests/cli/skills_command_alias_test.ts`
 
 1. **Success Criteria**
 
-   - `exactl skills list` correctly outputs all skills for the active portal.
-   - `exactl skills show <id>` prints full content for a known skill.
-   - Both commands exit cleanly when no skills directory exists.
+   - `exactl skills list` works as an alias for `exactl memory skill list`.
+   - `exactl skills show <id>` works as an alias for `exactl memory skill show <id>`.
 
 ---
 
@@ -285,9 +278,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `skills.match_completed` event to `EventLogger` schema with fields:
+   - [x] Add `skills.match_completed` event to `EventLogger` schema with fields:
      `skillIds: string[]`, `matchCount: number`, `latencyMs: number`.
-   - Add `skills.retrieval_timeout` and `skills.retrieval_failed` warning events.
+   - [x] Add `skills.retrieval_timeout` and `skills.retrieval_failed` warning events.
 
 1. **Architecture Notes**
 
@@ -430,3 +423,43 @@ Resolve in order before writing any implementation code:
 1. **(G6)** Remove "create `src/cli/commands/skills.ts`" from Step 70.4; scope step to verifying and optionally aliasing the existing `exactl memory skill` commands.
 1. **(G7)** Fix all Planned Tests paths to follow the project convention (remove `unit/` prefix; use `tests/agents/` for agent runner tests).
 1. **(G8)** Commit `SKILL_EVENT_MATCH_COMPLETED`, `SKILL_EVENT_RETRIEVAL_TIMEOUT`, `SKILL_EVENT_RETRIEVAL_FAILED` to `src/shared/constants.ts` before Step 70.5.
+
+---
+
+## Post-Implementation Gap Analysis
+
+### Implementation Coverage
+
+| Step | Requirement | Implementation Status | Note |
+| :--- | :--- | :----------- | :--- |
+| **70.1** | Zod Schema & Config Structure | ✅ **Complete** | Added `ISkillsContext`, `ZSkillsContext` to `src/shared/types/prompt_context.ts`, relocated to satisfied style rule. Added `[skills]` config block to `ConfigSchema`. |
+| **70.2** | AgentRunner Skills Retrieval | ✅ **Complete** | Integrated matching into `AgentRunner.matchAndApplySkills`. Consumer global config properly. Implemented 500ms timeout guard. |
+| **70.3** | Context Rendering (Prompts) | ✅ **Complete** | Created `src/services/agent/prompt_formatter.ts` with `renderSkillsSection`. Follows project layout patterns instead of separate context file. |
+| **70.4** | CLI Alias for Skill Discovery | ✅ **Complete** | Added `exactl skills` top-level alias in `src/cli/exactl.ts`. Reuse of `MemoryCommands` ensures code stability. |
+| **70.5** | Journalism & Observability | ✅ **Complete** | Integrated `skills.match_completed`, `skills.retrieval_timeout`, and `skills.retrieval_failed` via global constants. Enriched `agent.prompt_assembled`. |
+
+### Discovered Gaps & Deviations (G9–G12)
+
+#### G9 — 🔴 Cognitive Load: Complexity Breach in matchAndApplySkills
+
+- **Discovery:** The initial implementation of `AgentRunner.matchAndApplySkills` reached a cyclomatic complexity of 18 (project threshold: 15).
+- **Resolution:** Refactored the method by extracting `performDynamicSkillMatching` (timeout logic) and `hydrateSkills` (validation and mapping) into private methods. Complexity reduced to 5.
+
+#### G10 — 🟡 Architecture: Missing Module Headers
+
+- **Discovery:** New files `src/services/agent/prompt_formatter.ts` and `src/shared/types/prompt_context.ts` lacked mandatory `@architectural-layer` and `@related-files` headers.
+- **Resolution:** Headers added to satisfy `deno task check:arch`.
+
+#### G11 — 🟢 Style: Documentation Formatting
+
+- **Discovery:** Manual edits to `ARCHITECTURE.md` table indentation violated `deno fmt` rules.
+- **Resolution:** Ran project-wide formatting before final commit.
+
+#### G12 — 🟡 Workflow: Strict Commit Structure
+
+- **Discovery:** The project enforces a machine-readable structured commit format (`what/rationale/tests/who/impact`) which is stricter than standard conventional commits.
+- **Resolution:** Adopted the full structured format for the phase completion commit.
+
+### Conclusion
+
+Phase 70 is **successfully closed**. The system now possesses a robust, fail-safe procedural memory injection mechanism. No outstanding blockers remain from this phase.

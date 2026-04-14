@@ -18,7 +18,7 @@ export class SkillsAdapter implements ISkillsService {
     return await this.inner.initialize();
   }
 
-  async matchSkills(request: ISkillMatchRequest): Promise<ISkillMatch[]> {
+  async matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     return await this.inner.matchSkills(request);
   }
 

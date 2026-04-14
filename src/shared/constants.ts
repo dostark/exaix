@@ -145,6 +145,7 @@ export const AGENT_EVENT_EXECUTION_FAILED = "agent.execution_failed";
 export const AGENT_EVENT_OUTPUT = "agent.output";
 export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
 export const AGENT_GENERATION_COMPLETED = "agent.generation_completed";
+export const AGENT_EVENT_PROMPT_ASSEMBLED = "agent.prompt_assembled";
 
 export const AGENT_EXECUTOR_ID = "agent-executor";
 // Plan amendment event names (Phase 66)
@@ -154,6 +155,11 @@ export const PLAN_AMENDMENT_EVENT_APPROVED = "plan.amendment.approved";
 export const PLAN_AMENDMENT_EVENT_REJECTED = "plan.amendment.rejected";
 export const PLAN_AMENDMENT_EVENT_EXPIRED = "plan.amendment.expired";
 export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
+
+// Skill event names (Phase 70)
+export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
+export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
+export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
 
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
@@ -455,6 +461,10 @@ export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT = 4_000;
 
 /** Default maximum character budget for formatted skills context. */
 export const DEFAULT_SKILL_CONTEXT_CHAR_BUDGET = 2_000;
+export const DEFAULT_SKILLS_MAX_PER_REQUEST = 5;
+export const DEFAULT_SKILLS_MATCH_THRESHOLD = 0.3;
+export const DEFAULT_SKILLS_INJECT_IN_PROMPT = true;
+export const DEFAULT_SKILLS_LOG_MATCHED_IDS = true;
 
 /** Maximum allowed length for a saved session-memory insight description. */
 export const SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS = 2_000;

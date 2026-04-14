@@ -358,10 +358,48 @@ When an agent execution completes, Exaix automatically extracts learnings:
 
 1. **Extract**: Insights from `lessons_learned` and execution patterns
 
-1.
-1.
+1. **Approve**: Approved learnings are moved to their respective Global or Project banks.
 
 This ensures quality control over what enters the knowledge base.
+
+### 3.3 Procedural Skills
+
+Procedural Skills are specialized "how-to" guides that agents use to perform specific tasks correctly. Unlike declarative memory (facts), skills contain instructions, constraints, and examples for processes like "how to run tests in this project" or "how to deploy to production".
+
+#### Key Concepts
+
+- **Triggering**: Skills are automatically matched to your request based on keywords, task types, or file patterns.
+- **Hydration**: When a skill matches, its full instructions are "hydrated" and injected into the agent's prompt.
+- **Fail-Open Design**: Skill retrieval has a 500ms timeout. If it takes too long, the agent continues without the skill to avoid delays.
+
+#### CLI Access
+
+Use the top-level `exactl skills` command (or the alias `exactl memory skill`):
+
+```bash
+# List all available skills
+exactl skills list
+
+# Filter by category (core, project, learned)
+exactl skills list --category core
+
+# Show details and instructions for a skill
+exactl skills show testing-standard
+
+# Test skill matching for a specific request
+exactl skills match "Implement the feature and run tests"
+```
+
+#### Configuration
+
+You can tune skill matching in your `exa.config.toml`:
+
+```toml
+[skills]
+max_per_request = 5        # Max skills to inject per request
+match_threshold = 0.3      # Minimum confidence score (0.0 to 1.0)
+context_budget_chars = 4000 # Max characters for skills context
+```
 
 ## 4. CLI Reference
 

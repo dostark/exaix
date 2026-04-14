@@ -261,9 +261,9 @@ export class SkillsService implements ISkillsService {
   /**
    * Match skills based on request context
    */
-  async matchSkills(request: ISkillMatchRequest): Promise<ISkillMatch[]> {
+  async matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     if (!this.skillsDir) await this.initialize();
-    if (!this.skillsConfig.autoMatch) return [];
+    if (!this.skillsConfig.autoMatch) return { matches: [], totalAvailable: 0 };
 
     const index = await this.loadIndex();
     const activeSkills = index.skills.filter((s: ISkillIndexEntry) => s.status === SkillStatus.ACTIVE);
@@ -285,11 +285,12 @@ export class SkillsService implements ISkillsService {
     // Sort by confidence
     matches.sort((a, b) => b.confidence - a.confidence);
 
+    const totalAvailable = matches.length;
     const limitedMatches = matches.slice(0, this.skillsConfig.maxSkillsPerRequest);
     const contextBudgetChars = request.contextBudgetChars;
 
     if (contextBudgetChars === undefined) {
-      return limitedMatches;
+      return { matches: limitedMatches, totalAvailable };
     }
 
     const budgetedMatches: ISkillMatch[] = [];
@@ -310,7 +311,7 @@ export class SkillsService implements ISkillsService {
       remainingBudget -= skillBlockLength;
     }
 
-    return budgetedMatches;
+    return { matches: budgetedMatches, totalAvailable };
   }
 
   // Calculate trigger match score

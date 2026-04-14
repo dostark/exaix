@@ -83,6 +83,7 @@ graph TB
         ReflexAgt[Reflexive Agent]
         ConfScore[Confidence Scorer]
         SessMem[Session Memory]
+        SkillsSvc[Skills Service]
         ToolRefl[Tool Reflector]
         CostTrack[Cost Tracker]
         HealthSvc[Health Check Svc]
@@ -169,6 +170,7 @@ graph TB
     AgentRun --> PlanWriter
     AgentRun --> MissionRpt
     AgentRun --> EventLog
+    AgentRun --> SkillsSvc
     PromptBudget --> ContextLoad
     ExecLoop --> ToolReg
     ExecLoop --> GitSvc
@@ -1134,11 +1136,10 @@ graph TB
   ]
 } -->
 
-| Memory Tier   | Storage Path                  | Primary Consumer  |
-| ------------- | ----------------------------- | ----------------- |
-| **Local**     | `Workspace/Memory/Projects/`  | `ContextLoader`   |
+| **Local** | `Workspace/Memory/Projects/` | `ContextLoader` |
 | **Execution** | `Workspace/Memory/Execution/` | `ActivityJournal` |
-| **Global**    | `Workspace/Memory/Global/`    | `MemoryService`   |
+| **Global** | `Workspace/Memory/Global/` | `MemoryService` |
+| **Skills** | `Memory/Skills/` | `SkillsService` |
 
 The Memory Banks system provides persistent knowledge storage for project context, execution history, and cross-project learnings.
 
@@ -1154,6 +1155,7 @@ graph TB
         Execution["Execution/<br/>Execution history"]
         Pending["Pending/<br/>Awaiting approval"]
         Tasks["Tasks/<br/>Task tracking"]
+        Skills["Skills/<br/>Procedural knowledge"]
         Index["Index/<br/>Search indices"]
     end
 
@@ -1191,13 +1193,14 @@ graph TB
     Projects --> ProjectMem
     Execution --> ExecMem
     Global --> GlobalMem
+    Skills --> SkillsDir
     Index --> IndexDir
 
     classDef dir fill:#fff9c4,stroke:#f57f17,stroke-width:2px
     classDef file fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
     classDef json fill:#b2dfdb,stroke:#00695c,stroke-width:2px
 
-    class Memory,Global,Projects,Execution,Pending,Tasks,Index dir
+    class Memory,Global,Projects,Execution,Pending,Tasks,Skills,Index dir
     class Overview,Patterns,Decisions,References,Summary,Changes,Learnings,GLearnings,GPatterns,GAnti file
     class ContextJson,Context,GJson,Files,PatIdx,Tags,LearnIdx,Embed,Knowledge json
 ```

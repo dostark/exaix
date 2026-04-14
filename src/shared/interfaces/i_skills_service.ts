@@ -14,7 +14,7 @@ export interface ISkillsService {
   /**
    * Match skills based on request context.
    */
-  matchSkills(request: ISkillMatchRequest): Promise<ISkillMatch[]>;
+  matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }>;
 
   /**
    * Build combined skill context for prompt injection.

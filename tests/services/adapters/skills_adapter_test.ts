@@ -27,7 +27,7 @@ Deno.test("SkillsAdapter: delegates simple methods to SkillsService", async () =
 
   // Setup spies/stubs
   mockInner.initialize = spy(() => Promise.resolve());
-  mockInner.matchSkills = spy(() => Promise.resolve([]));
+  mockInner.matchSkills = spy(() => Promise.resolve({ matches: [], totalAvailable: 0 }));
   mockInner.buildSkillContext = spy(() => Promise.resolve("context"));
   mockInner.recordSkillUsage = spy(() => Promise.resolve());
   mockInner.rebuildIndex = spy(() => Promise.resolve());

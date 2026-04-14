@@ -191,6 +191,13 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
       threshold: 80,
       expiryMs: 3600000,
     },
+    skills: {
+      max_per_request: 5,
+      match_threshold: 0.3,
+      inject_in_prompt: true,
+      log_matched_ids: true,
+      context_budget_chars: 4000,
+    },
   };
 }
 

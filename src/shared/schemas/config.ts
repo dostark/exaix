@@ -177,6 +177,19 @@ export const ConfigSchema = z.object({
     timeout_sec: DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
     max_iterations: DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
   }),
+  skills: z.object({
+    max_per_request: z.number().int().min(1).default(DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST),
+    match_threshold: z.number().min(0).max(1).default(DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD),
+    inject_in_prompt: z.boolean().default(DEFAULTS.DEFAULT_SKILLS_INJECT_IN_PROMPT),
+    log_matched_ids: z.boolean().default(DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS),
+    context_budget_chars: z.number().int().min(0).default(DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET),
+  }).default({
+    max_per_request: DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST,
+    match_threshold: DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD,
+    inject_in_prompt: DEFAULTS.DEFAULT_SKILLS_INJECT_IN_PROMPT,
+    log_matched_ids: DEFAULTS.DEFAULT_SKILLS_LOG_MATCHED_IDS,
+    context_budget_chars: DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
+  }),
   portals: z.array(PortalPermissionsSchema).default([]),
   /** AI/LLM provider configuration (legacy/single) */
   ai: AiConfigSchema.optional(),
