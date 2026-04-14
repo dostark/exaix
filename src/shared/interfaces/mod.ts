@@ -9,6 +9,7 @@
 export * from "./i_agent_service.ts";
 export * from "./i_archive_service.ts";
 export * from "./i_config_service.ts";
+export * from "./i_cost_tracker.ts";
 export * from "./i_context_card_generator_service.ts";
 export * from "./i_criteria_generator_service.ts";
 export * from "./i_daemon_service.ts";

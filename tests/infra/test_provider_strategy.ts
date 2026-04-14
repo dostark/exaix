@@ -90,6 +90,7 @@ You are an expert developer. Provide detailed technical analysis and implementat
         { promptTokens: 50, completionTokens: 50, totalTokens: 100 },
         "trace-1",
       );
+      await costTracker.flush();
 
       // Select provider for simple task
       const simpleProvider = await selector.selectProvider({
@@ -134,9 +135,10 @@ You are an expert developer. Provide detailed technical analysis and implementat
       await costTracker.trackGeneration(
         "openai",
         "gpt-4o",
-        { promptTokens: 5000, completionTokens: 5000, totalTokens: 10000 },
+        { promptTokens: 30000, completionTokens: 30000, totalTokens: 60000 },
         "trace-2",
       );
+      await costTracker.flush();
 
       // Try to select provider with low budget - should avoid openai
       const provider = await selector.selectProvider({
@@ -149,7 +151,7 @@ You are an expert developer. Provide detailed technical analysis and implementat
 
       // Verify daily cost for paid provider is high
       const paidCost = await costTracker.getDailyCost("openai");
-      assert(paidCost > 0.05, "Paid provider should have accumulated high cost");
+      assert(paidCost > 0.05, `Paid provider should have accumulated high cost (got ${paidCost})`);
     } finally {
       await env.cleanup();
     }
@@ -253,6 +255,8 @@ Deno.test("Provider Strategy: Multi-provider concurrent requests", async (t) => 
           totalTokens: 40,
         }, "trace-c4"),
       ]);
+
+      await costTracker.flush();
 
       // Verify costs are tracked
       const freeCost = await costTracker.getDailyCost("ollama");

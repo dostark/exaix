@@ -36,6 +36,16 @@ export interface ICostTracker {
   getTotalCost(provider?: string, model?: string): number;
 
   /**
+   * Get total daily cost for a specific provider or all providers.
+   */
+  getDailyCost(provider?: string): Promise<number>;
+
+  /**
+   * Flush any pending cost records to the database
+   */
+  flush(): Promise<void>;
+
+  /**
    * Check if execution is within daily/monthly budget
    */
   isWithinBudget(provider?: string, budget?: number): Promise<boolean>;
