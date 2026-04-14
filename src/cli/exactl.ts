@@ -1901,6 +1901,65 @@ const migrateCommand = new Command()
 __test_command.command("migrate", migrateCommand);
 
 // ---------------------------------------------------------------------------
+// skills subcommand alias (Phase 70: Wiring Skills Service)
+// ---------------------------------------------------------------------------
+
+const skillsCommand = new Command()
+  .description("Manage procedural skills (Alias for 'memory skill')")
+  .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+  .action(async (options) => {
+    const result = await memoryCommands.skillList({ format: options.format as OutputFormat });
+    console.log(result);
+  })
+  .command(
+    "list",
+    new Command()
+      .description("List all skills")
+      .option("-c, --category <category:string>", "Filter by category: core, project, learned")
+      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+      .action(async (options) => {
+        const result = await memoryCommands.skillList({
+          category: options.category as MemoryBankSource | undefined,
+          format: options.format as OutputFormat,
+        });
+        console.log(result);
+      }),
+  )
+  .command(
+    "show <skillId:string>",
+    new Command()
+      .description("Show details of a specific skill")
+      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+      .action(async (options, ...args: string[]) => {
+        const skillId = args[0];
+        const result = await memoryCommands.skillShow(skillId, options.format as UIOutputFormat);
+        console.log(result);
+      }),
+  )
+  .command(
+    "match <request:string>",
+    new Command()
+      .description("Match skills for a given request")
+      .option("-t, --task-type <taskType:string>", "Task type filter")
+      .option("--tags <tags:string>", "Comma-separated tags filter")
+      .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 10 })
+      .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+      .action(async (options, ...args: string[]) => {
+        const request = args[0];
+        const tags = options.tags ? options.tags.split(",").map((t: string) => t.trim()) : undefined;
+        const result = await memoryCommands.skillMatch(request, {
+          taskType: options.taskType,
+          tags,
+          limit: options.limit,
+          format: options.format as UIOutputFormat,
+        });
+        console.log(result);
+      }),
+  );
+
+__test_command.command("skills", skillsCommand);
+
+// ---------------------------------------------------------------------------
 // watch subcommand (Phase 67: Live Execution Streaming)
 // ---------------------------------------------------------------------------
 

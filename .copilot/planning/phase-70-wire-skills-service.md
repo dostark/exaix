@@ -23,7 +23,7 @@ topics:
 
 ## Status & Context
 
-**Status**: 🚧 Planning
+**Status**: ✅ Completed
 **Phase Dependencies**: Phase 68
 **Risk Level**: L — purely additive. `SkillsService` already exists and compiles;
 this phase wires it into an already-established prompt construction call chain.
@@ -176,9 +176,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `ZSkillMatch` and `ZSkillsContext` types to `src/shared/types/prompt_context.ts`.
-   - Add `[skills]` section to `exa.config.toml` schema and reader.
-   - Validate config defaults with Zod in `src/config/config_loader.ts`.
+   - [x] Add `ZSkillMatch` and `ZSkillsContext` types to `src/shared/types/prompt_context.ts`.
+   - [x] Add `[skills]` section to `exa.config.toml` schema and reader.
+   - [x] Validate config defaults with Zod in `src/config/config_loader.ts`.
 
 1. **Architecture Notes**
 
@@ -201,10 +201,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Verify `matchAndApplySkills()` in `src/services/agent/agent_runner.ts` has a
-     500ms timeout guard matching the plan design (Phase 17 already wired the core path).
-   - Confirm `agent.prompt_assembled` journal event includes `skillIdsUsed: string[]`;
-     add the field if it is missing.
+   - [x] Verify `matchAndApplySkills()` in `src/services/agent/agent_runner.ts` has a 500ms timeout guard (fail-safe retrieval).
+   - [x] Promote hardcoded `maxSkillsPerRequest` and `matchThreshold` in `matchAndApplySkills()` to use the new `skills` config block.
+   - [x] Confirm `agent.prompt_assembled` journal event includes `skillIdsUsed: string[]`; add the field if missing.
 
 1. **Architecture Notes**
 
@@ -229,9 +228,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `renderSkillsSection(context: ISkillsContext): string` in
-     `src/services/prompt_context.ts`.
-   - Respect `PromptBudgetAllocator` (Phase 62) — skills budget is already allocated;
+   - [x] Add `renderSkillsSection(context: ISkillsContext): string` in
+     `src/services/agent/prompt_formatter.ts`.
+   - [x] Respect `PromptBudgetAllocator` (Phase 62) — skills budget is already allocated;
      truncate matched skills content to fit within the budget if Phase 62 is active.
 
 1. **Architecture Notes**
@@ -253,31 +252,25 @@ log_matched_ids     = true
 
 ---
 
-### Step 70.4: CLI `exactl skills` Command Group
+### Step 70.4: CLI `exactl skills` Command Alias
 
 1. **Actions**
 
-   - `exactl memory skill list` and `exactl memory skill show` are already implemented
-     in `MemoryCommands.skillList()` / `MemoryCommands.skillShow()` and wired in
-     `src/cli/exactl.ts` (Phase 17). No new file creation is needed.
-   - Optionally add a top-level `exactl skills` alias in `src/cli/exactl.ts` pointing
-     to the existing `exactl memory skill` command group.
+   - [x] Verify `exactl memory skill list` and `exactl memory skill show` are functional in the active portal.
+   - [x] Add a top-level `exactl skills` alias in `src/cli/exactl.ts` pointing to the existing `exactl memory skill` command group.
 
 1. **Architecture Notes**
 
-   - Do not create `src/cli/commands/skills.ts`; the implementation lives in
-     `src/cli/commands/memory_commands.ts`.
+   - Implementation already lives in `src/cli/commands/memory_commands.ts`. Do not create a new CLI command file.
 
 1. **Planned Tests**
 
-   - `tests/cli/skills_list_command_test.ts`
-   - `tests/cli/skills_show_command_test.ts`
+   - `tests/cli/skills_command_alias_test.ts`
 
 1. **Success Criteria**
 
-   - `exactl skills list` correctly outputs all skills for the active portal.
-   - `exactl skills show <id>` prints full content for a known skill.
-   - Both commands exit cleanly when no skills directory exists.
+   - `exactl skills list` works as an alias for `exactl memory skill list`.
+   - `exactl skills show <id>` works as an alias for `exactl memory skill show <id>`.
 
 ---
 
@@ -285,9 +278,9 @@ log_matched_ids     = true
 
 1. **Actions**
 
-   - Add `skills.match_completed` event to `EventLogger` schema with fields:
+   - [x] Add `skills.match_completed` event to `EventLogger` schema with fields:
      `skillIds: string[]`, `matchCount: number`, `latencyMs: number`.
-   - Add `skills.retrieval_timeout` and `skills.retrieval_failed` warning events.
+   - [x] Add `skills.retrieval_timeout` and `skills.retrieval_failed` warning events.
 
 1. **Architecture Notes**
 

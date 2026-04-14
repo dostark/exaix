@@ -780,24 +780,6 @@ class MockSkillsService implements ISkillsService {
     this.skillContext = context;
   }
 
-  matchSkills(
-    _request: ISkillMatchRequest,
-  ): Promise<ISkillMatch[]> {
-    this.matchCallCount++;
-    return Promise.resolve(this.matchedSkills);
-  }
-
-  buildSkillContext(skillIds: string[]): Promise<string> {
-    this.contextBuiltForSkills = skillIds;
-    if (skillIds.length === 0) return Promise.resolve("");
-    return Promise.resolve(this.skillContext);
-  }
-
-  recordSkillUsage(skillId: string): Promise<void> {
-    this.usageRecorded.push(skillId);
-    return Promise.resolve();
-  }
-
   private createSkillRecord(skillDef: SkillDefinition, skillId: string): ISkill {
     return {
       ...skillDef,
@@ -811,15 +793,59 @@ class MockSkillsService implements ISkillsService {
     };
   }
 
-  deriveSkillFromLearnings(
-    _learningIds: string[],
-    skillDef: SkillDefinition,
-  ): Promise<ISkill> {
-    return Promise.resolve(this.createSkillRecord(skillDef, "derived"));
+  matchSkills(
+    _request: ISkillMatchRequest,
+  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+    this.matchCallCount++;
+    return Promise.resolve({
+      matches: this.matchedSkills,
+      totalAvailable: this.matchedSkills.length,
+    });
   }
 
-  rebuildIndex(): Promise<void> {
+  buildSkillContext(skillIds: string[]): Promise<string> {
+    this.contextBuiltForSkills = skillIds;
+    if (skillIds.length === 0) return Promise.resolve("");
+    return Promise.resolve(this.skillContext);
+  }
+
+  recordSkillUsage(skillId: string): Promise<void> {
+    this.usageRecorded.push(skillId);
     return Promise.resolve();
+  }
+
+  getSkill(id: string): Promise<ISkill | null> {
+    this.contextBuiltForSkills.push(id);
+    // Return a dummy skill if it's in our matched list or if it's a known default skill
+    const isKnown = id.startsWith("default-skill") ||
+      this.matchedSkills.some((m) => m.skillId === id) ||
+      id === "security-first" || id === "tdd-methodology" || id === "error-handling";
+
+    if (!isKnown) return Promise.resolve(null);
+
+    return Promise.resolve({
+      id,
+      skill_id: id,
+      name: id === "security-first"
+        ? "Security First"
+        : id === "tdd-methodology"
+        ? "TDD Methodology"
+        : `Mock Skill ${id}`,
+      description: "Mock skill description",
+      instructions: "Mock skill instructions",
+      version: "1.0.0",
+      created_at: new Date().toISOString(),
+      source: MemoryBankSource.CORE,
+      scope: MemoryScope.GLOBAL,
+      status: SkillStatus.ACTIVE,
+      triggers: {
+        keywords: [],
+        task_types: [],
+        file_patterns: [],
+        tags: [],
+      },
+      usage_count: 0,
+    });
   }
 
   listSkills(): Promise<ISkill[]> {
@@ -830,18 +856,23 @@ class MockSkillsService implements ISkillsService {
     return Promise.resolve();
   }
 
-  createSkill(
-    skillDef: SkillDefinition,
-  ): Promise<ISkill> {
+  createSkill(skillDef: SkillDefinition): Promise<ISkill> {
     return Promise.resolve(this.createSkillRecord(skillDef, "created"));
-  }
-
-  getSkill(_id: string): Promise<ISkill | null> {
-    return Promise.resolve(null);
   }
 
   deleteSkill(_id: string): Promise<boolean> {
     return Promise.resolve(true);
+  }
+
+  rebuildIndex(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  deriveSkillFromLearnings(
+    _learningIds: string[],
+    skillDef: SkillDefinition,
+  ): Promise<ISkill> {
+    return Promise.resolve(this.createSkillRecord(skillDef, "derived"));
   }
 }
 
@@ -885,8 +916,9 @@ Deno.test("AgentRunner: injects skill context into prompt", async () => {
 
   await runner.run(sampleBlueprint, sampleRequest);
 
-  assertStringIncludes(capturedPrompt, "## Skill: Security First");
-  assertStringIncludes(capturedPrompt, "Always validate input");
+  assertStringIncludes(capturedPrompt, "### APPLICABLE SKILLS & PROCEDURES");
+  assertStringIncludes(capturedPrompt, "#### Security First");
+  assertStringIncludes(capturedPrompt, "Mock skill instructions");
 });
 
 Deno.test("AgentRunner: records skill usage after execution", async () => {
@@ -981,9 +1013,8 @@ Deno.test("AgentRunner: uses blueprint defaultSkills when no trigger matches", a
   const result = await runner.run(blueprintWithDefaults, sampleRequest);
 
   assertExists(result);
-  // Should use blueprint default skills since no triggers matched
   assertEquals(result.skillsApplied, ["default-skill-1", "default-skill-2"]);
-  // Verify buildSkillContext was called with the default skills
+  // Verify skills were requested (Phase 70 hydration)
   assertEquals(mockSkills.contextBuiltForSkills, ["default-skill-1", "default-skill-2"]);
 });
 

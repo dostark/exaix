@@ -16,6 +16,7 @@
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import type { ISkill, ISkillMatch } from "../../shared/schemas/memory_bank.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import {
@@ -30,10 +31,13 @@ import {
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
+import { renderSkillsSection } from "./prompt_formatter.ts";
+import type { ISkillsContext } from "../../shared/types/prompt_context.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
+  AGENT_EVENT_PROMPT_ASSEMBLED,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   PORTAL_CONTEXT_KEY,
@@ -191,11 +195,13 @@ export class AgentRunner implements IAgentRunner {
   private planAdapter: PlanAdapter;
 
   private modelProvider: IModelProvider;
+  private config?: IAgentRunnerConfig;
 
   constructor(
     modelProvider?: IModelProvider,
     config?: IAgentRunnerConfig,
   ) {
+    this.config = config;
     const ctx = config?.context;
     const provider = modelProvider || ctx?.provider;
     if (!provider) {
@@ -244,17 +250,31 @@ export class AgentRunner implements IAgentRunner {
     const traceId = request.traceId;
     const requestId = request.requestId;
 
-    // Phase 17: Match skills based on request context
-    const skillsApplied = await this.matchAndApplySkills(blueprint, request, identityId);
+    // Phase 17/70: Match skills based on request context
+    const { skillIds, skillsContext } = await this.matchAndApplySkills(blueprint, request, identityId);
 
     // Log agent execution start
-    this.logExecutionStart(request, identityId, traceId, requestId, skillsApplied);
+    this.logExecutionStart(request, identityId, traceId, requestId, skillIds);
 
-    // Step 1: Construct the combined prompt (with skill context)
-    const skillContext = skillsApplied.length > 0 && this.skillsService
-      ? await this.skillsService.buildSkillContext(skillsApplied)
-      : "";
-    const combinedPrompt = this.constructPrompt(blueprint, request, skillContext);
+    // Step 1: Construct the combined prompt (with skill context) (Phase 70)
+    const skillContextString = renderSkillsSection(skillsContext);
+    const combinedPrompt = this.constructPrompt(blueprint, request, skillContextString);
+
+    // Phase 70: Log prompt assembled event for observability
+    this.logActivity(
+      ACTIVITY_ACTOR_AGENT,
+      AGENT_EVENT_PROMPT_ASSEMBLED,
+      requestId || null,
+      {
+        identity_id: identityId,
+        prompt_length: combinedPrompt.length,
+        skillIdsUsed: skillIds,
+        skillsCount: skillIds.length,
+        retrievalLatencyMs: skillsContext?.retrievalLatencyMs || 0,
+      },
+      traceId,
+      identityId,
+    );
 
     // Step 2: Execute via the model provider (with retry if enabled)
     const retryResult = await this.executeWithRetry(combinedPrompt, startTime);
@@ -280,12 +300,12 @@ export class AgentRunner implements IAgentRunner {
       identityId,
       traceId,
       duration,
-      skillsApplied,
+      skillsApplied: skillIds,
     });
 
     return {
       ...result,
-      skillsApplied: skillsApplied.length > 0 ? skillsApplied : undefined,
+      skillsApplied: skillIds.length > 0 ? skillIds : undefined,
     };
   }
 
@@ -296,55 +316,130 @@ export class AgentRunner implements IAgentRunner {
     blueprint: IBlueprint,
     request: IParsedRequest,
     identityId: string,
-  ): Promise<string[]> {
+  ): Promise<{ skillIds: string[]; skillsContext: ISkillsContext | null }> {
     if (!this.skillsService || this.disableSkills) {
-      return [];
+      return { skillIds: [], skillsContext: null };
     }
+
+    const matchingStartTime = Date.now();
+    try {
+      let skillIds: string[] = [];
+      const matchScores = new Map<string, number>();
+      let totalAvailable = 0;
+
+      // 1. Explicit request-level override
+      if (request.skills?.length) {
+        skillIds = request.skills;
+        skillIds.forEach((id) => matchScores.set(id, 1.0));
+        totalAvailable = skillIds.length;
+      } // 2. Dynamic matching
+      else {
+        try {
+          const result = await this.performDynamicSkillMatching(request, identityId);
+
+          if (result.matches.length > 0) {
+            skillIds = result.matches.map((m) => m.skillId);
+            result.matches.forEach((m) => matchScores.set(m.skillId, m.confidence));
+            totalAvailable = result.totalAvailable;
+          } // 3. Fallback to blueprint defaults
+          else if (blueprint.defaultSkills?.length) {
+            skillIds = blueprint.defaultSkills;
+            skillIds.forEach((id) => matchScores.set(id, 0.5));
+            totalAvailable = skillIds.length;
+          }
+        } catch (error) {
+          console.warn("[AgentRunner] Skill matching failed or timed out, continuing without skills:", error);
+        }
+      }
+
+      // 4. Filtering
+      if (request.skipSkills?.length) {
+        const skip = request.skipSkills;
+        skillIds = skillIds.filter((id) => !skip.includes(id));
+      }
+
+      // 5. Hydration
+      const skillsContext = await this.hydrateSkills(
+        skillIds,
+        matchScores,
+        totalAvailable,
+        matchingStartTime,
+      );
+
+      // 6. Persistence
+      for (const skillId of skillIds) {
+        await this.skillsService.recordSkillUsage(skillId).catch(() => {});
+      }
+
+      return { skillIds, skillsContext };
+    } catch (error) {
+      console.error("[AgentRunner] Skill management critical failure:", error);
+      return { skillIds: [], skillsContext: null };
+    }
+  }
+
+  /**
+   * Perform dynamic skill matching with a 500ms timeout guard (Phase 70)
+   */
+  private async performDynamicSkillMatching(
+    request: IParsedRequest,
+    identityId: string,
+  ): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
+    const skillsConfig = this.config?.context?.config.get().skills;
+
+    const matchingPromise = this.skillsService!.matchSkills({
+      requestText: request.userPrompt,
+      keywords: this.extractKeywords(request.userPrompt),
+      taskType: request.taskType,
+      filePaths: request.filePaths,
+      tags: request.tags,
+      identityId,
+      contextBudgetChars: skillsConfig?.context_budget_chars,
+    });
+
+    let timeoutId: number | undefined;
+    const timeoutPromise = new Promise<{ matches: ISkillMatch[]; totalAvailable: number }>((_, reject) =>
+      timeoutId = setTimeout(() => reject(new Error("Skill matching timed out")), 500)
+    );
 
     try {
-      let skillsApplied: string[] = [];
-
-      // Step 1: Check for request-level explicit skills override
-      if (request.skills && request.skills.length > 0) {
-        // Use explicit skills from request
-        skillsApplied = request.skills;
-      } else {
-        // Step 2: Try trigger-based matching
-        const matchedSkills = await this.skillsService.matchSkills({
-          requestText: request.userPrompt,
-          keywords: this.extractKeywords(request.userPrompt),
-          taskType: request.taskType,
-          filePaths: request.filePaths,
-          tags: request.tags,
-          identityId,
-        });
-
-        if (matchedSkills.length > 0) {
-          skillsApplied = matchedSkills.map((m) => m.skillId);
-        } else if (blueprint.defaultSkills && blueprint.defaultSkills.length > 0) {
-          // Step 3: Fall back to blueprint default skills if no matches
-          skillsApplied = blueprint.defaultSkills;
-        }
+      return await Promise.race([matchingPromise, timeoutPromise]);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-
-      // Step 4: Filter out skipped skills
-      if (request.skipSkills && request.skipSkills.length > 0) {
-        skillsApplied = skillsApplied.filter((s) => !request.skipSkills!.includes(s));
-      }
-
-      if (skillsApplied.length > 0) {
-        // Record skill usage
-        for (const skillId of skillsApplied) {
-          await this.skillsService.recordSkillUsage(skillId);
-        }
-      }
-
-      return skillsApplied;
-    } catch (error) {
-      console.error("[AgentRunner] Skill matching failed:", error);
-      // Continue without skills - non-fatal error
-      return [];
     }
+  }
+
+  /**
+   * Hydrate skill IDs into full ISkillsContext for prompt injection
+   */
+  private async hydrateSkills(
+    skillIds: string[],
+    matchScores: Map<string, number>,
+    totalAvailable: number,
+    startTime: number,
+  ): Promise<ISkillsContext | null> {
+    if (skillIds.length === 0) return null;
+
+    const skillsFound = await Promise.all(
+      skillIds.map((id) => this.skillsService!.getSkill(id)),
+    );
+
+    const validSkills = skillsFound.filter((s): s is ISkill => s !== null);
+
+    return {
+      matched: validSkills.map((s) => ({
+        skillId: s.id,
+        title: s.name,
+        description: s.description,
+        content: s.instructions,
+        matchScore: matchScores.get(s.id) ?? 0.5,
+        tags: s.triggers.tags || [],
+      })),
+      totalAvailable,
+      retrievalLatencyMs: Date.now() - startTime,
+    };
   }
 
   /**

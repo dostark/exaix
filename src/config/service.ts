@@ -103,6 +103,11 @@ memoryGlobal = "${ExaPathDefaults.memoryGlobal}"
 [watcher]
 debounce_ms = 200
 stability_check = true
+
+[skills]
+max_per_request = 5
+match_threshold = 0.3
+inject_in_prompt = true
 `;
     Deno.writeTextFileSync(this.configPath, defaultConfig.trim());
     try {

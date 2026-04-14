@@ -39,6 +39,7 @@ Exaix enables secure, auditable multi-agent workflows with human-in-the-loop sup
 | **Blueprint**      | Reusable agent identity/persona definitions.                      |
 | **Portal**         | Symlink to external project repos for context.                    |
 | **Memory**         | Persistent vector store for agent recall/search. [cite:3][cite:4] |
+| **Skills**         | Procedural knowledge ("how-to") injected into agent prompts.      |
 
 ## Architecture Overview
 
