@@ -26,6 +26,9 @@ export const ACTIVITY_TABLE_SQL = `
     action_type TEXT NOT NULL,
     target TEXT,
     payload TEXT NOT NULL,
+    prompt_tokens INTEGER DEFAULT 0,
+    completion_tokens INTEGER DEFAULT 0,
+    cost_usd REAL DEFAULT 0.0,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_activity_trace ON activity(trace_id);
@@ -52,6 +55,9 @@ export function initTestDb(): Database {
       action_type TEXT NOT NULL,
       target TEXT,
       payload TEXT NOT NULL,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      cost_usd REAL DEFAULT 0.0,
       timestamp DATETIME DEFAULT (datetime('now'))
     );
   `);
@@ -144,11 +150,18 @@ export const PROVIDER_COSTS_TABLE_SQL = `
     provider TEXT NOT NULL,
     requests INTEGER NOT NULL DEFAULT 0,
     tokens INTEGER NOT NULL DEFAULT 0,
+    prompt_tokens INTEGER DEFAULT 0,
+    completion_tokens INTEGER DEFAULT 0,
+    model TEXT,
+    trace_id TEXT,
+    portal TEXT,
     estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
     timestamp DATETIME DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);
   CREATE INDEX IF NOT EXISTS idx_provider_costs_timestamp ON provider_costs(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_provider_costs_trace ON provider_costs(trace_id);
+  CREATE INDEX IF NOT EXISTS idx_provider_costs_portal ON provider_costs(portal);
 `;
 
 const ARTIFACT_STATUS_CHECK_VALUES = REVIEW_STATUS_VALUES.map((status) => `'${status}'`).join(", ");

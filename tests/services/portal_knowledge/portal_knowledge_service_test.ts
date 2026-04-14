@@ -77,7 +77,13 @@ function makeMockProvider(response = "## Architecture\n\nA test codebase."): {
     id: "mock",
     generate: (_prompt: string) => {
       calls++;
-      return Promise.resolve(response);
+      return Promise.resolve({
+        content: response,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
   return { provider, callCount: () => calls };
@@ -288,7 +294,13 @@ Deno.test(
         id: "slow",
         generate: () => {
           _bgAnalysisTriggered = true;
-          return Promise.resolve("# Overview updated");
+          return Promise.resolve({
+            content: "# Overview updated",
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "slow-model",
+            provider: "mock",
+            cost_usd: 0,
+          });
         },
       };
 
@@ -330,7 +342,13 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
       id: "tracking",
       generate: () => {
         refreshCallCount++;
-        return Promise.resolve("# Updated");
+        return Promise.resolve({
+          content: "# Updated",
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "tracking-model",
+          provider: "mock",
+          cost_usd: 0,
+        });
       },
     };
     const svc = new PortalKnowledgeService(

@@ -27,6 +27,7 @@ import type { IPlanAmendmentService } from "./i_plan_amendment_service.ts";
 import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
+import type { ICostTracker } from "./i_cost_tracker.ts";
 
 /**
  * Generic application context for dependency injection
@@ -94,6 +95,9 @@ export interface IApplicationContext {
 
   /** Configuration for portal knowledge analysis */
   portalKnowledgeConfig?: IPortalKnowledgeConfig;
+
+  /** Optional cost and token tracking service */
+  cost?: ICostTracker;
 }
 
 // Re-export types for convenience
@@ -101,6 +105,7 @@ export type {
   IArchiveService,
   IConfigService,
   IContextCardGeneratorService,
+  ICostTracker,
   IDatabaseService,
   IDisplayService,
   IFlowValidatorService,

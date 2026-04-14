@@ -22,6 +22,9 @@ export interface IDatabaseService {
     actorType?: string | null,
     identityId?: string | null,
     agentKind?: string | null,
+    promptTokens?: number,
+    completionTokens?: number,
+    costUsd?: number,
   ): void;
 
   /**

@@ -6,6 +6,7 @@
  * * @related-files [src/ai/provider_registry.ts]
  */
 import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
+import type { IGenerateResult } from "./common.ts";
 import type { IProviderFactory } from "../factories/abstract_provider_factory.ts";
 
 export class LazyProvider implements IModelProvider {
@@ -33,7 +34,7 @@ export class LazyProvider implements IModelProvider {
   /**
    * Delegate generate call to the lazily created instance
    */
-  async generate(prompt: string, options?: IModelOptions): Promise<string> {
+  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     const provider = await this.getInstance();
     return provider.generate(prompt, options);
   }

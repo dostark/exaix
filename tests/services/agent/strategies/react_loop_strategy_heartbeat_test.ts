@@ -11,6 +11,7 @@ import { EventBusService } from "../../../../src/services/observability/event_bu
 import type { IStreamingEvent } from "../../../../src/shared/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "../../../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "../../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../../src/ai/providers/common.ts";
 import { ExecutionStrategyName, SecurityMode } from "../../../../src/shared/enums.ts";
 import type {
   IAgentExecutionOptions,
@@ -31,6 +32,16 @@ import type { JSONValue } from "../../../../src/shared/types/json.ts";
 
 type TestToolParams = Record<string, JSONValue>;
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
+}
 
 const testBlueprint: IAgentFileBlueprint = {
   name: "heartbeat-agent",
@@ -81,6 +92,9 @@ function createBaseExecutor(bus?: EventBusService): ReActExecutor {
       tool_calls: 0,
       execution_time_ms: Date.now() - startTime,
     }),
+    logGeneration: async () => {
+      await Promise.resolve();
+    },
     toolRegistry: mockToolRegistry,
     eventBus: bus,
   };
@@ -106,9 +120,9 @@ Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running L
 
   const provider: IModelProvider = {
     id: "slow-provider",
-    async generate(_prompt: string): Promise<string> {
+    async generate(_prompt: string): Promise<IGenerateResult> {
       await Promise.resolve();
-      return generatePromise;
+      return generatePromise.then(makeResult);
     },
   };
 
@@ -147,9 +161,9 @@ Deno.test("ReActLoopStrategy: heartbeat should include step name and elapsed tim
 
   const provider: IModelProvider = {
     id: "slow-provider-2",
-    async generate(_prompt: string): Promise<string> {
+    async generate(_prompt: string): Promise<IGenerateResult> {
       await Promise.resolve();
-      return generatePromise;
+      return generatePromise.then(makeResult);
     },
   };
 
@@ -188,10 +202,10 @@ Deno.test("ReActLoopStrategy: timer should be cleared on success", async () => {
 
   const provider: IModelProvider = {
     id: "fast-provider",
-    generate(_prompt: string): Promise<string> {
-      return Promise.resolve(
+    generate(_prompt: string): Promise<IGenerateResult> {
+      return Promise.resolve(makeResult(
         `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Quick done`,
-      );
+      ));
     },
   };
 
@@ -209,7 +223,7 @@ Deno.test("ReActLoopStrategy: timer should be cleared on failure", async () => {
 
   const provider: IModelProvider = {
     id: "failing-provider",
-    generate(_prompt: string): Promise<string> {
+    generate(_prompt: string): Promise<IGenerateResult> {
       return Promise.reject(new Error("LLM call failed"));
     },
   };
@@ -233,10 +247,10 @@ Deno.test("ReActLoopStrategy: timer should be cleared on failure", async () => {
 Deno.test("ReActLoopStrategy: no bus means no heartbeat errors", async () => {
   const provider: IModelProvider = {
     id: "no-bus-provider",
-    generate(_prompt: string): Promise<string> {
-      return Promise.resolve(
+    generate(_prompt: string): Promise<IGenerateResult> {
+      return Promise.resolve(makeResult(
         `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
-      );
+      ));
     },
   };
 

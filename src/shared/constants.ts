@@ -141,9 +141,12 @@ export const DEFAULT_AGENT_MAX_ITERATIONS = 10;
 // Agent event names
 export const AGENT_EVENT_EXECUTION_STARTED = "agent.execution_started";
 export const AGENT_EVENT_EXECUTION_COMPLETED = "agent.execution_completed";
+export const AGENT_EVENT_EXECUTION_FAILED = "agent.execution_failed";
 export const AGENT_EVENT_OUTPUT = "agent.output";
 export const AGENT_EVENT_SECURITY_VIOLATION = "security.violation";
+export const AGENT_GENERATION_COMPLETED = "agent.generation_completed";
 
+export const AGENT_EXECUTOR_ID = "agent-executor";
 // Plan amendment event names (Phase 66)
 export const PLAN_AMENDMENT_EVENT_PROPOSED = "plan.amendment.proposed";
 export const PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL = "plan.amendment.awaiting_approval";
@@ -258,6 +261,7 @@ export const MOCK_OUTPUT_TOKENS = 200;
 
 // Default mock model name
 export const DEFAULT_MOCK_MODEL = "mock-model";
+export const DEFAULT_MOCK_PROVIDER_ID = "mock-provider";
 
 // Additional model names for schema defaults
 export const DEFAULT_FAST_MODEL_NAME = "gemini-flash-latest"; // Was mock-fast, now using recommended fast model name as default

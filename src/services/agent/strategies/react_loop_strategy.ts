@@ -39,6 +39,7 @@ interface IReActLoopExecutor {
   validateReviewResult: AgentExecutor["validateReviewResult"];
   parseAgentResponse: AgentExecutor["parseAgentResponse"];
   toolRegistry: AgentExecutor["toolRegistry"];
+  logGeneration: AgentExecutor["logGeneration"];
   eventBus?: IEventBusService;
 }
 
@@ -92,6 +93,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const startTime = Date.now();
     const history: Array<{ role: ReActRole; content: string }> = [];
     let toolCallCount = 0;
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
+    let totalCostUsd = 0;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
       // 1. Build prompt with history
@@ -104,8 +108,23 @@ export class ReActLoopStrategy implements IExecutionStrategy {
           max_tokens: REACT_DEFAULT_MAX_TOKENS,
         }));
 
+      // Log individual generation metrics (Phase 69)
+      await this.executor.logGeneration(
+        context.trace_id,
+        options.identity_id ?? "",
+        response.model,
+        response.provider,
+        response.usage,
+        response.cost_usd ?? 0,
+      );
+
+      // Accumulate metrics for the final result
+      totalPromptTokens += response.usage.promptTokens;
+      totalCompletionTokens += response.usage.completionTokens;
+      totalCostUsd += response.cost_usd ?? 0;
+
       // 3. Parse thought and actions
-      const { thought, actions, isComplete } = this.parseResponse(response);
+      const { thought, actions, isComplete } = this.parseResponse(response.content);
 
       if (thought) {
         history.push({ role: ReActRole.THOUGHT, content: thought });
@@ -114,7 +133,15 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
       if (isComplete) {
         // Agent signaled completion
-        const finalResult = this.createFinalResult(response, context, startTime, toolCallCount);
+        const finalResult = this.createFinalResult(response.content, context, startTime, toolCallCount);
+
+        // Attach accumulated usage (aggregated across all loop iterations)
+        finalResult.usage = {
+          prompt_tokens: totalPromptTokens,
+          completion_tokens: totalCompletionTokens,
+          cost_usd: totalCostUsd,
+        };
+
         return this.executor.validateReviewResult(finalResult);
       }
 

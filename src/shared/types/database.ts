@@ -36,6 +36,9 @@ export interface IActivityRecord {
   action_type: string;
   target: string | null;
   payload: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  cost_usd?: number;
   timestamp: string;
   count?: number;
 }
@@ -44,3 +47,29 @@ export interface IActivityRecord {
  * Supported parameter types for SQLite queries.
  */
 export type SqliteParam = string | number | boolean | null | Uint8Array;
+
+/**
+ * Record for tracking provider costs
+ */
+export interface IProviderCostRecord {
+  id: string;
+  provider: string;
+  model: string;
+  tokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  estimatedCostUsd: number;
+  traceId?: string;
+  portal?: string;
+  timestamp: Date;
+}
+
+/**
+ * Filter for querying cost records
+ */
+export interface ICostFilter {
+  traceId?: string;
+  portal?: string;
+  since?: Date;
+  model?: string;
+}

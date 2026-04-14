@@ -8,6 +8,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../../src/ai/providers/common.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
@@ -141,7 +142,7 @@ export function testProviderInitialization<T extends { id: string }>(
 /**
  * Test successful text generation.
  */
-export function testProviderGenerateSuccess<T extends { generate: (prompt: string) => Promise<string> }>(
+export function testProviderGenerateSuccess<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -155,7 +156,7 @@ export function testProviderGenerateSuccess<T extends { generate: (prompt: strin
 
     try {
       const result = await provider.generate("Hi");
-      assertEquals(result, expectedText);
+      assertEquals(result.content, expectedText);
     } finally {
       fetchStub.restore();
     }
@@ -165,7 +166,7 @@ export function testProviderGenerateSuccess<T extends { generate: (prompt: strin
 /**
  * Test API key header is sent correctly.
  */
-export function testProviderHeaders<T extends { generate: (prompt: string) => Promise<string> }>(
+export function testProviderHeaders<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -197,7 +198,7 @@ export function testProviderHeaders<T extends { generate: (prompt: string) => Pr
 /**
  * Test error handling for API errors.
  */
-export function testProviderErrorHandling<T extends { generate: (prompt: string) => Promise<string> }>(
+export function testProviderErrorHandling<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
 ): void {
@@ -223,7 +224,7 @@ export function testProviderErrorHandling<T extends { generate: (prompt: string)
  */
 
 export function testProviderOptionsMapping<
-  T extends { generate: (prompt: string, options?: JSONObject) => Promise<string> },
+  T extends { generate: (prompt: string, options?: JSONObject) => Promise<IGenerateResult> },
 >(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
@@ -264,7 +265,9 @@ export function testProviderOptionsMapping<
 /**
  * Test token usage reporting via EventLogger.
  */
-export function testProviderTokenUsage<T extends { generate: (prompt: string) => Promise<string>; id: string }>(
+export function testProviderTokenUsage<
+  T extends { generate: (prompt: string) => Promise<IGenerateResult>; id: string },
+>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -301,7 +304,7 @@ export function testProviderTokenUsage<T extends { generate: (prompt: string) =>
 /**
  * Test retry behavior on 429 rate limit.
  */
-export function testProviderRetryOn429<T extends { generate: (prompt: string) => Promise<string> }>(
+export function testProviderRetryOn429<T extends { generate: (prompt: string) => Promise<IGenerateResult> }>(
   name: string,
   createProvider: (options?: JSONObject, logger?: EventLogger) => T,
   responseConfig: IProviderResponseConfig,
@@ -322,7 +325,7 @@ export function testProviderRetryOn429<T extends { generate: (prompt: string) =>
 
     try {
       const result = await provider.generate("Hi");
-      assertEquals(result, "Success after retry");
+      assertEquals(result.content, "Success after retry");
       assertEquals(callCount, 2);
     } finally {
       fetchStub.restore();
@@ -337,7 +340,7 @@ export function testProviderRetryOn429<T extends { generate: (prompt: string) =>
 export function registerProviderTests<
   T extends {
     id: string;
-    generate: (prompt: string, options?: JSONObject) => Promise<string>;
+    generate: (prompt: string, options?: JSONObject) => Promise<IGenerateResult>;
   },
 >(config: ProviderTestSuiteConfig<T>): void {
   testProviderInitialization(config.name, config.createProvider, config.defaultId);

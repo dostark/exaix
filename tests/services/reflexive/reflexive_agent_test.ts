@@ -8,6 +8,7 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueQuality, CritiqueSeverity } from "../../../src/shared/enums.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import {
   createCodeReviewReflexiveAgent,
   createHighQualityReflexiveAgent,
@@ -259,13 +260,21 @@ Deno.test("[ReflexiveAgent] accumulates metrics across executions", async () => 
   let callCount = 0;
   const provider: IModelProvider = {
     id: "mock-provider",
-    generate: (): Promise<string> => {
+    generate: (): Promise<IGenerateResult> => {
       callCount++;
+      let content = "";
       if (callCount % 2 === 1) {
-        return Promise.resolve(makeXMLResponse("Test", "Response"));
+        content = makeXMLResponse("Test", "Response");
       } else {
-        return Promise.resolve(makeCritiqueJSON({ quality: CritiqueQuality.GOOD, confidence: 85, passed: true }));
+        content = makeCritiqueJSON({ quality: CritiqueQuality.GOOD, confidence: 85, passed: true });
       }
+      return Promise.resolve({
+        content,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
 

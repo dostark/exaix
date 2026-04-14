@@ -10,6 +10,7 @@ import type {
   IArchiveService,
   ICliApplicationContext,
   IContextCardGeneratorService,
+  ICostTracker,
   IFlowValidatorService,
   IMemoryBankService,
   IMemoryEmbeddingService,
@@ -128,6 +129,11 @@ export abstract class BaseCommand {
   protected get plans(): IPlanService {
     if (!this.context.plans) throw new Error("Plans service not initialized");
     return this.context.plans;
+  }
+
+  protected get cost(): ICostTracker {
+    if (!this.context.cost) throw new Error("Cost tracking service not initialized");
+    return this.context.cost;
   }
 
   /**

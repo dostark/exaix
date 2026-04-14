@@ -8,7 +8,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { DatabaseService } from "../../../src/services/core/db.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
@@ -99,6 +99,16 @@ Follow instructions
   }
 }
 
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
+}
+
 Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", async () => {
   await withSubjectPropagationEnv(async ({ workspaceDir, requestsDir, blueprintsDir, db, config }) => {
     // Mock LLM Response with a subject
@@ -106,7 +116,8 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
     const mockProviderRaw = {
       id: "mock",
       generate: () =>
-        Promise.resolve(`
+        Promise.resolve(
+          makeResult(`
 <thought>I should suggest a better subject.</thought>
 <content>
 {
@@ -121,6 +132,7 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
   ]
 }
 </content>`),
+        ),
     };
     const mockProvider = (mockProviderRaw as unknown) as IModelProvider;
 
@@ -185,7 +197,8 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
     const _mockProviderRaw = {
       id: "mock",
       generate: () =>
-        Promise.resolve(`
+        Promise.resolve(
+          makeResult(`
 <content>
 {
   "subject": "${agentSubject}",
@@ -193,6 +206,7 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
   "steps": [{"step": 1, "title": "S1", "description": "D1"}]
 }
 </content>`),
+        ),
     };
     const mockProvider = (_mockProviderRaw as unknown) as IModelProvider;
 

@@ -28,7 +28,7 @@ Deno.test("GoogleProvider: generate calls correct endpoint and extracts text con
 
   try {
     const result = await provider.generate("Hi Gemini");
-    assertEquals(result, "Hello! This is Gemini.");
+    assertEquals(result.content, "Hello! This is Gemini.");
 
     const call = fetchSpy.calls[0];
     const url = call.args[0] as string;

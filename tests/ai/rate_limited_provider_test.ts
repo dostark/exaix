@@ -9,9 +9,20 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { type Spy, spy } from "@std/testing/mock";
 import { RateLimitedProvider, RateLimitError } from "../../src/ai/rate_limited_provider.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
 import { PROVIDER_OPENAI } from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 50, completionTokens: 50, totalTokens: 100 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0.0001,
+  };
+}
 
 // ============================================================================
 // Test Fixtures
@@ -25,7 +36,7 @@ function createMockProvider(responses: string[] = ["response"]): IModelProvider 
   const generateSpy: Spy = spy((_prompt: string) => {
     const response = responses[callCount % responses.length];
     callCount++;
-    return response;
+    return Promise.resolve(makeResult(response));
   });
 
   return {
@@ -248,7 +259,7 @@ Deno.test("RateLimitedProvider: records cost via tracker using provider name", a
     const costTracker = new CostTracker(db);
     const mockProvider: IModelProvider = {
       id: "openai-gpt-4",
-      generate: spy(() => Promise.resolve("ok")),
+      generate: spy((): Promise<IGenerateResult> => Promise.resolve(makeResult("ok"))),
     };
 
     const rateLimited = new RateLimitedProvider(mockProvider, {
@@ -277,12 +288,16 @@ Deno.test("RateLimitedProvider: blocks when persistent budget exceeded", async (
   const { db, cleanup } = await initTestDbService();
   try {
     const costTracker = new CostTracker(db);
-    await costTracker.trackRequest(PROVIDER_OPENAI, 1000);
+    await costTracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
+      promptTokens: 500,
+      completionTokens: 500,
+      totalTokens: 1000,
+    });
     await costTracker.flush();
 
     const mockProvider: IModelProvider = {
       id: "openai-gpt-4",
-      generate: spy(() => Promise.resolve("ok")),
+      generate: spy((): Promise<IGenerateResult> => Promise.resolve(makeResult("ok"))),
     };
 
     const rateLimited = new RateLimitedProvider(mockProvider, {

@@ -8,7 +8,7 @@ import { LlmClient } from "../../src/ai/llm_client.ts";
 import type { IBlueprintFrontmatter } from "../../src/shared/schemas/blueprint.ts";
 import { McpToolName, ToolName } from "../../src/shared/enums.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
-import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "../../src/ai/types.ts";
 
 const mockIdentity: IBlueprintFrontmatter = {
   identity_id: "test",
@@ -36,10 +36,16 @@ class TestProvider implements IModelProvider {
 
   constructor(public mockResponse: string) {}
 
-  async generate(prompt: string): Promise<string> {
+  async generate(prompt: string): Promise<IGenerateResult> {
     this.lastPrompt = prompt;
     await Promise.resolve();
-    return this.mockResponse;
+    return {
+      content: this.mockResponse,
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "test-model",
+      provider: "mock",
+      cost_usd: 0,
+    };
   }
 }
 

@@ -21,7 +21,7 @@ Deno.test("MockProvider returns configured response", async () => {
 
   const result = await provider.generate("Any prompt here");
 
-  assertEquals(result, expectedResponse);
+  assertEquals(result.content, expectedResponse);
 });
 
 Deno.test("MockProvider has correct id", () => {
@@ -43,8 +43,8 @@ Deno.test("MockProvider ignores prompt content", async () => {
   const result1 = await provider.generate("First prompt");
   const result2 = await provider.generate("Different prompt");
 
-  assertEquals(result1, expectedResponse);
-  assertEquals(result2, expectedResponse);
+  assertEquals(result1.content, expectedResponse);
+  assertEquals(result2.content, expectedResponse);
 });
 
 // ============================================================================
@@ -99,7 +99,7 @@ Deno.test("OllamaProvider sends correct JSON payload to /api/generate", async ()
     assertEquals(options.num_predict, 100);
 
     // Verify response is parsed correctly
-    assertEquals(result, "Test response from Ollama");
+    assertEquals(result.content, "Test response from Ollama");
   } finally {
     // Restore original fetch
     globalThis.fetch = originalFetch;
@@ -203,7 +203,7 @@ Deno.test("ModelFactory passes config to providers", async () => {
 
   assertEquals(provider.id, "custom-id");
   const result = await provider.generate("test");
-  assertEquals(result, customResponse);
+  assertEquals(result.content, customResponse);
 });
 
 // ============================================================================
@@ -344,7 +344,7 @@ Deno.test("MockProvider handles empty prompt", async () => {
   const provider = new MockProvider("response");
   const result = await provider.generate("");
 
-  assertEquals(result, "response");
+  assertEquals(result.content, "response");
 });
 
 Deno.test("OllamaProvider handles empty prompt", async () => {

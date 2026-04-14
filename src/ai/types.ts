@@ -19,6 +19,9 @@ export interface IModelOptions {
   stream?: boolean;
 }
 
+import type { IGenerateResult } from "./providers/common.ts";
+export type { IGenerateResult };
+
 /**
  * Standard interface that all model providers must implement.
  */
@@ -30,9 +33,9 @@ export interface IModelProvider {
    * Generate a response from the model.
    * @param prompt The input prompt to send to the model
    * @param options Optional generation parameters
-   * @returns The generated text response
+   * @returns The generated response payload
    */
-  generate(prompt: string, options?: IModelOptions): Promise<string>;
+  generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
 }
 
 /**

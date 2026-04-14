@@ -18,6 +18,7 @@ import { FlowCommands } from "./commands/flow_commands.ts";
 import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
 import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
+import { CostCommands } from "./commands/cost_commands.ts";
 import {
   FlowInputSource,
   type MemoryBankSource,
@@ -89,6 +90,8 @@ const CLI_LIMIT_HELP = "Maximum results";
 const DISPLAY_CATEGORY_BLUEPRINTS = "blueprints";
 const CLI_CMD_SHOW_ID = "show <id>";
 const CLI_OPTION_REASON = "-r, --reason <reason:string>";
+const CLI_OPTION_MODEL = "-m, --model <model:string>";
+const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
 
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -307,7 +310,7 @@ export const __test_command = new Command()
       })
       .option("--portal <portal:string>", "Portal alias for context")
       .option("--target-branch <branch:string>", "Target branch for this request (portal-aware)")
-      .option("-m, --model <model:string>", "Named model configuration")
+      .option(CLI_OPTION_MODEL, "Named model configuration")
       .option("--flow <flow:string>", "Target multi-agent flow (mutually exclusive with --identity)")
       .option("--skills <skills:string>", "Comma-separated list of skills to inject")
       .option("-s, --subject <subject:string>", "Human-readable subject for the request")
@@ -1459,7 +1462,7 @@ export const __test_command = new Command()
         "search <query:string>",
         new Command()
           .description("Search across all memory banks")
-          .option("-p, --portal <portal:string>", "Filter by portal")
+          .option(CLI_OPTION_PORTAL, "Filter by portal")
           .option("-t, --tags <tags:string>", "Filter by tags (comma-separated)")
           .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
           .option("-e, --use-embeddings", "Use embedding-based semantic search")
@@ -1513,7 +1516,7 @@ export const __test_command = new Command()
         "execution",
         new Command()
           .description("Execution history operations")
-          .option("-p, --portal <portal:string>", "Filter by portal")
+          .option(CLI_OPTION_PORTAL, "Filter by portal")
           .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
           .action(async (options) => {
@@ -1529,7 +1532,7 @@ export const __test_command = new Command()
             RequestOperation.LIST,
             new Command()
               .description("List execution history")
-              .option("-p, --portal <portal:string>", "Filter by portal")
+              .option(CLI_OPTION_PORTAL, "Filter by portal")
               .option(CLI_LIMIT_OPTION, CLI_LIMIT_HELP, { default: 20 })
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
               .action(async (options) => {
@@ -1783,6 +1786,23 @@ const journalCommand = new Command()
     await cmd.show(options as IJournalCommandOptions);
   });
 
+const costCommand = new Command()
+  .description("Display aggregated cost reports")
+  .option("-t, --trace-id <id:string>", "Filter by trace ID")
+  .option(CLI_OPTION_PORTAL, "Filter by portal alias")
+  .option("-s, --since <date:string>", "Filter by date (ISO string)")
+  .option(CLI_OPTION_MODEL, "Filter by model")
+  .action(async (options) => {
+    const cmd = new CostCommands(context);
+    await cmd.show(options);
+  });
+
+const logCommand = new Command()
+  .description("Access system logs, activity journal and cost tracking")
+  .command("journal", journalCommand)
+  .command("cost", costCommand);
+
+__test_command.command("log", logCommand);
 __test_command.command("journal", journalCommand);
 
 // ---------------------------------------------------------------------------

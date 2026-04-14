@@ -6,6 +6,7 @@
 
 import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
@@ -45,11 +46,20 @@ export function createMockProvider(
 ): IModelProvider {
   return {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: async (prompt: string): Promise<IGenerateResult> => {
+      let content: string;
       if (typeof logic === "function") {
-        return Promise.resolve(logic(prompt));
+        content = await logic(prompt);
+      } else {
+        content = logic;
       }
-      return Promise.resolve(logic);
+      return {
+        content,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      };
     },
   };
 }

@@ -2128,6 +2128,9 @@ class MockDatabaseService {
       identity_id: null,
       agent_kind: null,
       target: null,
+      prompt_tokens: 0,
+      completion_tokens: 0,
+      cost_usd: 0,
     }));
   }
 

@@ -29,6 +29,9 @@ interface LogEntry {
   actionType: string;
   target: string | null;
   payload: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd: number;
   timestamp: string;
 }
 
@@ -43,6 +46,9 @@ export const ActivityRecordSchema = z.object({
   action_type: z.string(),
   target: z.string().nullable(),
   payload: z.string(),
+  prompt_tokens: z.number().int().min(0).optional().default(0),
+  completion_tokens: z.number().int().min(0).optional().default(0),
+  cost_usd: z.number().min(0).optional().default(0),
   timestamp: z.string(),
   count: z.number().optional(),
 });
@@ -112,6 +118,9 @@ export class DatabaseService implements IDatabaseService {
     actorType?: string | null,
     identityId?: string | null,
     agentKind?: string | null,
+    promptTokens?: number,
+    completionTokens?: number,
+    costUsd?: number,
   ): void {
     if (this.isClosing) {
       console.warn("Cannot log activity: DatabaseService is closing");
@@ -128,6 +137,9 @@ export class DatabaseService implements IDatabaseService {
       actionType,
       target,
       payload: JSON.stringify(payload),
+      promptTokens: promptTokens || 0,
+      completionTokens: completionTokens || 0,
+      costUsd: costUsd || 0,
       timestamp: new Date().toISOString(),
     };
 
@@ -260,8 +272,8 @@ export class DatabaseService implements IDatabaseService {
         this.retryTransaction(() => {
           for (const entry of batch) {
             this.db.exec(
-              `INSERT INTO activity (id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
+              `INSERT INTO activity (id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )`,
               [
                 entry.activityId ?? null,
                 entry.traceId ?? null,
@@ -272,6 +284,9 @@ export class DatabaseService implements IDatabaseService {
                 entry.actionType ?? null,
                 entry.target ?? null,
                 entry.payload ?? null,
+                entry.promptTokens ?? 0,
+                entry.completionTokens ?? 0,
+                entry.costUsd ?? 0,
                 entry.timestamp ?? null,
               ],
             );
@@ -331,7 +346,7 @@ export class DatabaseService implements IDatabaseService {
     value: string,
   ): Promise<ActivityRecord[]> {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp
+      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE ${field} = ?
        ORDER BY timestamp`,
@@ -356,7 +371,7 @@ export class DatabaseService implements IDatabaseService {
    */
   getActivitiesByTrace(traceId: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp
+      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE trace_id = ?
        ORDER BY timestamp`,
@@ -378,7 +393,7 @@ export class DatabaseService implements IDatabaseService {
    */
   getActivitiesByActionType(actionType: string): ActivityRecord[] {
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp
+      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        WHERE action_type = ?
        ORDER BY timestamp`,
@@ -402,7 +417,7 @@ export class DatabaseService implements IDatabaseService {
     await this.flushPendingLogs("getRecentActivity");
 
     const stmt = this.db.prepare(
-      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp
+      `SELECT id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp
        FROM activity
        ORDER BY timestamp DESC
        LIMIT ?`,
@@ -429,7 +444,7 @@ export class DatabaseService implements IDatabaseService {
       selectClause += `action_type, COUNT(*) as count`;
     } else {
       selectClause +=
-        `id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, timestamp`;
+        `id, trace_id, actor, actor_type, identity_id, agent_kind, action_type, target, payload, prompt_tokens, completion_tokens, cost_usd, timestamp`;
     }
 
     // Build WHERE clause

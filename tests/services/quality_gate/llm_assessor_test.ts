@@ -18,6 +18,7 @@ import {
 import { QualityGateMode } from "../../../src/shared/enums.ts";
 import { LlmQualityAssessor } from "../../../src/services/quality_gate/llm_assessor.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -88,9 +89,15 @@ Deno.test("[LlmQualityAssessor] passes request text in prompt", async () => {
   let capturedPrompt = "";
   const capturingProvider: IModelProvider = {
     id: "capturing",
-    generate: (prompt: string): Promise<string> => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(makeValidLlmResponse());
+      return Promise.resolve({
+        content: makeValidLlmResponse(),
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "m",
+        provider: "p",
+        cost_usd: 0,
+      });
     },
   };
 

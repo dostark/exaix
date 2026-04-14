@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import type { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
 import { LazyProvider } from "../../src/ai/providers/lazy_provider.ts";
 import { ProviderType } from "../../src/shared/enums.ts";
-import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../../src/ai/types.ts";
+import type { IGenerateResult, IModelOptions, IModelProvider, IResolvedProviderOptions } from "../../src/ai/types.ts";
 
 Deno.test("LazyProvider: derives id from constructor arg > options.id > provider-model", () => {
   const factory: IProviderFactory = {
@@ -44,9 +44,15 @@ Deno.test("LazyProvider: initializes underlying provider only once", async () =>
 
   const underlying: IModelProvider = {
     id: "underlying",
-    generate: (prompt: string, options?: IModelOptions) => {
+    generate: (prompt: string, options?: IModelOptions): Promise<IGenerateResult> => {
       generateCalls.push({ prompt, options });
-      return Promise.resolve(`out:${prompt}`);
+      return Promise.resolve({
+        content: `out:${prompt}`,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "m",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
 
@@ -68,8 +74,8 @@ Deno.test("LazyProvider: initializes underlying provider only once", async () =>
   const out1 = await lazy.generate("a", { temperature: 0 });
   const out2 = await lazy.generate("b");
 
-  assertEquals(out1, "out:a");
-  assertEquals(out2, "out:b");
+  assertEquals(out1.content, "out:a");
+  assertEquals(out2.content, "out:b");
   assertEquals(createCalls, 1);
   assertEquals(createdWith[0], opts);
   assertEquals(generateCalls.length, 2);

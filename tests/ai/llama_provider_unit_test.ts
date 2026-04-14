@@ -35,7 +35,7 @@ Deno.test("LlamaProvider: generate handles JSON extraction from response", async
 
   try {
     const result = await provider.generate("Hi");
-    assertEquals(result, '{"id": "test"}');
+    assertEquals(result.content, '{"id": "test"}');
   } finally {
     restore();
   }
@@ -52,7 +52,7 @@ Deno.test("LlamaProvider: generate handles raw response backup", async () => {
 
   try {
     const result = await provider.generate("Hi");
-    assertEquals(result, "This is not JSON at all.");
+    assertEquals(result.content, "This is not JSON at all.");
   } finally {
     restore();
   }
@@ -69,7 +69,7 @@ Deno.test("LlamaProvider: generate handles partial JSON object extraction", asyn
 
   try {
     const result = await provider.generate("Hi");
-    assertEquals(result, '{"key": "value"}');
+    assertEquals(result.content, '{"key": "value"}');
   } finally {
     restore();
   }

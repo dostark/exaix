@@ -22,6 +22,7 @@ import { createOutputValidator } from "../../src/services/tool/output_validator.
 import { RequestAnalysisComplexity, RequestTaskType } from "../../src/shared/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IRequestAnalysis } from "../../src/shared/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
@@ -106,9 +107,15 @@ Deno.test("[E2E] Gap 1: reflexive agent enhanced critique with goals", async () 
   let capturedPrompt = "";
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(VALID_CRITIQUE_JSON);
+      return Promise.resolve({
+        content: VALID_CRITIQUE_JSON,
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
 
@@ -160,10 +167,10 @@ Deno.test("[E2E] Gap 2: memory context feeds into analysis", async () => {
 
   const provider: IModelProvider = {
     id: "mock",
-    generate: (prompt: string) => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve(
-        JSON.stringify({
+      return Promise.resolve({
+        content: JSON.stringify({
           goals: [{ description: "Fix bug", explicit: true, priority: 1 }],
           requirements: [],
           constraints: [],
@@ -180,7 +187,11 @@ Deno.test("[E2E] Gap 2: memory context feeds into analysis", async () => {
             mode: AnalysisMode.LLM,
           },
         }),
-      );
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "mock-model",
+        provider: "mock",
+        cost_usd: 0,
+      });
     },
   };
 

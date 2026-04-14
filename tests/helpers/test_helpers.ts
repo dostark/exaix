@@ -10,6 +10,7 @@ import type { ActivityRepository } from "../../src/repositories/activity_reposit
 import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
 import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
@@ -143,12 +144,27 @@ export function createStubConfig(config: Config): IConfigService {
 }
 
 /**
+ * Build a minimal IGenerateResult from a content string.
+ * Convenience helper for test stubs.
+ */
+export function makeGenerateResult(content: string, overrides: Partial<IGenerateResult> = {}): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "mock-model",
+    provider: "mock-provider",
+    cost_usd: 0,
+    ...overrides,
+  };
+}
+
+/**
  * Create a stub IModelProvider for tests.
  */
-export function createStubProvider(): IModelProvider {
+export function createStubProvider(responseContent = "Mock response"): IModelProvider {
   return {
     id: "mock-provider",
-    generate: () => Promise.resolve("Mock response"),
+    generate: () => Promise.resolve(makeGenerateResult(responseContent)),
   };
 }
 

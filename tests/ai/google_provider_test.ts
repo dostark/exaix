@@ -7,10 +7,11 @@
 
 import { assertStringIncludes } from "@std/assert";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { googleResponseConfig, registerProviderTests, spyFetch } from "./helpers/provider_test_helper.ts";
 
 // Register all standard provider tests with Google-specific body extractor
-registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({
+registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGenerateResult> }>({
   name: "GoogleProvider",
   createProvider: (options, logger) => new GoogleProvider({ apiKey: "test-key", ...options, logger }),
   defaultId: "google-gemini-flash-latest",

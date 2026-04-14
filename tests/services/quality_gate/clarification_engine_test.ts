@@ -17,6 +17,7 @@ import {
 } from "../../../src/shared/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "../../../src/shared/schemas/request_specification.ts";
 import { ClarificationEngine } from "../../../src/services/quality_gate/clarification_engine.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -231,7 +232,7 @@ Deno.test("[ClarificationEngine] supports user cancellation", () => {
 Deno.test("[ClarificationEngine] handles LLM failure in question generation", async () => {
   const failingProvider = {
     id: "failing",
-    generate: (_prompt: string): Promise<string> => Promise.reject(new Error("LLM unavailable")),
+    generate: (_prompt: string): Promise<IGenerateResult> => Promise.reject(new Error("LLM unavailable")),
   };
 
   const engine = new ClarificationEngine(failingProvider, createOutputValidator({}), { maxRounds: 3 });

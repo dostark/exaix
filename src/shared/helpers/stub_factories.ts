@@ -9,6 +9,7 @@
 
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import type { IModelProvider } from "../../ai/types.ts";
+import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { GitBranchName } from "../../shared/enums.ts";
 
 /**
@@ -42,7 +43,14 @@ export function createGitServiceStub(overrides: Partial<IGitService> = {}): IGit
 export function createProviderStub(overrides: Partial<IModelProvider> = {}): IModelProvider {
   const base: IModelProvider = {
     id: "stub-provider",
-    generate: () => Promise.resolve(""),
+    generate: (): Promise<IGenerateResult> =>
+      Promise.resolve({
+        content: "",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "stub-model",
+        provider: "stub-provider",
+        cost_usd: 0,
+      }),
   };
   return { ...base, ...overrides };
 }

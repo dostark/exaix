@@ -28,6 +28,7 @@ import {
   AgentExecutor,
   type IAgentFileBlueprint,
 } from "../../../src/services/agent/agent_executor.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IWorkspaceExecutionContext } from "../../../src/services/portal/workspace_execution_context.ts";
 import { stub } from "@std/testing/mock";
@@ -1841,9 +1842,15 @@ Deno.test({
 
       const mockProvider: IModelProvider = {
         id: "mock",
-        generate: async (): Promise<string> => {
+        generate: async (): Promise<IGenerateResult> => {
           await Promise.resolve();
-          return `Here is the result \`\`\`json\n${JSON.stringify(mockResult)}\n\`\`\``;
+          return {
+            content: `Here is the result \`\`\`json\n${JSON.stringify(mockResult)}\n\`\`\``,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
         },
       };
 
@@ -2055,7 +2062,7 @@ Deno.test({
     const { db, logger, pathResolver, permissions } = getServices();
     const mockProvider: IModelProvider = {
       id: "mock-error",
-      generate: (): Promise<string> => Promise.reject(new Error("Provider synthetic failure")),
+      generate: (): Promise<IGenerateResult> => Promise.reject(new Error("Provider synthetic failure")),
     };
 
     try {
@@ -2102,9 +2109,15 @@ Deno.test({
     // Provide a response with just plain text, no {} at all
     const mockProvider: IModelProvider = {
       id: "mock-plaintext",
-      generate: async (): Promise<string> => {
+      generate: async (): Promise<IGenerateResult> => {
         await Promise.resolve();
-        return "I did absolutely nothing. No json.";
+        return {
+          content: "I did absolutely nothing. No json.",
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        };
       },
     };
 
@@ -2153,9 +2166,15 @@ Deno.test({
     // Provide a JSON-like response but invalid formatting
     const mockProvider: IModelProvider = {
       id: "mock-badjson",
-      generate: async (): Promise<string> => {
+      generate: async (): Promise<IGenerateResult> => {
         await Promise.resolve();
-        return `\`\`\`json\n{ "branch": "test", "missing_quotes: true }\n\`\`\``;
+        return {
+          content: `\`\`\`json\n{ "branch": "test", "missing_quotes: true }\n\`\`\``,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        };
       },
     };
 

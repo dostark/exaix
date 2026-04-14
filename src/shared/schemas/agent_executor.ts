@@ -82,6 +82,11 @@ export const ChangesetResultSchema = z.object({
   unauthorized_changes: z.array(z.string()).optional().describe(
     "Files modified outside MCP tools (hybrid mode audit)",
   ),
+  usage: z.object({
+    prompt_tokens: z.number().int().nonnegative(),
+    completion_tokens: z.number().int().nonnegative(),
+    cost_usd: z.number().nonnegative(),
+  }).optional().describe("LLM usage metrics (Phase 69)"),
 });
 export type IChangesetResult = z.infer<typeof ChangesetResultSchema>;
 

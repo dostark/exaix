@@ -84,7 +84,8 @@ export class ArchitectureInferrer {
 
     let raw: string;
     try {
-      raw = await this._provider.generate(prompt, options);
+      const result = await this._provider.generate(prompt, options);
+      raw = result.content;
     } catch {
       return "";
     }

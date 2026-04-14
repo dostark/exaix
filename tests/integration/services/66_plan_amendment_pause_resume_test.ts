@@ -11,7 +11,7 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentPatch } from "../../../src/shared/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
@@ -21,6 +21,16 @@ import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts"
  */
 function castTo<T>(val: unknown): T {
   return val as T;
+}
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
 }
 
 Deno.test("PlanExecutor pauses execution when amendment is proposed", async () => {
@@ -35,13 +45,17 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
 
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
-        Promise.resolve(JSON.stringify({
-          summary: "Amendment required due to tool failure",
-          affectedRemainingStepIds: ["2", "3"],
-          adds: [],
-          updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
-          removes: ["3"],
-        })),
+        Promise.resolve(
+          makeResult(
+            JSON.stringify({
+              summary: "Amendment required due to tool failure",
+              affectedRemainingStepIds: ["2", "3"],
+              adds: [],
+              updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
+              removes: ["3"],
+            }),
+          ),
+        ),
     });
 
     const mockScorer = castTo<ConfidenceScorer>({
@@ -120,13 +134,17 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
 
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
-        Promise.resolve(JSON.stringify({
-          summary: "Test amendment",
-          affectedRemainingStepIds: ["2"],
-          adds: [],
-          updates: [],
-          removes: [],
-        })),
+        Promise.resolve(
+          makeResult(
+            JSON.stringify({
+              summary: "Test amendment",
+              affectedRemainingStepIds: ["2"],
+              adds: [],
+              updates: [],
+              removes: [],
+            }),
+          ),
+        ),
     });
 
     const mockScorer = castTo<ConfidenceScorer>({
@@ -259,7 +277,7 @@ Deno.test("PlanExecutor does not trigger amendment when disabled", async () => {
     });
 
     const mockLLM = castTo<IModelProvider>({
-      generate: () => Promise.resolve("Step completed"),
+      generate: () => Promise.resolve(makeResult("Step completed")),
     });
 
     const mockScorer = castTo<ConfidenceScorer>({

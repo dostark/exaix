@@ -37,6 +37,8 @@ import type { IRequestQualityGateService } from "../../src/shared/interfaces/i_r
 import { QualityGateMode } from "../../src/shared/enums.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { MockStrategy } from "../../src/shared/enums.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
+import type { IModelProvider } from "../../src/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
 import { join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
@@ -285,10 +287,10 @@ Deno.test("Quality Gate E2E – pipeline integration", async (t) => {
         // Provider that always rejects — simulates network/service outage.
         const unavailableProvider = {
           id: "unavailable",
-          generate(_prompt: string): Promise<string> {
+          generate(_prompt: string): Promise<IGenerateResult> {
             return Promise.reject(new Error("LLM service unavailable"));
           },
-        };
+        } as IModelProvider;
 
         const hybridGate = new RequestQualityGate(
           {

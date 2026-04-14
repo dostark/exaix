@@ -7,10 +7,11 @@
 
 import { assertEquals } from "@std/assert";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { openaiResponseConfig, registerProviderTests, spyFetch } from "./helpers/provider_test_helper.ts";
 
 // Register all standard provider tests
-registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({
+registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGenerateResult> }>({
   name: "OpenAIProvider",
   createProvider: (options, logger) => new OpenAIProvider({ apiKey: "test-key", ...options, logger }),
   defaultId: "openai-gpt-5-mini",

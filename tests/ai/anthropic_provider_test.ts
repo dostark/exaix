@@ -6,10 +6,11 @@
  */
 
 import { AnthropicProvider } from "../../src/ai/providers/anthropic_provider.ts";
+import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { anthropicResponseConfig, registerProviderTests } from "./helpers/provider_test_helper.ts";
 
 // Register all standard provider tests
-registerProviderTests<{ id: string; generate: (prompt: string) => Promise<string> }>({
+registerProviderTests<{ id: string; generate: (prompt: string) => Promise<IGenerateResult> }>({
   name: "AnthropicProvider",
   createProvider: (options, logger) => new AnthropicProvider({ apiKey: "test-key", ...options, logger }),
   defaultId: "anthropic-claude-haiku-4-5-20251001",

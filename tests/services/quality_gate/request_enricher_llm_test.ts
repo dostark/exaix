@@ -10,6 +10,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import {
   type IRequestQualityIssue,
   RequestQualityIssueSeverity,
@@ -57,9 +58,15 @@ Deno.test("[RequestEnricherLlm] includes issues in prompt", async () => {
   let capturedPrompt = "";
   const capturingProvider: IModelProvider = {
     id: "capturing",
-    generate: (prompt: string): Promise<string> => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve("Improved: implement proper JWT login flow");
+      return Promise.resolve({
+        content: "Improved: implement proper JWT login flow",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "m",
+        provider: "p",
+        cost_usd: 0,
+      });
     },
   };
 
@@ -73,7 +80,7 @@ Deno.test("[RequestEnricherLlm] includes issues in prompt", async () => {
 Deno.test("[RequestEnricherLlm] falls back to original on LLM failure", async () => {
   const failingProvider: IModelProvider = {
     id: "failing",
-    generate: (_prompt: string): Promise<string> => {
+    generate: (_prompt: string): Promise<IGenerateResult> => {
       return Promise.reject(new Error("LLM unavailable"));
     },
   };
@@ -89,9 +96,15 @@ Deno.test("[RequestEnricherLlm] includes original body in prompt", async () => {
   let capturedPrompt = "";
   const capturingProvider: IModelProvider = {
     id: "capturing",
-    generate: (prompt: string): Promise<string> => {
+    generate: (prompt: string): Promise<IGenerateResult> => {
       capturedPrompt = prompt;
-      return Promise.resolve("Implement proper authentication");
+      return Promise.resolve({
+        content: "Implement proper authentication",
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        model: "m",
+        provider: "p",
+        cost_usd: 0,
+      });
     },
   };
 

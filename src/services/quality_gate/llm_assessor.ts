@@ -91,7 +91,8 @@ export class LlmQualityAssessor {
 
     try {
       const prompt = ASSESSMENT_PROMPT_TEMPLATE.replace("{requestText}", requestText);
-      const raw = await this.provider.generate(prompt);
+      const result = await this.provider.generate(prompt);
+      const raw = result.content;
       const validation = this.validator.validate(raw, LlmAssessmentResponseSchema);
 
       if (validation.success && validation.value) {

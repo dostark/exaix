@@ -14,6 +14,7 @@ import {
 import { join } from "@std/path";
 import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { MockProvider } from "../../../src/ai/providers.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
@@ -146,9 +147,10 @@ You are a test agent.
 
     // Let's create a SmartMockProvider for this test
     class SmartMockProvider extends MockProvider {
-      override generate(prompt: string): Promise<string> {
+      override generate(prompt: string): Promise<IGenerateResult> {
+        let content = "";
         if (prompt.includes("CURRENT TASK:\nStep 1")) {
-          return Promise.resolve(`
+          content = `
 \`\`\`toml
 [[actions]]
 tool = "write_file"
@@ -156,9 +158,9 @@ tool = "write_file"
 path = "step1.txt"
 content = "Step 1"
 \`\`\`
-`);
+`;
         } else if (prompt.includes("CURRENT TASK:\nStep 2")) {
-          return Promise.resolve(`
+          content = `
 \`\`\`toml
 [[actions]]
 tool = "write_file"
@@ -166,9 +168,15 @@ tool = "write_file"
 path = "step2.txt"
 content = "Step 2"
 \`\`\`
-`);
+`;
         }
-        return Promise.resolve("");
+        return Promise.resolve({
+          content,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "smart-mock",
+          provider: "mock",
+          cost_usd: 0,
+        });
       }
     }
 

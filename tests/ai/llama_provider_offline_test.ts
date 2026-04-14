@@ -53,7 +53,7 @@ Deno.test("LlamaProvider: returns JSON extracted from markdown code block", asyn
     });
 
     const out = await provider.generate(TEST_LLAMAPROVIDER_PROMPT);
-    assertEquals(out, TEST_LLAMAPROVIDER_JSON_BODY);
+    assertEquals(out.content, TEST_LLAMAPROVIDER_JSON_BODY);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -78,7 +78,7 @@ Deno.test("LlamaProvider: extracts JSON object from surrounding text", async () 
     });
 
     const out = await provider.generate(TEST_LLAMAPROVIDER_PROMPT);
-    assertEquals(out, TEST_LLAMAPROVIDER_JSON_BODY);
+    assertEquals(out.content, TEST_LLAMAPROVIDER_JSON_BODY);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -101,7 +101,7 @@ Deno.test("LlamaProvider: returns raw response when JSON parsing fails", async (
     });
 
     const out = await provider.generate(TEST_LLAMAPROVIDER_PROMPT);
-    assertEquals(out, raw);
+    assertEquals(out.content, raw);
   } finally {
     globalThis.fetch = originalFetch;
   }

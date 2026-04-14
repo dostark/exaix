@@ -158,6 +158,9 @@ Deno.test("MonitorView - does not fetch when paused", async () => {
         action_type: String(a.action_type ?? "unknown"),
         target: (a.target as string | null) ?? null,
         payload: typeof a.payload === "string" ? a.payload : JSON.stringify(a.payload ?? {}),
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        cost_usd: 0,
         timestamp: String(a.timestamp ?? new Date().toISOString()),
         count: typeof a.count === "number" ? (a.count as number) : undefined,
       }));

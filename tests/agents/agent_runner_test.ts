@@ -14,6 +14,7 @@ import type { ISkillsService } from "../../src/shared/interfaces/i_skills_servic
 import type { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "../../src/shared/schemas/memory_bank.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "../../src/shared/enums.ts";
+import type { IGenerateResult } from "../../src/ai/types.ts";
 
 // ============================================================================
 // Test Fixtures
@@ -60,7 +61,7 @@ Deno.test("AgentRunner combines System Prompt and User Request correctly", async
 
   // Wrap the generate method to capture the prompt
   const originalGenerate = mockProvider.generate.bind(mockProvider);
-  mockProvider.generate = async (prompt: string) => {
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
     capturedPrompt = prompt;
     return await originalGenerate(prompt);
   };
@@ -78,7 +79,7 @@ Deno.test("AgentRunner formats combined prompt correctly", async () => {
 
   const mockProvider = new MockProvider(wellFormedResponse);
   const originalGenerate = mockProvider.generate.bind(mockProvider);
-  mockProvider.generate = async (prompt: string) => {
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
     capturedPrompt = prompt;
     return await originalGenerate(prompt);
   };
@@ -100,7 +101,7 @@ Deno.test("AgentRunner injects portal context when provided", async () => {
 
   const mockProvider = new MockProvider(wellFormedResponse);
   const originalGenerate = mockProvider.generate.bind(mockProvider);
-  mockProvider.generate = async (prompt: string) => {
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
     capturedPrompt = prompt;
     return await originalGenerate(prompt);
   };
@@ -130,7 +131,7 @@ Deno.test("AgentRunner calls modelProvider.generate", async () => {
 
   const mockProvider = new MockProvider(wellFormedResponse);
   const originalGenerate = mockProvider.generate.bind(mockProvider);
-  mockProvider.generate = async (prompt: string) => {
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
     generateCalled = true;
     return await originalGenerate(prompt);
   };
@@ -145,9 +146,15 @@ Deno.test("AgentRunner passes complete prompt to modelProvider.generate", async 
   let receivedPrompt = "";
 
   const mockProvider = new MockProvider(wellFormedResponse);
-  mockProvider.generate = async (prompt: string) => {
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
     receivedPrompt = prompt;
-    return await Promise.resolve(wellFormedResponse);
+    return await Promise.resolve({
+      content: wellFormedResponse,
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      model: "mock-model",
+      provider: "mock",
+      cost_usd: 0,
+    });
   };
 
   const runner = new AgentRunner(mockProvider);
@@ -451,7 +458,7 @@ Deno.test("AgentRunner can be reused for multiple runs", async () => {
 
 Deno.test("AgentRunner handles provider errors gracefully", async () => {
   const errorProvider = new MockProvider(wellFormedResponse);
-  errorProvider.generate = () => {
+  errorProvider.generate = (): Promise<IGenerateResult> => {
     return Promise.reject(new Error("API Error: Rate limit exceeded"));
   };
 
@@ -473,7 +480,7 @@ Deno.test("AgentRunner handles provider errors gracefully", async () => {
 
 Deno.test("AgentRunner handles network timeout errors", async () => {
   const timeoutProvider = new MockProvider(wellFormedResponse);
-  timeoutProvider.generate = () => {
+  timeoutProvider.generate = (): Promise<IGenerateResult> => {
     throw new Error("Network timeout");
   };
 
@@ -493,7 +500,7 @@ Deno.test("AgentRunner handles network timeout errors", async () => {
 
 Deno.test("AgentRunner handles JSON parse errors", async () => {
   const malformedProvider = new MockProvider(wellFormedResponse);
-  malformedProvider.generate = () => {
+  malformedProvider.generate = (): Promise<IGenerateResult> => {
     throw new SyntaxError("Unexpected token in JSON");
   };
 
@@ -513,8 +520,8 @@ Deno.test("AgentRunner handles JSON parse errors", async () => {
 
 Deno.test("AgentRunner handles provider returning null", async () => {
   const nullProvider = new MockProvider(wellFormedResponse);
-  nullProvider.generate = () => {
-    return Promise.resolve(null as never as string);
+  nullProvider.generate = (): Promise<IGenerateResult> => {
+    return Promise.resolve(null as never as IGenerateResult);
   };
 
   const runner = new AgentRunner(nullProvider);
@@ -527,8 +534,8 @@ Deno.test("AgentRunner handles provider returning null", async () => {
 
 Deno.test("AgentRunner handles provider returning undefined", async () => {
   const undefinedProvider = new MockProvider(wellFormedResponse);
-  undefinedProvider.generate = () => {
-    return Promise.resolve(undefined as never as string);
+  undefinedProvider.generate = (): Promise<IGenerateResult> => {
+    return Promise.resolve(undefined as never as IGenerateResult);
   };
 
   const runner = new AgentRunner(undefinedProvider);

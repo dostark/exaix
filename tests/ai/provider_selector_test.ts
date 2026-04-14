@@ -158,7 +158,12 @@ Deno.test("ProviderSelector: respects budget constraints", async () => {
     const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
 
     // Set up high cost for expensive provider
-    await costTracker.trackRequest("expensive-provider", 100000); // ~$1
+    await costTracker.trackGeneration(
+      "expensive-provider",
+      "expensive-model",
+      { promptTokens: 50000, completionTokens: 50000, totalTokens: 100000 },
+      "trace-budget",
+    );
     await costTracker.flush(); // Ensure the cost is written immediately for the test
 
     // Mock health checks
@@ -554,7 +559,12 @@ Deno.test("ProviderSelector: enforces budget constraints", async () => {
     const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
 
     // Track enough usage to exceed budget
-    await costTracker.trackRequest(PROVIDER_OPENAI, 500000); // $0.50 at $0.001/1K
+    await costTracker.trackGeneration(
+      PROVIDER_OPENAI,
+      "gpt-4o",
+      { promptTokens: 250000, completionTokens: 250000, totalTokens: 500000 },
+      "trace-budget-exceeded",
+    );
     await costTracker.flush(); // Ensure the cost is written immediately for the test
 
     ProviderRegistry.clear();

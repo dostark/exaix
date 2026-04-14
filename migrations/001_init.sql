@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS activity (
   action_type TEXT NOT NULL,
   target TEXT,
   payload TEXT NOT NULL,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  cost_usd REAL DEFAULT 0.0,
   timestamp DATETIME DEFAULT (datetime('now'))
 );
 
@@ -100,13 +103,20 @@ CREATE INDEX IF NOT EXISTS idx_notifications_proposal ON notifications(proposal_
 CREATE TABLE IF NOT EXISTS provider_costs (
   id TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
+  model TEXT,
   requests INTEGER NOT NULL DEFAULT 0,
   tokens INTEGER NOT NULL DEFAULT 0,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
   estimated_cost_usd REAL NOT NULL DEFAULT 0.0,
+  trace_id TEXT,
+  portal TEXT,
   timestamp DATETIME DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_provider_costs_provider ON provider_costs(provider);
+CREATE INDEX IF NOT EXISTS idx_provider_costs_trace ON provider_costs(trace_id);
+CREATE INDEX IF NOT EXISTS idx_provider_costs_portal ON provider_costs(portal);
 CREATE INDEX IF NOT EXISTS idx_provider_costs_timestamp ON provider_costs(timestamp);
 
 -- ============================================================================

@@ -8,6 +8,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
+import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
@@ -32,14 +33,20 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
     // Mock LLM provider
     const mockLLM = {
       id: "mock-llm",
-      generate: () =>
-        Promise.resolve(JSON.stringify({
-          summary: "Proposing changes",
-          affectedRemainingStepIds: ["2"],
-          adds: [],
-          updates: [],
-          removes: [],
-        })),
+      generate: (): Promise<IGenerateResult> =>
+        Promise.resolve({
+          content: JSON.stringify({
+            summary: "Proposing changes",
+            affectedRemainingStepIds: ["2"],
+            adds: [],
+            updates: [],
+            removes: [],
+          }),
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        }),
     } as IModelProvider;
 
     // Mock ConfidenceScorer
@@ -105,14 +112,20 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
     // Mock LLM provider for amendment proposal
     const mockLLM = {
       id: "mock-llm",
-      generate: () =>
-        Promise.resolve(JSON.stringify({
-          summary: "Tool failed, proposing alternative approach",
-          affectedRemainingStepIds: ["2"],
-          adds: [],
-          updates: [{ number: 2, title: "Alternative approach", content: "Use different method" }],
-          removes: [],
-        })),
+      generate: (): Promise<IGenerateResult> =>
+        Promise.resolve({
+          content: JSON.stringify({
+            summary: "Tool failed, proposing alternative approach",
+            affectedRemainingStepIds: ["2"],
+            adds: [],
+            updates: [{ number: 2, title: "Alternative approach", content: "Use different method" }],
+            removes: [],
+          }),
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        }),
     } as IModelProvider;
 
     // No confidence scorer needed - tool error triggers without it

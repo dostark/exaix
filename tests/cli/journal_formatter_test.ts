@@ -46,6 +46,9 @@ const baseActivities: ActivityRecord[] = [
     target: JOURNAL_TARGET_LONG,
     payload: JOURNAL_PAYLOAD,
     timestamp: JOURNAL_TIMESTAMP_ONE,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cost_usd: 0,
   },
   {
     id: JOURNAL_ID_TWO,
@@ -58,6 +61,9 @@ const baseActivities: ActivityRecord[] = [
     target: JOURNAL_TARGET_SHORT,
     payload: JOURNAL_PAYLOAD,
     timestamp: JOURNAL_TIMESTAMP_TWO,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cost_usd: 0,
   },
   {
     id: JOURNAL_ID_THREE,
@@ -70,6 +76,9 @@ const baseActivities: ActivityRecord[] = [
     target: JOURNAL_TARGET_SHORT,
     payload: JOURNAL_PAYLOAD,
     timestamp: JOURNAL_TIMESTAMP_THREE,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    cost_usd: 0,
   },
 ];
 

@@ -14,6 +14,7 @@ import {
 } from "../provider_common_utils.ts";
 import * as DEFAULTS from "../../shared/constants.ts";
 import { BaseProvider, type IBaseProviderOptions } from "./base_provider.ts";
+import type { IGenerateResult } from "./common.ts";
 
 /**
  * Options for GoogleProvider
@@ -49,7 +50,7 @@ export class GoogleProvider extends BaseProvider {
   /**
    * Internal: attempt a single completion call.
    */
-  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<string> {
+  protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
     const endpoint = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
     const data = await performProviderCall<GoogleResponse>(endpoint, {

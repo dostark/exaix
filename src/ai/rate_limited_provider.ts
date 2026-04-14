@@ -7,7 +7,8 @@
  */
 
 import type { IModelProvider } from "./types.ts";
-import type { CostTracker } from "../services/cost/cost_tracker.ts";
+import type { IGenerateResult } from "./providers/common.ts";
+import type { ICostTracker } from "../shared/interfaces/i_cost_tracker.ts";
 import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,
@@ -29,7 +30,7 @@ export interface IRateLimitConfig {
   /** Cost per 1,000 tokens in USD */
   costPer1kTokens: number;
   /** Optional cost tracker for persistent cost tracking */
-  costTracker?: CostTracker;
+  costTracker?: ICostTracker;
 }
 
 /**
@@ -62,7 +63,7 @@ export class RateLimitedProvider implements IModelProvider {
     this.id = `rate-limited-${inner.id}`;
   }
 
-  async generate(prompt: string, options?: { max_tokens?: number }): Promise<string> {
+  async generate(prompt: string, options?: { max_tokens?: number }): Promise<IGenerateResult> {
     this.resetWindowsIfNeeded();
 
     // Check rate limits
@@ -104,7 +105,15 @@ export class RateLimitedProvider implements IModelProvider {
       // Track in persistent storage if cost tracker is available
       if (this.limits.costTracker) {
         const providerName = this.extractProviderName(this.inner.id);
-        await this.limits.costTracker.trackRequest(providerName, estimatedTokens);
+        await this.limits.costTracker.trackGeneration(
+          providerName,
+          result.model || this.inner.id,
+          {
+            promptTokens: result.usage.promptTokens,
+            completionTokens: result.usage.completionTokens,
+            totalTokens: result.usage.totalTokens,
+          },
+        );
       }
 
       return result;

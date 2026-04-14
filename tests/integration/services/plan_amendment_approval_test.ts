@@ -11,7 +11,7 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentDecision } from "../../../src/shared/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "../../../src/shared/schemas/plan_amendment.ts";
 import type { IPlanAmendmentPatch } from "../../../src/shared/schemas/plan_amendment.ts";
@@ -31,6 +31,16 @@ import {
  */
 function castTo<T>(val: unknown): T {
   return val as T;
+}
+
+function makeResult(content: string): IGenerateResult {
+  return {
+    content,
+    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    model: "m",
+    provider: "p",
+    cost_usd: 0,
+  };
 }
 
 /**
@@ -64,13 +74,17 @@ Deno.test("PlanAmendmentService propose emits no side effects without approval a
 
     const mockLlm = castTo<IModelProvider>({
       generate: () =>
-        JSON.stringify({
-          summary: "Test amendment proposal",
-          affectedRemainingStepIds: ["2"],
-          adds: [],
-          updates: [{ number: 2, title: "Updated", content: "Updated content" }],
-          removes: [],
-        }),
+        Promise.resolve(
+          makeResult(
+            JSON.stringify({
+              summary: "Test amendment proposal",
+              affectedRemainingStepIds: ["2"],
+              adds: [],
+              updates: [{ number: 2, title: "Updated", content: "Updated content" }],
+              removes: [],
+            }),
+          ),
+        ),
     });
 
     const service = new PlanAmendmentService(config, mockLlm);
@@ -144,13 +158,17 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
 
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
-        Promise.resolve(JSON.stringify({
-          summary: "Amendment proposed",
-          affectedRemainingStepIds: ["2"],
-          adds: [],
-          updates: [],
-          removes: [],
-        })),
+        Promise.resolve(
+          makeResult(
+            JSON.stringify({
+              summary: "Amendment proposed",
+              affectedRemainingStepIds: ["2"],
+              adds: [],
+              updates: [],
+              removes: [],
+            }),
+          ),
+        ),
     });
 
     const mockScorer = castTo<ConfidenceScorer>({

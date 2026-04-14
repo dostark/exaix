@@ -48,20 +48,38 @@ export class LegacyAgentStrategy implements IExecutionStrategy {
     }
 
     const prompt = this.executor.buildExecutionPrompt(blueprint, context, options);
-    const response = await this.provider.generate(prompt, {
+    const result = await this.provider.generate(prompt, {
       temperature: LEGACY_EXECUTION_TEMPERATURE,
       max_tokens: LEGACY_EXECUTION_MAX_TOKENS,
     });
 
-    const { toolCallCount, filesChanged } = await this.executeTomlActions(response, options);
-    const result = this.executor.parseAgentResponse(response, context, startTime);
-
-    result.tool_calls = toolCallCount;
-    result.files_changed = Array.from(
-      new Set([...(result.files_changed || []), ...filesChanged]),
+    // Log individual generation metrics (Phase 69)
+    await this.executor.logGeneration(
+      context.trace_id,
+      options.identity_id ?? "",
+      result.model,
+      result.provider,
+      result.usage,
+      result.cost_usd ?? 0,
     );
 
-    return this.executor.validateReviewResult(result);
+    const response = result.content;
+    const { toolCallCount, filesChanged } = await this.executeTomlActions(response, options);
+    const parsedResult = this.executor.parseAgentResponse(response, context, startTime);
+
+    parsedResult.tool_calls = toolCallCount;
+    parsedResult.files_changed = Array.from(
+      new Set([...(parsedResult.files_changed || []), ...filesChanged]),
+    );
+
+    // Attach usage metrics
+    parsedResult.usage = {
+      prompt_tokens: result.usage.promptTokens,
+      completion_tokens: result.usage.completionTokens,
+      cost_usd: result.cost_usd ?? 0,
+    };
+
+    return this.executor.validateReviewResult(parsedResult);
   }
 
   /**

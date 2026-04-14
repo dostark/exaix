@@ -96,7 +96,8 @@ export class LlmClient implements ILlmClient {
       .replace("{iteration}", iteration.toString())
       .replace("{max_iterations}", maxIterations.toString());
 
-    const responseStr = await provider.generate(prompt);
+    const result = await provider.generate(prompt);
+    const responseStr = result.content;
 
     // Attempt multiple parsing strategies
     let jsonMatch = responseStr.match(/```json\n([\s\S]*?)\n```/);
