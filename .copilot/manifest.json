@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-15T13:11:24.892Z",
+  "generated_at": "2026-04-15T13:41:11.139Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -642,911 +642,6 @@
       ]
     },
     {
-      "path": ".copilot/planning/phase-66-plan-amendment-gate.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning",
-      "short_summary": "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable.",
-      "version": "1.3",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "plan-amendment",
-        "approval",
-        "confidence",
-        "replanning",
-        "human-in-loop"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk0.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk1.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk2.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk3.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk4.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk5.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk6.txt",
-        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-72-git-hash-portal-invalidation.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 72: Git-Hash Portal Knowledge Invalidation",
-      "short_summary": "Replace time-based portal knowledge staleness detection with git-commit-hash comparison, reducing redundant re-analysis and ensuring portal context is always grounded in the actual current state of the codebase.",
-      "version": "1.1",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "portal",
-        "knowledge",
-        "git",
-        "caching",
-        "invalidation"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk0.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk1.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk2.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk3.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk4.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk5.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk6.txt",
-        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-33-code-duplication-refactoring.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 33: Code Duplication Refactoring & Architecture Improvement",
-      "short_summary": "Systematic refactoring to reduce code duplication from 4.06% to <2% while improving overall architecture quality through SOLID principles, design patterns, and measurable metrics.",
-      "version": "1.0",
-      "topics": [
-        "refactoring",
-        "architecture",
-        "code-quality",
-        "design-patterns",
-        "testing",
-        "metrics"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk0.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk1.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk2.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk3.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk4.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk5.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk6.txt",
-        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-36-changeset-to-review-rename.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 36: Rename 'changeset' to 'review' for Unified Artifact Workflow",
-      "short_summary": "Rename CLI commands and internal terminology from 'changeset' to 'review' to accurately reflect unified workflow for both git changesets and read-only artifacts, improving semantic clarity and user understanding.",
-      "version": "1.0",
-      "topics": [
-        "cli",
-        "naming",
-        "semantic-clarity",
-        "artifacts",
-        "changesets",
-        "review-workflow",
-        "ux"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk0.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk1.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk2.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk3.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk4.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk5.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk6.txt",
-        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-57-new-mcp-tools-handlers.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 57: New MCP Tool Handlers — File and Directory Operations",
-      "short_summary": "",
-      "version": "1.0",
-      "topics": [
-        "mcp",
-        "tools",
-        "file-operations",
-        "handlers",
-        "schemas",
-        "security",
-        "portal"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk0.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk1.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk2.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk3.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk4.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk5.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk6.txt",
-        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-30-cli-flow-request.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 30: Add Flow Support to `exactl request` Command",
-      "short_summary": "Implement `--flow` option for `exactl request` command to enable creating requests with defined multi-agent flows.",
-      "version": "0.1",
-      "topics": [
-        "exactl",
-        "request",
-        "flow",
-        "cli",
-        "routing"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk0.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk1.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk2.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk3.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk4.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk5.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk6.txt",
-        ".copilot/chunks/phase-30-cli-flow-request.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-38-tool-expansion.md",
-      "agent": "antigravity",
-      "scope": "dev",
-      "title": "Phase 38: Core Tool Expansion & Grounding",
-      "short_summary": "Technical specification for adding research, discovery, and refactoring tools to the Exaix ToolRegistry.",
-      "version": "1.0",
-      "topics": [
-        "tools",
-        "tool-registry",
-        "research",
-        "refactoring",
-        "git",
-        "deno"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk0.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk1.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk2.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk3.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk4.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk5.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk6.txt",
-        ".copilot/chunks/phase-38-tool-expansion.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-22-architecture-and-quality-improvement.md",
-      "agent": "copilot",
-      "scope": "architecture",
-      "title": "Extended Code Review - Additional Architecture & Quality Issues (v2)",
-      "short_summary": "",
-      "version": 2,
-      "topics": [
-        "code-quality",
-        "architecture",
-        "performance",
-        "security",
-        "reliability",
-        "technical-debt"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk0.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk1.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk2.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk3.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk4.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk5.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk6.txt",
-        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-62-context-window-management.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
-      "short_summary": "Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.",
-      "version": "1.7",
-      "topics": [
-        "context-window",
-        "budgeting",
-        "llm",
-        "tokens",
-        "cost-tracking",
-        "loop-history",
-        "local-llm",
-        "provider-strategy",
-        "W7",
-        "W15"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-62-context-window-management.md.chunk0.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk1.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk2.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk3.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk4.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk5.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk6.txt",
-        ".copilot/chunks/phase-62-context-window-management.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-54-remove-agent-alias.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 54: Remove Deprecated 'agent' Aliases Introduced in Phase 53",
-      "short_summary": "",
-      "version": "2.0",
-      "topics": [
-        "naming",
-        "cleanup",
-        "deprecation-removal",
-        "cli",
-        "blueprints",
-        "identities",
-        "flows",
-        "breaking-change"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk0.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk1.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk2.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk3.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk4.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk5.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk6.txt",
-        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-34-code-complexity-reduction.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 34: Code Complexity Reduction & Function Refactoring",
-      "short_summary": "Systematic refactoring to reduce cyclomatic complexity from average 38.23 to <30, targeting functions >25 complexity and files >150 complexity through function extraction, architectural improvements, and design pattern implementation.",
-      "version": "1.0",
-      "topics": [
-        "refactoring",
-        "complexity",
-        "architecture",
-        "design-patterns",
-        "maintainability",
-        "code-quality"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk0.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk1.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk2.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk3.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk4.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk5.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk6.txt",
-        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-64-flow-namespace-blackboard.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 64: Flow Namespace & Shared Blackboard Coordination",
-      "short_summary": "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact.",
-      "version": "1.4",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "flows",
-        "namespace",
-        "blackboard",
-        "shared-state",
-        "coordination"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk0.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk1.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk2.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk3.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk4.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk5.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk6.txt",
-        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-68-ollama-semantic-search.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 68: Local Embedding & Semantic Memory Search",
-      "short_summary": "Introduce a provider-agnostic embedding layer with Ollama as the first implementation, enabling zero-cost semantic vector search for the Solo edition and a pluggable interface for cloud providers (OpenAI, Google) and local alternatives (llama.cpp).",
-      "version": "2.0",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "memory",
-        "embeddings",
-        "search",
-        "ollama",
-        "openai",
-        "llamacpp",
-        "solo-tier",
-        "provider-agnostic"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk0.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk1.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk2.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk3.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk4.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk5.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk6.txt",
-        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-53-rename-agents-to-identity.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 53: Rename 'Agents' to 'Identities' for Conceptual Clarity",
-      "short_summary": "Rename the Blueprint/Agents layer to Blueprint/Identities to accurately reflect that these definitions are LLM persona/identity definitions loaded by the AgentRunner runtime, not autonomous agents in the cognitive AI sense.",
-      "version": "1.0",
-      "topics": [
-        "naming",
-        "semantic-clarity",
-        "blueprints",
-        "identities",
-        "refactoring",
-        "cli",
-        "docs"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk0.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk1.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk2.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk3.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk4.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk5.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk6.txt",
-        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-73-reflexive-agent-convergence.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 73: ReflexiveAgent Convergence Detection & Adaptive Iteration Budget",
-      "short_summary": "Add inline ConfidenceScorer feedback inside the ReflexiveAgent loop for early exit on quality convergence, oscillation detection, and complexity- proportional iteration budgets derived from IRequestAnalysis.",
-      "version": "1.1",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "reflexive-agent",
-        "confidence",
-        "iteration",
-        "convergence",
-        "quality",
-        "complexity"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk0.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk1.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk2.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk3.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk4.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk5.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk6.txt",
-        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-58-react-reasoning-engine.md",
-      "agent": "qwen",
-      "scope": "dev",
-      "title": "Phase 58: ReAct Reasoning Engine for Dynamic Flow Steps",
-      "short_summary": "Implement the ReAct reasoning engine and client interfaces required for dynamic tool selection in flow steps, enabling FlowRunner integration with full auditability and supervision.",
-      "version": "1.1",
-      "topics": [
-        "flows",
-        "react",
-        "reasoning",
-        "llm-client",
-        "mcp-client",
-        "dynamic-execution",
-        "auditability"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk0.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk1.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk2.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk3.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk4.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk5.txt",
-        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk6.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-61-agent-executor-mcp-integration.md",
-      "agent": "antigravity",
-      "scope": "dev",
-      "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
-      "short_summary": "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern.",
-      "version": "1.3",
-      "topics": [
-        "agent-executor",
-        "mcp",
-        "subprocess",
-        "security",
-        "git-audit",
-        "execution-strategy",
-        "identities",
-        "process-management",
-        "cross-process-context"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk0.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk1.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk2.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk3.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk4.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk5.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk6.txt",
-        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-59-scenario-framework-extension.md",
-      "agent": "qwen",
-      "scope": "dev",
-      "title": "Phase 59: Scenario Framework Extension for Dynamic Execution & New MCP Tools",
-      "short_summary": "Extend the scenario framework with comprehensive test scenarios for Phase 56/57/58 features: dynamic tool selection, ReAct reasoning engine, and new MCP tool handlers.",
-      "version": "1.0",
-      "topics": [
-        "scenario-framework",
-        "testing",
-        "dynamic-execution",
-        "react",
-        "mcp-tools",
-        "integration-tests"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk0.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk1.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk2.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk3.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk4.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk5.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk6.txt",
-        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-74-routing-policy-layer.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 74-R: RoutingPolicy Layer & Capability-Based Identity Selection",
-      "short_summary": "Introduce a policy-driven identity routing layer that selects the most appropriate blueprint version at runtime using declared capabilities, request analysis signals, and Activity Journal performance data.",
-      "version": "1.1",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "routing",
-        "capabilities",
-        "blueprints",
-        "policy",
-        "selection",
-        "journal"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk0.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk1.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk2.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk3.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk4.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk5.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk6.txt",
-        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-71-confidence-based-memory-approval.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 71: Confidence-Based Memory Auto-Approval & Pending Digest",
-      "short_summary": "Implement automatic promotion of high-confidence agent learnings to approved status after a configurable delay, and surface a pending-memory digest notification to prevent silent accumulation in Memory/Pending/.",
-      "version": "1.1",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "memory",
-        "approval",
-        "confidence",
-        "notification",
-        "automation"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk0.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk1.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk2.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk3.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk4.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk5.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk6.txt",
-        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-29-journal-command.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 29: Implementation of `exactl journal` Command",
-      "short_summary": "Comprehensive plan for implementing the `exactl journal` command to query, filter, and inspect the activity journal.",
-      "version": "0.2",
-      "topics": [
-        "exactl",
-        "journal",
-        "cli",
-        "audit",
-        "database"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-29-journal-command.md.chunk0.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk1.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk2.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk3.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk4.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk5.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk6.txt",
-        ".copilot/chunks/phase-29-journal-command.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-67-live-execution-streaming.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 67: Live Execution Streaming & Watch Command",
-      "short_summary": "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions.",
-      "version": "1.2",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "observability",
-        "sse",
-        "cli",
-        "streaming",
-        "ux"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk0.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk1.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk2.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk3.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk4.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk5.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk6.txt",
-        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-70-wire-skills-service.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 70: Wire SkillsService into AgentRunner & CLI Surface",
-      "short_summary": "Connect the dormant SkillsService.matchSkills() into the AgentRunner prompt construction pipeline and expose procedural memory inspection via exactl skills list|show commands.",
-      "version": "1.1",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "memory",
-        "skills",
-        "procedural-memory",
-        "agent-runner",
-        "cli"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk0.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk1.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk2.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk3.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk4.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk5.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk6.txt",
-        ".copilot/chunks/phase-70-wire-skills-service.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-37-portal-target-branch-and-worktree-execution.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 37: Portal Target Branches + Git Worktree Execution",
-      "short_summary": "Add portal-scoped target-branch support and support two portal-configurable execution strategies (branch default, worktree optional) for write-capable changes in multi-branch portal workflows.",
-      "version": "0.1",
-      "topics": [
-        "portals",
-        "git",
-        "worktree",
-        "branches",
-        "reviews",
-        "cli",
-        "execution",
-        "workflow"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk0.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk1.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk2.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk3.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk4.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk5.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk6.txt",
-        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-32-dynamic-skills-injection.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 32: Dynamic Skills Injection for Requests and Plans",
-      "short_summary": "Implement `--skills` option for `exactl request` and `exactl plan approve` commands to enable runtime skill injection, overriding agent limitations on a per-task basis.",
-      "version": "1.0",
-      "topics": [
-        "skills",
-        "request",
-        "plan",
-        "cli",
-        "agent-runner",
-        "plan-executor"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk0.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk1.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk2.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk3.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk4.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk5.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk6.txt",
-        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-75-agent-documentation-optimization.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 75: Agent Documentation Optimization",
-      "short_summary": "Consolidate agent documentation structure, migrate workflow guidelines, and enforce READMEs across all subfolders.",
-      "version": "1.0",
-      "topics": [
-        "planning",
-        "architecture",
-        "agents",
-        "documentation",
-        "workflows"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk0.txt",
-        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk1.txt",
-        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk2.txt",
-        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk3.txt",
-        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk4.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-63-flow-error-recovery.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
-      "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
-      "version": 1.4,
-      "topics": [
-        "flow-orchestration",
-        "error-recovery",
-        "checkpointing",
-        "flow-integrity",
-        "cost-aware-recovery",
-        "resilience",
-        "W13"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk0.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk1.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk2.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk3.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk4.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk5.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk6.txt",
-        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-56-dynamic-toolsets.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 56: Hybrid Dynamic Tool Selection for Flow Steps",
-      "short_summary": "Introduce execution_mode: 'dynamic' as an opt-in per flow step, allowing the model to select tools from a pre-defined toolset at runtime (ReAct-style) while keeping declared-tool behavior as the default and preserving full Activity Journal auditability.",
-      "version": "1.0",
-      "topics": [
-        "flows",
-        "tools",
-        "dynamic-execution",
-        "react",
-        "blueprints",
-        "schema",
-        "auditability",
-        "mcp"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk0.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk1.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk2.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk3.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk4.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk5.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk6.txt",
-        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-65-parallel-execution-groups.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 65: Explicit Parallel Execution Groups & Fan-In Merge",
-      "short_summary": "Formalize explicit parallel step groups and deterministic fan-in merge behavior on top of ExaIx’s existing dependency-wave flow execution model.",
-      "version": "1.3",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "flows",
-        "parallelism",
-        "fan-in",
-        "merge",
-        "scheduler"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk0.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk1.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk2.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk3.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk4.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk5.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk6.txt",
-        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-69-token-cost-persistence.md",
-      "agent": "senior-coder",
-      "scope": "dev",
-      "title": "Phase 69: Token & Cost Persistence",
-      "short_summary": "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI.",
-      "version": "1.2",
-      "topics": [
-        "planning",
-        "roadmap",
-        "architecture",
-        "tdd",
-        "finops",
-        "tokens",
-        "cost",
-        "metrics",
-        "journal"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk0.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk1.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk2.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk3.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk4.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk5.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk6.txt",
-        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-23-skills-blueprint-migration.md",
-      "agent": "copilot",
-      "scope": "architecture",
-      "title": "Skills Blueprint Migration - Moving Core Skills to Blueprints",
-      "short_summary": "",
-      "version": 1,
-      "topics": [
-        "architecture",
-        "organization",
-        "blueprints",
-        "skills"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk0.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk1.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk2.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk3.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk4.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk5.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk6.txt",
-        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-31-agent-blueprint-json-migration.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Agent Blueprint JSON Migration",
-      "short_summary": "Migrate all agent blueprints from XML/markdown to JSON format with Zod validation for consistent, machine-readable output.",
-      "version": "0.1",
-      "topics": [
-        "agents",
-        "blueprints",
-        "json",
-        "validation",
-        "migration"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk0.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk1.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk2.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk3.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk4.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk5.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk6.txt",
-        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/planning/phase-35-portal-workspace-integration.md",
-      "agent": "claude",
-      "scope": "dev",
-      "title": "Phase 35: Portal Workspace Integration & Git Changeset Architecture",
-      "short_summary": "Redesign agent execution model to work directly in portal workspaces instead of deployed workspace, enabling proper git operations, reviews, and team collaboration on actual source code repositories.",
-      "version": "1.0",
-      "topics": [
-        "portals",
-        "git",
-        "reviews",
-        "architecture",
-        "workspace",
-        "collaboration",
-        "version-control"
-      ],
-      "chunks": [
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk0.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk1.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk2.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk3.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk4.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk5.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk6.txt",
-        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk7.txt"
-      ]
-    },
-    {
       "path": ".copilot/README.md",
       "agent": "general",
       "scope": "dev",
@@ -2042,7 +1137,967 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-changeset-approval-bug.md",
+      "path": "exaix-dev-docs/planning/phase-66-plan-amendment-gate.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 66: Plan Amendment Gate & Bounded Mid-Execution Replanning",
+      "short_summary": "Add a bounded amendment workflow that allows ExaIx to propose and approve targeted changes to the remaining execution plan when tool results or confidence signals show the current plan is no longer reliable.",
+      "version": "1.3",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "plan-amendment",
+        "approval",
+        "confidence",
+        "replanning",
+        "human-in-loop"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk0.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk1.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk2.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk3.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk4.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk5.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk6.txt",
+        ".copilot/chunks/phase-66-plan-amendment-gate.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-72-git-hash-portal-invalidation.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 72: Git-Hash Portal Knowledge Invalidation",
+      "short_summary": "Replace time-based portal knowledge staleness detection with git-commit-hash comparison, reducing redundant re-analysis and ensuring portal context is always grounded in the actual current state of the codebase.",
+      "version": "1.1",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "portal",
+        "knowledge",
+        "git",
+        "caching",
+        "invalidation"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk0.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk1.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk2.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk3.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk4.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk5.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk6.txt",
+        ".copilot/chunks/phase-72-git-hash-portal-invalidation.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-33-code-duplication-refactoring.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 33: Code Duplication Refactoring & Architecture Improvement",
+      "short_summary": "Systematic refactoring to reduce code duplication from 4.06% to <2% while improving overall architecture quality through SOLID principles, design patterns, and measurable metrics.",
+      "version": "1.0",
+      "topics": [
+        "refactoring",
+        "architecture",
+        "code-quality",
+        "design-patterns",
+        "testing",
+        "metrics"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk0.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk1.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk2.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk3.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk4.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk5.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk6.txt",
+        ".copilot/chunks/phase-33-code-duplication-refactoring.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-36-changeset-to-review-rename.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 36: Rename 'changeset' to 'review' for Unified Artifact Workflow",
+      "short_summary": "Rename CLI commands and internal terminology from 'changeset' to 'review' to accurately reflect unified workflow for both git changesets and read-only artifacts, improving semantic clarity and user understanding.",
+      "version": "1.0",
+      "topics": [
+        "cli",
+        "naming",
+        "semantic-clarity",
+        "artifacts",
+        "changesets",
+        "review-workflow",
+        "ux"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk0.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk1.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk2.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk3.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk4.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk5.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk6.txt",
+        ".copilot/chunks/phase-36-changeset-to-review-rename.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-57-new-mcp-tools-handlers.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 57: New MCP Tool Handlers — File and Directory Operations",
+      "short_summary": "",
+      "version": "1.0",
+      "topics": [
+        "mcp",
+        "tools",
+        "file-operations",
+        "handlers",
+        "schemas",
+        "security",
+        "portal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk0.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk1.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk2.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk3.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk4.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk5.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk6.txt",
+        ".copilot/chunks/phase-57-new-mcp-tools-handlers.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-30-cli-flow-request.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 30: Add Flow Support to `exactl request` Command",
+      "short_summary": "Implement `--flow` option for `exactl request` command to enable creating requests with defined multi-agent flows.",
+      "version": "0.1",
+      "topics": [
+        "exactl",
+        "request",
+        "flow",
+        "cli",
+        "routing"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk0.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk1.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk2.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk3.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk4.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk5.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk6.txt",
+        ".copilot/chunks/phase-30-cli-flow-request.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-38-tool-expansion.md",
+      "agent": "antigravity",
+      "scope": "dev",
+      "title": "Phase 38: Core Tool Expansion & Grounding",
+      "short_summary": "Technical specification for adding research, discovery, and refactoring tools to the Exaix ToolRegistry.",
+      "version": "1.0",
+      "topics": [
+        "tools",
+        "tool-registry",
+        "research",
+        "refactoring",
+        "git",
+        "deno"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk0.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk1.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk2.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk3.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk4.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk5.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk6.txt",
+        ".copilot/chunks/phase-38-tool-expansion.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-22-architecture-and-quality-improvement.md",
+      "agent": "copilot",
+      "scope": "architecture",
+      "title": "Extended Code Review - Additional Architecture & Quality Issues (v2)",
+      "short_summary": "",
+      "version": 2,
+      "topics": [
+        "code-quality",
+        "architecture",
+        "performance",
+        "security",
+        "reliability",
+        "technical-debt"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk0.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk1.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk2.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk3.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk4.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk5.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk6.txt",
+        ".copilot/chunks/phase-22-architecture-and-quality-improvement.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-62-context-window-management.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 62: Global Prompt Budget Coordinator (W7 & W15 Remediation)",
+      "short_summary": "Introduce a policy-aware PromptBudgetAllocator service with distinct cloud (strict, on) and local LLM (relaxed, off) budget modes, dynamic reallocation, and cost tracking to manage context windows and prevent silent truncation.",
+      "version": "1.7",
+      "topics": [
+        "context-window",
+        "budgeting",
+        "llm",
+        "tokens",
+        "cost-tracking",
+        "loop-history",
+        "local-llm",
+        "provider-strategy",
+        "W7",
+        "W15"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-62-context-window-management.md.chunk0.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk1.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk2.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk3.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk4.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk5.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk6.txt",
+        ".copilot/chunks/phase-62-context-window-management.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-54-remove-agent-alias.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 54: Remove Deprecated 'agent' Aliases Introduced in Phase 53",
+      "short_summary": "",
+      "version": "2.0",
+      "topics": [
+        "naming",
+        "cleanup",
+        "deprecation-removal",
+        "cli",
+        "blueprints",
+        "identities",
+        "flows",
+        "breaking-change"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk0.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk1.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk2.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk3.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk4.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk5.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk6.txt",
+        ".copilot/chunks/phase-54-remove-agent-alias.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-34-code-complexity-reduction.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 34: Code Complexity Reduction & Function Refactoring",
+      "short_summary": "Systematic refactoring to reduce cyclomatic complexity from average 38.23 to <30, targeting functions >25 complexity and files >150 complexity through function extraction, architectural improvements, and design pattern implementation.",
+      "version": "1.0",
+      "topics": [
+        "refactoring",
+        "complexity",
+        "architecture",
+        "design-patterns",
+        "maintainability",
+        "code-quality"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk0.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk1.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk2.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk3.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk4.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk5.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk6.txt",
+        ".copilot/chunks/phase-34-code-complexity-reduction.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-64-flow-namespace-blackboard.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 64: Flow Namespace & Shared Blackboard Coordination",
+      "short_summary": "Introduce a per-flow shared namespace that allows all identities in a flow to read and write structured shared context, reducing transform-chain coupling and creating a human-readable coordination artifact.",
+      "version": "1.4",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "flows",
+        "namespace",
+        "blackboard",
+        "shared-state",
+        "coordination"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk0.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk1.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk2.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk3.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk4.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk5.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk6.txt",
+        ".copilot/chunks/phase-64-flow-namespace-blackboard.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-68-ollama-semantic-search.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 68: Local Embedding & Semantic Memory Search",
+      "short_summary": "Introduce a provider-agnostic embedding layer with Ollama as the first implementation, enabling zero-cost semantic vector search for the Solo edition and a pluggable interface for cloud providers (OpenAI, Google) and local alternatives (llama.cpp).",
+      "version": "2.0",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "embeddings",
+        "search",
+        "ollama",
+        "openai",
+        "llamacpp",
+        "solo-tier",
+        "provider-agnostic"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk0.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk1.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk2.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk3.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk4.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk5.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk6.txt",
+        ".copilot/chunks/phase-68-ollama-semantic-search.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-53-rename-agents-to-identity.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 53: Rename 'Agents' to 'Identities' for Conceptual Clarity",
+      "short_summary": "Rename the Blueprint/Agents layer to Blueprint/Identities to accurately reflect that these definitions are LLM persona/identity definitions loaded by the AgentRunner runtime, not autonomous agents in the cognitive AI sense.",
+      "version": "1.0",
+      "topics": [
+        "naming",
+        "semantic-clarity",
+        "blueprints",
+        "identities",
+        "refactoring",
+        "cli",
+        "docs"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk0.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk1.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk2.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk3.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk4.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk5.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk6.txt",
+        ".copilot/chunks/phase-53-rename-agents-to-identity.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-73-reflexive-agent-convergence.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 73: ReflexiveAgent Convergence Detection & Adaptive Iteration Budget",
+      "short_summary": "Add inline ConfidenceScorer feedback inside the ReflexiveAgent loop for early exit on quality convergence, oscillation detection, and complexity- proportional iteration budgets derived from IRequestAnalysis.",
+      "version": "1.1",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "reflexive-agent",
+        "confidence",
+        "iteration",
+        "convergence",
+        "quality",
+        "complexity"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk0.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk1.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk2.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk3.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk4.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk5.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk6.txt",
+        ".copilot/chunks/phase-73-reflexive-agent-convergence.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-58-react-reasoning-engine.md",
+      "agent": "qwen",
+      "scope": "dev",
+      "title": "Phase 58: ReAct Reasoning Engine for Dynamic Flow Steps",
+      "short_summary": "Implement the ReAct reasoning engine and client interfaces required for dynamic tool selection in flow steps, enabling FlowRunner integration with full auditability and supervision.",
+      "version": "1.1",
+      "topics": [
+        "flows",
+        "react",
+        "reasoning",
+        "llm-client",
+        "mcp-client",
+        "dynamic-execution",
+        "auditability"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk0.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk1.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk2.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk3.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk4.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk5.txt",
+        ".copilot/chunks/phase-58-react-reasoning-engine.md.chunk6.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-61-agent-executor-mcp-integration.md",
+      "agent": "antigravity",
+      "scope": "dev",
+      "title": "Phase 61: AgentExecutor MCP Integration & Real-World Execution",
+      "short_summary": "Replace the code-description stub in AgentExecutor with a robust Model Context Protocol (MCP) subprocess execution strategy, enabling secure, git-audited file system operations via spawned agents while unifying the execution engine under the IExecutionStrategy pattern.",
+      "version": "1.3",
+      "topics": [
+        "agent-executor",
+        "mcp",
+        "subprocess",
+        "security",
+        "git-audit",
+        "execution-strategy",
+        "identities",
+        "process-management",
+        "cross-process-context"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk0.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk1.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk2.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk3.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk4.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk5.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk6.txt",
+        ".copilot/chunks/phase-61-agent-executor-mcp-integration.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-59-scenario-framework-extension.md",
+      "agent": "qwen",
+      "scope": "dev",
+      "title": "Phase 59: Scenario Framework Extension for Dynamic Execution & New MCP Tools",
+      "short_summary": "Extend the scenario framework with comprehensive test scenarios for Phase 56/57/58 features: dynamic tool selection, ReAct reasoning engine, and new MCP tool handlers.",
+      "version": "1.0",
+      "topics": [
+        "scenario-framework",
+        "testing",
+        "dynamic-execution",
+        "react",
+        "mcp-tools",
+        "integration-tests"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk0.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk1.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk2.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk3.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk4.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk5.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk6.txt",
+        ".copilot/chunks/phase-59-scenario-framework-extension.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-74-routing-policy-layer.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 74-R: RoutingPolicy Layer & Capability-Based Identity Selection",
+      "short_summary": "Introduce a policy-driven identity routing layer that selects the most appropriate blueprint version at runtime using declared capabilities, request analysis signals, and Activity Journal performance data.",
+      "version": "1.1",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "routing",
+        "capabilities",
+        "blueprints",
+        "policy",
+        "selection",
+        "journal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk0.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk1.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk2.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk3.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk4.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk5.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk6.txt",
+        ".copilot/chunks/phase-74-routing-policy-layer.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-71-confidence-based-memory-approval.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 71: Confidence-Based Memory Auto-Approval & Pending Digest",
+      "short_summary": "Implement automatic promotion of high-confidence agent learnings to approved status after a configurable delay, and surface a pending-memory digest notification to prevent silent accumulation in Memory/Pending/.",
+      "version": "1.1",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "approval",
+        "confidence",
+        "notification",
+        "automation"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk0.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk1.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk2.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk3.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk4.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk5.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk6.txt",
+        ".copilot/chunks/phase-71-confidence-based-memory-approval.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-29-journal-command.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 29: Implementation of `exactl journal` Command",
+      "short_summary": "Comprehensive plan for implementing the `exactl journal` command to query, filter, and inspect the activity journal.",
+      "version": "0.2",
+      "topics": [
+        "exactl",
+        "journal",
+        "cli",
+        "audit",
+        "database"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-29-journal-command.md.chunk0.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk1.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk2.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk3.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk4.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk5.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk6.txt",
+        ".copilot/chunks/phase-29-journal-command.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-67-live-execution-streaming.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 67: Live Execution Streaming & Watch Command",
+      "short_summary": "Implement a local Server-Sent Events (SSE) bus for the EventLogger and an execution heartbeat to provide real-time CLI/TUI feedback during long-running agent executions.",
+      "version": "1.2",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "observability",
+        "sse",
+        "cli",
+        "streaming",
+        "ux"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk0.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk1.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk2.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk3.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk4.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk5.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk6.txt",
+        ".copilot/chunks/phase-67-live-execution-streaming.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-70-wire-skills-service.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 70: Wire SkillsService into AgentRunner & CLI Surface",
+      "short_summary": "Connect the dormant SkillsService.matchSkills() into the AgentRunner prompt construction pipeline and expose procedural memory inspection via exactl skills list|show commands.",
+      "version": "1.1",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "memory",
+        "skills",
+        "procedural-memory",
+        "agent-runner",
+        "cli"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk0.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk1.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk2.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk3.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk4.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk5.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk6.txt",
+        ".copilot/chunks/phase-70-wire-skills-service.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-37-portal-target-branch-and-worktree-execution.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 37: Portal Target Branches + Git Worktree Execution",
+      "short_summary": "Add portal-scoped target-branch support and support two portal-configurable execution strategies (branch default, worktree optional) for write-capable changes in multi-branch portal workflows.",
+      "version": "0.1",
+      "topics": [
+        "portals",
+        "git",
+        "worktree",
+        "branches",
+        "reviews",
+        "cli",
+        "execution",
+        "workflow"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk0.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk1.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk2.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk3.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk4.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk5.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk6.txt",
+        ".copilot/chunks/phase-37-portal-target-branch-and-worktree-execution.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-32-dynamic-skills-injection.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 32: Dynamic Skills Injection for Requests and Plans",
+      "short_summary": "Implement `--skills` option for `exactl request` and `exactl plan approve` commands to enable runtime skill injection, overriding agent limitations on a per-task basis.",
+      "version": "1.0",
+      "topics": [
+        "skills",
+        "request",
+        "plan",
+        "cli",
+        "agent-runner",
+        "plan-executor"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk0.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk1.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk2.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk3.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk4.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk5.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk6.txt",
+        ".copilot/chunks/phase-32-dynamic-skills-injection.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-75-agent-documentation-optimization.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 75: Agent Documentation Optimization",
+      "short_summary": "Consolidate agent documentation structure, migrate workflow guidelines, and enforce READMEs across all subfolders.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "architecture",
+        "agents",
+        "documentation",
+        "workflows"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk0.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk1.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk2.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk3.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-63-flow-error-recovery.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 63: Flow-Level Error Recovery & Checkpointing (W13 Remediation)",
+      "short_summary": "Add onError step handling, flow checkpointing, and compensating transactions to FlowRunner so multi-step flows survive partial failures without losing completed work.",
+      "version": 1.4,
+      "topics": [
+        "flow-orchestration",
+        "error-recovery",
+        "checkpointing",
+        "flow-integrity",
+        "cost-aware-recovery",
+        "resilience",
+        "W13"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk0.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk1.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk2.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk3.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk4.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk5.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk6.txt",
+        ".copilot/chunks/phase-63-flow-error-recovery.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-56-dynamic-toolsets.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 56: Hybrid Dynamic Tool Selection for Flow Steps",
+      "short_summary": "Introduce execution_mode: 'dynamic' as an opt-in per flow step, allowing the model to select tools from a pre-defined toolset at runtime (ReAct-style) while keeping declared-tool behavior as the default and preserving full Activity Journal auditability.",
+      "version": "1.0",
+      "topics": [
+        "flows",
+        "tools",
+        "dynamic-execution",
+        "react",
+        "blueprints",
+        "schema",
+        "auditability",
+        "mcp"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk0.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk1.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk2.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk3.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk4.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk5.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk6.txt",
+        ".copilot/chunks/phase-56-dynamic-toolsets.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-65-parallel-execution-groups.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 65: Explicit Parallel Execution Groups & Fan-In Merge",
+      "short_summary": "Formalize explicit parallel step groups and deterministic fan-in merge behavior on top of ExaIx’s existing dependency-wave flow execution model.",
+      "version": "1.3",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "flows",
+        "parallelism",
+        "fan-in",
+        "merge",
+        "scheduler"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk0.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk1.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk2.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk3.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk4.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk5.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk6.txt",
+        ".copilot/chunks/phase-65-parallel-execution-groups.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-69-token-cost-persistence.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 69: Token & Cost Persistence",
+      "short_summary": "Extract token usage and cost metrics from LLM provider responses, persist them into the Activity Journal per-request, and expose cost auditing via the CLI.",
+      "version": "1.2",
+      "topics": [
+        "planning",
+        "roadmap",
+        "architecture",
+        "tdd",
+        "finops",
+        "tokens",
+        "cost",
+        "metrics",
+        "journal"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk0.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk1.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk2.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk3.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk4.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk5.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk6.txt",
+        ".copilot/chunks/phase-69-token-cost-persistence.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-23-skills-blueprint-migration.md",
+      "agent": "copilot",
+      "scope": "architecture",
+      "title": "Skills Blueprint Migration - Moving Core Skills to Blueprints",
+      "short_summary": "",
+      "version": 1,
+      "topics": [
+        "architecture",
+        "organization",
+        "blueprints",
+        "skills"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk0.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk1.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk2.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk3.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk4.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk5.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk6.txt",
+        ".copilot/chunks/phase-23-skills-blueprint-migration.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-31-agent-blueprint-json-migration.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Agent Blueprint JSON Migration",
+      "short_summary": "Migrate all agent blueprints from XML/markdown to JSON format with Zod validation for consistent, machine-readable output.",
+      "version": "0.1",
+      "topics": [
+        "agents",
+        "blueprints",
+        "json",
+        "validation",
+        "migration"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk0.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk1.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk2.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk3.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk4.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk5.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk6.txt",
+        ".copilot/chunks/phase-31-agent-blueprint-json-migration.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/planning/phase-35-portal-workspace-integration.md",
+      "agent": "claude",
+      "scope": "dev",
+      "title": "Phase 35: Portal Workspace Integration & Git Changeset Architecture",
+      "short_summary": "Redesign agent execution model to work directly in portal workspaces instead of deployed workspace, enabling proper git operations, reviews, and team collaboration on actual source code repositories.",
+      "version": "1.0",
+      "topics": [
+        "portals",
+        "git",
+        "reviews",
+        "architecture",
+        "workspace",
+        "collaboration",
+        "version-control"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk0.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk1.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk2.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk3.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk4.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk5.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk6.txt",
+        ".copilot/chunks/phase-35-portal-workspace-integration.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/MAINTENANCE.md",
+      "agent": "general",
+      "scope": "docs",
+      "title": "exaix-dev-docs Submodule Maintenance Guidelines",
+      "short_summary": "Guidelines for maintaining development documentation in the exaix-dev-docs submodule.",
+      "version": "0.1",
+      "chunks": [
+        ".copilot/chunks/MAINTENANCE.md.chunk0.txt",
+        ".copilot/chunks/MAINTENANCE.md.chunk1.txt",
+        ".copilot/chunks/MAINTENANCE.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/dev/Agent_Validation_Requests.md",
+      "scope": "dev",
+      "title": "Agent Blueprint Validation Requests",
+      "short_summary": "",
+      "version": "2.0.0",
+      "chunks": [
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk0.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk1.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk2.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk3.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk4.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk5.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk6.txt",
+        ".copilot/chunks/Agent_Validation_Requests.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/dev/Exaix_Tools.md",
+      "agent": "all",
+      "scope": "dev",
+      "title": "Exaix Developer Tools — Complete Guide",
+      "short_summary": "Comprehensive guide to all developer tools: installation, usage, and when to use each tool for maximum effectiveness.",
+      "version": "1.0",
+      "topics": [
+        "tools",
+        "setup",
+        "productivity",
+        "development",
+        "installation"
+      ],
+      "chunks": [
+        ".copilot/chunks/Exaix_Tools.md.chunk0.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk1.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk2.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk3.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk4.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk5.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk6.txt",
+        ".copilot/chunks/Exaix_Tools.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "exaix-dev-docs/issues/plan-changeset-approval-bug.md",
       "title": "Plan/Changeset Approval Not Reflected in List Commands",
       "short_summary": "",
       "chunks": [
@@ -2054,7 +2109,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/request-processing-failure-test-provider.md",
+      "path": "exaix-dev-docs/issues/request-processing-failure-test-provider.md",
       "title": "Request Processing Fails with Test Provider and Plan Validation Error",
       "short_summary": "",
       "chunks": [
@@ -2067,7 +2122,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/003_technical_writer_plan_validation_no_saved_plan.md",
+      "path": "exaix-dev-docs/issues/003_technical_writer_plan_validation_no_saved_plan.md",
       "title": "Technical Writer Agent Plan Validation Failure - No Plan Saved for Review",
       "short_summary": "",
       "chunks": [
@@ -2079,7 +2134,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-show-missing-request-context.md",
+      "path": "exaix-dev-docs/issues/plan-show-missing-request-context.md",
       "title": "exactl plan show/list Missing Request and Agent Context",
       "short_summary": "",
       "chunks": [
@@ -2092,7 +2147,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/security-expert-artifact-duplicates-plan.md",
+      "path": "exaix-dev-docs/issues/security-expert-artifact-duplicates-plan.md",
       "title": "Read-only security-expert artifacts duplicate plan content",
       "short_summary": "",
       "chunks": [
@@ -2105,7 +2160,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/exa-bin-path-changes.md",
+      "path": "exaix-dev-docs/issues/exa-bin-path-changes.md",
       "title": "Support for Independent Exactl Installations via EXA_BIN_PATH",
       "short_summary": "",
       "chunks": [
@@ -2115,7 +2170,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/test-engineer-request-frontmatter-missing.md",
+      "path": "exaix-dev-docs/issues/test-engineer-request-frontmatter-missing.md",
       "title": "Test-engineer request plan missing frontmatter",
       "short_summary": "",
       "chunks": [
@@ -2130,7 +2185,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/changeset-approve-branch-not-found.md",
+      "path": "exaix-dev-docs/issues/changeset-approve-branch-not-found.md",
       "title": "Changeset approve fails to find branches in portal repositories",
       "short_summary": "",
       "chunks": [
@@ -2142,7 +2197,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-step-execution-logic-missing.md",
+      "path": "exaix-dev-docs/issues/plan-step-execution-logic-missing.md",
       "agent": "general",
       "scope": "dev",
       "title": "Plan step execution logic not implemented",
@@ -2166,7 +2221,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/README.md",
+      "path": "exaix-dev-docs/issues/README.md",
       "title": "Issues Folder Guidelines",
       "short_summary": "",
       "version": "1.0",
@@ -2187,7 +2242,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-show-rejected-plans-not-displayed.md",
+      "path": "exaix-dev-docs/issues/plan-show-rejected-plans-not-displayed.md",
       "title": "Rejected plans not shown in plan show command",
       "short_summary": "",
       "chunks": [
@@ -2198,7 +2253,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/changeset-show-missing-request-context.md",
+      "path": "exaix-dev-docs/issues/changeset-show-missing-request-context.md",
       "title": "Enhance changeset commands to show request and plan context",
       "short_summary": "",
       "chunks": [
@@ -2210,7 +2265,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/review-reject-worktree-conflict.md",
+      "path": "exaix-dev-docs/issues/review-reject-worktree-conflict.md",
       "title": "Cannot reject review when branch is used by worktree",
       "short_summary": "",
       "chunks": [
@@ -2222,7 +2277,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/database-changeset-table-missing.md",
+      "path": "exaix-dev-docs/issues/database-changeset-table-missing.md",
       "agent": "general",
       "scope": "dev",
       "title": "Database changeset table not created during migration",
@@ -2243,7 +2298,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/code-analyst-ignores-portal-context.md",
+      "path": "exaix-dev-docs/issues/code-analyst-ignores-portal-context.md",
       "title": "Code-analyst ignores portal context and hallucinates stack",
       "short_summary": "",
       "chunks": [
@@ -2255,7 +2310,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/llm-provider-env-vars-ignored.md",
+      "path": "exaix-dev-docs/issues/llm-provider-env-vars-ignored.md",
       "title": "LLM Provider Environment Variables Ignored in Provider Selection",
       "short_summary": "",
       "chunks": [
@@ -2270,7 +2325,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-validation-failure-senior-coder.md",
+      "path": "exaix-dev-docs/issues/plan-validation-failure-senior-coder.md",
       "title": "Plan Validation Failed for Senior Coder Agent",
       "short_summary": "",
       "chunks": [
@@ -2281,7 +2336,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/phase46-cli-commands-missing.md",
+      "path": "exaix-dev-docs/issues/phase46-cli-commands-missing.md",
       "title": "Phase 46 Portal Knowledge Commands Missing in CLI Wiring",
       "short_summary": "",
       "chunks": [
@@ -2293,7 +2348,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/changeset-show-diff-option-not-implemented.md",
+      "path": "exaix-dev-docs/issues/changeset-show-diff-option-not-implemented.md",
       "title": "changeset show --diff option not implemented",
       "short_summary": "",
       "chunks": [
@@ -2303,7 +2358,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/execution-bug-data-loss-git-root.md",
+      "path": "exaix-dev-docs/issues/execution-bug-data-loss-git-root.md",
       "title": "Critical Data Loss: Git Repository Scope Mismatch in Runtime Root",
       "short_summary": "",
       "chunks": [
@@ -2318,7 +2373,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-reject-after-changeset-rejection.md",
+      "path": "exaix-dev-docs/issues/plan-reject-after-changeset-rejection.md",
       "title": "Cannot reject plan after changeset rejection",
       "short_summary": "",
       "chunks": [
@@ -2330,7 +2385,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/code-analyst-execution-artifact-empty.md",
+      "path": "exaix-dev-docs/issues/code-analyst-execution-artifact-empty.md",
       "title": "Code-analyst execution artifact contains only placeholder summary",
       "short_summary": "",
       "chunks": [
@@ -2342,7 +2397,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/execution-folder-wrong-location.md",
+      "path": "exaix-dev-docs/issues/execution-folder-wrong-location.md",
       "agent": "general",
       "scope": "dev",
       "title": "Execution folder placed in workspace root instead of Memory/",
@@ -2362,7 +2417,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/event-journal-token-tracking-missing.md",
+      "path": "exaix-dev-docs/issues/event-journal-token-tracking-missing.md",
       "title": "Event Journal Missing Token Usage Tracking in Payload",
       "short_summary": "",
       "chunks": [
@@ -2374,7 +2429,7 @@
       ]
     },
     {
-      "path": ".copilot/issues/plan-validation-dependencies-strings-and-token-stats-missing.md",
+      "path": "exaix-dev-docs/issues/plan-validation-dependencies-strings-and-token-stats-missing.md",
       "title": "Plan validation rejects string dependencies and plan show lacks token stats",
       "short_summary": "",
       "chunks": [

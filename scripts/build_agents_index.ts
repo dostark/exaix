@@ -13,6 +13,7 @@ import { parse } from "@std/yaml";
 import type { JSONObject } from "../src/shared/types/json.ts";
 
 const AGENTS_DIR = ".copilot";
+const SUBMODULE_DIR = "exaix-dev-docs";
 const OUT_MANIFEST = `${AGENTS_DIR}/manifest.json`;
 const CHUNKS_DIR = `${AGENTS_DIR}/chunks`;
 
@@ -41,32 +42,43 @@ function chunkText(text: string, size = 800): string[] {
 export async function generateManifestObject() {
   const docs = [] as JSONObject[];
   await Deno.mkdir(CHUNKS_DIR, { recursive: true });
-  for await (const entry of walk(AGENTS_DIR, { exts: [".md"], maxDepth: 3 })) {
-    if (!entry.isFile) continue;
-    const md = await Deno.readTextFile(entry.path);
-    const fmRaw = extractFrontmatter(md);
-    if (!fmRaw) continue;
-    const fm = parse(fmRaw) as JSONObject;
-    const short_summary = String(fm["short_summary"] ?? "");
-    const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
-    const chunkPaths: string[] = [];
-    chunks.slice(0, 8).forEach((c, idx) => {
-      const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
-      Deno.writeTextFileSync(p, c);
-      chunkPaths.push(p);
-    });
 
-    docs.push({
-      path: entry.path,
-      agent: fm["agent"],
-      scope: fm["scope"],
-      title: fm["title"],
-      short_summary,
-      version: fm["version"],
-      topics: fm["topics"],
-      qwen_skill: fm["qwen_skill"],
-      chunks: chunkPaths,
-    });
+  const scanDirs = [AGENTS_DIR];
+  try {
+    const stat = await Deno.stat(SUBMODULE_DIR);
+    if (stat.isDirectory) scanDirs.push(SUBMODULE_DIR);
+  } catch {
+    // Submodule not present, skip
+  }
+
+  for (const dir of scanDirs) {
+    for await (const entry of walk(dir, { exts: [".md"], maxDepth: 4 })) {
+      if (!entry.isFile) continue;
+      const md = await Deno.readTextFile(entry.path);
+      const fmRaw = extractFrontmatter(md);
+      if (!fmRaw) continue;
+      const fm = parse(fmRaw) as JSONObject;
+      const short_summary = String(fm["short_summary"] ?? "");
+      const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
+      const chunkPaths: string[] = [];
+      chunks.slice(0, 8).forEach((c, idx) => {
+        const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
+        Deno.writeTextFileSync(p, c);
+        chunkPaths.push(p);
+      });
+
+      docs.push({
+        path: entry.path,
+        agent: fm["agent"],
+        scope: fm["scope"],
+        title: fm["title"],
+        short_summary,
+        version: fm["version"],
+        topics: fm["topics"],
+        qwen_skill: fm["qwen_skill"],
+        chunks: chunkPaths,
+      });
+    }
   }
 
   return { generated_at: new Date().toISOString(), docs };

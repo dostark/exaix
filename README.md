@@ -153,6 +153,6 @@ Proprietary © Exaix Development Team. See [LICENSE](./LICENSE). [cite:4]
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
-- **Planning**: [.copilot/planning/](./.copilot/planning/)
+- **Dev Docs**: [exaix-dev-docs/](./exaix-dev-docs/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
 `````

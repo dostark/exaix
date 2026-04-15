@@ -78,18 +78,33 @@ async function validateFile(path: string): Promise<string[]> {
 
 async function main() {
   const errors: string[] = [];
+  const SUBMODULE_DIR = "exaix-dev-docs";
+  const scanDirs = [AGENTS_DIR];
   try {
-    for await (const entry of walk(AGENTS_DIR, { exts: [".md"], maxDepth: 4 })) {
-      if (entry.isFile) {
-        if (entry.path.includes("/planning/") || entry.path.includes("/issues/")) {
-          continue;
+    const stat = await Deno.stat(SUBMODULE_DIR);
+    if (stat.isDirectory) scanDirs.push(SUBMODULE_DIR);
+  } catch {
+    // Submodule not present, skip
+  }
+
+  try {
+    for (const dir of scanDirs) {
+      for await (const entry of walk(dir, { exts: [".md"], maxDepth: 4 })) {
+        if (entry.isFile) {
+          if (
+            entry.path.includes("/planning/") || entry.path.includes("/issues/") ||
+            entry.path.includes("/not_actual/") || entry.path.includes("/dev/") ||
+            entry.name === "MAINTENANCE.md"
+          ) {
+            continue;
+          }
+          const fileErrors = await validateFile(entry.path);
+          errors.push(...fileErrors);
         }
-        const fileErrors = await validateFile(entry.path);
-        errors.push(...fileErrors);
       }
     }
   } catch (e) {
-    console.error("Error scanning .copilot/ directory:", e);
+    console.error("Error scanning directories:", e);
     Deno.exit(2);
   }
 

@@ -17,10 +17,9 @@ This directory contains short, machine-discoverable instruction documents intend
 - `.copilot/providers/` — provider-specific adaptation notes and prompt templates
 - `.copilot/prompts/` — Comprehensive prompt templates for systematic coding workflows (see [prompts/README.md](prompts/README.md))
 - `.copilot/chunks/` — (auto-generated) pre-chunked text files for quick retrieval
-- `.copilot/issues/` — structured bug reports and technical issues (see [issues/README.md](issues/README.md))
-- `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
 - `.copilot/process/` — high-level governance, methodologies (SDD), and repo-wide patterns (see [process/README.md](process/README.md))
 - `.copilot/workflows/` — tactical, step-by-step development workflows (see [workflows/README.md](workflows/README.md))
+- `exaix-dev-docs/` — (Submodule) Private development documentation including planning and issues.
 
 ## Prompt Directory Boundary
 
@@ -175,7 +174,7 @@ Choose the right location based on content:
 - **`workflows/`** — instructional and methodological workflows (merged from source, tests, docs)
 - **`prompts/`** — Comprehensive prompt templates (commit, plan, etc.)
 - **`providers/`** — Provider-specific adaptations (Claude, OpenAI, Google, Copilot)
-- **`planning/`** — implementation roadmaps and phase plans
+- **`exaix-dev-docs/`** — (Submodule) Implementation roadmaps, phase plans, and issue tracking.
 
 ### 2. Add YAML Frontmatter with Required Fields
 
@@ -490,4 +489,4 @@ EOF
 - **Priority**: `critical`, `high`, `medium`, `low`
 - **Labels**: Tag by type, component, and impact
 
-**See [issues/README.md](issues/README.md) for complete guidelines, templates, and best practices.**
+**See [exaix-dev-docs/MAINTENANCE.md](../exaix-dev-docs/MAINTENANCE.md) for complete guidelines, templates, and best practices regarding development documentation.**
