@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Post-Gap Analysis Workflow"
+short_summary: "Thin slash-command wrapper for post-gap analysis."
+version: "1.0"
+topics: ["post-gap", "analysis", "workflow"]
+qwen_skill: post-gap-analysis
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, finds gaps, and writes remediation steps back into the document
 ---
 

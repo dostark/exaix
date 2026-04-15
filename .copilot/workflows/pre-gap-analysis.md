@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Pre-Gap Analysis Workflow"
+short_summary: "Thin slash-command wrapper for pre-gap analysis."
+version: "1.0"
+topics: ["pre-gap", "analysis", "workflow"]
+qwen_skill: pre-gap-analysis
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 ---
 

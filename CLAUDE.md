@@ -14,6 +14,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 ## 🤖 CLAUDE.md — REQUIRED READING FOR ALL AI AGENTS
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
+> _Note: `.copilot/` is the canonical directory. Symlinks like `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`._
 >
 > **Violation of these guidelines will result in rejected or incorrect implementations.**
 
@@ -51,15 +52,15 @@ Exaix uses an **Agent-Native Documentation Nervous System**. Agents are **MANDAT
 
 ## Quick Reference
 
-| Need                 | Location                                                                 |
-| -------------------- | ------------------------------------------------------------------------ |
-| Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)               |
-| Source patterns      | [.copilot/source/exaix.md](.copilot/source/exaix.md)                     |
-| Testing patterns     | [.copilot/tests/testing.md](.copilot/tests/testing.md)                   |
-| Documentation guide  | [.copilot/docs/documentation.md](.copilot/docs/documentation.md)         |
-| Commit message guide | [.copilot/prompts/commit-message.md](.copilot/prompts/commit-message.md) |
-| Planning documents   | [.copilot/planning/](.copilot/planning/)                                 |
-| All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                         |
+| Need                 | Location                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)                         |
+| Source patterns      | [.copilot/workflows/exaix-development.md](.copilot/workflows/exaix-development.md) |
+| Testing patterns     | [.copilot/workflows/testing.md](.copilot/workflows/testing.md)                     |
+| Documentation guide  | [.copilot/workflows/documentation.md](.copilot/workflows/documentation.md)         |
+| Commit message guide | [.copilot/workflows/commit.md](.copilot/workflows/commit.md)                       |
+| Planning documents   | [.copilot/planning/](.copilot/planning/)                                           |
+| All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                                   |
 
 ## Project Overview
 
@@ -227,9 +228,7 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 .copilot/
 ├── manifest.json       # Index of all agent docs (auto-generated)
 ├── cross-reference.md  # Task → Document quick reference
-├── source/             # Source code development patterns
-├── tests/              # Testing patterns and helpers
-├── docs/               # Documentation maintenance
+├── workflows/          # Task-specific workflows and guidelines
 ├── process/            # Development processes
 ├── prompts/            # Example prompts for various tasks
 ├── providers/          # Provider-specific guidance (Claude, OpenAI, etc.)
@@ -239,14 +238,14 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 ### When to Consult .copilot/
 
-| Task                  | Consult                                                  |
-| --------------------- | -------------------------------------------------------- |
-| Writing tests         | `.copilot/tests/testing.md`                              |
-| Adding features       | `.copilot/source/exaix.md` + `.copilot/tests/testing.md` |
-| Refactoring           | `.copilot/source/exaix.md`                               |
-| Documentation         | `.copilot/docs/documentation.md`                         |
-| Planning/roadmap      | `.copilot/planning/*.md`                                 |
-| Finding the right doc | `.copilot/cross-reference.md`                            |
+| Task                  | Consult                                   |
+| --------------------- | ----------------------------------------- |
+| Writing tests         | `.copilot/workflows/testing.md`           |
+| Adding features       | `.copilot/workflows/exaix-development.md` |
+| Refactoring           | `.copilot/workflows/exaix-development.md` |
+| Documentation         | `.copilot/workflows/documentation.md`     |
+| Planning/roadmap      | `.copilot/planning/*.md`                  |
+| Finding the right doc | `.copilot/cross-reference.md`             |
 
 ## Key Patterns & Constraints
 

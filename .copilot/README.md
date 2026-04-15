@@ -28,6 +28,26 @@ There are two prompt directories in this repository, and they are intentionally 
 
 Do not move `.copilot/prompts/` files into `.github/prompts/` or vice versa unless you are also changing the consuming toolchain.
 
+## Qwen Code Integration
+
+The `.qwen/` directory contains Qwen Code-specific skill definitions for auto-discovery. It is the **only** agent-specific directory outside `.copilot/` because Qwen Code requires skills to be in `.qwen/skills/<name>/SKILL.md` format.
+
+- **`.qwen/skills/`** — 6 project skills: `commit`, `next-steps`, `plan`, `post-gap-analysis`, `pre-gap-analysis`, `refactor-check-magic`
+  - Each `SKILL.md` is a **thin routing wrapper** that instructs Qwen to `read_file` the canonical source in `.copilot/prompts/` before executing
+  - The canonical sources are **authoritative**; if a wrapper conflicts with the canonical source, the canonical source wins
+  - When updating a `.copilot/prompts/` file, review the corresponding `.qwen/skills/` wrapper to ensure the reference path is still correct
+
+| Qwen Skill                             | Canonical Source                                       |
+| -------------------------------------- | ------------------------------------------------------ |
+| `.qwen/skills/commit/`                 | `.copilot/prompts/commit-message.md`                   |
+| `.qwen/skills/next-steps/`             | `.copilot/prompts/tdd-phase-steps.md`                  |
+| `.qwen/skills/plan/`                   | `.copilot/prompts/plan.md`                             |
+| `.qwen/skills/post-gap-analysis/`      | `.copilot/prompts/post-gap-analysis.md`                |
+| `.qwen/skills/pre-gap-analysis/`       | `.copilot/prompts/pre-gap-analysis.md`                 |
+| `.qwen/skills/refactor-check-magic/`   | `.copilot/prompts/refactor-check-magic-comprehensive.md` |
+
+Qwen Code discovers skills automatically from `.qwen/skills/` based on the `description` frontmatter field. No manifest regeneration or chunk rebuild is needed when updating `.qwen/` files.
+
 - `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
 
 ## Quick Links for Agents

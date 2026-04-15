@@ -1,1 +1,0 @@
-../../.copilot/workflows/pre-gap-analysis.md

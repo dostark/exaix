@@ -105,7 +105,7 @@ tests/
 - Test placement is enforced by `deno task check:test-placement`.
 - New files matching `*_test.ts` must live under `tests/`.
 - New service tests must live under `tests/services/<domain>/`, not directly under `tests/services/`.
-- The authoritative agent-facing placement rules live in `.copilot/tests/testing.md`.
+- The authoritative agent-facing placement rules live in `.copilot/workflows/testing.md`.
 
 ### 1. Choose the Right Location
 

@@ -1,1 +1,0 @@
-../../.copilot/workflows/commit.md

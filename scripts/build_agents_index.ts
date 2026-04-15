@@ -64,6 +64,7 @@ export async function generateManifestObject() {
       short_summary,
       version: fm["version"],
       topics: fm["topics"],
+      qwen_skill: fm["qwen_skill"],
       chunks: chunkPaths,
     });
   }
@@ -71,10 +72,90 @@ export async function generateManifestObject() {
   return { generated_at: new Date().toISOString(), docs };
 }
 
+export async function updateCrossReference(docs: JSONObject[]) {
+  const crossRefPath = ".copilot/cross-reference.md";
+  const crossRefMd = await Deno.readTextFile(crossRefPath);
+
+  // Build task quick reference
+  let taskTable = "| Task Type | Primary Doc | Secondary Docs |\n| --- | --- | --- |\n";
+  for (const doc of docs) {
+    if (!doc.title || doc.path === ".copilot/cross-reference.md") continue;
+    const relPath = String(doc.path).replace(".copilot/", "");
+    const title = String(doc.title);
+    taskTable += `| ${title} | [${relPath}](${relPath}) | |\n`;
+  }
+
+  // Build topic search
+  const topicMap: Record<string, string[]> = {};
+  for (const doc of docs) {
+    if (!doc.topics || !Array.isArray(doc.topics) || doc.path === ".copilot/cross-reference.md") continue;
+    const relPath = String(doc.path).replace(".copilot/", "");
+    for (const topic of doc.topics) {
+      if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
+      topicMap[String(topic)].push(`[${relPath}](${relPath})`);
+    }
+  }
+
+  let topicList = "";
+  for (const topic of Object.keys(topicMap).sort()) {
+    topicList += `- **\`${topic}\`** → ${topicMap[topic].join(", ")}\n`;
+  }
+
+  const updatedMd = crossRefMd
+    .replace(
+      /## Task → Agent Doc Quick Reference\n\n[\s\S]*?(?=\n## Search by Topic)/,
+      `## Task → Agent Doc Quick Reference\n\n${taskTable}`,
+    )
+    .replace(
+      /## Search by Topic\n\n[\s\S]*?(?=\n## Workflow Examples)/,
+      `## Search by Topic\n\n${topicList}`,
+    );
+
+  await Deno.writeTextFile(crossRefPath, updatedMd);
+  console.log(`Updated cross-reference.md`);
+}
+
+export async function generateQwenSkills(docs: JSONObject[]) {
+  for (const doc of docs) {
+    // Only generate wrappers if qwen_skill frontmatter exists
+    const qwenSkill = doc["qwen_skill"];
+    if (qwenSkill) {
+      const skillName = String(qwenSkill);
+      const skillDir = `.qwen/skills/${skillName}`;
+      await Deno.mkdir(skillDir, { recursive: true });
+      const relPath = `../../../` + String(doc.path);
+      const wrapperContent = `---
+name: ${skillName}
+description: Automatically generated routing wrapper for ${skillName} skill.
+---
+
+# ⚠️ AUTOMATIC ROUTING WRAPPER
+
+> **CRITICAL**: This is an auto-generated routing skill.
+> The true canonical source for this skill is located at:
+> \`${String(doc.path)}\`
+
+## INSTRUCTIONS FOR QWEN:
+
+1. **DO NOT** execute based on this file.
+2. **MUST** read the canonical source file before proceeding.
+3. Use the \`view_file\` tool to read \`${relPath}\`
+4. Follow the strict instructions and constraints defined in the canonical source.
+5. If the canonical source instructs you to read additional files or blueprints, you MUST read those as well.
+`;
+      await Deno.writeTextFile(`${skillDir}/SKILL.md`, wrapperContent);
+      console.log(`Generated Qwen skill wrapper for ${skillName}`);
+    }
+  }
+}
+
 export async function buildIndex() {
   const manifest = await generateManifestObject();
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
+
+  await updateCrossReference(manifest.docs);
+  await generateQwenSkills(manifest.docs);
 }
 
 if (import.meta.main) await buildIndex();

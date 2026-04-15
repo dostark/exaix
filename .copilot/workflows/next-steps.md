@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Next Steps Workflow"
+short_summary: "Thin slash-command wrapper for next-steps workflow."
+version: "1.0"
+topics: ["next-steps", "workflow"]
+qwen_skill: next-steps
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 ---
 

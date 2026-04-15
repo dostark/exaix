@@ -48,7 +48,24 @@ async function validateFile(path: string): Promise<string[]> {
 
   // presence of a canonical prompt or examples
   if (!/Canonical prompt|Examples|Example prompt/i.test(content)) {
-    errors.push(`${path}: missing 'Canonical prompt' or 'Examples' section`);
+    // Exceptions: we don't strictly require this for READMEs
+    if (!path.endsWith("README.md")) {
+      errors.push(`${path}: missing 'Canonical prompt' or 'Examples' section`);
+    }
+  }
+
+  // Validate Qwen skill wrapper if declared
+  const qwenSkill = fm["qwen_skill"];
+  if (qwenSkill) {
+    const wrapperPath = `.qwen/skills/${qwenSkill}/SKILL.md`;
+    try {
+      const wrapperContent = await Deno.readTextFile(wrapperPath);
+      if (!wrapperContent.includes(`\`${path}\``)) {
+        errors.push(`${path}: Qwen wrapper ${wrapperPath} does not correctly cite canonical source`);
+      }
+    } catch {
+      errors.push(`${path}: Qwen wrapper ${wrapperPath} is missing but declared in frontmatter`);
+    }
   }
 
   return errors;

@@ -142,7 +142,7 @@ Each agent should be tested for:
 1.
 1.
 
-See `agents/tests/testing.md` for comprehensive testing guidelines.
+See `agents/workflows/testing.md` for comprehensive testing guidelines.
 
 ## 🚀 Getting Started
 
@@ -155,7 +155,7 @@ See `agents/tests/testing.md` for comprehensive testing guidelines.
 ## 📚 Related Documentation
 
 - `docs/Exaix_Implementation_Plan.md` - Step 6.10: Agent Examples
-- `agents/source/exaix.md` - Blueprint creation guidelines
-- `agents/tests/testing.md` - Testing guidelines
+- `agents/workflows/exaix-development.md` - Blueprint creation guidelines
+- `agents/workflows/testing.md` - Testing guidelines
 - `Blueprints/Flows/examples/` - Flow examples that use these agents
 ````

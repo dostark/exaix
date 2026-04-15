@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Commit Workflow"
+short_summary: "Thin slash-command wrapper for the canonical commit workflow."
+version: "1.0"
+topics: ["commit", "workflow", "git"]
+qwen_skill: commit
 description: Create a structured commit message for current changes following Exaix conventions
 ---
 

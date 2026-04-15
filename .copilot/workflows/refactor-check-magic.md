@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Refactor Magic Check Workflow"
+short_summary: "Thin slash-command wrapper for refactoring magic-value violations."
+version: "1.0"
+topics: ["refactor", "magic-values", "workflow"]
+qwen_skill: refactor-check-magic
 description: Refactor magic-value violations from deno task check:magic
 ---
 

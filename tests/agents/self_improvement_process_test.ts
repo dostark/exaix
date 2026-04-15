@@ -77,8 +77,8 @@ Deno.test("Self-improvement loop: verify provider docs reference common process"
 Deno.test("Self-improvement loop: verify discovery docs mention the process", async () => {
   const crossRef = await Deno.readTextFile(".copilot/cross-reference.md");
   assert(
-    crossRef.includes("Instruction gaps / self-improvement"),
-    "cross-reference should include self-improvement mapping row",
+    crossRef.includes("Self-improvement loop for agent instructions"),
+    "cross-reference should include self-improvement loop title",
   );
   assert(
     crossRef.includes("process/self-improvement.md") &&

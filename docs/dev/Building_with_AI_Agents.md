@@ -1459,9 +1459,9 @@ This isn't inconsistency—it's documentation of real engineering decisions:
 **What We Created**:
 
 ```text
-agents/source/exaix.md     # Source development guidelines
-agents/tests/testing.md       # Test development guidelines
-agents/docs/documentation.md  # Documentation development guidelines
+agents/workflows/exaix-development.md     # Source development guidelines
+agents/workflows/testing.md       # Test development guidelines
+agents/workflows/documentation.md  # Documentation development guidelines
 ```text
 
 **The Critical Addition—TDD as a Gate**:
@@ -3422,10 +3422,10 @@ These prompts _demonstrate_ the agents/ system by _using_ the agents/ system. Ea
 
 | Task Type              | Primary Doc                                                    | Secondary Docs                                                         |
 | ---------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Write unit tests       | [tests/testing.md](../agents/tests/testing.md)                 | [source/exaix.md](../agents/source/exaix.md)                     |
-| Refactor code          | [source/exaix.md](../agents/source/exaix.md)             | [tests/testing.md](../agents/tests/testing.md)                         |
-| Fix TypeScript errors  | [source/exaix.md](../agents/source/exaix.md)             | [copilot/exaix.md](../agents/copilot/exaix.md)                   |
-| Security audit         | [tests/testing.md](../agents/tests/testing.md) #Security Tests | [source/exaix.md](../agents/source/exaix.md) #System Constraints |
+| Write unit tests       | [workflows/testing.md](../agents/workflows/testing.md)                 | [workflows/exaix-development.md](../agents/workflows/exaix-development.md)                     |
+| Refactor code          | [workflows/exaix-development.md](../agents/workflows/exaix-development.md)             | [workflows/testing.md](../agents/workflows/testing.md)                         |
+| Fix TypeScript errors  | [workflows/exaix-development.md](../agents/workflows/exaix-development.md)             | [copilot/exaix.md](../agents/copilot/exaix.md)                   |
+| Security audit         | [workflows/testing.md](../agents/workflows/testing.md) #Security Tests | [workflows/exaix-development.md](../agents/workflows/exaix-development.md) #System Constraints |
 | Use Claude effectively | [providers/claude.md](../agents/providers/claude.md)           | [providers/claude-rag.md](../agents/providers/claude-rag.md)           |
 
 Plus workflow examples:
@@ -4452,8 +4452,8 @@ Agent: "No - I only explore it when tasks explicitly mention it,
 | Need               | Location                  |
 | ------------------ | ------------------------- |
 | Task → Doc mapping | agents/cross-reference.md |
-| Source patterns    | agents/source/exaix.md |
-| Testing patterns   | agents/tests/testing.md   |
+| Source patterns    | agents/workflows/exaix-development.md |
+| Testing patterns   | agents/workflows/testing.md   |
 | Planning docs      | agents/planning/          |
 
 ## Key Patterns

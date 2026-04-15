@@ -1,1 +1,0 @@
-../../.copilot/workflows/refactor-check-magic.md

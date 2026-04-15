@@ -1,35 +1,6 @@
 {
-  "generated_at": "2026-04-14T18:36:56.468Z",
+  "generated_at": "2026-04-15T12:26:12.038Z",
   "docs": [
-    {
-      "path": ".copilot/docs/documentation.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Documentation Development Guidelines",
-      "short_summary": "Guidance for producing and maintaining docs in the docs/ directory and cross-referencing the Implementation Plan.",
-      "version": "0.1",
-      "topics": [
-        "docs",
-        "process",
-        "publishing"
-      ],
-      "chunks": [
-        ".copilot/chunks/documentation.md.chunk0.txt",
-        ".copilot/chunks/documentation.md.chunk1.txt",
-        ".copilot/chunks/documentation.md.chunk2.txt",
-        ".copilot/chunks/documentation.md.chunk3.txt",
-        ".copilot/chunks/documentation.md.chunk4.txt",
-        ".copilot/chunks/documentation.md.chunk5.txt",
-        ".copilot/chunks/documentation.md.chunk6.txt"
-      ]
-    },
-    {
-      "path": ".copilot/coverage/coverage-summary.md",
-      "short_summary": "",
-      "chunks": [
-        ".copilot/chunks/coverage-summary.md.chunk0.txt"
-      ]
-    },
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
       "agent": "openai",
@@ -666,78 +637,6 @@
         ".copilot/chunks/self-improvement-loop.md.chunk0.txt",
         ".copilot/chunks/self-improvement-loop.md.chunk1.txt",
         ".copilot/chunks/self-improvement-loop.md.chunk2.txt"
-      ]
-    },
-    {
-      "path": ".copilot/source/agent-thought-standardization.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Thought Section Standardization",
-      "short_summary": "Standardized structure for agent <thought> sections to ensure consistent reasoning patterns across all blueprints.",
-      "version": "0.1",
-      "topics": [
-        "agents",
-        "reasoning",
-        "standardization",
-        "thought-structure"
-      ],
-      "chunks": [
-        ".copilot/chunks/agent-thought-standardization.md.chunk0.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk1.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk2.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk3.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk4.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk5.txt",
-        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt"
-      ]
-    },
-    {
-      "path": ".copilot/source/exaix.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Source Development Guidelines",
-      "short_summary": "Guidance for developing Exaix source code: TDD-first, patterns, project structure, and best practices.",
-      "version": "0.1",
-      "topics": [
-        "source",
-        "development",
-        "tdd",
-        "patterns"
-      ],
-      "chunks": [
-        ".copilot/chunks/exaix.md.chunk0.txt",
-        ".copilot/chunks/exaix.md.chunk1.txt",
-        ".copilot/chunks/exaix.md.chunk2.txt",
-        ".copilot/chunks/exaix.md.chunk3.txt",
-        ".copilot/chunks/exaix.md.chunk4.txt",
-        ".copilot/chunks/exaix.md.chunk5.txt",
-        ".copilot/chunks/exaix.md.chunk6.txt",
-        ".copilot/chunks/exaix.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/source/agent-content-schema.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Agent Content Schema Reference",
-      "short_summary": "Standardized JSON schema for agent <content> responses with Zod validation requirements.",
-      "version": "1.0",
-      "topics": [
-        "agents",
-        "schema",
-        "json",
-        "validation",
-        "blueprints"
-      ],
-      "chunks": [
-        ".copilot/chunks/agent-content-schema.md.chunk0.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk1.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk2.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk3.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk4.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk5.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk6.txt",
-        ".copilot/chunks/agent-content-schema.md.chunk7.txt"
       ]
     },
     {
@@ -1435,6 +1334,28 @@
       ]
     },
     {
+      "path": ".copilot/planning/phase-75-agent-documentation-optimization.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 75: Agent Documentation Optimization",
+      "short_summary": "Consolidate agent documentation structure, migrate workflow guidelines, and enforce READMEs across all subfolders.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "architecture",
+        "agents",
+        "documentation",
+        "workflows"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk0.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk1.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk2.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk3.txt",
+        ".copilot/chunks/phase-75-agent-documentation-optimization.md.chunk4.txt"
+      ]
+    },
+    {
       "path": ".copilot/planning/phase-63-flow-error-recovery.md",
       "agent": "senior-coder",
       "scope": "dev",
@@ -1642,11 +1563,6 @@
       ]
     },
     {
-      "path": ".copilot/rules/commit.md",
-      "short_summary": "",
-      "chunks": []
-    },
-    {
       "path": ".copilot/cross-reference.md",
       "scope": "dev",
       "title": "Agent Documentation Cross-Reference Map",
@@ -1703,8 +1619,64 @@
       ]
     },
     {
+      "path": ".copilot/workflows/agent-thought-standardization.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Agent Thought Section Standardization",
+      "short_summary": "Standardized structure for agent <thought> sections to ensure consistent reasoning patterns across all blueprints.",
+      "version": "0.1",
+      "topics": [
+        "agents",
+        "reasoning",
+        "standardization",
+        "thought-structure"
+      ],
+      "chunks": [
+        ".copilot/chunks/agent-thought-standardization.md.chunk0.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk1.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk2.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk3.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk4.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk5.txt",
+        ".copilot/chunks/agent-thought-standardization.md.chunk6.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/testing.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Test Development Guidelines",
+      "short_summary": "Testing patterns and unified test context for Exaix (initTestDbService, createCliTestContext, withEnv, etc.).",
+      "version": "0.1",
+      "topics": [
+        "tests",
+        "tdd",
+        "helpers"
+      ],
+      "chunks": [
+        ".copilot/chunks/testing.md.chunk0.txt",
+        ".copilot/chunks/testing.md.chunk1.txt",
+        ".copilot/chunks/testing.md.chunk2.txt",
+        ".copilot/chunks/testing.md.chunk3.txt",
+        ".copilot/chunks/testing.md.chunk4.txt",
+        ".copilot/chunks/testing.md.chunk5.txt",
+        ".copilot/chunks/testing.md.chunk6.txt",
+        ".copilot/chunks/testing.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/workflows/refactor-check-magic.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Refactor Magic Check Workflow",
+      "short_summary": "Thin slash-command wrapper for refactoring magic-value violations.",
+      "version": "1.0",
+      "topics": [
+        "refactor",
+        "magic-values",
+        "workflow"
+      ],
+      "qwen_skill": "refactor-check-magic",
       "chunks": [
         ".copilot/chunks/refactor-check-magic.md.chunk0.txt",
         ".copilot/chunks/refactor-check-magic.md.chunk1.txt"
@@ -1712,7 +1684,16 @@
     },
     {
       "path": ".copilot/workflows/next-steps.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Next Steps Workflow",
+      "short_summary": "Thin slash-command wrapper for next-steps workflow.",
+      "version": "1.0",
+      "topics": [
+        "next-steps",
+        "workflow"
+      ],
+      "qwen_skill": "next-steps",
       "chunks": [
         ".copilot/chunks/next-steps.md.chunk0.txt",
         ".copilot/chunks/next-steps.md.chunk1.txt",
@@ -1721,7 +1702,17 @@
     },
     {
       "path": ".copilot/workflows/pre-gap-analysis.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Pre-Gap Analysis Workflow",
+      "short_summary": "Thin slash-command wrapper for pre-gap analysis.",
+      "version": "1.0",
+      "topics": [
+        "pre-gap",
+        "analysis",
+        "workflow"
+      ],
+      "qwen_skill": "pre-gap-analysis",
       "chunks": [
         ".copilot/chunks/pre-gap-analysis.md.chunk0.txt",
         ".copilot/chunks/pre-gap-analysis.md.chunk1.txt",
@@ -1730,8 +1721,62 @@
       ]
     },
     {
+      "path": ".copilot/workflows/README.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Exaix Workflow Guidelines",
+      "short_summary": "Step-by-step guidelines for executing specific development tasks.",
+      "version": "1.0",
+      "topics": [
+        "workflows",
+        "guidelines",
+        "methodology",
+        "best-practices"
+      ],
+      "chunks": [
+        ".copilot/chunks/README.md.chunk0.txt",
+        ".copilot/chunks/README.md.chunk1.txt",
+        ".copilot/chunks/README.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/agent-content-schema.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Agent Content Schema Reference",
+      "short_summary": "Standardized JSON schema for agent <content> responses with Zod validation requirements.",
+      "version": "1.0",
+      "topics": [
+        "agents",
+        "schema",
+        "json",
+        "validation",
+        "blueprints"
+      ],
+      "chunks": [
+        ".copilot/chunks/agent-content-schema.md.chunk0.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk1.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk2.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk3.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk4.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk5.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk6.txt",
+        ".copilot/chunks/agent-content-schema.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/workflows/commit.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Commit Workflow",
+      "short_summary": "Thin slash-command wrapper for the canonical commit workflow.",
+      "version": "1.0",
+      "topics": [
+        "commit",
+        "workflow",
+        "git"
+      ],
+      "qwen_skill": "commit",
       "chunks": [
         ".copilot/chunks/commit.md.chunk0.txt",
         ".copilot/chunks/commit.md.chunk1.txt",
@@ -1740,8 +1785,40 @@
       ]
     },
     {
+      "path": ".copilot/workflows/documentation.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Documentation Development Guidelines",
+      "short_summary": "Guidance for producing and maintaining docs in the docs/ directory and cross-referencing the Implementation Plan.",
+      "version": "0.1",
+      "topics": [
+        "docs",
+        "process",
+        "publishing"
+      ],
+      "chunks": [
+        ".copilot/chunks/documentation.md.chunk0.txt",
+        ".copilot/chunks/documentation.md.chunk1.txt",
+        ".copilot/chunks/documentation.md.chunk2.txt",
+        ".copilot/chunks/documentation.md.chunk3.txt",
+        ".copilot/chunks/documentation.md.chunk4.txt",
+        ".copilot/chunks/documentation.md.chunk5.txt",
+        ".copilot/chunks/documentation.md.chunk6.txt"
+      ]
+    },
+    {
       "path": ".copilot/workflows/post-gap-analysis.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Post-Gap Analysis Workflow",
+      "short_summary": "Thin slash-command wrapper for post-gap analysis.",
+      "version": "1.0",
+      "topics": [
+        "post-gap",
+        "analysis",
+        "workflow"
+      ],
+      "qwen_skill": "post-gap-analysis",
       "chunks": [
         ".copilot/chunks/post-gap-analysis.md.chunk0.txt",
         ".copilot/chunks/post-gap-analysis.md.chunk1.txt",
@@ -1751,12 +1828,69 @@
       ]
     },
     {
+      "path": ".copilot/workflows/exaix-development.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Exaix Source Development Guidelines",
+      "short_summary": "Guidance for developing Exaix source code: TDD-first, patterns, project structure, and best practices.",
+      "version": "0.1",
+      "topics": [
+        "source",
+        "development",
+        "tdd",
+        "patterns"
+      ],
+      "chunks": [
+        ".copilot/chunks/exaix-development.md.chunk0.txt",
+        ".copilot/chunks/exaix-development.md.chunk1.txt",
+        ".copilot/chunks/exaix-development.md.chunk2.txt",
+        ".copilot/chunks/exaix-development.md.chunk3.txt",
+        ".copilot/chunks/exaix-development.md.chunk4.txt",
+        ".copilot/chunks/exaix-development.md.chunk5.txt",
+        ".copilot/chunks/exaix-development.md.chunk6.txt",
+        ".copilot/chunks/exaix-development.md.chunk7.txt"
+      ]
+    },
+    {
       "path": ".copilot/workflows/plan.md",
-      "short_summary": "",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Plan Workflow",
+      "short_summary": "Thin slash-command wrapper for canonical plan workflow.",
+      "version": "1.0",
+      "topics": [
+        "plan",
+        "workflow"
+      ],
+      "qwen_skill": "plan",
       "chunks": [
         ".copilot/chunks/plan.md.chunk0.txt",
         ".copilot/chunks/plan.md.chunk1.txt",
         ".copilot/chunks/plan.md.chunk2.txt"
+      ]
+    },
+    {
+      "path": ".copilot/workflows/jscpd-guide.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "jscpd Code Duplication Detection Guide",
+      "short_summary": "Using jscpd to detect and track code duplication in Exaix codebase",
+      "version": "0.1",
+      "topics": [
+        "refactoring",
+        "quality",
+        "tools",
+        "jscpd"
+      ],
+      "chunks": [
+        ".copilot/chunks/jscpd-guide.md.chunk0.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk1.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk2.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk3.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk4.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk5.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk6.txt",
+        ".copilot/chunks/jscpd-guide.md.chunk7.txt"
       ]
     },
     {
@@ -1807,6 +1941,23 @@
         ".copilot/chunks/self-improvement.md.chunk5.txt",
         ".copilot/chunks/self-improvement.md.chunk6.txt",
         ".copilot/chunks/self-improvement.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/process/README.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Exaix Process Methodologies",
+      "short_summary": "High-level organizational processes and governance methodologies for Exaix.",
+      "version": "1.0",
+      "topics": [
+        "process",
+        "governance",
+        "methodology"
+      ],
+      "chunks": [
+        ".copilot/chunks/README.md.chunk0.txt",
+        ".copilot/chunks/README.md.chunk1.txt"
       ]
     },
     {
@@ -1918,53 +2069,6 @@
         ".copilot/chunks/openai.md.chunk5.txt",
         ".copilot/chunks/openai.md.chunk6.txt",
         ".copilot/chunks/openai.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/tests/testing.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Test Development Guidelines",
-      "short_summary": "Testing patterns and unified test context for Exaix (initTestDbService, createCliTestContext, withEnv, etc.).",
-      "version": "0.1",
-      "topics": [
-        "tests",
-        "tdd",
-        "helpers"
-      ],
-      "chunks": [
-        ".copilot/chunks/testing.md.chunk0.txt",
-        ".copilot/chunks/testing.md.chunk1.txt",
-        ".copilot/chunks/testing.md.chunk2.txt",
-        ".copilot/chunks/testing.md.chunk3.txt",
-        ".copilot/chunks/testing.md.chunk4.txt",
-        ".copilot/chunks/testing.md.chunk5.txt",
-        ".copilot/chunks/testing.md.chunk6.txt",
-        ".copilot/chunks/testing.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/tests/jscpd-guide.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "jscpd Code Duplication Detection Guide",
-      "short_summary": "Using jscpd to detect and track code duplication in Exaix codebase",
-      "version": "0.1",
-      "topics": [
-        "refactoring",
-        "quality",
-        "tools",
-        "jscpd"
-      ],
-      "chunks": [
-        ".copilot/chunks/jscpd-guide.md.chunk0.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk1.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk2.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk3.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk4.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk5.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk6.txt",
-        ".copilot/chunks/jscpd-guide.md.chunk7.txt"
       ]
     },
     {

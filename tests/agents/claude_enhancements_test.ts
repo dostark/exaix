@@ -59,15 +59,15 @@ Deno.test("Claude enhancements: verify cross-reference.md structure", async () =
   assert(crossRefMd.includes("## Search by Topic"), "Should have topic search section");
   assert(crossRefMd.includes("## Workflow Examples"), "Should have workflow examples section");
 
-  // Verify it includes key task types
-  assert(crossRefMd.includes("Write unit tests"), "Should map 'Write unit tests' task");
-  assert(crossRefMd.includes("Refactor code"), "Should map 'Refactor code' task");
-  assert(crossRefMd.includes("Debug"), "Should map debugging tasks");
-  assert(crossRefMd.includes("Security"), "Should map security tasks");
+  // Verify it includes key task types (titles)
+  assert(crossRefMd.includes("Exaix Test Development Guidelines"), "Should map Test Guidelines task");
+  assert(crossRefMd.includes("Refactoring Template"), "Should map Refactoring task");
+  assert(crossRefMd.includes("Detailed Commit Message Prompt"), "Should map Commit task");
+  assert(crossRefMd.includes("Workflow Guidelines"), "Should map Workflow templates");
 
   // Verify it links to other docs
-  assert(crossRefMd.includes("[tests/testing.md]"), "Should link to testing.md");
-  assert(crossRefMd.includes("[source/exaix.md]"), "Should link to exaix.md");
+  assert(crossRefMd.includes("[workflows/testing.md]"), "Should link to testing.md");
+  assert(crossRefMd.includes("[workflows/exaix-development.md]"), "Should link to exaix.md");
   assert(crossRefMd.includes("[providers/claude.md]"), "Should link to claude.md");
 });
 

@@ -398,7 +398,7 @@ following documents only as cross‑references:
 
 - [`CLAUDE.md`](CLAUDE.md)
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- [`.copilot/source/exaix.md`](.copilot/source/exaix.md)
+- [`.copilot/workflows/exaix-development.md`](.copilot/workflows/exaix-development.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
 When editing those documents in the future, update the link above if this file's
@@ -448,7 +448,7 @@ Example:
 
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
-> (e.g. `.copilot/source/exaix.md`) and **are not** repeated here unless they
+> (e.g. `.copilot/workflows/exaix-development.md`) and **are not** repeated here unless they
 > directly impact the way code is written.
 
 ---

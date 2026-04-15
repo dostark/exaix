@@ -1,4 +1,11 @@
 ---
+agent: general
+scope: dev
+title: "Plan Workflow"
+short_summary: "Thin slash-command wrapper for canonical plan workflow."
+version: "1.0"
+topics: ["plan", "workflow"]
+qwen_skill: plan
 description: Drafts a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability
 ---
 

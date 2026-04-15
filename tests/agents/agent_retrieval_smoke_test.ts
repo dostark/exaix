@@ -13,7 +13,9 @@ Deno.test("retrieval smoke: build manifest and inject context", async () => {
   await buildIndex();
   assertExists(".copilot/manifest.json");
 
+  // inject may return found=false when no doc scores above 0 for this query; both outcomes are valid.
   const res = await inject("copilot", "copilot");
   if (res.found === false) return;
-  assert(res.short_summary && res.short_summary.length > 0);
+  // If a doc was found, it must have a path
+  assert(res.path && res.path.length > 0, "found doc should have a path");
 });

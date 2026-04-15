@@ -59,15 +59,15 @@ If you are updating legacy code, refer to `docs/dev/Migration_Guide_Phase27.md` 
 1. **Read [`CLAUDE.md`](CLAUDE.md)** for project orientation and quick reference
 
 1.
-   - `.copilot/source/exaix.md` — Source code patterns
-   - `.copilot/tests/testing.md` — Test patterns and helpers
-   - `.copilot/docs/documentation.md` — Documentation guidelines
+   - `.copilot/workflows/exaix-development.md` — Source code patterns
+   - `.copilot/workflows/testing.md` — Test patterns and helpers
+   - `.copilot/workflows/documentation.md` — Documentation guidelines
    - `.copilot/planning/*.md` — Phase planning documents
 1.
 
 **Example citation:**
 
-> "I consulted `.copilot/tests/testing.md` for test helpers and `.copilot/source/exaix.md` for service architecture patterns."
+> "I consulted `.copilot/workflows/testing.md` for test helpers and `.copilot/workflows/exaix-development.md` for service architecture patterns."
 
 ### 4.2 Agent Documentation Index
 
@@ -242,7 +242,7 @@ COMMIT_MSG
 
 Authoritative guidance:
 
-- [`.copilot/prompts/commit-message.md`](.copilot/prompts/commit-message.md)
+- [`.copilot/workflows/commit.md`](.copilot/workflows/commit.md)
 - [`Blueprints/Skills/commit-message.skill.md`](Blueprints/Skills/commit-message.skill.md)
 
 - [ ] **(AI Agents)** Consulted relevant `.copilot/` documentation and cited in implementation plan.
