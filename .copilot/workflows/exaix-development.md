@@ -26,6 +26,15 @@ Do / Don't
 - ✅ Do follow TDD and verify Success Criteria
 - ✅ Do add module-level documentation and file headers
 - ❌ Don't proceed with implementation if no refined Implementation Plan step exists
+- ❌ Don't suggest Web UI/React for core features. Exaix is TUI-first (Terminal User Interface).
+- ✅ Do distinguish between `Flows/examples/` (runnable) and `Flows/templates/` (scaffolding).
+
+### Philosophy & Workflow
+
+- **Refinement Loop (Critical)**: Before implementing, ask the agent to "Refine" a step with success criteria, examples, and error cases. If you can't write clear success criteria, you aren't ready to code.
+- **Walking Skeleton**: Build end-to-end minimal features (e.g., config -> db -> log -> watcher) rather than perfect isolated components. "Can I demo this?" should always be YES.
+- **Config Philosophy**: Every magic number should be a config option. Ask agents to measure first, then expose tradeoffs as config.
+- **Question->Action Loop**: Ask questions -> Agent investigates -> You decide -> Agent implements. Don't let the agent guess.
 
 Examples section
 

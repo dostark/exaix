@@ -26,9 +26,9 @@ These templates are the canonical Exaix workflow prompts. They are distinct from
 
 ## Conceptual Difference from `workflows/` and `process/`
 
-*   **`prompts/`**: Focuses on **how to instruct** an LLM to do a task. These are templates and wrappers around user intents to inject context and enforce rules.
-*   **`workflows/`**: Focuses on **how to do** a specific task, providing detailed step-by-step methodologies and coding standards.
-*   **`process/`**: Focuses on **how we govern** the project, outlining high-level methodologies like SDD.
+- **`prompts/`**: Focuses on **how to instruct** an LLM to do a task. These are templates and wrappers around user intents to inject context and enforce rules.
+- **`workflows/`**: Focuses on **how to do** a specific task, providing detailed step-by-step methodologies and coding standards.
+- **`process/`**: Focuses on **how we govern** the project, outlining high-level methodologies like SDD.
 
 ## Template Aliases
 

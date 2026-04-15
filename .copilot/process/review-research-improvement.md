@@ -21,7 +21,7 @@ A structured methodology for evaluating Exaix subsystems, identifying architectu
 
 ## Pattern Overview
 
-```text
+`````text
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   REVIEW    │───▶│  RESEARCH   │───▶│    PLAN     │───▶│  ARTIFACTS  │
 │  (Analyze)  │    │ (Compare)   │    │ (Prioritize)│    │  (Create)   │
@@ -363,5 +363,17 @@ Before completing the pattern:
 1.
 Commit all artifacts with descriptive commit message."
 ```text
+`````
 
-```
+## Canonical Prompt (Short)
+
+"Perform a Review-Research-Improvement analysis on [subsystem]:
+
+1. Review: Read all docs, implementation, templates
+2. Research: Compare to state-of-the-art
+3. Plan: Create improvement roadmap
+   Commit all artifacts with descriptive commit message."
+
+## Examples
+
+- Example prompt: "Perform a Review-Research-Improvement analysis on direct agent orchestration."

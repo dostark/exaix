@@ -11,7 +11,7 @@ topics: ["methodology", "sdd", "quality", "request-processing", "architecture"]
 
 ## Overview
 
-**Specification-Driven Development (SDD)** is an approach to building applications with LLM agents where a structured specification is written *before* code generation begins, and that specification serves as both the execution guide and the evaluation rubric. Rather than iterating on generated code ("generate → fix → regenerate"), SDD iterates on the *specification* until it's well-defined, then generates code from a solid foundation.
+**Specification-Driven Development (SDD)** is an approach to building applications with LLM agents where a structured specification is written _before_ code generation begins, and that specification serves as both the execution guide and the evaluation rubric. Rather than iterating on generated code ("generate → fix → regenerate"), SDD iterates on the _specification_ until it's well-defined, then generates code from a solid foundation.
 
 Exaix's Phases 45–49 quality pipeline implements an adapted form of SDD optimized for agent orchestration. This document maps the correlation between SDD principles and Exaix's architecture, identifies where Exaix goes beyond vanilla SDD, and notes the remaining gap.
 
@@ -19,21 +19,21 @@ Exaix's Phases 45–49 quality pipeline implements an adapted form of SDD optimi
 
 ## Core SDD Principles → Exaix Mapping
 
-| # | SDD Principle | Exaix Implementation | Phase |
-| --- | --- | --- | --- |
-| 1 | **Write a spec before code** | The Q&A loop produces an `IRequestSpecification` (goals, success criteria, scope, constraints) *before* the agent executes | Phase 47 |
+| # | SDD Principle                        | Exaix Implementation                                                                                                                                   | Phase         |
+| - | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| 1 | **Write a spec before code**         | The Q&A loop produces an `IRequestSpecification` (goals, success criteria, scope, constraints) _before_ the agent executes                             | Phase 47      |
 | 2 | **Spec defines acceptance criteria** | `IRequestAnalysis` extracts acceptance criteria; `CriteriaGenerator` converts them into evaluation rubric items (`GOAL_ALIGNMENT`, `TASK_FULFILLMENT`) | Phase 45 + 48 |
-| 3 | **Iterate on the spec, not on code** | Multi-round Q&A refines the specification through conversation; rounds track quality improvement; agent and user both must be satisfied | Phase 47 |
-| 4 | **Spec is the contract** | `IRequestSpecification` is preserved (never overwritten), persisted as `_clarification.json`, and used as ground truth for evaluation | Phase 47 |
-| 5 | **Grounded in reality** | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists | Phase 46 |
-| 6 | **Spec as evaluation rubric** | Quality gates, reflexive agent, and confidence scorer evaluate against spec-derived criteria, not generic heuristics | Phase 48 + 49 |
-| 7 | **Change the spec, not the code** | Structured frontmatter allows users to express expectations declaratively; spec revision path under consideration | Phase 49 |
+| 3 | **Iterate on the spec, not on code** | Multi-round Q&A refines the specification through conversation; rounds track quality improvement; agent and user both must be satisfied                | Phase 47      |
+| 4 | **Spec is the contract**             | `IRequestSpecification` is preserved (never overwritten), persisted as `_clarification.json`, and used as ground truth for evaluation                  | Phase 47      |
+| 5 | **Grounded in reality**              | `PortalKnowledgeService` provides actual codebase architecture, conventions, and key files — specs are written with awareness of what exists           | Phase 46      |
+| 6 | **Spec as evaluation rubric**        | Quality gates, reflexive agent, and confidence scorer evaluate against spec-derived criteria, not generic heuristics                                   | Phase 48 + 49 |
+| 7 | **Change the spec, not the code**    | Structured frontmatter allows users to express expectations declaratively; spec revision path under consideration                                      | Phase 49      |
 
 ---
 
 ## The Exaix SDD Pipeline
 
-```text
+````text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                     SPECIFICATION PHASE                                 │
 │                                                                         │
@@ -188,5 +188,12 @@ See the "Flow Request Coverage" sections in each phase document for detailed int
 - Phase 47: [Request Quality Gate & Clarification](../planning/phase-47-request-quality-gate.md)
 - Phase 48: [Acceptance Criteria Propagation](../planning/phase-48-acceptance-criteria-propagation.md)
 - Phase 49: [Quality Pipeline Hardening](../planning/phase-49-quality-pipeline-hardening.md)
+````
 
-```
+## Canonical Prompt (Short)
+
+"You are an SDD specialist. Ensure the request-clarification-planning-execution pipeline is followed and the specification is refined before implementation."
+
+## Examples
+
+- Example prompt: "Perform SDD analysis on the new portal-v2 request."

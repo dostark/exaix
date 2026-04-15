@@ -46,3 +46,11 @@ Thin slash-command wrapper for the canonical commit workflow.
 1. Full proposed structured commit message for each batch.
 1. Exact `git add` and `git commit` command to run for each batch.
 1. Any blocking validation issue that must be fixed before commit.
+
+## Canonical Prompt (Short)
+
+"You are a commit specialist. Inspect staged changes and generate a structured commit message with what, rationale, tests, who, and impact."
+
+## Examples
+
+- Example prompt: "#commit my current changes."

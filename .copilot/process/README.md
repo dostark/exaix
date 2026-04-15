@@ -1,28 +1,37 @@
 ---
 agent: general
 scope: dev
-title: "Exaix Process Methodologies"
-short_summary: "High-level organizational processes and governance methodologies for Exaix."
+title: ".copilot/process/ — Project Governance & Methodology"
+short_summary: "Strategic guidelines for SDD, project lifecycle, and systemic improvement patterns."
 version: "1.0"
-topics: ["process", "governance", "methodology"]
 ---
 
-# Exaix Process Methodologies
+# Exaix Process Guidelines
 
-Welcome to the Exaix Process Methodologies directory. This folder outlines the broad strategies, design paradigms, and governance models used across the repository.
+This directory contains high-level governance rules, systemic methodologies, and project-wide patterns that define **how** Exaix is built and improved.
 
 ## Purpose
 
-The documents in this directory explain the overarching systems used to govern development. They outline *why* we work the way we do, such as how we enforce quality gates and structure specification-driven development.
+While `workflows/` focus on tactical execution (how to do a task), `process/` focuses on **strategic governance**. These documents ensure that agents and humans follow consistent architectural patterns and quality loops throughout the repository's lifecycle.
 
-## Conceptual Difference from `workflows/` and `prompts/`
+## Governance Guidelines
 
-*   **`process/`**: Explains the overarching system and lifecycle (e.g., Specification-Driven Development).
-*   **`workflows/`**: Details the step-by-step technical execution of a specific task (e.g., how to do TDD for a feature).
-*   **`prompts/`**: Provides the exact text/templates used to instruct an LLM to execute a workflow.
+- **[specification-driven-development.md](specification-driven-development.md)**: The core SDD pipeline. Ensures work is defined by a structured specification before code generation begins.
+- **[review-research-improvement.md](review-research-improvement.md)**: A systematic pattern for evaluating subsystems and planning architectural upgrades.
+- **[self-improvement.md](self-improvement.md)**: The loop for detecting and patching instruction gaps in `.copilot/` itself.
 
-## Included Methodologies
+## When to use `process/` vs `workflows/`
 
-*   [review-research-improvement.md](review-research-improvement.md): Architecture review and improvement planning.
-*   [self-improvement.md](self-improvement.md): The self-improvement loop for continuous agent instruction adequacy.
-*   [specification-driven-development.md](specification-driven-development.md): The SDD methodology and request quality pipelines.
+| Scenario                          | Location                                      | Reasoning                                  |
+| --------------------------------- | --------------------------------------------- | ------------------------------------------ |
+| Preparing a commit                | `workflows/commit.md`                         | Tactical operation task.                   |
+| Reviewing a module's architecture | `process/review-research-improvement.md`      | Systemic analysis and improvement pattern. |
+| Refining a request with Q&A       | `process/specification-driven-development.md` | High-level methodology for goal alignment. |
+| Implementing next plan step       | `workflows/next-steps.md`                     | Tactical execution step.                   |
+| Noticing a doc is out of date     | `process/self-improvement.md`                 | Feedback loop for instructions.            |
+
+## Documentation Boundaries
+
+- **Methodology (Process)**: Defines the rules of engagement.
+- **Task (Workflow)**: Defines the steps of execution.
+- **Prompt (Prompt)**: Defines the exact instructions send to the model.

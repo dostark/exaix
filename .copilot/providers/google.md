@@ -1,5 +1,5 @@
 ---
-identity: google
+agent: general
 scope: dev
 title: Google Gemini Provider Adaptation Guide
 short_summary: "Optimized guidance for Google Gemini 1.5 Pro, focusing on 2M context window usage and parallel tool calls."
@@ -22,7 +22,8 @@ If the current `.copilot/` instructions are insufficient for the task, patch the
 
 - Process: `.copilot/process/self-improvement.md`
 - Template: `.copilot/prompts/self-improvement-loop.md`
-- Gemini-specific tip: use long-context to include the relevant `agents/` docs + the exact gap list, then propose a small doc patch (examples/checklists) and continue.
+- Gemini-specific agent: general
+  to include the relevant `agents/` docs + the exact gap list, then propose a small doc patch (examples/checklists) and continue.
 
 ## Task-Specific Prompts
 

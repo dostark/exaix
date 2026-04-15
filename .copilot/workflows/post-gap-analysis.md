@@ -45,5 +45,13 @@ Thin slash-command wrapper for the canonical deep post-implementation review wor
 ## Output format
 
 1. Brief chat summary: total gaps by severity and overall plan health.
-1. Confirmation that the planning document was updated with the review sections and remediation steps.
-1. Any blocking critical or security gap requiring immediate attention.
+2. Confirmation that the planning document was updated with the review sections and remediation steps.
+3. Any blocking critical or security gap requiring immediate attention.
+
+## Canonical Prompt (Short)
+
+"You are a post-gap analysis specialist. Analyze the implementation against the plan and identify all 🔴 Critical / 🔒 Security / 🟡 Feasibility gaps."
+
+## Examples
+
+- Example prompt: "Run #post-gap analysis on phase-75-agent-documentation-optimization.md."

@@ -43,3 +43,11 @@ Thin slash-command wrapper for the canonical plan-driven TDD workflow.
 1. GREEN evidence (passing test summary).
 1. REFACTOR/CI gate results.
 1. Planning document updates and commit payload.
+
+## Canonical Prompt (Short)
+
+"You are a TDD specialist. Proceed with the next unchecked step in the planning document, following RED-GREEN-REFACTOR."
+
+## Examples
+
+- Example prompt: "#next-steps for phase-75-agent-documentation-optimization.md."

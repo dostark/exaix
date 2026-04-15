@@ -1,5 +1,5 @@
 ---
-identity: general
+agent: general
 scope: dev
 title: Agent Documentation Cross-Reference Map
 short_summary: "Quick reference mapping task types to relevant agent documentation files."
@@ -79,8 +79,6 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 | Agent Blueprint JSON Migration | [planning/phase-31-agent-blueprint-json-migration.md](planning/phase-31-agent-blueprint-json-migration.md) | |
 | Phase 35: Portal Workspace Integration & Git Changeset Architecture | [planning/phase-35-portal-workspace-integration.md](planning/phase-35-portal-workspace-integration.md) | |
 | .copilot/ — IDE & Dev Agent Instructions | [README.md](README.md) | |
-| Exaix quick reference for Copilot | [copilot/exaix.md](copilot/exaix.md) | |
-| Exaix Quick Summary | [copilot/summary.md](copilot/summary.md) | |
 | Agent Thought Section Standardization | [workflows/agent-thought-standardization.md](workflows/agent-thought-standardization.md) | |
 | Exaix Test Development Guidelines | [workflows/testing.md](workflows/testing.md) | |
 | Refactor Magic Check Workflow | [workflows/refactor-check-magic.md](workflows/refactor-check-magic.md) | |
@@ -96,7 +94,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 | jscpd Code Duplication Detection Guide | [workflows/jscpd-guide.md](workflows/jscpd-guide.md) | |
 | Specification-Driven Development in Exaix | [process/specification-driven-development.md](process/specification-driven-development.md) | |
 | Self-improvement loop for agent instructions | [process/self-improvement.md](process/self-improvement.md) | |
-| Exaix Process Methodologies | [process/README.md](process/README.md) | |
+| .copilot/process/ — Project Governance & Methodology | [process/README.md](process/README.md) | |
 | Review-Research-Improvement Pattern | [process/review-research-improvement.md](process/review-research-improvement.md) | |
 | Claude provider adaptation notes | [providers/claude.md](providers/claude.md) | |
 | Google Gemini Provider Adaptation Guide | [providers/google.md](providers/google.md) | |
@@ -212,13 +210,12 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`flow`** → [planning/phase-30-cli-flow-request.md](planning/phase-30-cli-flow-request.md)
 - **`flow-integrity`** → [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
 - **`flow-orchestration`** → [planning/phase-63-flow-error-recovery.md](planning/phase-63-flow-error-recovery.md)
-- **`flows`** → [planning/phase-54-remove-agent-alias.md](planning/phase-54-remove-agent-alias.md), [planning/phase-64-flow-namespace-blackboard.md](planning/phase-64-flow-namespace-blackboard.md), [planning/phase-58-react-reasoning-engine.md](planning/phase-58-react-reasoning-engine.md), [planning/phase-56-dynamic-toolsets.md](planning/phase-56-dynamic-toolsets.md), [planning/phase-65-parallel-execution-groups.md](planning/phase-65-parallel-execution-groups.md), [copilot/exaix.md](copilot/exaix.md)
+- **`flows`** → [planning/phase-54-remove-agent-alias.md](planning/phase-54-remove-agent-alias.md), [planning/phase-64-flow-namespace-blackboard.md](planning/phase-64-flow-namespace-blackboard.md), [planning/phase-58-react-reasoning-engine.md](planning/phase-58-react-reasoning-engine.md), [planning/phase-56-dynamic-toolsets.md](planning/phase-56-dynamic-toolsets.md), [planning/phase-65-parallel-execution-groups.md](planning/phase-65-parallel-execution-groups.md)
 - **`formatting`** → [prompts/lint.md](prompts/lint.md)
 - **`gap-analysis`** → [prompts/pre-gap-analysis.md](prompts/pre-gap-analysis.md), [prompts/post-gap-analysis.md](prompts/post-gap-analysis.md)
 - **`gemini`** → [prompts/google-quickstart.md](prompts/google-quickstart.md), [prompts/google-tdd-workflow.md](prompts/google-tdd-workflow.md), [providers/google-long-context.md](providers/google-long-context.md)
 - **`git`** → [prompts/commit-message.md](prompts/commit-message.md), [planning/phase-72-git-hash-portal-invalidation.md](planning/phase-72-git-hash-portal-invalidation.md), [planning/phase-38-tool-expansion.md](planning/phase-38-tool-expansion.md), [planning/phase-37-portal-target-branch-and-worktree-execution.md](planning/phase-37-portal-target-branch-and-worktree-execution.md), [planning/phase-35-portal-workspace-integration.md](planning/phase-35-portal-workspace-integration.md), [workflows/commit.md](workflows/commit.md)
 - **`git-audit`** → [planning/phase-61-agent-executor-mcp-integration.md](planning/phase-61-agent-executor-mcp-integration.md)
-- **`governance`** → [process/README.md](process/README.md)
 - **`guidelines`** → [workflows/README.md](workflows/README.md)
 - **`handlers`** → [planning/phase-57-new-mcp-tools-handlers.md](planning/phase-57-new-mcp-tools-handlers.md)
 - **`helpers`** → [workflows/testing.md](workflows/testing.md)
@@ -255,7 +252,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`memory-bank`** → [issues/execution-folder-wrong-location.md](issues/execution-folder-wrong-location.md)
 - **`merge`** → [planning/phase-65-parallel-execution-groups.md](planning/phase-65-parallel-execution-groups.md)
 - **`meta`** → [prompts/update-building-with-ai-agents.md](prompts/update-building-with-ai-agents.md)
-- **`methodology`** → [workflows/README.md](workflows/README.md), [process/specification-driven-development.md](process/specification-driven-development.md), [process/README.md](process/README.md)
+- **`methodology`** → [workflows/README.md](workflows/README.md), [process/specification-driven-development.md](process/specification-driven-development.md)
 - **`metrics`** → [planning/phase-33-code-duplication-refactoring.md](planning/phase-33-code-duplication-refactoring.md), [planning/phase-69-token-cost-persistence.md](planning/phase-69-token-cost-persistence.md)
 - **`migration`** → [planning/phase-31-agent-blueprint-json-migration.md](planning/phase-31-agent-blueprint-json-migration.md), [issues/database-changeset-table-missing.md](issues/database-changeset-table-missing.md)
 - **`namespace`** → [planning/phase-64-flow-namespace-blackboard.md](planning/phase-64-flow-namespace-blackboard.md)
@@ -264,11 +261,9 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`next-steps`** → [workflows/next-steps.md](workflows/next-steps.md)
 - **`notification`** → [planning/phase-71-confidence-based-memory-approval.md](planning/phase-71-confidence-based-memory-approval.md)
 - **`observability`** → [planning/phase-67-live-execution-streaming.md](planning/phase-67-live-execution-streaming.md)
-- **`obsidian`** → [copilot/exaix.md](copilot/exaix.md)
 - **`ollama`** → [planning/phase-68-ollama-semantic-search.md](planning/phase-68-ollama-semantic-search.md)
 - **`openai`** → [prompts/openai-debugging-systematic.md](prompts/openai-debugging-systematic.md), [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md), [prompts/openai-quickstart.md](prompts/openai-quickstart.md), [planning/phase-68-ollama-semantic-search.md](planning/phase-68-ollama-semantic-search.md)
 - **`organization`** → [planning/phase-23-skills-blueprint-migration.md](planning/phase-23-skills-blueprint-migration.md)
-- **`overview`** → [copilot/summary.md](copilot/summary.md)
 - **`parallel-tool-calls`** → [providers/google.md](providers/google.md)
 - **`parallelism`** → [planning/phase-65-parallel-execution-groups.md](planning/phase-65-parallel-execution-groups.md)
 - **`patch`** → [prompts/security.md](prompts/security.md)
@@ -285,7 +280,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`post-gap`** → [workflows/post-gap-analysis.md](workflows/post-gap-analysis.md)
 - **`pre-gap`** → [workflows/pre-gap-analysis.md](workflows/pre-gap-analysis.md)
 - **`procedural-memory`** → [planning/phase-70-wire-skills-service.md](planning/phase-70-wire-skills-service.md)
-- **`process`** → [workflows/documentation.md](workflows/documentation.md), [process/README.md](process/README.md)
+- **`process`** → [workflows/documentation.md](workflows/documentation.md)
 - **`process-management`** → [planning/phase-61-agent-executor-mcp-integration.md](planning/phase-61-agent-executor-mcp-integration.md)
 - **`prompt-template`** → [prompts/self-improvement-loop.md](prompts/self-improvement-loop.md)
 - **`prompts`** → [prompts/openai-debugging-systematic.md](prompts/openai-debugging-systematic.md), [prompts/refactoring-with-thinking.md](prompts/refactoring-with-thinking.md), [prompts/debugging-systematic.md](prompts/debugging-systematic.md), [prompts/google-quickstart.md](prompts/google-quickstart.md), [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md), [prompts/README.md](prompts/README.md), [prompts/tdd-workflow.md](prompts/tdd-workflow.md), [prompts/google-tdd-workflow.md](prompts/google-tdd-workflow.md), [prompts/openai-quickstart.md](prompts/openai-quickstart.md), [prompts/implementation-plan-driven.md](prompts/implementation-plan-driven.md), [prompts/cross-reference-navigation.md](prompts/cross-reference-navigation.md), [providers/claude.md](providers/claude.md), [providers/google.md](providers/google.md), [providers/openai.md](providers/openai.md)
@@ -295,7 +290,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`publishing`** → [workflows/documentation.md](workflows/documentation.md)
 - **`quality`** → [prompts/pre-gap-analysis.md](prompts/pre-gap-analysis.md), [prompts/test.md](prompts/test.md), [prompts/post-gap-analysis.md](prompts/post-gap-analysis.md), [planning/phase-73-reflexive-agent-convergence.md](planning/phase-73-reflexive-agent-convergence.md), [workflows/jscpd-guide.md](workflows/jscpd-guide.md), [process/specification-driven-development.md](process/specification-driven-development.md), [process/review-research-improvement.md](process/review-research-improvement.md)
 - **`quality-assurance`** → [prompts/review.md](prompts/review.md)
-- **`quickstart`** → [prompts/google-quickstart.md](prompts/google-quickstart.md), [prompts/openai-quickstart.md](prompts/openai-quickstart.md), [copilot/summary.md](copilot/summary.md)
+- **`quickstart`** → [prompts/google-quickstart.md](prompts/google-quickstart.md), [prompts/openai-quickstart.md](prompts/openai-quickstart.md)
 - **`rag`** → [prompts/openai-quickstart.md](prompts/openai-quickstart.md), [process/self-improvement.md](process/self-improvement.md), [providers/openai.md](providers/openai.md)
 - **`react`** → [planning/phase-58-react-reasoning-engine.md](planning/phase-58-react-reasoning-engine.md), [planning/phase-59-scenario-framework-extension.md](planning/phase-59-scenario-framework-extension.md), [planning/phase-56-dynamic-toolsets.md](planning/phase-56-dynamic-toolsets.md)
 - **`reasoning`** → [planning/phase-58-react-reasoning-engine.md](planning/phase-58-react-reasoning-engine.md), [workflows/agent-thought-standardization.md](workflows/agent-thought-standardization.md), [providers/google-long-context.md](providers/google-long-context.md)
@@ -306,7 +301,6 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`regression`** → [prompts/test.md](prompts/test.md), [prompts/fix.md](prompts/fix.md), [prompts/regression.md](prompts/regression.md)
 - **`reliability`** → [planning/phase-22-architecture-and-quality-improvement.md](planning/phase-22-architecture-and-quality-improvement.md)
 - **`replanning`** → [planning/phase-66-plan-amendment-gate.md](planning/phase-66-plan-amendment-gate.md)
-- **`repo-overview`** → [copilot/exaix.md](copilot/exaix.md)
 - **`request`** → [planning/phase-30-cli-flow-request.md](planning/phase-30-cli-flow-request.md), [planning/phase-32-dynamic-skills-injection.md](planning/phase-32-dynamic-skills-injection.md)
 - **`request-processing`** → [process/specification-driven-development.md](process/specification-driven-development.md)
 - **`research`** → [planning/phase-38-tool-expansion.md](planning/phase-38-tool-expansion.md)
@@ -343,7 +337,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 - **`tdd`** → [prompts/step.md](prompts/step.md), [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md), [prompts/pre-gap-analysis.md](prompts/pre-gap-analysis.md), [prompts/tdd-workflow.md](prompts/tdd-workflow.md), [prompts/test.md](prompts/test.md), [prompts/google-tdd-workflow.md](prompts/google-tdd-workflow.md), [prompts/tdd-phase-steps.md](prompts/tdd-phase-steps.md), [prompts/refactor-check-magic-comprehensive.md](prompts/refactor-check-magic-comprehensive.md), [prompts/post-gap-analysis.md](prompts/post-gap-analysis.md), [prompts/plan.md](prompts/plan.md), [planning/phase-66-plan-amendment-gate.md](planning/phase-66-plan-amendment-gate.md), [planning/phase-72-git-hash-portal-invalidation.md](planning/phase-72-git-hash-portal-invalidation.md), [planning/phase-64-flow-namespace-blackboard.md](planning/phase-64-flow-namespace-blackboard.md), [planning/phase-68-ollama-semantic-search.md](planning/phase-68-ollama-semantic-search.md), [planning/phase-73-reflexive-agent-convergence.md](planning/phase-73-reflexive-agent-convergence.md), [planning/phase-74-routing-policy-layer.md](planning/phase-74-routing-policy-layer.md), [planning/phase-71-confidence-based-memory-approval.md](planning/phase-71-confidence-based-memory-approval.md), [planning/phase-67-live-execution-streaming.md](planning/phase-67-live-execution-streaming.md), [planning/phase-70-wire-skills-service.md](planning/phase-70-wire-skills-service.md), [planning/phase-65-parallel-execution-groups.md](planning/phase-65-parallel-execution-groups.md), [planning/phase-69-token-cost-persistence.md](planning/phase-69-token-cost-persistence.md), [workflows/testing.md](workflows/testing.md), [workflows/exaix-development.md](workflows/exaix-development.md), [providers/claude.md](providers/claude.md)
 - **`technical-debt`** → [planning/phase-22-architecture-and-quality-improvement.md](planning/phase-22-architecture-and-quality-improvement.md)
 - **`templates`** → [prompts/README.md](prompts/README.md)
-- **`testing`** → [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md), [prompts/tdd-workflow.md](prompts/tdd-workflow.md), [prompts/test.md](prompts/test.md), [prompts/fix.md](prompts/fix.md), [prompts/regression.md](prompts/regression.md), [planning/phase-33-code-duplication-refactoring.md](planning/phase-33-code-duplication-refactoring.md), [planning/phase-59-scenario-framework-extension.md](planning/phase-59-scenario-framework-extension.md), [copilot/exaix.md](copilot/exaix.md)
+- **`testing`** → [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md), [prompts/tdd-workflow.md](prompts/tdd-workflow.md), [prompts/test.md](prompts/test.md), [prompts/fix.md](prompts/fix.md), [prompts/regression.md](prompts/regression.md), [planning/phase-33-code-duplication-refactoring.md](planning/phase-33-code-duplication-refactoring.md), [planning/phase-59-scenario-framework-extension.md](planning/phase-59-scenario-framework-extension.md)
 - **`tests`** → [workflows/testing.md](workflows/testing.md)
 - **`thinking-protocol`** → [prompts/refactoring-with-thinking.md](prompts/refactoring-with-thinking.md), [providers/openai.md](providers/openai.md)
 - **`thought-structure`** → [workflows/agent-thought-standardization.md](workflows/agent-thought-standardization.md)
@@ -412,8 +406,7 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 
 ### VS Code Copilot
 
-- **Main guide**: [workflows/exaix-development.md](workflows/exaix-development.md)
-- **Quick summary**: [copilot/summary.md](copilot/summary.md)
+- **Main guide**: [workflows/exaix-development.md](workflows/exaix-development.md) (Standard development & Copilot guidelines)
 - **Pattern**: Consult `.copilot/manifest.json` first
 
 ### OpenAI

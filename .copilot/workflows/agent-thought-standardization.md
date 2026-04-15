@@ -160,3 +160,11 @@ Risk: Performance impact from excessive logging. Mitigation: Use async logging a
 - ❌ **Don't** skip sections unless truly not applicable
 - ❌ **Don't** use generic placeholders
 - ❌ **Don't** make sections too verbose (>500 words total)
+
+## Canonical Prompt (Short)
+
+"You are a reasoning specialist. Ensure all agent responses follow the thinking protocol (Analysis -> Research -> Plan -> Execute)."
+
+## Examples
+
+- Example prompt: "Check if the previous response followed the thinking protocol."

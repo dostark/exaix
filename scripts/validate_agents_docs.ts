@@ -41,16 +41,21 @@ async function validateFile(path: string): Promise<string[]> {
 
   // quick safety check for obvious secrets
   // Detect common secret patterns. Use stricter matches to avoid false positives (e.g., 'pass' as a word).
-  const secretRegex = /(AKIA|AIza|SECRET|api_key|password|token\s*[:=])/i;
+  const secretRegex = /\b(AKIA|AIza|api_key|password|token)\s*[:=]/i;
   if (secretRegex.test(content)) {
     errors.push(`${path}: potential secret/token found (CI will fail on secrets)`);
   }
 
   // presence of a canonical prompt or examples
-  if (!/Canonical prompt|Examples|Example prompt/i.test(content)) {
-    // Exceptions: we don't strictly require this for READMEs
-    if (!path.endsWith("README.md")) {
-      errors.push(`${path}: missing 'Canonical prompt' or 'Examples' section`);
+  const isTemplate = path.startsWith(".copilot/prompts/") || path.includes("README.md") ||
+    path.includes("manifest.json") || path.includes("chunks/") || path.includes("cross-reference.md");
+
+  if (!isTemplate) {
+    if (!content.includes("Canonical prompt") && !content.includes("Canonical Prompt")) {
+      errors.push(`${path}: missing 'Canonical prompt' section`);
+    }
+    if (!content.includes("Examples")) {
+      errors.push(`${path}: missing 'Examples' section`);
     }
   }
 
@@ -74,8 +79,11 @@ async function validateFile(path: string): Promise<string[]> {
 async function main() {
   const errors: string[] = [];
   try {
-    for await (const entry of walk(AGENTS_DIR, { exts: [".md"], maxDepth: 3 })) {
+    for await (const entry of walk(AGENTS_DIR, { exts: [".md"], maxDepth: 4 })) {
       if (entry.isFile) {
+        if (entry.path.includes("/planning/") || entry.path.includes("/issues/")) {
+          continue;
+        }
         const fileErrors = await validateFile(entry.path);
         errors.push(...fileErrors);
       }

@@ -11,7 +11,7 @@ topics: ["refactoring", "quality", "tools", "jscpd"]
 
 ## Quick Start
 
-```bash
+````bash
 # Basic scan of source and tests
 npx jscpd src/ tests/
 
@@ -207,5 +207,12 @@ See [phase-14-code-deduplication.md](../planning/phase-14-code-deduplication.md)
 - [jscpd GitHub](https://github.com/kucherenko/jscpd)
 - [Testing Guidelines](testing.md)
 - [Phase 14 Refactoring Plan](../planning/phase-14-code-deduplication.md)
+````
 
-```
+## Canonical Prompt (Short)
+
+"You are a duplication reduction specialist. Run jscpd to find clones and propose a refactoring plan to extract shared logic into helpers."
+
+## Examples
+
+- Example prompt: "Analyze code duplication in src/tui/ and propose helper extractions."

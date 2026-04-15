@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-15T12:26:12.038Z",
+  "generated_at": "2026-04-15T13:11:24.892Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -140,6 +140,7 @@
     },
     {
       "path": ".copilot/prompts/google-quickstart.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Gemini Quickstart Prompt",
       "short_summary": "Native long-context prompt for Gemini 1.5 Pro to perform whole-repo analysis.",
@@ -297,6 +298,7 @@
     },
     {
       "path": ".copilot/prompts/google-tdd-workflow.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Gemini TDD Workflow Prompt",
       "short_summary": "Exhaustive TDD prompt optimized for Gemini's long-context reasoning.",
@@ -1564,6 +1566,7 @@
     },
     {
       "path": ".copilot/cross-reference.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Agent Documentation Cross-Reference Map",
       "short_summary": "Quick reference mapping task types to relevant agent documentation files.",
@@ -1582,40 +1585,6 @@
         ".copilot/chunks/cross-reference.md.chunk5.txt",
         ".copilot/chunks/cross-reference.md.chunk6.txt",
         ".copilot/chunks/cross-reference.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/copilot/exaix.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix quick reference for Copilot",
-      "short_summary": "Deno + TypeScript Flow-driven AI automation. Key dirs: src/, tests/, Blueprints/, docs/. Consult .copilot/manifest.json before edits.",
-      "version": "0.1",
-      "topics": [
-        "repo-overview",
-        "testing",
-        "flows",
-        "obsidian"
-      ],
-      "chunks": [
-        ".copilot/chunks/exaix.md.chunk0.txt",
-        ".copilot/chunks/exaix.md.chunk1.txt",
-        ".copilot/chunks/exaix.md.chunk2.txt"
-      ]
-    },
-    {
-      "path": ".copilot/copilot/summary.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Exaix Quick Summary",
-      "short_summary": "One-line overview of Exaix for quick Copilot context injection.",
-      "version": "0.1",
-      "topics": [
-        "quickstart",
-        "overview"
-      ],
-      "chunks": [
-        ".copilot/chunks/summary.md.chunk0.txt"
       ]
     },
     {
@@ -1866,7 +1835,8 @@
       "chunks": [
         ".copilot/chunks/plan.md.chunk0.txt",
         ".copilot/chunks/plan.md.chunk1.txt",
-        ".copilot/chunks/plan.md.chunk2.txt"
+        ".copilot/chunks/plan.md.chunk2.txt",
+        ".copilot/chunks/plan.md.chunk3.txt"
       ]
     },
     {
@@ -1947,17 +1917,14 @@
       "path": ".copilot/process/README.md",
       "agent": "general",
       "scope": "dev",
-      "title": "Exaix Process Methodologies",
-      "short_summary": "High-level organizational processes and governance methodologies for Exaix.",
+      "title": ".copilot/process/ — Project Governance & Methodology",
+      "short_summary": "Strategic guidelines for SDD, project lifecycle, and systemic improvement patterns.",
       "version": "1.0",
-      "topics": [
-        "process",
-        "governance",
-        "methodology"
-      ],
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
-        ".copilot/chunks/README.md.chunk1.txt"
+        ".copilot/chunks/README.md.chunk1.txt",
+        ".copilot/chunks/README.md.chunk2.txt",
+        ".copilot/chunks/README.md.chunk3.txt"
       ]
     },
     {
@@ -1987,6 +1954,7 @@
     },
     {
       "path": ".copilot/providers/claude.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Claude provider adaptation notes",
       "short_summary": "Comprehensive Claude usage guide with task-specific prompts, thinking protocols, and tool-use patterns.",
@@ -2012,6 +1980,7 @@
     },
     {
       "path": ".copilot/providers/google.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Google Gemini Provider Adaptation Guide",
       "short_summary": "Optimized guidance for Google Gemini 1.5 Pro, focusing on 2M context window usage and parallel tool calls.",
@@ -2031,6 +2000,7 @@
     },
     {
       "path": ".copilot/providers/google-long-context.md",
+      "agent": "general",
       "scope": "dev",
       "title": "Gemini Long-Context Reasoning Guide",
       "short_summary": "Strategies for utilizing Gemini's 1.5 Pro's 2M context window for holistic repository reasoning.",

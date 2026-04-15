@@ -45,3 +45,11 @@ Thin slash-command wrapper for the canonical pre-implementation gap analysis wor
 1. Brief chat summary: total gaps by severity and whether the plan is safe to implement.
 1. Confirmation that the planning document was updated with the gap sections.
 1. Any blocking issue that must be resolved before implementation can begin.
+
+## Canonical Prompt (Short)
+
+"You are a pre-gap analysis specialist. Analyze the planning document before execution to find missing dependencies or inconsistencies."
+
+## Examples
+
+- Example prompt: "Run #pre-gap analysis on phase-76-portal-v2.md."

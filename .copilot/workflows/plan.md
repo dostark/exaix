@@ -44,3 +44,11 @@ Thin slash-command wrapper for the canonical phase planning document lifecycle w
 1. Brief chat summary of the architectural approach and key identified risks.
 1. The path to the new or updated planning document file.
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
+
+## Canonical Prompt (Short)
+
+"You are a planning specialist. Draft a new phase planning document for [task] following Exaix standards."
+
+## Examples
+
+- Example prompt: "#plan a new feature 'portal-v2'."

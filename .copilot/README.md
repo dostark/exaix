@@ -13,11 +13,14 @@ This directory contains short, machine-discoverable instruction documents intend
 ## Layout
 
 - `.copilot/manifest.json` — auto-generated manifest listing available agent docs (`scripts/build_agents_index.ts`)
-- `.copilot/copilot/` — Copilot-focused docs and short summaries
+- `.copilot/workflows/` — instructional and methodological workflows (merged from docs/, source/, tests/)
 - `.copilot/providers/` — provider-specific adaptation notes and prompt templates
 - `.copilot/prompts/` — Comprehensive prompt templates for systematic coding workflows (see [prompts/README.md](prompts/README.md))
 - `.copilot/chunks/` — (auto-generated) pre-chunked text files for quick retrieval
 - `.copilot/issues/` — structured bug reports and technical issues (see [issues/README.md](issues/README.md))
+- `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
+- `.copilot/process/` — high-level governance, methodologies (SDD), and repo-wide patterns (see [process/README.md](process/README.md))
+- `.copilot/workflows/` — tactical, step-by-step development workflows (see [workflows/README.md](workflows/README.md))
 
 ## Prompt Directory Boundary
 
@@ -37,18 +40,16 @@ The `.qwen/` directory contains Qwen Code-specific skill definitions for auto-di
   - The canonical sources are **authoritative**; if a wrapper conflicts with the canonical source, the canonical source wins
   - When updating a `.copilot/prompts/` file, review the corresponding `.qwen/skills/` wrapper to ensure the reference path is still correct
 
-| Qwen Skill                             | Canonical Source                                       |
-| -------------------------------------- | ------------------------------------------------------ |
-| `.qwen/skills/commit/`                 | `.copilot/prompts/commit-message.md`                   |
-| `.qwen/skills/next-steps/`             | `.copilot/prompts/tdd-phase-steps.md`                  |
-| `.qwen/skills/plan/`                   | `.copilot/prompts/plan.md`                             |
-| `.qwen/skills/post-gap-analysis/`      | `.copilot/prompts/post-gap-analysis.md`                |
-| `.qwen/skills/pre-gap-analysis/`       | `.copilot/prompts/pre-gap-analysis.md`                 |
-| `.qwen/skills/refactor-check-magic/`   | `.copilot/prompts/refactor-check-magic-comprehensive.md` |
+| Qwen Skill                           | Canonical Source                                         |
+| ------------------------------------ | -------------------------------------------------------- |
+| `.qwen/skills/commit/`               | `.copilot/prompts/commit-message.md`                     |
+| `.qwen/skills/next-steps/`           | `.copilot/prompts/tdd-phase-steps.md`                    |
+| `.qwen/skills/plan/`                 | `.copilot/prompts/plan.md`                               |
+| `.qwen/skills/post-gap-analysis/`    | `.copilot/prompts/post-gap-analysis.md`                  |
+| `.qwen/skills/pre-gap-analysis/`     | `.copilot/prompts/pre-gap-analysis.md`                   |
+| `.qwen/skills/refactor-check-magic/` | `.copilot/prompts/refactor-check-magic-comprehensive.md` |
 
 Qwen Code discovers skills automatically from `.qwen/skills/` based on the `description` frontmatter field. No manifest regeneration or chunk rebuild is needed when updating `.qwen/` files.
-
-- `.copilot/planning/` — implementation roadmaps and phase plans (see [planning/README.md](planning/README.md))
 
 ## Quick Links for Agents
 
@@ -171,11 +172,10 @@ Follow this workflow to create a new agent documentation file:
 
 Choose the right location based on content:
 
-- **`source/`** — Source code development guidance (patterns, architecture, conventions)
-- **`tests/`** — Testing patterns and helpers (TDD, test utilities, security tests)
-- **`docs/`** — Documentation maintenance (Implementation Plan, versioning, cross-references)
+- **`workflows/`** — instructional and methodological workflows (merged from source, tests, docs)
+- **`prompts/`** — Comprehensive prompt templates (commit, plan, etc.)
 - **`providers/`** — Provider-specific adaptations (Claude, OpenAI, Google, Copilot)
-- **`copilot/`** — Copilot-specific quick references
+- **`planning/`** — implementation roadmaps and phase plans
 
 ### 2. Add YAML Frontmatter with Required Fields
 
@@ -209,7 +209,7 @@ Structure your document with these sections:
 
 Bullet list of 3-5 critical takeaways:
 
-```markdown
+````markdown
 Key points
 
 - Use `initTestDbService()` for database tests
@@ -224,12 +224,13 @@ Example system prompt showing ideal usage:
 Canonical prompt (short):
 "You are a test-writing assistant for Exaix. List failing test names and assertions first, using `initTestDbService()` or `createCliTestContext()` where appropriate."
 ```
+````
 
 #### Examples (Required)
 
 2-3 example prompts with expected responses:
 
-```markdown
+`````markdown
 Examples
 
 - Example prompt: "Write tests that verify PlanWriter handles missing files and empty JSON. Use `initTestDbService()` and ensure cleanup is called."
@@ -239,7 +240,7 @@ Examples
 
 Guidance on safe/unsafe patterns:
 
-```markdown
+````markdown
 Do / Don't
 
 - ✅ Do follow TDD and verify Success Criteria
@@ -253,6 +254,8 @@ After creating or updating a doc:
 ```bash
 deno run --allow-read --allow-write scripts/build_agents_index.ts
 ```
+````
+`````
 
 This updates `.copilot/manifest.json` and regenerates `.copilot/chunks/*.txt` files.
 
@@ -287,8 +290,8 @@ This should return JSON with your doc if the query matches.
 Copy an existing doc as a starting point:
 
 - For provider-specific: `.copilot/providers/claude.md`
-- For testing guidance: `.copilot/tests/testing.md`
-- For source patterns: `.copilot/source/exaix.md`
+- For testing guidance: `.copilot/workflows/testing.md`
+- For source patterns: `.copilot/workflows/exaix-development.md`
 
 ### Common Mistakes to Avoid
 
@@ -400,10 +403,10 @@ Agents must use the following core services for reliability and security:
 
 1.
 
-   ```typescript
-   Deno.test("[regression] Plan list shows approved plans from Active directory", ...);
-   Deno.test("[regression] EventLogger works with stub db", ...);
-   ```
+```typescript
+Deno.test("[regression] Plan list shows approved plans from Active directory", ...);
+Deno.test("[regression] EventLogger works with stub db", ...);
+```
 
 1.
    - `tests/<feature>_regression_test.ts` for feature-specific regressions

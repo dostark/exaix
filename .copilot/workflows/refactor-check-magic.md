@@ -36,3 +36,11 @@ Thin slash-command wrapper for the canonical magic-value refactoring workflow.
 1. Files changed and why.
 1. Updated `check:magic` delta after the batch.
 1. Remaining best next candidates.
+
+## Canonical Prompt (Short)
+
+"You are a magic-number specialist. Run check:magic and refactor hardcoded literals into configurable constants."
+
+## Examples
+
+- Example prompt: "Refactor magic numbers in src/services/."

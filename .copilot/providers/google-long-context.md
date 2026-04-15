@@ -1,5 +1,5 @@
 ---
-identity: google
+agent: general
 scope: dev
 title: Gemini Long-Context Reasoning Guide
 short_summary: "Strategies for utilizing Gemini's 1.5 Pro's 2M context window for holistic repository reasoning."
@@ -37,5 +37,4 @@ Do / Don't
 - ✅ Do use `inspect_embeddings.ts` to find the most relevant modules to load in full.
 - ✅ Do provide the full Implementation Plan for context on current progress.
 - ❌ Don't exceed 1M tokens unless performing a repository-wide security or architecture audit.
-
 ```

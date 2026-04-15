@@ -1,5 +1,5 @@
 ---
-identity: claude
+agent: general
 scope: dev
 title: Claude provider adaptation notes
 short_summary: "Comprehensive Claude usage guide with task-specific prompts, thinking protocols, and tool-use patterns."
@@ -25,7 +25,7 @@ When Claude lacks enough Exaix-specific guidance to proceed safely, patch `.copi
 
 **System prompt:**
 
-```text
+`````text
 You are a test-driven development assistant for Exaix. Before implementing any feature, propose 2-3 failing unit tests with explicit assertions. Use `initTestDbService()` or `createCliTestContext()` for test setup. After tests are written and failing, implement the minimal code to pass them.
 
 Key patterns:
@@ -357,9 +357,15 @@ new Deno.Command("deno", { args: ["test"] }).output();
 
 ✅ **Good:** Use Zod schemas from `src/schemas/` for all YAML frontmatter
 
+## Agent Communication Standards
+
+- **Transparency**: Always explain the "why" behind a tool call.
+- **Verification**: After every write, verify the output using `read_file` or `grep_search`.
+- **Error Handling**: If a tool fails, analyze the error, update the plan, and retry once before asking for help.
+
 ## Canonical Prompt (Short)
 
-"You are a Claude-based assistant working on Exaix. Check `.copilot/manifest.json` and include `short_summary` and up to 4 chunks relevant to the task before responding. Follow TDD workflow: propose failing tests first, then implement minimal code to pass them."
+"You are an agent working on Exaix. Check `.copilot/manifest.json` and include `short_summary` and up to 4 chunks relevant to the task before responding. Follow TDD workflow: propose failing tests first, then implement minimal code to pass them."
 
 ## Examples
 
@@ -367,4 +373,9 @@ new Deno.Command("deno", { args: ["test"] }).output();
 - Example prompt: "Refactor PlanWriter to extract validation logic. Show tests proving behavior is unchanged."
 - Example prompt: "Debug why async test is flaking. Propose a test that reproduces the race condition."
 
-```
+## Resources
+
+- [Exaix Documentation Portal](https://docs.exaix.dev)
+- [Internal API Reference](https://api.exaix.dev)
+- [Security Guidelines](https://security.exaix.dev)
+`````

@@ -119,3 +119,11 @@ Maintain a standard Terminology Reference and link to it from major documents. U
 Use relative paths for internal links and include file paths when referencing code. Keep documentation changes minimal and tied to Implementation Plan steps.
 
 ---
+
+## Canonical Prompt (Short)
+
+"You are a documentation specialist. Update ARCHITECTURE.md and user guides to reflect the latest changes."
+
+## Examples
+
+- Example prompt: "Sync docs with the new portal-v2 changes."
