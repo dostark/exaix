@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
-import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
+import { DEFAULT_TITLE_PLACEHOLDER, MEMORY_EVENT_AUTO_APPROVED } from "../../shared/constants.ts";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "../../shared/schemas/config.ts";
@@ -78,7 +78,10 @@ export class MemoryExtractorService {
       operation: MemoryOperation.ADD,
       target_scope: learning.scope,
       target_project: learning.project,
-      learning,
+      learning: {
+        ...learning,
+        extracted_at: learning.extracted_at || new Date().toISOString(),
+      },
       reason: `Extracted from execution ${execution.trace_id}`,
       identity_id: identityId,
       execution_id: execution.trace_id,
@@ -165,7 +168,7 @@ export class MemoryExtractorService {
    *
    * @param proposalId - Proposal ID to approve
    */
-  async approvePending(proposalId: string): Promise<void> {
+  async approvePending(proposalId: string, autoApproved = false): Promise<void> {
     const proposal = await this.getPending(proposalId);
     if (!proposal) {
       throw new Error(`Proposal not found: ${proposalId}`);
@@ -202,7 +205,7 @@ export class MemoryExtractorService {
 
     // Log approval
     this.logActivity({
-      event_type: "memory.proposal.approved",
+      event_type: autoApproved ? MEMORY_EVENT_AUTO_APPROVED : "memory.proposal.approved",
       target: proposal.target_project || MemoryScope.GLOBAL,
       metadata: {
         proposal_id: proposalId,

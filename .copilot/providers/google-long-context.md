@@ -1,4 +1,5 @@
 ---
+identity: google
 agent: general
 scope: dev
 title: Gemini Long-Context Reasoning Guide

@@ -13,7 +13,7 @@ import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -68,7 +68,7 @@ export async function createTestMemoryBankWithGlobal(
         description: "A test pattern for global memory",
         category: LearningCategory.PATTERN,
         tags: ["test"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
         ...globalOverrides,
       });
@@ -195,7 +195,7 @@ export function createSampleLearning(overrides: Partial<ILearning> = {}): ILearn
 
     category: overrides.category ?? LearningCategory.PATTERN,
     tags: overrides.tags ?? ["sample"],
-    confidence: overrides.confidence ?? ConfidenceLevel.MEDIUM,
+    confidence: overrides.confidence ?? ConfidenceAssessmentLevel.MEDIUM,
     references: overrides.references ?? [],
     status: overrides.status ?? MemoryStatus.APPROVED,
     ...overrides,

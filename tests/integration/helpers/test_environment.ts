@@ -35,7 +35,11 @@ import {
   getBlueprintsIdentitiesDir,
   getMemoryDir,
   getMemoryExecutionDir,
+  getMemoryGlobalDir,
+  getMemoryIndexDir,
+  getMemoryPendingDir,
   getMemoryProjectsDir,
+  getMemorySkillsDir,
   getMemoryTasksDir,
   getPortalsDir,
   getRuntimeDir,
@@ -112,7 +116,8 @@ export class TestEnvironment {
    */
   static async create(options: ITestEnvironmentOptions = {}): Promise<TestEnvironment> {
     // Use centralized test DB + tempdir helper for consistency
-    const { db, tempDir, config, cleanup } = await initTestDbService();
+    const { db, tempDir, config: baseConfig, cleanup } = await initTestDbService();
+    const config = options.configOverrides ? { ...baseConfig, ...options.configOverrides } : baseConfig;
 
     // Create any additional directory structure required for integration tests
     await ensureDir(getWorkspaceRequestsDir(tempDir));
@@ -123,6 +128,10 @@ export class TestEnvironment {
     await ensureDir(getMemoryExecutionDir(tempDir));
     await ensureDir(getMemoryProjectsDir(tempDir));
     await ensureDir(getMemoryTasksDir(tempDir));
+    await ensureDir(getMemoryPendingDir(tempDir));
+    await ensureDir(getMemoryIndexDir(tempDir));
+    await ensureDir(getMemorySkillsDir(tempDir));
+    await ensureDir(getMemoryGlobalDir(tempDir));
     await ensureDir(getMemoryDir(tempDir));
     await ensureDir(getRuntimeDir(tempDir));
     await ensureDir(getBlueprintsIdentitiesDir(tempDir));

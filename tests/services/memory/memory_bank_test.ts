@@ -13,7 +13,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import type { IDecision, ILearning, IPattern } from "../../../src/shared/schemas/memory_bank.ts";
 import {
   ActivityType,
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -655,7 +655,7 @@ Deno.test("MemoryBankService: file locking serializes global learning updates", 
         description: `ILearning added sequentially ${i}`,
         category: LearningCategory.INSIGHT,
         tags: [`sequential-${i}`],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
         approved_at: new Date().toISOString(),
       };
@@ -691,7 +691,7 @@ Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async 
       description: "Testing lock acquisition",
       category: LearningCategory.PATTERN,
       tags: ["test"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
       approved_at: new Date().toISOString(),
     });
@@ -706,7 +706,7 @@ Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async 
       description: "Testing lock release",
       category: LearningCategory.PATTERN,
       tags: ["test"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
       approved_at: new Date().toISOString(),
     });
@@ -736,7 +736,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on success", async () =>
       description: "Testing lock file cleanup",
       category: LearningCategory.PATTERN,
       tags: ["cleanup"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
       approved_at: new Date().toISOString(),
     });
@@ -769,7 +769,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
         description: "First instance",
         category: LearningCategory.PATTERN,
         tags: ["duplicate"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
         approved_at: new Date().toISOString(),
       });
@@ -784,7 +784,7 @@ Deno.test("MemoryBankService: lock files are cleaned up on failure", async () =>
         description: "Second instance - should fail",
         category: LearningCategory.PATTERN,
         tags: ["duplicate"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
         approved_at: new Date().toISOString(),
       });

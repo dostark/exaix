@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   EvaluationCategory,
   LearningCategory,
   MemoryBankSource,
@@ -88,7 +88,7 @@ async function setupTestLearnings(
       description: "Always wrap async operations in try-catch for proper error propagation",
       category: LearningCategory.PATTERN,
       tags: ["error-handling", "typescript", "async"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     },
     {
@@ -100,7 +100,7 @@ async function setupTestLearnings(
       description: "Use async/await instead of nested callbacks for better readability",
       category: LearningCategory.ANTI_PATTERN,
       tags: ["async", "code-quality", "typescript"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     },
     {
@@ -114,7 +114,7 @@ async function setupTestLearnings(
       description: "Use connection pooling to avoid exhausting database connections",
       category: LearningCategory.INSIGHT,
       tags: ["database", EvaluationCategory.PERFORMANCE],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       status: MemoryStatus.APPROVED,
     },
   ];

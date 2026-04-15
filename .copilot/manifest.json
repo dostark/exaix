@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-15T13:41:11.139Z",
+  "generated_at": "2026-04-16T08:08:31.194Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -1670,7 +1670,7 @@
       "scope": "dev",
       "title": "Phase 71: Confidence-Based Memory Auto-Approval & Pending Digest",
       "short_summary": "Implement automatic promotion of high-confidence agent learnings to approved status after a configurable delay, and surface a pending-memory digest notification to prevent silent accumulation in Memory/Pending/.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "planning",
         "roadmap",

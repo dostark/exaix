@@ -35,6 +35,7 @@ export interface INotificationService {
   notifyRejection(proposalId: string, reason: string): void;
   getNotifications(): Promise<IMemoryNotification[]>;
   getPendingCount(): Promise<number>;
+  notifyPendingDigestIfNeeded(pendingCount: number): Promise<boolean>;
   clearNotification(proposalId: string): Promise<void>;
   clearAllNotifications(): Promise<void>;
   readonly database: IDatabaseService;
@@ -205,6 +206,56 @@ export class NotificationService implements INotificationService {
     `,
       [new Date().toISOString(), proposalId],
     );
+  }
+
+  /**
+   * Notify a digest summary of pending memory updates, throttled once per 24 hours.
+   *
+   * @param pendingCount - Number of pending memory update proposals
+   * @returns true when a digest was emitted, false when throttled
+   */
+  async notifyPendingDigestIfNeeded(pendingCount: number): Promise<boolean> {
+    if (pendingCount <= 0) {
+      return false;
+    }
+
+    const latestDigest = await this.db.preparedGet<{ created_at: string }>(
+      `
+      SELECT created_at
+      FROM notifications
+      WHERE type = 'memory_update_pending_digest'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+      [],
+    );
+
+    if (latestDigest?.created_at) {
+      const lastCreatedAt = new Date(latestDigest.created_at);
+      const diffMs = Date.now() - lastCreatedAt.getTime();
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      if (diffMs < oneDayMs) {
+        return false;
+      }
+    }
+
+    await this.notify(
+      `There are ${pendingCount} pending memory update proposal(s) awaiting review.`,
+      "memory_update_pending_digest",
+      undefined,
+      undefined,
+      JSON.stringify({ pendingCount }),
+    );
+
+    this.logActivity({
+      event_type: "memory.update.pending.digest",
+      target: MemoryScope.GLOBAL,
+      metadata: {
+        pending_count: pendingCount,
+      },
+    });
+
+    return true;
   }
 
   /**

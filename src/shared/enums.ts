@@ -1003,6 +1003,7 @@ export enum MemoryBankSource {
   EXECUTION = "execution",
   USER = "user",
   IDENTITY = "identity",
+  AGENT = "agent",
   LEARNED = "learned",
   CORE = "core",
   PROJECT = "project",

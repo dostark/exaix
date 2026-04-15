@@ -15,8 +15,29 @@ import {
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "../../shared/constants.ts";
-import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "../../shared/enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  ConfidenceLevel,
+  LearningCategory,
+  MemoryBankSource,
+  MemoryScope,
+  MemoryType,
+} from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
+
+function mapConfidenceLevelToAssessment(
+  confidence: ConfidenceLevel,
+): ConfidenceAssessmentLevel {
+  switch (confidence) {
+    case ConfidenceLevel.HIGH:
+      return ConfidenceAssessmentLevel.HIGH;
+    case ConfidenceLevel.MEDIUM:
+      return ConfidenceAssessmentLevel.MEDIUM;
+    case ConfidenceLevel.LOW:
+    default:
+      return ConfidenceAssessmentLevel.LOW;
+  }
+}
 
 // ===== Configuration Schema =====
 
@@ -311,9 +332,9 @@ export class SessionMemoryService {
         project: insight.portal,
         title: insight.title,
         description: insight.description,
-        category: insight.category as LearningCategory,
+        category: insight.category,
         tags: insight.tags,
-        confidence: insight.confidence,
+        confidence: mapConfidenceLevelToAssessment(insight.confidence),
         status: MemoryStatus.PENDING, // Start as pending for review
       };
 

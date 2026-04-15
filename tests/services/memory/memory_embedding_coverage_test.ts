@@ -17,7 +17,12 @@ import {
 } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { ILearning } from "../../../src/shared/schemas/memory_bank.ts";
-import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../../src/shared/enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LearningCategory,
+  MemoryBankSource,
+  MemoryScope,
+} from "../../../src/shared/enums.ts";
 import { getMemoryIndexDir } from "../../helpers/paths_helper.ts";
 
 // ===== Test Fixture =====
@@ -31,7 +36,7 @@ const testLearning: ILearning = {
   description: "This is a test learning for coverage testing of embedding service",
   category: LearningCategory.PATTERN,
   tags: ["coverage", "test"],
-  confidence: ConfidenceLevel.HIGH,
+  confidence: ConfidenceAssessmentLevel.HIGH,
   status: MemoryStatus.APPROVED,
 };
 

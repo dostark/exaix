@@ -8,7 +8,7 @@
 import {
   ActivityType,
   AgentHealth,
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   DaemonStatus,
   ExecutionStatus,
   GitBranchName,
@@ -780,7 +780,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
           title: "Test Pattern",
           description: "A pattern for the mock",
           category: LearningCategory.PATTERN,
-          confidence: ConfidenceLevel.HIGH,
+          confidence: ConfidenceAssessmentLevel.HIGH,
           tags: [],
         },
         reason: "Testing",
@@ -806,7 +806,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
         title: "Test Pattern",
         description: "A pattern for the mock",
         category: LearningCategory.PATTERN,
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         tags: [],
       },
       reason: "Testing",
@@ -996,6 +996,10 @@ export class MockNotificationService implements INotificationService {
 
   getPendingCount(): Promise<number> {
     return Promise.resolve(0);
+  }
+
+  notifyPendingDigestIfNeeded(_pendingCount: number): Promise<boolean> {
+    return Promise.resolve(false);
   }
 
   clearNotification(_proposalId: string): Promise<void> {

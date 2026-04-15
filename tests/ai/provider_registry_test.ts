@@ -218,6 +218,10 @@ Deno.test("AnthropicProviderFactory: exists and has correct interface", () => {
 });
 
 Deno.test("ProviderFactory: uses registry for mock provider", async () => {
+  Deno.env.delete("EXA_LLM_PROVIDER");
+  Deno.env.delete("EXA_LLM_MODEL");
+  Deno.env.delete("EXA_LLM_BASE_URL");
+
   const config = {
     system: {
       root: "/tmp/test",

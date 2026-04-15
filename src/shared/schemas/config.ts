@@ -11,7 +11,15 @@ import { AiConfigSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "../schemas/mcp.ts";
 import * as DEFAULTS from "../constants.ts";
 import { ProviderTypeSchema } from "./ai_config.ts";
-import { LogLevel, PortalAnalysisMode, ProviderCostTier, QualityGateMode, SqliteJournalMode } from "../enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LogLevel,
+  MemoryBankSource,
+  PortalAnalysisMode,
+  ProviderCostTier,
+  QualityGateMode,
+  SqliteJournalMode,
+} from "../enums.ts";
 import type { PortalOperation } from "../enums.ts";
 import { AnalysisMode } from "../types/request.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "../version.ts";
@@ -62,6 +70,11 @@ const DEFAULT_GIT_OPERATIONS = {
   trace_id_short_length: DEFAULTS.DEFAULT_GIT_TRACE_ID_SHORT_LENGTH,
   branch_suffix_length: DEFAULTS.DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,
 } as const;
+
+const AutoApproveSourceSchema = z.union([
+  z.nativeEnum(MemoryBankSource),
+  z.enum(["EXECUTION", "USER", "IDENTITY", "AGENT", "LEARNED", "CORE", "PROJECT", "FILE", "DATABASE", "LLM"]),
+]);
 
 export const ToolsConfigSchema = z.object({
   // Network capability control
@@ -177,6 +190,16 @@ export const ConfigSchema = z.object({
     timeout_sec: DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
     max_iterations: DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
   }),
+  memory: z.object({
+    auto_approve: z.object({
+      enabled: z.boolean().default(false),
+      confidence_threshold: z.nativeEnum(ConfidenceAssessmentLevel)
+        .default(ConfidenceAssessmentLevel.HIGH),
+      delay_hours: z.number().int().min(1).max(720).default(24),
+      sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
+      max_batch_size: z.number().int().min(1).max(100).default(20),
+    }).default({}),
+  }).optional().default({}),
   skills: z.object({
     max_per_request: z.number().int().min(1).default(DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST),
     match_threshold: z.number().min(0).max(1).default(DEFAULTS.DEFAULT_SKILLS_MATCH_THRESHOLD),

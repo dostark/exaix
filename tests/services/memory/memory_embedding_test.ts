@@ -7,7 +7,7 @@
 
 import { assertAlmostEquals, assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   EvaluationCategory,
   LearningCategory,
   MemoryBankSource,
@@ -36,7 +36,7 @@ const testLearning: ILearning = {
   description: "This is a test learning about error handling best practices in TypeScript",
   category: LearningCategory.PATTERN,
   tags: ["error-handling", "typescript"],
-  confidence: ConfidenceLevel.HIGH,
+  confidence: ConfidenceAssessmentLevel.HIGH,
   status: MemoryStatus.APPROVED,
 };
 
@@ -49,7 +49,7 @@ const anotherTestLearning: ILearning = {
   description: "Error propagation should use Result types for better error handling",
   category: LearningCategory.PATTERN,
   tags: ["error-handling", "functional"],
-  confidence: ConfidenceLevel.MEDIUM,
+  confidence: ConfidenceAssessmentLevel.MEDIUM,
   status: MemoryStatus.APPROVED,
 };
 
@@ -62,7 +62,7 @@ const unrelatedLearning: ILearning = {
   description: "Use indexes on frequently queried columns for better performance",
   category: LearningCategory.INSIGHT,
   tags: ["database", EvaluationCategory.PERFORMANCE],
-  confidence: ConfidenceLevel.HIGH,
+  confidence: ConfidenceAssessmentLevel.HIGH,
   status: MemoryStatus.APPROVED,
 };
 

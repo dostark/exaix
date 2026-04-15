@@ -1573,9 +1573,10 @@ export const __test_command = new Command()
         new Command()
           .description("Manage pending memory update proposals")
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+          .option("--eligible", "Show only auto-approval eligible pending proposals")
           .action(async (options) => {
             // Default: list pending
-            const result = await memoryCommands.pendingList(options.format as OutputFormat);
+            const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
             console.log(result);
           })
           .command(
@@ -1583,8 +1584,9 @@ export const __test_command = new Command()
             new Command()
               .description("List all pending proposals")
               .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)
+              .option("--eligible", "Show only auto-approval eligible pending proposals")
               .action(async (options) => {
-                const result = await memoryCommands.pendingList(options.format as OutputFormat);
+                const result = await memoryCommands.pendingList(options.eligible, options.format as OutputFormat);
                 console.log(result);
               }),
           )
@@ -1600,12 +1602,13 @@ export const __test_command = new Command()
               }),
           )
           .command(
-            "approve <proposalId:string>",
+            "approve [proposalId:string]",
             new Command()
-              .description("Approve a pending proposal")
-              .action(async (_options, ...args: string[]) => {
+              .description("Approve a pending proposal or preview auto-approvals")
+              .option("--dry-run", "Preview auto-approvable proposals without changing state")
+              .action(async (options, ...args: string[]) => {
                 const proposalId = args[0];
-                const result = await memoryCommands.pendingApprove(proposalId);
+                const result = await memoryCommands.pendingApprove(proposalId, !!options.dryRun);
                 console.log(result);
               }),
           )

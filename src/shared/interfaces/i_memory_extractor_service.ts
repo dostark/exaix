@@ -36,7 +36,7 @@ export interface IMemoryExtractorService {
   /**
    * Approve a pending memory update.
    */
-  approvePending(proposalId: string): Promise<void>;
+  approvePending(proposalId: string, autoApproved?: boolean): Promise<void>;
 
   /**
    * Reject a pending proposal.

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { DEFAULT_SKILL_INDEX_VERSION } from "../constants.ts";
 import {
   type ActivityType,
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -180,7 +180,7 @@ export const LearningSchema = z.object({
 
   tags: z.array(z.string()).max(10).describe("Searchable tags"),
 
-  confidence: z.nativeEnum(ConfidenceLevel).describe("Confidence level in this learning"),
+  confidence: z.nativeEnum(ConfidenceAssessmentLevel).describe("Confidence level in this learning"),
 
   references: z.array(LearningReferenceSchema).optional().describe("Supporting evidence"),
 
@@ -259,19 +259,14 @@ export const ProposalLearningSchema = z.object({
   created_at: z.string().datetime(),
   source: z.nativeEnum(MemoryBankSource),
   source_id: z.string().optional(),
-
   scope: z.nativeEnum(MemoryScope),
   project: z.string().optional(),
-
   title: z.string().max(100),
   description: z.string().max(2000),
-
   category: z.nativeEnum(LearningCategory),
-
   tags: z.array(z.string()).max(10).optional().default([]),
-
-  confidence: z.nativeEnum(ConfidenceLevel),
-
+  confidence: z.nativeEnum(ConfidenceAssessmentLevel),
+  extracted_at: z.string().datetime().optional().describe("ISO timestamp when this learning was extracted"),
   references: z.array(LearningReferenceSchema).optional(),
 });
 

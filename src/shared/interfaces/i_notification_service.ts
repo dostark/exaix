@@ -47,6 +47,11 @@ export interface INotificationService {
   getPendingCount(): Promise<number>;
 
   /**
+   * Notify a digest summary of pending memory updates, throttled once per 24 hours.
+   */
+  notifyPendingDigestIfNeeded(pendingCount: number): Promise<boolean>;
+
+  /**
    * Dismiss a specific notification.
    */
   clearNotification(proposalId: string): Promise<void>;

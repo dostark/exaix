@@ -10,6 +10,7 @@ import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "../
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "../base.ts";
+import { MemoryAutoApprovalAdapter } from "../../services/adapters/memory_auto_approval_adapter.ts";
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus, UIOutputFormat } from "../../shared/enums.ts";
 import type { SkillDefinition } from "../../shared/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
@@ -28,11 +29,19 @@ export interface IMemoryCommandsContext extends ICommandContext {}
 export class MemoryCommands extends BaseCommand {
   private formatter: MemoryFormatter;
   private memoryRoot: string;
+  private _autoApprovalService?: MemoryAutoApprovalAdapter;
 
   constructor(context: ICommandContext) {
     super(context);
     this.memoryRoot = join(this.context.config.getAll().system.root, this.context.config.getAll().paths.memory);
     this.formatter = new MemoryFormatter();
+  }
+
+  private get autoApprovalService(): MemoryAutoApprovalAdapter {
+    if (!this._autoApprovalService) {
+      this._autoApprovalService = new MemoryAutoApprovalAdapter(this.config, this.extractor);
+    }
+    return this._autoApprovalService;
   }
 
   private formatOutput<T>(format: OutputFormat, data: T, mdFn: (d: T) => string, tableFn: (d: T) => string): string {
@@ -432,11 +441,11 @@ export class MemoryCommands extends BaseCommand {
    * @param format - Output format
    * @returns Formatted list of pending proposals
    */
-  async pendingList(format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
-    const proposals = await this.extractor.listPending();
+  async pendingList(eligible = false, format: OutputFormat = UIOutputFormat.TABLE): Promise<string> {
+    const proposals = eligible ? await this.autoApprovalService.listEligible() : await this.extractor.listPending();
 
     if (proposals.length === 0) {
-      return "No pending proposals.";
+      return eligible ? "No eligible proposals for auto-approval." : "No pending proposals.";
     }
 
     switch (format) {
@@ -481,7 +490,18 @@ export class MemoryCommands extends BaseCommand {
    * @param proposalId - Proposal ID to approve
    * @returns Success or error message
    */
-  async pendingApprove(proposalId: string): Promise<string> {
+  async pendingApprove(proposalId?: string, dryRun = false): Promise<string> {
+    if (dryRun) {
+      if (proposalId) {
+        return "Error: --dry-run is only supported without a proposal ID. Use `exactl memory pending approve --dry-run`.";
+      }
+      return this.pendingApproveDryRun();
+    }
+
+    if (!proposalId) {
+      return "Error: proposal ID is required unless --dry-run is used.";
+    }
+
     try {
       const proposal = await this.extractor.getPending(proposalId);
       if (!proposal) {
@@ -495,6 +515,15 @@ export class MemoryCommands extends BaseCommand {
     } catch (error) {
       return `Error: ${(error as Error).message}`;
     }
+  }
+
+  private async pendingApproveDryRun(): Promise<string> {
+    const eligible = await this.autoApprovalService.listEligible();
+    if (eligible.length === 0) {
+      return "No proposals are currently eligible for auto-approval.";
+    }
+
+    return this.formatter.formatPendingDryRunTable(eligible);
   }
 
   /**

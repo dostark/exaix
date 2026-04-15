@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -51,7 +51,7 @@ function buildTestProposalData(scope: MemoryScope = MemoryScope.GLOBAL, project?
     description: TEST_PENDING_LEARNING_DESCRIPTION,
     category: LearningCategory.PATTERN,
     tags: [TEST_SKILL_KEYWORD],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     references: [],
   };
 }
@@ -278,7 +278,7 @@ Deno.test("MemoryCommands: promote returns error for non-existent project", asyn
       description: "Test description",
       category: LearningCategory.PATTERN,
       tags: ["test"],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
     });
 
     assertStringIncludes(result, "Error");
@@ -543,7 +543,7 @@ Deno.test("MemoryCommands: pendingList and pendingShow return proposal details",
     const execution = new ExecutionMemoryBuilder("PendingProject").build();
     const proposalId = await extractor.createProposal(buildTestProposalData(), execution, "test-identity");
 
-    const listResult = await commands.pendingList(UIOutputFormat.TABLE);
+    const listResult = await commands.pendingList(false, UIOutputFormat.TABLE);
     assertStringIncludes(listResult, "Pending Memory Update Proposals");
     assertStringIncludes(listResult, TEST_PENDING_LEARNING_TITLE);
 

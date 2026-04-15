@@ -92,7 +92,12 @@ export async function updateCrossReference(docs: JSONObject[]) {
   let taskTable = "| Task Type | Primary Doc | Secondary Docs |\n| --- | --- | --- |\n";
   for (const doc of docs) {
     if (!doc.title || doc.path === ".copilot/cross-reference.md") continue;
-    const relPath = String(doc.path).replace(".copilot/", "");
+    const rawPath = String(doc.path);
+    const relPath = rawPath.startsWith(".copilot/")
+      ? rawPath.replace(".copilot/", "")
+      : rawPath.startsWith("exaix-dev-docs/")
+      ? `../${rawPath}`
+      : rawPath;
     const title = String(doc.title);
     taskTable += `| ${title} | [${relPath}](${relPath}) | |\n`;
   }
@@ -101,7 +106,12 @@ export async function updateCrossReference(docs: JSONObject[]) {
   const topicMap: Record<string, string[]> = {};
   for (const doc of docs) {
     if (!doc.topics || !Array.isArray(doc.topics) || doc.path === ".copilot/cross-reference.md") continue;
-    const relPath = String(doc.path).replace(".copilot/", "");
+    const rawPath = String(doc.path);
+    const relPath = rawPath.startsWith(".copilot/")
+      ? rawPath.replace(".copilot/", "")
+      : rawPath.startsWith("exaix-dev-docs/")
+      ? `../${rawPath}`
+      : rawPath;
     for (const topic of doc.topics) {
       if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
       topicMap[String(topic)].push(`[${relPath}](${relPath})`);

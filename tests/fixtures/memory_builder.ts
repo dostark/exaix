@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -163,7 +163,7 @@ export class LearningBuilder {
       description: "Test description",
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     } as ILearning;
   }

@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   LearningCategory,
   MemoryBankSource,
   MemoryOperation,
@@ -116,7 +116,7 @@ Deno.test("renderPendingPanel: limits display to 10 items", () => {
         title: `ILearning as ILearning ${i}`,
         category: LearningCategory.PATTERN,
         description: "Test",
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         tags: [],
         source: MemoryBankSource.IDENTITY,
         scope: MemoryScope.GLOBAL,

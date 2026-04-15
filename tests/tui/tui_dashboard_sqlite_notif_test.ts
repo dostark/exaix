@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   LearningCategory,
   MemoryBankSource,
   MemoryOperation,
@@ -43,7 +43,7 @@ Deno.test("TUI Dashboard + SQLite: handles notification service integration", as
         description: "Test description",
         category: LearningCategory.INSIGHT,
         tags: ["test"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
       },
       reason: "Testing",
       status: MemoryStatus.PENDING,

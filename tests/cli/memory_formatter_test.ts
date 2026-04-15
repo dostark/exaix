@@ -8,7 +8,7 @@
 import { assertStringIncludes } from "@std/assert";
 import { MemoryFormatter } from "../../src/cli/formatters/memory_formatter.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -140,7 +140,7 @@ function createLearning(): ILearning {
     description: TEST_PATTERN_DESCRIPTION,
     category: LearningCategory.PATTERN,
     tags: [TEST_PATTERN_TAG],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     references: [],
     status: MemoryStatus.APPROVED,
     approved_at: TEST_GLOBAL_UPDATED_AT,
@@ -175,7 +175,7 @@ function createPendingProposal(): IMemoryUpdateProposal {
       description: TEST_PENDING_LEARNING_DESCRIPTION,
       category: LearningCategory.PATTERN,
       tags: [TEST_PATTERN_TAG],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       references: [],
     },
     reason: TEST_PENDING_REASON,

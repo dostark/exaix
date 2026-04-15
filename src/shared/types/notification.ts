@@ -13,6 +13,7 @@ export interface IMemoryNotification {
   id?: string;
   type:
     | "memory_update_pending"
+    | "memory_update_pending_digest"
     | "memory_approved"
     | "memory_rejected"
     | "amendment_pending"

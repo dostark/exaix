@@ -343,10 +343,23 @@ export class MemoryBankService implements IMemoryBankService {
     const projectDir = join(this.projectsDir, portal);
     const lockPath = join(projectDir, "patterns.lock");
 
+    await ensureDir(projectDir);
+
     await this.withFileLock(lockPath, async () => {
-      const existing = await this.getProjectMemory(portal);
+      let existing = await this.getProjectMemory(portal);
       if (!existing) {
-        throw new Error(`Project memory not found for portal: ${portal}`);
+        await this.createProjectMemory({
+          portal,
+          overview: "",
+          patterns: [],
+          decisions: [],
+          references: [],
+        });
+        existing = await this.getProjectMemory(portal);
+      }
+
+      if (!existing) {
+        throw new Error(`Could not create project memory for portal: ${portal}`);
       }
 
       existing.patterns.push(pattern);
