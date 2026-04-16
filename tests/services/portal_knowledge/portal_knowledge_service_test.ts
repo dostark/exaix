@@ -129,14 +129,13 @@ Deno.test("[PortalKnowledgeService] quick mode avoids LLM calls", async () => {
   const tempDir = await makeTempPortal();
   try {
     const { provider, callCount } = makeMockProvider();
-    const svc = new PortalKnowledgeService(
-      makeConfig({ defaultMode: PortalAnalysisMode.QUICK }),
-      makeMockMemoryBank(),
-      provider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ defaultMode: PortalAnalysisMode.QUICK }),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     await svc.analyze("test-portal", tempDir, PortalAnalysisMode.QUICK);
     assertEquals(callCount(), 0, "Quick mode must not call the LLM");
   } finally {
@@ -148,14 +147,13 @@ Deno.test("[PortalKnowledgeService] standard mode includes LLM architecture infe
   const tempDir = await makeTempPortal();
   try {
     const { provider, callCount } = makeMockProvider();
-    const svc = new PortalKnowledgeService(
-      makeConfig({ useLlmInference: true }),
-      makeMockMemoryBank(),
-      provider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: true }),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     const result = await svc.analyze("test-portal", tempDir, PortalAnalysisMode.STANDARD);
     assertEquals(callCount() >= 1, true, "Standard mode must call the LLM");
     assertExists(result.architectureOverview);
@@ -168,14 +166,13 @@ Deno.test("[PortalKnowledgeService] deep mode uses higher file read caps", async
   const tempDir = await makeTempPortal();
   try {
     const { provider } = makeMockProvider();
-    const svc = new PortalKnowledgeService(
-      makeConfig({ maxFilesToRead: 5 }),
-      makeMockMemoryBank(),
-      provider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ maxFilesToRead: 5 }),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     const result = await svc.analyze("test-portal", tempDir, PortalAnalysisMode.DEEP);
     assertExists(result.metadata);
     assertEquals(result.metadata.mode, "deep");
@@ -188,14 +185,13 @@ Deno.test("[PortalKnowledgeService] merges all strategy results correctly", asyn
   const tempDir = await makeTempPortal();
   try {
     const { provider } = makeMockProvider();
-    const svc = new PortalKnowledgeService(
-      makeConfig(),
-      makeMockMemoryBank(),
-      provider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig(),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     const result = await svc.analyze("test-portal", tempDir);
     assertEquals(result.portal, "test-portal");
     assertExists(result.gatheredAt);
@@ -211,14 +207,12 @@ Deno.test("[PortalKnowledgeService] merges all strategy results correctly", asyn
 Deno.test("[PortalKnowledgeService] isStale returns false within threshold", async () => {
   const tempDir = await makeTempPortal();
   try {
-    const svc = new PortalKnowledgeService(
-      makeConfig({ staleness: 24 }),
-      makeMockMemoryBank(),
-      undefined,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ staleness: 24 }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     await svc.analyze("fresh-portal", tempDir, PortalAnalysisMode.QUICK);
     assertEquals(await svc.isStale("fresh-portal"), false);
   } finally {
@@ -229,14 +223,12 @@ Deno.test("[PortalKnowledgeService] isStale returns false within threshold", asy
 Deno.test("[PortalKnowledgeService] isStale returns true beyond threshold", async () => {
   const tempDir = await makeTempPortal();
   try {
-    const svc = new PortalKnowledgeService(
-      makeConfig({ staleness: 0 }),
-      makeMockMemoryBank(),
-      undefined,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ staleness: 0 }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     await svc.analyze("stale-portal", tempDir, PortalAnalysisMode.QUICK);
     // With staleness=0 hours, cutoff=Date.now(), so any gathered time is stale
     await new Promise((r) => setTimeout(r, 5));
@@ -247,14 +239,12 @@ Deno.test("[PortalKnowledgeService] isStale returns true beyond threshold", asyn
 });
 
 Deno.test("[PortalKnowledgeService] isStale returns true when no cache", async () => {
-  const svc = new PortalKnowledgeService(
-    makeConfig(),
-    makeMockMemoryBank(),
-    undefined,
-    undefined,
-    makeMockDb(),
-    makeMockDocRunner(),
-  );
+  const svc = new PortalKnowledgeService({
+    config: makeConfig(),
+    memoryBank: makeMockMemoryBank(),
+    db: makeMockDb(),
+    runner: makeMockDocRunner(),
+  });
   assertEquals(await svc.isStale("unknown-portal"), true);
 });
 
@@ -262,14 +252,13 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze returns cached when fresh", asy
   const tempDir = await makeTempPortal();
   try {
     const { provider, callCount } = makeMockProvider();
-    const svc = new PortalKnowledgeService(
-      makeConfig({ staleness: 24, useLlmInference: false }),
-      makeMockMemoryBank(),
-      provider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ staleness: 24, useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      provider: provider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     // First call populates cache
     const first = await svc.getOrAnalyze("cache-portal", tempDir);
     const callsAfterFirst = callCount();
@@ -304,14 +293,13 @@ Deno.test(
         },
       };
 
-      const svc = new PortalKnowledgeService(
-        makeConfig({ staleness: 0, useLlmInference: false }),
-        makeMockMemoryBank(),
-        slowProvider,
-        undefined,
-        makeMockDb(),
-        makeMockDocRunner(),
-      );
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ staleness: 0, useLlmInference: false }),
+        memoryBank: makeMockMemoryBank(),
+        provider: slowProvider,
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
       // Populate cache
       const stale = await svc.analyze("bg-portal", tempDir, PortalAnalysisMode.QUICK);
 
@@ -351,14 +339,13 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
         });
       },
     };
-    const svc = new PortalKnowledgeService(
-      makeConfig({ staleness: 0, useLlmInference: false }),
-      makeMockMemoryBank(),
-      trackingProvider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ staleness: 0, useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      provider: trackingProvider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     // Populate cache
     await svc.analyze("bg2-portal", tempDir, PortalAnalysisMode.QUICK);
     const _callsAfterFirst = refreshCallCount;
@@ -388,14 +375,12 @@ Deno.test(
   async () => {
     const tempDir = await makeTempPortal();
     try {
-      const svc = new PortalKnowledgeService(
-        makeConfig({ useLlmInference: false }),
-        makeMockMemoryBank(),
-        undefined,
-        undefined,
-        makeMockDb(),
-        makeMockDocRunner(),
-      );
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
       // No prior analyze — should run synchronously
       const result = await svc.getOrAnalyze("new-portal", tempDir);
       assertExists(result.gatheredAt);
@@ -410,14 +395,12 @@ Deno.test("[PortalKnowledgeService] logs portal.analyzed activity", async () => 
   const tempDir = await makeTempPortal();
   try {
     const db = makeMockDb();
-    const svc = new PortalKnowledgeService(
-      makeConfig({ useLlmInference: false }),
-      makeMockMemoryBank(),
-      undefined,
-      undefined,
-      db,
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      db: db,
+      runner: makeMockDocRunner(),
+    });
     await svc.analyze("log-portal", tempDir, PortalAnalysisMode.QUICK);
     const logged = db.activities.find((a) => a.actionType === "portal.analyzed");
     assertExists(logged, "Should log portal.analyzed activity");
@@ -429,14 +412,12 @@ Deno.test("[PortalKnowledgeService] logs portal.analyzed activity", async () => 
 Deno.test("[PortalKnowledgeService] populates metadata.durationMs", async () => {
   const tempDir = await makeTempPortal();
   try {
-    const svc = new PortalKnowledgeService(
-      makeConfig({ useLlmInference: false }),
-      makeMockMemoryBank(),
-      undefined,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     const result = await svc.analyze("meta-portal", tempDir, PortalAnalysisMode.QUICK);
     assertEquals(result.metadata.durationMs >= 0, true);
   } finally {
@@ -451,14 +432,13 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
       id: "fail",
       generate: () => Promise.reject(new Error("LLM down")),
     };
-    const svc = new PortalKnowledgeService(
-      makeConfig({ useLlmInference: true }),
-      makeMockMemoryBank(),
-      failingProvider,
-      undefined,
-      makeMockDb(),
-      makeMockDocRunner(),
-    );
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: true }),
+      memoryBank: makeMockMemoryBank(),
+      provider: failingProvider,
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
     // Should not throw; architectureOverview falls back to empty
     assertEquals(result.architectureOverview, "");

@@ -158,13 +158,12 @@ export async function initializeServices(
       ignorePatterns: cfg.portal_knowledge.ignore_patterns,
     };
 
-    const portalKnowledge = new PortalKnowledgeService(
-      portalKnowledgeConfig,
+    const portalKnowledge = new PortalKnowledgeService({
+      config: portalKnowledgeConfig,
       memoryBank,
-      providerLocal,
-      undefined,
-      dbLocal,
-    );
+      provider: providerLocal,
+      db: dbLocal,
+    });
 
     const toolRegistry = new ToolRegistry({
       config: cfg,

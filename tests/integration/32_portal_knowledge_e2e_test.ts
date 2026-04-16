@@ -107,13 +107,11 @@ Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
 
-    const service = new PortalKnowledgeService(
-      makeConfig(),
-      null as never,
-      undefined,
-      undefined,
-      db,
-    );
+    const service = new PortalKnowledgeService({
+      config: makeConfig(),
+      memoryBank: null as never,
+      db: db,
+    });
     const knowledge = await service.analyze("test-portal", portalDir, PortalAnalysisMode.QUICK);
 
     assertEquals(knowledge.portal, "test-portal");
@@ -142,14 +140,12 @@ Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
 
-    const service = new PortalKnowledgeService(
-      makeConfig({ defaultMode: PortalAnalysisMode.STANDARD }),
-      null as never,
-      undefined,
-      undefined,
-      db,
-      NULL_RUNNER,
-    );
+    const service = new PortalKnowledgeService({
+      config: makeConfig({ defaultMode: PortalAnalysisMode.STANDARD }),
+      memoryBank: null as never,
+      db: db,
+      runner: NULL_RUNNER,
+    });
     const knowledge = await service.analyze("std-portal", portalDir, PortalAnalysisMode.STANDARD);
 
     assertEquals(knowledge.portal, "std-portal");
@@ -177,13 +173,11 @@ Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
     const projectsDir = join(tempDir, "Memory", "Projects");
     await ensureDir(projectsDir);
 
-    const service = new PortalKnowledgeService(
-      makeConfig(),
-      null as never,
-      undefined,
-      undefined,
-      db,
-    );
+    const service = new PortalKnowledgeService({
+      config: makeConfig(),
+      memoryBank: null as never,
+      db: db,
+    });
     const knowledge = await service.analyze("persist-portal", portalDir);
 
     await saveKnowledge("persist-portal", knowledge, null, projectsDir);
@@ -218,13 +212,11 @@ Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
     await ensureDir(projectsDir);
 
     const memoryBank = new MemoryBankService(config, db);
-    const service = new PortalKnowledgeService(
-      makeConfig(),
-      null as never,
-      undefined,
-      undefined,
-      db,
-    );
+    const service = new PortalKnowledgeService({
+      config: makeConfig(),
+      memoryBank: null as never,
+      db: db,
+    });
     const knowledge = await service.analyze("mem-portal", portalDir);
 
     await saveKnowledge("mem-portal", knowledge, memoryBank, projectsDir);
@@ -262,39 +254,30 @@ Deno.test(
 
       const spyService: IPortalKnowledgeService = {
         analyze(alias, path, mode) {
-          const svc = new PortalKnowledgeService(
-            makeConfig(),
-            null as never,
-            undefined,
-            undefined,
-            undefined,
-            NULL_RUNNER,
-          );
+          const svc = new PortalKnowledgeService({
+            config: makeConfig(),
+            memoryBank: null as never,
+            runner: NULL_RUNNER,
+          });
           return svc.analyze(alias, path, mode);
         },
         getOrAnalyze(alias, path) {
           getOrAnalyzeCalled = true;
           capturedAlias = alias;
-          const svc = new PortalKnowledgeService(
-            makeConfig(),
-            null as never,
-            undefined,
-            undefined,
-            undefined,
-            NULL_RUNNER,
-          );
+          const svc = new PortalKnowledgeService({
+            config: makeConfig(),
+            memoryBank: null as never,
+            runner: NULL_RUNNER,
+          });
           return svc.analyze(alias, path);
         },
         isStale: () => Promise.resolve(true),
         updateKnowledge(alias, path) {
-          const svc = new PortalKnowledgeService(
-            makeConfig(),
-            null as never,
-            undefined,
-            undefined,
-            undefined,
-            NULL_RUNNER,
-          );
+          const svc = new PortalKnowledgeService({
+            config: makeConfig(),
+            memoryBank: null as never,
+            runner: NULL_RUNNER,
+          });
           return svc.analyze(alias, path);
         },
       };
@@ -363,14 +346,11 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
     const portalDir = await createMockPortalDir(tempDir);
 
     // staleness=-1 makes cutoff 1 hour in the future → always stale
-    const service = new PortalKnowledgeService(
-      makeConfig({ staleness: -1 }),
-      null as never,
-      undefined,
-      undefined,
-      db,
-    );
-
+    const service = new PortalKnowledgeService({
+      config: makeConfig({ staleness: -1 }),
+      memoryBank: null as never,
+      db: db,
+    });
     const first = await service.analyze("stale-portal", portalDir);
     assertEquals(first.version, 1);
 

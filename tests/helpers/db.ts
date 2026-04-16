@@ -7,6 +7,7 @@
 import { Database } from "@db/sqlite";
 import { DatabaseService } from "../../src/services/core/db.ts";
 import { createMockConfig } from "./config.ts";
+import { existsSync } from "@std/fs";
 import { join } from "@std/path";
 import { REVIEW_STATUS_VALUES } from "../../src/reviews/review_status.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
@@ -203,9 +204,37 @@ export function initFullSchema(db: DatabaseService): void {
  * Initialize a DatabaseService with an in-memory database for testing.
  * Uses a temporary directory for the config root.
  */
+function resolveSqliteLibraryPath(): string | null {
+  const candidates = [
+    "/usr/lib/x86_64-linux-gnu/libsqlite3.so.0",
+    "/usr/lib/x86_64-linux-gnu/libsqlite3.so",
+    "/usr/lib/libsqlite3.so.0",
+    "/usr/lib/libsqlite3.so",
+    "/usr/local/lib/libsqlite3.so.0",
+    "/usr/local/lib/libsqlite3.so",
+    "/lib/x86_64-linux-gnu/libsqlite3.so.0",
+    "/lib/x86_64-linux-gnu/libsqlite3.so",
+    "/lib/libsqlite3.so.0",
+    "/lib/libsqlite3.so",
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+
+  return null;
+}
+
 export async function initTestDbService(): Promise<
   { db: DatabaseService; config: Config; tempDir: string; cleanup: () => Promise<void> }
 > {
+  if (!Deno.env.get("DENO_SQLITE_PATH")) {
+    const sqlitePath = resolveSqliteLibraryPath();
+    if (sqlitePath) {
+      Deno.env.set("DENO_SQLITE_PATH", sqlitePath);
+    }
+  }
+
   const tempDir = await Deno.makeTempDir({ prefix: "exa-test-" });
 
   const config = createMockConfig(tempDir);

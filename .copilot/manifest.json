@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-16T08:08:31.194Z",
+  "generated_at": "2026-04-16T11:14:07.398Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -2051,7 +2051,8 @@
       "chunks": [
         ".copilot/chunks/MAINTENANCE.md.chunk0.txt",
         ".copilot/chunks/MAINTENANCE.md.chunk1.txt",
-        ".copilot/chunks/MAINTENANCE.md.chunk2.txt"
+        ".copilot/chunks/MAINTENANCE.md.chunk2.txt",
+        ".copilot/chunks/MAINTENANCE.md.chunk3.txt"
       ]
     },
     {

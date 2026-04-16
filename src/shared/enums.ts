@@ -112,6 +112,26 @@ export enum GitBranchName {
 }
 
 /**
+ * Known reasons why cached portal knowledge may still be considered valid.
+ */
+export enum KnowledgeValidityReason {
+  SHA_MATCH = "sha_match",
+  SHA_MISMATCH = "sha_mismatch",
+  NO_GIT = "no_git",
+  TIME_TTL = "time_ttl",
+  ERROR_FALLBACK = "error_fallback",
+}
+
+/**
+ * Decision modes used by the portal knowledge invalidation strategy.
+ */
+export enum KnowledgeAnalysisMode {
+  SKIP = "skip",
+  INCREMENTAL = "incremental",
+  FULL = "full",
+}
+
+/**
  * Standard task types used for categorization and routing.
  */
 export enum TaskType {

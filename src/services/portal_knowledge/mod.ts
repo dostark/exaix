@@ -31,3 +31,9 @@ export { analyzeDirectory, type IWalkResult, walkDirectory } from "./directory_a
 export { parseConfigFiles } from "./config_parser.ts";
 export { identifyKeyFiles } from "./key_file_identifier.ts";
 export { detectPatterns } from "./pattern_detector.ts";
+export { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
+export {
+  type IKnowledgeInvalidationStrategy,
+  type IKnowledgeValidityCheck,
+  KnowledgeInvalidationStrategy,
+} from "./knowledge_invalidation_strategy.ts";
