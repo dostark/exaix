@@ -414,6 +414,39 @@ Deno.test("MemoryExtractorService: approvePending logs to IActivity Journal", as
   }
 });
 
+Deno.test("MemoryExtractorService: approvePending logs auto-approved event when autoApproved=true", async () => {
+  const { db, memoryBank, extractor, cleanup } = await initExtractorTest();
+  try {
+    const projectMem = createMinimalProjectMemory({
+      portal: "my-app",
+      overview: "Test project",
+    });
+    await memoryBank.createProjectMemory(projectMem);
+
+    const proposalId = await createTestProposal(extractor, "my-app", "550e8400-e29b-41d4-a716-446655440025");
+
+    if (!proposalId) {
+      return; // No learnings extracted
+    }
+
+    await extractor.approvePending(proposalId, true);
+
+    await db.waitForFlush();
+
+    const autoActivities = db.instance.prepare(
+      "SELECT action_type FROM activity WHERE action_type = 'memory.auto_approved'",
+    ).all() as Array<{ action_type: string }>;
+    assertEquals(autoActivities.length, 1);
+
+    const manualActivities = db.instance.prepare(
+      "SELECT action_type FROM activity WHERE action_type = 'memory.proposal.approved'",
+    ).all() as Array<{ action_type: string }>;
+    assertEquals(manualActivities.length, 0);
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("MemoryExtractorService: rejectPending archives proposal", async () => {
   const { config, extractor, cleanup } = await initExtractorTest();
   try {

@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   EvaluationCategory,
   ExecutionStatus,
   LearningCategory,
@@ -181,7 +181,7 @@ Deno.test("Integration: promote workflow - project → global", async () => {
       description: "Use lazy initialization for singletons to avoid startup overhead",
       category: LearningCategory.PATTERN,
       tags: ["singleton", "design-pattern", EvaluationCategory.PERFORMANCE],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     };
 
@@ -245,7 +245,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
         description: "Create indexes on frequently queried columns for optimal database performance",
         category: LearningCategory.INSIGHT,
         tags: ["database", EvaluationCategory.PERFORMANCE, "indexing"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
       },
       {
@@ -257,7 +257,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
         description: "Always log errors with stack traces and context for debugging",
         category: LearningCategory.PATTERN,
         tags: ["error-handling", "logging", "debugging"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
       },
     ];
@@ -413,7 +413,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
     await extractor.createProposal(learnings[0], execution, execution.identity_id);
 
     // List pending via CLI
-    const pendingList = await commands.pendingList(UIOutputFormat.TABLE);
+    const pendingList = await commands.pendingList(false, UIOutputFormat.TABLE);
     assertStringIncludes(pendingList, MemoryStatus.PENDING);
 
     // Get the proposal ID
@@ -488,7 +488,7 @@ Deno.test("Integration: performance - embedding search completes under 500ms", a
       description: `Description for learning ${i} with some searchable content`,
       category: LearningCategory.INSIGHT,
       tags: [`tag${i % 5}`],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       status: MemoryStatus.APPROVED,
     }));
 

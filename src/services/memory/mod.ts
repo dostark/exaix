@@ -11,3 +11,4 @@ export * from "./memory_extractor.ts";
 export * from "./memory_embedding.ts";
 export * from "./memory_search.ts";
 export * from "./session_memory.ts";
+export * from "./memory_auto_approval_service.ts";

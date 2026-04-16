@@ -5,7 +5,13 @@
  * initialization, listing, and cross-project pattern retrieval.
  */
 
-import { ConfidenceLevel, LearningCategory, MemoryScope, MemoryType, UIOutputFormat } from "../../src/shared/enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LearningCategory,
+  MemoryScope,
+  MemoryType,
+  UIOutputFormat,
+} from "../../src/shared/enums.ts";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironmentFactory } from "../fixtures/test_environment_factory.ts";
 import { LearningBuilder } from "../fixtures/memory_builder.ts";
@@ -207,7 +213,7 @@ Deno.test("MemoryCommands: promote moves learning to global", async () => {
       description: "Use repositories for all database access",
       category: LearningCategory.PATTERN,
       tags: ["architecture"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
     });
 
     assertStringIncludes(result, "promoted");
@@ -233,7 +239,7 @@ Deno.test("MemoryCommands: promote non-existent project returns error", async ()
       description: "Test",
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
     });
 
     assertStringIncludes(result, "Error:");

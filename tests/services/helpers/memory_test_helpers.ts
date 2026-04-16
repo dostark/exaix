@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -108,7 +108,7 @@ export function createBaseLearning(
     description: overrides.description ?? "Database access should go through repositories",
     category: overrides.category ?? LearningCategory.PATTERN,
     tags: overrides.tags ?? ["architecture"],
-    confidence: overrides.confidence ?? ConfidenceLevel.MEDIUM,
+    confidence: overrides.confidence ?? ConfidenceAssessmentLevel.MEDIUM,
     references: overrides.references ?? [],
   };
 }
@@ -153,7 +153,7 @@ export function createGlobalProposal(overrides: Partial<IMemoryUpdateProposal> =
       description: "Input validation prevents security issues",
       category: LearningCategory.INSIGHT,
       tags: ["security"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
 
       ...overrides.learning,
     }),
@@ -183,7 +183,7 @@ export function createApprovedProposal(overrides: Partial<IMemoryUpdateProposal>
       description: "Test description",
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.LOW,
+      confidence: ConfidenceAssessmentLevel.LOW,
       ...overrides.learning,
     }),
     reason: overrides.reason ?? "User requested",
@@ -250,7 +250,7 @@ function createInvalidLearning(
     description: overrides.description ?? "Test",
     category: overrides.category ?? LearningCategory.PATTERN,
     tags: overrides.tags ?? [],
-    confidence: overrides.confidence ?? ConfidenceLevel.LOW,
+    confidence: overrides.confidence ?? ConfidenceAssessmentLevel.LOW,
     ...overrides,
   };
 }

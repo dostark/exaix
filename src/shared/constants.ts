@@ -160,6 +160,7 @@ export const PLAN_AMENDMENT_EVENT_APPLIED = "plan.amendment.applied";
 export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
+export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
 
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;

@@ -9,7 +9,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { NotificationService } from "../../../src/services/notification/notification.ts";
 import type { IMemoryUpdateProposal } from "../../../src/shared/schemas/memory_bank.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   LearningCategory,
   MemoryBankSource,
   MemoryOperation,
@@ -65,7 +65,7 @@ export function createTestProposal(idOrOverrides?: string | Partial<IMemoryUpdat
       description: "A test pattern for notifications",
       category: LearningCategory.PATTERN,
       tags: ["test"],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       ...overrides.learning,
     },
     reason: "Extracted from execution",

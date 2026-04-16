@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -94,7 +94,7 @@ function createLearning(overrides: Partial<ILearning> = {}): ILearning {
     description: "A test learning description",
     category: LearningCategory.PATTERN,
     tags: ["test"],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     status: MemoryStatus.PENDING,
     ...overrides,
   };
@@ -467,7 +467,7 @@ Deno.test("renderPendingPanel: renders single proposal", () => {
       description: "A proposed learning",
       category: LearningCategory.PATTERN,
       tags: ["test"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
     },
     reason: "Good pattern to remember",
     identity_id: "test-agent",
@@ -498,7 +498,11 @@ Deno.test("renderPendingPanel: renders multiple proposals", () => {
         | LearningCategory.DECISION
         | LearningCategory.INSIGHT,
       tags: [],
-      confidence: [ConfidenceLevel.LOW, ConfidenceLevel.MEDIUM, ConfidenceLevel.HIGH][i % 3],
+      confidence: [
+        ConfidenceAssessmentLevel.LOW,
+        ConfidenceAssessmentLevel.MEDIUM,
+        ConfidenceAssessmentLevel.HIGH,
+      ][i % 3],
     },
     reason: `Reason ${i}`,
     identity_id: MemoryBankSource.IDENTITY,
@@ -525,7 +529,7 @@ Deno.test("renderPendingPanel: handles selection", () => {
       description: `Desc ${i}`,
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
     },
     reason: "Reason",
     identity_id: MemoryBankSource.IDENTITY,

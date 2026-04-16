@@ -21,9 +21,25 @@ import {
   TUI_PREFIX_PROJECT,
 } from "../helpers/constants.ts";
 import { renderCategoryBadge, renderConfidence, renderMarkdown } from "../helpers/markdown_renderer.ts";
-import { ConfidenceLevel } from "../../shared/enums.ts";
+import { ConfidenceAssessmentLevel, ConfidenceLevel } from "../../shared/enums.ts";
 import { DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
 import type { IMemoryService, ITreeNode } from "./types.ts";
+
+function mapAssessmentConfidenceToConfidenceLevel(
+  confidence: ConfidenceAssessmentLevel,
+): ConfidenceLevel {
+  switch (confidence) {
+    case ConfidenceAssessmentLevel.HIGH:
+    case ConfidenceAssessmentLevel.VERY_HIGH:
+      return ConfidenceLevel.HIGH;
+    case ConfidenceAssessmentLevel.MEDIUM:
+      return ConfidenceLevel.MEDIUM;
+    case ConfidenceAssessmentLevel.LOW:
+    case ConfidenceAssessmentLevel.VERY_LOW:
+    default:
+      return ConfidenceLevel.LOW;
+  }
+}
 
 export class MemoryFormatter {
   /**
@@ -113,7 +129,10 @@ export class MemoryFormatter {
 
     // Build content with color badges
     const categoryBadge = renderCategoryBadge(learning?.category || "observation", useColors);
-    const confidenceBadge = renderConfidence(learning?.confidence || ConfidenceLevel.MEDIUM, useColors);
+    const confidenceBadge = renderConfidence(
+      learning?.confidence ? mapAssessmentConfidenceToConfidenceLevel(learning.confidence) : ConfidenceLevel.MEDIUM,
+      useColors,
+    );
 
     const content = [
       `# ${learning?.title || "Proposed Learning"}`,

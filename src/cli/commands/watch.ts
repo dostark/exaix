@@ -11,8 +11,8 @@
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
+import { z } from "zod";
 import type { IStreamingEvent } from "../../shared/schemas/streaming_event.ts";
-import { ZStreamingEvent } from "../../shared/schemas/streaming_event.ts";
 import {
   STREAMING_EVENT_FLOW_STATUS,
   STREAMING_EVENT_HEARTBEAT,
@@ -36,7 +36,7 @@ export class WatchCommand extends BaseCommand {
    */
   async watch(traceId: string, _testMode?: boolean): Promise<void> {
     // Validate traceId
-    const parseResult = ZStreamingEvent.shape.eventId.safeParse(traceId);
+    const parseResult = z.string().uuid().safeParse(traceId);
     if (!parseResult.success) {
       const msg = `Invalid traceId: must be a valid UUID. Got: "${traceId}"`;
       if (Deno.env.get("EXA_TEST_CLI_MODE") === "1") {

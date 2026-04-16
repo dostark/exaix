@@ -634,6 +634,43 @@ export class MemoryFormatter {
     return lines.join("\n");
   }
 
+  formatPendingDryRunTable(proposals: IMemoryUpdateProposal[]): string {
+    const lines: string[] = [
+      "Pending Auto-Approval Preview",
+      "═".repeat(CLI_SEPARATOR_WIDE),
+      "",
+      "ID".padEnd(38) + "Title".padEnd(30) + "Confidence".padEnd(12) + "Age".padEnd(8) + "Eligible",
+      "─".repeat(CLI_SEPARATOR_WIDE),
+    ];
+
+    for (const proposal of proposals) {
+      const id = proposal.id.substring(0, CLI_TRUNCATE_ID_LONG);
+      const title = proposal.learning.title.substring(0, CLI_TRUNCATE_TITLE_SHORT).padEnd(30);
+      const confidence = proposal.learning.confidence.padEnd(12);
+      const extractedAt = proposal.learning.extracted_at ? new Date(proposal.learning.extracted_at) : null;
+      const age = extractedAt ? this.formatAge(extractedAt).padEnd(8) : "unknown".padEnd(8);
+      lines.push(`${id}  ${title}${confidence}${age}yes`);
+    }
+
+    lines.push("");
+    lines.push(`Total: ${proposals.length} eligible proposal(s)`);
+
+    return lines.join("\n");
+  }
+
+  private formatAge(extractedAt: Date): string {
+    const elapsed = Date.now() - extractedAt.getTime();
+    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+    if (hours < 1) {
+      return "<1h";
+    }
+    if (hours < 24) {
+      return `${hours}h`;
+    }
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
+  }
+
   formatPendingListMarkdown(proposals: IMemoryUpdateProposal[]): string {
     const lines: string[] = [
       "# Pending Memory Update Proposals",

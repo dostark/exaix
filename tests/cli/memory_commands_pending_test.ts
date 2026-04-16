@@ -51,7 +51,7 @@ async function createTestEnvironmentWithProposal(traceId?: string) {
 Deno.test("MemoryCommands: pendingList returns empty message", async () => {
   const { commands, cleanup } = await TestEnvironmentFactory.createMemoryEnvironment();
   try {
-    const result = await commands.pendingList(UIOutputFormat.TABLE);
+    const result = await commands.pendingList(false, UIOutputFormat.TABLE);
 
     assertStringIncludes(result, "No pending");
   } finally {
@@ -62,7 +62,7 @@ Deno.test("MemoryCommands: pendingList returns empty message", async () => {
 Deno.test("MemoryCommands: pendingList shows proposals", async () => {
   const { commands, cleanup, proposalId } = await createTestEnvironmentWithProposal();
   try {
-    const result = await commands.pendingList(UIOutputFormat.TABLE);
+    const result = await commands.pendingList(false, UIOutputFormat.TABLE);
 
     // Should show the pending proposal
     if (proposalId) {
@@ -76,7 +76,7 @@ Deno.test("MemoryCommands: pendingList shows proposals", async () => {
 Deno.test("MemoryCommands: pendingList --format json outputs valid JSON", async () => {
   const { commands, cleanup } = await createTestEnvironmentWithProposal();
   try {
-    const result = await commands.pendingList(UIOutputFormat.JSON);
+    const result = await commands.pendingList(false, UIOutputFormat.JSON);
     const parsed = JSON.parse(result);
 
     assertEquals(Array.isArray(parsed), true);

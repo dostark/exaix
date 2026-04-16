@@ -10,7 +10,7 @@ import { join } from "@std/path";
 
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   LearningCategory,
   MemoryBankSource,
   MemoryOperation,
@@ -37,7 +37,7 @@ function makeProposalLearning(overrides: Partial<IProposalLearning> = {}): IProp
     description: "d",
     category: LearningCategory.INSIGHT,
     tags: ["tag"],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     references: [],
     ...overrides,
   };

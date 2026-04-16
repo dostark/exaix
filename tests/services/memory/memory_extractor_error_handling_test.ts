@@ -9,7 +9,12 @@ import { assertEquals } from "@std/assert";
 
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../../src/shared/enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LearningCategory,
+  MemoryBankSource,
+  MemoryScope,
+} from "../../../src/shared/enums.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IExecutionMemory, IProposalLearning } from "../../../src/shared/schemas/memory_bank.ts";
@@ -41,7 +46,7 @@ Deno.test("MemoryExtractorService: logActivity errors do not break createProposa
         scope: MemoryScope.GLOBAL,
         category: LearningCategory.INSIGHT,
         tags: ["tag"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         references: [],
       } as IProposalLearning,
       { trace_id: "trace" } as Partial<IExecutionMemory> as IExecutionMemory,

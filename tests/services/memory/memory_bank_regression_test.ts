@@ -17,7 +17,7 @@ import {
 import type { IExecutionMemory, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
 import { createTestLearning } from "../helpers/memory_test_helpers.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -82,7 +82,7 @@ Deno.test("[regression] searchByKeyword finds patterns, decisions and overview",
           status: MemoryStatus.APPROVED,
           tags: ["alpha"],
           category: LearningCategory.INSIGHT,
-          confidence: ConfidenceLevel.HIGH,
+          confidence: ConfidenceAssessmentLevel.HIGH,
           scope: MemoryScope.GLOBAL,
           source: MemoryBankSource.IDENTITY,
         }),

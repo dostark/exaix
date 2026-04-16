@@ -44,7 +44,7 @@ import type {
 } from "../../src/shared/schemas/memory_bank.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   EvaluationCategory,
   LearningCategory,
   MemoryBankSource,
@@ -1030,7 +1030,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
         description: "Use try-catch for all async functions",
         category: LearningCategory.PATTERN,
         tags: ["error-handling"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         references: [{ type: MemoryReferenceType.FILE, path: "src/db.ts" }],
       } as IProposalLearning,
       target_scope: MemoryScope.PROJECT,
@@ -1052,7 +1052,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
         description: "Implement rate limiting for all API endpoints",
         category: LearningCategory.DECISION,
         tags: [MemoryReferenceType.API, EvaluationCategory.SECURITY],
-        confidence: ConfidenceLevel.MEDIUM,
+        confidence: ConfidenceAssessmentLevel.MEDIUM,
       } as IProposalLearning,
       target_scope: MemoryScope.GLOBAL,
       reason: "Common pattern across projects",
@@ -1072,7 +1072,7 @@ export function createMockProposals(): IMemoryUpdateProposal[] {
         description: "Connection timeout solutions",
         category: LearningCategory.TROUBLESHOOTING,
         tags: ["database"],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
       } as IProposalLearning,
       target_scope: MemoryScope.PROJECT,
       target_project: "api-service",

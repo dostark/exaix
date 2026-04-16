@@ -9,6 +9,7 @@ import { assertEquals, assertExists, assertGreater, assertStringIncludes } from 
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 
 import {
+  ConfidenceAssessmentLevel,
   ConfidenceLevel,
   ExecutionStatus,
   LearningCategory,
@@ -114,7 +115,7 @@ class MockMemoryServiceFull extends MinimalMemoryServiceMock implements IMemoryS
           title: "Global ILearning as ILearning 1",
           description: "Important global insight",
           category: LearningCategory.INSIGHT,
-          confidence: ConfidenceLevel.HIGH,
+          confidence: ConfidenceAssessmentLevel.HIGH,
           tags: [MemoryScope.GLOBAL],
           source: MemoryBankSource.USER,
           scope: MemoryScope.GLOBAL,
@@ -222,7 +223,7 @@ function createMockProposal(
       title,
       description: `Description for ${title}`,
       category,
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       tags: [category, "test"],
       source: MemoryBankSource.IDENTITY,
       scope: MemoryScope.PROJECT,

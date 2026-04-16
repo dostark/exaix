@@ -620,6 +620,9 @@ function createMockNotificationService(localNotifs: IMemoryNotification[]): INot
     async getPendingCount() {
       return await Promise.resolve(localNotifs.filter((n) => !n.dismissed_at).length);
     },
+    async notifyPendingDigestIfNeeded() {
+      return await Promise.resolve(false);
+    },
     notifyMemoryUpdate: async () => {},
     notifyApproval: async () => {},
     notifyRejection: async () => {},
@@ -909,6 +912,9 @@ async function createProductionDashboard(options: {
     },
     async getPendingCount() {
       return await Promise.resolve(0);
+    },
+    async notifyPendingDigestIfNeeded() {
+      return await Promise.resolve(false);
     },
     async notify() {
       await Promise.resolve();

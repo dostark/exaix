@@ -14,7 +14,12 @@ import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { MemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { ILearning, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
-import { ConfidenceLevel, LearningCategory, MemoryBankSource, MemoryScope } from "../../../src/shared/enums.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LearningCategory,
+  MemoryBankSource,
+  MemoryScope,
+} from "../../../src/shared/enums.ts";
 import { getMemoryGlobalDir, getMemoryIndexDir } from "../../helpers/paths_helper.ts";
 
 // ===== Test Setup Helpers =====
@@ -68,7 +73,7 @@ async function setupTestData(
       description: "Always check for proper error handling and edge cases",
       category: LearningCategory.INSIGHT,
       tags: ["code-review", "best-practices"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     },
     {
@@ -80,7 +85,7 @@ async function setupTestData(
       description: "Use JSDoc for all public functions and classes",
       category: LearningCategory.PATTERN,
       tags: ["documentation", "typescript"],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       status: MemoryStatus.APPROVED,
     },
   ];

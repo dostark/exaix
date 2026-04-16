@@ -16,6 +16,12 @@ import { RequestProcessor } from "./services/request/request_processor.ts";
 import { ReviewRegistry } from "./services/artifact/review_registry.ts";
 import { EventLogger } from "./services/core/event_logger.ts";
 import { ExecutionLoop } from "./services/agent/execution_loop.ts";
+import { MemoryBankService } from "./services/memory/memory_bank.ts";
+import { MemoryExtractorService } from "./services/memory/memory_extractor.ts";
+import { MemoryAutoApprovalService } from "./services/memory/memory_auto_approval_service.ts";
+import { initializeMemoryAutoApprovalMaintenance } from "./services/memory/auto_approval_daemon.ts";
+import { NotificationService } from "./services/notification/notification.ts";
+import { MemoryBankAdapter } from "./services/adapters/memory_bank_adapter.ts";
 import { createConfigReloadHandler } from "./config/config_reload_handler.ts";
 import {
   ConsoleOutput,
@@ -204,6 +210,21 @@ if (import.meta.main) {
       reviewRegistry,
     });
 
+    // Initialize Memory Auto-Approval Service
+    const memoryBank = new MemoryBankService(config, dbService);
+    const memoryAdapter = new MemoryBankAdapter(memoryBank);
+    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    const notificationService = new NotificationService(config, dbService);
+    const autoApprovalService = new MemoryAutoApprovalService(config, memoryExtractor);
+
+    const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance(
+      notificationService,
+      memoryExtractor,
+      autoApprovalService,
+      logger,
+      60 * 60 * 1000,
+    );
+
     // Start file watcher for approved plans (Workspace/Active)
     // Detection for Step 5.12: Plan Execution Flow
     const planWatcher = new FileWatcher(
@@ -268,6 +289,11 @@ if (import.meta.main) {
 
     gracefulShutdown.registerCleanup("stop_config_watcher", async () => {
       await configWatcher.stop();
+    });
+
+    gracefulShutdown.registerCleanup("stop_auto_approval", async () => {
+      stopAutoApproval();
+      await logger.info("shutdown.auto_approval_stopped", "memory auto-approval cycle", {});
     });
 
     gracefulShutdown.registerCleanup("close_database", async () => {

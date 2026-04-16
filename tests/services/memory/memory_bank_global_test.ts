@@ -19,7 +19,7 @@ import {
   LearningSchema,
 } from "../../../src/shared/schemas/memory_bank.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
@@ -43,7 +43,7 @@ Deno.test("LearningSchema: validates minimal learning", () => {
     description: "Always use try-catch with typed errors in async functions",
     category: LearningCategory.PATTERN,
     tags: ["error-handling", "typescript"],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     status: MemoryStatus.APPROVED,
   });
 
@@ -61,7 +61,7 @@ Deno.test("LearningSchema: validates global learning without project", () => {
     description: "Ensure all tests pass before committing to avoid CI failures",
     category: LearningCategory.INSIGHT,
     tags: ["testing", "workflow"],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     status: MemoryStatus.APPROVED,
   });
 
@@ -81,7 +81,7 @@ Deno.test("LearningSchema: validates pending status with references", () => {
     description: "Use joins or batch loading to avoid N+1 query problems",
     category: LearningCategory.ANTI_PATTERN,
     tags: ["database", EvaluationCategory.PERFORMANCE],
-    confidence: ConfidenceLevel.MEDIUM,
+    confidence: ConfidenceAssessmentLevel.MEDIUM,
     references: [
       { type: MemoryReferenceType.FILE, path: "src/services/user.ts" },
       { type: MemoryReferenceType.EXECUTION, path: "trace-123" },
@@ -103,7 +103,7 @@ Deno.test("LearningSchema: rejects invalid category", () => {
     description: "Test description",
     category: "invalid-category" as Partial<LearningCategory> as LearningCategory, // Invalid
     tags: [],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     status: MemoryStatus.APPROVED,
   });
 
@@ -121,7 +121,7 @@ Deno.test("LearningSchema: rejects invalid status", () => {
     description: "Test description",
     category: LearningCategory.PATTERN,
     tags: [],
-    confidence: ConfidenceLevel.HIGH,
+    confidence: ConfidenceAssessmentLevel.HIGH,
     status: "unknown", // Invalid
   };
 
@@ -164,7 +164,7 @@ Deno.test("GlobalMemorySchema: validates populated global memory", () => {
         description: "A global pattern description",
         category: LearningCategory.PATTERN,
         tags: [MemoryScope.GLOBAL],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
       }),
     ],
@@ -262,7 +262,7 @@ Deno.test("MemoryBankService: addGlobalLearning creates learning entry", async (
       description: "Validate all user input at API boundaries",
       category: LearningCategory.PATTERN,
       tags: [EvaluationCategory.SECURITY, "validation"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     });
 
@@ -292,7 +292,7 @@ Deno.test("MemoryBankService: addGlobalLearning updates markdown file", async ()
       description: "Always validate user input at API boundaries",
       category: LearningCategory.PATTERN,
       tags: [EvaluationCategory.SECURITY],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     });
 
@@ -320,7 +320,7 @@ Deno.test("MemoryBankService: addGlobalLearning logs to IActivity Journal", asyn
       description: "Test description",
       category: LearningCategory.INSIGHT,
       tags: [],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       status: MemoryStatus.APPROVED,
     });
 
@@ -374,7 +374,7 @@ Deno.test("MemoryBankService: promoteLearning moves from project to global", asy
       description: "All database access through repositories - promoted from my-app",
       category: LearningCategory.PATTERN,
       tags: ["architecture", "database"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
     });
 
     assertExists(learningId);
@@ -421,7 +421,7 @@ Deno.test("MemoryBankService: promoteLearning logs to IActivity Journal", async 
       description: "Use TypeScript for better type safety",
       category: LearningCategory.DECISION,
       tags: ["language"],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
     });
 
     // Wait for batch flush
@@ -454,7 +454,7 @@ Deno.test("MemoryBankService: promoteLearning from non-existent project throws",
           description: "Test",
           category: LearningCategory.PATTERN,
           tags: [],
-          confidence: ConfidenceLevel.MEDIUM,
+          confidence: ConfidenceAssessmentLevel.MEDIUM,
         });
       },
       Error,
@@ -534,7 +534,7 @@ Deno.test("MemoryBankService: demoteLearning removes from global index", async (
       description: "First learning",
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     });
     const learning2 = createSampleLearning({
@@ -546,7 +546,7 @@ Deno.test("MemoryBankService: demoteLearning removes from global index", async (
       description: "Second learning",
       category: LearningCategory.INSIGHT,
       tags: [],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       status: MemoryStatus.APPROVED,
     });
     await service.addGlobalLearning(learning1);
@@ -607,7 +607,7 @@ Deno.test("MemoryBankService: demoteLearning to non-existent project throws", as
       description: "Test",
       category: LearningCategory.PATTERN,
       tags: [],
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       status: MemoryStatus.APPROVED,
     });
     await service.addGlobalLearning(learning);
@@ -645,7 +645,7 @@ Deno.test("MemoryBankService: getGlobalStats returns accurate statistics", async
         description: "Desc 1",
         category: LearningCategory.PATTERN,
         tags: [],
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
       }),
       createSampleLearning({
@@ -658,7 +658,7 @@ Deno.test("MemoryBankService: getGlobalStats returns accurate statistics", async
         description: "Desc 2",
         category: LearningCategory.PATTERN,
         tags: [],
-        confidence: ConfidenceLevel.MEDIUM,
+        confidence: ConfidenceAssessmentLevel.MEDIUM,
         status: MemoryStatus.APPROVED,
       }),
       createSampleLearning({
@@ -671,7 +671,7 @@ Deno.test("MemoryBankService: getGlobalStats returns accurate statistics", async
         description: "Desc 3",
         category: LearningCategory.INSIGHT,
         tags: [],
-        confidence: ConfidenceLevel.LOW,
+        confidence: ConfidenceAssessmentLevel.LOW,
         status: MemoryStatus.APPROVED,
       }),
     ];

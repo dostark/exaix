@@ -1,4 +1,5 @@
 ---
+identity: claude
 agent: general
 scope: dev
 title: Claude provider adaptation notes

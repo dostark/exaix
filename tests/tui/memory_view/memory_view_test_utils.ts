@@ -6,7 +6,7 @@
  */
 
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -137,7 +137,7 @@ export function createMockProposal(id: string, title: string): IMemoryUpdateProp
       title,
       description: "Test learning description",
       category: LearningCategory.PATTERN,
-      confidence: ConfidenceLevel.HIGH,
+      confidence: ConfidenceAssessmentLevel.HIGH,
       source: MemoryBankSource.IDENTITY,
       scope: MemoryScope.PROJECT,
       project: "TestPortal",
@@ -217,7 +217,7 @@ export function createMockGlobalMemory(): IGlobalMemory {
         title: "Global ILearning 1",
         description: "Description",
         category: LearningCategory.PATTERN,
-        confidence: ConfidenceLevel.HIGH,
+        confidence: ConfidenceAssessmentLevel.HIGH,
         source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         created_at: new Date().toISOString(),
@@ -229,7 +229,7 @@ export function createMockGlobalMemory(): IGlobalMemory {
         title: "Global ILearning 2",
         description: "Description",
         category: LearningCategory.INSIGHT,
-        confidence: ConfidenceLevel.MEDIUM,
+        confidence: ConfidenceAssessmentLevel.MEDIUM,
         source: MemoryBankSource.IDENTITY,
         scope: MemoryScope.GLOBAL,
         created_at: new Date().toISOString(),

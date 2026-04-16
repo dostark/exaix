@@ -337,6 +337,8 @@ exactl memory pending approve <proposal-id>
 # Reject with reason
 exactl memory pending reject <proposal-id> --reason "Duplicate"
 
+> Note: If `memory.auto_approve.enabled` is enabled in configuration, the daemon can automatically promote eligible pending proposals, and it may emit a daily pending digest notification when proposals are waiting for review.
+
 # Rebuild search indices
 exactl memory rebuild-index
 ```

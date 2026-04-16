@@ -8,7 +8,7 @@
 import type { IExecutionMemory, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
 import { LANG_TYPESCRIPT } from "../../shared/constants.ts";
 import {
-  ConfidenceLevel,
+  ConfidenceAssessmentLevel,
   ExecutionStatus,
   LearningCategory,
   MemoryBankSource,
@@ -109,7 +109,7 @@ export class LearningExtractor {
       description: lesson,
       category,
       tags: this.extractTags(lesson, execution),
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       references: [
         { type: MemoryReferenceType.EXECUTION, path: execution.trace_id },
       ],
@@ -209,7 +209,7 @@ export class LearningExtractor {
           description: `Learned ${indicator.pattern.toLowerCase()} from execution: ${execution.summary}`,
           category: LearningCategory.PATTERN,
           tags: this.extractTags(execution.summary, execution),
-          confidence: ConfidenceLevel.MEDIUM,
+          confidence: ConfidenceAssessmentLevel.MEDIUM,
           references: [
             { type: MemoryReferenceType.EXECUTION, path: execution.trace_id },
           ],
@@ -242,7 +242,7 @@ export class LearningExtractor {
       }`,
       category: LearningCategory.TROUBLESHOOTING,
       tags: ["error", ...this.extractTags(execution.error_message, execution)],
-      confidence: ConfidenceLevel.MEDIUM,
+      confidence: ConfidenceAssessmentLevel.MEDIUM,
       references: [
         { type: MemoryReferenceType.EXECUTION, path: execution.trace_id },
       ],

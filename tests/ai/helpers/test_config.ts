@@ -9,8 +9,10 @@ import { type AiConfig, AiConfigSchema } from "../../../src/shared/schemas/ai_co
 import type { Config } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import {
+  ConfidenceAssessmentLevel,
   LogLevel,
   McpTransportType,
+  MemoryBankSource,
   PortalAnalysisMode,
   ProviderType,
   QualityGateMode,
@@ -67,6 +69,15 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
       default_model: "default",
       timeout_sec: 60,
       max_iterations: 10,
+    },
+    memory: {
+      auto_approve: {
+        enabled: false,
+        confidence_threshold: ConfidenceAssessmentLevel.HIGH,
+        delay_hours: 24,
+        sources_allowed: [MemoryBankSource.LEARNED],
+        max_batch_size: 20,
+      },
     },
     portals: [],
     mcp: {

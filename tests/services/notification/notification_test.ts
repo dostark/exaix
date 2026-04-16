@@ -160,3 +160,26 @@ Deno.test("NotificationService: getPendingCount returns correct count", async ()
     assertEquals(await notification.getPendingCount(), 2);
   });
 });
+
+Deno.test("NotificationService: notifyPendingDigestIfNeeded creates a digest and throttles repeats", async () => {
+  await runNotificationTest(async ({ db, notification }) => {
+    const createdFirst = await notification.notifyPendingDigestIfNeeded(3);
+    assertEquals(createdFirst, true);
+
+    const rows = db.instance.prepare(
+      "SELECT type, message FROM notifications WHERE type = ?",
+    ).all("memory_update_pending_digest") as Array<{ type: string; message: string }>;
+
+    assertEquals(rows.length, 1);
+    assertStringIncludes(rows[0].message, "3 pending");
+
+    const createdSecond = await notification.notifyPendingDigestIfNeeded(3);
+    assertEquals(createdSecond, false);
+
+    const rowsAfter = db.instance.prepare(
+      "SELECT COUNT(*) as count FROM notifications WHERE type = ?",
+    ).get("memory_update_pending_digest") as { count: number };
+
+    assertEquals(rowsAfter.count, 1);
+  });
+});

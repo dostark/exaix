@@ -584,6 +584,8 @@ Memory Banks will be integrated into the TUI dashboard in a future phase:
 - **Decision Tracking:** Link decisions to execution history
 - **Export/Import:** Share memory banks between Exaix instances
 - **Auto-Approve Config:** `memory.auto_approve: true` to skip pending workflow
+- **Auto-Approve Sources:** `memory.auto_approve.sources_allowed: ["AGENT"]` includes agent-derived proposals from `EXECUTION`, `LLM`, and `LEARNED`
+- **Pending Digest:** The daemon emits a `memory_update_pending_digest` notification when there are pending proposals and no digest has been sent in the last 24 hours
 - **Retention Policies:** Automatic archival of old learnings
 
 ---

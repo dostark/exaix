@@ -778,7 +778,7 @@ Deno.test("memory execution default action lists executions", async () => {
 Deno.test("memory pending default action lists pending", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
-    ctx.memoryCommands.pendingList = (_format?: OutputFormat) => {
+    ctx.memoryCommands.pendingList = (_eligible?: boolean, _format?: OutputFormat) => {
       called = true;
       return Promise.resolve("Pending proposals");
     };
@@ -805,8 +805,37 @@ Deno.test("memory pending approve-all calls pendingApproveAll", async () => {
   });
 });
 
-// ===== Flow Commands =====
+Deno.test("memory pending list --eligible filters eligible proposals", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.memoryCommands.pendingList = (eligible?: boolean, _format?: OutputFormat) => {
+      called = eligible === true;
+      return Promise.resolve("Eligible proposals");
+    };
+    const out = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "list", "--eligible"]);
+    });
+    assert(called);
+    assert(out.includes("Eligible proposals"));
+  });
+});
 
+Deno.test("memory pending approve --dry-run previews auto-approvals", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.memoryCommands.pendingApprove = (proposalId?: string, dryRun?: boolean) => {
+      called = dryRun === true && proposalId === undefined;
+      return Promise.resolve("Dry run preview");
+    };
+    const out = await captureConsoleOutput(async () => {
+      await mod.__test_command.parse(["memory", MemoryStatus.PENDING, "approve", "--dry-run"]);
+    });
+    assert(called);
+    assert(out.includes("Dry run preview"));
+  });
+});
+
+// ===== Flow Commands =====
 Deno.test("flow show calls flowCommands.showFlow", async () => {
   await withTestMod(async (mod, ctx) => {
     let called = false;
