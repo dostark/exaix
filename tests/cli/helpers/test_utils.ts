@@ -16,9 +16,12 @@ import {
 
 // Dynamic import required for test module loading (documented in CODE_STYLE.md)
 // This must remain a dynamic import because the module is only needed at runtime in test mode.
-const exactlModulePromise: Promise<typeof import("../../../src/cli/exactl.ts")> = import("../../../src/cli/exactl.ts");
+let exactlModulePromise: Promise<typeof import("../../../src/cli/exactl.ts")> | null = null;
 
 function loadExaCtlModule(): Promise<typeof import("../../../src/cli/exactl.ts")> {
+  if (!exactlModulePromise) {
+    exactlModulePromise = import("../../../src/cli/exactl.ts");
+  }
   return exactlModulePromise;
 }
 
