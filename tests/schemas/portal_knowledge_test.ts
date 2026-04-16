@@ -257,6 +257,15 @@ Deno.test("[PortalKnowledgeSchema] validates complete valid knowledge object", (
   assertEquals(result.success, true);
 });
 
+Deno.test("[PortalKnowledgeSchema] accepts optional headCommitSha and fullAnalysis", () => {
+  const result = PortalKnowledgeSchema.safeParse({
+    ...validPortalKnowledge,
+    headCommitSha: "0123456789abcdef0123456789abcdef01234567",
+    fullAnalysis: true,
+  });
+  assertEquals(result.success, true);
+});
+
 Deno.test("[PortalKnowledgeSchema] rejects missing required fields", () => {
   const { portal: _p, ...withoutPortal } = validPortalKnowledge;
   const result = PortalKnowledgeSchema.safeParse(withoutPortal);

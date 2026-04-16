@@ -16,6 +16,9 @@ import { identifyKeyFiles } from "./key_file_identifier.ts";
 import { detectPatterns } from "./pattern_detector.ts";
 import { ArchitectureInferrer, type IArchitectureValidator } from "./architecture_inferrer.ts";
 import { type IDocCommandRunner, SymbolExtractor } from "./symbol_extractor.ts";
+import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
+import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./knowledge_invalidation_strategy.ts";
+import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
 import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
@@ -26,6 +29,17 @@ import type { IDatabaseService } from "../../shared/interfaces/i_database_servic
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import { PortalAnalysisMode } from "../../shared/enums.ts";
 import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
+
+export interface IPortalKnowledgeServiceOptions {
+  config: IPortalKnowledgeConfig;
+  memoryBank: IMemoryBankService;
+  provider?: IModelProvider;
+  validator?: IArchitectureValidator;
+  db?: IDatabaseService;
+  runner?: IDocCommandRunner;
+  gitHeadResolver?: IGitHeadResolver;
+  invalidationStrategy?: IKnowledgeInvalidationStrategy;
+}
 
 // ---------------------------------------------------------------------------
 // PortalKnowledgeService
@@ -51,24 +65,29 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _validator?: IArchitectureValidator;
   private readonly _db?: IDatabaseService;
   private readonly _symbolRunner: IDocCommandRunner | undefined;
+  private readonly _gitHeadResolver: IGitHeadResolver;
+  private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
 
   /** In-memory cache: alias → latest IPortalKnowledge. */
   private readonly _cache: Map<string, IPortalKnowledge> = new Map();
 
-  constructor(
-    config: IPortalKnowledgeConfig,
-    memoryBank: IMemoryBankService,
-    provider?: IModelProvider,
-    validator?: IArchitectureValidator,
-    db?: IDatabaseService,
-    runner?: IDocCommandRunner,
-  ) {
+  constructor(options: IPortalKnowledgeServiceOptions) {
+    const optionsWithDefaults = {
+      ...options,
+      gitHeadResolver: options.gitHeadResolver,
+      invalidationStrategy: options.invalidationStrategy,
+    };
+    const config = optionsWithDefaults.config;
     this._config = config;
-    this._memoryBank = memoryBank;
-    this._provider = provider;
-    this._validator = validator;
-    this._db = db;
-    this._symbolRunner = runner;
+    this._memoryBank = optionsWithDefaults.memoryBank;
+    this._provider = optionsWithDefaults.provider;
+    this._validator = optionsWithDefaults.validator;
+    this._db = optionsWithDefaults.db;
+    this._symbolRunner = optionsWithDefaults.runner;
+    this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ?? new GitHeadResolver();
+    this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
+      this._gitHeadResolver,
+    );
     // memoryBank is stored for use in Step 10 (persistence)
     void this._memoryBank;
   }
@@ -84,6 +103,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   ): Promise<IPortalKnowledge> {
     const resolvedMode = mode ?? this._config.defaultMode;
     const startMs = Date.now();
+    const currentHeadSha = await this._gitHeadResolver.resolve(portalPath);
 
     // Strategy 1 & 2: walk directory
     const scanLimit = resolvedMode === PortalAnalysisMode.QUICK
@@ -211,6 +231,8 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         totalDirectories: 0,
         extensionDistribution: {},
       },
+      ...(currentHeadSha ? { headCommitSha: currentHeadSha } : {}),
+      fullAnalysis: resolvedMode !== PortalAnalysisMode.QUICK,
       metadata: {
         durationMs: Date.now() - startMs,
         mode: resolvedMode,
@@ -243,29 +265,63 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     return Promise.resolve(new Date(cached.gatheredAt) < cutoff);
   }
 
-  async getOrAnalyze(
+  getOrAnalyze(
     portalAlias: string,
     portalPath: string,
   ): Promise<IPortalKnowledge> {
     const cached = this._cache.get(portalAlias);
 
     if (!cached) {
-      // Code path 3: no cache — analyze synchronously
       return this.analyze(portalAlias, portalPath);
     }
 
-    if (!(await this.isStale(portalAlias))) {
-      // Code path 1: fresh cache — return immediately
-      return cached;
+    void this._revalidateStaleCache(portalAlias, portalPath, cached);
+    return Promise.resolve(cached);
+  }
+
+  private async _revalidateStaleCache(
+    portalAlias: string,
+    portalPath: string,
+    cached: IPortalKnowledge,
+  ): Promise<void> {
+    const startMs = Date.now();
+    const validity = await this._invalidationStrategy.check(
+      portalPath,
+      cached,
+      this._config.staleness,
+    );
+    const elapsedMs = Date.now() - startMs;
+
+    this._db?.logActivity(
+      "portal-knowledge-service",
+      this._mapValidityEventType(validity.analysisMode),
+      portalAlias,
+      {
+        ...validity,
+        elapsedMs,
+      },
+    );
+
+    if (validity.analysisMode === "skip") {
+      return;
     }
 
-    // Code path 2: stale cache — return stale knowledge immediately,
-    // fire async background re-analysis (never blocks the caller)
-    this.analyze(portalAlias, portalPath).catch(() => {
-      // Silently swallow background errors
+    const mode = validity.analysisMode === "incremental" ? PortalAnalysisMode.QUICK : undefined;
+    await this.analyze(portalAlias, portalPath, mode).catch(() => {
+      // Swallow background analysis failures to preserve stale return behavior.
     });
+  }
 
-    return cached;
+  private _mapValidityEventType(mode: KnowledgeAnalysisMode): string {
+    switch (mode) {
+      case "skip":
+        return "portal.knowledge.skipped";
+      case "incremental":
+        return "portal.knowledge.incremental";
+      case "full":
+      default:
+        return "portal.knowledge.full";
+    }
   }
 
   updateKnowledge(

@@ -147,7 +147,7 @@ Deno.test("[KnowledgePersistence] loads previously saved knowledge", async () =>
   const tempDir = await Deno.makeTempDir();
   try {
     const memoryBank = makeMockMemoryBank();
-    const knowledge = makeKnowledge();
+    const knowledge = makeKnowledge({ headCommitSha: "0123456789abcdef0123456789abcdef01234567", fullAnalysis: true });
     await saveKnowledge("test-portal", knowledge, memoryBank, tempDir);
 
     const loaded = await loadKnowledge("test-portal", tempDir);
@@ -155,6 +155,25 @@ Deno.test("[KnowledgePersistence] loads previously saved knowledge", async () =>
     assertEquals(loaded.portal, "test-portal");
     assertEquals(loaded.version, 1);
     assertEquals(loaded.architectureOverview, knowledge.architectureOverview);
+    assertEquals(loaded.headCommitSha, knowledge.headCommitSha);
+    assertEquals(loaded.fullAnalysis, knowledge.fullAnalysis);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[KnowledgePersistence] loads legacy knowledge without headCommitSha", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const portalDir = join(tempDir, "legacy-portal");
+    await Deno.mkdir(portalDir, { recursive: true });
+    const legacyKnowledge = { ...makeKnowledge(), headCommitSha: undefined, fullAnalysis: undefined };
+    await Deno.writeTextFile(join(portalDir, "knowledge.json"), JSON.stringify(legacyKnowledge, null, 2));
+
+    const result = await loadKnowledge("legacy-portal", tempDir);
+    assertExists(result);
+    assertEquals(result.portal, "test-portal");
+    assertEquals(result.metadata.mode, PortalAnalysisMode.QUICK);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

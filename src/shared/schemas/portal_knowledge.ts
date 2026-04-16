@@ -160,6 +160,10 @@ export const PortalKnowledgeSchema = z.object({
   gatheredAt: z.string().datetime(),
   /** Knowledge version (incremented on re-analysis) */
   version: z.number().int().min(1),
+  /** Commit SHA of the portal at the time of analysis */
+  headCommitSha: z.string().length(40).optional(),
+  /** Whether this snapshot includes a full 6-strategy analysis */
+  fullAnalysis: z.boolean().optional(),
 
   /** High-level architecture overview (Markdown) */
   architectureOverview: z.string(),
