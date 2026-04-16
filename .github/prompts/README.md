@@ -45,3 +45,4 @@ That keeps one source of truth for the actual workflow while preserving the inte
 - `/pre-gap-analysis` -> `pre-gap-analysis.prompt.md` (canonical: `../../.copilot/prompts/pre-gap-analysis.md`)
 - `/post-gap-analysis` -> `post-gap-analysis.prompt.md` (canonical: `../../.copilot/prompts/post-gap-analysis.md`)
 - `/plan` -> `plan.prompt.md` (canonical: `../../.copilot/prompts/plan.md`)
+- `/submodule-workflow` -> `submodule-workflow.prompt.md` (canonical: `../../.copilot/prompts/submodule-workflow.md`)

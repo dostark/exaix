@@ -25,6 +25,7 @@ topics: ["docs", "process", "publishing"]
 > - Agents should read `.copilot/` for specific coding patterns, prompts, and workflows.
 > - Agents should read `docs/` for high-level architectural understanding.
 > - If a conflict exists between `docs/` (human intent) and source code, follow `docs/` but verify with the user.
+> - If a document lives in the `exaix-dev-docs` submodule, consult `exaix-dev-docs/MAINTENANCE.md` and update the parent repo pointer only after the submodule change is committed.
 
 ## Quickstart — Using `.copilot/` with VS Code & Copilot ✅
 
