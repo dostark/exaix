@@ -157,7 +157,15 @@ const PRE_PUSH_CONTENT = `#!/bin/sh
 echo "
 🚀 Running Pre-push Gates..."
 
-# 1. Full Type Check (all source AND test files)
+# 1. Manifest Freshness Check
+#    Ensure the documentation manifest is up-to-date before pushing code.
+deno run --allow-all scripts/verify_manifest_fresh.ts
+if [ $? -ne 0 ]; then
+  echo "❌ Error: .copilot/manifest.json is out of date. Run scripts/build_agents_index.ts and commit the updated manifest."
+  exit 1
+fi
+
+# 2. Full Type Check (all source AND test files)
 #    The pre-commit hook only checks src/main.ts for speed.
 #    Pre-push must catch TS errors in every file that will be pushed.
 deno check src/ tests/
@@ -166,7 +174,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 2. Focused Test Run — run tests for files that changed
+# 3. Focused Test Run — run tests for files that changed
 #    If any test files were modified, run them.
 #    If any source files were modified, run their mirrored test files.
 CHANGED_FILES=$(git diff --name-only origin/main..HEAD 2>/dev/null || git diff --name-only HEAD~5..HEAD 2>/dev/null || echo "")
