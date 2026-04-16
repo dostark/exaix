@@ -135,7 +135,7 @@ The project includes automated pre-commit hooks that run:
 - `deno fmt --check` - Validates formatting
 - `deno lint` - Validates code quality
 - Markdown linting - Validates markdown formatting
-- Manifest freshness checks
+- Manifest freshness checks - Validates `.copilot/manifest.json` is current after `.copilot/` edits
 
 **Failure to run these checks will result in commit rejection.**
 
