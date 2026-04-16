@@ -28,7 +28,26 @@ import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
 import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import { MAX_CRITIQUE_REQUIREMENTS } from "../../shared/constants.ts";
+import type { Config } from "../../shared/schemas/config.ts";
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+  DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
+  DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
+  DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
+  MAX_CRITIQUE_REQUIREMENTS,
+} from "../../shared/constants.ts";
+import { type ConfidenceAssessment, ConfidenceScorer } from "../utils/confidence_scorer.ts";
+
+export interface IReflexiveAgentConvergenceConfig {
+  qualityExitThreshold: number;
+  minImprovementDelta: number;
+  oscillationWindow: number;
+  baseMaxIterations: number;
+  complexityScaleFactor: number;
+  absoluteMaxIterations: number;
+  scoreEveryNIterations: number;
+}
 
 export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   maxIterations?: number;
@@ -36,7 +55,10 @@ export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   confidenceThreshold?: number;
   critiquePromptTemplate?: string;
   refinementPromptTemplate?: string;
+  scoreEveryNIterations?: number;
   verbose?: boolean;
+  adaptiveIterationBudget?: boolean;
+  convergenceConfig?: Partial<IReflexiveAgentConvergenceConfig>;
 }
 
 export interface IReflexionIteration {
@@ -45,6 +67,16 @@ export interface IReflexionIteration {
   critique: ICritique | null;
   durationMs: number;
 }
+
+export interface IIterationScore {
+  iteration: number;
+  score: number;
+  delta: number | null;
+  level: ConfidenceAssessment["level"];
+  requiresReview: boolean;
+}
+
+type IReflexionConvergenceReason = "quality_threshold_met" | "plateau_detected" | "oscillation_detected";
 
 export interface IReflexiveExecutionResult {
   final: IAgentExecutionResult;
@@ -65,6 +97,8 @@ export interface IReflexionMetrics {
   qualityDistribution: Record<ICritique["quality"], number>;
   issueTypeDistribution: Record<string, number>;
 }
+
+const REFLEXIVE_AGENT_ACTIVITY_SOURCE = "reflexive_agent" as const;
 
 // ============================================================================
 // Critique Schema
@@ -178,11 +212,15 @@ export class ReflexiveAgent {
     confidenceThreshold: number;
     critiquePromptTemplate: string;
     refinementPromptTemplate: string;
+    scoreEveryNIterations: number;
     verbose: boolean;
+    adaptiveIterationBudget: boolean;
+    convergenceConfig: IReflexiveAgentConvergenceConfig;
     agentRunnerConfig: IAgentRunnerConfig;
   };
 
   public metrics: IReflexionMetrics = this.emptyMetrics();
+  public confidenceScorer: ConfidenceScorer;
 
   private emptyMetrics(): IReflexionMetrics {
     return {
@@ -209,9 +247,18 @@ export class ReflexiveAgent {
       confidenceThreshold = 70,
       critiquePromptTemplate = DEFAULT_CRITIQUE_PROMPT,
       refinementPromptTemplate = DEFAULT_REFINEMENT_PROMPT,
+      scoreEveryNIterations = 1,
       verbose = false,
+      adaptiveIterationBudget = true,
+      convergenceConfig = {},
       ...agentRunnerConfig
     } = config;
+
+    const effectiveScoreEveryNIterations = Math.max(
+      1,
+      scoreEveryNIterations ?? convergenceConfig.scoreEveryNIterations ??
+        DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
+    );
 
     this.config = {
       maxIterations,
@@ -219,11 +266,31 @@ export class ReflexiveAgent {
       confidenceThreshold,
       critiquePromptTemplate,
       refinementPromptTemplate,
+      scoreEveryNIterations: effectiveScoreEveryNIterations,
       verbose,
+      adaptiveIterationBudget,
+      convergenceConfig: {
+        qualityExitThreshold: convergenceConfig.qualityExitThreshold ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
+        minImprovementDelta: convergenceConfig.minImprovementDelta ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+        oscillationWindow: convergenceConfig.oscillationWindow ?? DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
+        baseMaxIterations: convergenceConfig.baseMaxIterations ?? maxIterations,
+        complexityScaleFactor: convergenceConfig.complexityScaleFactor ?? 1,
+        absoluteMaxIterations: convergenceConfig.absoluteMaxIterations ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+        scoreEveryNIterations: effectiveScoreEveryNIterations,
+      },
       agentRunnerConfig,
     };
 
     this.db = agentRunnerConfig.db;
+    this.confidenceScorer = new ConfidenceScorer(modelProvider, {
+      lowConfidenceThreshold: confidenceThreshold,
+      highConfidenceThreshold: 90,
+      autoReview: false,
+      verbose,
+    });
     this.agentRunner = new AgentRunner(modelProvider, agentRunnerConfig);
     this.critiqueRunner = new AgentRunner(modelProvider, agentRunnerConfig);
     this.outputValidator = createOutputValidator({ autoRepair: true });
@@ -278,13 +345,22 @@ export class ReflexiveAgent {
     await pipeline.execute(context, async () => {
       const startTime = performance.now();
       const iterations: IReflexionIteration[] = [];
+      const scoreHistory: IIterationScore[] = [];
       let currentResponse: IAgentExecutionResult | null = null;
       let finalCritique: ICritique | null = null;
       let earlyExit = false;
+      const effectiveMaxIterations = this.computeEffectiveMaxIterations(requestAnalysis);
+
+      this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "agent.iteration_budget_computed", null, {
+        complexity: requestAnalysis?.complexity ?? null,
+        configuredMaxIterations: this.config.maxIterations,
+        effectiveMaxIterations,
+        scoreEveryNIterations: this.config.scoreEveryNIterations,
+      }, request.traceId);
 
       this.metrics.totalExecutions++;
 
-      for (let i = 1; i <= this.config.maxIterations; i++) {
+      for (let i = 1; i <= effectiveMaxIterations; i++) {
         const iterationStart = performance.now();
 
         if (i === 1) {
@@ -306,7 +382,21 @@ export class ReflexiveAgent {
         this.metrics.totalIterations++;
         this.updateMetrics(critique);
 
-        this.logActivity("reflexive_agent", "reflexion.iteration", null, {
+        if (this.shouldScoreIteration(i)) {
+          const previousScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1].score : null;
+          const assessment = this.scoreIteration(i, currentResponse!, previousScore);
+          scoreHistory.push(assessment);
+
+          this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "agent.iteration_scored", null, {
+            iteration: assessment.iteration,
+            score: assessment.score,
+            delta: assessment.delta,
+            level: assessment.level,
+            requiresReview: assessment.requiresReview,
+          }, request.traceId);
+        }
+
+        this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "reflexion.iteration", null, {
           iteration: i,
           quality: critique.quality as string,
           confidence: critique.confidence,
@@ -317,10 +407,44 @@ export class ReflexiveAgent {
 
         if (this.shouldAccept(critique)) {
           finalCritique = critique;
-          earlyExit = i < this.config.maxIterations;
+          earlyExit = i < effectiveMaxIterations;
           if (earlyExit) {
             this.metrics.earlyExitCount++;
+            this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "agent.converged", null, {
+              reason: "quality_threshold_met",
+              iteration: i,
+              finalQuality: critique.quality,
+              finalConfidence: critique.confidence,
+              scores: scoreHistory.map((entry) => ({
+                iteration: entry.iteration,
+                score: entry.score,
+                delta: entry.delta,
+                level: entry.level,
+                requiresReview: entry.requiresReview,
+              })),
+            }, request.traceId);
           }
+          break;
+        }
+
+        const convergence = this.detectConvergence(scoreHistory, iterations);
+        if (convergence.shouldExit) {
+          finalCritique = critique;
+          earlyExit = true;
+          this.metrics.earlyExitCount++;
+          this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "agent.converged", null, {
+            reason: convergence.reason,
+            iteration: i,
+            finalQuality: critique.quality,
+            finalConfidence: critique.confidence,
+            scores: scoreHistory.map((entry) => ({
+              iteration: entry.iteration,
+              score: entry.score,
+              delta: entry.delta,
+              level: entry.level,
+              requiresReview: entry.requiresReview,
+            })),
+          }, request.traceId);
           break;
         }
 
@@ -332,7 +456,7 @@ export class ReflexiveAgent {
       this.metrics.earlyExitRate = this.metrics.earlyExitCount / this.metrics.totalExecutions;
       this.metrics.averageIterationsPerExecution = this.metrics.totalIterations / this.metrics.totalExecutions;
 
-      this.logActivity("reflexive_agent", "reflexion.complete", null, {
+      this.logActivity(REFLEXIVE_AGENT_ACTIVITY_SOURCE, "reflexion.complete", null, {
         totalIterations: iterations.length,
         earlyExit,
         finalQuality: (finalCritique?.quality as string) ?? null,
@@ -496,11 +620,138 @@ export class ReflexiveAgent {
     this.metrics = this.emptyMetrics();
   }
 
+  private shouldScoreIteration(iteration: number): boolean {
+    return iteration % this.config.scoreEveryNIterations === 0;
+  }
+
+  private scoreIteration(
+    iteration: number,
+    response: IAgentExecutionResult,
+    previousScore: number | null,
+  ): IIterationScore {
+    const assessment = this.confidenceScorer.assessQuick(response.content);
+    return {
+      iteration,
+      score: assessment.score,
+      delta: previousScore === null ? null : assessment.score - previousScore,
+      level: assessment.level,
+      requiresReview: assessment.requires_review,
+    };
+  }
+
+  private detectConvergence(
+    scoreHistory: IIterationScore[],
+    iterations: IReflexionIteration[],
+  ): { shouldExit: boolean; reason?: IReflexionConvergenceReason } {
+    if (scoreHistory.length < 2) return { shouldExit: false };
+
+    const previous = scoreHistory[scoreHistory.length - 2];
+    const latest = scoreHistory[scoreHistory.length - 1];
+    const lastIterations = iterations.slice(-2);
+
+    if (lastIterations.length < 2) return { shouldExit: false };
+    const [previousIteration, latestIteration] = lastIterations;
+
+    if (!previousIteration.critique || !latestIteration.critique) return { shouldExit: false };
+    if (this.hasRecentCriticalIssue(previousIteration, latestIteration)) return { shouldExit: false };
+
+    if (latest.score >= this.config.convergenceConfig.qualityExitThreshold) {
+      return { shouldExit: true, reason: "quality_threshold_met" };
+    }
+
+    if (!this.isEligibleForConvergence(latestIteration.critique)) {
+      return { shouldExit: false };
+    }
+
+    if (scoreHistory.length < this.config.convergenceConfig.oscillationWindow) {
+      return { shouldExit: false };
+    }
+
+    if (this.isOscillation(previous, latest)) {
+      return { shouldExit: true, reason: "oscillation_detected" };
+    }
+
+    if (this.isPlateau(previousIteration, latestIteration, previous, latest)) {
+      return { shouldExit: true, reason: "plateau_detected" };
+    }
+
+    return { shouldExit: false };
+  }
+
+  private hasRecentCriticalIssue(
+    previousIteration: IReflexionIteration,
+    latestIteration: IReflexionIteration,
+  ): boolean {
+    return [previousIteration, latestIteration].some((iteration) =>
+      iteration.critique?.issues.some((issue) => issue.severity === CritiqueSeverity.CRITICAL)
+    );
+  }
+
+  private isEligibleForConvergence(critique: ICritique): boolean {
+    const acceptableQualities = [
+      CritiqueQuality.EXCELLENT,
+      CritiqueQuality.GOOD,
+      CritiqueQuality.ACCEPTABLE,
+    ];
+
+    return acceptableQualities.includes(critique.quality);
+  }
+
+  private isOscillation(previous: IIterationScore, latest: IIterationScore): boolean {
+    return (
+      previous.delta !== null &&
+      latest.delta !== null &&
+      Math.sign(previous.delta) !== Math.sign(latest.delta) &&
+      Math.abs(previous.delta) <= this.config.convergenceConfig.minImprovementDelta &&
+      Math.abs(latest.delta) <= this.config.convergenceConfig.minImprovementDelta
+    );
+  }
+
+  private isPlateau(
+    previousIteration: IReflexionIteration,
+    latestIteration: IReflexionIteration,
+    previous: IIterationScore,
+    latest: IIterationScore,
+  ): boolean {
+    const stableQuality = latestIteration.critique!.quality === previousIteration.critique!.quality;
+    const samePassStatus = latestIteration.critique!.passed === previousIteration.critique!.passed;
+    const deltaAbs = Math.abs(latest.score - previous.score);
+
+    return stableQuality && samePassStatus && latest.score >= previous.score &&
+      deltaAbs <= this.config.convergenceConfig.minImprovementDelta;
+  }
+
   public updateMetrics(critique: ICritique): void {
     this.metrics.qualityDistribution[critique.quality]++;
     for (const issue of critique.issues) {
       this.metrics.issueTypeDistribution[issue.type] = (this.metrics.issueTypeDistribution[issue.type] || 0) + 1;
     }
+  }
+
+  private computeEffectiveMaxIterations(requestAnalysis?: IRequestAnalysis): number {
+    const baseIterations = this.config.convergenceConfig.baseMaxIterations;
+    if (!this.config.adaptiveIterationBudget || !requestAnalysis?.complexity) {
+      return Math.min(baseIterations, this.config.convergenceConfig.absoluteMaxIterations);
+    }
+
+    const complexityWeight = (() => {
+      switch (requestAnalysis.complexity) {
+        case "simple":
+          return -1;
+        case "medium":
+          return 0;
+        case "complex":
+          return 1;
+        case "epic":
+          return 2;
+        default:
+          return 0;
+      }
+    })();
+
+    const scaledAdjustment = Math.round(complexityWeight * this.config.convergenceConfig.complexityScaleFactor);
+    const effectiveMax = Math.max(1, baseIterations + scaledAdjustment);
+    return Math.min(effectiveMax, this.config.convergenceConfig.absoluteMaxIterations);
   }
 
   public logActivity(
@@ -559,5 +810,28 @@ export function createHighQualityReflexiveAgent(
     minQuality: CritiqueQuality.EXCELLENT,
     confidenceThreshold: 90,
     ...config,
+  });
+}
+
+export function createReflexiveAgentFromConfig(
+  modelProvider: IModelProvider,
+  config: Config,
+  overrides: IReflexiveAgentConfig = {},
+): ReflexiveAgent {
+  const convergence = config.agents.convergence ?? {};
+  return new ReflexiveAgent(modelProvider, {
+    maxIterations: overrides.maxIterations ?? convergence.base_max_iterations ?? config.agents.max_iterations,
+    scoreEveryNIterations: overrides.scoreEveryNIterations ?? convergence.score_every_n_iterations,
+    convergenceConfig: {
+      qualityExitThreshold: convergence.quality_exit_threshold,
+      minImprovementDelta: convergence.min_improvement_delta,
+      oscillationWindow: convergence.oscillation_window,
+      baseMaxIterations: convergence.base_max_iterations,
+      complexityScaleFactor: convergence.complexity_scale_factor,
+      absoluteMaxIterations: convergence.absolute_max_iterations,
+      scoreEveryNIterations: convergence.score_every_n_iterations,
+      ...overrides.convergenceConfig,
+    },
+    ...overrides,
   });
 }

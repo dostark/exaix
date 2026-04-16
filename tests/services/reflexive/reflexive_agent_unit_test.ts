@@ -134,6 +134,75 @@ Deno.test("ReflexiveAgent.logActivity: writes to db when present", () => {
   assertEquals(calls.length, 1);
 });
 
+Deno.test("ReflexiveAgent.run: emits reflexive observability events", async () => {
+  const calls: Array<unknown[]> = [];
+  const db = createStubDb({
+    logActivity: (
+      actor: string,
+      actionType: string,
+      target: string | null,
+      payload: Record<string, JSONValue>,
+      traceId?: string,
+      identityId?: string | null,
+    ) => {
+      calls.push([actor, actionType, target, payload, traceId, identityId]);
+    },
+  });
+
+  const agent = new ReflexiveAgent(stubProvider, {
+    db,
+    maxIterations: 3,
+    confidenceThreshold: 70,
+    scoreEveryNIterations: 1,
+  });
+
+  agent.agentBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
+  agent.critiqueBreaker.execute = <T>(fn: () => Promise<T>): Promise<T> => fn();
+
+  let runCount = 0;
+  agent.agentRunner = createMockRunner(() => {
+    runCount++;
+    return Promise.resolve({ content: `response-${runCount}`, thought: "", raw: "" });
+  });
+
+  agent.critiqueRunner = createMockRunner(() => Promise.resolve({ content: "ignored", thought: "", raw: "" }));
+  agent.outputValidator = createMockValidator({
+    validate: <T>(_content: string, _schema: unknown): IValidationResult<T> => ({
+      success: true,
+      value: {
+        quality: CritiqueQuality.GOOD,
+        confidence: 80,
+        passed: true,
+        issues: [],
+        reasoning: "ok",
+      } as T,
+      repairAttempted: false,
+      repairSucceeded: false,
+      raw: "",
+    }),
+  });
+
+  const result = await agent.run(
+    { systemPrompt: "", identityId: "agent" } satisfies IBlueprint,
+    { userPrompt: "u", context: {}, traceId: "trace-1" } satisfies IParsedRequest,
+  );
+
+  assertEquals(result.earlyExit, true);
+  assertEquals(result.totalIterations, 1);
+
+  const budgetEvent = calls.find((call) => call[1] === "agent.iteration_budget_computed");
+  assertExists(budgetEvent);
+  assertEquals((budgetEvent[3] as { effectiveMaxIterations: number }).effectiveMaxIterations, 3);
+
+  const scoredEvent = calls.find((call) => call[1] === "agent.iteration_scored");
+  assertExists(scoredEvent);
+  assertEquals((scoredEvent[3] as { iteration: number }).iteration, 1);
+
+  const convergedEvent = calls.find((call) => call[1] === "agent.converged");
+  assertExists(convergedEvent);
+  assertEquals((convergedEvent[3] as { reason: string }).reason, "quality_threshold_met");
+});
+
 Deno.test("ReflexiveAgent.shouldAccept: accepts when confidence meets threshold", () => {
   const agent = new ReflexiveAgent(stubProvider, { confidenceThreshold: 60, maxIterations: 1 });
 

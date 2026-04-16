@@ -6,7 +6,7 @@
  */
 
 import { type AiConfig, AiConfigSchema } from "../../../src/shared/schemas/ai_config.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import { type Config, ConfigSchema } from "../../../src/shared/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import {
   ConfidenceAssessmentLevel,
@@ -32,7 +32,7 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
   // Parse through schema to apply defaults
   const parsedAi = aiConfig ? AiConfigSchema.parse(aiConfig) : undefined;
 
-  return {
+  const rawConfig = {
     tools: {
       fetch_url: {
         enabled: false,
@@ -210,6 +210,8 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
       context_budget_chars: 4000,
     },
   };
+
+  return ConfigSchema.parse(rawConfig as unknown);
 }
 
 /**

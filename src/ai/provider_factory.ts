@@ -246,12 +246,12 @@ export class ProviderFactory {
 
     // Resolve provider type (env > modelConfig > global)
     let providerType: ProviderType = ProviderType.MOCK;
+    // Ensure the registry is initialized before validation so tests and runtime
+    // cannot observe a partially-registered provider set.
+    initializeRegistry();
+
     if (envProvider) {
       const normalized = envProvider.toLowerCase().trim();
-      // Initialize registry if needed
-      if (ProviderRegistry.getSupportedProviders().length === 0) {
-        initializeRegistry();
-      }
       if (ProviderRegistry.getSupportedProviders().includes(normalized)) {
         providerType = normalized as ProviderType;
       } else {
@@ -259,10 +259,6 @@ export class ProviderFactory {
         providerType = ProviderType.MOCK;
       }
     } else if (merged.provider) {
-      // Initialize registry if needed for validation
-      if (ProviderRegistry.getSupportedProviders().length === 0) {
-        initializeRegistry();
-      }
       if (ProviderRegistry.getSupportedProviders().includes(merged.provider)) {
         providerType = merged.provider as ProviderType;
       } else {

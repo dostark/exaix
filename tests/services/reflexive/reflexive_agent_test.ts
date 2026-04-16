@@ -19,6 +19,9 @@ import {
   type ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
+import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
+import { AnalysisMode, RequestAnalysisComplexity } from "../../../src/shared/schemas/request_analysis.ts";
+import { TaskType } from "../../../src/shared/enums.ts";
 
 function makeXMLResponse(thought: string, content: string): string {
   return `<thought>${thought}</thought><content>${content}</content>`;
@@ -45,11 +48,13 @@ async function runAgentTest(
   mockResponses: string[],
   options: IReflexiveAgentConfig = {},
   assertions: (result: IReflexiveExecutionResult, identity: ReflexiveAgent) => void | Promise<void>,
+  requestAnalysis?: IRequestAnalysis,
 ) {
   const agent = createReflexiveAgent(createMockProvider(mockResponses), options);
   const result = await agent.run(
     { systemPrompt: "Test", identityId: "test" },
     { userPrompt: "Help", context: {} },
+    requestAnalysis,
   );
   await assertions(result, agent);
 }
@@ -162,6 +167,61 @@ Deno.test("[ReflexiveAgent] stops at maxIterations", async () => {
   }, (result) => {
     assertEquals(result.totalIterations, 3);
     assert(!result.earlyExit);
+  });
+});
+
+Deno.test("[ReflexiveAgent] lowers effective max iterations for simple request complexity", async () => {
+  const mockResponses = [
+    makeXMLResponse("Attempt 1", "Response 1"),
+    makeCritiqueJSON({ quality: CritiqueQuality.POOR, confidence: 20, passed: false }),
+    makeXMLResponse("Attempt 2", "Response 2"),
+    makeCritiqueJSON({ quality: CritiqueQuality.POOR, confidence: 15, passed: false }),
+    makeXMLResponse("Attempt 3", "Response 3"),
+    makeCritiqueJSON({ quality: CritiqueQuality.POOR, confidence: 10, passed: false }),
+  ];
+
+  const requestAnalysis: IRequestAnalysis = {
+    goals: [],
+    requirements: [],
+    constraints: [],
+    acceptanceCriteria: [],
+    ambiguities: [],
+    actionabilityScore: 95,
+    complexity: RequestAnalysisComplexity.SIMPLE,
+    taskType: TaskType.UNKNOWN,
+    tags: [],
+    referencedFiles: [],
+    metadata: {
+      analyzedAt: new Date().toISOString(),
+      durationMs: 12,
+      mode: AnalysisMode.HEURISTIC,
+      analyzerVersion: "1.0.0",
+    },
+  };
+
+  await runAgentTest(mockResponses, { maxIterations: 3 }, (result) => {
+    assertEquals(result.totalIterations, 2);
+    assert(!result.earlyExit);
+  }, requestAnalysis);
+});
+
+Deno.test("[ReflexiveAgent] stops early when critique stability indicates convergence", async () => {
+  const mockResponses = [
+    makeXMLResponse("Attempt 1", "This is definitely the correct and complete answer. It is absolutely precise."),
+    makeCritiqueJSON({ quality: CritiqueQuality.GOOD, confidence: 80, passed: false }),
+    makeXMLResponse("Attempt 2", "This is definitely the correct and complete answer. It is absolutely precise."),
+    makeCritiqueJSON({ quality: CritiqueQuality.GOOD, confidence: 82, passed: false }),
+    makeXMLResponse("Attempt 3", "This is definitely the correct and complete answer. It is absolutely precise."),
+    makeCritiqueJSON({ quality: CritiqueQuality.GOOD, confidence: 83, passed: false }),
+  ];
+
+  await runAgentTest(mockResponses, {
+    maxIterations: 5,
+    confidenceThreshold: 90,
+    minQuality: CritiqueQuality.EXCELLENT,
+  }, (result) => {
+    assertEquals(result.totalIterations, 2);
+    assert(result.earlyExit);
   });
 });
 
