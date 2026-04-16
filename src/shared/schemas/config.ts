@@ -185,10 +185,33 @@ export const ConfigSchema = z.object({
       .min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN)
       .max(DEFAULTS.AGENT_MAX_ITERATIONS_MAX)
       .default(DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS),
+    convergence: z.object({
+      quality_exit_threshold: z.number()
+        .min(0)
+        .max(100)
+        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD),
+      min_improvement_delta: z.number()
+        .min(0)
+        .max(20)
+        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA),
+      oscillation_window: z.number().int().min(2).max(4)
+        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW),
+      base_max_iterations: z.number().int()
+        .min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN)
+        .max(DEFAULTS.AGENT_MAX_ITERATIONS_MAX)
+        .default(DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS),
+      complexity_scale_factor: z.number().min(0).max(3)
+        .default(1.0),
+      absolute_max_iterations: z.number().int().min(1).max(20)
+        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS),
+      score_every_n_iterations: z.number().int().min(1).max(5)
+        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS),
+    }).optional().default({}),
   }).default({
     default_model: DEFAULTS.DEFAULT_AGENT_MODEL,
     timeout_sec: DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
     max_iterations: DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
+    convergence: {},
   }),
   memory: z.object({
     auto_approve: z.object({

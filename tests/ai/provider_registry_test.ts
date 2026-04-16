@@ -246,6 +246,10 @@ Deno.test("ProviderFactory: uses registry for mock provider", async () => {
 });
 
 Deno.test("ProviderFactory: maintains backward compatibility for ollama", async () => {
+  Deno.env.delete("EXA_LLM_PROVIDER");
+  Deno.env.delete("EXA_LLM_MODEL");
+  Deno.env.delete("EXA_LLM_BASE_URL");
+
   const config = {
     system: {
       root: "/tmp/test",

@@ -108,6 +108,15 @@ stability_check = true
 max_per_request = 5
 match_threshold = 0.3
 inject_in_prompt = true
+
+[agents.convergence]
+quality_exit_threshold = 85
+min_improvement_delta = 3
+oscillation_window = 2
+base_max_iterations = 10
+complexity_scale_factor = 1.0
+absolute_max_iterations = 12
+score_every_n_iterations = 1
 `;
     Deno.writeTextFileSync(this.configPath, defaultConfig.trim());
     try {

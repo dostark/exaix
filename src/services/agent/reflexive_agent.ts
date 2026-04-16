@@ -28,8 +28,26 @@ import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
 import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import { MAX_CRITIQUE_REQUIREMENTS } from "../../shared/constants.ts";
+import type { Config } from "../../shared/schemas/config.ts";
+import {
+  DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+  DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+  DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
+  DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
+  DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
+  MAX_CRITIQUE_REQUIREMENTS,
+} from "../../shared/constants.ts";
 import { type ConfidenceAssessment, ConfidenceScorer } from "../utils/confidence_scorer.ts";
+
+export interface IReflexiveAgentConvergenceConfig {
+  qualityExitThreshold: number;
+  minImprovementDelta: number;
+  oscillationWindow: number;
+  baseMaxIterations: number;
+  complexityScaleFactor: number;
+  absoluteMaxIterations: number;
+  scoreEveryNIterations: number;
+}
 
 export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   maxIterations?: number;
@@ -40,6 +58,7 @@ export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   scoreEveryNIterations?: number;
   verbose?: boolean;
   adaptiveIterationBudget?: boolean;
+  convergenceConfig?: Partial<IReflexiveAgentConvergenceConfig>;
 }
 
 export interface IReflexionIteration {
@@ -57,7 +76,7 @@ export interface IIterationScore {
   requiresReview: boolean;
 }
 
-type IReflexionConvergenceReason = "plateau_detected" | "oscillation_detected";
+type IReflexionConvergenceReason = "quality_threshold_met" | "plateau_detected" | "oscillation_detected";
 
 export interface IReflexiveExecutionResult {
   final: IAgentExecutionResult;
@@ -196,6 +215,7 @@ export class ReflexiveAgent {
     scoreEveryNIterations: number;
     verbose: boolean;
     adaptiveIterationBudget: boolean;
+    convergenceConfig: IReflexiveAgentConvergenceConfig;
     agentRunnerConfig: IAgentRunnerConfig;
   };
 
@@ -230,8 +250,15 @@ export class ReflexiveAgent {
       scoreEveryNIterations = 1,
       verbose = false,
       adaptiveIterationBudget = true,
+      convergenceConfig = {},
       ...agentRunnerConfig
     } = config;
+
+    const effectiveScoreEveryNIterations = Math.max(
+      1,
+      scoreEveryNIterations ?? convergenceConfig.scoreEveryNIterations ??
+        DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
+    );
 
     this.config = {
       maxIterations,
@@ -239,9 +266,21 @@ export class ReflexiveAgent {
       confidenceThreshold,
       critiquePromptTemplate,
       refinementPromptTemplate,
-      scoreEveryNIterations: Math.max(1, scoreEveryNIterations),
+      scoreEveryNIterations: effectiveScoreEveryNIterations,
       verbose,
       adaptiveIterationBudget,
+      convergenceConfig: {
+        qualityExitThreshold: convergenceConfig.qualityExitThreshold ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
+        minImprovementDelta: convergenceConfig.minImprovementDelta ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+        oscillationWindow: convergenceConfig.oscillationWindow ?? DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
+        baseMaxIterations: convergenceConfig.baseMaxIterations ?? maxIterations,
+        complexityScaleFactor: convergenceConfig.complexityScaleFactor ?? 1,
+        absoluteMaxIterations: convergenceConfig.absoluteMaxIterations ??
+          DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+        scoreEveryNIterations: effectiveScoreEveryNIterations,
+      },
       agentRunnerConfig,
     };
 
@@ -616,6 +655,18 @@ export class ReflexiveAgent {
     if (!previousIteration.critique || !latestIteration.critique) return { shouldExit: false };
     if (this.hasRecentCriticalIssue(previousIteration, latestIteration)) return { shouldExit: false };
 
+    if (latest.score >= this.config.convergenceConfig.qualityExitThreshold) {
+      return { shouldExit: true, reason: "quality_threshold_met" };
+    }
+
+    if (!this.isEligibleForConvergence(latestIteration.critique)) {
+      return { shouldExit: false };
+    }
+
+    if (scoreHistory.length < this.config.convergenceConfig.oscillationWindow) {
+      return { shouldExit: false };
+    }
+
     if (this.isOscillation(previous, latest)) {
       return { shouldExit: true, reason: "oscillation_detected" };
     }
@@ -636,13 +687,23 @@ export class ReflexiveAgent {
     );
   }
 
+  private isEligibleForConvergence(critique: ICritique): boolean {
+    const acceptableQualities = [
+      CritiqueQuality.EXCELLENT,
+      CritiqueQuality.GOOD,
+      CritiqueQuality.ACCEPTABLE,
+    ];
+
+    return acceptableQualities.includes(critique.quality);
+  }
+
   private isOscillation(previous: IIterationScore, latest: IIterationScore): boolean {
     return (
       previous.delta !== null &&
       latest.delta !== null &&
       Math.sign(previous.delta) !== Math.sign(latest.delta) &&
-      Math.abs(previous.delta) <= 8 &&
-      Math.abs(latest.delta) <= 8
+      Math.abs(previous.delta) <= this.config.convergenceConfig.minImprovementDelta &&
+      Math.abs(latest.delta) <= this.config.convergenceConfig.minImprovementDelta
     );
   }
 
@@ -652,12 +713,12 @@ export class ReflexiveAgent {
     previous: IIterationScore,
     latest: IIterationScore,
   ): boolean {
-    const stableQuality = latestIteration.critique.quality === previousIteration.critique.quality;
-    const samePassStatus = latestIteration.critique.passed === previousIteration.critique.passed;
+    const stableQuality = latestIteration.critique!.quality === previousIteration.critique!.quality;
+    const samePassStatus = latestIteration.critique!.passed === previousIteration.critique!.passed;
     const deltaAbs = Math.abs(latest.score - previous.score);
-    const stableEnough = latest.score >= 70 && previous.score >= 70;
 
-    return stableQuality && samePassStatus && deltaAbs <= 8 && stableEnough;
+    return stableQuality && samePassStatus && latest.score >= previous.score &&
+      deltaAbs <= this.config.convergenceConfig.minImprovementDelta;
   }
 
   public updateMetrics(critique: ICritique): void {
@@ -668,23 +729,29 @@ export class ReflexiveAgent {
   }
 
   private computeEffectiveMaxIterations(requestAnalysis?: IRequestAnalysis): number {
-    const baseIterations = this.config.maxIterations;
+    const baseIterations = this.config.convergenceConfig.baseMaxIterations;
     if (!this.config.adaptiveIterationBudget || !requestAnalysis?.complexity) {
-      return baseIterations;
+      return Math.min(baseIterations, this.config.convergenceConfig.absoluteMaxIterations);
     }
 
-    switch (requestAnalysis.complexity) {
-      case "simple":
-        return Math.max(1, baseIterations - 1);
-      case "medium":
-        return baseIterations;
-      case "complex":
-        return baseIterations + 1;
-      case "epic":
-        return baseIterations + 2;
-      default:
-        return baseIterations;
-    }
+    const complexityWeight = (() => {
+      switch (requestAnalysis.complexity) {
+        case "simple":
+          return -1;
+        case "medium":
+          return 0;
+        case "complex":
+          return 1;
+        case "epic":
+          return 2;
+        default:
+          return 0;
+      }
+    })();
+
+    const scaledAdjustment = Math.round(complexityWeight * this.config.convergenceConfig.complexityScaleFactor);
+    const effectiveMax = Math.max(1, baseIterations + scaledAdjustment);
+    return Math.min(effectiveMax, this.config.convergenceConfig.absoluteMaxIterations);
   }
 
   public logActivity(
@@ -743,5 +810,28 @@ export function createHighQualityReflexiveAgent(
     minQuality: CritiqueQuality.EXCELLENT,
     confidenceThreshold: 90,
     ...config,
+  });
+}
+
+export function createReflexiveAgentFromConfig(
+  modelProvider: IModelProvider,
+  config: Config,
+  overrides: IReflexiveAgentConfig = {},
+): ReflexiveAgent {
+  const convergence = config.agents.convergence ?? {};
+  return new ReflexiveAgent(modelProvider, {
+    maxIterations: overrides.maxIterations ?? convergence.base_max_iterations ?? config.agents.max_iterations,
+    scoreEveryNIterations: overrides.scoreEveryNIterations ?? convergence.score_every_n_iterations,
+    convergenceConfig: {
+      qualityExitThreshold: convergence.quality_exit_threshold,
+      minImprovementDelta: convergence.min_improvement_delta,
+      oscillationWindow: convergence.oscillation_window,
+      baseMaxIterations: convergence.base_max_iterations,
+      complexityScaleFactor: convergence.complexity_scale_factor,
+      absoluteMaxIterations: convergence.absolute_max_iterations,
+      scoreEveryNIterations: convergence.score_every_n_iterations,
+      ...overrides.convergenceConfig,
+    },
+    ...overrides,
   });
 }
