@@ -6,6 +6,7 @@
  *
  * Usage:
  *   deno run -A scripts/build_agents_index.ts
+ *   deno run -A scripts/build_agents_index.ts -- --include-submodule
  */
 
 import { walk } from "@std/fs";
@@ -39,16 +40,18 @@ function chunkText(text: string, size = 800): string[] {
   return chunks;
 }
 
-export async function generateManifestObject() {
+export async function generateManifestObject(includeSubmodule = false) {
   const docs = [] as JSONObject[];
   await Deno.mkdir(CHUNKS_DIR, { recursive: true });
 
   const scanDirs = [AGENTS_DIR];
-  try {
-    const stat = await Deno.stat(SUBMODULE_DIR);
-    if (stat.isDirectory) scanDirs.push(SUBMODULE_DIR);
-  } catch {
-    // Submodule not present, skip
+  if (includeSubmodule) {
+    try {
+      const stat = await Deno.stat(SUBMODULE_DIR);
+      if (stat.isDirectory) scanDirs.push(SUBMODULE_DIR);
+    } catch {
+      // Submodule not present, skip
+    }
   }
 
   for (const dir of scanDirs) {
@@ -171,8 +174,8 @@ description: Automatically generated routing wrapper for ${skillName} skill.
   }
 }
 
-export async function buildIndex() {
-  const manifest = await generateManifestObject();
+export async function buildIndex(includeSubmodule = false) {
+  const manifest = await generateManifestObject(includeSubmodule);
   await Deno.writeTextFile(OUT_MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Wrote manifest to ${OUT_MANIFEST}`);
 
@@ -180,6 +183,9 @@ export async function buildIndex() {
   await generateQwenSkills(manifest.docs);
 }
 
-if (import.meta.main) await buildIndex();
+if (import.meta.main) {
+  const includeSubmodule = Deno.args.includes("--include-submodule");
+  await buildIndex(includeSubmodule);
+}
 
 export { chunkText, extractFrontmatter };

@@ -11,12 +11,8 @@ jobs:
   validate-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: "Checkout repo and private submodules"
+      - name: "Checkout repository"
         uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.CI_SSH_KEY }}
-          persist-credentials: false
-          submodules: recursive
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2

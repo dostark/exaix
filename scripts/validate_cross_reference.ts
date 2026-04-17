@@ -16,6 +16,8 @@ const TARGET_FILE = ".copilot/cross-reference.md";
 async function main() {
   const cwd = Deno.cwd();
   const filePath = join(cwd, TARGET_FILE);
+  const submoduleDir = resolve(cwd, "../exaix-dev-docs");
+  const submodulePresent = existsSync(submoduleDir);
 
   if (!existsSync(filePath)) {
     console.error(`❌ ${TARGET_FILE} not found!`);
@@ -40,6 +42,10 @@ async function main() {
     const fullPath = resolve(baseDir, pathOnly);
 
     if (!existsSync(fullPath)) {
+      if (pathOnly.startsWith("../exaix-dev-docs/") && !submodulePresent) {
+        // Allow missing exaix-dev-docs links when the submodule is intentionally absent.
+        continue;
+      }
       console.error(`❌ [${TARGET_FILE}]: Broken link -> ${link} (Target not found: ${fullPath})`);
       errors++;
     } else if (anchor) {
