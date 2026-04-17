@@ -139,6 +139,24 @@
       ]
     },
     {
+      "path": ".copilot/prompts/submodule-workflow.md",
+      "agent": "general",
+      "scope": "docs",
+      "title": "Submodule Workflow Guidance",
+      "short_summary": "Instructions for safely handling simultaneous parent repo and exaix-dev-docs submodule changes.",
+      "version": "0.1",
+      "topics": [
+        "git",
+        "submodule",
+        "workflow",
+        "documentation"
+      ],
+      "chunks": [
+        ".copilot/chunks/submodule-workflow.md.chunk0.txt",
+        ".copilot/chunks/submodule-workflow.md.chunk1.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/google-quickstart.md",
       "agent": "general",
       "scope": "dev",
@@ -729,6 +747,27 @@
       ]
     },
     {
+      "path": ".copilot/workflows/submodule-workflow.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Submodule Workflow & Pointer Policy",
+      "short_summary": "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes.",
+      "version": "0.1",
+      "topics": [
+        "git",
+        "submodule",
+        "docs",
+        "workflow"
+      ],
+      "chunks": [
+        ".copilot/chunks/submodule-workflow.md.chunk0.txt",
+        ".copilot/chunks/submodule-workflow.md.chunk1.txt",
+        ".copilot/chunks/submodule-workflow.md.chunk2.txt",
+        ".copilot/chunks/submodule-workflow.md.chunk3.txt",
+        ".copilot/chunks/submodule-workflow.md.chunk4.txt"
+      ]
+    },
+    {
       "path": ".copilot/workflows/refactor-check-magic.md",
       "agent": "general",
       "scope": "dev",
@@ -867,7 +906,8 @@
         ".copilot/chunks/documentation.md.chunk3.txt",
         ".copilot/chunks/documentation.md.chunk4.txt",
         ".copilot/chunks/documentation.md.chunk5.txt",
-        ".copilot/chunks/documentation.md.chunk6.txt"
+        ".copilot/chunks/documentation.md.chunk6.txt",
+        ".copilot/chunks/documentation.md.chunk7.txt"
       ]
     },
     {
