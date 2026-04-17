@@ -157,12 +157,23 @@ const PRE_PUSH_CONTENT = `#!/bin/sh
 echo "
 🚀 Running Pre-push Gates..."
 
-# 1. Manifest Freshness Check
-#    Ensure the documentation manifest is up-to-date before pushing code.
-deno run --allow-all scripts/verify_manifest_fresh.ts
+# 1. Manifest Auto-Sync
+#    Regenerate the documentation manifest before pushing code.
+echo "🔄 Regenerating .copilot/manifest.json before push..."
+deno run --allow-read --allow-write scripts/build_agents_index.ts
 if [ $? -ne 0 ]; then
-  echo "❌ Error: .copilot/manifest.json is out of date. Run scripts/build_agents_index.ts and commit the updated manifest."
+  echo "❌ Error: Failed to regenerate .copilot/manifest.json."
   exit 1
+fi
+git add .copilot/manifest.json
+
+if ! git diff --cached --quiet -- .copilot/manifest.json; then
+  echo "🔁 .copilot/manifest.json changed; amending current commit to include the updated manifest..."
+  git commit --amend --no-edit
+  if [ $? -ne 0 ]; then
+    echo "❌ Error: Failed to amend the current commit with .copilot/manifest.json."
+    exit 1
+  fi
 fi
 
 # 2. Full Type Check (all source AND test files)
@@ -230,6 +241,27 @@ fi
 echo "✅ Commit message valid!\n"
 `;
 
+const PRE_MERGE_COMMIT_CONTENT = `#!/bin/sh
+# ============================================
+# Exaix Pre-merge-commit Hook
+# ============================================
+# Regenerates .copilot/manifest.json before creating merge commits.
+# ============================================
+
+echo "
+🔄 Running Pre-merge-commit hook..."
+
+deno run --allow-read --allow-write scripts/build_agents_index.ts
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Failed to regenerate .copilot/manifest.json for merge commit."
+  exit 1
+fi
+
+git add .copilot/manifest.json
+
+echo "✅ .copilot/manifest.json regenerated and staged for merge commit.\n"
+`;
+
 const PRE_REBASE_CONTENT = `#!/bin/sh
 # Exaix Pre-rebase Guard
 # Blocks rebase if the working tree is dirty to prevent data loss.
@@ -282,11 +314,13 @@ async function installHooks() {
   const preCommitPath = join(HOOKS_DIR, "pre-commit");
   const prePushPath = join(HOOKS_DIR, "pre-push");
   const commitMsgPath = join(HOOKS_DIR, "commit-msg");
+  const preMergeCommitPath = join(HOOKS_DIR, "pre-merge-commit");
   const preRebasePath = join(HOOKS_DIR, "pre-rebase");
 
   await Deno.writeTextFile(preCommitPath, PRE_COMMIT_CONTENT);
   await Deno.writeTextFile(prePushPath, PRE_PUSH_CONTENT);
   await Deno.writeTextFile(commitMsgPath, COMMIT_MSG_CONTENT);
+  await Deno.writeTextFile(preMergeCommitPath, PRE_MERGE_COMMIT_CONTENT);
   await Deno.writeTextFile(preRebasePath, PRE_REBASE_CONTENT);
 
   // Make them executable
@@ -294,6 +328,7 @@ async function installHooks() {
     await Deno.chmod(preCommitPath, 0o755);
     await Deno.chmod(prePushPath, 0o755);
     await Deno.chmod(commitMsgPath, 0o755);
+    await Deno.chmod(preMergeCommitPath, 0o755);
     await Deno.chmod(preRebasePath, 0o755);
   }
 
@@ -301,7 +336,8 @@ async function installHooks() {
   console.log(
     "   - pre-commit: Gate 0 (main branch guard) + fmt, lint, style/boundary, test placement, magic values, docs drift, markdown lint (staged .md only), complexity, architecture",
   );
-  console.log("   - pre-push: type-check, security tests");
+  console.log("   - pre-push: regenerate .copilot/manifest.json, type-check, security tests");
+  console.log("   - pre-merge-commit: regenerate .copilot/manifest.json for merge commits");
   console.log("   - commit-msg: structured commit message validation");
   console.log("   - pre-rebase: blocks rebase with dirty working tree");
 }

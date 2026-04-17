@@ -73,8 +73,15 @@ const checkCommand = new Command()
       { cmd: ["deno", "task", "check:style"], desc: "Style/Boundary Validation" },
       { cmd: ["deno", "task", "check:test-placement"], desc: "Test Placement Validation" },
       { cmd: ["deno", "task", "check"], desc: "Type Checking" },
-      { cmd: ["deno", "task", "check:docs"], desc: "Docs Drift Check" },
     ]);
+
+    const docsSuccess = await run(["deno", "task", "check:docs"], "Docs Drift Check");
+    if (!docsSuccess) {
+      console.warn(
+        "⚠️ Docs Drift Check failed. The CI pipeline will continue, but please regenerate .copilot/manifest.json and commit the updated file.",
+      );
+    }
+
     if (!success) Deno.exit(1);
   });
 

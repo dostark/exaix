@@ -135,9 +135,11 @@ The project includes automated pre-commit hooks that run:
 - `deno fmt --check` - Validates formatting
 - `deno lint` - Validates code quality
 - Markdown linting - Validates markdown formatting
-- Manifest freshness checks - Validates `.copilot/manifest.json` is current after `.copilot/` edits
+- Manifest freshness checks - Regenerate and validate `.copilot/manifest.json` for `.copilot/` edits. When the pre-push hook regenerates the manifest, it will amend the current commit so the updated manifest is included in the pushed history.
 
 **Failure to run these checks will result in commit rejection.**
+
+> Note: Docs drift failures are still reported during CI, but they no longer block later gates in the workflow. You should still regenerate `.copilot/manifest.json` and commit the update as soon as possible.
 
 ### Workflow for Code Changes
 

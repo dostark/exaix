@@ -100,18 +100,19 @@ deno task hooks:install
 This writes hooks to `.git/hooks/` from `scripts/setup_hooks.ts`. The hooks
 are:
 
-| Hook                      | Purpose                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                       |
-| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                                           |
-| `pre-push`                | Check manifest freshness, full type-check (src/ + tests/), focused tests for changed files, security regression tests |
+| Hook                      | Purpose                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                  |
+| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                                                      |
+| `pre-push`                | Regenerate `.copilot/manifest.json`, full type-check (src/ + tests/), focused tests for changed files, security regression tests |
+| `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                         |
 
-The `pre-push` hook is the last gate before code leaves your machine. It runs
-`deno run --allow-all scripts/verify_manifest_fresh.ts` to ensure `.copilot/manifest.json`
-is up to date, `deno check src/ tests/` to catch type errors in ALL files (not just
-`src/main.ts`), runs the test files that correspond to your changes, and
-always runs security regression tests. If any of these fail, the push is
-blocked.
+The `pre-push` hook is the last gate before code leaves your machine. It regenerates
+`.copilot/manifest.json` before pushing, stages the updated manifest, and amends the
+current commit so the regenerated manifest is included in the push. It also runs
+`deno check src/ tests/` to catch type errors in ALL files (not just `src/main.ts`),
+runs the test files that correspond to your changes, and always runs security
+regression tests. If any of these fail, the push is blocked.
 
 | Hook         | Purpose                               |
 | ------------ | ------------------------------------- |
