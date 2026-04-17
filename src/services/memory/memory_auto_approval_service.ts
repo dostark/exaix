@@ -60,7 +60,7 @@ export class MemoryAutoApprovalService {
 
     const pending = await this.memoryExtractor.listPending();
     const now = new Date();
-    const thresholdScore = this.confidenceScores[this.config.confidence_threshold as ConfidenceAssessmentLevel] || 4;
+    const thresholdScore = this.getConfidenceScore(this.config.confidence_threshold) || 4;
     const allowedSources = this.buildAllowedSources();
 
     const eligible = pending.filter((proposal) => {
@@ -70,7 +70,7 @@ export class MemoryAutoApprovalService {
       }
 
       // 2. Must meet confidence threshold
-      const proposalScore = this.confidenceScores[proposal.learning.confidence] || 0;
+      const proposalScore = this.getConfidenceScore(proposal.learning.confidence);
       if (proposalScore < thresholdScore) {
         return false;
       }
@@ -120,6 +120,15 @@ export class MemoryAutoApprovalService {
     }
 
     return allowedSources;
+  }
+
+  private getConfidenceScore(value: string | undefined): number {
+    if (!value) {
+      return 0;
+    }
+
+    const normalized = String(value).toLowerCase() as ConfidenceAssessmentLevel;
+    return this.confidenceScores[normalized] || 0;
   }
 
   /**
