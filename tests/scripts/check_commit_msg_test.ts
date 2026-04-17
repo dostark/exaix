@@ -99,6 +99,12 @@ impact: ReqProc: update`;
     assertEquals(result.success, true); // Should bypass
   });
 
+  it("skips validation for merge commits when merge state is detected", () => {
+    const msg = `chore: merge feature branch`;
+    const result = validateCommitMsg(msg, { isMergeCommit: true });
+    assertEquals(result.success, true); // Should bypass merge commit validation
+  });
+
   it("skips validation for revert commits", () => {
     const msg = `Revert "feat: add feature"
 
