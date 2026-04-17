@@ -15,9 +15,11 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - name: "Checkout"
+      - name: "Checkout repo and private submodules"
         uses: actions/checkout@v4
         with:
+          ssh-key: ${{ secrets.CI_SSH_KEY }}
+          persist-credentials: false
           submodules: recursive
 
       - name: "Setup Deno"
@@ -59,6 +61,8 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v4
         with:
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          persist-credentials: false
           submodules: recursive
 
       - name: "Setup Deno"
