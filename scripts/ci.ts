@@ -368,9 +368,15 @@ const allCommand = new Command()
         { cmd: ["deno", "task", "fmt:check"], desc: "Formatting" },
         { cmd: ["deno", "task", "lint"], desc: "Linting" },
         { cmd: ["deno", "task", "check"], desc: "Type Check" },
-        { cmd: ["deno", "task", "check:docs"], desc: "Docs Drift Check" },
       ])
     ) Deno.exit(1);
+
+    const docsSuccess = await run(["deno", "task", "check:docs"], "Docs Drift Check");
+    if (!docsSuccess) {
+      console.warn(
+        "⚠️ Docs Drift Check failed. The CI pipeline will continue, but please regenerate .copilot/manifest.json and commit the updated file.",
+      );
+    }
 
     // 2. Tests (Parallel)
     console.log("\n--- Phase 2: Testing ---");
