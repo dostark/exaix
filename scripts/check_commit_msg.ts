@@ -43,10 +43,14 @@ const VALID_MODELS = [
  */
 export function validateCommitMsg(
   text: string,
-  options: { changedFileCount?: number } = {},
+  options: { changedFileCount?: number; isMergeCommit?: boolean } = {},
 ): { success: boolean; errors: string[] } {
   const errors: string[] = [];
   const lines = text.split("\n");
+
+  if (options.isMergeCommit) {
+    return { success: true, errors: [] };
+  }
 
   if (lines.length === 0 || !lines[0].trim()) {
     return { success: false, errors: ["Commit message is empty."] };
@@ -179,6 +183,20 @@ export function validateCommitMsg(
   return { success: errors.length === 0, errors };
 }
 
+async function isGitMergeCommit(): Promise<boolean> {
+  try {
+    const process = new Deno.Command("git", {
+      args: ["rev-parse", "--verify", "MERGE_HEAD"],
+      stdout: "null",
+      stderr: "null",
+    });
+    const { code } = await process.output();
+    return code === 0;
+  } catch (_e) {
+    return false;
+  }
+}
+
 /** CLI Entry point */
 if (import.meta.main) {
   const commitMsgFile = Deno.args[0];
@@ -204,7 +222,11 @@ if (import.meta.main) {
       // Not in a git repo or git not found, default to 0
     }
 
-    const { success, errors } = validateCommitMsg(text, { changedFileCount });
+    const mergeCommit = await isGitMergeCommit();
+    const { success, errors } = validateCommitMsg(text, {
+      changedFileCount,
+      isMergeCommit: mergeCommit,
+    });
 
     if (!success) {
       console.error("\n❌ Structured Commit Message Validation Failed:");
