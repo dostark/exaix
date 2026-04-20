@@ -7,7 +7,7 @@
  * * @related-files [src/services/agent_runner.ts, src/services/request_processor.ts]
  */
 
-import { join } from "@std/path";
+import { basename, join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
@@ -123,6 +123,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Tools the agent is permitted to use in DYNAMIC execution mode */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
+
+  /** Deprecation flag for outdated blueprints */
+  deprecated: z.boolean().default(false),
 });
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
@@ -398,6 +401,37 @@ export class BlueprintLoader {
   async exists(identityId: string): Promise<boolean> {
     const path = this.resolvePath(identityId);
     return await exists(path);
+  }
+
+  /**
+   * List all blueprint files under Blueprints/Identities.
+   */
+  async listAll(): Promise<ILoadedBlueprint[]> {
+    const identitiesDir = this.options.blueprintsPath.endsWith(DEFAULT_IDENTITIES_PATH)
+      ? this.options.blueprintsPath
+      : join(this.options.blueprintsPath, DEFAULT_IDENTITIES_PATH);
+
+    try {
+      const stat = await Deno.stat(identitiesDir);
+      if (!stat.isDirectory) {
+        return [];
+      }
+    } catch {
+      return [];
+    }
+
+    const blueprints: ILoadedBlueprint[] = [];
+
+    for await (const entry of Deno.readDir(identitiesDir)) {
+      if (!entry.isFile || !entry.name.endsWith(".md")) continue;
+      const identityId = basename(entry.name, ".md");
+      const blueprint = await this.load(identityId);
+      if (blueprint) {
+        blueprints.push(blueprint);
+      }
+    }
+
+    return blueprints;
   }
 
   /**

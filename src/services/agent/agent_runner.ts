@@ -104,6 +104,9 @@ export interface IParsedRequest {
 
   /** Optional: Skills to skip/disable for this request - Phase 17 */
   skipSkills?: string[];
+
+  /** Optional: Enable dynamic routing for this request */
+  allowDynamicRouting?: boolean;
 }
 
 /**

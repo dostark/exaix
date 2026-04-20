@@ -19,6 +19,7 @@ import { DashboardCommands } from "./commands/dashboard_commands.ts";
 import { MemoryCommands } from "./commands/memory_commands.ts";
 import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
+import { RoutingCommands } from "./commands/routing_commands.ts";
 import {
   FlowInputSource,
   type MemoryBankSource,
@@ -107,6 +108,7 @@ const gitCommands = new GitCommands(fullContext);
 const daemonCommands = new DaemonCommands(fullContext);
 const portalCommands = new PortalCommands(fullContext);
 const blueprintCommands = new BlueprintCommands(fullContext);
+const routingCommands = new RoutingCommands(fullContext);
 const flowCommands = new FlowCommands(fullContext);
 const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
@@ -1394,6 +1396,75 @@ export const __test_command = new Command()
                   display.info("blueprint.removed", identityId, { status: "Removed ✓" });
                 } catch (error) {
                   display.error("cli.error", "blueprint remove", {
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                  });
+                  Deno.exit(1);
+                }
+              }),
+          ),
+      ),
+  )
+  .command(
+    "routing",
+    new Command()
+      .description("Inspect routing policy behavior and candidate ranking")
+      .command(
+        "explain",
+        new Command()
+          .description("Explain dynamic routing for a request without executing it")
+          .option("--request <request:string>", "Path to a request file")
+          .action(async (options) => {
+            const requestFile = options.request;
+            if (!requestFile) {
+              display.error("cli.error", "routing explain", {
+                message: "The --request option is required.",
+              });
+              Deno.exit(1);
+            }
+
+            try {
+              const result = await routingCommands.explainRequest(requestFile);
+              display.info("routing.explain", requestFile, {
+                selected_identity_id: result.selectedIdentityId,
+                selected_version: result.selectedVersion,
+                strategy: result.strategy,
+                matched_rule_id: result.matchedRuleId ?? null,
+                candidate_count: result.candidates.length,
+              });
+              for (const candidate of result.candidates.slice(0, 5)) {
+                console.log(`${candidate.identityId}@${candidate.version} score=${candidate.score.toFixed(2)}`);
+              }
+            } catch (error) {
+              display.error("cli.error", "routing explain", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "policy",
+        new Command()
+          .description("Routing policy helpers")
+          .command(
+            "validate [policy-file:string]",
+            new Command()
+              .description("Validate a routing policy YAML file")
+              .action(async (_options, ...args: string[]) => {
+                const policyFile = args[0];
+                try {
+                  const result = await routingCommands.validatePolicy(policyFile);
+                  if (result.success) {
+                    display.info("routing.policy.valid", result.path, { status: "valid" });
+                    return;
+                  }
+
+                  display.error("routing.policy.invalid", result.path, {
+                    errors: result.errors,
+                  });
+                  Deno.exit(1);
+                } catch (error) {
+                  display.error("cli.error", "routing policy validate", {
                     message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);

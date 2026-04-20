@@ -76,6 +76,13 @@ const AutoApproveSourceSchema = z.union([
   z.enum(["EXECUTION", "USER", "IDENTITY", "AGENT", "LEARNED", "CORE", "PROJECT", "FILE", "DATABASE", "LLM"]),
 ]);
 
+const RoutingConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  policy_path: z.string().min(1).default(".exaix/routing.policy.yaml"),
+  experiment_salt: z.string().min(1).default("exaix-routing-experiments"),
+  enable_dynamic_routing: z.boolean().default(false),
+}).optional().default({});
+
 export const ToolsConfigSchema = z.object({
   // Network capability control
   fetch_url: z.object({
@@ -529,6 +536,7 @@ export const ConfigSchema = z.object({
     health_check_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED,
     fallback_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED,
   }),
+  routing: RoutingConfigSchema,
   /** Provider-specific configuration overrides */
   providers: z.record(z.object({
     cost_tier: z.nativeEnum(ProviderCostTier).optional(),

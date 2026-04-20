@@ -18,6 +18,8 @@ export interface IRequestFrontmatter {
   source: string;
   created_by: string;
   portal?: string;
+  /** Enable runtime routing policy selection for this request */
+  allow_dynamic_routing?: boolean;
   target_branch?: string;
   model?: string;
   skills?: string;

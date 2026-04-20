@@ -13,6 +13,7 @@ import type {
   IBlueprint,
   IParsedRequest,
 } from "../../src/services/agent/agent_runner.ts";
+import type { IRoutingPolicyService } from "../../src/services/routing/routing_policy_service.ts";
 import type { IFlow } from "../../src/shared/schemas/flow.ts";
 import type { Config } from "../../src/shared/schemas/config.ts";
 import type { ILogEvent } from "../../src/services/common/types.ts";
@@ -189,6 +190,7 @@ export function createTestRequestRouter(
     agentRunner,
     flowValidator,
     logger,
+    routingPolicyService,
     defaultAgent = "default-agent",
     blueprintsPath = "/tmp/blueprints",
     config = createTestConfig(),
@@ -197,6 +199,7 @@ export function createTestRequestRouter(
     agentRunner: IAgentRunner;
     flowValidator: IFlowValidator;
     logger: IEventLogger;
+    routingPolicyService?: IRoutingPolicyService;
     defaultAgent?: string;
     blueprintsPath?: string;
     config?: Config;
@@ -214,6 +217,7 @@ export function createTestRequestRouter(
         defaultAgentId: defaultAgent,
         blueprintsPath,
         config,
+        routingPolicyService,
       });
       this.mockBlueprints.set("senior-coder", { identityId: "senior-coder", systemPrompt: "Senior Coder" });
       this.mockBlueprints.set("default-agent", { identityId: "default-agent", systemPrompt: "Default Agent" });
@@ -256,6 +260,8 @@ export function sampleRouterRequest(overrides: {
 export function createRouterTestContext(overrides: {
   defaultAgent?: string;
   blueprintsPath?: string;
+  routingPolicyService?: IRoutingPolicyService;
+  config?: Config;
 } = {}): IRouterTestContext {
   const mockFlowRunner = createMockFlowRunner();
   const mockAgentRunner = createMockAgentRunner();
@@ -266,8 +272,10 @@ export function createRouterTestContext(overrides: {
     agentRunner: mockAgentRunner,
     flowValidator: mockFlowValidator,
     logger: mockLogger,
+    routingPolicyService: overrides.routingPolicyService,
     defaultAgent: overrides.defaultAgent ?? "default-agent",
     blueprintsPath: overrides.blueprintsPath ?? "/tmp/blueprints",
+    config: overrides.config,
   });
 
   return {
