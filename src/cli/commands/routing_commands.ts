@@ -112,7 +112,7 @@ export class RoutingCommands extends BaseCommand {
     return undefined;
   }
 
-  private buildRoutingPolicyService() {
+  private buildRoutingPolicyService(): ReturnType<typeof createRoutingPolicyService> {
     return createRoutingPolicyService({
       config: this.config,
       root: this.config.system.root,
@@ -122,4 +122,6 @@ export class RoutingCommands extends BaseCommand {
   }
 }
 
-type ParsedFrontmatter = Record<string, unknown>;
+interface ParsedFrontmatter {
+  [key: string]: unknown;
+}
