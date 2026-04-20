@@ -8,6 +8,7 @@
 
 import type { Config } from "../../shared/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
+import type { IRoutingPolicyLoadResult } from "../routing/routing_policy_loader.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { CandidateDiscovery } from "../routing/candidate_discovery.ts";
 import { IdentityPerformanceRepository } from "../routing/identity_performance_repository.ts";
@@ -39,4 +40,13 @@ export function createRoutingPolicyService(
     }),
     experimentSalt: options.experimentSalt,
   });
+}
+
+export async function loadRoutingPolicy(
+  options: { config: Config; root: string },
+): Promise<IRoutingPolicyLoadResult> {
+  return await new RoutingPolicyLoader({
+    config: options.config,
+    root: options.root,
+  }).loadPolicy();
 }

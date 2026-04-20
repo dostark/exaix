@@ -21,6 +21,7 @@ import {
 import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../request_processing/types.ts";
 import type { IFlow } from "../../shared/schemas/flow.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
@@ -52,6 +53,15 @@ interface RouterRequest {
   requestId: string;
   frontmatter: IRequestFrontmatter;
   body: string;
+  requestAnalysis?: IRequestAnalysis;
+}
+
+type RouterRequestFrontmatterMap = IRequestFrontmatter & {
+  [key: string]: unknown;
+};
+
+function normalizeText(value?: string): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 export class RoutingError extends Error {
@@ -243,6 +253,34 @@ export class RequestRouter {
       await this.logRoutingDecision(requestId, traceId, {
         explicit_identity_id: identityId,
       }, policyDecision);
+
+      if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
+        await this.eventLogger.log({
+          action: "routing.fallback_used",
+          target: requestId,
+          payload: {
+            fallback_identity_id: selectedIdentityId,
+            strategy: policyDecision.strategy,
+            reason: "Routing policy returned a fallback candidate",
+          },
+          traceId,
+        });
+      }
+
+      if (policyDecision.experimentApplied) {
+        await this.eventLogger.log({
+          action: "routing.experiment_applied",
+          target: requestId,
+          payload: {
+            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_version: policyDecision.selectedVersion,
+            strategy: policyDecision.strategy,
+            matched_rule_id: policyDecision.matchedRuleId ?? null,
+            experiment_bucket: policyDecision.experimentBucket ?? null,
+          },
+          traceId,
+        });
+      }
     }
 
     // Load blueprint
@@ -281,6 +319,34 @@ export class RequestRouter {
       await this.logRoutingDecision(requestId, traceId, {
         default_agent_id: this.defaultAgentId,
       }, policyDecision);
+
+      if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
+        await this.eventLogger.log({
+          action: "routing.fallback_used",
+          target: requestId,
+          payload: {
+            fallback_identity_id: selectedIdentityId,
+            strategy: policyDecision.strategy,
+            reason: "Routing policy returned a fallback candidate",
+          },
+          traceId,
+        });
+      }
+
+      if (policyDecision.experimentApplied) {
+        await this.eventLogger.log({
+          action: "routing.experiment_applied",
+          target: requestId,
+          payload: {
+            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_version: policyDecision.selectedVersion,
+            strategy: policyDecision.strategy,
+            matched_rule_id: policyDecision.matchedRuleId ?? null,
+            experiment_bucket: policyDecision.experimentBucket ?? null,
+          },
+          traceId,
+        });
+      }
     }
 
     // Load selected blueprint
@@ -315,6 +381,45 @@ export class RequestRouter {
     return loader.toLegacyBlueprint(loaded);
   }
 
+  private buildRoutingContext(request: RouterRequest): {
+    matchCriteria: {
+      capability?: string;
+      complexityMin?: number;
+      complexityMax?: number;
+      language?: string;
+      taskType?: string;
+      portalType?: string;
+      tags: string[];
+    };
+    requestText?: string;
+    requestAnalysis?: IRequestAnalysis;
+    portalName?: string;
+    flowStepId?: string;
+  } {
+    const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
+    const tags = Array.isArray(frontmatter.tags)
+      ? frontmatter.tags.map((tag) => String(tag).trim()).filter((tag) => tag.length > 0)
+      : typeof frontmatter.tags === "string"
+      ? [frontmatter.tags.trim()]
+      : [];
+
+    return {
+      requestText: normalizeText(request.body),
+      requestAnalysis: request.requestAnalysis,
+      portalName: normalizeText(typeof frontmatter.portal === "string" ? frontmatter.portal : undefined),
+      flowStepId: normalizeText(typeof frontmatter.flow_step_id === "string" ? frontmatter.flow_step_id : undefined),
+      matchCriteria: {
+        capability: normalizeText(typeof frontmatter.capability === "string" ? frontmatter.capability : undefined),
+        complexityMin: typeof frontmatter.complexity_min === "number" ? frontmatter.complexity_min : undefined,
+        complexityMax: typeof frontmatter.complexity_max === "number" ? frontmatter.complexity_max : undefined,
+        language: normalizeText(typeof frontmatter.language === "string" ? frontmatter.language : undefined),
+        taskType: normalizeText(typeof frontmatter.task_type === "string" ? frontmatter.task_type : undefined),
+        portalType: normalizeText(typeof frontmatter.portal_type === "string" ? frontmatter.portal_type : undefined),
+        tags,
+      },
+    };
+  }
+
   private async selectIdentity(
     request: RouterRequest,
     explicitIdentityId?: string,
@@ -326,11 +431,16 @@ export class RequestRouter {
     }
 
     try {
+      const routingContext = this.buildRoutingContext(request);
+      const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
       const decision = await this.routingPolicyService.selectIdentity({
         explicitIdentityId,
-        matchCriteria: {
-          tags: [],
-        },
+        explicitVersion: typeof frontmatter.identity_version === "string" ? frontmatter.identity_version : undefined,
+        requestText: routingContext.requestText,
+        requestAnalysis: routingContext.requestAnalysis,
+        portalName: routingContext.portalName,
+        flowStepId: routingContext.flowStepId,
+        matchCriteria: routingContext.matchCriteria,
         traceId: request.traceId,
         allowDynamicRouting: true,
       });

@@ -9,6 +9,7 @@
 
 import {
   type IRoutingCandidate,
+  type IRoutingContext,
   type IRoutingMatchCriteria,
   type IRoutingPolicy,
   type IRoutingPolicyDecision,
@@ -17,18 +18,8 @@ import {
   ZRoutingCandidate,
   ZRoutingPolicyDecision,
 } from "../../shared/schemas/routing_policy.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import type { IIdentityPerformanceSnapshot } from "./identity_performance_repository.ts";
 import type { IRoutingPolicyLoadResult } from "./routing_policy_loader.ts";
-
-export interface IRoutingContext {
-  explicitIdentityId?: string;
-  explicitVersion?: string;
-  requestAnalysis?: IRequestAnalysis;
-  matchCriteria?: IRoutingMatchCriteria;
-  traceId?: string;
-  allowDynamicRouting?: boolean;
-}
 
 export interface IRoutingPolicyLoader {
   loadPolicy(): Promise<IRoutingPolicyLoadResult>;
@@ -78,7 +69,7 @@ export class RoutingPolicyService {
       return ruleDecision;
     }
 
-    return await this.buildFallbackDecision(policy, criteria, candidates);
+    return await this.buildFallbackDecision(policy, criteria, candidates, context.portalName);
   }
 
   private buildMatchCriteria(context: IRoutingContext): IRoutingMatchCriteria {
@@ -145,7 +136,7 @@ export class RoutingPolicyService {
         continue;
       }
 
-      const { chosenCandidate, experimentApplied } = await this.applyExperiment(
+      const { chosenCandidate, experimentApplied, experimentBucket } = await this.applyExperiment(
         rule,
         preferredCandidate,
         candidates,
@@ -158,12 +149,15 @@ export class RoutingPolicyService {
         chosenCandidate,
         experimentApplied ? 1 : 0,
         criteria,
+        context.portalName,
       );
 
       return ZRoutingPolicyDecision.parse({
         selectedIdentityId: chosenCandidate.identityId,
         selectedVersion: chosenCandidate.version,
         strategy: "policy",
+        experimentApplied,
+        experimentBucket,
         matchedRuleId: rule.ruleId,
         candidates: scoredCandidates,
         rationale: experimentApplied
@@ -246,7 +240,7 @@ export class RoutingPolicyService {
     candidates: IRoutingCandidate[],
     context: IRoutingContext,
     policy: IRoutingPolicy,
-  ): Promise<{ chosenCandidate: IRoutingCandidate; experimentApplied: boolean }> {
+  ): Promise<{ chosenCandidate: IRoutingCandidate; experimentApplied: boolean; experimentBucket?: number }> {
     if (
       rule.prefer.trafficSplit === undefined || !policy.allowExperiments || !this.experimentSalt || !context.traceId
     ) {
@@ -255,7 +249,7 @@ export class RoutingPolicyService {
 
     const bucket = await this.computeExperimentBucket(context.traceId, this.experimentSalt);
     if (bucket < rule.prefer.trafficSplit) {
-      return { chosenCandidate: preferredCandidate, experimentApplied: true };
+      return { chosenCandidate: preferredCandidate, experimentApplied: true, experimentBucket: bucket };
     }
 
     if (rule.prefer.fallbackIdentityId) {
@@ -264,11 +258,11 @@ export class RoutingPolicyService {
         version: rule.prefer.fallbackVersion,
       } as IRoutingPreference, candidates);
       if (fallback) {
-        return { chosenCandidate: fallback, experimentApplied: true };
+        return { chosenCandidate: fallback, experimentApplied: true, experimentBucket: bucket };
       }
     }
 
-    return { chosenCandidate: preferredCandidate, experimentApplied: false };
+    return { chosenCandidate: preferredCandidate, experimentApplied: false, experimentBucket: bucket };
   }
 
   private async scoreCandidates(
@@ -277,9 +271,10 @@ export class RoutingPolicyService {
     winner: IRoutingCandidate,
     experimentScore: number,
     criteria: IRoutingMatchCriteria,
+    portalName?: string,
   ): Promise<IRoutingCandidate[]> {
     const journalSnapshots = criteria.capability
-      ? await this.options.performanceRepository.getPerformanceByCapability(criteria.capability)
+      ? await this.options.performanceRepository.getPerformanceByCapability(criteria.capability, portalName)
       : [];
 
     return candidates.map((candidate) => {
@@ -311,6 +306,7 @@ export class RoutingPolicyService {
     policy: IRoutingPolicy,
     criteria: IRoutingMatchCriteria,
     candidates: IRoutingCandidate[],
+    portalName?: string,
   ): Promise<IRoutingPolicyDecision> {
     const scoredCandidates = await this.scoreCandidates(
       candidates,
@@ -325,6 +321,7 @@ export class RoutingPolicyService {
         },
       0,
       criteria,
+      portalName,
     );
     const selected = scoredCandidates[0];
 

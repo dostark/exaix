@@ -89,6 +89,10 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
     assertEquals(decision.selectedVersion, "1.0.0");
   }
 
+  assertEquals(decision.experimentApplied, true);
+  assertEquals(typeof decision.experimentBucket, "number");
+  assertEquals(decision.experimentBucket, bucket);
+
   const decisionRepeat = await service.selectIdentity({
     matchCriteria: { capability: "code_review", tags: [] },
     traceId,
@@ -98,4 +102,6 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
   assertEquals(decision.selectedVersion, decisionRepeat.selectedVersion);
   assertEquals(decision.strategy, decisionRepeat.strategy);
   assertEquals(decision.matchedRuleId, decisionRepeat.matchedRuleId);
+  assertEquals(decision.experimentApplied, decisionRepeat.experimentApplied);
+  assertEquals(decision.experimentBucket, decisionRepeat.experimentBucket);
 });

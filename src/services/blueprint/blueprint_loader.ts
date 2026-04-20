@@ -94,6 +94,15 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Description */
   description: z.string().optional(),
 
+  /** Language or locale this agent primarily supports */
+  language: z.string().min(1).optional(),
+
+  /** Primary task type for this agent */
+  task_type: z.string().min(1).optional(),
+
+  /** Portal type or scope for this agent */
+  portal_type: z.string().min(1).optional(),
+
   /** Created timestamp (ISO 8601) */
   created: z.string().optional(),
 

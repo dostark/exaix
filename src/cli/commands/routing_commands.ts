@@ -9,7 +9,7 @@
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { BaseCommand } from "../base.ts";
-import { createRoutingPolicyService } from "../../services/adapters/routing_adapter.ts";
+import { createRoutingPolicyService, loadRoutingPolicy } from "../../services/adapters/routing_adapter.ts";
 import { ZRoutingPolicy } from "../../shared/schemas/routing_policy.ts";
 import type {
   IRoutingContext,
@@ -38,11 +38,10 @@ export class RoutingCommands extends BaseCommand {
       };
     }
 
-    const loader = new RoutingPolicyLoader({
+    const result = await loadRoutingPolicy({
       config: this.config,
       root: this.config.system.root,
     });
-    const result = await loader.loadPolicy();
     if (!result.success) {
       return { success: false, errors: result.errors ?? [], path: result.path };
     }

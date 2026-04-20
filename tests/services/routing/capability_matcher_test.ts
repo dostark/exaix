@@ -50,6 +50,64 @@ Deno.test("CapabilityMatcher: scores partially matched tag criteria", () => {
   assertEquals(candidate?.score, 0.5);
 });
 
+Deno.test("CapabilityMatcher: boosts score when language, taskType, and portalType match", () => {
+  const matcher = new CapabilityMatcher();
+  const blueprint = makeBlueprint({
+    capabilities: ["code_review"],
+    frontmatter: {
+      capabilities: [],
+      version: "1.0.0",
+      reflexive: false,
+      max_reflexion_iterations: 3,
+      memory_enabled: false,
+      deprecated: false,
+      language: "typescript",
+      task_type: "implementation",
+      portal_type: "api",
+    },
+  });
+
+  const candidate = matcher.matchBlueprint(blueprint, {
+    capability: "code_review",
+    language: "typescript",
+    taskType: "implementation",
+    portalType: "api",
+    tags: [],
+  });
+
+  assertExists(candidate);
+  assertEquals(candidate?.score, 1);
+});
+
+Deno.test("CapabilityMatcher: lowers score when metadata fields mismatch", () => {
+  const matcher = new CapabilityMatcher();
+  const blueprint = makeBlueprint({
+    capabilities: ["code_review"],
+    frontmatter: {
+      capabilities: [],
+      version: "1.0.0",
+      reflexive: false,
+      max_reflexion_iterations: 3,
+      memory_enabled: false,
+      deprecated: false,
+      language: "python",
+      task_type: "analysis",
+      portal_type: "console",
+    },
+  });
+
+  const candidate = matcher.matchBlueprint(blueprint, {
+    capability: "code_review",
+    language: "typescript",
+    taskType: "implementation",
+    portalType: "api",
+    tags: [],
+  });
+
+  assertExists(candidate);
+  assertEquals(candidate?.score, 0.75);
+});
+
 Deno.test("CapabilityMatcher: excludes deprecated blueprints by default", () => {
   const matcher = new CapabilityMatcher();
   const blueprint = makeBlueprint({

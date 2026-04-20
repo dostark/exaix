@@ -6,7 +6,20 @@
  * * @related-files [src/services/routing/routing_policy_loader.ts]
  */
 
+import type { IRequestAnalysis } from "./request_analysis.ts";
 import { z } from "zod";
+
+export interface IRoutingContext {
+  explicitIdentityId?: string;
+  explicitVersion?: string;
+  requestText?: string;
+  requestAnalysis?: IRequestAnalysis;
+  portalName?: string;
+  flowStepId?: string;
+  matchCriteria?: IRoutingMatchCriteria;
+  traceId?: string;
+  allowDynamicRouting?: boolean;
+}
 
 export const ZRoutingMatchCriteria = z.object({
   capability: z.string().min(1).optional(),
@@ -75,6 +88,8 @@ export const ZRoutingPolicyDecision = z.object({
   selectedIdentityId: z.string().min(1),
   selectedVersion: z.string().min(1),
   strategy: z.enum(["explicit", "policy", "capability_fallback", "static_fallback"]),
+  experimentApplied: z.boolean().optional(),
+  experimentBucket: z.number().min(0).max(1).optional(),
   matchedRuleId: z.string().optional(),
   candidates: z.array(ZRoutingCandidate).default([]),
   rationale: z.string().min(1),
