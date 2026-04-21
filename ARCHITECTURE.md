@@ -479,6 +479,64 @@ Before routing to FlowRunner, the Request Router validates:
 - **Dependencies:** All referenced agents and transforms exist
 - **No Cycles:** Flow doesn't contain circular dependencies
 
+### Routing Policy Layer (Phase 74-R)
+
+Phase 74-R introduces a dedicated routing policy stage between request analysis and final identity resolution. When `allowDynamicRouting` is enabled, the Request Router evaluates a candidate set of blueprint versions using:
+
+- declared blueprint capabilities
+- request match criteria from frontmatter and analysis signals
+- historical identity performance from the Activity Journal
+- explicit routing rules from `routing.policy.yaml`
+
+The routing layer remains auditable and deterministic by emitting structured journal events for every decision.
+
+#### Audit Events
+
+`routing.decision` is emitted for every dynamic routing evaluation. It captures the selected identity/version, chosen strategy, matched rule, and candidate summary.
+
+```json
+{
+  "type": "routing.decision",
+  "trace_id": "abc-123",
+  "payload": {
+    "selectedIdentityId": "senior-coder",
+    "selectedVersion": "v2.1",
+    "strategy": "policy_match",
+    "matchedRuleId": "rule-1",
+    "candidateCount": 4,
+    "candidates": [
+      { "identityId": "senior-coder", "version": "v2.1", "score": 0.92 },
+      { "identityId": "senior-coder", "version": "v2.0", "score": 0.78 }
+    ]
+  }
+}
+```
+
+If no qualified candidate is found, a fallback is recorded with `routing.fallback_used`, and Exaix falls back to the current explicit or default identity deterministically.
+
+```json
+{
+  "type": "routing.fallback_used",
+  "trace_id": "abc-123",
+  "payload": {
+    "fallbackIdentityId": "senior-coder",
+    "fallbackVersion": "v1.0",
+    "reason": "no qualified candidate",
+    "policyPath": ".exaix/routing.policy.yaml"
+  }
+}
+```
+
+#### CLI Inspection Surface
+
+Operators can preview routing behavior without executing a request using the CLI:
+
+```text
+exactl routing explain --request ./Workspace/Requests/my-request.md
+exactl routing policy validate ./routing.policy.yaml
+exactl routing policy validate
+```
+
 ---
 
 ## Parsing & Schema Layer
@@ -1564,6 +1622,8 @@ exactl request clarify <id>                     # Show current Q&A questions
 exactl request clarify <id> --answers <json>    # Submit answers to current round
 exactl request clarify <id> --proceed           # Accept current state and re-queue
 exactl request clarify <id> --cancel            # Cancel Q&A, restore PENDING status
+exactl routing explain --request <request-file>  # Preview routing policy evaluation without execution
+exactl routing policy validate [policy-file]     # Validate a routing policy YAML file
 ```
 
 ---

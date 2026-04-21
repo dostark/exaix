@@ -141,6 +141,54 @@ Deno.test("[BlueprintLoader] returns null for non-existent blueprint", async () 
   }
 });
 
+Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () => {
+  const { blueprintsPath, identitiesDir, testDir } = await setup();
+
+  try {
+    const alpha = `---
+identity_id: "alpha"
+name: "Alpha"
+model: "anthropic:claude-sonnet-4-20250514"
+version: "1.0.0"
+---
+# Alpha
+`;
+    const beta = `---
+identity_id: "beta"
+name: "Beta"
+model: "anthropic:claude-sonnet-4-20250514"
+version: "1.0.0"
+---
+# Beta
+`;
+
+    await Deno.writeTextFile(join(identitiesDir, "alpha.md"), alpha);
+    await Deno.writeTextFile(join(identitiesDir, "beta.md"), beta);
+
+    const loader = new BlueprintLoader({ blueprintsPath });
+    const blueprints = await loader.listAll();
+
+    assertEquals(blueprints.length, 2);
+    assertEquals(new Set(blueprints.map((b) => b.identityId)), new Set(["alpha", "beta"]));
+  } finally {
+    await teardown(testDir);
+  }
+});
+
+Deno.test("[BlueprintLoader] returns empty list when Identities path is missing", async () => {
+  const testDir = await Deno.makeTempDir({ prefix: "exa_blueprint_test_" });
+  const blueprintsPath = join(testDir, "Blueprints");
+
+  try {
+    const loader = new BlueprintLoader({ blueprintsPath });
+    const blueprints = await loader.listAll();
+
+    assertEquals(blueprints.length, 0);
+  } finally {
+    await teardown(testDir);
+  }
+});
+
 Deno.test("[BlueprintLoader] loadOrThrow throws for non-existent blueprint", async () => {
   const { blueprintsPath, testDir } = await setup();
 

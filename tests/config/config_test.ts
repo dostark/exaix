@@ -153,6 +153,41 @@ Deno.test("ConfigSchema applies defaults for missing watcher section", () => {
   assertEquals(result.watcher.stability_check, true);
 });
 
+Deno.test("ConfigSchema applies defaults for missing routing section", () => {
+  const configWithoutRouting = {
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+  };
+
+  const result = ConfigSchema.parse(configWithoutRouting);
+  assertEquals(result.routing.enabled, true);
+  assertEquals(result.routing.policy_path, ".exaix/routing.policy.yaml");
+});
+
+Deno.test("ConfigSchema accepts routing policy configuration", () => {
+  const configWithRouting = {
+    system: {
+      version: DEFAULT_MCP_VERSION,
+      log_level: "info",
+    },
+    paths: { ...ExaPathDefaults },
+    routing: {
+      enabled: false,
+      policy_path: "config/routing.policy.yaml",
+    },
+  };
+
+  const result = ConfigSchema.safeParse(configWithRouting);
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.routing?.enabled, false);
+    assertEquals(result.data.routing?.policy_path, "config/routing.policy.yaml");
+  }
+});
+
 Deno.test("ConfigService computes checksum", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "config-checksum-test-" });
 

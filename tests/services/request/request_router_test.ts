@@ -9,6 +9,32 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { RequestKind } from "../../../src/shared/enums.ts";
 import { RoutingError } from "../../../src/services/request/request_router.ts";
 import { createRouterTestContext, sampleRouterRequest } from "../helpers.ts";
+import { createMockConfig } from "../../helpers/config.ts";
+import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
+
+type RoutingContext = {
+  explicitIdentityId?: string;
+  explicitVersion?: string;
+  requestText?: string;
+  requestAnalysis?: unknown;
+  portalName?: string;
+  flowStepId?: string;
+  matchCriteria?: {
+    capability?: string;
+    complexityMin?: number;
+    complexityMax?: number;
+    language?: string;
+    taskType?: string;
+    portalType?: string;
+    tags?: string[];
+  };
+  traceId?: string;
+  allowDynamicRouting?: boolean;
+};
+
+type TestRouterFrontmatter = Partial<IRequestFrontmatter> & {
+  [key: string]: unknown;
+};
 
 // Test-specific helpers are provided by tests/services/helpers.ts
 
@@ -112,4 +138,210 @@ Deno.test("RequestRouter: flow takes priority over agent when both present (shou
   assertEquals(result.flowId, "code-review");
   assertEquals(mockFlowRunner.executedFlows.length, 1);
   assertEquals(mockAgentRunner.executedAgents.length, 0); // Agent should not be called
+});
+
+Deno.test("RequestRouter: applies routing policy service for explicit identity when dynamic routing is enabled", async () => {
+  const routingPolicyService = {
+    selectIdentity: () =>
+      Promise.resolve({
+        selectedIdentityId: "default-agent",
+        selectedVersion: "1.0.0",
+        strategy: "policy" as const,
+        candidates: [],
+        rationale: "Dynamic routing selected default agent",
+        decidedAt: new Date().toISOString(),
+      }),
+  };
+
+  const { mockAgentRunner, mockLogger, router } = createRouterTestContext({
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({
+    frontmatter: { identity: "senior-coder", allow_dynamic_routing: true },
+  });
+
+  const result = await router.route(request);
+
+  assertEquals(result.type, RequestKind.IDENTITY);
+  assertEquals(result.identityId, "default-agent");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "default-agent");
+  assertEquals(mockLogger.events.some((event) => event.action === "routing.decision"), true);
+  const decisionEvent = mockLogger.events.find((event) => event.action === "routing.decision");
+  assertEquals(decisionEvent?.payload?.selected_identity_id, "default-agent");
+  assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
+});
+
+Deno.test("RequestRouter: logs fallback_used when routing policy service fails", async () => {
+  const routingPolicyService = {
+    selectIdentity: () => Promise.reject(new Error("policy service unavailable")),
+  };
+
+  const { mockAgentRunner, mockLogger, router } = createRouterTestContext({
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({
+    frontmatter: { identity: "senior-coder", allow_dynamic_routing: true },
+  });
+
+  const result = await router.route(request);
+
+  assertEquals(result.type, RequestKind.IDENTITY);
+  assertEquals(result.identityId, "senior-coder");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
+  assertEquals(mockLogger.events.some((event) => event.action === "routing.fallback_used"), true);
+  const fallbackEvent = mockLogger.events.find((event) => event.action === "routing.fallback_used");
+  assertEquals(fallbackEvent?.payload?.fallback_identity_id, "senior-coder");
+  assertEquals(fallbackEvent?.payload?.reason, "policy service unavailable");
+});
+
+Deno.test("RequestRouter: logs fallback_used when routing policy returns a fallback decision", async () => {
+  let receivedContext: RoutingContext | null = null;
+  const routingPolicyService = {
+    selectIdentity: (context: RoutingContext) => {
+      receivedContext = context;
+      return Promise.resolve({
+        selectedIdentityId: "default-agent",
+        selectedVersion: "1.0.0",
+        strategy: "capability_fallback" as const,
+        candidates: [],
+        rationale: "Fallback candidate selected",
+        decidedAt: new Date().toISOString(),
+      });
+    },
+  };
+
+  const { mockLogger, router } = createRouterTestContext({
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({
+    frontmatter: { allow_dynamic_routing: true },
+  });
+
+  const result = await router.route(request);
+
+  assertEquals(result.identityId, "default-agent");
+  assertEquals(mockLogger.events.some((event) => event.action === "routing.fallback_used"), true);
+  const fallbackEvent = mockLogger.events.find((event) => event.action === "routing.fallback_used");
+  assertEquals(fallbackEvent?.payload?.fallback_identity_id, "default-agent");
+  const fallbackContext = receivedContext as RoutingContext | null;
+  assertEquals(fallbackContext?.matchCriteria !== undefined, true);
+});
+
+Deno.test("RequestRouter: logs experiment_applied when routing policy returns an experiment decision", async () => {
+  const routingPolicyService = {
+    selectIdentity: () =>
+      Promise.resolve({
+        selectedIdentityId: "default-agent",
+        selectedVersion: "1.0.0",
+        strategy: "policy" as const,
+        experimentApplied: true,
+        experimentBucket: 0.32,
+        candidates: [],
+        rationale: "Experiment applied",
+        decidedAt: new Date().toISOString(),
+      }),
+  };
+
+  const { mockLogger, router } = createRouterTestContext({
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({
+    frontmatter: { allow_dynamic_routing: true },
+  });
+
+  const result = await router.route(request);
+
+  assertEquals(result.identityId, "default-agent");
+  assertEquals(mockLogger.events.some((event) => event.action === "routing.experiment_applied"), true);
+  const experimentEvent = mockLogger.events.find((event) => event.action === "routing.experiment_applied");
+  assertEquals(experimentEvent?.payload?.selected_identity_id, "default-agent");
+  assertEquals(experimentEvent?.payload?.experiment_bucket, 0.32);
+});
+
+Deno.test("RequestRouter: forwards full routing context to routing policy service", async () => {
+  let receivedContext: RoutingContext | null = null;
+
+  const routingPolicyService = {
+    selectIdentity: (context: RoutingContext) => {
+      receivedContext = context;
+      return Promise.resolve({
+        selectedIdentityId: "default-agent",
+        selectedVersion: "1.0.0",
+        strategy: "policy" as const,
+        candidates: [],
+        rationale: "Routing context captured",
+        decidedAt: new Date().toISOString(),
+      });
+    },
+  };
+
+  const { router } = createRouterTestContext({
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({
+    frontmatter: {
+      allow_dynamic_routing: true,
+      capability: "code_review",
+      language: "typescript",
+      task_type: "implementation",
+      portal_type: "api",
+      portal: "portal-a",
+      identity_version: "1.2.3",
+    } as TestRouterFrontmatter,
+    body: "Use the code review agent.",
+  });
+
+  await router.route(request);
+
+  const context = receivedContext as RoutingContext | null;
+
+  assertEquals(context?.requestText ?? undefined, "Use the code review agent.");
+  assertEquals(context?.matchCriteria?.language, "typescript");
+  assertEquals(context?.matchCriteria?.taskType, "implementation");
+  assertEquals(context?.matchCriteria?.portalType, "api");
+  assertEquals(context?.requestAnalysis ?? null, null);
+});
+
+Deno.test("RequestRouter: applies routing policy service for default routing when global dynamic routing is enabled", async () => {
+  const routingPolicyService = {
+    selectIdentity: () =>
+      Promise.resolve({
+        selectedIdentityId: "senior-coder",
+        selectedVersion: "1.0.0",
+        strategy: "policy" as const,
+        candidates: [],
+        rationale: "Dynamic default routing selected senior coder",
+        decidedAt: new Date().toISOString(),
+      }),
+  };
+
+  const config = createMockConfig("/tmp/exaix-request-router-test", {
+    routing: {
+      enabled: true,
+      policy_path: ".exaix/routing.policy.yaml",
+      experiment_salt: "exaix-routing-experiments",
+      enable_dynamic_routing: true,
+    },
+  });
+  const { mockAgentRunner, mockLogger, router } = createRouterTestContext({
+    config,
+    routingPolicyService,
+  });
+
+  const request = sampleRouterRequest({ frontmatter: {} });
+
+  const result = await router.route(request);
+
+  assertEquals(result.type, RequestKind.IDENTITY);
+  assertEquals(result.identityId, "senior-coder");
+  assertEquals(mockAgentRunner.executedAgents[0].blueprint.identityId, "senior-coder");
+  assertEquals(mockLogger.events.some((event) => event.action === "routing.decision"), true);
+  const decisionEvent = mockLogger.events.find((event) => event.action === "routing.decision");
+  assertEquals(decisionEvent?.payload?.selected_identity_id, "senior-coder");
+  assertEquals(decisionEvent?.payload?.allow_dynamic_routing, true);
 });

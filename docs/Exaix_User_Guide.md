@@ -1264,6 +1264,25 @@ exactl flow validate <flow-id>
 exactl flow validate research-pipeline
 ```
 
+#### Routing Commands — Inspect dynamic identity selection
+
+Use routing commands to preview how Exaix will choose an identity before executing a request, and to validate routing policy syntax and semantics.
+
+```bash
+# Preview routing candidate ranking for a request file
+exactl routing explain --request ./Workspace/Requests/my-request.md
+
+# Validate a routing policy file
+exactl routing policy validate ./routing.policy.yaml
+
+# Validate the configured default routing policy
+exactl routing policy validate
+```
+
+`exactl routing explain` evaluates the request frontmatter and policy rules without creating a plan. It prints the selected identity/version, matched rule, routing strategy, and top candidate scores.
+
+`exactl routing policy validate` checks a YAML policy file against the current schema. When omitted, it validates the configured default routing policy file, typically `.exaix/routing.policy.yaml`.
+
 ##### Flow Step Types
 
 Flows support various step types for different orchestration patterns:

@@ -21,8 +21,13 @@ import {
 import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
+import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../request_processing/types.ts";
 import type { IFlow } from "../../shared/schemas/flow.ts";
+import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IRoutingPolicyDecision } from "../../shared/schemas/routing_policy.ts";
+import type { IRoutingPolicyService } from "../routing/routing_policy_service.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import { GitBranchName, RequestKind } from "../../shared/enums.ts";
 
 /**
@@ -48,6 +53,15 @@ interface RouterRequest {
   requestId: string;
   frontmatter: IRequestFrontmatter;
   body: string;
+  requestAnalysis?: IRequestAnalysis;
+}
+
+type RouterRequestFrontmatterMap = IRequestFrontmatter & {
+  [key: string]: unknown;
+};
+
+function normalizeText(value?: string): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 export class RoutingError extends Error {
@@ -61,8 +75,6 @@ export interface IFlowValidator {
   validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
 }
 
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-
 export interface IRequestRouterConfig {
   flowRunner: IFlowRunner;
   agentRunner: IAgentRunner;
@@ -71,6 +83,7 @@ export interface IRequestRouterConfig {
   defaultAgentId: string;
   blueprintsPath: string;
   config: Config;
+  routingPolicyService?: IRoutingPolicyService;
   context?: IApplicationContext;
 }
 
@@ -85,6 +98,7 @@ export class RequestRouter {
   private defaultAgentId: string;
   private blueprintsPath: string;
   private config: Config;
+  private routingPolicyService?: IRoutingPolicyService;
 
   constructor(options: IRequestRouterConfig) {
     const ctx = options.context;
@@ -95,6 +109,7 @@ export class RequestRouter {
     this.defaultAgentId = options.defaultAgentId;
     this.blueprintsPath = options.blueprintsPath;
     this.config = ctx?.config.get() || options.config;
+    this.routingPolicyService = options.routingPolicyService;
   }
 
   /**
@@ -222,7 +237,7 @@ export class RequestRouter {
   }
 
   public async routeToAgent(identityId: string, request: RouterRequest): Promise<IRoutingDecision> {
-    const { traceId, requestId, body } = request;
+    const { traceId, requestId } = request;
 
     // Log routing decision
     await this.eventLogger.log({
@@ -232,30 +247,57 @@ export class RequestRouter {
       traceId,
     });
 
+    const { selectedIdentityId, policyDecision } = await this.selectIdentity(request, identityId);
+
+    if (policyDecision) {
+      await this.logRoutingDecision(requestId, traceId, {
+        explicit_identity_id: identityId,
+      }, policyDecision);
+
+      if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
+        await this.eventLogger.log({
+          action: "routing.fallback_used",
+          target: requestId,
+          payload: {
+            fallback_identity_id: selectedIdentityId,
+            strategy: policyDecision.strategy,
+            reason: "Routing policy returned a fallback candidate",
+          },
+          traceId,
+        });
+      }
+
+      if (policyDecision.experimentApplied) {
+        await this.eventLogger.log({
+          action: "routing.experiment_applied",
+          target: requestId,
+          payload: {
+            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_version: policyDecision.selectedVersion,
+            strategy: policyDecision.strategy,
+            matched_rule_id: policyDecision.matchedRuleId ?? null,
+            experiment_bucket: policyDecision.experimentBucket ?? null,
+          },
+          traceId,
+        });
+      }
+    }
+
     // Load blueprint
-    const blueprint = await this.loadBlueprint(identityId);
+    const blueprint = await this.loadBlueprint(selectedIdentityId);
     if (!blueprint) {
-      throw new RoutingError(`Agent blueprint not found: ${identityId}`, requestId);
+      throw new RoutingError(`Agent blueprint not found: ${selectedIdentityId}`, requestId);
     }
 
     // Create parsed request
-    const parsedRequest: IParsedRequest = {
-      userPrompt: body,
-      context: {},
-      traceId,
-      requestId,
-    };
-    const portalContext = this.buildPortalContext(request.frontmatter?.portal);
-    if (portalContext) {
-      parsedRequest.context[PORTAL_CONTEXT_KEY] = portalContext;
-    }
+    const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute agent
     const result = await this.agentRunner.run(blueprint, parsedRequest);
 
     return {
       type: RequestKind.IDENTITY,
-      identityId,
+      identityId: selectedIdentityId,
       result,
     };
   }
@@ -271,30 +313,57 @@ export class RequestRouter {
       traceId,
     });
 
-    // Load default blueprint
-    const blueprint = await this.loadBlueprint(this.defaultAgentId);
+    const { selectedIdentityId, policyDecision } = await this.selectIdentity(request, undefined);
+
+    if (policyDecision) {
+      await this.logRoutingDecision(requestId, traceId, {
+        default_agent_id: this.defaultAgentId,
+      }, policyDecision);
+
+      if (policyDecision.strategy === "capability_fallback" || policyDecision.strategy === "static_fallback") {
+        await this.eventLogger.log({
+          action: "routing.fallback_used",
+          target: requestId,
+          payload: {
+            fallback_identity_id: selectedIdentityId,
+            strategy: policyDecision.strategy,
+            reason: "Routing policy returned a fallback candidate",
+          },
+          traceId,
+        });
+      }
+
+      if (policyDecision.experimentApplied) {
+        await this.eventLogger.log({
+          action: "routing.experiment_applied",
+          target: requestId,
+          payload: {
+            selected_identity_id: policyDecision.selectedIdentityId,
+            selected_version: policyDecision.selectedVersion,
+            strategy: policyDecision.strategy,
+            matched_rule_id: policyDecision.matchedRuleId ?? null,
+            experiment_bucket: policyDecision.experimentBucket ?? null,
+          },
+          traceId,
+        });
+      }
+    }
+
+    // Load selected blueprint
+    const blueprint = await this.loadBlueprint(selectedIdentityId);
     if (!blueprint) {
-      throw new RoutingError(`Default agent blueprint not found: ${this.defaultAgentId}`, requestId);
+      throw new RoutingError(`Agent blueprint not found: ${selectedIdentityId}`, requestId);
     }
 
     // Create parsed request
-    const parsedRequest: IParsedRequest = {
-      userPrompt: request.body,
-      context: {},
-      traceId,
-      requestId,
-    };
-    const portalContext = this.buildPortalContext(request.frontmatter?.portal);
-    if (portalContext) {
-      parsedRequest.context[PORTAL_CONTEXT_KEY] = portalContext;
-    }
+    const parsedRequest = this.createParsedRequest(request, Boolean(policyDecision));
 
     // Execute default agent
     const result = await this.agentRunner.run(blueprint, parsedRequest);
 
     return {
       type: RequestKind.IDENTITY,
-      identityId: this.defaultAgentId,
+      identityId: selectedIdentityId,
       result,
     };
   }
@@ -310,6 +379,139 @@ export class RequestRouter {
       return null;
     }
     return loader.toLegacyBlueprint(loaded);
+  }
+
+  private buildRoutingContext(request: RouterRequest): {
+    matchCriteria: {
+      capability?: string;
+      complexityMin?: number;
+      complexityMax?: number;
+      language?: string;
+      taskType?: string;
+      portalType?: string;
+      tags: string[];
+    };
+    requestText?: string;
+    requestAnalysis?: IRequestAnalysis;
+    portalName?: string;
+    flowStepId?: string;
+  } {
+    const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
+    const tags = Array.isArray(frontmatter.tags)
+      ? frontmatter.tags.map((tag) => String(tag).trim()).filter((tag) => tag.length > 0)
+      : typeof frontmatter.tags === "string"
+      ? [frontmatter.tags.trim()]
+      : [];
+
+    return {
+      requestText: normalizeText(request.body),
+      requestAnalysis: request.requestAnalysis,
+      portalName: normalizeText(typeof frontmatter.portal === "string" ? frontmatter.portal : undefined),
+      flowStepId: normalizeText(typeof frontmatter.flow_step_id === "string" ? frontmatter.flow_step_id : undefined),
+      matchCriteria: {
+        capability: normalizeText(typeof frontmatter.capability === "string" ? frontmatter.capability : undefined),
+        complexityMin: typeof frontmatter.complexity_min === "number" ? frontmatter.complexity_min : undefined,
+        complexityMax: typeof frontmatter.complexity_max === "number" ? frontmatter.complexity_max : undefined,
+        language: normalizeText(typeof frontmatter.language === "string" ? frontmatter.language : undefined),
+        taskType: normalizeText(typeof frontmatter.task_type === "string" ? frontmatter.task_type : undefined),
+        portalType: normalizeText(typeof frontmatter.portal_type === "string" ? frontmatter.portal_type : undefined),
+        tags,
+      },
+    };
+  }
+
+  private async selectIdentity(
+    request: RouterRequest,
+    explicitIdentityId?: string,
+  ): Promise<{ selectedIdentityId: string; policyDecision?: IRoutingPolicyDecision }> {
+    const allowDynamicRouting = request.frontmatter.allow_dynamic_routing ??
+      this.config.routing?.enable_dynamic_routing ?? false;
+    if (!allowDynamicRouting || !this.routingPolicyService) {
+      return { selectedIdentityId: explicitIdentityId ?? this.defaultAgentId };
+    }
+
+    try {
+      const routingContext = this.buildRoutingContext(request);
+      const frontmatter = request.frontmatter as RouterRequestFrontmatterMap;
+      const decision = await this.routingPolicyService.selectIdentity({
+        explicitIdentityId,
+        explicitVersion: typeof frontmatter.identity_version === "string" ? frontmatter.identity_version : undefined,
+        requestText: routingContext.requestText,
+        requestAnalysis: routingContext.requestAnalysis,
+        portalName: routingContext.portalName,
+        flowStepId: routingContext.flowStepId,
+        matchCriteria: routingContext.matchCriteria,
+        traceId: request.traceId,
+        allowDynamicRouting: true,
+      });
+
+      return { selectedIdentityId: decision.selectedIdentityId, policyDecision: decision };
+    } catch (error) {
+      await this.eventLogger.log({
+        action: "request.routing.policy.failed",
+        target: request.requestId,
+        payload: {
+          error: error instanceof Error ? error.message : String(error),
+          explicit_identity_id: explicitIdentityId ?? null,
+        },
+        traceId: request.traceId,
+      });
+      await this.eventLogger.log({
+        action: "routing.fallback_used",
+        target: request.requestId,
+        payload: {
+          fallback_identity_id: explicitIdentityId ?? this.defaultAgentId,
+          reason: error instanceof Error ? error.message : String(error),
+          allow_dynamic_routing: true,
+        },
+        traceId: request.traceId,
+      });
+      return { selectedIdentityId: explicitIdentityId ?? this.defaultAgentId };
+    }
+  }
+
+  private async logRoutingDecision(
+    requestId: string,
+    traceId: string,
+    basePayload: Record<string, JSONValue>,
+    policyDecision: IRoutingPolicyDecision,
+  ): Promise<void> {
+    await this.eventLogger.log({
+      action: "routing.decision",
+      target: requestId,
+      payload: {
+        ...basePayload,
+        allow_dynamic_routing: true,
+        selected_identity_id: policyDecision.selectedIdentityId,
+        selected_version: policyDecision.selectedVersion,
+        strategy: policyDecision.strategy,
+        matched_rule_id: policyDecision.matchedRuleId ?? null,
+        rationale: policyDecision.rationale,
+        candidate_count: policyDecision.candidates.length,
+        top_candidates: policyDecision.candidates.slice(0, 5).map((candidate) => ({
+          identity_id: candidate.identityId,
+          version: candidate.version,
+          score: candidate.score,
+          score_breakdown: candidate.scoreBreakdown,
+        })),
+      },
+      traceId,
+    });
+  }
+
+  private createParsedRequest(request: RouterRequest, allowDynamicRouting: boolean): IParsedRequest {
+    const parsedRequest: IParsedRequest = {
+      userPrompt: request.body,
+      context: {},
+      traceId: request.traceId,
+      requestId: request.requestId,
+      allowDynamicRouting,
+    };
+    const portalContext = this.buildPortalContext(request.frontmatter?.portal);
+    if (portalContext) {
+      parsedRequest.context[PORTAL_CONTEXT_KEY] = portalContext;
+    }
+    return parsedRequest;
   }
 
   private buildPortalContext(portalAlias?: string): string | null {

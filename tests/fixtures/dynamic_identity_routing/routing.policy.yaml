@@ -1,0 +1,14 @@
+version: "1.0"
+defaultMode: policy_first
+allowExperiments: true
+rules:
+  - ruleId: "prefer-senior-coder"
+    priority: 1
+    match:
+      capability: "code_review"
+      language: "typescript"
+      portalType: "api"
+    prefer:
+      identityId: "senior-coder"
+      trafficSplit: 1.0
+      fallbackIdentityId: "default-agent"

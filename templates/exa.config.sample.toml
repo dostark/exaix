@@ -386,6 +386,13 @@ balanced = ["openai", "anthropic", "google"]
 fast = ["google", "openai"]
 local_first = ["local", "default"]
 
+# ---------------------------------------------------------------------------
+# Routing policy configuration
+# ---------------------------------------------------------------------------
+[routing]
+# Relative path to the YAML routing policy manifest.
+policy_path = ".exaix/routing.policy.yaml"
+
 
 [quality_gate]
 enabled = true
