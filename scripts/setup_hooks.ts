@@ -176,7 +176,62 @@ if ! git diff --cached --quiet -- .copilot/manifest.json; then
   fi
 fi
 
-# 2. Full Type Check (all source AND test files)
+# 2. Submodule Safety Check
+#    If the parent repo includes a changed exaix-dev-docs pointer, ensure
+#    the submodule is committed and pushed before pushing the parent repo.
+if [ -d "exaix-dev-docs/.git" ]; then
+  SUBMODULE_CHANGED=0
+  while read LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+    if [ "$LOCAL_SHA" = "0000000000000000000000000000000000000000" ]; then
+      continue
+    fi
+
+    if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
+      CHANGED_SUBMODULE=$(git diff-tree --no-commit-id --name-only --submodule=log -r "$LOCAL_SHA" -- exaix-dev-docs 2>/dev/null || true)
+    else
+      CHANGED_SUBMODULE=$(git diff --name-only --submodule=log "$REMOTE_SHA".."$LOCAL_SHA" -- exaix-dev-docs 2>/dev/null || true)
+    fi
+
+    if [ -n "$CHANGED_SUBMODULE" ]; then
+      SUBMODULE_CHANGED=1
+      break
+    fi
+  done
+
+  if [ "$SUBMODULE_CHANGED" -eq 1 ]; then
+    echo "🔐 Detected exaix-dev-docs submodule pointer change in the parent repo."
+    cd exaix-dev-docs || exit 1
+
+    if [ -n "$(git status --porcelain)" ]; then
+      echo "❌ exaix-dev-docs has uncommitted changes. Commit or stash them before pushing the parent repo."
+      exit 1
+    fi
+
+    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || true)
+    if [ -z "$UPSTREAM" ]; then
+      echo "❌ exaix-dev-docs has no upstream branch configured. Push it manually before pushing the parent repo."
+      exit 1
+    fi
+
+    AHEAD_BEHIND=$(git rev-list --left-right --count "$UPSTREAM...HEAD" 2>/dev/null || echo "0 0")
+    AHEAD=$(echo "$AHEAD_BEHIND" | awk '{print $1}')
+
+    if [ "$AHEAD" -gt 0 ]; then
+      echo "🔁 Pushing exaix-dev-docs submodule to its upstream branch ($UPSTREAM)..."
+      git push
+      if [ $? -ne 0 ]; then
+        echo "❌ Failed to push exaix-dev-docs. Push the submodule first before pushing the parent repo."
+        exit 1
+      fi
+    else
+      echo "✅ exaix-dev-docs submodule is already pushed to upstream."
+    fi
+
+    cd - >/dev/null || exit 1
+  fi
+fi
+
+# 3. Full Type Check (all source AND test files)
 #    The pre-commit hook only checks src/main.ts for speed.
 #    Pre-push must catch TS errors in every file that will be pushed.
 deno check src/ tests/
