@@ -1,0 +1,87 @@
+import { join } from "https://deno.land/std/path/mod.ts";
+import { RequestRouter } from "{{REPO_ROOT}}src/services/request/request_router.ts";
+import { RoutingPolicyService } from "{{REPO_ROOT}}src/services/routing/routing_policy_service.ts";
+import { RoutingPolicyLoader } from "{{REPO_ROOT}}src/services/routing/routing_policy_loader.ts";
+import { CandidateDiscovery } from "{{REPO_ROOT}}src/services/routing/candidate_discovery.ts";
+import { BlueprintLoader } from "{{REPO_ROOT}}src/services/blueprint/blueprint_loader.ts";
+
+const root = Deno.cwd();
+const selectedIdentity = "senior-coder";
+const defaultAgent = "default-agent";
+const request = {
+  traceId: "scenario-trace-1",
+  requestId: "scenario-request-1",
+  frontmatter: {
+    allow_dynamic_routing: true,
+    capability: "code_review",
+    language: "typescript",
+    portal_type: "api",
+  },
+  body: "Please review the API implementation.",
+};
+
+const config = {
+  routing: {
+    enabled: true,
+    enable_dynamic_routing: true,
+    policy_path: ".exa/routing.policy.yaml",
+    experiment_salt: "scenario-dynamic-routing",
+  },
+};
+
+const routingPolicyService = new RoutingPolicyService({
+  policyLoader: new RoutingPolicyLoader({ config, root }),
+  candidateDiscovery: new CandidateDiscovery(
+    new BlueprintLoader({ blueprintsPath: join(root, "Blueprints", "Identities") }),
+  ),
+  performanceRepository: { getPerformanceByCapability: async () => [] },
+  experimentSalt: config.routing?.experiment_salt ?? "scenario-dynamic-routing",
+});
+
+const logger = {
+  log: async () => {},
+  info: async () => {},
+  warn: async () => {},
+  error: async () => {},
+  fatal: async () => {},
+  debug: async () => {},
+  child() {
+    return this;
+  },
+};
+
+const router = new RequestRouter({
+  flowRunner: {
+    execute: async () => ({
+      flowRunId: "",
+      success: true,
+      stepResults: new Map(),
+      output: "",
+      duration: 0,
+      startedAt: new Date(),
+      completedAt: new Date(),
+    }),
+  },
+  agentRunner: {
+    run: async () => ({ thought: "", content: "", raw: "" }),
+  },
+  flowValidator: {
+    validateFlow: async () => ({ valid: true }),
+  },
+  eventLogger: logger,
+  defaultAgentId: defaultAgent,
+  blueprintsPath: join(root, "Blueprints", "Identities"),
+  config,
+  routingPolicyService,
+});
+
+const result = await router.route(request as any);
+if (result.identityId !== selectedIdentity) {
+  throw new Error(`Unexpected selected identity: ${result.identityId}`);
+}
+
+await Deno.mkdir(join(root, "artifacts"), { recursive: true });
+await Deno.writeTextFile(
+  join(root, "artifacts", "result.json"),
+  JSON.stringify({ selected_identity_id: result.identityId }),
+);

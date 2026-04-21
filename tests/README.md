@@ -100,6 +100,13 @@ tests/
 
 ## Writing New Tests
 
+### Avoid hard-coded multiline fixture content
+
+- Do not embed large YAML/Markdown/text blocks directly in test files.
+- Use files under `tests/fixtures/` for request bodies, blueprint definitions, policy documents, and other multiline assets.
+- Load fixture content in tests with `Deno.readTextFile()` and copy it into temporary workspaces with `Deno.writeTextFile()`.
+- This keeps tests readable, maintainable, and avoids anti-patterns where multiline strings are duplicated in code.
+
 ## Enforcement
 
 - Test placement is enforced by `deno task check:test-placement`.

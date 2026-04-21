@@ -94,7 +94,7 @@ steps:
         pattern: "**/_plan.md"
 ```
 
-### Key Rules:
+### Key Rules
 
 - **No Embedded Prompts**: Always use `request_fixture` to point to a file in `fixtures/requests/`.
 - **Measurable Criteria**: Use `input_criteria` and `output_criteria` to define what "success" looks like at each step.
