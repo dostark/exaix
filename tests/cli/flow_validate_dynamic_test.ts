@@ -15,7 +15,7 @@ import {
   McpToolName,
   StepExecutionMode,
 } from "../../src/shared/enums.ts";
-import type { IFlow, IFlowStep } from "../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 
 /**

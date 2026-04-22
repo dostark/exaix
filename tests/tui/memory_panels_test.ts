@@ -36,7 +36,7 @@ import type {
   IMemorySearchResult,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
 
 const defaultOptions: IPanelRenderOptions = {

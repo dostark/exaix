@@ -8,7 +8,7 @@
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { PortalOperation } from "../../../src/shared/enums.ts";
-import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{

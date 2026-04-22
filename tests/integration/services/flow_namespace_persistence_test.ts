@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import type { IFlowNamespaceWrite } from "../../../src/shared/schemas/flow.ts";
+import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { FlowNamespaceService } from "../../../src/services/flow/flow_namespace_service.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";

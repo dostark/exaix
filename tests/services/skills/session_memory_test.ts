@@ -23,7 +23,7 @@ import type {
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
-} from "../../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceLevel,
   ExecutionStatus,

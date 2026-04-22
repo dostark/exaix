@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
-import type { IBlueprintMetadata } from "../../src/shared/schemas/blueprint.ts";
+import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 
 Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
   const env = await TestEnvironment.create();

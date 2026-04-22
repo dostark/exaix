@@ -11,7 +11,7 @@
 import { basename, dirname, join } from "@std/path";
 import type { IModelProvider } from "../../ai/types.ts";
 import { DatabaseService } from "../core/db.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import {
   AgentRunner,
   type IAgentExecutionResult,
@@ -40,7 +40,7 @@ import {
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
 } from "../../shared/constants.ts";
 import type { IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { EventLogger } from "../core/event_logger.ts";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
@@ -59,7 +59,7 @@ import type { LogMetadata } from "../../shared/types/json.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
-import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import type {
   IRequestAnalyzerConfig,
   IRequestAnalyzerService,
@@ -69,10 +69,10 @@ import { ProviderType, RequestKind, TaskComplexity } from "../../shared/enums.ts
 import type { AnalysisMode } from "../../shared/types/request.ts";
 import type { IRequestQualityGateService } from "../../shared/interfaces/i_request_quality_gate_service.ts";
 import { buildQualityGateConfig, RequestQualityGate } from "../quality_gate/request_quality_gate.ts";
-import { RequestQualityRecommendation } from "../../shared/schemas/request_quality_assessment.ts";
+import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
-import { ClarificationSessionStatus } from "../../shared/schemas/clarification_session.ts";
-import type { IRequestSpecification } from "../../shared/schemas/request_specification.ts";
+import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
+import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import type { EnhancedRequest, SessionMemoryService } from "../memory/session_memory.ts";
 
 export interface IRequestProcessingContext extends IServiceContext {

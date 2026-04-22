@@ -15,7 +15,7 @@ import {
   type IRequestQualityAssessment,
   RequestQualityLevel,
   RequestQualityRecommendation,
-} from "../../../src/shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
@@ -23,8 +23,8 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";
-import type { IClarificationSession } from "../../../src/shared/schemas/clarification_session.ts";
-import { ClarificationSessionStatus } from "../../../src/shared/schemas/clarification_session.ts";
+import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
+import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers

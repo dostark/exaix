@@ -6,7 +6,7 @@
  * * @related-files [src/services/db.ts]
  */
 
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import { ActivityActor, MessageRole } from "../shared/enums.ts";
 import { PORTAL_LABEL } from "../shared/constants.ts";

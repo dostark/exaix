@@ -20,7 +20,7 @@ import {
   TUI_TREE_RECENT_LIMIT,
 } from "../helpers/constants.ts";
 import type { IMemoryService, ITreeNode } from "./types.ts";
-import type { IExecutionMemory, IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
 export class TreeBuilder {
   /**

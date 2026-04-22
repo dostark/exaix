@@ -9,8 +9,8 @@
  */
 
 import { basename, dirname, extname, join } from "@std/path";
-import { ClarificationSessionSchema, type IClarificationSession } from "../../shared/schemas/clarification_session.ts";
-import type { IRequestSpecification } from "../../shared/schemas/request_specification.ts";
+import { ClarificationSessionSchema, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
+import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { RequestStatus } from "../../shared/status/request_status.ts";
 
 // ---------------------------------------------------------------------------

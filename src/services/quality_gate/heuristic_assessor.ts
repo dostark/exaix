@@ -16,9 +16,9 @@ import {
   RequestQualityIssueType,
   RequestQualityLevel,
   RequestQualityRecommendation,
-} from "../../shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "../../shared/enums.ts";
-import { AmbiguityImpact, type IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import { AmbiguityImpact, type IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   DEFAULT_QG_ENRICHMENT_THRESHOLD,
   DEFAULT_QG_MINIMUM_THRESHOLD,

@@ -9,7 +9,7 @@
 import { DEFAULT_TITLE_PLACEHOLDER, MEMORY_EVENT_AUTO_APPROVED } from "../../shared/constants.ts";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
@@ -19,8 +19,8 @@ import type {
   IMemoryUpdateProposal,
   IPattern,
   IProposalLearning,
-} from "../../shared/schemas/memory_bank.ts";
-import { MemoryUpdateProposalSchema } from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
+import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryOperation, MemoryReferenceType, MemoryScope } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import { LearningExtractor } from "../memory/learning_extractor.ts";

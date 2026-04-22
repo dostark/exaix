@@ -8,8 +8,8 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { type IRoutingPolicy, ZRoutingPolicy } from "../../shared/schemas/routing_policy.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import { type IRoutingPolicy, ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 export interface IRoutingPolicyLoaderOptions {
   config: Config;

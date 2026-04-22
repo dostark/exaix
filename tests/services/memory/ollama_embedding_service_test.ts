@@ -9,7 +9,7 @@ import { assert, assertEquals } from "@std/assert";
 import { OllamaEmbeddingService } from "../../../src/services/memory/ollama_embedding_service.ts";
 import type { IEmbeddingProvider } from "../../../src/ai/embeddings/embedding_provider.ts";
 import { createTestLearning } from "../helpers/memory_test_helpers.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 // ============================================================================
 // Helpers

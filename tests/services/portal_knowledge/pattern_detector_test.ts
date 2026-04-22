@@ -9,7 +9,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { detectPatterns } from "../../../src/services/portal_knowledge/pattern_detector.ts";
-import type { IFileSignificance } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 
 // Minimal key-file stubs used across tests
 const NO_KEY_FILES: IFileSignificance[] = [];

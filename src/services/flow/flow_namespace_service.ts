@@ -9,8 +9,8 @@
 import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "../../shared/constants.ts";
-import type { Config } from "../../shared/schemas/config.ts";
-import { type IFlowNamespaceEntry, type IFlowNamespaceWrite, ZFlowNamespaceEntry } from "../../shared/schemas/flow.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import { type IFlowNamespaceEntry, type IFlowNamespaceWrite, ZFlowNamespaceEntry } from "@exaix/schemas/flow.ts";
 
 export interface IFlowNamespaceSnapshot {
   traceId: string;

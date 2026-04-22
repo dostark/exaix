@@ -10,8 +10,8 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "../../../src/shared/schemas/plan_amendment.ts";
-import { ZPlanAmendmentDecision } from "../../../src/shared/schemas/plan_amendment.ts";
+import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
+import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.

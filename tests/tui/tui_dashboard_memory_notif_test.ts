@@ -10,7 +10,7 @@ import { MemoryOperation, MemoryScope } from "../../src/shared/enums.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { createTuiDashboardWithNotification } from "./dashboard_helper.ts";
-import type { IProposalLearning } from "../../src/shared/schemas/memory_bank.ts";
+import type { IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 Deno.test("TUI Dashboard + Memory: handles memory update notifications", async () => {
   const { dashboard, notificationService, cleanup } = await createTuiDashboardWithNotification();

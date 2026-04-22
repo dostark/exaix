@@ -13,7 +13,7 @@
  * * @related-files [src/services/plan_executor.ts]
  */
 
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import type {

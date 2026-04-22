@@ -16,7 +16,7 @@ import type {
   ILearning,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "../../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,
   ExecutionStatus,

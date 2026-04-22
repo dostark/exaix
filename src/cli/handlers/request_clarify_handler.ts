@@ -15,7 +15,7 @@ import {
   ClarificationSessionStatus,
   type IClarificationQuestion,
   type IClarificationSession,
-} from "../../shared/schemas/clarification_session.ts";
+} from "@exaix/schemas/clarification_session.ts";
 import { RequestStatus } from "../../shared/status/request_status.ts";
 import { ClarifyResultStatus } from "../../shared/enums.ts";
 

@@ -26,7 +26,7 @@ import { MemoryBankAdapter, MemoryEmbeddingAdapter, MemoryExtractorAdapter } fro
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import type { IExecutionMemory, ILearning, IProjectMemory } from "../../src/shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { getMemoryGlobalDir } from "../helpers/paths_helper.ts";
 
 // ===== Full Workflow Tests =====

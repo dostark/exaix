@@ -8,11 +8,7 @@
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../../shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "../../../ai/types.ts";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "../../../shared/types/json.ts";

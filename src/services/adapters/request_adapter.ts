@@ -7,7 +7,7 @@
  */
 
 import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { RequestStatusType } from "../../shared/status/request_status.ts";
 import type { AnalysisMode } from "../../shared/types/request.ts";
 import type { RequestSource } from "../../shared/enums.ts";

@@ -8,7 +8,7 @@
  */
 
 import { join } from "@std/path";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { GitService } from "../core/git_service.ts";
@@ -38,7 +38,7 @@ import type { IApplicationContext } from "../../shared/interfaces/i_application_
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
-import type { IPlanAmendmentTrigger } from "../../shared/schemas/plan_amendment.ts";
+import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
 import { PlanAmendmentPendingError } from "./errors.ts";
 

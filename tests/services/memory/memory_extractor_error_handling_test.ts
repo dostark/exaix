@@ -17,7 +17,7 @@ import {
 } from "../../../src/shared/enums.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
-import type { IExecutionMemory, IProposalLearning } from "../../../src/shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 Deno.test("MemoryExtractorService: logActivity errors do not break createProposal", async () => {
   const root = await Deno.makeTempDir({ prefix: "memory-extractor-" });

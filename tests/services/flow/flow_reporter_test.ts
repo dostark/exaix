@@ -13,10 +13,10 @@ import { exists } from "@std/fs";
 import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow/flow_reporter.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { IFlow, IFlowInput } from "../../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IFlowResult, IStepResult } from "../../../src/flows/flow_runner.ts";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../../config/constants.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
 
 describe("FlowReporter", () => {

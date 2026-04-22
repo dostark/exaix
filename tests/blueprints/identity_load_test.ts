@@ -7,7 +7,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
-import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";
 
 Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async () => {

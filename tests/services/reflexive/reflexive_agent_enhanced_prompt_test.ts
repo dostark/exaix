@@ -14,8 +14,8 @@ import {
   createReflexiveAgent,
   type ReflexiveAgent as _ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
-import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
-import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import type {
   IAgentExecutionResult,

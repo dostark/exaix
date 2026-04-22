@@ -8,11 +8,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { analyzeHeuristic } from "../../../src/services/request_analysis/heuristic_analyzer.ts";
-import {
-  AmbiguityImpact,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
+import { AmbiguityImpact, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 
 // ---------------------------------------------------------------------------
 // File reference detection
@@ -27,7 +23,7 @@ Deno.test("[HeuristicAnalyzer] detects file references in request text", () => {
   assertExists(result.referencedFiles);
   assertEquals(result.referencedFiles!.includes("src/services/foo.ts"), true);
   assertEquals(result.referencedFiles!.includes("tests/services/foo_test.ts"), true);
-  assertEquals(result.referencedFiles!.includes("src/shared/schemas/bar.ts"), true);
+  assertEquals(result.referencedFiles!.includes("@exaix/schemas/bar.ts"), true);
 });
 
 Deno.test("[HeuristicAnalyzer] detects unquoted file paths with extensions", () => {

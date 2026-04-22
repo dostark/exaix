@@ -33,7 +33,7 @@ import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IWorkspaceExecutionContext } from "../../../src/services/portal/workspace_execution_context.ts";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "../../../src/errors/safe_error.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
@@ -42,8 +42,8 @@ import { PROVIDER_OPENAI, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
-import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { PromptBudgetAllocator } from "../../../src/services/context/prompt_budget_allocator.ts";
 

@@ -12,7 +12,7 @@ import { PORTAL_CONTEXT_KEY } from "../../src/shared/constants.ts";
 import { buildPortalContextBlock } from "../../src/services/context/prompt_context.ts";
 import type { ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
 import type { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
-import type { ISkill, ISkillMatch, SkillDefinition } from "../../src/shared/schemas/memory_bank.ts";
+import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "../../src/shared/enums.ts";
 import type { IGenerateResult } from "../../src/ai/types.ts";
 

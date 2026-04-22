@@ -14,7 +14,7 @@ import {
   TUI_MSG_PRESS_QUIT,
 } from "../helpers/constants.ts";
 import type { IRequest } from "../../shared/types/request.ts";
-import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 
 /**
  * Formatter for Request Manager View

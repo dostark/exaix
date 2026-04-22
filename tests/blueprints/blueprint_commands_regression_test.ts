@@ -10,10 +10,10 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubDb } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
-import type { IBlueprintMetadata } from "../../src/shared/schemas/blueprint.ts";
+import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 const AGENT_ID_YAML = "yaml-agent";
 const AGENT_NAME_YAML = "YAML Format Agent";

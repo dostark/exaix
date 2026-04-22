@@ -6,7 +6,7 @@
  * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 
-import type { IFlow, IFlowStep } from "../shared/schemas/flow.ts";
+import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowInputSource, RequestKind } from "../shared/enums.ts";
 import type { IStepResult } from "./flow_runner.ts";
 import type { JSONValue } from "../shared/types/json.ts";

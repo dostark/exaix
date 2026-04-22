@@ -18,14 +18,14 @@ import {
   type IWorkspaceExecutionContext,
   WorkspaceExecutionContextBuilder,
 } from "../portal/workspace_execution_context.ts";
-import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
+import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY } from "../../shared/constants.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../request_processing/types.ts";
-import type { IFlow } from "../../shared/schemas/flow.ts";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-import type { IRoutingPolicyDecision } from "../../shared/schemas/routing_policy.ts";
+import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { IRoutingPolicyService } from "../routing/routing_policy_service.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import { GitBranchName, RequestKind } from "../../shared/enums.ts";

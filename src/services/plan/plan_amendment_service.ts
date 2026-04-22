@@ -11,12 +11,12 @@ import type {
   IPlanAmendmentDecision,
   IPlanAmendmentPatch,
   IPlanAmendmentTrigger,
-} from "../../shared/schemas/plan_amendment.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+} from "@exaix/schemas/plan_amendment.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
-import { ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
+import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";

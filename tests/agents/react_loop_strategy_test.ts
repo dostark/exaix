@@ -10,11 +10,7 @@ import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executo
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "../../src/shared/enums.ts";
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../src/shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,

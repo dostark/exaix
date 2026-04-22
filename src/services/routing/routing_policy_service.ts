@@ -17,7 +17,7 @@ import {
   type IRoutingRule,
   ZRoutingCandidate,
   ZRoutingPolicyDecision,
-} from "../../shared/schemas/routing_policy.ts";
+} from "@exaix/schemas/routing_policy.ts";
 import type { IIdentityPerformanceSnapshot } from "./identity_performance_repository.ts";
 import type { IRoutingPolicyLoadResult } from "./routing_policy_loader.ts";
 

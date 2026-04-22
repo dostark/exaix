@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
-import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 const AGENT_ID = "multiline-test";
 const CAP_TESTING = "testing";

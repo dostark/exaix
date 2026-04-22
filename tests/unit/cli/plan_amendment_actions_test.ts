@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import type { IPlanAmendmentPatch } from "../../../src/shared/schemas/plan_amendment.ts";
+import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
 Deno.test("amendment list discovers pending amendments", async () => {
   const root = await Deno.makeTempDir();

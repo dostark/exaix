@@ -12,7 +12,7 @@ import type {
   IMemorySearchResult,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import { MemoryScope } from "../../shared/enums.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { ANSI } from "../helpers/colors.ts";

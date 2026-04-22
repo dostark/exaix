@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
-import { FlowSchema, FlowStepSchema, ZFlowParallelConfig, ZParallelMergeMode } from "../../src/shared/schemas/flow.ts";
+import { FlowSchema, FlowStepSchema, ZFlowParallelConfig, ZParallelMergeMode } from "@exaix/schemas/flow.ts";
 
 Deno.test("ZFlowParallelConfig: applies merge defaults", () => {
   const parsed = ZFlowParallelConfig.parse({ group: "reviewers" });

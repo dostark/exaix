@@ -8,7 +8,7 @@
  */
 
 import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
-import type { IRequestAnalysis } from "../schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 /**
  * Generates request-specific EvaluationCriterion objects from a structured

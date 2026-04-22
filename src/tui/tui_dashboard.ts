@@ -43,7 +43,7 @@ import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts"
 import { type IKeyBinding, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";
 import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "./helpers/layout_rendering.ts";

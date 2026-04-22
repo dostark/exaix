@@ -17,14 +17,10 @@ import {
   ProviderType,
   SqliteJournalMode,
 } from "../../../src/shared/enums.ts";
-import { ConfigSchema } from "../../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
-import type {
-  IExecutionMemory,
-  IMemoryUpdateProposal,
-  IProposalLearning,
-} from "../../../src/shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 
 Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to proposals", async () => {

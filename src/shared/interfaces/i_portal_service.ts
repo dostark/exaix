@@ -8,7 +8,7 @@
 
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "../enums.ts";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../types/portal.ts";
-import type { IPortalKnowledge } from "../schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 export interface IPortalService {
   /**

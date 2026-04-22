@@ -11,7 +11,7 @@
  * * @related-files [src/services/portal_knowledge/architecture_inferrer.ts, src/services/portal_knowledge/key_file_identifier.ts]
  */
 
-import type { ISymbolEntry } from "../../shared/schemas/portal_knowledge.ts";
+import type { ISymbolEntry } from "@exaix/schemas/portal_knowledge.ts";
 import { SystemCommand } from "../../shared/enums.ts";
 import { DEFAULT_SYMBOL_MAP_LIMIT, LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
 

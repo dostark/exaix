@@ -7,9 +7,9 @@
  * * @related-files [src/services/memory/memory_extractor.ts, src/shared/schemas/config.ts]
  */
 
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { ConfidenceAssessmentLevel } from "../../shared/enums.ts";
-import type { IMemoryUpdateProposal, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
+import type { IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
 
 export type IEligibleMemoryUpdateProposal = IMemoryUpdateProposal & {

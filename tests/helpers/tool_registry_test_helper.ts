@@ -13,7 +13,7 @@ import { initTestDbService } from "./db.ts";
 import { getMemoryProjectsDir } from "./paths_helper.ts";
 import { type JSONObject, type JSONValue, toSafeJson } from "../../src/shared/types/json.ts";
 import type { IToolResult } from "../../src/shared/interfaces/i_tool_registry.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 /**
  * Test helper for ToolRegistry tests

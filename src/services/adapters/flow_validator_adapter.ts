@@ -6,7 +6,7 @@
 
 import type { IFlowValidationResult, IFlowValidatorService } from "../../shared/interfaces/i_flow_validator_service.ts";
 import type { FlowValidatorImpl } from "../flow/flow_validator.ts";
-import type { IFlow } from "../../shared/schemas/flow.ts";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 
 export class FlowValidatorAdapter implements IFlowValidatorService {
   constructor(private inner: FlowValidatorImpl) {}

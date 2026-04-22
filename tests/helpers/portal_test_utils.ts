@@ -10,7 +10,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { setupGitRepo } from "./git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { PortalExecutionStrategy, PortalOperation, ToolName } from "../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";

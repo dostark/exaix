@@ -9,11 +9,7 @@ import { assertEquals } from "@std/assert";
 import { EvaluationCategory } from "../../../src/shared/enums.ts";
 import { CriteriaGenerator } from "../../../src/services/skills/criteria_generator.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import {
   ACCEPTANCE_CRITERION_WEIGHT,

@@ -41,7 +41,7 @@ import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
 import { TUI_ELEMENT_ACTION_BUTTONS, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
 import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 /**
  * Service bundle interface for TUI initialization

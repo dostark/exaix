@@ -13,7 +13,7 @@ import type {
   IPortalPermissions,
   IPortalSecurityConfig,
   IRBACPermissionCheckResult,
-} from "../../shared/schemas/portal_permissions.ts";
+} from "@exaix/schemas/portal_permissions.ts";
 import type { AuditLogger } from "../core/audit_logger.ts";
 import {
   PermissionAction,

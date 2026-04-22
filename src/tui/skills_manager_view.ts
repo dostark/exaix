@@ -35,9 +35,9 @@ import {
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
 import { KEYS } from "./helpers/keyboard.ts";
-import type { ISkill, SkillDefinition } from "../shared/schemas/memory_bank.ts";
+import type { ISkill, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "../shared/types/skill.ts";
-import type { ISkillMatch } from "../shared/schemas/memory_bank.ts";
+import type { ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 
 // ===== Interfaces =====
 

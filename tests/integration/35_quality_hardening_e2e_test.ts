@@ -19,12 +19,12 @@ import { RequestAnalyzer } from "../../src/services/request_analysis/request_ana
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";
 import { buildParsedRequest } from "../../src/services/request/request_common.ts";
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
-import { RequestAnalysisComplexity, RequestTaskType } from "../../src/shared/schemas/request_analysis.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
-import type { IRequestAnalysis } from "../../src/shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
 import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
 import {

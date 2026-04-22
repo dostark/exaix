@@ -8,16 +8,12 @@
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
 import { ReActLoopStrategy } from "../../../../src/services/agent/strategies/react_loop_strategy.ts";
 import { EventBusService } from "../../../../src/services/observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../../../../src/shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "../../../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "../../../../src/ai/types.ts";
 import type { IGenerateResult } from "../../../../src/ai/providers/common.ts";
 import { ExecutionStrategyName, SecurityMode } from "../../../../src/shared/enums.ts";
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../../../src/shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {
   EXECUTION_HEARTBEAT_INTERVAL_MS,
   REACT_STATUS_COMPLETE,

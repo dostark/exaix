@@ -19,11 +19,7 @@ import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_r
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "../../src/ai/providers.ts";
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../src/shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { ExecutionStrategyName, SecurityMode } from "../../src/shared/enums.ts";
 
 const TEST_OPTIONS: IAgentExecutionOptions = {

@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { RoutingPolicyService } from "../../../src/services/routing/routing_policy_service.ts";
-import type { IRoutingPolicy } from "../../../src/shared/schemas/routing_policy.ts";
+import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 
 Deno.test("RoutingPolicyService: returns explicit identity when requested even if no rule matches", async () => {
   const policy: IRoutingPolicy = { version: "1.0", allowExperiments: false, defaultMode: "policy_first", rules: [] };

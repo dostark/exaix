@@ -7,7 +7,7 @@
  * * @related-files [src/services/request_processor.ts, src/config/service.ts]
  */
 import { join } from "@std/path";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import { DEFAULT_MCP_IDENTITY_ID, DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";

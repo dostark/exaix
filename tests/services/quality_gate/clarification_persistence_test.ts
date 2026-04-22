@@ -8,11 +8,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import type { IRequestSpecification } from "../../../src/shared/schemas/request_specification.ts";
-import {
-  ClarificationSessionStatus,
-  type IClarificationSession,
-} from "../../../src/shared/schemas/clarification_session.ts";
+import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
+import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import {
   loadClarification,
   renderSpecificationAsPrompt,

@@ -10,16 +10,13 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { assessHeuristic } from "../../../src/services/quality_gate/heuristic_assessor.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
-import {
-  RequestQualityIssueType,
-  RequestQualityRecommendation,
-} from "../../../src/shared/schemas/request_quality_assessment.ts";
+import { RequestQualityIssueType, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import {
   AmbiguityImpact,
   type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
+} from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { QualityGateMode } from "../../../src/shared/enums.ts";
 

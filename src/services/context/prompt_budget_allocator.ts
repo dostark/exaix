@@ -19,7 +19,7 @@ import {
   type IPromptBudget,
   type IPromptBudgetSections,
   ZBudgetPolicy,
-} from "../../shared/schemas/prompt_budget.ts";
+} from "@exaix/schemas/prompt_budget.ts";
 
 /**
  * Options to hint at actual content usage for waterfall reallocation.

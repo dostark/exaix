@@ -6,8 +6,8 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
-import { FlowStepSchema } from "../../src/shared/schemas/flow.ts";
-import { BlueprintFrontmatterSchema } from "../../src/shared/schemas/blueprint.ts";
+import { FlowStepSchema } from "@exaix/schemas/flow.ts";
+import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import {
   DynamicStepExecutor,
   type IActivityJournal,

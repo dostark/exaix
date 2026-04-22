@@ -16,7 +16,7 @@ import {
 } from "../../src/shared/enums.ts";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { PROVIDER_OPENAI } from "../../src/shared/constants.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
 import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";

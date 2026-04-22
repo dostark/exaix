@@ -13,7 +13,7 @@ import { ActivityActor, LogLevel } from "../../shared/enums.ts";
 import type { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
 import { EventBusService, type IEventBusService } from "../observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../../shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   STREAMING_EVENT_FLOW_STATUS,
   STREAMING_EVENT_HEARTBEAT,

@@ -12,7 +12,7 @@ import { GitService } from "../../src/services/core/git_service.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**

@@ -24,15 +24,9 @@ import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,
   type IClarificationSession,
-} from "../../src/shared/schemas/clarification_session.ts";
-import type {
-  IRequestQualityAssessment,
-  IRequestQualityIssue,
-} from "../../src/shared/schemas/request_quality_assessment.ts";
-import {
-  RequestQualityLevel,
-  RequestQualityRecommendation,
-} from "../../src/shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/clarification_session.ts";
+import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
+import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import type { IRequestQualityGateService } from "../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import { QualityGateMode } from "../../src/shared/enums.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";

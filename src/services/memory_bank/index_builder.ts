@@ -7,7 +7,7 @@
  */
 
 import { join } from "@std/path";
-import type { IExecutionMemory, ILearning } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, ILearning } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 
 function pushTagRef(tagsIndex: Record<string, string[]>, tag: string, ref: string) {

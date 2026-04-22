@@ -9,7 +9,7 @@ import { McpToolName } from "../../src/shared/enums.ts";
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
-import type { MCPToolResponse } from "../../src/shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { createStubContext } from "../helpers/test_helpers.ts";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;

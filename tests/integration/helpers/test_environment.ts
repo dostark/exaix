@@ -19,7 +19,7 @@ import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import {
   FlowStepType,
@@ -51,7 +51,7 @@ import {
 } from "../../helpers/paths_helper.ts";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
-import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 
 export interface ITestEnvironmentOptions {
   /** Custom config overrides */

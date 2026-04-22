@@ -16,7 +16,7 @@ import {
   type IOutputValidator,
 } from "../../../src/services/tool/output_validator.ts";
 import { LlmAnalyzer } from "../../../src/services/request_analysis/llm_analyzer.ts";
-import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 
 // ---------------------------------------------------------------------------

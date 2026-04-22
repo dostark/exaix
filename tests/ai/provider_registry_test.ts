@@ -12,7 +12,7 @@ import { AnthropicProviderFactory } from "../../src/ai/factories/anthropic_facto
 import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";
 import type { IResolvedProviderOptions } from "../../src/ai/types.ts";
 import { ProviderFactory } from "../../src/ai/provider_factory.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { TEST_MODEL_ANTHROPIC } from "../config/constants.ts";
 

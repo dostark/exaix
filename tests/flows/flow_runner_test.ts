@@ -15,8 +15,8 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
-import type { IFlow, IFlowInput, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import { RetryPolicy } from "../../src/services/core/retry_policy.ts";
 import {

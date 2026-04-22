@@ -12,12 +12,9 @@
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import type { IEventLogger } from "../core/event_logger.ts";
-import type {
-  IRequestQualityAssessment,
-  IRequestQualityIssue,
-} from "../../shared/schemas/request_quality_assessment.ts";
-import { RequestQualityLevel, RequestQualityRecommendation } from "../../shared/schemas/request_quality_assessment.ts";
-import { ClarificationSessionStatus, type IClarificationSession } from "../../shared/schemas/clarification_session.ts";
+import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
+import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
+import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import type {
   IRequestQualityContext,
   IRequestQualityGateConfig,

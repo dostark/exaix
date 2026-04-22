@@ -13,7 +13,7 @@
 import { z, type ZodType, type ZodTypeDef } from "zod";
 import type { IModelOptions, IModelProvider } from "../../ai/types.ts";
 import type { IValidationResult } from "../tool/output_validator.ts";
-import type { ICodeConvention, IFileSignificance } from "../../shared/schemas/portal_knowledge.ts";
+import type { ICodeConvention, IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 import { ARCHITECTURE_INFERRER_MAX_FILE_TOKENS, ARCHITECTURE_INFERRER_TOKEN_BUDGET } from "../../shared/constants.ts";
 
 // ---------------------------------------------------------------------------

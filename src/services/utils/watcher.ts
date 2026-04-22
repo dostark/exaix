@@ -7,7 +7,7 @@
  * * @related-files [src/main.ts, src/services/request_processor.ts]
  */
 import { join } from "@std/path";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { EventLogger } from "../core/event_logger.ts";
 import {

@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { FlowOutputFormat, McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
-import type { IFlow, IFlowStep, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 /**
  * Tests for Phase 56 Step 4: FlowRunner Execution Mode Dispatch

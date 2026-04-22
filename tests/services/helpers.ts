@@ -14,8 +14,8 @@ import type {
   IParsedRequest,
 } from "../../src/services/agent/agent_runner.ts";
 import type { IRoutingPolicyService } from "../../src/services/routing/routing_policy_service.ts";
-import type { IFlow } from "../../src/shared/schemas/flow.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { IFlow } from "@exaix/schemas/flow.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { ILogEvent } from "../../src/services/common/types.ts";
 import type { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";

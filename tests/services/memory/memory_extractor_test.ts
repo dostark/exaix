@@ -9,10 +9,10 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { initTestDbService } from "../../helpers/db.ts";
-import { MemoryUpdateProposalSchema } from "../../../src/shared/schemas/memory_bank.ts";
+import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
-import type { IExecutionMemory } from "../../../src/shared/schemas/memory_bank.ts";
+import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 import { ExecutionStatus, LearningCategory } from "../../../src/shared/enums.ts";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import {

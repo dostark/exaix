@@ -19,7 +19,7 @@ import type { IStepResult } from "./flow_runner.ts";
 import { FlowGateAction, FlowGateOnFail } from "../shared/enums.ts";
 import type { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
 import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
-import type { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult, IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
 
 /**

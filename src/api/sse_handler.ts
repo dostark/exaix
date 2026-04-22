@@ -10,8 +10,8 @@
  */
 
 import type { IEventBusService } from "../services/observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../shared/schemas/streaming_event.ts";
-import { ZStreamingEvent } from "../shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
+import { ZStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 
 const TRACE_STREAM_PATTERN = /^\/api\/v1\/traces\/([^/]+)\/stream$/;
 

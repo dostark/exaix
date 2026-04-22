@@ -12,7 +12,7 @@ import type {
   ILearning,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import { MemoryTuiScope } from "./memory_scope.ts";
 import {
   TUI_DETAIL_MAX_OVERVIEW_CHARS,

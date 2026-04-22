@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { BlueprintFrontmatterSchema } from "../../src/shared/schemas/blueprint.ts";
+import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 
 const BLUEPRINTS_DIR = "./Blueprints/Identities";
 const EXAMPLES_DIR = "./Blueprints/Identities/examples";

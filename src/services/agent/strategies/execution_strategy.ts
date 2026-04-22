@@ -8,11 +8,7 @@
  * Allows different execution models (ReAct, MCP, etc.) to be used interchangeably.
  */
 
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../../shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IAgentFileBlueprint } from "../agent_executor.ts";
 
 /**

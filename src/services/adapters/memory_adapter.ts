@@ -15,7 +15,7 @@ import type {
   IMemorySearchResult,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 
 /**
  * Adapter that implements the IMemoryService interface used by the TUI

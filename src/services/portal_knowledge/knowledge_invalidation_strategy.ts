@@ -6,7 +6,7 @@
  * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/git_head_resolver.ts]
  */
 
-import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import {
   KnowledgeAnalysisMode as SharedKnowledgeAnalysisMode,
   KnowledgeValidityReason as SharedKnowledgeValidityReason,

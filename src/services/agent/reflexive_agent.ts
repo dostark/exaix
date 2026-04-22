@@ -27,8 +27,8 @@ import { EventLogger } from "../core/event_logger.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import {
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,

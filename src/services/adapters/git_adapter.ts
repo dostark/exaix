@@ -9,7 +9,7 @@
 import { GitService } from "../core/git_service.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 export interface IGitServiceOptions {
   config: Config;

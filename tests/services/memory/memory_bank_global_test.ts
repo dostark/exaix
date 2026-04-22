@@ -17,7 +17,7 @@ import {
   type ILearning,
   type IProjectMemory,
   LearningSchema,
-} from "../../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,
   LearningCategory,

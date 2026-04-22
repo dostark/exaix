@@ -13,7 +13,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
 import { ToolName } from "../../../src/shared/enums.ts";

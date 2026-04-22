@@ -7,7 +7,7 @@
  */
 import type { SqliteParam } from "../core/db.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "../../shared/interfaces/i_cost_tracker.ts";
 import type { ICostFilter, IProviderCostRecord } from "../../shared/types/database.ts";
 import {

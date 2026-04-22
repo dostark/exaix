@@ -15,14 +15,14 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../../src/flows/flow_runner.ts";
-import type { IFlow, IFlowInput } from "../../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../../src/services/agent/agent_runner.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { ToolHandler } from "../../../src/mcp/tool_handler.ts";
-import type { MCPToolResponse } from "../../../src/shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
 class SequencedAgentExecutor implements IAgentExecutor {
   private readonly sequences = new Map<string, Array<IAgentExecutionResult | Error>>();

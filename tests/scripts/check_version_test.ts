@@ -122,7 +122,7 @@ describe("classifyChanges", () => {
   });
 
   it("triggers minor on src/shared/schemas/config.ts", () => {
-    const { requiresMinor } = classifyChanges(["src/shared/schemas/config.ts"]);
+    const { requiresMinor } = classifyChanges(["@exaix/schemas/config.ts"]);
     assert(requiresMinor);
   });
 

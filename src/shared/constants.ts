@@ -913,7 +913,7 @@ export const ANALYSIS_COMPLEX_CHAR_THRESHOLD = 3000;
 
 /** Regex pattern for detecting file path references in request text. */
 export const ANALYSIS_FILE_REF_PATTERN =
-  /(?:^|[\s`'"])([a-zA-Z][a-zA-Z0-9_/-]*\/[a-zA-Z0-9_/.-]+\.[a-z]{1,4})(?=[\s`'",)!]|$)/gm;
+  /(?:^|[\s`'"])(@?[a-zA-Z][a-zA-Z0-9_@/-]*\/[a-zA-Z0-9_/.-]+\.[a-z]{1,4})(?=[\s`'",)!]|$)/gm;
 
 /** Keywords indicating a multi-phase / epic request. */
 export const ANALYSIS_EPIC_KEYWORDS: string[] = [

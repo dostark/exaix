@@ -5,7 +5,7 @@
  * @architectural-layer Services
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
-import type { IExecutionMemory, IProposalLearning } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { LANG_TYPESCRIPT } from "../../shared/constants.ts";
 import {
   ConfidenceAssessmentLevel,

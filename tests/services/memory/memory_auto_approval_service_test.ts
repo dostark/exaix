@@ -14,8 +14,8 @@ import {
   MemoryScope,
 } from "../../../src/shared/enums.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
-import type { IMemoryUpdateProposal } from "../../../src/shared/schemas/memory_bank.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 
 const now = new Date();

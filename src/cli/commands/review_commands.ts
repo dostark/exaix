@@ -18,7 +18,7 @@ import { CommandUtils } from "../helpers/command_utils.ts";
 import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import type { IReviewStatus } from "../../reviews/review_status.ts";
-import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "../../shared/schemas/artifact.ts";
+import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import {
   type ArtifactSubtype,

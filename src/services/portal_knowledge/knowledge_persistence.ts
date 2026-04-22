@@ -12,9 +12,9 @@
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { type IPortalKnowledge, PortalKnowledgeSchema } from "../../shared/schemas/portal_knowledge.ts";
+import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
-import type { IPattern } from "../../shared/schemas/memory_bank.ts";
+import type { IPattern } from "@exaix/schemas/memory_bank.ts";
 
 // ---------------------------------------------------------------------------
 // Internal constants

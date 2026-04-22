@@ -19,7 +19,7 @@ import type {
   IProjectMemory,
   ISkill,
   ISkillMatch,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   CLI_LAYOUT_BOX_INDENT_WIDTH,
   CLI_LAYOUT_BOX_LABEL_WIDTH,

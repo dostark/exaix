@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { IDecision, ILearning, IPattern } from "../../../src/shared/schemas/memory_bank.ts";
+import type { IDecision, ILearning, IPattern } from "@exaix/schemas/memory_bank.ts";
 import {
   ActivityType,
   ConfidenceAssessmentLevel,

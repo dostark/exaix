@@ -8,7 +8,7 @@
 
 import type { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { CapabilityMatcher } from "./capability_matcher.ts";
-import type { IRoutingCandidate, IRoutingMatchCriteria } from "../../shared/schemas/routing_policy.ts";
+import type { IRoutingCandidate, IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
 
 export interface ICandidateDiscoveryOptions {
   allowDeprecated?: boolean;

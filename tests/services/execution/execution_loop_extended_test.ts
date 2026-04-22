@@ -10,7 +10,7 @@ import { MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import type { ActivityRecord, DatabaseService } from "../../../src/services/core/db.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";

@@ -5,10 +5,10 @@
  * @architectural-layer MCP
  * * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
  */
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
-import { MCPConfigSchema, type MCPTool } from "../shared/schemas/mcp.ts";
+import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "../shared/types/json.ts";
 import { JsonRpcErrorCode, McpTransportType } from "../shared/enums.ts";
 import type { ToolHandler } from "./tool_handler.ts";

@@ -41,7 +41,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
   IProposalLearning,
-} from "../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 import {
   ConfidenceAssessmentLevel,

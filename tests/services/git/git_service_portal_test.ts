@@ -12,7 +12,7 @@ import { ensureDir } from "@std/fs";
 import { GitService } from "../../../src/services/core/git_service.ts";
 import { GitTestHelper } from "../../helpers/git_test_helper.ts";
 import { setupPortalGitRepos } from "../../helpers/portal_test_utils.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 /**
  * TDD Tests for GitService Portal Support

@@ -56,7 +56,7 @@ Deno.test("[KeyFileIdentifier] identifies schema/types files", () => {
     "src/types.ts",
     "src/interfaces/user.ts",
     "src/main.ts",
-    "src/schemas/portal.ts",
+    "@exaix/schemas/portal.ts",
   ];
   const result = identifyKeyFiles(files, 50);
 

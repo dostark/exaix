@@ -6,10 +6,10 @@
  * * @related-files [src/services/portal_permissions.ts, src/mcp/handlers/read_file_tool.ts, src/mcp/handlers/write_file_tool.ts]
  */
 import { join, normalize, relative } from "@std/path";
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
-import type { MCPToolResponse } from "../shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import type { PortalOperation } from "../shared/enums.ts";
 import { type JSONValue, type LogMetadata, toSafeJson } from "../shared/types/json.ts";

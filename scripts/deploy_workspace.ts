@@ -78,6 +78,13 @@ async function main() {
     }
   }
 
+  // Copy packages workspace members
+  const packagesSource = join(repoRoot, "packages");
+  if (await Deno.stat(packagesSource).then((s) => s.isDirectory).catch(() => false)) {
+    console.log("Copying packages/...");
+    await copy(packagesSource, join(dest, "packages"), copyOpts);
+  }
+
   // Copy migrations
   const migrationsSource = join(repoRoot, "migrations");
   if (await Deno.stat(migrationsSource).then((s) => s.isDirectory).catch(() => false)) {

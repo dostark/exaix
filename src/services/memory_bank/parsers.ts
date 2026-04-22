@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 
-import type { IDecision, IPattern } from "../../shared/schemas/memory_bank.ts";
+import type { IDecision, IPattern } from "@exaix/schemas/memory_bank.ts";
 
 function parseTags(lines: string[]): string[] | undefined {
   const tagsLine = lines.find((line) => line.startsWith("**Tags:"));

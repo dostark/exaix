@@ -16,7 +16,7 @@ import {
   MemoryEmbeddingService,
 } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { ILearning } from "../../../src/shared/schemas/memory_bank.ts";
+import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,
   LearningCategory,

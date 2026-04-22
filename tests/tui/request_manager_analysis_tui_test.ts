@@ -13,7 +13,7 @@ import {
   type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestTaskType,
-} from "../../src/shared/schemas/request_analysis.ts";
+} from "@exaix/schemas/request_analysis.ts";
 import { RequestPriority, RequestSource } from "../../src/shared/enums.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { ANALYZER_VERSION } from "../../src/shared/constants.ts";

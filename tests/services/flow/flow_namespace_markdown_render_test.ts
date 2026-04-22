@@ -7,7 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { IFlowNamespaceWrite } from "../../../src/shared/schemas/flow.ts";
+import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import { FlowNamespaceService } from "../../../src/services/flow/flow_namespace_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 

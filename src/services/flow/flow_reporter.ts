@@ -7,10 +7,10 @@
  */
 
 import { join } from "@std/path";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import type { IFlowResult } from "../../flows/flow_runner.ts";
-import type { IFlow } from "../../shared/schemas/flow.ts";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../../shared/constants.ts";
 import { ActivityActor } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";

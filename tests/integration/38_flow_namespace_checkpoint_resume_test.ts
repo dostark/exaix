@@ -11,7 +11,7 @@ import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowExecutionError, FlowRunner } from "../../src/flows/flow_runner.ts";
-import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,

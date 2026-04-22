@@ -13,7 +13,7 @@ import { EventLogger } from "../services/core/event_logger.ts";
 import { ProviderFactory } from "../ai/provider_factory.ts";
 import { FlowLoader } from "../flows/flow_loader.ts";
 import { ExaPathDefaults } from "../shared/constants.ts";
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";

@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { ProviderType } from "../shared/enums.ts";
-import { ProviderTypeSchema } from "../shared/schemas/ai_config.ts";
+import { ProviderTypeSchema } from "@exaix/schemas/ai_config.ts";
 import { AI_TIMEOUT_MS_MAX, AI_TIMEOUT_MS_MIN, KNOWN_PROVIDERS } from "../shared/constants.ts";
 
 /**

@@ -21,7 +21,7 @@ import type {
   IRequestService,
   ISkillsService,
 } from "./cli_context.ts";
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 export interface ICommandContext extends ICliApplicationContext {}
 

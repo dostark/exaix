@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { RequestStatus, type RequestStatusType } from "../../shared/status/request_status.ts";
 import { RequestPriority, RequestSource } from "../../shared/enums.ts";
 import type {
@@ -19,7 +19,7 @@ import type {
 } from "../../shared/types/request.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import type { IConfigService } from "../../shared/interfaces/i_config_service.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";

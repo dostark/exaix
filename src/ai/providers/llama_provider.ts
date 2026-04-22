@@ -6,7 +6,7 @@
  * * @related-files [src/ai/factories/llama_factory.ts, src/ai/factories/ollama_factory.ts]
  */
 import type { IModelOptions, IModelProvider } from "../types.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import * as DEFAULTS from "../../shared/constants.ts";
 import { calculateCost, fetchJsonWithRetries, type OllamaResponse } from "../provider_common_utils.ts";
 import type { IGenerateResult } from "./common.ts";

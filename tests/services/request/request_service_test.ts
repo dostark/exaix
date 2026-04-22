@@ -442,7 +442,7 @@ Deno.test("RequestService.analyze: returns cached analysis when force=false and 
   const { saveAnalysis } = await import("../../../src/services/request_analysis/mod.ts");
   const { AnalysisMode } = await import("../../../src/shared/types/request.ts");
   const { RequestAnalysisComplexity, RequestTaskType } = await import(
-    "../../../src/shared/schemas/request_analysis.ts"
+    "@exaix/schemas/request_analysis.ts"
   );
 
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-cache-" });
@@ -494,7 +494,7 @@ Deno.test("RequestService.analyze: re-analyzes when force=true even with cache",
   const { saveAnalysis } = await import("../../../src/services/request_analysis/mod.ts");
   const { AnalysisMode } = await import("../../../src/shared/types/request.ts");
   const { RequestAnalysisComplexity, RequestTaskType } = await import(
-    "../../../src/shared/schemas/request_analysis.ts"
+    "@exaix/schemas/request_analysis.ts"
   );
 
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-force-" });

@@ -11,24 +11,21 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import {
-  ClarificationSessionStatus,
-  type IClarificationSession,
-} from "../../../src/shared/schemas/clarification_session.ts";
-import type { IRequestSpecification } from "../../../src/shared/schemas/request_specification.ts";
+import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
+import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { finalizeAndWritePending } from "../../../src/services/quality_gate/clarification_persistence.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { QualityGateMode, RequestSource } from "../../../src/shared/enums.ts";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
-import type { IRequestQualityIssue } from "../../../src/shared/schemas/request_quality_assessment.ts";
+import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import {
   type IRequestQualityAssessment,
   RequestQualityLevel,
   RequestQualityRecommendation,
-} from "../../../src/shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/request_quality_assessment.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";

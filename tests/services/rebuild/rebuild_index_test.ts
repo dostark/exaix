@@ -13,7 +13,7 @@ import { exists } from "@std/fs";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { MemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { ILearning, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
+import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,
   LearningCategory,

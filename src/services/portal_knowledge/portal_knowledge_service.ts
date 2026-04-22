@@ -23,7 +23,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "../../shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";

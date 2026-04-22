@@ -11,10 +11,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
-import {
-  RequestQualityLevel,
-  RequestQualityRecommendation,
-} from "../../../src/shared/schemas/request_quality_assessment.ts";
+import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "../../../src/shared/enums.ts";
 import { LlmQualityAssessor } from "../../../src/services/quality_gate/llm_assessor.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";

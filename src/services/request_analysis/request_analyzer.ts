@@ -22,11 +22,7 @@ import type {
   IRequestAnalyzerConfig,
   IRequestAnalyzerService,
 } from "../../shared/interfaces/i_request_analyzer_service.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
 import { analyzeHeuristic } from "./heuristic_analyzer.ts";
 import { LlmAnalyzer } from "./llm_analyzer.ts";

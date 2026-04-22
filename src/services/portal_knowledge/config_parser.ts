@@ -12,7 +12,7 @@
 import { join } from "@std/path";
 import { LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
 import { DependencyCategory, SystemCommand } from "../../shared/enums.ts";
-import type { IDependencyInfo } from "../../shared/schemas/portal_knowledge.ts";
+import type { IDependencyInfo } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
 // Specific JSON shape types for config file parsing

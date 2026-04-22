@@ -8,7 +8,7 @@
  * * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/interfaces/mod.ts]
  */
 
-import type { IRequestAnalysis } from "../schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { AnalysisMode } from "../types/request.ts";
 import type { EnhancedRequest } from "../../services/memory/session_memory.ts";
 

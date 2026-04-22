@@ -16,7 +16,7 @@
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
-import type { ISkill, ISkillMatch } from "../../shared/schemas/memory_bank.ts";
+import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import {

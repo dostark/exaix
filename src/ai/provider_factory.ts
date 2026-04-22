@@ -8,10 +8,10 @@
  */
 
 import * as DEFAULTS from "../shared/constants.ts";
-import type { Config } from "../shared/schemas/config.ts";
-import { type AiConfig, getDefaultModels } from "../shared/schemas/ai_config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import { type AiConfig, getDefaultModels } from "@exaix/schemas/ai_config.ts";
 import { LlamaProvider } from "./providers/llama_provider.ts";
-import { InputValidator } from "../shared/schemas/input_validation.ts";
+import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { CostTracker } from "../services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../services/core/db.ts";
 import { createAPIRetryPolicy, RetryPolicy } from "../services/core/retry_policy.ts";

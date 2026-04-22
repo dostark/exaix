@@ -12,7 +12,7 @@
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
 import { z } from "zod";
-import type { IStreamingEvent } from "../../shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   STREAMING_EVENT_FLOW_STATUS,
   STREAMING_EVENT_HEARTBEAT,

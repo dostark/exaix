@@ -6,7 +6,7 @@
  * * @related-files [src/services/routing/routing_policy_service.ts, src/cli/commands/routing_commands.ts]
  */
 
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IRoutingPolicyLoadResult } from "../routing/routing_policy_loader.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";

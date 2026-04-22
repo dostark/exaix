@@ -15,9 +15,9 @@ import {
   MemoryRecordStatus,
   MemoryScope,
 } from "../../../src/shared/enums.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IMemoryExtractorService } from "../../../src/shared/interfaces/i_memory_extractor_service.ts";
-import type { IMemoryUpdateProposal } from "../../../src/shared/schemas/memory_bank.ts";
+import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
 type EligibleProposalWithAt = IMemoryUpdateProposal & {
   learning: {

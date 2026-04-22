@@ -18,7 +18,7 @@ import {
   MemoryScope,
 } from "../../../src/shared/enums.ts";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
-import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "../../../src/shared/schemas/memory_bank.ts";
+import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";

@@ -25,7 +25,7 @@ import {
   type SkillIndexSchema as _SkillIndexSchema,
   SkillSchema,
   type SkillUpdates,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import type { ISkillMatchRequest } from "../../shared/types/skill.ts";

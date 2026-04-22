@@ -10,7 +10,7 @@
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { PortalManagerTuiSession, renderKnowledgeSection } from "../../src/tui/portal_manager_view.ts";
-import type { IPortalKnowledge } from "../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
 import { PortalStatus, SystemCommand } from "../../src/shared/enums.ts";
 import type { IPortalInfo } from "../../src/shared/types/portal.ts";

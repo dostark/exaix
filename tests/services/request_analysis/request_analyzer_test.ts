@@ -11,7 +11,7 @@ import { MockProvider } from "../../../src/ai/providers.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
-import { RequestAnalysisComplexity, RequestTaskType } from "../../../src/shared/schemas/request_analysis.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
 import { makeValidAnalysisJson as makeValidJson } from "./test_helpers.ts";

@@ -55,6 +55,7 @@ const META_FILE = join(REPO_ROOT, "src", "shared", ".version_meta.json");
 
 const MINOR_TRIGGER_PATTERNS: RegExp[] = [
   /^src\/shared\/schemas\/config\.ts$/,
+  /^@exaix\/schemas\/config\.ts$/,
   /^migrations\/.*\.sql$/,
   /^src\/services\/db\.ts$/,
   /^src\/shared\/constants\.ts$/,

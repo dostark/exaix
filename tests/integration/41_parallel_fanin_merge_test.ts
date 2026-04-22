@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
-import type { IFlow, IFlowInput } from "../../src/shared/schemas/flow.ts";
+import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";

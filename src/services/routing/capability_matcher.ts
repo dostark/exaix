@@ -6,9 +6,9 @@
  * * @related-files [src/shared/schemas/routing_policy.ts, src/services/routing/candidate_discovery.ts]
  */
 
-import { ZRoutingCandidate } from "../../shared/schemas/routing_policy.ts";
+import { ZRoutingCandidate } from "@exaix/schemas/routing_policy.ts";
 import type { ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
-import type { IRoutingMatchCriteria } from "../../shared/schemas/routing_policy.ts";
+import type { IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
 
 type BlueprintFrontmatterMap = {
   [key: string]: unknown;

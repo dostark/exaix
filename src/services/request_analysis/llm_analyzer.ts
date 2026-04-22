@@ -16,7 +16,7 @@ import {
   RequestAnalysisComplexity,
   RequestAnalysisSchema,
   RequestTaskType,
-} from "../../shared/schemas/request_analysis.ts";
+} from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
 import type { IRequestAnalysisContext } from "../../shared/interfaces/i_request_analyzer_service.ts";
 import { ANALYZER_VERSION } from "../../shared/constants.ts";

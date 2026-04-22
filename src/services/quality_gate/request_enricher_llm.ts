@@ -10,7 +10,7 @@
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IRequestQualityIssue } from "../../shared/schemas/request_quality_assessment.ts";
+import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 
 // ---------------------------------------------------------------------------
 // Prompt template

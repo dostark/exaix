@@ -21,7 +21,7 @@ import {
   type IBlueprintMetadata,
   type IBlueprintValidationResult,
   isReservedAgentId,
-} from "../../shared/schemas/blueprint.ts";
+} from "@exaix/schemas/blueprint.ts";
 
 // ============================================================================
 // Types and Interfaces

@@ -10,7 +10,7 @@
 import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
-import type { Config, IPortalConfig } from "../../shared/schemas/config.ts";
+import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import type { EventLogger } from "../core/event_logger.ts";
 import type { PathResolver } from "../portal/path_resolver.ts";
@@ -54,7 +54,7 @@ import {
   type IAgentExecutionOptionsInput,
   type IChangesetResult,
   type IExecutionContext,
-} from "../../shared/schemas/agent_executor.ts";
+} from "@exaix/schemas/agent_executor.ts";
 import type { IToolRegistry } from "../../shared/interfaces/i_tool_registry.ts";
 import {
   ActorType,
@@ -64,7 +64,7 @@ import {
   LogLevel,
   SecurityMode,
 } from "../../shared/enums.ts";
-import { InputValidator } from "../../shared/schemas/input_validation.ts";
+import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
@@ -73,7 +73,7 @@ import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
 import { PromptBudgetAllocator } from "../context/prompt_budget_allocator.ts";
-import type { IPromptBudget } from "../../shared/schemas/prompt_budget.ts";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 
 /**
  * Agent blueprint loaded from file

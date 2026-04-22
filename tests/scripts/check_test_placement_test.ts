@@ -24,7 +24,7 @@ Deno.test("validateTestPlacement: accepts correctly placed service tests", () =>
 Deno.test("getTestPlacementIssue: rejects test files outside tests/", () => {
   const issue = getTestPlacementIssue("src/services/agent/agent_executor_test.ts");
 
-  assertEquals(issue?.message, "Test files must live under tests/.");
+  assertEquals(issue?.message, "Test files must live under tests/ or packages/<package>/tests/.");
   assertEquals(issue?.suggestion, "tests/services/agent/");
 });
 
@@ -40,7 +40,7 @@ Deno.test("getTestPlacementIssue: rejects direct tests/services root files", () 
 
 Deno.test("recommendTestDirectoryForSource: maps common source folders to test folders", () => {
   assertEquals(recommendTestDirectoryForSource("src/services/flow/flow_namespace_service.ts"), "tests/services/flow/");
-  assertEquals(recommendTestDirectoryForSource("src/shared/schemas/flow.ts"), "tests/schemas/");
+  assertEquals(recommendTestDirectoryForSource("@exaix/schemas/flow.ts"), "tests/schemas/");
   assertEquals(recommendTestDirectoryForSource("scripts/check_test_placement.ts"), "tests/scripts/");
 });
 
@@ -52,4 +52,16 @@ Deno.test("validateTestPlacement: ignores non-test files in mixed input", () => 
 
   assertEquals(result.success, true);
   assertEquals(result.inspectedPaths.length, 1);
+});
+
+Deno.test("recommendTestDirectoryForSource: maps package sources to package tests", () => {
+  assertEquals(
+    recommendTestDirectoryForSource("packages/schemas/src/flow.ts"),
+    "packages/schemas/tests/",
+  );
+});
+
+Deno.test("getTestPlacementIssue: accepts package-local tests", () => {
+  const issue = getTestPlacementIssue("packages/schemas/tests/request_analysis_test.ts");
+  assertEquals(issue, null);
 });

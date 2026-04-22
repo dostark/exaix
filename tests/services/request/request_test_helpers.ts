@@ -6,11 +6,7 @@
 
 import { join } from "@std/path";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type {
@@ -20,7 +16,7 @@ import type {
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 
 export function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {

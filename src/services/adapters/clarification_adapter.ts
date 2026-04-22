@@ -8,7 +8,7 @@
  */
 
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
-import type { IClarificationSession } from "../../shared/schemas/clarification_session.ts";
+import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 
 export class ClarificationAdapter {
   async load(requestFilePath: string): Promise<IClarificationSession | null> {

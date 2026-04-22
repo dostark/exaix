@@ -17,7 +17,7 @@ import { ArtifactRegistry } from "../../src/services/artifact/artifact_registry.
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 
 describe("ReviewCommands", () => {

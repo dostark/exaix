@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "../../shared/constants.ts";
 import type { JSONValue } from "../../shared/types/json.ts";

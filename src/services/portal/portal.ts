@@ -8,7 +8,7 @@
 
 import { join, resolve } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import {
   type PortalAnalysisMode,
   type PortalExecutionStrategy,
@@ -17,7 +17,7 @@ import {
 } from "../../shared/enums.ts";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
 import { DEFAULT_PROJECTS_MEMORY_PATH, GIT_CMD_BRANCH, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
-import type { IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { loadKnowledge, saveKnowledge } from "../portal_knowledge/knowledge_persistence.ts";
 import type {
   IPortalKnowledgeConfig,

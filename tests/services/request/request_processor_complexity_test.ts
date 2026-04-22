@@ -13,7 +13,7 @@ import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import { type IRequestAnalysis, RequestAnalysisComplexity } from "../../../src/shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";

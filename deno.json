@@ -2,6 +2,14 @@
   "$schema": "./schemas/deno-config.schema.json",
   "name": "@dostark/exaix",
   "version": "0.1.0",
+  "workspace": [
+    "./packages/schemas",
+    "./packages/parsing",
+    "./packages/core",
+    "./packages/ai",
+    "./packages/testing",
+    "./packages/memory"
+  ],
   "lock": true,
   "exports": "./src/main.ts",
   "tasks": {
@@ -48,6 +56,8 @@
     "compile": "deno compile --allow-all --output exaix src/main.ts",
     "docs-agent-validate": "deno fmt --check *.md && deno run -A scripts/validate_doc_links.ts && deno run -A scripts/validate_cross_reference.ts && grep -q 'copilot_knowledge_base: true' *.md",
     "docs-bench": "deno test -A --filter \"[hallucination-bench]\" tests/docs/",
+    "workspace:check": "deno check --unstable ./packages/**",
+    "workspace:test": "deno test --allow-all ./packages/**",
     "docs-sync-schemas": "deno run -A scripts/sync_tool_schemas.ts && deno fmt TOOLS.md"
   },
   "imports": {
@@ -69,7 +79,9 @@
     "typescript": "npm:typescript@5.3.3",
     "@babel/parser": "npm:@babel/parser@7.24.4",
     "@std/flags": "jsr:@std/flags@^0.221.0",
-    "@std/streams": "jsr:@std/streams@^1.0.17"
+    "@std/streams": "jsr:@std/streams@^1.0.17",
+    "@exaix/schemas": "./packages/schemas/mod.ts",
+    "@exaix/schemas/": "./packages/schemas/src/"
   },
   "exclude": [
     "cov_profile",

@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import type { IFlowNamespaceWrite } from "../../../src/shared/schemas/flow.ts";
+import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import {
   type IFlowNamespaceService,
   type IFlowNamespaceSnapshot,

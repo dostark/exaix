@@ -17,7 +17,7 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../../src/flows/flow_runner.ts";
-import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "../../../src/shared/schemas/flow.ts";
+import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../../src/services/agent/agent_runner.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,

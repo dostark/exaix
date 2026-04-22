@@ -8,8 +8,8 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
-import type { ILearning } from "../../shared/schemas/memory_bank.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 
 /**
  * Embedding search result

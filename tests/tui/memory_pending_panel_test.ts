@@ -17,7 +17,7 @@ import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import { renderPendingPanel, renderStatsPanel } from "../../src/tui/memory_panels/index.ts";
-import type { IMemoryUpdateProposal } from "../../src/shared/schemas/memory_bank.ts";
+import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
   createInitializedMemoryViewSession,
   createMockProposals,

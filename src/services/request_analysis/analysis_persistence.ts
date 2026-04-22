@@ -9,7 +9,7 @@
  * * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
-import { type IRequestAnalysis, RequestAnalysisSchema } from "../../shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 
 // ---------------------------------------------------------------------------
 // Path helpers

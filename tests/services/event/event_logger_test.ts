@@ -10,7 +10,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 import { EventBusService } from "../../../src/services/observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../../../src/shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "../../../src/shared/constants.ts";
 
 type ITestDb = Awaited<ReturnType<typeof initTestDbService>>["db"];

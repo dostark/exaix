@@ -7,7 +7,7 @@
  */
 
 import type { EventLogger } from "../../services/core/event_logger.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import { type IGenerateResult, withRetry } from "./common.ts";
 /**

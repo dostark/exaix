@@ -13,7 +13,7 @@ import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,
   type IClarificationSession,
-} from "../../../src/shared/schemas/clarification_session.ts";
+} from "@exaix/schemas/clarification_session.ts";
 import { ClarifyResultStatus } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";

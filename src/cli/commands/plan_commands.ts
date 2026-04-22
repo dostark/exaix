@@ -28,9 +28,9 @@ import {
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
 } from "../../shared/constants.ts";
-import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
+import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
-import { type PlanFrontmatter, PlanFrontmatterSchema } from "../../shared/schemas/plan_schema.ts";
+import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";

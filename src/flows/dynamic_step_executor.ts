@@ -8,8 +8,8 @@
  * * @related-files [src/flows/flow_runner.ts, src/shared/schemas/flow.ts]
  */
 
-import type { IFlowStep } from "../shared/schemas/flow.ts";
-import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
+import type { IFlowStep } from "@exaix/schemas/flow.ts";
+import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { type McpToolName, StepExecutionMode } from "../shared/enums.ts";
 import { READ_ONLY_TOOLS } from "../shared/constants.ts";
 import type { JSONValue } from "../shared/types/json.ts";

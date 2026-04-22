@@ -18,7 +18,7 @@ import {
   PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS,
   PORTAL_KNOWLEDGE_PRIORITY_PATTERNS,
 } from "../../shared/constants.ts";
-import type { IArchitectureLayer, IMonorepoPackage, IPortalKnowledge } from "../../shared/schemas/portal_knowledge.ts";
+import type { IArchitectureLayer, IMonorepoPackage, IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
 // Internal types

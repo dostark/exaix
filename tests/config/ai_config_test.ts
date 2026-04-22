@@ -11,7 +11,7 @@ import {
   getDefaultEndpoints,
   getDefaultModels,
   getDefaultRetryConfig,
-} from "../../src/shared/schemas/ai_config.ts";
+} from "@exaix/schemas/ai_config.ts";
 import {
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,

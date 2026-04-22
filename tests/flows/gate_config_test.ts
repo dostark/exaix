@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { GateEvaluateSchema } from "../../src/shared/schemas/flow.ts";
+import { GateEvaluateSchema } from "@exaix/schemas/flow.ts";
 import { GateConfigSchema } from "../../src/flows/gate_evaluator.ts";
 import { FlowGateOnFail } from "../../src/shared/enums.ts";
 

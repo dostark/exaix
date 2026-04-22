@@ -14,7 +14,7 @@ import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 import type { IPlanMetadata } from "../../src/shared/types/plan.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
-import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { LogLevel } from "../../src/shared/enums.ts";
 
 const TEST_AGENT_ID = "test-agent";

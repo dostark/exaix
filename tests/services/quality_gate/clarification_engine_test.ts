@@ -14,8 +14,8 @@ import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,
   type IClarificationSession,
-} from "../../../src/shared/schemas/clarification_session.ts";
-import type { IRequestSpecification } from "../../../src/shared/schemas/request_specification.ts";
+} from "@exaix/schemas/clarification_session.ts";
+import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { ClarificationEngine } from "../../../src/services/quality_gate/clarification_engine.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 

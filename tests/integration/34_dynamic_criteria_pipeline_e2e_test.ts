@@ -17,7 +17,7 @@ import {
   FlowOutputFormat,
   FlowStepType,
 } from "../../src/shared/enums.ts";
-import { FlowSchema, type IFlow } from "../../src/shared/schemas/flow.ts";
+import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import {
   FlowRunner,
   type IAgentExecutor,
@@ -34,11 +34,7 @@ import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/eval
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
 import type { ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../src/shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";

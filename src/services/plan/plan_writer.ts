@@ -16,12 +16,12 @@ import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "../../share
 import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
-import type { PlanFrontmatter } from "../../shared/schemas/plan_schema.ts";
+import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 export interface IRequestMetadata {
   requestId: string;

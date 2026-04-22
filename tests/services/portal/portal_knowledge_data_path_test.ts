@@ -14,7 +14,7 @@ import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
 import type { IContextCardGeneratorService } from "../../../src/shared/interfaces/i_context_card_generator_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 
 function makeMockContextCardGenerator(): IContextCardGeneratorService {

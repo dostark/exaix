@@ -54,7 +54,7 @@ import {
   TUI_PRIORITY_ICONS,
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
-import type { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 /**
  * View state interface

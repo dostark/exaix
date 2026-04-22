@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IKnowledgeInvalidationStrategy } from "../../../src/services/portal_knowledge/knowledge_invalidation_strategy.ts";
 import { KnowledgeInvalidationStrategy } from "../../../src/services/portal_knowledge/knowledge_invalidation_strategy.ts";
 import type { IGitHeadResolver } from "../../../src/services/portal_knowledge/git_head_resolver.ts";

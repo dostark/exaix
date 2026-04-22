@@ -27,7 +27,7 @@ import type {
   IProjectMemory,
   ISkill,
   ISkillMatch,
-} from "../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   TEST_AGENT_NAME,
   TEST_COMPLETED_AT,

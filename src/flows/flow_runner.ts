@@ -6,13 +6,7 @@
  * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
  */
 
-import type {
-  IFlow,
-  IFlowNamespaceWrite,
-  IFlowStep,
-  IGateEvaluate,
-  IParallelMergeMode,
-} from "../shared/schemas/flow.ts";
+import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate, IParallelMergeMode } from "@exaix/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
@@ -21,9 +15,9 @@ import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
 import { jsonExtract, type JSONValue } from "../shared/types/json.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
-import type { IRequestAnalysis } from "../shared/schemas/request_analysis.ts";
-import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
-import type { IBlueprintFrontmatter } from "../shared/schemas/blueprint.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
+import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
 import { FlowInputSource, FlowStepOnErrorAction, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
@@ -31,14 +25,14 @@ import { ActivityJournal } from "../journal/activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
 import { LlmClient } from "../ai/llm_client.ts";
 import type { ToolHandler } from "../mcp/tool_handler.ts";
-import type { Config } from "../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { RetryPolicy } from "../services/core/retry_policy.ts";
 import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
 import type { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
 import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
-import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "../shared/schemas/flow.ts";
+import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,

@@ -15,7 +15,7 @@ import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts
 import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
-import type { IRequestAnalysis } from "../../../src/shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import type { IStructuredLogEntry } from "../../../src/shared/types/logging.ts";
 import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/logger/structured_logger.ts";

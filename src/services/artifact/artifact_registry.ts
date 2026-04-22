@@ -14,7 +14,7 @@ import type {
   IArtifactFilters,
   IArtifactFrontmatter,
   IArtifactWithContent,
-} from "../../shared/schemas/artifact.ts";
+} from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "../../shared/constants.ts";
 

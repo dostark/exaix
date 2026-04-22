@@ -33,6 +33,8 @@ export interface ITestPlacementResult {
 const REPO_ROOT = resolve(new URL("../", import.meta.url).pathname);
 const TEST_FILE_PATTERN = /(^|\/)[^/]+_test\.(ts|tsx|js|jsx)$/;
 const ROOT_TESTS_PREFIX = "tests/";
+const PACKAGE_TEST_PREFIX = "packages/";
+const PACKAGE_TEST_PATTERN = /^packages\/[^/]+\/tests\//;
 const DIRECT_SERVICE_TEST_PATTERN = /^tests\/services\/[^/]+_test\.(ts|tsx|js|jsx)$/;
 
 const SKIP_PATH_PATTERNS: RegExp[] = [
@@ -58,7 +60,14 @@ export function recommendTestDirectoryForSource(path: string): string | null {
     return domain ? `tests/services/${domain}/` : "tests/services/";
   }
 
-  if (normalized.startsWith("src/shared/schemas/")) {
+  if (normalized.startsWith("packages/")) {
+    const parts = normalized.split("/");
+    if (parts.length >= 3 && parts[2] === "src") {
+      return `packages/${parts[1]}/tests/`;
+    }
+  }
+
+  if (normalized.startsWith("src/shared/schemas/") || normalized.startsWith("@exaix/schemas/")) {
     return "tests/schemas/";
   }
 
@@ -99,15 +108,16 @@ export function getTestPlacementIssue(path: string): ITestPlacementIssue | null 
     return null;
   }
 
-  if (!normalized.startsWith(ROOT_TESTS_PREFIX)) {
+  if (!normalized.startsWith(ROOT_TESTS_PREFIX) && !PACKAGE_TEST_PATTERN.test(normalized)) {
     return {
       path: normalized,
-      message: "Test files must live under tests/.",
-      suggestion: recommendTestDirectoryForSource(normalized) ?? "Move this file under tests/.",
+      message: "Test files must live under tests/ or packages/<package>/tests/.",
+      suggestion: recommendTestDirectoryForSource(normalized) ??
+        "Move this file under tests/ or a package tests folder.",
     };
   }
 
-  if (DIRECT_SERVICE_TEST_PATTERN.test(normalized)) {
+  if (normalized.startsWith(ROOT_TESTS_PREFIX) && DIRECT_SERVICE_TEST_PATTERN.test(normalized)) {
     return {
       path: normalized,
       message: "Service tests must live under tests/services/<domain>/, not directly under tests/services/.",

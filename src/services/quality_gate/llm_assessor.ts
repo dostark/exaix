@@ -14,7 +14,7 @@ import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   type IRequestQualityAssessment,
   RequestQualityAssessmentSchema,
-} from "../../shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "../../shared/enums.ts";
 import { assessHeuristic } from "./heuristic_assessor.ts";
 

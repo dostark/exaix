@@ -15,7 +15,7 @@ import {
   type IReviewFilters,
   RegisterReviewSchema,
   ReviewSchema,
-} from "../../shared/schemas/review.ts";
+} from "@exaix/schemas/review.ts";
 import { type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import { ACTIVITY_ACTOR_AGENT } from "../../shared/constants.ts";
 

@@ -13,7 +13,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
 // Minimal stub that must satisfy the full IPortalKnowledgeService contract.

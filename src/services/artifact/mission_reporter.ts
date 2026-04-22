@@ -12,7 +12,7 @@
  * * @related-files [src/services/execution_loop.ts, src/services/memory_bank.ts]
  */
 import { join } from "@std/path";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import {
   AMENDMENT_ARTIFACTS_DIR,
   DEFAULT_EXECUTION_MEMORY_PATH,
@@ -21,10 +21,10 @@ import {
 } from "../../shared/constants.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
-import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 import { ActivityActor, ExecutionStatus } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
-import { ZPlanAmendmentPatch } from "../../shared/schemas/plan_amendment.ts";
+import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { exists } from "@std/fs";
 
 // ============================================================================

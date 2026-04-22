@@ -13,7 +13,7 @@ import { GitService } from "../../../src/services/core/git_service.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { GitTestHelper } from "../../helpers/git_test_helper.ts";
 import { setupPortalGitRepos } from "../../helpers/portal_test_utils.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 /**
  * TDD Tests for ReviewRegistry Portal Support

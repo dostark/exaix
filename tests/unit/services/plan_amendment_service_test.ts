@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
 

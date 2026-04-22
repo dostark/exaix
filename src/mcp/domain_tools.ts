@@ -11,7 +11,7 @@ import {
   ListPlansToolArgsSchema,
   type MCPToolResponse,
   QueryJournalToolArgsSchema,
-} from "../shared/schemas/mcp.ts";
+} from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "../shared/types/json.ts";
 import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";

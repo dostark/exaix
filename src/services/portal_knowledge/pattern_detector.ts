@@ -11,7 +11,7 @@
  */
 
 import { basename, extname } from "@std/path";
-import type { ICodeConvention, IFileSignificance } from "../../shared/schemas/portal_knowledge.ts";
+import type { ICodeConvention, IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
 // Constants

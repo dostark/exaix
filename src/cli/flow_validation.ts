@@ -9,7 +9,7 @@
 
 import { READ_ONLY_TOOLS, WRITE_TOOLS } from "../shared/constants.ts";
 import { StepExecutionMode } from "../shared/enums.ts";
-import type { IFlow } from "../shared/schemas/flow.ts";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 
 /**
  * CLI validation report with errors and warnings

@@ -10,7 +10,7 @@
  */
 
 import { PORTAL_ENTRYPOINT_NAMES, PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS } from "../../shared/constants.ts";
-import type { IFileSignificance } from "../../shared/schemas/portal_knowledge.ts";
+import type { IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------
 // Role priority order (lower index = higher significance)

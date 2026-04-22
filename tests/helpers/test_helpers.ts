@@ -7,14 +7,14 @@
 
 import type { IDatabaseService } from "../../src/services/core/db.ts";
 import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
-import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
 import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
-import type { IPortalPermissions } from "../../src/shared/schemas/portal_permissions.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "../../src/shared/enums.ts";
 import type { JSONObject, JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
 import { ExaPathDefaults } from "../../src/shared/constants.ts";

@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { McpAgentStrategy } from "../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "../../src/services/agent/process_manager.ts";
 import type { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
-import type { IExecutionContext } from "../../src/shared/schemas/agent_executor.ts";
+import type { IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 
 function createFailingStderrStream(errorMessage: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

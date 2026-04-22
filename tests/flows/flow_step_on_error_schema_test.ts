@@ -8,7 +8,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, McpToolName } from "../../src/shared/enums.ts";
-import { FlowSchema, ZFlowCheckpoint, ZFlowStepOnError } from "../../src/shared/schemas/flow.ts";
+import { FlowSchema, ZFlowCheckpoint, ZFlowStepOnError } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_MAX_RETRIES,
   DEFAULT_FLOW_STEP_BACKOFF_MS,

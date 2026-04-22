@@ -16,7 +16,7 @@ import {
 import { join } from "@std/path";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { ILearning, IProjectMemory } from "../../../src/shared/schemas/memory_bank.ts";
+import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { getMemoryGlobalDir } from "../../helpers/paths_helper.ts";
 

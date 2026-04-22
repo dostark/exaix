@@ -41,7 +41,7 @@ import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import type { ILogService } from "../../shared/interfaces/i_log_service.ts";
 import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
 import type { ICliApplicationContext } from "../../cli/cli_context.ts";
 import type { IModelProvider } from "../../ai/types.ts";

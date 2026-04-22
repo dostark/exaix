@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { ChangesetResultSchema } from "../../src/shared/schemas/agent_executor.ts";
+import { ChangesetResultSchema } from "@exaix/schemas/agent_executor.ts";
 import { SecurityMode } from "../../src/shared/enums.ts";
 import { join } from "@std/path";
 import { initTestDbService } from "../helpers/db.ts";
@@ -20,7 +20,7 @@ import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "../../src/ai/providers.ts";
 import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
-import type { IAgentExecutionOptions, IExecutionContext } from "../../src/shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 
 /**
  * Helper: set up a full AgentExecutor with all dependencies for strategy testing.

@@ -8,7 +8,7 @@
  */
 import type { DatabaseService } from "../core/db.ts";
 import type { IModelProvider } from "../../ai/types.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import {
   BYTES_PER_KB,
   DEFAULT_HEALTH_CACHE_TTL_MS,

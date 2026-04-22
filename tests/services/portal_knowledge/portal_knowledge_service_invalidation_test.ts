@@ -14,7 +14,7 @@ import { PortalKnowledgeService } from "../../../src/services/portal_knowledge/p
 import type { IPortalKnowledgeConfig } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 
 class FakeInvalidationStrategy implements IKnowledgeInvalidationStrategy {

@@ -22,7 +22,7 @@ import {
   type IRequestAnalysis,
   type RequestAnalysisComplexity as _RequestAnalysisComplexity,
   RequestTaskType,
-} from "../../../src/shared/schemas/request_analysis.ts";
+} from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestSource } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";

@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 
-import type { IExecutionMemory } from "../../shared/schemas/memory_bank.ts";
+import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 
 /**
  * Format execution summary to markdown

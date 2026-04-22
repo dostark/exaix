@@ -9,7 +9,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource } from "../../src/shared/enums.ts";
 
 import { DependencyResolver, FlowValidationError } from "../../src/flows/dependency_resolver.ts";
-import type { IFlowStep, IFlowStepInput } from "../../src/shared/schemas/flow.ts";
+import type { IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 const defaultStepProps = {
   identity: "agent1",

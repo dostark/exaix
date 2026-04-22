@@ -21,7 +21,7 @@ import type {
   IPattern,
   IProjectMemory,
   IReference,
-} from "../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 
 /**
  * Builder for IProjectMemory objects to simplify test data creation

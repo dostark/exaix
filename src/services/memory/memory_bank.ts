@@ -13,7 +13,7 @@
 
 import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 import {
@@ -40,7 +40,7 @@ import {
   GlobalMemorySchema,
   LearningSchema,
   ProjectMemorySchema,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import {
   searchByKeyword as searchByKeywordHelper,
   searchByTags as searchByTagsHelper,
@@ -57,7 +57,7 @@ import type {
   IPattern,
   IProjectMemory,
   IReference,
-} from "../../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 
 import { parseDecisions, parsePatterns } from "../memory_bank/parsers.ts";
 import { formatExecutionSummary } from "../memory_bank/formatters.ts";

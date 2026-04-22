@@ -9,7 +9,7 @@ import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "
 import { parse as parseToml } from "@std/toml";
 import { LogLevel, ProviderCostTier } from "../../src/shared/enums.ts";
 import { ConfigService } from "../../src/config/service.ts";
-import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { initializeGlobalLogger, resetGlobalLogger } from "../../src/services/logger/structured_logger.ts";
 import { DEFAULT_MCP_VERSION, ExaPathDefaults } from "../../src/shared/constants.ts";
 

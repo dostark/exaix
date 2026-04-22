@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowStepType, McpToolName, MemoryOperation, PortalOperation } from "../../src/shared/enums.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
-import type { Config } from "../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";

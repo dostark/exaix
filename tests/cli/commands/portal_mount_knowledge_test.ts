@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import type { IPortalKnowledge } from "../../../src/shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
 import { initPortalTest } from "../helpers/test_setup.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";

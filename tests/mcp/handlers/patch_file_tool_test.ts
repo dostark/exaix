@@ -4,7 +4,7 @@
  * @description Unit tests for the PatchFileTool MCP tool.
  */
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import type { MCPToolResponse } from "../../../src/shared/schemas/mcp.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PatchFileTool } from "../../../src/mcp/handlers/patch_file_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
 import { PortalOperation } from "../../../src/shared/enums.ts";

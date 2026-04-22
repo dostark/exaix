@@ -56,7 +56,7 @@ import type {
   ISkillMatch,
   SkillImmutableFields as _SkillImmutableFields,
   SkillManagedFields,
-} from "../shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
 import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
 import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
@@ -68,7 +68,7 @@ import type { INotificationService } from "../shared/interfaces/i_notification_s
 import type { ILogService, IStructuredLogger } from "../shared/interfaces/i_log_service.ts";
 import type { IJournalService } from "../shared/interfaces/i_journal_service.ts";
 import type { IMemoryService } from "../shared/interfaces/i_memory_service.ts";
-import type { IPortalKnowledge } from "../shared/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
 import { RequestStatus, type RequestStatusType } from "../shared/status/request_status.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";

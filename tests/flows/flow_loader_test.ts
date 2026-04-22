@@ -7,7 +7,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
-import { FlowSchema } from "../../src/shared/schemas/flow.ts";
+import { FlowSchema } from "@exaix/schemas/flow.ts";
 
 const mockFlowsDir = "/tmp/test-flows";
 

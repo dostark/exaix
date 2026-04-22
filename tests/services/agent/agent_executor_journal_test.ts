@@ -18,7 +18,7 @@ import {
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import type { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import type { IChangesetResult } from "../../../src/shared/schemas/agent_executor.ts";
+import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 
 /**

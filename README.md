@@ -87,11 +87,14 @@ exaix/
 ├── Blueprints/     # Agent personas/templates
 ├── Memory/         # Persistent memory banks
 ├── docs/           # User guides & specs
+├── docs/dev/       # Development and migration trackers
 ├── src/            # Core runtime
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons
 ```text
+
+For package migration planning, see `docs/dev/package-migration-plan.md` and the authoritative tracker in the `exaix-dev-docs` submodule.
 
 Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state). [cite:4]
 

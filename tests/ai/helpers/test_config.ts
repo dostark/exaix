@@ -5,8 +5,8 @@
  * consistent model names and base URLs for Mock/Live backend testing.
  */
 
-import { type AiConfig, AiConfigSchema } from "../../../src/shared/schemas/ai_config.ts";
-import { type Config, ConfigSchema } from "../../../src/shared/schemas/config.ts";
+import { type AiConfig, AiConfigSchema } from "@exaix/schemas/ai_config.ts";
+import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import {
   ConfidenceAssessmentLevel,

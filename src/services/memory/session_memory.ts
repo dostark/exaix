@@ -9,7 +9,7 @@
 import { z } from "zod";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { IMemoryEmbeddingService } from "./memory_embedding.ts";
-import type { ILearning, IMemorySearchResult } from "../../shared/schemas/memory_bank.ts";
+import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,

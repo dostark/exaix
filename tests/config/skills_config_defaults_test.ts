@@ -5,7 +5,7 @@
  */
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 describe("Skills Config Defaults", () => {
   it("should have correct skill defaults in ConfigSchema", () => {

@@ -9,11 +9,7 @@ import { assertEquals } from "@std/assert";
 import { type GateConfig, GateEvaluator } from "../../src/flows/gate_evaluator.ts";
 import type { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
-import {
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "../../src/shared/schemas/request_analysis.ts";
+import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import { FlowGateOnFail } from "../../src/shared/enums.ts";
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";

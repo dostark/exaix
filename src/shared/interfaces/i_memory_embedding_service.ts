@@ -6,7 +6,7 @@
  * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 
-import type { ILearning } from "../schemas/memory_bank.ts";
+import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import type { IEmbeddingSearchResult } from "../types/memory.ts";
 
 export interface IMemoryEmbeddingService {

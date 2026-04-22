@@ -8,8 +8,8 @@
  * * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/interfaces/mod.ts]
  */
 
-import type { IRequestQualityAssessment, IRequestQualityIssue } from "../schemas/request_quality_assessment.ts";
-import type { IClarificationSession } from "../schemas/clarification_session.ts";
+import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
+import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import type { QualityGateMode } from "../enums.ts";
 
 /**

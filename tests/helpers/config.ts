@@ -5,7 +5,7 @@
  * ensuring stable behavior across AI, database, and infrastructure tests.
  */
 
-import { type Config, ConfigSchema } from "../../src/shared/schemas/config.ts";
+import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import { ConfigService } from "../../src/config/service.ts";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";

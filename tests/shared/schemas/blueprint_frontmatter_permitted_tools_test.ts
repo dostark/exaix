@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { BlueprintFrontmatterSchema } from "../../../src/shared/schemas/blueprint.ts";
+import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import { McpToolName } from "../../../src/shared/enums.ts";
 
 /**

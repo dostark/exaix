@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
-import type { IPortalConfig } from "../../../src/shared/schemas/config.ts";
+import type { IPortalConfig } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 describe("AgentExecutor with IWorkspaceExecutionContext", () => {

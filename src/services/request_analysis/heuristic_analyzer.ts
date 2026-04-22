@@ -18,7 +18,7 @@ import {
   type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestTaskType,
-} from "../../shared/schemas/request_analysis.ts";
+} from "@exaix/schemas/request_analysis.ts";
 import {
   ANALYSIS_COMPLEX_BULLET_THRESHOLD,
   ANALYSIS_COMPLEX_CHAR_THRESHOLD,
@@ -35,12 +35,22 @@ import type { IRequestAnalysisContext } from "../../shared/interfaces/i_request_
 // File reference extraction
 // ---------------------------------------------------------------------------
 
+function normalizeSchemaFileRef(path: string): string {
+  if (path.startsWith("src/shared/schemas/")) {
+    return path.replace(/^src\/shared\/schemas\//, "@exaix/schemas/");
+  }
+  if (path.startsWith("src/schemas/")) {
+    return path.replace(/^src\/schemas\//, "@exaix/schemas/");
+  }
+  return path;
+}
+
 function extractFileRefs(text: string): string[] {
   const pattern = new RegExp(ANALYSIS_FILE_REF_PATTERN.source, ANALYSIS_FILE_REF_PATTERN.flags);
   const found = new Set<string>();
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(text)) !== null) {
-    found.add(match[1]);
+    found.add(normalizeSchemaFileRef(match[1]));
   }
   return [...found];
 }

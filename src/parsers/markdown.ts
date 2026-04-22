@@ -6,7 +6,7 @@
  * * @related-files [src/schemas/request.ts, src/services/request/request_processor.ts]
  */
 import { parse as parseYaml } from "@std/yaml";
-import { type Request, RequestSchema } from "../shared/schemas/request.ts";
+import { type Request, RequestSchema } from "@exaix/schemas/request.ts";
 import type { DatabaseService } from "../services/core/db.ts";
 import { ActivityActor } from "../shared/enums.ts";
 import { type JSONValue, toSafeJson } from "../shared/types/json.ts";

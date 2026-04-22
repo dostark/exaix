@@ -15,10 +15,10 @@ import {
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
 import type { IGateConfig, IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
-import { FlowSchema, type IFlow, type IFlowInput } from "../../src/shared/schemas/flow.ts";
+import { FlowSchema, type IFlow, type IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
-import type { IRequestAnalysis } from "../../src/shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 // ============================================================
 // Mock infrastructure

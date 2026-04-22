@@ -1,0 +1,9 @@
+{
+  "name": "@exaix/schemas",
+  "version": "0.1.0",
+  "imports": {
+    "@exaix/schemas": "./mod.ts",
+    "@exaix/schemas/": "./src/"
+  },
+  "exports": "./mod.ts"
+}

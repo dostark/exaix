@@ -15,7 +15,7 @@ import {
   type IRequestQualityIssue,
   RequestQualityIssueSeverity,
   RequestQualityIssueType,
-} from "../../../src/shared/schemas/request_quality_assessment.ts";
+} from "@exaix/schemas/request_quality_assessment.ts";
 import { enrichRequest } from "../../../src/services/quality_gate/request_enricher_llm.ts";
 
 // ---------------------------------------------------------------------------

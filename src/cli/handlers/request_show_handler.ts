@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import type { IRequestAnalysis } from "../../shared/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestShowResult } from "../../shared/types/request.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";

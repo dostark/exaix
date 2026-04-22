@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
-import { PlanSchema } from "../../src/shared/schemas/plan_schema.ts";
+import { PlanSchema } from "@exaix/schemas/plan_schema.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { getProviderForModel } from "./helpers/test_config.ts";

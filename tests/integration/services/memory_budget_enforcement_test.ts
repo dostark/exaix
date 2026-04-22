@@ -22,7 +22,7 @@ import type {
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
-} from "../../../src/shared/schemas/memory_bank.ts";
+} from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "../../../src/shared/enums.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../../src/shared/constants.ts";
 import { initTestDbService } from "../../helpers/db.ts";

@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { RoutingPolicyService } from "../../../src/services/routing/routing_policy_service.ts";
-import type { IRoutingPolicy } from "../../../src/shared/schemas/routing_policy.ts";
+import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 
 async function computeBucket(traceId: string, salt: string): Promise<number> {
   const data = new TextEncoder().encode(traceId + salt);

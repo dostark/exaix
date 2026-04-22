@@ -18,8 +18,8 @@ import {
   type IClarificationQuestion,
   type IClarificationRound,
   type IClarificationSession,
-} from "../../shared/schemas/clarification_session.ts";
-import { RequestSpecificationSchema } from "../../shared/schemas/request_specification.ts";
+} from "@exaix/schemas/clarification_session.ts";
+import { RequestSpecificationSchema } from "@exaix/schemas/request_specification.ts";
 import { assessHeuristic } from "./heuristic_assessor.ts";
 /** Configuration for the clarification engine. */
 export interface IClarificationEngineConfig {

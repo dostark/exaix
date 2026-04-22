@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { FlowStepSchema } from "../../../src/shared/schemas/flow.ts";
+import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { McpToolName, StepExecutionMode } from "../../../src/shared/enums.ts";
 
 /**

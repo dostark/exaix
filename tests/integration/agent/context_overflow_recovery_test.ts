@@ -12,7 +12,7 @@ import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { ExecutionStrategyName, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
-import type { IAgentExecutionOptions, IExecutionContext } from "../../../src/shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/shared/constants.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";

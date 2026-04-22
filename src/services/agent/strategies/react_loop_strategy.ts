@@ -9,17 +9,13 @@
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
-import type {
-  IAgentExecutionOptions,
-  IChangesetResult,
-  IExecutionContext,
-} from "../../../shared/schemas/agent_executor.ts";
+import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "../../../ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "../../../shared/types/json.ts";
 import type { IEventBusService } from "../../observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../../../shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   EXECUTION_HEARTBEAT_INTERVAL_MS,

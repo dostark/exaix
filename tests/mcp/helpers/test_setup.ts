@@ -18,10 +18,10 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 
-import type { IPortalPermissions } from "../../../src/shared/schemas/portal_permissions.ts";
+import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
-import type { Config } from "../../../src/shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 
 interface IMCPErrorShape {
   code: number;

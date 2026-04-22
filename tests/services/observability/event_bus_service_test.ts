@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { EventBusService } from "../../../src/services/observability/event_bus_service.ts";
-import type { IStreamingEvent } from "../../../src/shared/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   EVENT_BUS_MAX_SUBSCRIBER_QUEUE,
   STREAMING_EVENT_HEARTBEAT,

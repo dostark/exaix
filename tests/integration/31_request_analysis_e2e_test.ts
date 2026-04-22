@@ -17,7 +17,7 @@ import { RequestProcessor } from "../../src/services/request/request_processor.t
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { loadAnalysis } from "../../src/services/request_analysis/mod.ts";
 import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
-import { RequestAnalysisSchema } from "../../src/shared/schemas/request_analysis.ts";
+import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";

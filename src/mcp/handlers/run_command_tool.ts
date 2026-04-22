@@ -6,7 +6,7 @@
  * * @related-files [src/mcp/tool_handler.ts, src/services/tool_registry.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
-import { type MCPToolResponse, RunCommandToolArgsSchema } from "../../shared/schemas/mcp.ts";
+import { type MCPToolResponse, RunCommandToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 

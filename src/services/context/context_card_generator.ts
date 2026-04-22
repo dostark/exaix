@@ -10,7 +10,7 @@ import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
 import type { IDatabaseService } from "../core/db.ts";
 import { ActivityActor } from "../../shared/enums.ts";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { JSONValue } from "../../shared/types/json.ts";
 
 export interface IPortalInfo {

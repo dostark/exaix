@@ -6,10 +6,10 @@
  * @architectural-layer Services
  * * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
  */
-import { ConfigSchema } from "../../shared/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { ActivityActor, GitBranchName, LogLevel, SystemCommand, ToolName } from "../../shared/enums.ts";
 import {

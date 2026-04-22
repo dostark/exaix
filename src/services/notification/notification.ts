@@ -12,11 +12,11 @@
  * * @related-files [src/services/db.ts, src/services/memory_bank/index.builder.ts, src/shared/types/notification.ts]
  */
 
-import type { Config } from "../../shared/schemas/config.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 import { MemoryScope } from "../../shared/enums.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { IMemoryUpdateProposal } from "../../shared/schemas/memory_bank.ts";
+import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 /**
