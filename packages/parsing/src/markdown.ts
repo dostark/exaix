@@ -8,6 +8,9 @@
 import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "@exaix/schemas/request.ts";
 import type { JSONValue } from "@exaix/core";
+import { FRONTMATTER_REGEX } from "./constants.ts";
+import { SYSTEM_ACTIVITY_ACTOR } from "@exaix/core";
+import { ParserActivityActionType } from "./enums.ts";
 
 export interface IParsedRequest {
   request: Request;
@@ -30,8 +33,6 @@ export interface IDatabaseService {
   ): void;
 }
 
-const SYSTEM_ACTIVITY_ACTOR = "system" as const;
-
 export class FrontmatterParser {
   private readonly db?: IDatabaseService;
 
@@ -48,7 +49,7 @@ export class FrontmatterParser {
         .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
         .join("\n");
 
-      this.logActivity("request.validation_failed", {
+      this.logActivity(ParserActivityActionType.REQUEST_VALIDATION_FAILED, {
         file_path: filePath ?? null,
         errors,
       });
@@ -56,7 +57,7 @@ export class FrontmatterParser {
       throw new Error(`Request validation failed:\n${errors}`);
     }
 
-    this.logActivity("request.validated", {
+    this.logActivity(ParserActivityActionType.REQUEST_VALIDATED, {
       file_path: filePath ?? null,
       trace_id: result.data.trace_id,
       identity_id: result.data.identity_id,
@@ -94,8 +95,7 @@ export class FrontmatterParser {
   }
 
   private extractFrontmatter(markdown: string): { frontmatter: MarkdownFrontmatter; body: string } {
-    const yamlRegex = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
-    const match = markdown.match(yamlRegex);
+    const match = markdown.match(FRONTMATTER_REGEX);
 
     if (!match) {
       throw new Error("No frontmatter found: markdown must start with --- and end with ---");

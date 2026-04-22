@@ -9,8 +9,7 @@ import { FrontmatterParser } from "@exaix/parsing";
 import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
-const loadFixture = async (name: string) =>
-  await Deno.readTextFile(join(FIXTURE_ROOT, name));
+const loadFixture = async (name: string) => await Deno.readTextFile(join(FIXTURE_ROOT, name));
 
 Deno.test("FrontmatterParser: malformed YAML is rejected", async () => {
   const markdown = await loadFixture("malformed-yaml.md");
