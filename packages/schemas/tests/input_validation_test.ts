@@ -21,8 +21,9 @@ import {
   TraceIdSchema,
   UserRequestSchema,
 } from "@exaix/schemas/input_validation.ts";
-import { TEST_MODEL_OPENAI } from "../../../tests/config/constants.ts";
 import { PROVIDER_OPENAI } from "@exaix/schemas/constants.ts";
+
+const TEST_MODEL_OPENAI = "openai-gpt-4.1";
 
 Deno.test("Input Validation - BlueprintNameSchema", async (t) => {
   await t.step("accepts valid blueprint names", () => {

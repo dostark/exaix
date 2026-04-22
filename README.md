@@ -29,17 +29,17 @@ Exaix enables secure, auditable multi-agent workflows with human-in-the-loop sup
 
 ## Key Concepts
 
-| Term               | Description                                                       |
-| ------------------ | ----------------------------------------------------------------- |
-| **Request**        | User task input triggering agent workflows.                       |
-| **Plan**           | Agent's proposed steps/changes for human review.                  |
-| **Changeset**      | Approved, atomic file modifications from Plans.                   |
-| **Plan Amendment** | Mid-execution replanning with human approval when triggers fire.  |
-| **Safety Gate**    | Approval checkpoint for dynamic mission adjustments.              |
-| **Blueprint**      | Reusable agent identity/persona definitions.                      |
-| **Portal**         | Symlink to external project repos for context.                    |
-| **Memory**         | Persistent vector store for agent recall/search. [cite:3][cite:4] |
-| **Skills**         | Procedural knowledge ("how-to") injected into agent prompts.      |
+| Term               | Description                                                      |
+| ------------------ | ---------------------------------------------------------------- |
+| **Request**        | User task input triggering agent workflows.                      |
+| **Plan**           | Agent's proposed steps/changes for human review.                 |
+| **Changeset**      | Approved, atomic file modifications from Plans.                  |
+| **Plan Amendment** | Mid-execution replanning with human approval when triggers fire. |
+| **Safety Gate**    | Approval checkpoint for dynamic mission adjustments.             |
+| **Blueprint**      | Reusable agent identity/persona definitions.                     |
+| **Portal**         | Symlink to external project repos for context.                   |
+| **Memory**         | Persistent vector store for agent recall/search.                 |
+| **Skills**         | Procedural knowledge ("how-to") injected into agent prompts.     |
 
 ## Architecture Overview
 
@@ -87,14 +87,11 @@ exaix/
 ├── Blueprints/     # Agent personas/templates
 ├── Memory/         # Persistent memory banks
 ├── docs/           # User guides & specs
-├── docs/dev/       # Development and migration trackers
 ├── src/            # Core runtime
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons
 ```text
-
-For package migration planning, see `docs/dev/package-migration-plan.md` and the authoritative tracker in the `exaix-dev-docs` submodule.
 
 Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state). [cite:4]
 

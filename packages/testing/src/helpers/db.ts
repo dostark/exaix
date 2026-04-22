@@ -1,0 +1,75 @@
+/**
+ * @module TestingPackageDbHelpers
+ * @path packages/testing/src/helpers/db.ts
+ * @description Shared DB-related test helpers for package-local tests.
+ */
+import type { JSONValue } from "@exaix/core";
+
+export interface ILoggedActivity {
+  actor: string;
+  actionType: string;
+  target: string | null;
+  payload: Record<string, JSONValue>;
+  traceId?: string;
+  actorType?: string | null;
+  identityId?: string | null;
+  agentKind?: string | null;
+  promptTokens?: number;
+  completionTokens?: number;
+  costUsd?: number;
+}
+
+export interface TestDatabaseService {
+  logActivity(
+    actor: string,
+    actionType: string,
+    target: string | null,
+    payload: Record<string, JSONValue>,
+    traceId?: string,
+    actorType?: string | null,
+    identityId?: string | null,
+    agentKind?: string | null,
+    promptTokens?: number,
+    completionTokens?: number,
+    costUsd?: number,
+  ): void;
+}
+
+export function createLoggingTestDb() {
+  const activities: ILoggedActivity[] = [];
+
+  const db: TestDatabaseService = {
+    logActivity(
+      actor,
+      actionType,
+      target,
+      payload,
+      traceId,
+      actorType,
+      identityId,
+      agentKind,
+      promptTokens,
+      completionTokens,
+      costUsd,
+    ) {
+      activities.push({
+        actor,
+        actionType,
+        target,
+        payload,
+        traceId,
+        actorType,
+        identityId,
+        agentKind,
+        promptTokens,
+        completionTokens,
+        costUsd,
+      });
+    },
+  };
+
+  return {
+    activities,
+    db,
+  };
+}

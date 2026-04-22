@@ -1,5 +1,5 @@
 ---
-title: CODE_STYLE.md
+title: "Code Style & Standards"
 description: Coding standards and stylistic requirements for Exaix
 agent_priority: mandatory
 copilot_knowledge_base: true
@@ -10,8 +10,6 @@ links:
   - "scripts/check_code_style.ts"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
-
-# Code Style & Standards
 
 > 🚨 Original documents now point to this file for the authoritative style rules.
 
@@ -207,6 +205,17 @@ const { join } = await import("@std/path");
 ```
 
 The code style checker will warn on all uses of dynamic import. Only use them when absolutely necessary and always provide a justification comment.
+
+## 4. Package Test Boundary Isolation {#package-test-boundaries}
+
+Package-local tests under `packages/<package>/tests/` must remain self-contained and must not import test fixtures, helpers, or other test modules from outside the package boundary.
+
+- **No cross-package test imports:** `packages/<package>/tests/` files must not import from root-level `tests/`, from other packages' test directories, or from any module outside their own package.
+- **Fixtures belong inside the package:** Store package-specific test fixtures under `packages/<package>/tests/fixtures/` or package-local helper code under `packages/<package>/tests/helpers/`.
+- **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
+- **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
+
+These rules are enforced by `scripts/check_code_style.ts` via the `[package-test-boundary]` error tag.
 
 ### No Inline Type Imports
 
@@ -453,7 +462,7 @@ Example:
 
 ---
 
-**Footer — Agent Knowledge Base**
+## Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)

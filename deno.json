@@ -81,7 +81,13 @@
     "@std/flags": "jsr:@std/flags@^0.221.0",
     "@std/streams": "jsr:@std/streams@^1.0.17",
     "@exaix/schemas": "./packages/schemas/mod.ts",
-    "@exaix/schemas/": "./packages/schemas/src/"
+    "@exaix/schemas/": "./packages/schemas/src/",
+    "@exaix/parsing": "./packages/parsing/mod.ts",
+    "@exaix/parsing/": "./packages/parsing/src/",
+    "@exaix/core": "./packages/core/mod.ts",
+    "@exaix/core/": "./packages/core/src/",
+    "@exaix/testing": "./packages/testing/mod.ts",
+    "@exaix/testing/": "./packages/testing/src/"
   },
   "exclude": [
     "cov_profile",

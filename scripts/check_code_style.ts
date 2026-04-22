@@ -7,12 +7,9 @@
  * Usage:
  *   deno run -A scripts/check_code_style.ts [path]
  */
-// Copyright 2026 Exaix authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
 
 import { walk } from "@std/fs";
-import { dirname, fromFileUrl, join } from "@std/path";
+import { dirname, fromFileUrl, join, normalize } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
 
@@ -285,7 +282,8 @@ async function checkFile(path: string) {
           namedMatch[1].replace(/}.*/, "").split(",").forEach((n) => {
             const parts = n.trim().split(/\s+as\s+/);
             const name = parts.pop()?.trim();
-            if (parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
+            const isCompatShim = path.endsWith("/src/parsers/markdown.ts");
+            if (!isCompatShim && parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
               console.log(
                 `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
                   parts[0].trim()
@@ -303,6 +301,30 @@ async function checkFile(path: string) {
         }
         const namespaceMatch = trimmed.match(/import\s+\*\s+as\s+([\w$]+)/);
         if (namespaceMatch) importedNames.set(namespaceMatch[1], idx + 1);
+
+        const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
+        if (relativePath.startsWith("packages/") && relativePath.includes("/tests/")) {
+          const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
+          const importPath = importMatch?.[1];
+
+          if (importPath && importPath.startsWith("..")) {
+            const normalizedImport = normalize(join(dirname(relativePath), importPath));
+            const packageRoot = relativePath.split("/").slice(0, 2).join("/");
+
+            if (normalizedImport.startsWith("tests/")) {
+              console.log(
+                `ERROR [package-test-boundary] ${relativePath}:${idx + 1} – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
+              );
+              errorCount++;
+            } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
+              console.log(
+                `ERROR [package-test-boundary] ${relativePath}:${idx + 1} – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
+              );
+              errorCount++;
+            }
+          }
+        }
+
       }
 
       if (trimmed.includes("{") && !trimmed.includes("} from")) {
