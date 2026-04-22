@@ -83,6 +83,15 @@ const rules: Rule[] = [
     severity: "error" as const,
   },
   {
+    name: "test-inline-multiline-fixture",
+    regex:
+      /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*(?:[A-Za-z_$][\w$]*\s*)?`[^`]*$/,
+    message:
+      "Avoid inline multiline structured text fixtures in test files. Move YAML, markdown, JSON, or other multi-line test inputs into a package-local fixture under tests/fixtures/ and load them from the test file.",
+    severity: "warn" as const,
+    pathFilter: (path: string) => path.includes("/tests/") || path.endsWith(".test.ts") || path.endsWith("_test.ts"),
+  },
+  {
     name: "explicit-unknown-array",
     regex: /:\s*unknown\[\]/,
     message: "Using 'unknown[]' as a type is forbidden; use a specific type instead.",
@@ -313,18 +322,21 @@ async function checkFile(path: string) {
 
             if (normalizedImport.startsWith("tests/")) {
               console.log(
-                `ERROR [package-test-boundary] ${relativePath}:${idx + 1} – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
+                `ERROR [package-test-boundary] ${relativePath}:${
+                  idx + 1
+                } – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
               );
               errorCount++;
             } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
               console.log(
-                `ERROR [package-test-boundary] ${relativePath}:${idx + 1} – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
+                `ERROR [package-test-boundary] ${relativePath}:${
+                  idx + 1
+                } – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
               );
               errorCount++;
             }
           }
         }
-
       }
 
       if (trimmed.includes("{") && !trimmed.includes("} from")) {

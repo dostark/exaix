@@ -212,10 +212,13 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 
 - **No cross-package test imports:** `packages/<package>/tests/` files must not import from root-level `tests/`, from other packages' test directories, or from any module outside their own package.
 - **Fixtures belong inside the package:** Store package-specific test fixtures under `packages/<package>/tests/fixtures/` or package-local helper code under `packages/<package>/tests/helpers/`.
+- **Avoid inline multiline structured text in tests:** Do not embed YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test.
 - **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
 - **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
 
 These rules are enforced by `scripts/check_code_style.ts` via the `[package-test-boundary]` error tag.
+
+- Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 
 ### No Inline Type Imports
 

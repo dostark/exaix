@@ -4,25 +4,16 @@
  * @description Verifies @exaix/parsing frontmatter parsing behavior, including validation and activity logging.
  */
 import { assertEquals, assertThrows } from "@std/assert";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { FrontmatterParser } from "@exaix/parsing";
 import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";
 
-Deno.test("FrontmatterParser: valid markdown with YAML frontmatter", () => {
-  const markdown = `---
-trace_id: "550e8400-e29b-41d4-a716-446655440000"
-identity_id: coder-agent
-status: pending
-priority: 8
-tags: [feature, ui]
----
+const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
+const loadFixture = async (name: string) => await Deno.readTextFile(join(FIXTURE_ROOT, name));
 
-# Implement Login Page
-
-Create a modern login page with:
-- Email/password fields
-- \"Remember me\" checkbox
-`;
+Deno.test("FrontmatterParser: valid markdown with YAML frontmatter", async () => {
+  const markdown = await loadFixture("valid-request.md");
   const parser = new FrontmatterParser();
   const result = parser.parse(markdown);
 
@@ -35,10 +26,8 @@ Create a modern login page with:
   assertEquals(result.body.includes("Email/password"), true);
 });
 
-Deno.test("FrontmatterParser: throws on missing frontmatter delimiters", () => {
-  const markdown = `# Just a title
-
-No frontmatter here!\n`;
+Deno.test("FrontmatterParser: throws on missing frontmatter delimiters", async () => {
+  const markdown = await loadFixture("missing-delimiters.md");
   const parser = new FrontmatterParser();
   const error = assertThrows(() => parser.parse(markdown)) as Error;
 
@@ -46,55 +35,28 @@ No frontmatter here!\n`;
 });
 
 Deno.test("FrontmatterParser: logs successful validation", async () => {
-  const { db, cleanup } = await createLoggingTestDb();
-  try {
-    const parser = new FrontmatterParser(db);
-    const markdown = `---
-trace_id: "550e8400-e29b-41d4-a716-446655440000"
-identity_id: coder-agent
-status: pending
-priority: 8
-tags: [feature, ui]
----
+  const { activities, db } = createLoggingTestDb();
+  const parser = new FrontmatterParser(db);
+  const markdown = await loadFixture("validated-request.md");
 
-# Test
-`;
+  const result = parser.parse(markdown, "test.md");
+  assertEquals(result.request.trace_id, "550e8400-e29b-41d4-a716-446655440000");
 
-    const result = parser.parse(markdown, "test.md");
-    assertEquals(result.request.trace_id, "550e8400-e29b-41d4-a716-446655440000");
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const rows = db.getActivitiesByActionType("request.validated");
-    assertEquals(rows.length, 1);
-    assertEquals(rows[0].actor, "system");
-    assertEquals(rows[0].action_type, "request.validated");
-    assertEquals(rows[0].target, "test.md");
-  } finally {
-    await cleanup();
-  }
+  assertEquals(activities.length, 1);
+  assertEquals(activities[0].actor, "system");
+  assertEquals(activities[0].actionType, "request.validated");
+  assertEquals(activities[0].target, "test.md");
 });
 
 Deno.test("FrontmatterParser: logs validation failure", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const parser = new FrontmatterParser(db);
-    const markdown = `---
-identity_id: coder-agent
-status: pending
----
+  const { activities, db } = createLoggingTestDb();
+  const parser = new FrontmatterParser(db);
+  const markdown = await loadFixture("bad-request.md");
 
-# Bad
-`;
+  assertThrows(() => parser.parse(markdown, "bad.md"));
 
-    assertThrows(() => parser.parse(markdown, "bad.md"));
-
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    const rows = db.getActivitiesByActionType("request.validation_failed");
-    assertEquals(rows.length, 1);
-    assertEquals(rows[0].actor, "system");
-    assertEquals(rows[0].action_type, "request.validation_failed");
-    assertEquals(rows[0].target, "bad.md");
-  } finally {
-    await cleanup();
-  }
+  assertEquals(activities.length, 1);
+  assertEquals(activities[0].actor, "system");
+  assertEquals(activities[0].actionType, "request.validation_failed");
+  assertEquals(activities[0].target, "bad.md");
 });

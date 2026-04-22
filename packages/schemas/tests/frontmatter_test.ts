@@ -4,9 +4,8 @@
  * @description Verifies RequestSchema validation behavior for request frontmatter data.
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-
 import { RequestSchema } from "@exaix/schemas/request.ts";
 
 /**

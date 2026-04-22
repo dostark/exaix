@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { SecurityMode } from "@exaix/schemas/enums.ts";
+import { SecurityMode } from "../../../src/shared/enums.ts";
 
 import { AgentExecutionOptionsSchema } from "@exaix/schemas/agent_executor.ts";
 import {
@@ -21,9 +21,8 @@ import {
   TraceIdSchema,
   UserRequestSchema,
 } from "@exaix/schemas/input_validation.ts";
-import { PROVIDER_OPENAI } from "@exaix/schemas/constants.ts";
-
-const TEST_MODEL_OPENAI = "openai-gpt-4.1";
+import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
+import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 Deno.test("Input Validation - BlueprintNameSchema", async (t) => {
   await t.step("accepts valid blueprint names", () => {
