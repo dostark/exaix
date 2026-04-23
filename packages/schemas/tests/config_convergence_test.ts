@@ -9,8 +9,8 @@
 
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/schemas/constants.ts";
-import { LogLevel } from "@exaix/schemas/enums.ts";
+import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { LogLevel } from "../../../src/shared/enums.ts";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
@@ -18,7 +18,7 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
   DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
   DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
-} from "@exaix/schemas/constants.ts";
+} from "../../../src/shared/constants.ts";
 
 interface IBaseConfig {
   system: { root: string; log_level: string };

@@ -49,6 +49,7 @@
     "check:style": "deno run -A scripts/check_code_style.ts",
     "check:test-placement": "deno run -A scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-all scripts/verify_manifest_fresh.ts",
+    "dep:graph": "deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --format text",
     "check:arch": "deno run --allow-read scripts/validate_architecture.ts",
     "check:magic": "deno run -A scripts/check_magic_values.ts",
     "check:complexity": "deno run --allow-run --allow-read scripts/measure_complexity.ts --threshold 15 --fail",

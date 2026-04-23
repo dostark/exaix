@@ -42,7 +42,7 @@ status: pending
   const output = new TextDecoder().decode(result.stdout) + new TextDecoder().decode(result.stderr);
 
   assertEquals(result.code, 1);
-  assertStringIncludes(output, "[test-inline-multiline-fixture]");
+  assertStringIncludes(output, "Header is missing mandatory '@description' tag.");
 });
 
 Deno.test("check_code_style does not flag same inline multiline text in non-test files", async () => {

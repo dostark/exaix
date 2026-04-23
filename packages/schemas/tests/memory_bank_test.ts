@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ExecutionStatus, MemoryReferenceType } from "@exaix/schemas/enums.ts";
+import { ExecutionStatus, MemoryReferenceType } from "../../../src/shared/enums.ts";
 
 import {
   ExecutionMemorySchema,

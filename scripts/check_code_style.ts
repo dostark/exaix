@@ -48,28 +48,23 @@ Description:
 // with a non-zero status if any errors were detected so it can be used in
 // pre-commit hooks or CI.
 const rules: Rule[] = [
-  // Dynamic import checks are only enabled if --strict-imports is passed
-  ...(strictImports
-    ? [
-      {
-        name: "import-inside-statement",
-        // Match lines that have 'import(' and start with whitespace (indented = nested)
-        // AND ignore 'typeof import('
-        regex: /^\s+.*(?<!typeof\s+)import\s*\(/,
-        message:
-          "Use of import() inside other statements (e.g., if, function, loop) is prohibited. All imports must be at the top level.",
-        severity: "error" as const,
-      },
-      {
-        name: "dynamic-import",
-        // Match 'import(' but exclude 'typeof import('
-        regex: /(?<!typeof\s+)\bimport\s*\(/,
-        message:
-          "Dynamic import statements (import(...)) are discouraged. If used, document the rationale in a comment above the import.",
-        severity: convertWarnings ? ("error" as const) : ("warn" as const),
-      },
-    ]
-    : []),
+  {
+    name: "import-inside-statement",
+    // Match lines that have 'import(' and start with whitespace (indented = nested)
+    // AND ignore 'typeof import('
+    regex: /^\s+.*(?<!typeof\s+)import\s*\(/,
+    message:
+      "Use of import() inside other statements (e.g., if, function, loop) is prohibited. All imports must be at the top level.",
+    severity: "error" as const,
+  },
+  {
+    name: "dynamic-import",
+    // Match 'import(' but exclude 'typeof import('
+    regex: /(?<!typeof\s+)\bimport\s*\(/,
+    message:
+      "Dynamic import statements (import(...)) are discouraged. If used, document the rationale in a comment above the import.",
+    severity: convertWarnings || strictImports ? ("error" as const) : ("warn" as const),
+  },
   {
     name: "inline-type-import",
     // Matches import("...").Something used as a type annotation, e.g.:
@@ -92,15 +87,23 @@ const rules: Rule[] = [
     pathFilter: (path: string) => path.includes("/tests/") || path.endsWith(".test.ts") || path.endsWith("_test.ts"),
   },
   {
-    name: "explicit-unknown-array",
-    regex: /:\s*unknown\[\]/,
-    message: "Using 'unknown[]' as a type is forbidden; use a specific type instead.",
-    severity: "error" as const,
-  },
-  {
     name: "explicit-any-array",
     regex: /:\s*any\[\]/,
     message: "Using 'any[]' as a type is forbidden; use a specific type instead.",
+    severity: "error" as const,
+  },
+  {
+    name: "explicit-unknown",
+    // Catch ': unknown' but skip 'catch(e: unknown)'
+    // Uses lookbehind for catch and matches various terminators
+    regex: /(?<!catch\s*\(\s*[a-zA-Z_$]\w*\s*):\s*unknown\b(?!\s*\[)/,
+    message: "Using 'unknown' as an explicit type is forbidden; name the shape with an interface or type alias.",
+    severity: "error" as const,
+  },
+  {
+    name: "explicit-unknown-array",
+    regex: /:\s*unknown\[\]/,
+    message: "Using 'unknown[]' as a type is forbidden; use a specific type instead.",
     severity: "error" as const,
   },
   {
@@ -149,10 +152,17 @@ const rules: Rule[] = [
     severity: "error" as const,
   },
   {
+    name: "index-signature-unknown",
+    regex: /\{\s*\[\s*key\s*:\s*string\s*\]\s*:\s*unknown\s*\}/,
+    message: "'{ [key: string]: unknown }' is prohibited; define a specific interface describing the expected shape.",
+    severity: "error" as const,
+  },
+  {
     name: "promise-response-return",
-    regex: /:\s*Promise\s*<\s*Response\s*>\s*=>/,
+    // Expanded to catch both arrow => Promise<Response> and : Promise<Response> method/function returns
+    regex: /:\s*Promise\s*<\s*Response\s*>/,
     message:
-      "'Promise<Response>' as return type in arrow functions is weak typing; define a specific return type interface instead.",
+      "'Promise<Response>' as return type is too weak; define a specific interface describing the expected response shape.",
     severity: "error" as const,
   },
   {
@@ -195,11 +205,13 @@ async function checkFile(path: string) {
   let firstInterfaceLineNum = -1;
   let headerFound = false;
   let firstContentLineNum = -1;
+  let paramDepth = 0;
   const importedNames = new Map<string, number>();
   let inParamList = false;
   let currentParamCount = 0;
   let paramListStartLine = -1;
-  let paramDepth = 0;
+  const importFollowingInterface = new Map<number, number>();
+  const importFollowingFunctional = new Map<number, number>();
 
   for (let idx = 0; idx < lines.length; idx++) {
     const line = lines[idx];
@@ -278,87 +290,112 @@ async function checkFile(path: string) {
       }
       continue;
     }
+    const isImportStart = /^\s*import\b/.test(line) ||
+      /^\s*export\s+\*\s+from\b/.test(line) ||
+      /^\s*export\s+{[^}]*}\s+from\b/.test(line) ||
+      /^\s*export\s+type\s+{[^}]*}\s+from\b/.test(line);
+    if (isImportStart || inMultiLineImport) {
+      if (isImportStart) {
+        if (firstImportLineNum === -1) firstImportLineNum = idx + 1;
+        lastImportLineNum = idx + 1;
 
-    const isImportStart = /^\s*import\b/.test(line) || /^\s*export\s+{[^}]*}\s+from\b/.test(line);
-    if (isImportStart) {
-      if (firstImportLineNum === -1) firstImportLineNum = idx + 1;
-      lastImportLineNum = idx + 1;
-
-      // Extract names from single-line or start of multi-line import
-      if (trimmed.startsWith("import")) {
-        const namedMatch = trimmed.match(/{([^}]*)/);
-        if (namedMatch) {
-          namedMatch[1].replace(/}.*/, "").split(",").forEach((n) => {
-            const parts = n.trim().split(/\s+as\s+/);
-            const name = parts.pop()?.trim();
-            const isCompatShim = path.endsWith("/src/parsers/markdown.ts");
-            if (!isCompatShim && parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
-              console.log(
-                `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
-                  parts[0].trim()
-                }' to '${name}' is prohibited. Use the original name.`,
-              );
-              errorCount++;
-            }
-            if (name && name !== "from" && name !== "import") importedNames.set(name, idx + 1);
-          });
+        // Extract names from single-line or start of multi-line import
+        if (trimmed.startsWith("import")) {
+          const namedMatch = trimmed.match(/{([^}]*)/);
+          if (namedMatch) {
+            namedMatch[1].replace(/}.*/, "").split(",").forEach((n) => {
+              const parts = n.trim().split(/\s+as\s+/);
+              const name = parts.pop()?.trim();
+              const isCompatShim = path.endsWith("/src/parsers/markdown.ts");
+              if (!isCompatShim && parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
+                console.log(
+                  `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
+                    parts[0].trim()
+                  }' to '${name}' is prohibited. Use the original name.`,
+                );
+                errorCount++;
+              }
+              if (name && name !== "from" && name !== "import") importedNames.set(name, idx + 1);
+            });
+          }
+          // Default or Namespace import
+          const defaultMatch = trimmed.match(/^import\s+([\w$]+)[,\s]/);
+          if (defaultMatch && defaultMatch[1] !== "type" && defaultMatch[1] !== "*") {
+            importedNames.set(defaultMatch[1], idx + 1);
+          }
+          const namespaceMatch = trimmed.match(/import\s+\*\s+as\s+([\w$]+)/);
+          if (namespaceMatch) importedNames.set(namespaceMatch[1], idx + 1);
         }
-        // Default or Namespace import
-        const defaultMatch = trimmed.match(/^import\s+([\w$]+)[,\s]/);
-        if (defaultMatch && defaultMatch[1] !== "type" && defaultMatch[1] !== "*") {
-          importedNames.set(defaultMatch[1], idx + 1);
+
+        if (trimmed.includes("{") && !trimmed.includes("} from")) {
+          inMultiLineImport = true;
         }
-        const namespaceMatch = trimmed.match(/import\s+\*\s+as\s+([\w$]+)/);
-        if (namespaceMatch) importedNames.set(namespaceMatch[1], idx + 1);
+      }
 
-        const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
-        if (relativePath.startsWith("packages/") && relativePath.includes("/tests/")) {
-          const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
-          const importPath = importMatch?.[1];
+      const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
+      if (relativePath.startsWith("packages/") && relativePath.includes("/tests/")) {
+        const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
+        const importPath = importMatch?.[1];
 
-          if (importPath && importPath.startsWith("..")) {
-            const normalizedImport = normalize(join(dirname(relativePath), importPath));
-            const packageRoot = relativePath.split("/").slice(0, 2).join("/");
+        if (importPath && importPath.startsWith("..")) {
+          const normalizedImport = normalize(join(dirname(relativePath), importPath));
+          const packageRoot = relativePath.split("/").slice(0, 2).join("/");
 
-            if (normalizedImport.startsWith("tests/")) {
-              console.log(
-                `ERROR [package-test-boundary] ${relativePath}:${
-                  idx + 1
-                } – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
-              );
-              errorCount++;
-            } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
-              console.log(
-                `ERROR [package-test-boundary] ${relativePath}:${
-                  idx + 1
-                } – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
-              );
-              errorCount++;
-            }
+          if (normalizedImport.startsWith("tests/")) {
+            console.log(
+              `ERROR [package-test-boundary] ${relativePath}:${
+                idx + 1
+              } – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
+            );
+            errorCount++;
+          } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
+            console.log(
+              `ERROR [package-test-boundary] ${relativePath}:${
+                idx + 1
+              } – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
+            );
+            errorCount++;
           }
         }
       }
 
-      if (trimmed.includes("{") && !trimmed.includes("} from")) {
-        inMultiLineImport = true;
+      if (relativePath.startsWith("packages/") && relativePath.includes("/src/")) {
+        const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
+        const importPath = importMatch?.[1];
+
+        if (importPath) {
+          let normalizedImport: string | null = null;
+          if (importPath.startsWith(".")) {
+            normalizedImport = normalize(join(dirname(relativePath), importPath));
+          } else if (importPath.startsWith("src/")) {
+            normalizedImport = normalize(importPath);
+          }
+
+          const packageRoot = relativePath.split("/").slice(0, 2).join("/");
+          const isExternalRepoSrcImport = normalizedImport &&
+            (normalizedImport === "src" || normalizedImport.startsWith("src/"));
+          if (isExternalRepoSrcImport) {
+            console.log(
+              `ERROR [package-src-boundary] ${relativePath}:${
+                idx + 1
+              } – Package source modules under '${packageRoot}/src/' must not import directly from 'src/*'. Use package public APIs instead.`,
+            );
+            errorCount++;
+          }
+        }
+      }
+
+      if (inMultiLineImport && trimmed.includes("} from")) {
+        inMultiLineImport = false;
       }
 
       if (firstInterfaceLineNum !== -1) {
-        console.log(
-          `ERROR [import-placement] ${path}:${
-            idx + 1
-          } – Imports must precede all interface/type definitions (interface started at line ${firstInterfaceLineNum}).`,
-        );
-        errorCount++;
+        // Collect violations but don't print immediately to avoid flooding mod.ts-style files
+        importFollowingInterface.set(idx + 1, firstInterfaceLineNum);
       }
 
       if (functionalCodeLineNum !== -1) {
-        console.log(
-          `ERROR [import-placement] ${path}:${
-            idx + 1
-          } – Imports must be at the top, preceding functional code (functional code started at line ${functionalCodeLineNum}).`,
-        );
-        errorCount++;
+        importFollowingFunctional.set(idx + 1, functionalCodeLineNum);
       }
       continue;
     }
@@ -549,6 +586,23 @@ async function checkFile(path: string) {
       `ERROR [import-placement] ${path}:${firstInterfaceLineNum} – Interface/type definitions must follow all imports (last import at line ${lastImportLineNum}).`,
     );
     errorCount++;
+  } else if (importFollowingInterface.size > 0) {
+    // If not flagged above, report the first misplaced import
+    const line = Array.from(importFollowingInterface.keys())[0];
+    const started = importFollowingInterface.get(line);
+    console.log(
+      `ERROR [import-placement] ${path}:${line} – Imports must precede all interface/type definitions (interface started at line ${started}).`,
+    );
+    errorCount++;
+  }
+
+  if (importFollowingFunctional.size > 0) {
+    const line = Array.from(importFollowingFunctional.keys())[0];
+    const started = importFollowingFunctional.get(line);
+    console.log(
+      `ERROR [import-placement] ${path}:${line} – Imports must be at the top, preceding functional code (functional code started at line ${started}).`,
+    );
+    errorCount++;
   }
 
   // TUI Boundary Isolation Checks - implemented during main loop for efficiency
@@ -635,6 +689,62 @@ async function checkFile(path: string) {
     }
   }
 
+  const multilineFixtureExemptLines = new Set<number>();
+  const multilineFixtureWarnLines = new Set<number>();
+  const fixtureStartRegex = /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*`/;
+  const anyTemplateStartRegex = /^\s*(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*`/;
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
+    if (anyTemplateStartRegex.test(line) && !/`[^`]*`/.test(line)) {
+      let containsInterpolation = false;
+      let lineCount = 0;
+      let closed = false;
+      let firstNonEmptyLine: string | null = null;
+      const openingBacktickIndex = line.indexOf("`");
+      const openingText = line.slice(openingBacktickIndex + 1);
+      if (openingText.trim().length > 0) {
+        if (openingText.includes("${")) {
+          containsInterpolation = true;
+        }
+        lineCount++;
+        firstNonEmptyLine = openingText.trim();
+      }
+
+      for (let j = idx + 1; j < lines.length; j++) {
+        if (lines[j].includes("${")) {
+          containsInterpolation = true;
+        }
+        if (firstNonEmptyLine === null && lines[j].trim().length > 0) {
+          firstNonEmptyLine = lines[j].trim();
+        }
+        const backtickIndex = lines[j].indexOf("`");
+        if (backtickIndex !== -1) {
+          if (lines[j].slice(0, backtickIndex).trim().length > 0) {
+            lineCount++;
+          }
+          closed = true;
+          break;
+        }
+        lineCount++;
+      }
+
+      const shouldWarn = closed &&
+        !containsInterpolation &&
+        lineCount >= 7 &&
+        firstNonEmptyLine !== null &&
+        (firstNonEmptyLine.startsWith("---") || firstNonEmptyLine.startsWith("#"));
+
+      if (fixtureStartRegex.test(line)) {
+        if (!closed || containsInterpolation || lineCount < 7) {
+          multilineFixtureExemptLines.add(idx + 1);
+        }
+      } else if (shouldWarn) {
+        multilineFixtureWarnLines.add(idx + 1);
+      }
+    }
+  }
+
   rules.forEach((rule) => {
     // Skip rule if path does not match rule's pathFilter
     if (rule.pathFilter && !rule.pathFilter(path)) {
@@ -642,7 +752,33 @@ async function checkFile(path: string) {
     }
 
     lines.forEach((line, idx) => {
+      if (rule.name === "test-inline-multiline-fixture") {
+        if (multilineFixtureExemptLines.has(idx + 1)) {
+          return;
+        }
+        if (multilineFixtureWarnLines.has(idx + 1)) {
+          const location = `${path}:${idx + 1}`;
+          const actualSeverity = convertWarnings ? "error" : rule.severity;
+          const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
+          console.log(`${prefix} [${rule.name}] ${location} – ${rule.message}`);
+          if (actualSeverity === "error") {
+            errorCount++;
+          } else {
+            warnCount++;
+          }
+          return;
+        }
+      }
       if (rule.regex.test(line)) {
+        if (rule.name === "dynamic-import") {
+          // Look at the line above for a rationale comment
+          const prevLine = idx > 0 ? lines[idx - 1].trim() : "";
+          if (prevLine.startsWith("//") || (idx > 0 && lines[idx - 1].includes("*/"))) {
+            // Check if the previous line looks like a rationale (starts with lowercase or has enough words)
+            // Or just trust any comment for now as per the message
+            return;
+          }
+        }
         const location = `${path}:${idx + 1}`;
         const actualSeverity = convertWarnings ? "error" : rule.severity;
         const prefix = actualSeverity === "error" ? "ERROR" : "WARN";

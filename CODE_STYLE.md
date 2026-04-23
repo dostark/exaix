@@ -58,6 +58,7 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
   `as typeof variable` is treated as an 'any' escape and is forbidden in
   production code. Exception: `as typeof globalThis.fetch` is allowed in test
   code for mocking the fetch API, as this preserves the correct type signature.
+- **Intersection type extensions.** Casting that includes an intersection (e.g., `as typeof Deno & { ... }`) is permitted to extend global or core namespaces with additional properties.
 - **Always name it.** If a type doesn't exist yet, create one explicitly. When
   the keys are known, prefer specific interfaces over `Record<string, …>`.
 - **No `Record<string, any>`.** This type is extremely weak and effectively
@@ -117,6 +118,11 @@ pre-commit gates via `deno task check:magic` (or directly:
 - Strings shorter than 3 characters that don't start with a lowercase letter
   (e.g., `"ID"`, `"OK"` are allowed; `"ab"` is not flagged)
 
+- **Magic string unions.** Avoid inline string literal unions (e.g., `"a" | "b"`)
+  directly in functional code. These are difficult to maintain and track.
+  Instead, define a TypeScript `enum` in `src/enums.ts` or a shared named type alias.
+  This rule is enforced as an error in production code.
+
 **What is skipped (not counted):**
 
 - Property/enum member names (e.g., `{ foo: "bar" }` — `"foo"` is a name, not a
@@ -172,6 +178,15 @@ import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
 ```
 
+**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules; re-exporting from external packages or arbitrary non-root modules remains prohibited.
+
+```ts
+// packages/core/mod.ts
+export type { IToolRegistry } from "./src/interfaces/i_tool_registry.ts";
+export type { IActivityRecord } from "./src/types/database.ts";
+export { PortalOperation } from "./src/enums.ts";
+```
+
 ### Multi-line Named Imports
 
 The style checker does not enforce a specific format for named imports. Use your judgment to balance readability and conciseness. `deno fmt` will automatically format imports according to its configured line width.
@@ -204,7 +219,7 @@ const { Y } = await import("./y.ts");
 const { join } = await import("@std/path");
 ```
 
-The code style checker will warn on all uses of dynamic import. Only use them when absolutely necessary and always provide a justification comment.
+The code style checker will strictly enforce that all imports appear at the top level. Dynamic imports should only be used when absolutely necessary and always provide a justification comment.
 
 ## 4. Package Test Boundary Isolation {#package-test-boundaries}
 
@@ -212,11 +227,12 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 
 - **No cross-package test imports:** `packages/<package>/tests/` files must not import from root-level `tests/`, from other packages' test directories, or from any module outside their own package.
 - **Fixtures belong inside the package:** Store package-specific test fixtures under `packages/<package>/tests/fixtures/` or package-local helper code under `packages/<package>/tests/helpers/`.
-- **Avoid inline multiline structured text in tests:** Do not embed YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test.
+- **Avoid inline multiline structured text in tests:** It is highly recommended to avoid embedding YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test instead to keep test files readable.
 - **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
+- **Package source must not import repository source directly:** Files under `packages/<package>/src/` must not import from repository `src/*` paths directly. Use package public APIs instead.
 - **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
 
-These rules are enforced by `scripts/check_code_style.ts` via the `[package-test-boundary]` error tag.
+These rules are enforced by `scripts/check_code_style.ts` via the `[package-test-boundary]` and `[package-src-boundary]` error tags.
 
 - Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 
@@ -266,6 +282,8 @@ import { IRequest } from "./request.ts";
 ```
 
 If a naming conflict occurs, it is better to refactor the local names or the conflicting modules than to alias the interfaces.
+
+**Exception:** Aliasing is permitted in `src/parsers/markdown.ts` when used for backward compatibility shims or interface compatibility bridges.
 
 Good:
 
@@ -375,6 +393,7 @@ These rules are enforced by `scripts/check_code_style.ts` via:
 - `[tui-boundary-config]`
 - `[tui-boundary-helpers]`
 - `[core-boundary-tui-helpers]`
+- `[package-src-boundary]`
 
 Boundary checks run as part of the standard quality gates in pre-commit hooks and CI.
 

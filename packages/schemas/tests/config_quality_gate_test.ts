@@ -9,14 +9,14 @@
 
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/schemas/constants.ts";
-import { LogLevel, QualityGateMode } from "@exaix/schemas/enums.ts";
+import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { LogLevel, QualityGateMode } from "../../../src/shared/enums.ts";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_QG_ENRICHMENT_THRESHOLD,
   DEFAULT_QG_MINIMUM_THRESHOLD,
   DEFAULT_QG_PROCEED_THRESHOLD,
-} from "@exaix/schemas/constants.ts";
+} from "../../../src/shared/constants.ts";
 
 function baseConfig() {
   return {

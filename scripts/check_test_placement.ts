@@ -33,7 +33,6 @@ export interface ITestPlacementResult {
 const REPO_ROOT = resolve(new URL("../", import.meta.url).pathname);
 const TEST_FILE_PATTERN = /(^|\/)[^/]+_test\.(ts|tsx|js|jsx)$/;
 const ROOT_TESTS_PREFIX = "tests/";
-const PACKAGE_TEST_PREFIX = "packages/";
 const PACKAGE_TEST_PATTERN = /^packages\/[^/]+\/tests\//;
 const DIRECT_SERVICE_TEST_PATTERN = /^tests\/services\/[^/]+_test\.(ts|tsx|js|jsx)$/;
 

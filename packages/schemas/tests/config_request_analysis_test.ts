@@ -9,9 +9,9 @@
 
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/schemas/constants.ts";
+import { ExaPathDefaults } from "../../../src/shared/constants.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { LogLevel } from "@exaix/schemas/enums.ts";
+import { LogLevel } from "../../../src/shared/enums.ts";
 
 // ---------------------------------------------------------------------------
 // Minimal valid config base (only truly required fields — system + paths)
