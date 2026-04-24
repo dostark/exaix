@@ -46,6 +46,12 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
   response shape and return `Promise<YourResponseType>`. This ensures callers
   have proper type information and prevents runtime errors from unexpected
   response formats.
+- **No aliasing raw `unknown` or `Promise<Response>`.** Do not create type
+  aliases that merely rename a weak type, such as `type UnknownValue = unknown;`
+  or `type MockFetch = () => Promise<Response>;`. These fake aliases disguise
+  poor typing and make it harder to reason about actual data shapes. Define the
+  real structure explicitly with a named interface or type alias, or use runtime
+  validation and narrow from `unknown` at the point of access.
 - **No deceptive type aliases for mocks.** Do not create type aliases like
   `type MockFetch = () => Promise<Response>` to hide weak typing. This pattern
   is deceptive because it gives the appearance of strong typing while still

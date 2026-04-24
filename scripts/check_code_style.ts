@@ -12,6 +12,13 @@ import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, normalize } from "@std/path";
 
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
+const EXCLUSION_DICT_PATH = join(dirname(fromFileUrl(import.meta.url)), "style_warning_exclusions.json");
+let exclusionDict: Record<string, Record<string, { reason: string }>> = {};
+try {
+  exclusionDict = JSON.parse(Deno.readTextFileSync(EXCLUSION_DICT_PATH));
+} catch {
+  exclusionDict = {};
+}
 
 interface Rule {
   name: string;
@@ -24,17 +31,21 @@ interface Rule {
 const args = new Set(Deno.args);
 const strictImports = args.has("--strict-imports");
 const convertWarnings = args.has("--convert-warnings-to-errors");
+const showAllWarnings = args.has("--show-all-warnings");
 
 if (args.has("--help") || args.has("-h")) {
   console.log(`Exaix Code Style Checker
 
 Usage:
+
   deno run scripts/check_code_style.ts [options] [paths...]
 
 Options:
   --help, -h          Show this help message
   --strict-imports    Enable strict dynamic import checks (detects imports inside statements)
+
   --convert-warnings-to-errors  Convert all warnings to errors
+  --show-all-warnings          Show all warnings, including those masked by exclusion comments
 
 Description:
   Scans all .ts and .tsx files in the Exaix repository for code style violations
@@ -104,6 +115,19 @@ const rules: Rule[] = [
     name: "explicit-unknown-array",
     regex: /:\s*unknown\[\]/,
     message: "Using 'unknown[]' as a type is forbidden; use a specific type instead.",
+    severity: "error" as const,
+  },
+  {
+    name: "unknown-type-alias",
+    regex: /^\s*(?:export\s+)?type\s+[A-Za-z_$][\w$]*\s*=\s*unknown\s*;/,
+    message:
+      "Type aliases that rename raw 'unknown' are prohibited; define a real shape or narrow from 'unknown' where needed.",
+    severity: "error" as const,
+  },
+  {
+    name: "promise-response-alias",
+    regex: /^\s*(?:export\s+)?type\s+[A-Za-z_$][\w$]*\s*=\s*(?:\([^\)]*\)\s*=>\s*)?Promise\s*<\s*Response\s*>\s*;/,
+    message: "Type aliases that mask 'Promise<Response>' are prohibited; define a specific response type instead.",
     severity: "error" as const,
   },
   {
@@ -190,9 +214,100 @@ const rules: Rule[] = [
 let errorCount = 0;
 let warnCount = 0;
 
+function parseExclusionComment(line: string, ruleName: string): { code: string; rationale: string } | null {
+  // Looks for: // style-exclude:CODE - rationale
+  const match = line.match(new RegExp(`//\\s*style-exclude:([A-Z0-9_]+)\\s*-\\s*(.+)$`));
+  if (match && exclusionDict[ruleName] && exclusionDict[ruleName][match[1]]) {
+    return { code: match[1], rationale: match[2] };
+  }
+  return null;
+}
+
+function stripQuotedStringsAndComments(line: string): string {
+  let result = "";
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let inBacktick = false;
+  let escaped = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (escaped) {
+      escaped = false;
+      result += " ";
+      continue;
+    }
+
+    if (inSingleQuote) {
+      if (char === "\\") {
+        escaped = true;
+      } else if (char === "'") {
+        inSingleQuote = false;
+      }
+      result += " ";
+      continue;
+    }
+
+    if (inDoubleQuote) {
+      if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inDoubleQuote = false;
+      }
+      result += " ";
+      continue;
+    }
+
+    if (inBacktick) {
+      if (char === "\\") {
+        escaped = true;
+      } else if (char === "`") {
+        inBacktick = false;
+      }
+      result += " ";
+      continue;
+    }
+
+    if (char === "/" && line[i + 1] === "/") {
+      break;
+    }
+    if (char === "'") {
+      inSingleQuote = true;
+      result += " ";
+      continue;
+    }
+    if (char === '"') {
+      inDoubleQuote = true;
+      result += " ";
+      continue;
+    }
+    if (char === "`") {
+      inBacktick = true;
+      result += " ";
+      continue;
+    }
+    result += char;
+  }
+
+  return result;
+}
+
 async function checkFile(path: string) {
   const text = await Deno.readTextFile(path);
   const lines = text.split(/\r?\n/);
+
+  const templateLiteralLines = new Set<number>();
+  let templateLiteralState = false;
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
+    const backtickCount = (line.replace(/\\`/g, "").match(/`/g) || []).length;
+    if (backtickCount % 2 !== 0) {
+      templateLiteralState = !templateLiteralState;
+    }
+    if (templateLiteralState) {
+      templateLiteralLines.add(idx + 1);
+    }
+  }
 
   let inMultiLineComment = false;
   let inMultiLineImport = false;
@@ -275,7 +390,10 @@ async function checkFile(path: string) {
     if (backtickCount % 2 !== 0) {
       inTemplateLiteral = !inTemplateLiteral;
     }
-    if (inTemplateLiteral) continue;
+    if (inTemplateLiteral) {
+      templateLiteralLines.add(idx + 1);
+      continue;
+    }
 
     // Skip content inside multi-line type/interface/enum declarations
     if (inTypeDeclaration) {
@@ -290,7 +408,7 @@ async function checkFile(path: string) {
       }
       continue;
     }
-    const isImportStart = /^\s*import\b/.test(line) ||
+    const isImportStart = (/^\s*import\b/.test(line) && !/^\s*import(\.|\s*\()/.test(line)) ||
       /^\s*export\s+\*\s+from\b/.test(line) ||
       /^\s*export\s+{[^}]*}\s+from\b/.test(line) ||
       /^\s*export\s+type\s+{[^}]*}\s+from\b/.test(line);
@@ -752,6 +870,30 @@ async function checkFile(path: string) {
     }
 
     lines.forEach((line, idx) => {
+      if (templateLiteralLines.has(idx + 1) && rule.name !== "test-inline-multiline-fixture") {
+        return;
+      }
+      const lineToTest = ["explicit-unknown", "explicit-unknown-array", "index-signature-unknown"].includes(rule.name)
+        ? stripQuotedStringsAndComments(line)
+        : line;
+      let masked = false;
+      let exclusionCode = null;
+      let exclusionRationale = null;
+      // For warnings only, check for exclusion comment above
+      if (
+        rule.severity === "warn" &&
+        (rule.regex.test(lineToTest) ||
+          (rule.name === "test-inline-multiline-fixture" && multilineFixtureWarnLines.has(idx + 1)))
+      ) {
+        // Look for exclusion comment above
+        const prevLine = idx > 0 ? lines[idx - 1].trim() : "";
+        const exclusion = parseExclusionComment(prevLine, rule.name);
+        if (exclusion) {
+          masked = true;
+          exclusionCode = exclusion.code;
+          exclusionRationale = exclusion.rationale;
+        }
+      }
       if (rule.name === "test-inline-multiline-fixture") {
         if (multilineFixtureExemptLines.has(idx + 1)) {
           return;
@@ -760,33 +902,52 @@ async function checkFile(path: string) {
           const location = `${path}:${idx + 1}`;
           const actualSeverity = convertWarnings ? "error" : rule.severity;
           const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
-          console.log(`${prefix} [${rule.name}] ${location} – ${rule.message}`);
-          if (actualSeverity === "error") {
-            errorCount++;
-          } else {
-            warnCount++;
+          if (!masked || showAllWarnings) {
+            let msg = `${prefix} [${rule.name}] ${location} – ${rule.message}`;
+            if (exclusionDict[rule.name]) {
+              msg += `\n  Possible exclusion codes: ${Object.keys(exclusionDict[rule.name]).join(", ")}`;
+            }
+            if (masked) {
+              msg += `\n  (masked by style-exclude:${exclusionCode} – ${exclusionRationale})`;
+            }
+            console.log(msg);
+          }
+          if (!masked) {
+            if (actualSeverity === "error") errorCount++;
+            else warnCount++;
           }
           return;
         }
       }
-      if (rule.regex.test(line)) {
+      if (rule.regex.test(lineToTest)) {
+        if (rule.severity === "warn") {
+          // Check for exclusion comment above
+          if (masked && !showAllWarnings) {
+            return;
+          }
+        }
         if (rule.name === "dynamic-import") {
-          // Look at the line above for a rationale comment
+          // Look at the line above for a rationale comment or exclusion
           const prevLine = idx > 0 ? lines[idx - 1].trim() : "";
-          if (prevLine.startsWith("//") || (idx > 0 && lines[idx - 1].includes("*/"))) {
-            // Check if the previous line looks like a rationale (starts with lowercase or has enough words)
-            // Or just trust any comment for now as per the message
+          const exclusion = parseExclusionComment(prevLine, rule.name);
+          if (exclusion && !showAllWarnings) {
             return;
           }
         }
         const location = `${path}:${idx + 1}`;
         const actualSeverity = convertWarnings ? "error" : rule.severity;
         const prefix = actualSeverity === "error" ? "ERROR" : "WARN";
-        console.log(`${prefix} [${rule.name}] ${location} – ${rule.message}`);
-        if (actualSeverity === "error") {
-          errorCount++;
-        } else {
-          warnCount++;
+        let msg = `${prefix} [${rule.name}] ${location} – ${rule.message}`;
+        if (rule.severity === "warn" && exclusionDict[rule.name]) {
+          msg += `\n  Possible exclusion codes: ${Object.keys(exclusionDict[rule.name]).join(", ")}`;
+        }
+        if (masked) {
+          msg += `\n  (masked by style-exclude:${exclusionCode} – ${exclusionRationale})`;
+        }
+        console.log(msg);
+        if (!masked) {
+          if (actualSeverity === "error") errorCount++;
+          else warnCount++;
         }
       }
     });

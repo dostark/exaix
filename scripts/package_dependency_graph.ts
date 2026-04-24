@@ -12,11 +12,9 @@
 import { parse } from "@std/flags";
 import { dirname, fromFileUrl, join, normalize, relative } from "@std/path";
 
-const ROOT = Deno.cwd();
-const DEFAULT_ENTRYPOINT = "src/main.ts";
-const DEFAULT_FORMAT = "text" as const;
+type PackageDependencyFormat = "text" | "json" | "dot";
 
-export interface DenoInfoDependency {
+export interface IDenoInfoDependency {
   specifier: string;
   code?: {
     specifier: string;
@@ -26,7 +24,7 @@ export interface DenoInfoDependency {
 export interface DenoInfoModule {
   specifier: string;
   local?: string;
-  dependencies?: DenoInfoDependency[];
+  dependencies?: IDenoInfoDependency[];
 }
 
 export interface DenoInfoJson {
@@ -62,6 +60,15 @@ export interface PackageGraphOptions {
   importAliases?: Record<string, string>;
 }
 
+export interface IPackageDiscovery {
+  roots: string[];
+  importAliases: Record<string, string>;
+}
+
+const ROOT = Deno.cwd();
+const DEFAULT_ENTRYPOINT = "src/main.ts";
+const DEFAULT_FORMAT: PackageDependencyFormat = "text";
+
 export async function main() {
   const args = parse(Deno.args, {
     string: ["entrypoint", "format", "candidatePackage"],
@@ -78,7 +85,7 @@ export async function main() {
   }
 
   const entrypoint = String(args.entrypoint || DEFAULT_ENTRYPOINT);
-  const format = String(args.format || DEFAULT_FORMAT) as "text" | "json" | "dot";
+  const format = String(args.format || DEFAULT_FORMAT) as PackageDependencyFormat;
   const candidatePackage = typeof args.candidatePackage === "string"
     ? String(args.candidatePackage)
     : typeof args["candidate-package"] === "string"
@@ -147,12 +154,7 @@ export async function runDenoInfo(entrypoint: string): Promise<DenoInfoJson> {
   return JSON.parse(raw) as DenoInfoJson;
 }
 
-export interface PackageDiscovery {
-  roots: string[];
-  importAliases: Record<string, string>;
-}
-
-export async function discoverPackageRoots(): Promise<PackageDiscovery> {
+export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
   const configPath = join(ROOT, "deno.json");
   const configText = await Deno.readTextFile(configPath);
   const config = JSON.parse(configText) as { workspace?: string[]; imports?: Record<string, string> };

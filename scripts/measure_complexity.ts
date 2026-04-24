@@ -30,7 +30,9 @@ const parserCandidates = [
 ];
 
 type ParserOptions = JSONObject;
-type BabelParseFn = (code: string, opts?: ParserOptions) => unknown;
+type BabelParseResult = object | null;
+type BabelParseFn = (code: string, opts?: ParserOptions) => BabelParseResult;
+type AstFieldValue = string | number | boolean | null | undefined | AstFieldValue[] | { [key: string]: AstFieldValue };
 
 interface IAstNamedNode {
   name?: string;
@@ -44,26 +46,25 @@ interface IAstNode {
   type?: string;
   loc?: IAstLoc;
   alternate?: IAstNode;
-  test?: unknown;
+  test?: AstFieldValue;
   operator?: string;
   id?: IAstNamedNode | null;
   key?: IAstNamedNode | null;
-  [key: string]: unknown;
 }
 
-function extractParse(mod: unknown): BabelParseFn | undefined {
+function extractParse(mod: object | null): BabelParseFn | undefined {
   if (typeof mod === "object" && mod !== null) {
-    if ("parse" in mod && typeof (mod as { parse?: unknown }).parse === "function") {
+    if ("parse" in mod && typeof (mod as { parse?: AstFieldValue }).parse === "function") {
       return (mod as { parse: BabelParseFn }).parse;
     }
-    if ("default" in mod && typeof (mod as { default?: unknown }).default === "function") {
+    if ("default" in mod && typeof (mod as { default?: AstFieldValue }).default === "function") {
       return (mod as { default: BabelParseFn }).default;
     }
     if (
       "default" in mod &&
-      typeof (mod as { default?: unknown }).default === "object" &&
-      (mod as { default: { parse?: unknown } }).default &&
-      typeof (mod as { default: { parse?: unknown } }).default.parse === "function"
+      typeof (mod as { default?: AstFieldValue }).default === "object" &&
+      (mod as { default: { parse?: AstFieldValue } }).default &&
+      typeof (mod as { default: { parse?: AstFieldValue } }).default.parse === "function"
     ) {
       return (mod as { default: { parse: BabelParseFn } }).default.parse;
     }
@@ -108,6 +109,10 @@ const SHOULD_FAIL = !!flags.fail;
 // We parse TypeScript/JS with @babel/parser and walk the AST.
 
 type Node = IAstNode;
+type NodeValue = string | number | boolean | null | object;
+interface NodeRecord {
+  [key: string]: NodeValue;
+}
 
 export function computeFileComplexityMetrics(
   fnComplexities: number[],
@@ -124,15 +129,20 @@ export function computeFileComplexityMetrics(
   return { fileComplexity, fileComplexitySum, maxFnComplexity, topLevelComplexity };
 }
 
-export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, parent?: Node) {
+export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, parent?: Node): void {
   if (!node || typeof node !== "object") return;
   cb(node, parent);
 
-  for (const key of Object.keys(node)) {
+  const nodeRecord = node as NodeRecord;
+  for (const key of Object.keys(nodeRecord)) {
     if (key === "loc" || key === "range") continue;
-    const child = node[key];
+    const child = nodeRecord[key];
     if (Array.isArray(child)) {
-      for (const c of child) traverse(c, cb, node);
+      for (const c of child) {
+        if (c && typeof c === "object" && typeof (c as IAstNode).type === "string") {
+          traverse(c as IAstNode, cb, node);
+        }
+      }
     } else if (child && typeof child === "object" && typeof (child as IAstNode).type === "string") {
       traverse(child as IAstNode, cb, node);
     }
@@ -140,15 +150,20 @@ export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, paren
 }
 
 // New traversal helper that provides the full ancestor chain to the callback.
-export function traverseWithAncestors(node: Node, cb: (n: Node, ancestors: Node[]) => void, ancestors: Node[] = []) {
+export function traverseWithAncestors(node: Node, cb: (n: Node, ancestors: Node[]) => void, ancestors: Node[] = []): void {
   if (!node || typeof node !== "object") return;
   cb(node, ancestors);
 
-  for (const key of Object.keys(node)) {
+  const nodeRecord = node as NodeRecord;
+  for (const key of Object.keys(nodeRecord)) {
     if (key === "loc" || key === "range") continue;
-    const child = node[key];
+    const child = nodeRecord[key];
     if (Array.isArray(child)) {
-      for (const c of child) traverseWithAncestors(c, cb, [...ancestors, node]);
+      for (const c of child) {
+        if (c && typeof c === "object" && typeof (c as IAstNode).type === "string") {
+          traverseWithAncestors(c as IAstNode, cb, [...ancestors, node]);
+        }
+      }
     } else if (child && typeof child === "object" && typeof (child as IAstNode).type === "string") {
       traverseWithAncestors(child as IAstNode, cb, [...ancestors, node]);
     }
