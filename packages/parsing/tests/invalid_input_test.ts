@@ -17,18 +17,27 @@ Deno.test("FrontmatterParser: malformed YAML is rejected", async () => {
   assertThrows(() => parser.parse(markdown));
 });
 
-Deno.test("FrontmatterParser: error message is descriptive for malformed YAML", async () => {
-  const markdown = await loadFixture("malformed-yaml-descriptive-error.md");
+Deno.test("FrontmatterParser: error message is descriptive for malformed YAML", () => {
+  const markdown = `---
+trace_id: !!!invalid yaml here!!!
+---
+
+# Request`;
   const parser = new FrontmatterParser();
 
   const error = assertThrows(() => parser.parse(markdown)) as Error;
   assertEquals(error.message.length > 0, true);
 });
 
-Deno.test("FrontmatterParser: logs validation failure to activity journal", async () => {
+Deno.test("FrontmatterParser: logs validation failure to activity journal", () => {
   const { activities, db } = createLoggingTestDb();
   const parser = new FrontmatterParser(db);
-  const markdown = await loadFixture("validation-failure.md");
+  const markdown = `---
+identity_id: coder-agent
+status: pending
+---
+
+# Bad`;
 
   assertThrows(() => parser.parse(markdown, "bad.md"));
 
@@ -91,8 +100,10 @@ Deno.test("FrontmatterParser: rejects empty file", () => {
   assertThrows(() => parser.parse("", "empty.md"));
 });
 
-Deno.test("FrontmatterParser: rejects missing frontmatter delimiters", async () => {
-  const markdown = await loadFixture("no-frontmatter.md");
+Deno.test("FrontmatterParser: rejects missing frontmatter delimiters", () => {
+  const markdown = `# Just a heading
+
+Some content without any YAML frontmatter.`;
   const parser = new FrontmatterParser();
   assertThrows(() => parser.parse(markdown));
 });

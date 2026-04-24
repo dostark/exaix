@@ -26,8 +26,10 @@ Deno.test("FrontmatterParser: valid markdown with YAML frontmatter", async () =>
   assertEquals(result.body.includes("Email/password"), true);
 });
 
-Deno.test("FrontmatterParser: throws on missing frontmatter delimiters", async () => {
-  const markdown = await loadFixture("missing-delimiters.md");
+Deno.test("FrontmatterParser: throws on missing frontmatter delimiters", () => {
+  const markdown = `# Just a title
+
+No frontmatter here!`;
   const parser = new FrontmatterParser();
   const error = assertThrows(() => parser.parse(markdown)) as Error;
 
@@ -48,10 +50,15 @@ Deno.test("FrontmatterParser: logs successful validation", async () => {
   assertEquals(activities[0].target, "test.md");
 });
 
-Deno.test("FrontmatterParser: logs validation failure", async () => {
+Deno.test("FrontmatterParser: logs validation failure", () => {
   const { activities, db } = createLoggingTestDb();
   const parser = new FrontmatterParser(db);
-  const markdown = await loadFixture("bad-request.md");
+  const markdown = `---
+identity_id: coder-agent
+status: pending
+---
+
+# Bad`;
 
   assertThrows(() => parser.parse(markdown, "bad.md"));
 
