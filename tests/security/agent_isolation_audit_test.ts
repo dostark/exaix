@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module AgentIsolationAuditTest
  * @path tests/security/agent_isolation_audit_test.ts
@@ -186,7 +187,7 @@ Deno.test({
         "violation payload must include unauthorized_files array",
       );
       assertEquals(
-        (unauthorizedFiles as unknown[]).length > 0,
+        (unauthorizedFiles as any[]).length > 0,
         true,
         "violation payload must include at least one unauthorized file",
       );

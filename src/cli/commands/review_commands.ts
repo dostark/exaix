@@ -1217,7 +1217,7 @@ export class ReviewCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "ReviewCommands.approve",
         args: { branchName },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -1347,7 +1347,7 @@ export class ReviewCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "ReviewCommands.reject",
         args: { branchName, reason },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }

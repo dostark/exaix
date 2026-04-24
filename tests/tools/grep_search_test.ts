@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module GrepSearchToolTest
  * @path tests/tools/grep_search_test.ts
@@ -63,7 +64,7 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
     // Wait, implementation says: if (code !== 0 && code !== 1) return error.
     // If no matches (code 1), it returns matches: [].
     // Here we expect NO matches because "hidden" is only in node_modules which is excluded
-    const matches = result.data as unknown[];
+    const matches = result.data as any[];
     assertEquals(matches.length, 0);
   });
 
@@ -73,14 +74,14 @@ Deno.test("ToolRegistry: grep_search", async (t) => {
     // Test with explicit parameter.
     const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "FOO", path: ".", case_sensitive: false });
     assertEquals(result.success, true);
-    const matches = result.data as unknown[];
+    const matches = result.data as any[];
     assertEquals(matches.length > 0, true);
   });
 
   await t.step("case sensitive enforcement", async () => {
     const result = await registry.execute(ToolName.GREP_SEARCH, { pattern: "FOO", path: ".", case_sensitive: true });
     assertEquals(result.success, true);
-    const matches = result.data as unknown[];
+    const matches = result.data as any[];
     assertEquals(matches.length, 0);
   });
 

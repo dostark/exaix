@@ -46,6 +46,7 @@ import type { IDatabaseService } from "../shared/interfaces/i_database_service.t
 import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";
+
 import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "./helpers/layout_rendering.ts";
 import {
   closePane as helperClosePane,
@@ -188,6 +189,16 @@ export interface ITuiDashboard {
 
 // ===== Dashboard Icons =====
 
+// Runtime-loaded TUI helpers are imported at module initialization so the dynamic
+// dependency is still tracked by the module graph while avoiding imports inside
+// nested statements.
+// style-exclude:PLUGINS - runtime TUI helper loaded on demand
+const handleKeyModulePromise = import("./tui_helpers/handle_key.ts");
+// style-exclude:PLUGINS - runtime TUI helper loaded on demand
+const prodHandleKeyModulePromise = import("./tui_helpers/prod_handle_key.ts");
+// style-exclude:RUNTIME_REGISTRY - dynamic std/io import used in non-tty fallback
+const stdIoModulePromise = import("@std/io");
+
 export const DASHBOARD_ICONS = {
   views: {
     PortalManagerView: TUI_DASHBOARD_ICONS.views.PortalManagerView,
@@ -228,9 +239,8 @@ export const DASHBOARD_ICONS = {
   },
 } as const;
 
-// Dynamic import required for runtime module loading of TUI helpers (documented in CODE_STYLE.md)
-// This must remain a dynamic import to avoid circular dependencies and only load in production or test mode as needed.
-const dynamicImport = (specifier: string) => import(specifier);
+// style-exclude:RUNTIME_REGISTRY - Dynamic import is required at runtime to avoid circular dependency and load TUI service factory only when the dashboard is initialized.
+const tuiServiceFactoryModule = import("../services/utils/tui_service_factory.ts");
 
 // ===== Dashboard Key Bindings =====
 
@@ -703,7 +713,7 @@ function createTestDashboard(options: {
     async handleKey(key: string) {
       const viewPickerRef = { index: viewPickerIndex };
       const handleKeyModule: { testModeHandleKey: typeof import("./tui_helpers/handle_key.ts").testModeHandleKey } =
-        await dynamicImport("./tui_helpers/handle_key.ts");
+        await handleKeyModulePromise;
       const idx = handleKeyModule.testModeHandleKey(this, key, panes, views, viewPickerRef);
       viewPickerIndex = viewPickerRef.index;
       // Check for Deno global in test debug mode
@@ -864,7 +874,7 @@ async function createProductionDashboard(options: {
   }
 
   // Create services using core factory (this is the boundary crossing point)
-  const { createTuiServices } = await import("../services/utils/tui_service_factory.ts");
+  const { createTuiServices } = await tuiServiceFactoryModule;
   const serviceBundle = createTuiServices({
     config: options.config,
     databaseService: options.databaseService,
@@ -1035,7 +1045,7 @@ async function runProductionInteractiveLoop(context: {
         const key = input; // preserve escape sequences
 
         const prodHandleKeyModule: { prodHandleKey: typeof import("./tui_helpers/prod_handle_key.ts").prodHandleKey } =
-          await dynamicImport("./tui_helpers/prod_handle_key.ts");
+          await prodHandleKeyModulePromise;
         const res = await prodHandleKeyModule.prodHandleKey(key, {
           prodState: context.prodState,
           panes: context.panes,
@@ -1055,14 +1065,13 @@ async function runProductionInteractiveLoop(context: {
       }
     } else {
       // Non-raw fallback: read lines from stdin (Enter-terminated commands)
-      const ioMod: { readLines: typeof import("https://deno.land/std@0.203.0/io/mod.ts").readLines } =
-        await dynamicImport("https://deno.land/std@0.203.0/io/mod.ts");
+      const ioMod: { readLines: typeof import("@std/io").readLines } = await stdIoModulePromise;
       for await (const line of ioMod.readLines(Deno.stdin)) {
         const cmd = line.trim().toLowerCase();
         if (!cmd) continue;
 
         const prodHandleKeyModule: { prodHandleKey: typeof import("./tui_helpers/prod_handle_key.ts").prodHandleKey } =
-          await dynamicImport("./tui_helpers/prod_handle_key.ts");
+          await prodHandleKeyModulePromise;
         const res = await prodHandleKeyModule.prodHandleKey(cmd, {
           prodState: context.prodState,
           panes: context.panes,

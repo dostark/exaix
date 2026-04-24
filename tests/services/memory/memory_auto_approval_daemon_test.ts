@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MemoryAutoApprovalDaemonTest
  * @path tests/services/memory/memory_auto_approval_daemon_test.ts
@@ -36,8 +37,8 @@ interface MockLogger {
   info(message: string, ...args: Array<string | number | boolean | object | undefined | null>): Promise<void>;
 }
 
-type AssertionHelper = <T>(value: unknown) => T;
-const asMock = (<T>(value: unknown) => value as T) as AssertionHelper;
+type AssertionHelper = <T>(value: any) => T;
+const asMock = (<T>(value: any) => value as T) as AssertionHelper;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

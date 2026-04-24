@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module DefineFlowUnitTest
  * @path tests/flows/define_flow_unit_test.ts
@@ -8,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { defineFlow } from "../../src/flows/define_flow.ts";
 import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
 
-function cast<T>(obj: unknown): T {
+function cast<T>(obj: any): T {
   return obj as T;
 }
 

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ScenarioFrameworkAssertions
  * @path tests/scenario_framework/runner/assertions.ts
@@ -21,6 +22,7 @@ import {
 } from "../schema/step_schema.ts";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const JSON_PATH_ROOT = "$";
@@ -28,7 +30,7 @@ const JSON_PATH_ROOT = "$";
 interface IJournalEvent {
   event_type?: string;
   action_type?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export enum StepFailureStage {
@@ -88,7 +90,7 @@ type IVersionLteCriterion = Extract<ICriterion, { kind: CriterionKind.VERSION_LT
 type ICommandOutputContainsCriterion = Extract<ICriterion, { kind: CriterionKind.COMMAND_OUTPUT_CONTAINS }>;
 
 interface IKeyValueDocument {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export async function evaluateCriterion(
@@ -642,8 +644,8 @@ function evaluateEnvVarPresentCriterion(
 interface ICriterionResultBuildOptions {
   message: string;
   evidenceRefs?: string[];
-  observedValue?: unknown;
-  expectedValue?: unknown;
+  observedValue?: any;
+  expectedValue?: any;
 }
 
 function buildPassedResult(
@@ -751,10 +753,10 @@ async function loadFrontmatterDocument(
 
 interface IJsonPathSelection {
   exists: boolean;
-  value?: unknown;
+  value?: any;
 }
 
-function readJsonPath(document: unknown, jsonPath: string): IJsonPathSelection {
+function readJsonPath(document: any, jsonPath: string): IJsonPathSelection {
   if (jsonPath === JSON_PATH_ROOT) {
     return {
       exists: true,
@@ -773,7 +775,7 @@ function readJsonPath(document: unknown, jsonPath: string): IJsonPathSelection {
     .split(".")
     .filter((token) => token.length > 0);
 
-  let cursor: unknown = document;
+  let cursor: any = document;
   for (const token of tokens) {
     if (Array.isArray(cursor)) {
       const index = Number(token);
@@ -797,7 +799,7 @@ function readJsonPath(document: unknown, jsonPath: string): IJsonPathSelection {
   };
 }
 
-function valuesMatch(left: unknown, right: unknown, similarityThreshold?: number): boolean {
+function valuesMatch(left: any, right: any, similarityThreshold?: number): boolean {
   if (similarityThreshold !== undefined && typeof left === "string" && typeof right === "string") {
     return getSimilarityScore(left, right) >= similarityThreshold;
   }
@@ -878,14 +880,10 @@ function rewriteCriteriaWithTarget(
 // Version Assertion Criteria (Phase 51 Secondary Goal)
 // -----------------------------------------------------------------------------
 
-async function evaluateVersionEqualsCriterion(
+function evaluateVersionEqualsCriterion(
   options: IEvaluateCriterionOptions,
-): Promise<ICriterionResult> {
+): ICriterionResult {
   const criterion = options.criterion as IVersionEqualsCriterion;
-  const { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } = await import(
-    "../../../src/shared/version.ts"
-  );
-
   const observedVersion = criterion.source === "binary" ? BINARY_VERSION : WORKSPACE_SCHEMA_VERSION;
   const passed = observedVersion === criterion.version;
 
@@ -903,14 +901,10 @@ async function evaluateVersionEqualsCriterion(
   };
 }
 
-async function evaluateVersionGteCriterion(
+function evaluateVersionGteCriterion(
   options: IEvaluateCriterionOptions,
-): Promise<ICriterionResult> {
+): ICriterionResult {
   const criterion = options.criterion as IVersionGteCriterion;
-  const { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } = await import(
-    "../../../src/shared/version.ts"
-  );
-
   const observedVersion = criterion.source === "binary" ? BINARY_VERSION : WORKSPACE_SCHEMA_VERSION;
   const passed = compareVersions(observedVersion, criterion.version) >= 0;
 
@@ -928,14 +922,10 @@ async function evaluateVersionGteCriterion(
   };
 }
 
-async function evaluateVersionLteCriterion(
+function evaluateVersionLteCriterion(
   options: IEvaluateCriterionOptions,
-): Promise<ICriterionResult> {
+): ICriterionResult {
   const criterion = options.criterion as IVersionLteCriterion;
-  const { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } = await import(
-    "../../../src/shared/version.ts"
-  );
-
   const observedVersion = criterion.source === "binary" ? BINARY_VERSION : WORKSPACE_SCHEMA_VERSION;
   const passed = compareVersions(observedVersion, criterion.version) <= 0;
 
@@ -965,7 +955,7 @@ function evaluateJsonQueryCriterion(
 
     // Execute the query using a simple JSON path evaluation
     const queryParts = criterion.query.split(".");
-    let result: unknown = data;
+    let result: any = data;
 
     for (const part of queryParts) {
       if (part === "[]" || part === "[*]") {

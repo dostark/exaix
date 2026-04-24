@@ -1288,7 +1288,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
   /**
    * Validate review result structure
    */
-  validateReviewResult(result: unknown): IChangesetResult {
+  validateReviewResult(result: JSONValue): IChangesetResult {
     try {
       return ChangesetResultSchema.parse(result);
     } catch (error) {

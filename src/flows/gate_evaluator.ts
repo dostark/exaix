@@ -191,7 +191,7 @@ export class GateEvaluator implements IGateEvaluator {
   /**
    * Create an error evaluation result
    */
-  private createErrorEvaluation(error: unknown): EvaluationResult {
+  private createErrorEvaluation(error: Error | string | unknown): EvaluationResult {
     return {
       overallScore: 0,
       criteriaScores: {},

@@ -9,6 +9,7 @@ import { DatabaseService } from "../../../src/services/core/db.ts";
 import { ConfigService } from "../../../src/config/service.ts";
 import { join } from "@std/path";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+
 import {
   ConsoleOutput,
   initializeGlobalLogger,
@@ -18,6 +19,7 @@ import { REPO_ROOT } from "../../helpers/repo_root.ts";
 import { LogLevel } from "../../../src/shared/enums.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**
  * Regression test for: "Request processing fails with test-provider selection"
@@ -73,13 +75,13 @@ Deno.test("[regression] RequestProcessor uses ProviderSelector when no testProvi
     const db = new DatabaseService(config);
 
     // Create a mock agent blueprint
-    const blueprintContent = `---
-identity_id: "test-agent"
-name: "Test Agent"
-model: "google:gemini-2.5-flash"
-capabilities: ["search"]
----
-Body content`;
+    const blueprintContent = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "request",
+      "request_processor_regression_test",
+      "blueprintContent.md",
+    );
     await Deno.writeTextFile(join(blueprintsPath, "test-agent.md"), blueprintContent);
 
     // Create a request file

@@ -15,6 +15,7 @@ import { ExaPathDefaults } from "../../src/shared/constants.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { initActivityTableSchema } from "../helpers/db.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 // Mock Config
 const createMockConfig = (rootDir: string): Config => ({
@@ -89,15 +90,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     const plansDir = join(tempDir, config.paths.workspace, config.paths.plans);
     await ensureDir(plansDir);
     const planId = "plan-123";
-    const planContent = `---
-status: pending
-trace_id: trace-1
-identity_id: agent-1
-created_at: 2023-01-01T00:00:00Z
----
-# Plan
-Plan content
-`;
+    const planContent = readFixtureTextSync(import.meta.url, "mcp", "domain_tools_test", "planContent.md");
     await Deno.writeTextFile(join(plansDir, `${planId}.md`), planContent);
 
     const tool = new ListPlansTool(context);
@@ -119,14 +112,7 @@ Plan content
 
     const plansDir = join(tempDir, config.paths.workspace, config.paths.plans);
     const planId = "plan-approve";
-    const planContent = `---
-status: review
-trace_id: trace-2
-identity_id: agent-1
----
-# Plan
-To be approved
-`;
+    const planContent = readFixtureTextSync(import.meta.url, "mcp", "domain_tools_test", "planContent_1.md");
     await Deno.writeTextFile(join(plansDir, `${planId}.md`), planContent);
 
     const tool = new ApprovePlanTool(context);

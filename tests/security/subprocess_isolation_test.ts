@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module SubprocessIsolationTest
  * @path tests/security/subprocess_isolation_test.ts
@@ -49,7 +50,7 @@ type BuildArgsFn = {
 function withStrategy(fn: (strategy: BuildArgsFn) => void): void {
   const strategy = new McpAgentStrategy({} as AgentExecutor);
   try {
-    fn((strategy as unknown) as BuildArgsFn);
+    fn((strategy as any) as BuildArgsFn);
   } finally {
     strategy.dispose();
   }

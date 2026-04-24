@@ -31,6 +31,20 @@ import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
 import { logInfo } from "../services/logger/structured_logger.ts";
 
+type JsonRpcResult = JSONValue | object;
+type JsonRpcErrorData = JSONValue | object;
+type JsonRpcArguments = Record<string, JSONValue>;
+type ErrorPayload = Error | string | object | JSONValue[] | null | undefined;
+type ZodErrorCandidate =
+  | { constructor?: { name?: string }; errors?: Array<object> }
+  | Error
+  | string
+  | object
+  | JSONValue[]
+  | null
+  | undefined;
+type MCPHttpResponse = Response;
+
 /**
  * MCP Server Implementation
  *
@@ -65,11 +79,11 @@ interface JSONRPCRequest {
 interface JSONRPCResponse {
   jsonrpc: string;
   id: number | string;
-  result?: unknown;
+  result?: JsonRpcResult;
   error?: {
     code: number;
     message: string;
-    data?: unknown;
+    data?: JsonRpcErrorData;
   };
 }
 
@@ -355,7 +369,7 @@ export class MCPServer {
   ): Promise<JSONRPCResponse> {
     const params = request.params as {
       name: string;
-      arguments: unknown;
+      arguments: JsonRpcArguments;
     };
 
     // Validate tool exists
@@ -406,7 +420,7 @@ export class MCPServer {
       };
     } catch (error) {
       // Classify and sanitize errors for JSON-RPC
-      const classification = this.classifyError(error);
+      const classification = this.classifyError(error as ErrorPayload);
 
       // Log error with context (do not include sensitive details)
       try {
@@ -439,9 +453,9 @@ export class MCPServer {
   }
 
   public classifyError(
-    error: unknown,
+    error: ErrorPayload,
   ): { type: string; code: number; message: string; data?: Record<string, JSONValue> } {
-    const isZodError = (value: unknown): value is { errors?: Array<object> } => {
+    const isZodError = (value: ZodErrorCandidate): value is { errors?: Array<object> } => {
       return (
         !!value &&
         typeof value === "object" &&
@@ -451,7 +465,7 @@ export class MCPServer {
       );
     };
 
-    const getErrorMessage = (value: unknown): string => {
+    const getErrorMessage = (value: ErrorPayload): string => {
       if (value instanceof Error) return value.message || "";
       if (typeof value === "string") return value;
       return "";
@@ -513,12 +527,12 @@ export class MCPServer {
   }
 
   /** Build a standard JSONRPC success response. */
-  private successResponse(request: JSONRPCRequest, result: unknown): JSONRPCResponse {
+  private successResponse(request: JSONRPCRequest, result: JsonRpcResult): JSONRPCResponse {
     return { jsonrpc: "2.0", id: request.id, result: result as JSONRPCResponse["result"] };
   }
 
   /** Build a standard JSONRPC internal-error response from a caught exception. */
-  private errorResponse(request: JSONRPCRequest, error: unknown): JSONRPCResponse {
+  private errorResponse(request: JSONRPCRequest, error: ErrorPayload): JSONRPCResponse {
     return {
       jsonrpc: "2.0",
       id: request.id,
@@ -546,7 +560,7 @@ export class MCPServer {
 
       return this.successResponse(request, { resources });
     } catch (error) {
-      return this.errorResponse(request, error);
+      return this.errorResponse(request, error as ErrorPayload);
     }
   }
 
@@ -604,7 +618,7 @@ export class MCPServer {
 
       return this.successResponse(request, { contents: result.content });
     } catch (error) {
-      return this.errorResponse(request, error);
+      return this.errorResponse(request, error as ErrorPayload);
     }
   }
 
@@ -659,7 +673,7 @@ export class MCPServer {
 
       return this.successResponse(request, result);
     } catch (error) {
-      return this.errorResponse(request, error);
+      return this.errorResponse(request, error as ErrorPayload);
     }
   }
 
@@ -722,7 +736,7 @@ export class MCPServer {
    * Handles HTTP requests for MCP over HTTP transport
    * Applies security headers to all responses
    */
-  async handleHTTPRequest(request: Request): Promise<Response> {
+  async handleHTTPRequest(request: Request): Promise<MCPHttpResponse> {
     try {
       // Delegate to SSE handler for SSE routes
       if (this.sseHandler) {

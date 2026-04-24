@@ -144,7 +144,7 @@ Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local 
 
 Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fallback", () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("custom:unknown-cloud-model");
+  const budget = allocator.allocate("custom: any-cloud-model");
 
   assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
   assertGreater(budget.safetyBufferTokens, 0);

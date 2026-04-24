@@ -27,7 +27,6 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { IRoutingPolicyService } from "../routing/routing_policy_service.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
 import { GitBranchName, RequestKind } from "../../shared/enums.ts";
 
 /**
@@ -56,8 +55,10 @@ interface RouterRequest {
   requestAnalysis?: IRequestAnalysis;
 }
 
+import type { JSONValue } from "../../shared/types/json.ts";
+
 type RouterRequestFrontmatterMap = IRequestFrontmatter & {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 };
 
 function normalizeText(value?: string): string | undefined {

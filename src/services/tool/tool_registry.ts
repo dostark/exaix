@@ -955,16 +955,18 @@ export class ToolRegistry implements IToolRegistry {
    * @private
    */
   private formatError(error: unknown, context?: string): IToolResult {
+    const normalizedError = error instanceof Error ? error : String(error);
+
     // Handle path security errors
-    if (error instanceof Error && error.message.includes("outside allowed roots")) {
+    if (normalizedError instanceof Error && normalizedError.message.includes("outside allowed roots")) {
       return {
         success: false,
-        error: `Access denied: ${error.message}`,
+        error: `Access denied: ${normalizedError.message}`,
       };
     }
 
     // Handle not found errors
-    if (error instanceof Deno.errors.NotFound) {
+    if (normalizedError instanceof Deno.errors.NotFound) {
       let message = context || "Not found";
 
       // Strip portal prefix if present for cleaner error messages

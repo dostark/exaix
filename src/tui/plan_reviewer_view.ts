@@ -153,12 +153,12 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
     pending: ITreeNode<IPlan>[];
     approved: ITreeNode<IPlan>[];
     rejected: ITreeNode<IPlan>[];
-    unknown: ITreeNode<IPlan>[];
+    otherPlans: ITreeNode<IPlan>[];
   } {
     const pending: ITreeNode<IPlan>[] = [];
     const approved: ITreeNode<IPlan>[] = [];
     const rejected: ITreeNode<IPlan>[] = [];
-    const unknown: ITreeNode<IPlan>[] = [];
+    const otherPlans: ITreeNode<IPlan>[] = [];
 
     const filter = this.state.filterText.toLowerCase();
 
@@ -192,16 +192,16 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
           rejected.push(node);
           break;
         default:
-          unknown.push(node);
+          otherPlans.push(node);
       }
     }
 
-    return { pending, approved, rejected, unknown };
+    return { pending, approved, rejected, otherPlans };
   }
 
   private createGroupNodes(categories: ReturnType<typeof this.categorizePlans>): ITreeNode<IPlan>[] {
     const tree: ITreeNode<IPlan>[] = [];
-    const { pending, approved, rejected, unknown } = categories;
+    const { pending, approved, rejected, otherPlans } = categories;
 
     if (pending.length > 0) {
       tree.push(
@@ -233,11 +233,11 @@ export class PlanReviewerTuiSession extends BaseTreeView<IPlan> {
       );
     }
 
-    if (unknown.length > 0) {
+    if (otherPlans.length > 0) {
       tree.push(
-        createGroupNode("other-group", "Other", TuiNodeType.GROUP, unknown, {
+        createGroupNode("other-group", "Other", TuiNodeType.GROUP, otherPlans, {
           icon: PLAN_ICONS.folder,
-          badge: unknown.length,
+          badge: otherPlans.length,
         }),
       );
     }

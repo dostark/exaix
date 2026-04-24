@@ -7,8 +7,8 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
-
 import { TestEnvironment } from "./helpers/test_environment.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
   const env = await TestEnvironment.create();
@@ -18,18 +18,14 @@ Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
     let planPath: string;
 
     // Setup: Create blueprint and processor
+    const fixture_1 = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "12_mock_plan_generation_test",
+      "fixture_1.md",
+    );
     await env.createBlueprint(
-      "senior-coder",
-      `# Senior Coder IBlueprint as Blueprint
-
-You are an expert software developer. Analyze requests and create detailed implementation plans.
-
-## Response Format
-
-Always respond with:
-- <thought> tags containing your analysis
-- <content> tags containing the implementation plan
-`,
+      fixture_1,
     );
 
     const { processor } = env.createRequestProcessor();
@@ -174,18 +170,15 @@ Deno.test("Integration: Mock Plan Generation - IActivity Logging", async () => {
 Deno.test("[regression] RequestProcessor copies target_branch into plan frontmatter", async () => {
   const env = await TestEnvironment.create();
   try {
+    const fixture_2 = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "12_mock_plan_generation_test",
+      "fixture_2.md",
+    );
     await env.createBlueprint(
       "senior-coder",
-      `# Senior Coder IBlueprint as Blueprint
-
-You are an expert software developer.
-
-## Response Format
-
-Always respond with:
-- <thought> tags containing your analysis
-- <content> tags containing the implementation plan
-`,
+      fixture_2,
     );
 
     const { processor } = env.createRequestProcessor();

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentServiceTest
  * @path tests/unit/services/plan_amendment_service_test.ts
@@ -9,39 +10,25 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
 Deno.test("PlanAmendmentService.applyApprovedAmendment correctly applies patches", () => {
   const service = new PlanAmendmentService(castTo<Config>({}), castTo<IModelProvider>({}));
 
-  const planContent = `---
-trace_id: "trace-1"
-request_id: "req-1"
-status: amendment_pending
----
-
-# Test Plan
-
-## Execution Steps
-
-## Step 1: title 1
-
-content 1
-
-## Step 2: title 2
-
-content 2
-
-## Next Steps
-1. Review
-`;
-
+  const planContent = readFixtureTextSync(
+    import.meta.url,
+    "unit",
+    "services",
+    "plan_amendment_service_test",
+    "planContent.md",
+  );
   const patch = {
     amendmentId: "550e8400-e29b-41d4-a716-446655440003",
     planId: "req-1",
@@ -71,19 +58,13 @@ content 2
 Deno.test("PlanAmendmentService.applyApprovedAmendment handles removals", () => {
   const service = new PlanAmendmentService(castTo<Config>({}), castTo<IModelProvider>({}));
 
-  const planContent = `---
-status: amendment_pending
----
-
-## Execution Steps
-
-## Step 1: title 1
-c1
-
-## Step 2: title 2
-c2
-`;
-
+  const planContent = readFixtureTextSync(
+    import.meta.url,
+    "unit",
+    "services",
+    "plan_amendment_service_test",
+    "planContent_1.md",
+  );
   const patch = {
     amendmentId: "550e8400-e29b-41d4-a716-446655440003",
     planId: "req-1",

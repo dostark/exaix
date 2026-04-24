@@ -13,6 +13,7 @@ import { MockProvider } from "../../src/ai/providers.ts";
 import { GitService } from "../../src/services/core/git_service.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { getFixturePath, readFixtureTextSync } from "../helpers/fixtures.ts";
 
 Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");
@@ -83,18 +84,8 @@ Deno.test("Git Security: blocks checkout to main branch", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["*"]
----
-You are a test agent.
-`,
-    );
+    const fixture_1 = readFixtureTextSync(import.meta.url, "security", "git_security_regression_test", "fixture_1.md");
+    await Deno.writeTextFile(join(blueprintsDir, "test-agent.md"), fixture_1);
 
     const mockResponse = `
 \`\`\`toml
@@ -164,17 +155,8 @@ Deno.test("Git Security: prevents system root taint during Portal execution fail
   });
 
   // Create a plan that fails
-  const planContent = `---
-trace_id: "trace-taint"
-request_id: "req-taint"
-identity: "test-agent"
-portal: "test"
-status: "approved"
----
-
-## Step 1: Fail
-Tool: non_existent_tool
-`;
+  const planContentPath = getFixturePath(import.meta.url, "git_security_regression_plan.md");
+  const planContent = await Deno.readTextFile(planContentPath);
 
   const activeDir = join(systemRoot, "Workspace", "Active");
   await Deno.mkdir(activeDir, { recursive: true });

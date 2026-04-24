@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module TUIAllHelpers
  * @path tests/tui/helpers.ts
@@ -70,7 +71,7 @@ export interface IPortalInfoOverrides {
   targetPath?: string;
   symlinkPath?: string;
   contextCardPath?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface ILogEntryPayload {
@@ -879,12 +880,12 @@ export interface ISkillSummaryOverrides {
   status?: SkillStatus;
   source?: MemoryBankSource | "core" | "project";
   description?: string;
-  triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: unknown };
+  triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: any };
   instructions?: string;
   usage_count?: number;
   created_at?: string;
   scope?: MemoryScope;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export function sampleSkill(overrides: ISkillSummaryOverrides = {}): ISkillSummary {

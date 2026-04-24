@@ -457,7 +457,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
     } else if (
       rawStatus &&
       typeof rawStatus === "object" &&
-      typeof (rawStatus as { toString?: unknown }).toString === "function"
+      typeof (rawStatus as { toString?: (() => string) | undefined }).toString === "function"
     ) {
       normalized = (rawStatus as { toString: () => string }).toString().trim().toLowerCase();
     }

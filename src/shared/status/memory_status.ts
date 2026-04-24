@@ -6,6 +6,7 @@
  * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 import { MemoryRecordStatus } from "../enums.ts";
+import type { JSONValue } from "../types/json.ts";
 export const MemoryStatus = {
   PENDING: MemoryRecordStatus.PENDING,
   APPROVED: MemoryRecordStatus.APPROVED,
@@ -23,12 +24,12 @@ export const MEMORY_STATUS_VALUES = [
   MemoryStatus.ARCHIVED,
 ] as const;
 
-export function isMemoryStatus(value: unknown): value is MemoryStatus {
+export function isMemoryStatus(value: JSONValue): value is MemoryStatus {
   return typeof value === "string" && (MEMORY_STATUS_VALUES as readonly string[]).includes(value);
 }
 
 export function coerceMemoryStatus(
-  value: unknown,
+  value: JSONValue,
   fallback: MemoryStatus = MemoryStatus.PENDING,
 ): MemoryStatus {
   return isMemoryStatus(value) ? value : fallback;

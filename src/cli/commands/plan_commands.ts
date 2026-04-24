@@ -180,7 +180,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approve",
         args: { planId, skills },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -204,7 +204,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approveAll",
         args: { skills },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -296,7 +296,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.reject",
         args: { planId, reason },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -405,7 +405,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.revise",
         args: { planId, comments },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -762,7 +762,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approveAmendment",
         args: { planId },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -786,7 +786,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.rejectAmendment",
         args: { planId, reason },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -810,7 +810,7 @@ export class PlanCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "PlanCommands.approveAllAmendments",
         args: {},
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }

@@ -10,6 +10,7 @@
  */
 
 import { type IRequestAnalysis, RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 // ---------------------------------------------------------------------------
 // Path helpers
@@ -65,9 +66,9 @@ export async function loadAnalysis(requestFilePath: string): Promise<IRequestAna
     return null; // file not found or unreadable
   }
 
-  let parsed: unknown;
+  let parsed: JSONValue;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(raw) as JSONValue;
   } catch {
     return null; // malformed JSON
   }

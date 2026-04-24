@@ -292,11 +292,13 @@ export async function executePlanForReview<TConfig extends Config>(
   activePlanPath: string,
   reviewRegistry?: ReviewRegistry,
 ): Promise<{ success: boolean; traceId: string | undefined; error?: string }> {
+  const { provider } = env.createRequestProcessor();
   const loop = new ExecutionLoop({
     config,
     db: env.db,
     identityId: "daemon",
     reviewRegistry,
+    llmProvider: provider,
   });
   const result = await loop.processTask(activePlanPath);
   return { success: result.success, traceId: result.traceId, error: result.error };

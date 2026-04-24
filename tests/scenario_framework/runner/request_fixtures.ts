@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ScenarioFrameworkRequestFixtures
  * @path tests/scenario_framework/runner/request_fixtures.ts
@@ -10,13 +11,7 @@
 
 import { extname, isAbsolute, resolve } from "@std/path";
 import { type IScenario, ScenarioSchema } from "../schema/scenario_schema.ts";
-
-const ALLOWED_REQUEST_FIXTURE_EXTENSIONS = [".md", ".txt"] as const;
-const EMBEDDED_REQUEST_CONTENT_KEYS = ["request_body", "request_text", "prompt_body", "prompt_text"] as const;
-
-interface IUnknownMap {
-  [key: string]: unknown;
-}
+import type { JSONValue } from "../../../src/shared/types/json.ts";
 
 export interface IRequestFixtureLoadOptions {
   frameworkHome: string;
@@ -27,6 +22,15 @@ export interface IRequestFixture {
   relativePath: string;
   absolutePath: string;
   content: string;
+}
+
+type RawScenario = JSONValue;
+
+const ALLOWED_REQUEST_FIXTURE_EXTENSIONS = [".md", ".txt"] as const;
+const EMBEDDED_REQUEST_CONTENT_KEYS = ["request_body", "request_text", "prompt_body", "prompt_text"] as const;
+
+interface IUnknownMap {
+  [key: string]: any;
 }
 
 export async function loadRequestFixture(
@@ -70,7 +74,7 @@ export async function loadRequestFixture(
   };
 }
 
-export function ensureScenarioUsesFixtureOnly(rawScenario: unknown): IScenario {
+export function ensureScenarioUsesFixtureOnly(rawScenario: RawScenario): IScenario {
   const forbiddenKeyPath = findEmbeddedRequestKey(rawScenario, []);
   if (forbiddenKeyPath) {
     throw new Error(`embedded request content is not allowed in scenario definitions: ${forbiddenKeyPath}`);
@@ -79,7 +83,7 @@ export function ensureScenarioUsesFixtureOnly(rawScenario: unknown): IScenario {
   return ScenarioSchema.parse(rawScenario);
 }
 
-function findEmbeddedRequestKey(node: unknown, path: string[]): string | null {
+function findEmbeddedRequestKey(node: RawScenario, path: string[]): string | null {
   if (Array.isArray(node)) {
     for (let index = 0; index < node.length; index += 1) {
       const nestedPath = findEmbeddedRequestKey(node[index], [...path, String(index)]);
@@ -108,7 +112,7 @@ function findEmbeddedRequestKey(node: unknown, path: string[]): string | null {
   return null;
 }
 
-function isUnknownMap(value: unknown): value is IUnknownMap {
+function isUnknownMap(value: any): value is IUnknownMap {
   return typeof value === "object" && value !== null;
 }
 

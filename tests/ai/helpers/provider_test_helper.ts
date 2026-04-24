@@ -10,16 +10,21 @@ import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../../src/ai/providers/common.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject, JSONValue } from "../../../src/shared/types/json.ts";
+
+/**
+ * Payload body accepted by the test response stub.
+ */
+type ProviderResponseBody = JSONValue;
 
 /** Configuration for provider-specific response formats */
 export interface IProviderResponseConfig {
   /** How to wrap the response text in the provider's response format */
-  wrapResponse: (text: string) => unknown;
+  wrapResponse: (text: string) => JSONValue;
   /** How to create usage metadata in the provider's format */
-  createUsage: (promptTokens: number, completionTokens: number) => unknown;
+  createUsage: (promptTokens: number, completionTokens: number) => JSONValue;
   /** Combine response and usage into full response object */
-  createFullResponse: (text: string, promptTokens: number, completionTokens: number) => unknown;
+  createFullResponse: (text: string, promptTokens: number, completionTokens: number) => JSONValue;
 }
 
 /** Configuration for a complete provider test suite */
@@ -81,7 +86,7 @@ export const googleResponseConfig: IProviderResponseConfig = {
 /**
  * Creates a fetch stub that returns a successful response.
  */
-export function stubFetchSuccess(responseBody: unknown): Stub {
+export function stubFetchSuccess(responseBody: ProviderResponseBody): Stub {
   return stub(
     globalThis,
     "fetch",
@@ -103,7 +108,7 @@ export function stubFetchError(errorMessage: string, status: number): Stub {
 /**
  * Creates a fetch spy for inspecting request details.
  */
-export function spyFetch(responseBody: unknown): { spy: Spy; restore: () => void } {
+export function spyFetch(responseBody: ProviderResponseBody): { spy: Spy; restore: () => void } {
   const originalFetch = globalThis.fetch;
   const fetchSpy = spy(() => Promise.resolve(new Response(JSON.stringify(responseBody), { status: 200 })));
 

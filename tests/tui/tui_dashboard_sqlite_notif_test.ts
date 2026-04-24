@@ -25,7 +25,7 @@ Deno.test("TUI Dashboard + SQLite: handles notification service integration", as
     assertEquals(dashboard.notificationService, notificationService);
 
     // Phase 1: Verify in-memory notifications are gone
-    // assertEquals((dashboard.state as { notifications?: unknown }).notifications, undefined); // Type check confirms this
+    // assertEquals((dashboard.state as { notifications?: any }).notifications, undefined); // Type check confirms this
 
     // Phase 1: Verify async rendering of notifications
     await notificationService.notifyMemoryUpdate({

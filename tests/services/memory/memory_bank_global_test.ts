@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MemoryBankGlobalTest
  * @path tests/services/memory/memory_bank_global_test.ts
@@ -112,7 +113,7 @@ Deno.test("LearningSchema: rejects invalid category", () => {
 });
 
 Deno.test("LearningSchema: rejects invalid status", () => {
-  const learning: unknown = {
+  const learning: any = {
     id: "550e8400-e29b-41d4-a716-446655440003",
     created_at: "2026-01-04T12:00:00Z",
     source: MemoryBankSource.IDENTITY,

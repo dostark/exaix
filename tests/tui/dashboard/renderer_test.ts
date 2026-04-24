@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module TUIDashboardRendererTest
  * @path tests/tui/dashboard/renderer_test.ts
@@ -33,7 +34,7 @@ Deno.test("prodRender: falls back to 80x24 when consoleSize throws", async () =>
     // Pane coords should be updated based on fallback size
     assertEquals(panes[0].width, Math.floor(0.5 * 80));
   } finally {
-    (Deno as Partial<{ consoleSize: unknown }> as { consoleSize: unknown }).consoleSize = originalConsoleSize;
+    (Deno as Partial<{ consoleSize: any }> as { consoleSize: any }).consoleSize = originalConsoleSize;
   }
 });
 

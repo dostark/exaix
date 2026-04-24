@@ -7,6 +7,7 @@
  */
 
 import { MessageType } from "../../shared/enums.ts";
+import type { JSONValue } from "../types/json.ts";
 
 export const AgentStatus = {
   ACTIVE: "active",
@@ -28,12 +29,12 @@ export const AGENT_STATUS_ORDER: readonly AgentStatusType[] = [
   AgentStatus.ERROR,
 ];
 
-export function isAgentStatus(value: unknown): value is AgentStatusType {
+export function isAgentStatus(value: JSONValue): value is AgentStatusType {
   return typeof value === "string" && (AGENT_STATUS_VALUES as readonly string[]).includes(value);
 }
 
 export function coerceAgentStatus(
-  value: unknown,
+  value: JSONValue,
   fallback: AgentStatusType = AgentStatus.INACTIVE,
 ): AgentStatusType {
   return isAgentStatus(value) ? value : fallback;

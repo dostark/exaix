@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module AIProviderTestConfig
  * @path tests/ai/helpers/test_config.ts
@@ -211,7 +212,7 @@ export function createTestConfig(aiConfig?: Partial<AiConfig>): Config {
     },
   };
 
-  return ConfigSchema.parse(rawConfig as unknown);
+  return ConfigSchema.parse(rawConfig as any);
 }
 
 /**

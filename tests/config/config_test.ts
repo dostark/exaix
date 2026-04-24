@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ConfigSchemaTest
  * @path tests/config/config_test.ts
@@ -12,6 +13,7 @@ import { ConfigService } from "../../src/config/service.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { initializeGlobalLogger, resetGlobalLogger } from "../../src/services/logger/structured_logger.ts";
 import { DEFAULT_MCP_VERSION, ExaPathDefaults } from "../../src/shared/constants.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 Deno.test("ConfigSchema accepts valid minimal config", () => {
   const validConfig = {
@@ -453,19 +455,10 @@ Deno.test("ConfigService handles edge cases", async (t) => {
     const tempDir = await Deno.makeTempDir({ prefix: "config-comments-test-" });
     const configPath = `${tempDir}/test-comments-config.toml`;
 
+    const fixture_1 = readFixtureTextSync(import.meta.url, "config", "config_test", "fixture_1.md");
     Deno.writeTextFileSync(
       configPath,
-      `
-# This is a comment
-[system]
-version = "1.0.0"
-log_level = "info"  # inline comment
-
-[paths]
-memory = "./Memory"
-blueprints = "./Blueprints"
-runtime = "./Runtime"
-    `.trim(),
+      fixture_1.trim(),
     );
 
     try {
@@ -557,6 +550,7 @@ runtime = "./系統"
 
   await t.step("should compute consistent checksums", async () => {
     const tempDir = await Deno.makeTempDir({ prefix: "config-checksum-consistent-test-" });
+    // style-exclude:FIXTURE_READABILITY - The inline TOML content is kept here for compactness and clarity in this checksum test.
     const content = `[system]
 log_level = "info"
 
@@ -883,12 +877,12 @@ Deno.test("[regression] Sample config includes required provider strategy entrie
   const samplePath = "templates/exa.config.sample.toml";
   const sampleContent = Deno.readTextFileSync(samplePath);
   interface ConfigToml {
-    [section: string]: unknown;
+    [section: string]: any;
   }
   const parsed = parseToml(sampleContent) as ConfigToml;
 
-  const getPath = (path: string[]): unknown => {
-    let current: unknown = parsed;
+  const getPath = (path: string[]): any => {
+    let current: any = parsed;
     for (const key of path) {
       if (current && typeof current === "object" && key in (current as ConfigToml)) {
         current = (current as ConfigToml)[key];

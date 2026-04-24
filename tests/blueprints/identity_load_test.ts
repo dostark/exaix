@@ -7,23 +7,22 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async () => {
   const tempDir = await Deno.makeTempDir();
   const identityDir = join(tempDir, "Identities");
   await Deno.mkdir(identityDir);
 
-  const blueprintContent = `---
-name: designer
-model: gpt-4
-provider: openai
-capabilities: ["design"]
----
-You are a lead UI/UX designer.
-`;
-
+  const blueprintContent = readFixtureTextSync(
+    import.meta.url,
+    "blueprints",
+    "identity_load_test",
+    "blueprintContent.md",
+  );
   await Deno.writeTextFile(join(identityDir, "designer.md"), blueprintContent);
 
   const mockConfig = createStubConfig(ConfigSchema.parse({

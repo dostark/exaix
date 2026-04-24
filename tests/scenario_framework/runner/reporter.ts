@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ScenarioFrameworkReporter
  * @path tests/scenario_framework/runner/reporter.ts
@@ -70,7 +71,7 @@ function indent(text: string): string {
   return text.split("\n").map((line) => `  ${line}`).join("\n");
 }
 
-function formatValue(val: unknown): string {
+function formatValue(val: any): string {
   if (typeof val === "string") return `"${val}"`;
   return JSON.stringify(val);
 }

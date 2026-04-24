@@ -55,7 +55,7 @@ interface RawFrontmatter {
   status?: string;
   amendment_id?: string;
   amendment_proposed_at?: string;
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 export interface IExecutionLoopConfig {
@@ -258,7 +258,7 @@ export class ExecutionLoop {
         await this.persistExecutionReport(traceId, workResult.report);
       }
 
-      const commitSha = workResult.didMutateRepo
+      const commitSha = workResult.didMutateRepo && gitSetup.branchName
         ? await this.commitChanges(gitSetup.executionGitService, requestId!, traceId!)
         : null;
 
@@ -669,7 +669,7 @@ export class ExecutionLoop {
         // Check if this looks like an action (has tool field)
         if (
           parsed && typeof parsed === "object" && "tool" in parsed &&
-          typeof (parsed as { tool: unknown }).tool === "string"
+          typeof (parsed as { tool: JSONValue }).tool === "string"
         ) {
           const actionData = parsed as { tool: string; params?: Record<string, JSONValue>; description?: string };
           actions.push({
@@ -718,6 +718,19 @@ export class ExecutionLoop {
 
       try {
         const result = await toolRegistry.execute(action.tool, action.params);
+
+        if (!result.success) {
+          const errorMessage = result.error ?? "Unknown tool error";
+
+          this.logActivity("execution.action_failed", traceId, {
+            request_id: requestId,
+            action_index: actionIndex,
+            tool: action.tool,
+            error: errorMessage,
+          });
+
+          throw new Error(`Action ${actionIndex} (${action.tool}) failed: ${errorMessage}`);
+        }
 
         this.logActivity("execution.action_completed", traceId, {
           request_id: requestId,

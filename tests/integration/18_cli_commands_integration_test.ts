@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module CLICommandsIntegrationTest
  * @path tests/integration/18_cli_commands_integration_test.ts
@@ -130,7 +131,7 @@ async function runExactl(args: string[], cwd: string) {
         timestamp: new Date().toISOString(),
         trace_id: "",
         status: "",
-      } as { trace_id: string; status: string; [key: string]: unknown };
+      } as { trace_id: string; status: string; [key: string]: any };
 
       await Deno.writeTextFile(join(artifactsDir, `cli-${id}.stdout.txt`), stdoutStr);
       await Deno.writeTextFile(join(artifactsDir, `cli-${id}.stderr.txt`), stderrStr);

@@ -125,7 +125,7 @@ export class DaemonCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.start",
         args: {},
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -180,7 +180,7 @@ export class DaemonCommands extends BaseCommand {
           pid: status.pid,
           method: "forced",
         });
-      } catch (error: unknown) {
+      } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`Failed to stop daemon: ${message}`);
       }
@@ -188,7 +188,7 @@ export class DaemonCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.stop",
         args: {},
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -213,7 +213,7 @@ export class DaemonCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.restart",
         args: {},
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -349,7 +349,7 @@ export class DaemonCommands extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "DaemonCommands.logs",
         args: { lines, follow },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }

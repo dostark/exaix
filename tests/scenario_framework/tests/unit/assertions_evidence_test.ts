@@ -13,6 +13,7 @@ import { join } from "@std/path";
 import { evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
 import { copyEvidenceArtifact, writeRunManifest } from "../../runner/evidence_collector.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../../src/shared/version.ts";
 
 async function withTempWorkspace(
   fn: (workspaceRoot: string) => Promise<void>,
@@ -363,7 +364,6 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] failure manifests include step 
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] version-equals criterion passes when versions match", async () => {
   await withTempWorkspace(async (workspaceRoot) => {
-    const { BINARY_VERSION } = await import("../../../../src/shared/version.ts");
     const result = await evaluateCriterion({
       workspaceRoot,
       phase: CriterionPhase.OUTPUT,
@@ -384,7 +384,6 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] version-equals criterion passes
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] version-equals criterion fails when versions differ", async () => {
   await withTempWorkspace(async (workspaceRoot) => {
-    const { BINARY_VERSION } = await import("../../../../src/shared/version.ts");
     const result = await evaluateCriterion({
       workspaceRoot,
       phase: CriterionPhase.OUTPUT,
@@ -477,7 +476,6 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] version-lte criterion fails whe
 
 Deno.test("[ScenarioFrameworkAssertionsEvidence] version criteria can check workspace schema version", async () => {
   await withTempWorkspace(async (workspaceRoot) => {
-    const { WORKSPACE_SCHEMA_VERSION } = await import("../../../../src/shared/version.ts");
     const result = await evaluateCriterion({
       workspaceRoot,
       phase: CriterionPhase.OUTPUT,

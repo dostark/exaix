@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentServiceContractTest
  * @path tests/unit/services/plan_amendment_service_contract_test.ts
@@ -12,11 +13,12 @@ import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
@@ -309,29 +311,13 @@ Deno.test("proposeAmendment rejects invalid LLM JSON", async () => {
 Deno.test("applyApprovedAmendment preserves non-step content in plan", () => {
   const service = new PlanAmendmentService(castTo<Config>({}), castTo<IModelProvider>({}));
 
-  const planContent = `---
-trace_id: "trace-1"
-request_id: "req-1"
-status: amendment_pending
----
-
-# Implementation Plan
-
-## Overview
-This is the overview section that should be preserved.
-
-## Execution Steps
-
-## Step 1: Setup
-Setup the environment.
-
-## Step 2: Execute
-Execute the main logic.
-
-## Notes
-Additional notes section that should be preserved.
-`;
-
+  const planContent = readFixtureTextSync(
+    import.meta.url,
+    "unit",
+    "services",
+    "plan_amendment_service_contract_test",
+    "planContent.md",
+  );
   const patch: IPlanAmendmentPatch = {
     amendmentId: crypto.randomUUID(),
     planId: "req-1",

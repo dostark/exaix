@@ -11,9 +11,11 @@ import * as DEFAULTS from "../shared/constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { type AiConfig, getDefaultModels } from "@exaix/schemas/ai_config.ts";
 import { LlamaProvider } from "./providers/llama_provider.ts";
-import { InputValidator } from "@exaix/schemas/input_validation.ts";
+import { InputValidator, type ModelConfigSchema } from "@exaix/schemas/input_validation.ts";
+import type { z } from "zod";
 import { CostTracker } from "../services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../services/core/db.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 import { createAPIRetryPolicy, RetryPolicy } from "../services/core/retry_policy.ts";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";
@@ -221,12 +223,20 @@ export class ProviderFactory {
    * env vars, modelConfig, and global config to produce a fully populated
    * ResolvedProviderOptions (guarantees timeoutMs).
    */
+  private static isModelConfigInput(
+    rawModelConfig: JSONValue,
+  ): rawModelConfig is z.input<typeof ModelConfigSchema> {
+    return typeof rawModelConfig === "object" && rawModelConfig !== null && !Array.isArray(rawModelConfig);
+  }
+
   private static resolveOptions(
     config: Config,
-    rawModelConfig?: unknown,
+    rawModelConfig?: JSONValue,
   ): IResolvedProviderOptions {
     // ✓ Validate model config to prevent type confusion attacks
-    const modelConfig = rawModelConfig ? InputValidator.validateModelConfig(rawModelConfig) : undefined;
+    const modelConfig = rawModelConfig && this.isModelConfigInput(rawModelConfig)
+      ? InputValidator.validateModelConfig(rawModelConfig)
+      : undefined;
     const envProvider = this.safeEnvGet("EXA_LLM_PROVIDER");
     const envModel = this.safeEnvGet("EXA_LLM_MODEL");
     const envBaseUrl = this.safeEnvGet("EXA_LLM_BASE_URL");

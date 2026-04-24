@@ -725,7 +725,7 @@ ${systemPrompt}
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.create",
         args: { identityId, options },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
       throw error;
     }
@@ -885,7 +885,7 @@ ${systemPrompt}
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.edit",
         args: { identityId },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }
@@ -909,7 +909,7 @@ ${systemPrompt}
       await DefaultErrorStrategy.handle({
         commandName: "BlueprintCommands.remove",
         args: { identityId, options },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
     }
   }

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MCPGitToolsTest
  * @path tests/mcp/git_tools_test.ts
@@ -14,7 +15,7 @@ import {
   initMCPTestWithoutPortal,
 } from "./helpers/test_setup.ts";
 
-interface IMCPResponseShape<TResult = unknown> {
+interface IMCPResponseShape<TResult = any> {
   error?: { code: number; message: string };
   result?: TResult;
 }

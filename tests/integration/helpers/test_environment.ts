@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module IntegrationTestEnvironment
  * @path tests/integration/helpers/test_environment.ts
@@ -451,7 +452,7 @@ retry_backoff_base_ms = 1000
       "---",
     ].join("\n");
 
-    const toTomlValue = (value: unknown): string => {
+    const toTomlValue = (value: any): string => {
       if (typeof value === "string") return JSON.stringify(value);
       if (typeof value === "number") return String(value);
       if (typeof value === "boolean") return value ? "true" : "false";

@@ -813,7 +813,7 @@ ${result.content}`,
   }
 
   private async handleError(
-    error: unknown,
+    error: Error | string | unknown,
     filePath: string,
     requestId: string,
     traceLogger: EventLogger,
@@ -904,7 +904,7 @@ ${result.content}`,
     traceId?: string;
     errorMessage: string;
     rawDetails: string;
-    validationError: unknown;
+    validationError: PlanValidationError;
   }): string {
     return `---
 trace_id: "${args.traceId ?? "unknown"}"

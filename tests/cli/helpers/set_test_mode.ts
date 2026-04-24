@@ -10,6 +10,7 @@ Deno.env.set("EXA_TEST_CLI_MODE", "1");
 
 // Eagerly load the module at top level to avoid it being "loaded during the test" attribution
 // We await it to ensure initialization completes before we unset the flags
+// style-exclude:REQUIRED_FOR_TEST - This runtime import is required for CLI test mode initialization and must occur before env reset.
 await import("../../../src/cli/exactl.ts");
 
 // Clean up so we don't pollute other tests run in the same process

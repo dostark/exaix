@@ -146,7 +146,7 @@ export class RequestCreateHandler extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "RequestCreateHandler.create",
         args: { description, options, source },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
       throw error;
     }
@@ -244,7 +244,7 @@ export class RequestCreateHandler extends BaseCommand {
       await DefaultErrorStrategy.handle({
         commandName: "RequestCreateHandler.createFromFile",
         args: { filePath, options },
-        error,
+        error: error as Error | string | object | null | undefined,
       });
       throw error;
     }

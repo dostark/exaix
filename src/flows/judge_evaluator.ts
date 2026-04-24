@@ -8,6 +8,7 @@
 
 import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "./evaluation_criteria.ts";
 import type { IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 
 /**
  * Context object for agent requests
@@ -254,7 +255,7 @@ export class JudgeEvaluator implements IJudgeInvoker {
   /**
    * Normalize score to 0-1 range
    */
-  private normalizeScore(value: unknown): number {
+  private normalizeScore(value: JSONValue): number {
     if (typeof value === "number") {
       // Handle percentage (0-100) vs decimal (0-1)
       if (value > 1) {

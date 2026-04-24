@@ -17,6 +17,7 @@ import { MockProvider } from "../../../src/ai/providers.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("PlanExecutor: executes plan steps successfully", async () => {
   const { tempDir: _tempDir, repoDir, db, cleanup, config, git } = await createGitTestContext("plan-exec-test-");
@@ -30,18 +31,8 @@ Deno.test("PlanExecutor: executes plan steps successfully", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["test.txt"]
----
-You are a test agent.
-`,
-    );
+    const fixture_1 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_1.md");
+    await Deno.writeTextFile(join(blueprintsDir, "test-agent.md"), fixture_1);
 
     // Mock LLM response with TOML actions
     const mockResponse = `
@@ -125,17 +116,10 @@ Deno.test("PlanExecutor: handles multiple steps", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
+    const fixture_2 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_2.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["step1.txt", "step2.txt"]
----
-You are a test agent.
-`,
+      fixture_2,
     );
 
     // Mock LLM response - we need different responses for different steps
@@ -218,17 +202,10 @@ Deno.test("PlanExecutor: handles tool execution failure", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
+    const fixture_3 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_3.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["fail.txt"]
----
-You are a test agent.
-`,
+      fixture_3,
     );
 
     // Mock response with invalid tool usage (e.g. write to root which might be allowed but let's try something that fails)
@@ -352,17 +329,10 @@ Deno.test("PlanExecutor: handles tool failure (result.success=false)", async () 
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
+    const fixture_4 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_4.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["non_existent.txt"]
----
-You are a test agent.
-`,
+      fixture_4,
     );
 
     // Mock response where tool returns success=false
@@ -450,17 +420,10 @@ Deno.test("PlanExecutor: handles execution without git", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
+    const fixture_5 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_5.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["no-git.txt"]
----
-You are a test agent.
-`,
+      fixture_5,
     );
 
     const mockResponse =
@@ -504,17 +467,10 @@ Deno.test("PlanExecutor: handles portal context in frontmatter", async () => {
     // Create blueprint without mcp capability so Legacy strategy is used
     const blueprintsDir = join(config.system.root, config.paths.blueprints, "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
+    const fixture_6 = readFixtureTextSync(import.meta.url, "services", "plan", "plan_executor_test", "fixture_6.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "test-agent.md"),
-      `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["portal-file.txt"]
----
-You are a test agent.
-`,
+      fixture_6,
     );
 
     const mockResponse =

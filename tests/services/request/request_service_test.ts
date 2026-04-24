@@ -12,6 +12,9 @@ import { RequestPriority, RequestSource } from "../../../src/shared/enums.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
 import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { saveAnalysis } from "../../../src/services/request_analysis/mod.ts";
+import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 
 function createTestRequestService(root: string, overrides?: {
   userIdentity?: string;
@@ -438,13 +441,6 @@ Deno.test("RequestService.list: skips files without valid frontmatter", async ()
 // ---------------------------------------------------------------------------
 
 Deno.test("RequestService.analyze: returns cached analysis when force=false and cache exists", async () => {
-  const { join: pathJoin } = await import("@std/path");
-  const { saveAnalysis } = await import("../../../src/services/request_analysis/mod.ts");
-  const { AnalysisMode } = await import("../../../src/shared/types/request.ts");
-  const { RequestAnalysisComplexity, RequestTaskType } = await import(
-    "@exaix/schemas/request_analysis.ts"
-  );
-
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-cache-" });
   try {
     const service = createTestRequestService(tempDir);
@@ -453,11 +449,11 @@ Deno.test("RequestService.analyze: returns cached analysis when force=false and 
 
     // Build the path to the file (mirrors internal logic)
     const config = createMockConfig(tempDir);
-    const requestsDir = pathJoin(tempDir, config.paths.workspace, config.paths.requests);
+    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
     const files = await Array.fromAsync(Deno.readDir(requestsDir));
     const mdFile = files.find((f) => f.name.endsWith(".md"));
     if (!mdFile) throw new Error("No request file found");
-    const filePath = pathJoin(requestsDir, mdFile.name);
+    const filePath = join(requestsDir, mdFile.name);
 
     // Pre-populate cache with a distinct analysis
     const cachedAnalysis = {
@@ -490,13 +486,6 @@ Deno.test("RequestService.analyze: returns cached analysis when force=false and 
 });
 
 Deno.test("RequestService.analyze: re-analyzes when force=true even with cache", async () => {
-  const { join: pathJoin } = await import("@std/path");
-  const { saveAnalysis } = await import("../../../src/services/request_analysis/mod.ts");
-  const { AnalysisMode } = await import("../../../src/shared/types/request.ts");
-  const { RequestAnalysisComplexity, RequestTaskType } = await import(
-    "@exaix/schemas/request_analysis.ts"
-  );
-
   const tempDir = await Deno.makeTempDir({ prefix: "req-svc-force-" });
   try {
     const service = createTestRequestService(tempDir);
@@ -504,11 +493,11 @@ Deno.test("RequestService.analyze: re-analyzes when force=true even with cache",
     const id = metadata2.trace_id;
 
     const config = createMockConfig(tempDir);
-    const requestsDir = pathJoin(tempDir, config.paths.workspace, config.paths.requests);
+    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
     const files = await Array.fromAsync(Deno.readDir(requestsDir));
     const mdFile = files.find((f) => f.name.endsWith(".md"));
     if (!mdFile) throw new Error("No request file found");
-    const filePath = pathJoin(requestsDir, mdFile.name);
+    const filePath = join(requestsDir, mdFile.name);
 
     // Pre-populate cache with sentinel score=55
     const cachedAnalysis = {

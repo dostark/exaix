@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutionMCPIntegrationTest
  * @path tests/integration/15_plan_execution_mcp_test.ts
@@ -9,6 +10,7 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { McpToolName, MemoryOperation, PortalOperation, SecurityMode } from "../../src/shared/enums.ts";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { join } from "@std/path";
+
 import { ensureDir } from "@std/fs";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
@@ -17,6 +19,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { initTestDbService } from "../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
 import type { ActivityRecord } from "../../src/services/core/db.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 // Test helper to cleanup
 async function cleanup(tempDir: string) {
@@ -135,7 +138,7 @@ Create a simple hello world function in src/utils.ts
       agent?: string;
       status?: string;
       created_at?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     assertEquals(frontmatter.trace_id, traceId);
     assertEquals(frontmatter.status, ReviewStatus.APPROVED);
@@ -236,7 +239,7 @@ Modify README.md with additional content
       status?: string;
       created_at?: string;
       security_mode?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
     assertEquals(frontmatter.security_mode, SecurityMode.HYBRID);
 
@@ -504,15 +507,12 @@ Deno.test("Integration Test 15.7: Plan Parsing Errors", async () => {
     const eventLogger = new EventLogger({ db: dbService });
 
     // Test 1: Missing trace_id
-    const planMissingTrace = `---
-request_id: req-001
-status: approved
-identity: test-agent
-portal: TestPortal
----
-
-# Plan without trace_id
-`;
+    const planMissingTrace = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "15_plan_execution_mcp_test",
+      "planMissingTrace.md",
+    );
     await Deno.writeTextFile(join(activePath, "plan_missing_trace.md"), planMissingTrace);
 
     const planFile1 = await Deno.readTextFile(join(activePath, "plan_missing_trace.md"));
@@ -524,7 +524,7 @@ portal: TestPortal
       agent?: string;
       status?: string;
       created_at?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
 
     if (!frontmatter1.trace_id) {

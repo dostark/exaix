@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module CopilotAssertions
  * @path tests/helpers/copilot_assertions.ts
@@ -15,7 +16,7 @@ interface Frontmatter {
   title: string;
   short_summary: string;
   version: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export async function assertFilesExist(files: string[]): Promise<void> {

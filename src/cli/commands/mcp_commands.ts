@@ -10,16 +10,24 @@ import { BaseCommand, type ICommandContext } from "../base.ts";
 import { MCPServer } from "../../mcp/server.ts";
 import { McpTransportType } from "../../shared/enums.ts";
 import { DEFAULT_MCP_HTTP_PORT } from "../../shared/constants.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
+
+interface JSONRPCRequest {
+  jsonrpc: string;
+  id: number | string;
+  method: string;
+  params: Record<string, JSONValue>;
+}
 
 export interface IMcpStdioServer {
   start(): void;
-  handleRequest(request: unknown): Promise<unknown>;
+  handleRequest(request: JSONRPCRequest): Promise<unknown>;
 }
 
 export interface McpStdioIo {
   stdin: ReadableStream<Uint8Array>;
   writeStdout: (data: Uint8Array) => Promise<number> | number;
-  onError?: (message: string, error: unknown) => void;
+  onError?: (message: string, error: Error | string | unknown) => void;
 }
 
 /**
@@ -38,7 +46,7 @@ export async function runMcpStdioLoop(server: IMcpStdioServer, io: McpStdioIo): 
 
     for (const line of lines) {
       try {
-        const request = JSON.parse(line);
+        const request = JSON.parse(line) as JSONRPCRequest;
         const response = await server.handleRequest(request);
         if (response) {
           const responseStr = JSON.stringify(response) + "\n";

@@ -12,6 +12,7 @@ import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfil
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
+import { reportScenarioFailure } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 
 const modeType = new EnumType(ScenarioExecutionMode);
@@ -115,7 +116,6 @@ await new Command()
 
         console.log(`Outcome: ${result.manifest.outcome}`);
         if (result.manifest.outcome !== "success" && result.manifest.outcome !== "paused") {
-          const { reportScenarioFailure } = await import("./reporter.ts");
           reportScenarioFailure(result);
           hasFailure = true;
           if (runtimeConfig.mode === ScenarioExecutionMode.AUTO) {

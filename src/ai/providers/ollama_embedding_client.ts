@@ -9,6 +9,7 @@
  */
 
 import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 import { EmbeddingError } from "../embeddings/embedding_errors.ts";
 import {
   DEFAULT_OLLAMA_BASE_URL,
@@ -23,15 +24,15 @@ import {
  * Raw Ollama /api/embed HTTP response body structure.
  */
 interface IOllamaRawEmbedResponse {
-  embeddings?: unknown;
-  error?: unknown;
+  embeddings?: JSONValue;
+  error?: JSONValue;
 }
 
 /**
  * Ollama /api/embed response validated before consumption (OWASP A08).
  */
 const ZOllamaEmbedResponse = {
-  parse: (body: unknown): { embeddings: number[][] } => {
+  parse: (body: JSONValue): { embeddings: number[][] } => {
     if (typeof body !== "object" || body === null) {
       throw new EmbeddingError(
         "EMBEDDING_FAILED",
@@ -45,9 +46,9 @@ const ZOllamaEmbedResponse = {
         "Ollama response missing embeddings array",
       );
     }
-    const embeddings = raw.embeddings as unknown[];
+    const embeddings = raw.embeddings as JSONValue[];
     for (const entry of embeddings) {
-      if (!Array.isArray(entry) || !(entry as unknown[]).every((v) => typeof v === "number")) {
+      if (!Array.isArray(entry) || !(entry as JSONValue[]).every((v) => typeof v === "number")) {
         throw new EmbeddingError(
           "EMBEDDING_FAILED",
           "Ollama embeddings entry is not a number array",

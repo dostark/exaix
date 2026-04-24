@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module AmendmentThresholdPolicyTest
  * @path tests/unit/services/amendment_threshold_policy_test.ts
@@ -16,7 +17,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 

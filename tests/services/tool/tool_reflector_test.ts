@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ToolReflectorSchemaTest
  * @path tests/services/tool/tool_reflector_test.ts
@@ -64,7 +65,7 @@ function makeReflectionJSON(options: {
   });
 }
 
-function createMockToolResult(success: boolean, output: unknown = "result", error?: string): IToolResult {
+function createMockToolResult(success: boolean, output: any = "result", error?: string): IToolResult {
   return {
     callId: "call-1",
     success,

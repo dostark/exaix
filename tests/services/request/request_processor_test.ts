@@ -10,6 +10,7 @@ import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/services/request/request_processor.ts";
+
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { ProviderRegistry } from "../../../src/ai/provider_registry.ts";
 import { MockProviderFactory } from "../../../src/ai/factories/mock_factory.ts";
@@ -27,6 +28,7 @@ import {
 } from "../../helpers/paths_helper.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // ============================================================================
 // Test Utilities
@@ -74,24 +76,14 @@ ${opts.body}
  * Create a default agent blueprint file
  */
 function createBlueprintContent(): string {
-  return `# Default Agent Blueprint
-
-You are a helpful coding assistant. When given a request, analyze it and create a detailed implementation plan.
-
-## Response Format
-
-Always respond with:
-1. <thought> tags containing your analysis
-2. <content> tags containing the implementation plan
-
-Example:
-<thought>Analyzing the request...</thought>
-<content>
-# Implementation Plan
-1. Step one
-2. Step two
-</content>
-`;
+  const fixture_1 = readFixtureTextSync(
+    import.meta.url,
+    "services",
+    "request",
+    "request_processor_test",
+    "fixture_1.md",
+  );
+  return fixture_1;
 }
 
 // ============================================================================

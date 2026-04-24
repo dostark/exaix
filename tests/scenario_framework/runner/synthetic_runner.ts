@@ -10,7 +10,7 @@
 
 import { join } from "@std/path";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
-import { type IRunManifest, writeRunManifest } from "./evidence_collector.ts";
+import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
 import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
@@ -106,7 +106,6 @@ export async function runSyntheticScenario(
     manifest,
   });
 
-  const { writeExecutionLog } = await import("./evidence_collector.ts");
   const executionLogPath = await writeExecutionLog({
     outputDir: options.outputDir,
     scenarioId: loadedScenario.scenario.id,

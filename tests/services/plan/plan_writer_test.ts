@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanWriterTest
  * @path tests/services/plan/plan_writer_test.ts
@@ -21,7 +22,7 @@ import type { IActivityRecord } from "../../../src/shared/types/database.ts";
 /**
  * Helper: Retrieve calls from a spy
  */
-function getSpyCalls(fn: unknown): SpyCall[] {
+function getSpyCalls(fn: any): SpyCall[] {
   return (fn as { calls: SpyCall[] })?.calls ?? [];
 }
 function createJsonPlan(
@@ -351,7 +352,7 @@ describe("PlanWriter - JSON Integration", () => {
       try {
         await planWriterWithDb.writePlan(agentResult, metadata);
         assert(false, "Should have thrown PlanValidationError");
-      } catch (e: unknown) {
+      } catch (e: any) {
         assertEquals((e as Error).name, "PlanValidationError");
         // Verify enrichment
         const details = (e as { details?: { fullRawResponse?: string } }).details;

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module LoggingDecoratorTest
  * @path tests/services/ai/logging_decorator_test.ts
@@ -41,7 +42,7 @@ Deno.test("LogMethod (standard decorator): wraps method via (value, context)", a
   const calls: LoggedCall[] = [];
   const logger = createStubLogger(calls);
 
-  const original = function (this: unknown, value: string) {
+  const original = function (this: any, value: string) {
     return Promise.resolve(`ok:${value}`);
   };
 

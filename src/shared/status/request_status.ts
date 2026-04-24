@@ -5,6 +5,9 @@
  * @architectural-layer Shared
  * * @related-files [src/shared/status/plan_status.ts]
  */
+
+import type { JSONValue } from "../types/json.ts";
+
 export const RequestStatus = {
   PENDING: "pending",
   PLANNED: "planned",
@@ -38,12 +41,12 @@ export const REQUEST_STATUS_VALUES = [
   RequestStatus.ANALYZING,
 ] as const;
 
-export function isRequestStatus(value: unknown): value is RequestStatus {
+export function isRequestStatus(value: JSONValue): value is RequestStatus {
   return typeof value === "string" && (REQUEST_STATUS_VALUES as readonly string[]).includes(value);
 }
 
 export function coerceRequestStatus(
-  value: unknown,
+  value: JSONValue,
   fallback: RequestStatus = RequestStatus.PENDING,
 ): RequestStatus {
   return isRequestStatus(value) ? value : fallback;

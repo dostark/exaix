@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentTriggerTest
  * @path tests/integration/services/plan_amendment_trigger_test.ts
@@ -16,7 +17,7 @@ import type { ConfidenceScorer } from "../../../src/services/utils/confidence_sc
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
@@ -81,7 +82,7 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     // Should throw PlanAmendmentPendingError
     await assertRejects(
@@ -158,7 +159,7 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     // Should throw PlanAmendmentPendingError (amendment proposed, execution paused)
     await assertRejects(

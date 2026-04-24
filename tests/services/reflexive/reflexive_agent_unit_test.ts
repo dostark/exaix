@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ReflexiveAgentUnitTest
  * @path tests/services/reflexive/reflexive_agent_unit_test.ts
@@ -37,7 +38,7 @@ function createMockValidator(overrides: Partial<IOutputValidator> = {}): IOutput
   return {
     validate: <T>(
       _content: string,
-      _schema: unknown,
+      _schema: any,
     ): IValidationResult<T> => defaultResult as IValidationResult<T>,
     parseXMLTags: (raw: string) => ({ thought: "", content: raw, raw }),
     validateWithSchema: (_content, _schemaName) => defaultResult as IValidationResult<unknown>,
@@ -167,7 +168,7 @@ Deno.test("ReflexiveAgent.run: emits reflexive observability events", async () =
 
   agent.critiqueRunner = createMockRunner(() => Promise.resolve({ content: "ignored", thought: "", raw: "" }));
   agent.outputValidator = createMockValidator({
-    validate: <T>(_content: string, _schema: unknown): IValidationResult<T> => ({
+    validate: <T>(_content: string, _schema: any): IValidationResult<T> => ({
       success: true,
       value: {
         quality: CritiqueQuality.GOOD,
@@ -269,7 +270,7 @@ Deno.test("ReflexiveAgent.run: early-exits on first passing critique", async () 
   );
 
   agent.outputValidator = createMockValidator({
-    validate: <T>(_content: string, _schema: unknown): IValidationResult<T> => ({
+    validate: <T>(_content: string, _schema: any): IValidationResult<T> => ({
       success: true,
       value: {
         quality: CritiqueQuality.ACCEPTABLE,
@@ -333,7 +334,7 @@ Deno.test("ReflexiveAgent.run: refines when critique fails then accepts", async 
   ];
 
   agent.outputValidator = createMockValidator({
-    validate: <T>(_content: string, _schema: unknown): IValidationResult<T> => ({
+    validate: <T>(_content: string, _schema: any): IValidationResult<T> => ({
       success: true,
       value: critiques.shift() as T,
       repairAttempted: false,

@@ -10,18 +10,18 @@ import { colorize, type ITuiTheme } from "./colors.ts";
 import { renderLayoutPresetListLines } from "./layout_rendering.ts";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID, TUI_SEPARATOR_ROW } from "./constants.ts";
 import { ResizeDirection, SplitDirection, TuiViewName } from "../../shared/enums.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject, JSONValue } from "../../shared/types/json.ts";
 
 // ===== Layout Interfaces =====
 
-export interface IPaneBounds {
+export interface IPaneBounds extends JSONObject {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-export interface ILayoutPane {
+export interface ILayoutPane extends JSONObject {
   id: string;
   viewName: string;
   x: number;
@@ -33,7 +33,7 @@ export interface ILayoutPane {
   previousBounds?: IPaneBounds;
 }
 
-export interface ILayout {
+export interface ILayout extends JSONObject {
   name: string;
   panes: ILayoutPane[];
   activePaneId: string;
@@ -697,7 +697,7 @@ export class LayoutManager {
     }
   }
 
-  validateLayout(layout: unknown): layout is ILayout {
+  validateLayout(layout: JSONValue): layout is ILayout {
     if (typeof layout !== "object" || layout === null) return false;
     const l = layout as JSONObject;
 

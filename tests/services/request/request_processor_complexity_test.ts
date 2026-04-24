@@ -280,7 +280,7 @@ Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: 'architect
   }
 });
 
-Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: unknown agent map to MEDIUM", async () => {
+Deno.test("[RequestProcessor.classifyTaskComplexity] agent fallbacks: any agent map to MEDIUM", async () => {
   const { processor, cleanup } = await createComplexityTestSetup();
   const { frontmatter } = createTestBlueprintAndFrontmatter();
   const request = buildParsedRequest(

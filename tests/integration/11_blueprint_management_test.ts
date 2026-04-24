@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 
 Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
@@ -83,36 +84,26 @@ Deno.test("Integration: Blueprint Management - Full Lifecycle", async (t) => {
     // Test 3: Create Blueprint with Custom System Prompt from File
     // ========================================================================
     await t.step("Test 3: Custom system prompt loaded from file", async () => {
-      // Create custom prompt file
       customPromptPath = join(env.tempDir, "custom-prompt.txt");
-      const customPrompt = `# Custom Integration Test Agent
-
-You are a specialized integration testing agent.
-
-## Output Format
-
-\`\`\`xml
-<thought>
-Integration test reasoning
-</thought>
-
-<content>
-Test execution results
-</content>
-\`\`\``;
+      const customPrompt = readFixtureTextSync(
+        import.meta.url,
+        "integration",
+        "11_blueprint_management_test",
+        "customPrompt.md",
+      );
 
       await Deno.writeTextFile(customPromptPath, customPrompt);
 
       const result = await blueprintCommands.create(customAgentId, {
         name: "Custom Prompt Agent",
-        model: "mock:test-model",
+        model: "ollama:codellama:13b",
         systemPromptFile: customPromptPath,
       });
 
       const content = await Deno.readTextFile(result.path);
-      assertStringIncludes(content, "Custom Integration Test Agent");
-      assertStringIncludes(content, "specialized integration testing agent");
-      assertStringIncludes(content, "Integration test reasoning");
+      assertStringIncludes(content, "You are a specialized integration testing agent.");
+      assertStringIncludes(content, "<thought>");
+      assertStringIncludes(content, "<content>");
     });
 
     // ========================================================================

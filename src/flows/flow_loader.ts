@@ -11,6 +11,7 @@ import { parse as parseYaml } from "@std/yaml";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { StepExecutionMode } from "../shared/enums.ts";
+import type { JSONValue } from "../shared/types/json.ts";
 import { WRITE_TOOLS } from "../shared/constants.ts";
 
 /**
@@ -98,9 +99,9 @@ export class FlowLoader {
       // Read the yaml file content
       const originalContent = await Deno.readTextFile(filePath);
 
-      let parsedYaml: unknown;
+      let parsedYaml: JSONValue;
       try {
-        parsedYaml = parseYaml(originalContent);
+        parsedYaml = parseYaml(originalContent) as JSONValue;
       } catch (e) {
         throw new Error(`Invalid YAML format in ${fileName}: ${e}`);
       }

@@ -28,6 +28,7 @@ import {
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
 } from "../../src/shared/constants.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 describe("PlanCommands", () => {
   let tempDir: string;
@@ -72,23 +73,12 @@ describe("PlanCommands", () => {
     it("should approve a plan and move it to Workspace/Active", async () => {
       // Create a plan file with status='review'
       const planId = "test-plan-001";
-      const planContent = `---
-trace_id: "trace-123"
-identity_id: agent-456
-status: review
-created_at: "2025-11-25T10:00:00Z"
----
-
-# Test Plan
-
-## Actions
-\`\`\`toml
-- tool: file_write
-  params:
-    path: test.txt
-    content: hello
-\`\`\`
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "cli",
+        "plan_commands_test",
+        "plan_001_review_plan.md",
+      );
       const planPath = join(inboxPlansDir, `${planId}.md`);
       await Deno.writeTextFile(planPath, planContent);
 
@@ -187,14 +177,12 @@ status: review
   describe("reject", () => {
     it("should reject a plan with reason and move to /Workspace/Rejected", async () => {
       const planId = "test-plan-004";
-      const planContent = `---
-trace_id: "trace-abc"
-identity_id: agent-xyz
-status: review
----
-
-# Test Plan
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "cli",
+        "plan_commands_test",
+        "plan_004_reject_plan.md",
+      );
       await Deno.writeTextFile(join(inboxPlansDir, `${planId}.md`), planContent);
 
       const reason = "Plan is too vague and lacks specific actions";
@@ -248,16 +236,12 @@ status: review
   describe("revise", () => {
     it("should request revision with single comment", async () => {
       const planId = "test-plan-006";
-      const planContent = `---
-trace_id: "trace-def"
-status: review
----
-
-# Test Plan
-
-## Actions
-Some actions here
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "cli",
+        "plan_commands_test",
+        "plan_006_revision_plan.md",
+      );
       await Deno.writeTextFile(join(inboxPlansDir, `${planId}.md`), planContent);
 
       const comment = "Please add more specific file paths";
@@ -334,22 +318,12 @@ status: review
 
     it("should append to existing review comments section", async () => {
       const planId = "test-plan-009";
-      const planContent = `---
-trace_id: "trace-jkl"
-status: needs_revision
-reviewed_by: user1
-reviewed_at: "2025-11-25T10:00:00Z"
----
-
-# Test Plan
-
-## Review Comments
-
-⚠️ Previous comment
-
-## Actions
-Some actions
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "cli",
+        "plan_commands_test",
+        "plan_009_revision_existing_plan.md",
+      );
       await Deno.writeTextFile(join(inboxPlansDir, `${planId}.md`), planContent);
 
       await planCommands.revise(planId, ["New comment"]);
@@ -542,24 +516,12 @@ This plan is currently being executed.
   describe("show", () => {
     it("should display plan content with frontmatter", async () => {
       const planId = "test-plan-010";
-      const planContent = `---
-trace_id: "trace-show-001"
-status: review
-identity_id: agent-123
-created_at: "2025-11-25T10:00:00Z"
----
-
-# Test Plan
-
-This is a test plan with some content.
-
-## Actions
-\`\`\`toml
-- tool: file_write
-  params:
-    path: test.txt
-\`\`\`
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "cli",
+        "plan_commands_test",
+        "plan_010_show_plan.md",
+      );
       await Deno.writeTextFile(join(inboxPlansDir, `${planId}.md`), planContent);
 
       const result = await planCommands.show(planId);

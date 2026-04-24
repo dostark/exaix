@@ -21,6 +21,7 @@ import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../src/shared/version.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 /**
  * Helper class to expose and mock protected methods of DaemonCommands
@@ -115,22 +116,8 @@ describe("DaemonCommands", {
     mainScript = join(srcDir, "main.ts");
 
     // Mock daemon script that stays alive for testing
-    await Deno.writeTextFile(
-      mainScript,
-      `#!/usr/bin/env -S deno run --allow-all
-// Mock daemon for testing
-console.log("Daemon started");
-const shutdown = () => {
-  console.log("Daemon stopping");
-  Deno.exit(0);
-};
-Deno.addSignalListener("SIGTERM", shutdown);
-Deno.addSignalListener("SIGINT", shutdown);
-// Keep alive
-await new Promise(() => {});
-`,
-    );
-
+    const fixture_1 = readFixtureTextSync(import.meta.url, "cli", "daemon_commands_test", "fixture_1.md");
+    await Deno.writeTextFile(mainScript, fixture_1);
     // Ensure DaemonCommands uses our mock script
     Deno.env.set("EXA_DAEMON_SCRIPT", mainScript);
 

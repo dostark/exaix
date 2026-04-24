@@ -14,6 +14,7 @@ import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 function parseFrontmatter(content: string): JSONObject {
   const parts = content.split("---");
@@ -31,19 +32,13 @@ Deno.test("StatusManager error storage regression test", async () => {
     const statusManager = new StatusManager(new EventLogger({ prefix: "test" }));
 
     const requestPath = join(tempDir, "test-request.md");
-    const originalContent = `---
-trace_id: "test-trace-id"
-created: "2024-01-01T00:00:00.000Z"
-status: pending
-priority: normal
-identity: technical-writer
-source: cli
-created_by: "test@example.com"
----
-
-Test request content.
-`;
-
+    const originalContent = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "status",
+      "status_manager_error_test",
+      "originalContent.md",
+    );
     await Deno.writeTextFile(requestPath, originalContent);
 
     // Test error message storage

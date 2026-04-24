@@ -1307,7 +1307,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     request: { traceId?: string; requestId?: string },
     stepId: string,
-    processingError: unknown,
+    processingError: Error | string | unknown,
     stepResults: Map<string, IStepResult>,
     failFast: boolean,
   ): Promise<IWaveProcessingOutcome> {
@@ -1419,7 +1419,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
-    error: unknown,
+    error: Error | string | unknown,
   ): Promise<never> {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
@@ -1544,13 +1544,13 @@ export class FlowRunner implements IFlowRunner {
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
-    initialError: unknown,
+    initialError: Error | string | unknown,
   ): Promise<IStepResult> {
     if (!step.onError) {
       return this.formatStepFailure(flowRunId, step, request, initialError, startedAt);
     }
 
-    let lastError: unknown = initialError;
+    let lastError: Error | string | unknown = initialError;
 
     if (step.onError.action === FlowStepOnErrorAction.RETRY) {
       const maxRetries = step.onError.maxRetries ?? 1;
@@ -2061,7 +2061,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
     step: IFlowStep,
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
-    error: unknown,
+    error: Error | string | unknown,
     startedAt: Date,
   ): IStepResult {
     const completedAt = new Date();

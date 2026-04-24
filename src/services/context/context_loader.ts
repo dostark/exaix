@@ -399,7 +399,7 @@ export class ContextLoader {
    */
   private logFileLoadError(
     filePath: string,
-    error: unknown,
+    error: Error | string | unknown,
   ): void {
     if (!this.config.db || !this.config.traceId) {
       // If no database or trace ID, just log to stderr

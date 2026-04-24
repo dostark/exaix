@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentResumeTest
  * @path tests/integration/services/plan_amendment_resume_test.ts
@@ -12,11 +13,12 @@ import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
@@ -31,32 +33,13 @@ Deno.test("applyApprovedAmendment preserves original plan structure", async () =
     const mockLlm = castTo<IModelProvider>({});
     const service = new PlanAmendmentService(config, mockLlm);
 
-    const planContent = `---
-trace_id: "trace-resume-1"
-request_id: "req-resume-1"
-status: amendment_pending
----
-
-# Resume Test Plan
-
-## Overview
-This plan tests the resume functionality.
-
-## Execution Steps
-
-## Step 1: Setup Environment
-Initialize all required dependencies.
-
-## Step 2: Process Data
-Process the input data with standard algorithm.
-
-## Step 3: Validate Results
-Ensure all outputs meet quality criteria.
-
-## Notes
-All steps must pass validation before completion.
-`;
-
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "services",
+      "plan_amendment_resume_test",
+      "planContent.md",
+    );
     const patch: IPlanAmendmentPatch = {
       amendmentId: crypto.randomUUID(),
       planId: "req-resume-1",
@@ -107,26 +90,13 @@ Deno.test("applyApprovedAmendment handles step removal correctly", async () => {
     const mockLlm = castTo<IModelProvider>({});
     const service = new PlanAmendmentService(config, mockLlm);
 
-    const planContent = `---
-trace_id: "trace-remove-1"
-request_id: "req-remove-1"
-status: amendment_pending
----
-
-# Remove Step Test
-
-## Execution Steps
-
-## Step 1: First
-Content 1
-
-## Step 2: To Be Removed
-This step should be removed.
-
-## Step 3: Third
-Content 3
-`;
-
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "services",
+      "plan_amendment_resume_test",
+      "planContent_1.md",
+    );
     const patch: IPlanAmendmentPatch = {
       amendmentId: crypto.randomUUID(),
       planId: "req-remove-1",
@@ -163,20 +133,13 @@ Deno.test("applyApprovedAmendment handles step addition correctly", async () => 
     const mockLlm = castTo<IModelProvider>({});
     const service = new PlanAmendmentService(config, mockLlm);
 
-    const planContent = `---
-trace_id: "trace-add-1"
-request_id: "req-add-1"
-status: amendment_pending
----
-
-# Add Step Test
-
-## Execution Steps
-
-## Step 1: First
-Content 1
-`;
-
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "services",
+      "plan_amendment_resume_test",
+      "planContent_2.md",
+    );
     const patch: IPlanAmendmentPatch = {
       amendmentId: crypto.randomUUID(),
       planId: "req-add-1",

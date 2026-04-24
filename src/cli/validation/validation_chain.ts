@@ -7,9 +7,9 @@
  */
 
 import type { ValidationResult } from "../base/command.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject, JSONValue } from "../../shared/types/json.ts";
 
-export type ValidationRule = (value: unknown) => string | null;
+export type ValidationRule = (value: JSONValue) => string | null;
 
 /**
  * Chain of validation rules to be applied sequentially.

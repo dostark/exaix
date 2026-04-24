@@ -8,6 +8,7 @@
 
 import type { IActivityRecord } from "../../shared/types/database.ts";
 import type { IDatabaseService } from "../core/db.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 export interface IIdentityPerformanceSnapshot {
   identityId: string;
@@ -102,7 +103,7 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
 
   private extractCapabilities(payload: JsonPayload | null): string[] {
     if (!Array.isArray(payload?.capabilities)) return [];
-    return (payload.capabilities as unknown[]).filter((value): value is string => typeof value === "string");
+    return (payload.capabilities as JSONValue[]).filter((value): value is string => typeof value === "string");
   }
 
   private extractPortal(payload: JsonPayload | null): string | undefined {
@@ -179,5 +180,5 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
 }
 
 interface JsonPayload {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }

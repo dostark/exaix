@@ -52,6 +52,8 @@ export type {
 
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
+type GitServiceError = Error | string | Record<string, JSONValue>;
+
 export interface IGitServiceConfig {
   config: Config;
   db?: IDatabaseService;
@@ -740,7 +742,7 @@ export class GitService implements IGitService {
         }
 
         // Handle lock conflicts with retry
-        if (retryOnLock && attempt < maxRetries && this.isLockError(error)) {
+        if (retryOnLock && attempt < maxRetries && this.isLockError(error as GitServiceError)) {
           attempt++;
           const delay = Math.pow(2, attempt) * DEFAULT_GIT_RETRY_BACKOFF_BASE_MS; // Exponential backoff
           await new Promise((resolve) => setTimeout(resolve, delay));
@@ -793,7 +795,7 @@ export class GitService implements IGitService {
   /**
    * Check if error is related to repository locking
    */
-  protected isLockError(error: unknown): boolean {
+  protected isLockError(error: GitServiceError): boolean {
     if (!(error instanceof Error)) return false;
     return error.message.includes("lock") || error.message.includes("Lock");
   }

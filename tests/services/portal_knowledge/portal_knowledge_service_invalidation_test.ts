@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PortalKnowledgeServiceInvalidationTest
  * @path tests/services/portal_knowledge/portal_knowledge_service_invalidation_test.ts
@@ -42,7 +43,7 @@ function makeConfig(): IPortalKnowledgeConfig {
 }
 
 function makeFakeMemoryBank(): IMemoryBankService {
-  const bank: unknown = {
+  const bank: any = {
     getProjectMemory: () => Promise.resolve(null),
     createProjectMemory: () => Promise.resolve(undefined),
     updateProjectMemory: () => Promise.resolve(undefined),
@@ -121,7 +122,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze uses quick mode on incremental 
     payload: IPortalKnowledgeLogPayload;
   }> = [];
 
-  const fakeDb: unknown = {
+  const fakeDb: any = {
     logActivity(actor: string, actionType: string, target: string | null, payload: IPortalKnowledgeLogPayload) {
       logCalls.push({ actor, actionType, target, payload });
     },

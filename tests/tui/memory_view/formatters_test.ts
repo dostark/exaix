@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MemoryFormatterTest
  * @path tests/tui/memory_view/formatters_test.ts
@@ -35,7 +36,7 @@ import {
 } from "../../../src/tui/helpers/constants.ts";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 
-function node(id: string, label = id, data?: unknown, badge?: number): ITreeNode {
+function node(id: string, label = id, data?: any, badge?: number): ITreeNode {
   return {
     id,
     type: TuiNodeType.GROUP,

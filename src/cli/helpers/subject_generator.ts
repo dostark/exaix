@@ -6,6 +6,8 @@
  * * @related-files [tests/helpers/subject_generator_test.ts]
  */
 
+import type { JSONValue } from "../../shared/types/json.ts";
+
 /**
  * Extracts a fallback subject from a text description (e.g., first line).
  * Used when no explicit subject is provided and agent hasn't generated one yet.
@@ -33,11 +35,13 @@ export function extractFallbackSubject(text: string, maxLength = 60): string {
 /**
  * Validates a subject (e.g. from agent response).
  * Subject must be a non-empty single-line string within length limits.
- *
+ */
+
+/**
  * @param subject The subject to validate
  * @returns Cleaned subject string if valid, null otherwise
  */
-export function validateSubject(subject: unknown): string | null {
+export function validateSubject(subject: JSONValue): string | null {
   if (typeof subject !== "string") return null;
 
   const trimmed = subject.trim();

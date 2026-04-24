@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module LlmAnalyzerTest
  * @path tests/services/request_analysis/llm_analyzer_test.ts
@@ -148,7 +149,7 @@ Deno.test("[LlmAnalyzer] uses OutputValidator for schema validation", async () =
     parseXMLTags: (raw: string) => ({ thought: "", content: raw, raw }),
     validate: () => ({ success: false, repairAttempted: false, repairSucceeded: false, raw: "" }),
     validateWithSchema: () => ({ success: false, repairAttempted: false, repairSucceeded: false, raw: "" }),
-    parseAndValidate: <T>(content: string, _schema: unknown) => {
+    parseAndValidate: <T>(content: string, _schema: any) => {
       parseAndValidateCalled = true;
       // Delegate to real parser for correctness
       const parsed = JSON.parse(content);

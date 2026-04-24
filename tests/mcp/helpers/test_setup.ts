@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MCPTestSetup
  * @path tests/mcp/helpers/test_setup.ts
@@ -28,7 +29,7 @@ interface IMCPErrorShape {
   message: string;
 }
 
-interface IMCPResponseShape<TResult = unknown> {
+interface IMCPResponseShape<TResult = any> {
   error?: IMCPErrorShape;
   result?: TResult;
 }
@@ -335,7 +336,7 @@ export function assertMCPError(
  * @throws AssertionError if response contains an error
  * @returns The result object from the response
  */
-export function assertMCPSuccess<T = unknown>(response: IMCPResponseShape<T>): T {
+export function assertMCPSuccess<T = any>(response: IMCPResponseShape<T>): T {
   if (response.error) {
     throw new Error(
       `Expected success, got error ${response.error.code}: ${response.error.message}`,

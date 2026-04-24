@@ -1,0 +1,21 @@
+{
+  "test-inline-multiline-fixture": {
+    "SMALL_FIXTURE_OK": {
+      "reason": "Fixture is under the 7-line threshold and inlining improves test clarity."
+    },
+    "FIXTURE_READABILITY": {
+      "reason": "Inline fixture is more readable and maintainable in this context."
+    }
+  },
+  "dynamic-import": {
+    "REQUIRED_FOR_TEST": {
+      "reason": "Dynamic import is required for test setup or mocking."
+    },
+    "PLUGINS": {
+      "reason": "Dynamic import is necessary for plugin or runtime extension loading."
+    },
+    "RUNTIME_REGISTRY": {
+      "reason": "Dynamic import is required at runtime for provider registry initialization and cannot be converted to a static top-level import."
+    }
+  }
+}

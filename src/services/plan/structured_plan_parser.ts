@@ -39,7 +39,7 @@ export function parseStructuredPlanFromMarkdown(
 ): IStructuredPlan | null {
   const stepRegex = /^## Step (\d+): (.+)$/gm;
   const executionStepsRegex =
-    /^## (Execution Steps|Analysis Results|QA & Testing Results|Security Analysis|Performance Analysis)$/m;
+    /^#{1,2} (Execution Steps|Analysis Results|QA & Testing Results|Security Analysis|Performance Analysis)$/m;
 
   if (!executionStepsRegex.test(planContent)) return null;
 

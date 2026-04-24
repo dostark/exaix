@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module GitServiceTest
  * @path tests/services/git/git_service_test.ts
@@ -239,7 +240,7 @@ class TestGitService extends GitService {
   public static testParseWorktreeListPorcelain(output: string) {
     return this.parseWorktreeListPorcelain(output);
   }
-  public testIsLockError(error: unknown) {
+  public testIsLockError(error: any) {
     return this.isLockError(error);
   }
 }

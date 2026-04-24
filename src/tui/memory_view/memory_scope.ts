@@ -7,6 +7,7 @@
  */
 
 import { TUI_ACTION_SEARCH } from "../helpers/constants.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 export const MemoryTuiScope = {
   GLOBAL: "global",
@@ -26,12 +27,12 @@ export const MEMORY_TUI_SCOPE_VALUES: readonly IMemoryTuiScopeType[] = [
   MemoryTuiScope.SEARCH,
 ];
 
-export function isMemoryTuiScope(value: unknown): value is IMemoryTuiScopeType {
+export function isMemoryTuiScope(value: JSONValue): value is IMemoryTuiScopeType {
   return typeof value === "string" && (MEMORY_TUI_SCOPE_VALUES as readonly string[]).includes(value);
 }
 
 export function coerceMemoryTuiScope(
-  value: unknown,
+  value: JSONValue,
   fallback: IMemoryTuiScopeType = MemoryTuiScope.PROJECTS,
 ): IMemoryTuiScopeType {
   return isMemoryTuiScope(value) ? value : fallback;

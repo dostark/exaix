@@ -8,6 +8,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createCliTestContext } from "../helpers/test_setup.ts";
 import { RoutingCommands } from "../../../src/cli/commands/routing_commands.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("RoutingCommands: validatePolicy rejects invalid routing policy YAML", async () => {
   const { tempDir, context, cleanup } = await createCliTestContext();
@@ -41,30 +42,16 @@ Deno.test("RoutingCommands: explainRequest returns explicit routing decision for
     const blueprintsDir = join(tempDir, "Blueprints", "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
 
+    const fixture_1 = readFixtureTextSync(import.meta.url, "cli", "commands", "routing_commands_test", "fixture_1.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "senior-coder.md"),
-      `---
-identity_id: senior-coder
-model: test:model
-capabilities:
-  - code_generation
-version: "1.0.0"
----
-Senior Coder prompt.
-`,
+      fixture_1,
     );
 
+    const fixture_2 = readFixtureTextSync(import.meta.url, "cli", "commands", "routing_commands_test", "fixture_2.md");
     await Deno.writeTextFile(
       join(blueprintsDir, "default-agent.md"),
-      `---
-identity_id: default-agent
-model: test:model
-capabilities:
-  - general
-version: "1.0.0"
----
-Default Agent prompt.
-`,
+      fixture_2,
     );
 
     const requestPath = join(tempDir, "request.md");

@@ -10,6 +10,7 @@
 import { resolve } from "@std/path";
 import { z } from "zod";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
+import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 export interface IScenarioSelectionOptions {
   explicitScenarioIds?: string[];
@@ -92,7 +93,7 @@ export const RuntimeConfigSchema = z.object({
 
 export type IRuntimeConfig = z.infer<typeof RuntimeConfigSchema>;
 
-export function loadRuntimeConfig(rawConfig: unknown): IRuntimeConfig {
+export function loadRuntimeConfig(rawConfig: JSONObject): IRuntimeConfig {
   return RuntimeConfigSchema.parse(rawConfig);
 }
 

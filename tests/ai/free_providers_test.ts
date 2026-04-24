@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module FreeProvidersTest
  * @path tests/ai/free_providers_test.ts
@@ -42,7 +43,7 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
 
   // Capture request
   let capturedUrl = "";
-  let capturedBody: unknown = null;
+  let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {

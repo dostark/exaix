@@ -13,6 +13,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { ensureScenarioUsesFixtureOnly, type IRequestFixture, loadRequestFixture } from "./request_fixtures.ts";
 import type { IScenario } from "../schema/scenario_schema.ts";
 import type { IScenarioStep } from "../schema/step_schema.ts";
+import type { JSONValue } from "../../../src/shared/types/json.ts";
 
 export interface IScenarioLoaderOptions {
   frameworkHome: string;
@@ -42,8 +43,8 @@ export async function loadScenarioFromYamlFile(
   }
 
   const rawYaml = await Deno.readTextFile(absoluteScenarioPath);
-  const parsedYaml = parseYaml(rawYaml);
-  const scenario = ensureScenarioUsesFixtureOnly(parsedYaml);
+  const parsedYaml = parseYaml(rawYaml) as unknown;
+  const scenario = ensureScenarioUsesFixtureOnly(parsedYaml as JSONValue);
   const requestFixture = await loadRequestFixture({
     frameworkHome,
     requestFixturePath: scenario.request_fixture,

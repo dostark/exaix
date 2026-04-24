@@ -8,8 +8,10 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+
 import { inject } from "../../scripts/inject_agent_context.ts";
 import { REPO_ROOT, withRepoRoot } from "../helpers/repo_root.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 // Helper to create temporary markdown files under .copilot/providers
 async function writeAgentMarkdown(filename: string, content: string) {
@@ -56,22 +58,8 @@ Deno.test("inject selects best-scoring document among multiple candidates", asyn
   const f1 = `candidate-a-${Date.now()}.md`;
   const f2 = `candidate-b-${Date.now()}.md`;
 
-  const md1 = `---
-identity: copilot
-title: Low Score
-short_summary: low
----
-
-Contains the word foobar once.`;
-
-  const md2 = `---
-identity: copilot
-title: High Score
-short_summary: high
----
-
-Contains the word foobar and also foobar again. Foobar appears multiple times.`;
-
+  const md1 = readFixtureTextSync(import.meta.url, "scripts", "inject_agent_context_test", "md1.md");
+  const md2 = readFixtureTextSync(import.meta.url, "scripts", "inject_agent_context_test", "md2.md");
   const p1 = await writeAgentMarkdown(f1, md1);
   const p2 = await writeAgentMarkdown(f2, md2);
 

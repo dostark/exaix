@@ -54,7 +54,9 @@ interface IParsedNamespaceSection {
   value: string;
 }
 
-type INamespacePathObject = { [key: string]: unknown };
+import type { JSONValue } from "../../shared/types/json.ts";
+
+type INamespacePathObject = { [key: string]: JSONValue };
 
 export class FlowNamespaceService implements IFlowNamespaceService {
   constructor(private readonly config: Config) {}
@@ -222,7 +224,7 @@ export class FlowNamespaceService implements IFlowNamespaceService {
       return stepOutput;
     }
 
-    let parsedOutput: unknown;
+    let parsedOutput: JSONValue;
     try {
       parsedOutput = JSON.parse(stepOutput);
     } catch {
@@ -239,9 +241,9 @@ export class FlowNamespaceService implements IFlowNamespaceService {
     return typeof extracted === "string" ? extracted : JSON.stringify(extracted);
   }
 
-  private resolveDotPath(source: unknown, path: string): unknown {
+  private resolveDotPath(source: JSONValue, path: string): JSONValue {
     const segments = path.split(".").filter((segment) => segment.length > 0);
-    let current: unknown = source;
+    let current: JSONValue = source;
 
     for (const segment of segments) {
       if (typeof current !== "object" || current === null || !(segment in current)) {

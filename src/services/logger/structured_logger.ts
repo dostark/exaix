@@ -24,7 +24,7 @@ import * as DEFAULTS from "../../shared/constants.ts";
 // ============================================================================
 
 import { LogLevel, type LogRotationInterval } from "../../shared/enums.ts";
-import type { LogMetadata } from "../../shared/types/json.ts";
+import type { JSONValue, LogMetadata } from "../../shared/types/json.ts";
 import type * as LogServiceTypes from "../../shared/interfaces/i_log_service.ts";
 import type * as LoggingTypes from "../../shared/types/logging.ts";
 
@@ -335,7 +335,7 @@ export class StructuredLogger implements IStructuredLogger {
           name: error.name,
           message: error.message,
           stack: error.stack,
-          code: "code" in error ? String((error as { code?: unknown }).code) : undefined,
+          code: "code" in error ? String((error as { code?: JSONValue }).code) : undefined,
         }
         : undefined,
     };

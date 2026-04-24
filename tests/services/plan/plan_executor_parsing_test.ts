@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorParsingTest
  * @path tests/services/plan/plan_executor_parsing_test.ts
@@ -11,39 +12,30 @@ import { ensureDir } from "@std/fs";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";
 import { parse } from "@std/yaml";
 
+import type { JSONObject } from "../../../src/shared/types/json.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+
 interface Frontmatter {
   trace_id?: string;
   request_id?: string;
   agent?: string;
   status?: string;
   created_at?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
-import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 Deno.test("Plan Executor - Parsing", async (t) => {
   const testDir = await Deno.makeTempDir({ prefix: "plan-parsing-test-" });
 
   await t.step("Plan Structure Extraction", async (t) => {
     await t.step("should extract steps from plan body", async () => {
-      const planContent = `---
-trace_id: test-trace-123
-request_id: test-request-456
-status: approved
----
-
-# Implementation Plan
-
-## Step 1: Create User Model
-Description of step 1
-- Task 1.1
-- Task 1.2
-
-## Step 2: Add Validation
-Description of step 2
-- Task 2.1
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent.md",
+      );
       const planPath = join(testDir, "test_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -61,23 +53,13 @@ Description of step 2
     });
 
     await t.step("should extract step descriptions and tasks", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step 1: Database Setup
-Create the database schema
-
-- Create users table
-- Add indexes
-- Set up migrations
-
-## Step 2: API Endpoints
-Build REST API
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_1.md",
+      );
       const planPath = join(testDir, "test_plan2.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -98,16 +80,13 @@ Build REST API
     });
 
     await t.step("should handle plans with single step", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step 1: Quick Fix
-Just update one file
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_2.md",
+      );
       const planPath = join(testDir, "single_step_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -124,16 +103,13 @@ Just update one file
 
   await t.step("Context Extraction", async (t) => {
     await t.step("should extract request_id from frontmatter", async () => {
-      const planContent = `---
-trace_id: test-trace-123
-request_id: req-789
-status: approved
----
-
-# Plan
-## Step 1: Do something
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_3.md",
+      );
       const planPath = join(testDir, "context_plan1.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -147,15 +123,13 @@ status: approved
     });
 
     await t.step("should extract agent from frontmatter", async () => {
-      const planContent = `---
-trace_id: test-trace-123
-identity: mock-agent
----
-
-# Plan
-## Step 1: Test
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_4.md",
+      );
       const planPath = join(testDir, "context_plan2.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -192,15 +166,13 @@ trace_id: test-trace-123
 
   await t.step("Plan Validation", async (t) => {
     await t.step("should validate plan has at least one step", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-No steps defined here, just text.
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_5.md",
+      );
       const planPath = join(testDir, "no_steps_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -215,17 +187,13 @@ No steps defined here, just text.
     });
 
     await t.step("should validate step numbering is sequential", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step 1: First step
-## Step 3: Third step (skipped 2!)
-## Step 4: Fourth step
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_6.md",
+      );
       const planPath = join(testDir, "invalid_numbering.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -246,19 +214,13 @@ trace_id: test-trace-123
     });
 
     await t.step("should validate steps have titles", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step 1: Valid Title
-Content here
-
-## Step 2:
-No title after colon!
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_7.md",
+      );
       const planPath = join(testDir, "missing_title.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -293,17 +255,13 @@ trace_id: test-trace-123
     });
 
     await t.step("should handle malformed step headers", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step One: First (not a number!)
-## Step 2 Missing colon
-## Step 3: Valid Step
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_8.md",
+      );
       const planPath = join(testDir, "malformed_headers.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -319,18 +277,13 @@ trace_id: test-trace-123
     });
 
     await t.step("should handle empty step content", async () => {
-      const planContent = `---
-trace_id: test-trace-123
----
-
-# Plan
-
-## Step 1: Title Only
-
-## Step 2: Another Title
-Some content here
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_9.md",
+      );
       const planPath = join(testDir, "empty_content.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -357,38 +310,13 @@ Some content here
       const activePath = getWorkspaceActiveDir(testDir);
       await ensureDir(activePath);
 
-      const planContent = `---
-trace_id: integration-test-123
-request_id: integration-req-456
-identity: mock-agent
-status: approved
-created_at: 2024-01-01T00:00:00Z
----
-
-# Implementation Plan for User Authentication
-
-## Step 1: Create User Model
-Create a User model with email and password fields.
-
-- Add User interface
-- Create database migration
-- Add validation logic
-
-## Step 2: Add Authentication Routes
-Set up login and signup endpoints.
-
-- POST /api/auth/signup
-- POST /api/auth/login
-- Add JWT token generation
-
-## Step 3: Add Middleware
-Create authentication middleware.
-
-- Verify JWT tokens
-- Attach user to request
-- Handle errors gracefully
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_10.md",
+      );
       const planPath = join(activePath, "integration_test_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -434,16 +362,13 @@ Create authentication middleware.
       const activePath = getWorkspaceActiveDir(testDir);
       await ensureDir(activePath);
 
-      const planContent = `---
-trace_id: fs-test-789
----
-
-# Quick Fix Plan
-
-## Step 1: Update Config
-Change timeout value in config file.
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_parsing_test",
+        "planContent_11.md",
+      );
       const planPath = join(activePath, "quick_fix_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 

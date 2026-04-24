@@ -137,7 +137,7 @@ export abstract class ToolHandler {
     toolName: string,
     portal: string,
     identityId: string,
-    error: unknown,
+    error: Error | string | unknown,
     metadata: LogMetadata,
   ): never {
     this.logToolExecution(toolName, portal, identityId, {

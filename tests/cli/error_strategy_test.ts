@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module CLIErrorStrategyTest
  * @path tests/cli/error_strategy_test.ts
@@ -40,7 +41,7 @@ Deno.test("FailFastStrategy: logs and throws non-Error", () => {
   };
 
   try {
-    let thrown: unknown;
+    let thrown: any;
     try {
       new FailFastStrategy().handle({ commandName: "cmd", error: "nope" });
     } catch (err) {

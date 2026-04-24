@@ -15,7 +15,7 @@
 import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
 import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
-import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "../../shared/types/json.ts";
 
 // ============================================================================
 // Types
@@ -85,8 +85,9 @@ export class PlanAdapter {
 
     // Map ValidationResult errors to PlanValidationError
     const message = result.errors?.[0]?.message || "Plan validation failed";
+    const zodErrors = result.errors ? JSON.parse(JSON.stringify(result.errors)) as JSONValue : null;
     throw new PlanValidationError(message, {
-      zodErrors: result.errors ? toSafeJson(result.errors) : null,
+      zodErrors,
       rawContent: content,
       repairAttempted: result.repairAttempted,
       repairSucceeded: result.repairSucceeded,

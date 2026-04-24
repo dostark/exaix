@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module SkillsAdapterTest
  * @path tests/services/adapters/skills_adapter_test.ts
@@ -17,7 +18,7 @@ interface SpyLike {
   calls: { readonly length: number };
 }
 
-function getSpyCallCount(fn: unknown): number {
+function getSpyCallCount(fn: any): number {
   const s = fn as SpyLike;
   return s?.calls?.length ?? 0;
 }

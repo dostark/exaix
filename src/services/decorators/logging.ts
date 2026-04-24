@@ -9,13 +9,15 @@ import type { EventLogger } from "../core/event_logger.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
 import { toSafeJson } from "../../shared/types/json.ts";
 
-type AsyncMethodDecorator = <This, Args extends unknown[], Return>(
+type SafeJsonInput = string | number | boolean | null | undefined | SafeJsonInput[] | { [key: string]: SafeJsonInput };
+
+type AsyncMethodDecorator = <This, Args extends Array<unknown>, Return>(
   target: (this: This, ...args: Args) => Promise<Return>,
   context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,
 ) => ((this: This, ...args: Args) => Promise<Return>) | void;
 
 export function LogMethod(logger: EventLogger, action?: string): AsyncMethodDecorator {
-  return function <This, Args extends unknown[], Return>(
+  return function <This, Args extends Array<unknown>, Return>(
     target: (this: This, ...args: Args) => Promise<Return>,
     context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Promise<Return>>,
   ): ((this: This, ...args: Args) => Promise<Return>) | void {
@@ -29,7 +31,7 @@ export function LogMethod(logger: EventLogger, action?: string): AsyncMethodDeco
 
       try {
         // Log cached arguments
-        await logger.debug(actionName, "started", { args: toSafeJson(args) });
+        await logger.debug(actionName, "started", { args: toSafeJson(args as SafeJsonInput) });
 
         // Note: we must await target regardless of whether it's sync or async
         // target is the original method in Stage 3 decorators

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutionParsingIntegrationTest
  * @path tests/integration/14_plan_execution_parsing_test.ts
@@ -18,7 +19,7 @@ interface Frontmatter {
   agent?: string;
   status?: string;
   created_at?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 Deno.test("Integration: Plan Execution Parsing", async (t) => {

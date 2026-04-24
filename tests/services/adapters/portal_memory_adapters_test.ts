@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PortalMemoryAdaptersTest
  * @path tests/services/adapters/portal_memory_adapters_test.ts
@@ -61,7 +62,7 @@ function createMockPortalService(overrides: Partial<PortalService> = {}): Portal
     verify: () => Promise.resolve([{ alias: "myportal", status: VerificationStatus.OK }]),
     refresh: () => Promise.resolve(),
     ...overrides,
-  } as unknown) as PortalService;
+  } as any) as PortalService;
 }
 
 Deno.test("PortalAdapter: add delegates with options", async () => {
@@ -217,7 +218,7 @@ function createMockMemoryBank(overrides: Partial<MemoryBankService> = {}): Memor
     getExecutionHistory: () => Promise.resolve([]),
     searchMemory: () => Promise.resolve([]),
     ...overrides,
-  } as unknown) as MemoryBankService;
+  } as any) as MemoryBankService;
 }
 
 function createMockExtractor(overrides: Partial<MemoryExtractorService> = {}): MemoryExtractorService {
@@ -227,7 +228,7 @@ function createMockExtractor(overrides: Partial<MemoryExtractorService> = {}): M
     approvePending: () => Promise.resolve(),
     rejectPending: () => Promise.resolve(),
     ...overrides,
-  } as unknown) as MemoryExtractorService;
+  } as any) as MemoryExtractorService;
 }
 
 Deno.test("MemoryServiceAdapter: getProjects delegates", async () => {
@@ -254,7 +255,7 @@ Deno.test("MemoryServiceAdapter: getGlobalMemory delegates", async () => {
     createMockMemoryBank(
       ({
         getGlobalMemory: () => Promise.resolve(mockGlobal),
-      } as unknown) as MemoryBankService,
+      } as any) as MemoryBankService,
     ),
     createMockExtractor(),
   );
@@ -336,7 +337,7 @@ Deno.test("MemoryServiceAdapter: listPending delegates to extractor", async () =
     createMockExtractor(
       ({
         listPending: () => Promise.resolve(mockProposals),
-      } as unknown) as MemoryExtractorService,
+      } as any) as MemoryExtractorService,
     ),
   );
   const pending = await adapter.listPending();
@@ -404,7 +405,7 @@ function createMockArchiveService(overrides: Partial<ArchiveService> = {}): Arch
     searchByAgent: () => Promise.resolve([sampleEntry]),
     getByTraceId: () => Promise.resolve(sampleEntry),
     ...overrides,
-  } as unknown) as ArchiveService;
+  } as any) as ArchiveService;
 }
 
 Deno.test("ArchiveAdapter: searchByDateRange delegates", async () => {
@@ -475,12 +476,12 @@ function createMockFlowValidatorImpl(overrides: Partial<FlowValidatorImpl> = {})
     validate: () => Promise.resolve({ isValid: true, errors: [], warnings: [] }),
     validateFile: () => Promise.resolve({ isValid: true, errors: [], warnings: [] }),
     ...overrides,
-  } as unknown) as FlowValidatorImpl;
+  } as any) as FlowValidatorImpl;
 }
 
 Deno.test("FlowValidatorAdapter: validate delegates and returns structured result", async () => {
   const adapter = new FlowValidatorAdapter(createMockFlowValidatorImpl());
-  const flow: IFlow = ({ id: "test-flow", name: "Test", steps: [] } as unknown) as IFlow;
+  const flow: IFlow = ({ id: "test-flow", name: "Test", steps: [] } as any) as IFlow;
   const result = await adapter.validate(flow);
   assertEquals(result.isValid, true);
   assertEquals(result.errors, []);
@@ -497,7 +498,7 @@ Deno.test("FlowValidatorAdapter: validate with errors", async () => {
       }),
   });
   const adapter = new FlowValidatorAdapter(inner);
-  const result = await adapter.validate(({ id: "bad-flow", name: "Bad", steps: [] } as unknown) as IFlow);
+  const result = await adapter.validate(({ id: "bad-flow", name: "Bad", steps: [] } as any) as IFlow);
   assertEquals(result.isValid, false);
   assertEquals(result.errors.length, 1);
   assertEquals(result.warnings.length, 1);
@@ -511,10 +512,10 @@ Deno.test("FlowValidatorAdapter: validate maps missing warnings to empty array",
           isValid: true,
           errors: [],
         }),
-    } as unknown) as FlowValidatorImpl,
+    } as any) as FlowValidatorImpl,
   );
   const adapter = new FlowValidatorAdapter(inner);
-  const result = await adapter.validate(({ id: "f", name: "F", steps: [] } as unknown) as IFlow);
+  const result = await adapter.validate(({ id: "f", name: "F", steps: [] } as any) as IFlow);
   assertEquals(result.warnings, []);
 });
 
@@ -532,7 +533,7 @@ Deno.test("FlowValidatorAdapter: validateFile with errors", async () => {
           isValid: false,
           errors: ["File not found"],
         }),
-    } as unknown) as FlowValidatorImpl,
+    } as any) as FlowValidatorImpl,
   );
   const adapter = new FlowValidatorAdapter(inner);
   const result = await adapter.validateFile("/bad/path");
@@ -563,7 +564,7 @@ function createMockDaemonCommands(
         }
         : null,
     ...overrides,
-  } as unknown) as DaemonCommands;
+  } as any) as DaemonCommands;
 }
 
 Deno.test("DaemonServiceAdapter: start/stop/restart delegate", async () => {
@@ -651,7 +652,7 @@ Deno.test("DaemonServiceAdapter: getLogs returns message when config is null", a
   const commands = createMockDaemonCommands(
     ({
       getConfig: () => null,
-    } as unknown) as DaemonCommands,
+    } as any) as DaemonCommands,
   );
   const adapter = new DaemonServiceAdapter(commands);
   const logs = await adapter.getLogs();

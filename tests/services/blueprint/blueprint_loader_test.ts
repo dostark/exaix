@@ -9,6 +9,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { McpToolName } from "../../../src/shared/enums.ts";
 
 import { join } from "@std/path";
+
 import {
   BlueprintLoader,
   BlueprintLoadError,
@@ -17,6 +18,7 @@ import {
 } from "../../../src/services/blueprint/blueprint_loader.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // Test directory setup
 let testDir: string;
@@ -46,20 +48,13 @@ Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () =>
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const content = `---
-identity_id: "code-reviewer"
-name: "Code Reviewer Agent"
-model: "anthropic:claude-sonnet-4-20250514"
-capabilities:
-  - read_file
-  - write_file
-version: "1.0.0"
----
-
-# Code Reviewer
-
-You are a code reviewer. Review code for quality and best practices.
-`;
+    const content = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "blueprint",
+      "blueprint_loader_test",
+      "content.md",
+    );
     await Deno.writeTextFile(join(identitiesDir, "code-reviewer.md"), content);
 
     const loader = new BlueprintLoader({ blueprintsPath });
@@ -145,23 +140,8 @@ Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () 
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const alpha = `---
-identity_id: "alpha"
-name: "Alpha"
-model: "anthropic:claude-sonnet-4-20250514"
-version: "1.0.0"
----
-# Alpha
-`;
-    const beta = `---
-identity_id: "beta"
-name: "Beta"
-model: "anthropic:claude-sonnet-4-20250514"
-version: "1.0.0"
----
-# Beta
-`;
-
+    const alpha = readFixtureTextSync(import.meta.url, "services", "blueprint", "blueprint_loader_test", "alpha.md");
+    const beta = readFixtureTextSync(import.meta.url, "services", "blueprint", "blueprint_loader_test", "beta.md");
     await Deno.writeTextFile(join(identitiesDir, "alpha.md"), alpha);
     await Deno.writeTextFile(join(identitiesDir, "beta.md"), beta);
 
@@ -263,19 +243,13 @@ Deno.test("[BlueprintLoader] parses reflexive agent configuration", async () => 
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const content = `---
-identity_id: "reflexive-agent"
-name: "Reflexive Agent"
-model: "anthropic:claude-sonnet-4-20250514"
-reflexive: true
-max_reflexion_iterations: 5
-confidence_required: 80
----
-
-# Reflexive Agent
-
-Agent with self-critique enabled.
-`;
+    const content = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "blueprint",
+      "blueprint_loader_test",
+      "content_1.md",
+    );
     await Deno.writeTextFile(join(identitiesDir, "reflexive-agent.md"), content);
 
     const loader = new BlueprintLoader({ blueprintsPath });
@@ -294,20 +268,13 @@ Deno.test("[BlueprintLoader] parses memory and skills configuration", async () =
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const content = `---
-identity_id: "skilled-agent"
-name: "Skilled Agent"
-model: "anthropic:claude-sonnet-4-20250514"
-memory_enabled: true
-default_skills:
-  - tdd-methodology
-  - security-first
----
-
-# Skilled Agent
-
-Agent with memory and skills.
-`;
+    const content = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "blueprint",
+      "blueprint_loader_test",
+      "content_2.md",
+    );
     await Deno.writeTextFile(join(identitiesDir, "skilled-agent.md"), content);
 
     const loader = new BlueprintLoader({ blueprintsPath });
@@ -502,20 +469,13 @@ Deno.test("[BlueprintLoader] loads from Identities path (canonical)", async () =
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const content = `---
-identity_id: "senior-coder"
-name: "Senior Coder"
-model: "anthropic:claude-sonnet-4-20250514"
-capabilities:
-  - read_file
-  - write_file
-version: "1.0.0"
----
-
-# Senior Coder
-
-You are a senior coder.
-`;
+    const content = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "blueprint",
+      "blueprint_loader_test",
+      "content_3.md",
+    );
     await Deno.writeTextFile(join(identitiesDir, "senior-coder.md"), content);
 
     const loader = new BlueprintLoader({ blueprintsPath });

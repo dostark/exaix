@@ -546,13 +546,16 @@ interface HealthContext extends IServiceContext {
   res?: Response;
 }
 
+type HealthCheckResponse = Response;
+type HealthCheckResponsePromise = Promise<HealthCheckResponse>;
+
 /**
  * HTTP endpoint handler for health checks
  */
 export async function handleHealthCheck(
   _req: Request,
   health: HealthCheckService,
-): Promise<Response> {
+): HealthCheckResponsePromise {
   // Build a middleware pipeline to add timing, error handling, and logging
   const pipeline = new MiddlewarePipeline<HealthContext>();
 

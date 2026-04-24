@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ExaCtlAllTest
  * @path tests/cli/exactl_all_test.ts
@@ -322,7 +323,7 @@ Deno.test("blueprint validate invalid triggers exit", async () => {
 
 Deno.test("request --file outputs JSON when --json specified", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: unknown }) =>
+    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: any }) =>
       Promise.resolve({
         filename: "/tmp/exa-test/request-1.md",
         trace_id: "trace-1234",
@@ -343,7 +344,7 @@ Deno.test("request --file outputs JSON when --json specified", async () => {
 
 Deno.test("request --file prints human output when no --json", async () => {
   await withTestMod(async (mod, ctx) => {
-    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: unknown }) =>
+    ctx.requestCommands.createFromFile = (_file: string, _opts?: { [key: string]: any }) =>
       Promise.resolve({
         filename: "/tmp/exa-test/request-2.md",
         trace_id: "trace-5678",
@@ -747,7 +748,7 @@ Deno.test("exactl: --version prints version and exits (in-process)", async () =>
     try {
       (Deno as typeof Deno & { exit: (code?: number) => never }).exit = exitMock;
       await mod.__test_command.parse(["--version"]);
-    } catch (e: unknown) {
+    } catch (e: any) {
       if (!(e instanceof Error) || !e.message.startsWith("DENO_EXIT:")) throw e;
     } finally {
       (Deno as typeof Deno & { exit: (code?: number) => never }).exit = origExit;

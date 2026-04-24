@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module TUIRendererTestUtils
  * @path tests/tui/renderer_test_utils.ts
@@ -65,7 +66,7 @@ export function captureStdout(): { writes: string[]; restore: () => void } {
   return {
     writes,
     restore: () => {
-      (process.stdout as Partial<{ write: unknown }> as { write: unknown }).write = originalWrite;
+      (process.stdout as Partial<{ write: any }> as { write: any }).write = originalWrite;
     },
   };
 }

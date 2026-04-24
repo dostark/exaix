@@ -23,6 +23,7 @@ import {
   ToolName,
 } from "../../../src/shared/enums.ts";
 import { join } from "@std/path";
+
 import {
   AgentExecutionError,
   AgentExecutor,
@@ -46,6 +47,7 @@ import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/a
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { PromptBudgetAllocator } from "../../../src/services/context/prompt_budget_allocator.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // Test fixtures - initialized once
 let testDir: string;
@@ -201,18 +203,13 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
 
       // Create test blueprint
-      const blueprintContent = `---
-model: mock-model
-provider: mock
-capabilities:
-  - code_generation
-  - git_operations
----
-
-# Test Agent
-
-You are a test agent for Exaix testing.`;
-
+      const blueprintContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "agent",
+        "agent_executor_test",
+        "blueprintContent.md",
+      );
       await Deno.writeTextFile(
         join(blueprintsDir, "test-agent.md"),
         blueprintContent,
@@ -842,18 +839,13 @@ Deno.test({
       );
 
       // malicious YAML attempting code execution via constructor hijacking
-      const maliciousYaml = `---
-name: malicious
-model: !!js/function >
-  function() {
-    process.exit(1);
-  }
-provider: !!js/regexp /[a-z]/
-capabilities:
-  - !!js/eval "console.log('pwned')"
----
-Test prompt`;
-
+      const maliciousYaml = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "agent",
+        "agent_executor_test",
+        "maliciousYaml.md",
+      );
       const blueprintPath = join(testConfig.system.root, "Blueprints", "Identities", "malicious.md");
       await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, maliciousYaml);
@@ -926,16 +918,13 @@ Deno.test({
         permissions,
       );
 
-      const scriptYaml = `---
-name: test
-model: mock-model
-provider: mock
-capabilities: []
----
-You are a test agent.
-<script>evil code here</script>
-More content after.`;
-
+      const scriptYaml = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "agent",
+        "agent_executor_test",
+        "scriptYaml.md",
+      );
       const blueprintPath = join(testConfig.system.root, "Blueprints", "Identities", "test.md");
       await Deno.mkdir(join(testConfig.system.root, "Blueprints", "Identities"), { recursive: true });
       await Deno.writeTextFile(blueprintPath, scriptYaml);

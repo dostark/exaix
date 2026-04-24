@@ -236,7 +236,7 @@ Deno.test(
 // ============================================================================
 
 Deno.test(
-  "ProviderFactory: unknown provider falls back to mock with warning",
+  "ProviderFactory: any provider falls back to mock with warning",
   withEnvVars({ EXA_LLM_PROVIDER: "unknown-provider-xyz" }, async () => {
     const config = createTestConfig();
 
@@ -458,7 +458,7 @@ Deno.test("ProviderFactory: llama model prefix routes to LlamaProvider from env"
 // Unknown Provider ID Generation Test
 // ============================================================================
 
-Deno.test("ProviderFactory: unknown provider generates unknown ID", () => {
+Deno.test("ProviderFactory: any provider generates unknown ID", () => {
   // This tests the default case in generateProviderId
   // We need to access the private method, so we'll test via getProviderInfo
   const config = createTestConfig();

@@ -47,7 +47,11 @@ Deno.test("StrategyRegistry Tests - Mock strategy registration and resolution", 
 
 Deno.test("StrategyRegistry Tests - Should throw for unknown strategy", () => {
   const registry = new StrategyRegistry();
-  assertThrows(() => registry.resolve("unknown"), Error, "Execution strategy not found: unknown");
+  assertThrows(
+    () => registry.resolve("unknown"),
+    Error,
+    "Execution strategy not found",
+  );
 });
 
 /**

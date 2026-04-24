@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestRouterTest
  * @path tests/services/request/request_router_test.ts
@@ -16,7 +17,7 @@ type RoutingContext = {
   explicitIdentityId?: string;
   explicitVersion?: string;
   requestText?: string;
-  requestAnalysis?: unknown;
+  requestAnalysis?: any;
   portalName?: string;
   flowStepId?: string;
   matchCriteria?: {
@@ -33,7 +34,7 @@ type RoutingContext = {
 };
 
 type TestRouterFrontmatter = Partial<IRequestFrontmatter> & {
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 // Test-specific helpers are provided by tests/services/helpers.ts

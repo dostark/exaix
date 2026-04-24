@@ -6,10 +6,12 @@
  * * @related-files [src/cli/base.ts]
  */
 
+import type { JSONValue } from "../../shared/types/json.ts";
+
 export interface IHelperResult {
   success: boolean;
   message?: string;
-  data?: unknown;
+  data?: JSONValue;
 }
 
 export interface ValidationResult {
@@ -18,7 +20,7 @@ export interface ValidationResult {
 }
 
 export interface CommandArgs {
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 /**

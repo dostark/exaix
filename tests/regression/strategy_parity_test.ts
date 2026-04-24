@@ -15,12 +15,14 @@ import { createTestConfig } from "../ai/helpers/test_config.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
+
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "../../src/ai/providers.ts";
 import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 /**
  * Helper: set up a full AgentExecutor with all dependencies for strategy testing.
@@ -51,18 +53,8 @@ async function setupExecutor(
   // Create blueprint
   const blueprintsDir = join(tempDir, "Blueprints", "Identities");
   await Deno.mkdir(blueprintsDir, { recursive: true });
-  await Deno.writeTextFile(
-    join(blueprintsDir, "test-agent.md"),
-    `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["test.txt"]
----
-You are a test agent.
-`,
-  );
+  const fixture_1 = readFixtureTextSync(import.meta.url, "regression", "strategy_parity_test", "fixture_1.md");
+  await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture_1);
 
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);

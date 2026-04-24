@@ -8,6 +8,7 @@
 import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+
 import { PortalExecutionStrategy, PortalOperation } from "../../src/shared/enums.ts";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
@@ -27,6 +28,7 @@ import {
 } from "../helpers/portal_test_utils.ts";
 import type { setupGitRepo as _setupGitRepo } from "../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
 
@@ -58,23 +60,13 @@ parallelSafeTest("[e2e] Portal request → plan → execution → artifact revie
     // IBlueprint as Blueprint must include capabilities so ExecutionLoop can detect read-only mode.
     const blueprintsDir = join(env.tempDir, "Blueprints", "Identities");
     await ensureDir(blueprintsDir);
-    await Deno.writeTextFile(
-      join(blueprintsDir, "code-analyst.md"),
-      `---
-identity_id: "code-analyst"
-name: "Code Analyst"
-model: "mock:test"
-capabilities: ["read_file", "list_directory", "grep_search"]
-created: "2026-02-05T00:00:00Z"
-created_by: "test"
-version: "1.0.0"
----
-
-# Code Analyst
-
-Return an analysis-only plan.
-`,
+    const fixture_1 = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "24_portal_e2e_workflow_test",
+      "fixture_1.md",
     );
+    await Deno.writeTextFile(join(blueprintsDir, "code-analyst.md"), fixture_1);
 
     const config = {
       ...env.config,
@@ -100,10 +92,8 @@ Return an analysis-only plan.
     assertStringIncludes(planContent, `portal: ${portalConfig.alias}`);
 
     const activePlanPath = await env.approvePlan(planPath);
-
     const portalBranchesBefore = await listBranches(portalTargetPath);
     const workspaceBranchesBefore = await env.getGitBranches();
-
     const result = await executePlanForReview(env, config, activePlanPath);
 
     assertEquals(result.success, true);
@@ -145,10 +135,10 @@ Return an analysis-only plan.
 
     // Ensure read-only execution didn't mutate either repository.
     const portalBranchesAfter = await listBranches(portalTargetPath);
-    assertEquals(portalBranchesAfter, portalBranchesBefore);
+    assertEquals([...portalBranchesAfter].sort(), [...portalBranchesBefore].sort());
 
     const workspaceBranchesAfter = await env.getGitBranches();
-    assertEquals(workspaceBranchesAfter, workspaceBranchesBefore);
+    assertEquals([...workspaceBranchesAfter].sort(), [...workspaceBranchesBefore].sort());
 
     // Validate unified CLI review surface works for portal artifacts.
     const show = await runExactl(["review", "show", artifacts[0].id, "--diff"], env.tempDir);

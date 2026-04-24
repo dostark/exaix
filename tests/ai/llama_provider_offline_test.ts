@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module LlamaProviderOfflineTest
  * @path tests/ai/llama_provider_offline_test.ts
@@ -18,7 +19,7 @@ import {
 } from "../config/constants.ts";
 import { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 
-function jsonResponse(body: unknown, init?: ResponseInit): Response {
+function jsonResponse(body: any, init?: ResponseInit): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: { "Content-Type": "application/json" },
@@ -37,7 +38,7 @@ Deno.test("LlamaProvider: constructor rejects unsupported model", () => {
 Deno.test("LlamaProvider: returns JSON extracted from markdown code block", async () => {
   const originalFetch = globalThis.fetch;
   try {
-    globalThis.fetch = ((_input: unknown, _init?: unknown) =>
+    globalThis.fetch = ((_input: any, _init?: any) =>
       Promise.resolve(
         jsonResponse({
           response: `Here you go:\n\n\`\`\`json\n${TEST_LLAMAPROVIDER_JSON_BODY}\n\`\`\`\n`,
@@ -62,7 +63,7 @@ Deno.test("LlamaProvider: returns JSON extracted from markdown code block", asyn
 Deno.test("LlamaProvider: extracts JSON object from surrounding text", async () => {
   const originalFetch = globalThis.fetch;
   try {
-    globalThis.fetch = ((_input: unknown, _init?: unknown) =>
+    globalThis.fetch = ((_input: any, _init?: any) =>
       Promise.resolve(
         jsonResponse({
           response: `prefix ${TEST_LLAMAPROVIDER_JSON_BODY} suffix`,
@@ -89,7 +90,7 @@ Deno.test("LlamaProvider: returns raw response when JSON parsing fails", async (
   const raw = "not a json";
 
   try {
-    globalThis.fetch = ((_input: unknown, _init?: unknown) =>
+    globalThis.fetch = ((_input: any, _init?: any) =>
       Promise.resolve(jsonResponse({ response: raw }))) as typeof globalThis.fetch;
 
     const provider = new LlamaProvider({
@@ -111,7 +112,7 @@ Deno.test("LlamaProvider: throws on invalid Ollama response shape", async () => 
   const originalFetch = globalThis.fetch;
 
   try {
-    globalThis.fetch = ((_input: unknown, _init?: unknown) =>
+    globalThis.fetch = ((_input: any, _init?: any) =>
       Promise.resolve(
         jsonResponse({ somethingElse: "no response field" }),
       )) as typeof globalThis.fetch;
@@ -138,7 +139,7 @@ Deno.test("LlamaProvider: surfaces HTTP errors from provider_common_utils", asyn
   const originalFetch = globalThis.fetch;
 
   try {
-    globalThis.fetch = ((_input: unknown, _init?: unknown) =>
+    globalThis.fetch = ((_input: any, _init?: any) =>
       Promise.resolve(
         new Response(JSON.stringify({ error: { message: "boom" } }), {
           status: 500,

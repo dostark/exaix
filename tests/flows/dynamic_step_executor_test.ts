@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module DynamicStepExecutorTest
  * @path tests/flows/dynamic_step_executor_test.ts
@@ -73,7 +74,7 @@ class MockLlmClient implements ILlmClient {
   }
 
   reasonNextAction(
-    _params: unknown,
+    _params: any,
   ): Promise<{ done: boolean; tool?: McpToolName; args?: ToolArgs; output?: string }> {
     if (this.decisionIndex >= this.decisions.length) {
       // Default to done if no more decisions

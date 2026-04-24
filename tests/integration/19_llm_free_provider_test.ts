@@ -10,7 +10,6 @@
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "../../src/shared/enums.ts";
-
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
@@ -19,6 +18,7 @@ import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helpe
 import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";
 import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test(
@@ -45,18 +45,14 @@ Deno.test(
 
     try {
       // Create blueprint that instructs the model to include <thought> and <content> tags
+      const fixture_1 = readFixtureTextSync(
+        import.meta.url,
+        "integration",
+        "19_llm_free_provider_test",
+        "fixture_1.md",
+      );
       await env.createBlueprint(
-        "senior-coder",
-        `# Senior Coder Blueprint
-
-You are an expert software developer. Analyze requests and create detailed implementation plans.
-
-## Response Format
-
-Always respond with:
-- <thought> tags containing your analysis
-- <content> tags containing the implementation plan
-`,
+        fixture_1,
       );
 
       // Create a real provider using ModelFactory

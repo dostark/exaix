@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module CommandUtilsTest
  * @path tests/cli/helpers/command_utils_test.ts
@@ -133,7 +134,7 @@ Deno.test("CommandUtils.printMetadata: handles undefined values", () => {
   try {
     CommandUtils.printMetadata("Info", {
       present: "yes",
-      absent: (undefined as unknown) as string,
+      absent: (undefined as any) as string,
     });
 
     const allContent = logs.join("\n");

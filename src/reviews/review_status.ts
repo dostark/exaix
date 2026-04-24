@@ -5,6 +5,9 @@
  * @architectural-layer Reviews
  * * @related-files [src/services/review_registry.ts, src/shared/schemas/review.ts]
  */
+
+import type { JSONValue } from "../shared/types/json.ts";
+
 export const ReviewStatus = {
   PENDING: "pending",
   APPROVED: "approved",
@@ -19,10 +22,15 @@ export const REVIEW_STATUS_VALUES = [
   ReviewStatus.REJECTED,
 ] as const;
 
-export function isReviewStatus(value: unknown): value is IReviewStatus {
+type ReviewStatusCandidate = JSONValue;
+
+export function isReviewStatus(value: ReviewStatusCandidate): value is IReviewStatus {
   return value === ReviewStatus.PENDING || value === ReviewStatus.APPROVED || value === ReviewStatus.REJECTED;
 }
 
-export function coerceReviewStatus(value: unknown, fallback: IReviewStatus = ReviewStatus.PENDING): IReviewStatus {
+export function coerceReviewStatus(
+  value: ReviewStatusCandidate,
+  fallback: IReviewStatus = ReviewStatus.PENDING,
+): IReviewStatus {
   return isReviewStatus(value) ? value : fallback;
 }

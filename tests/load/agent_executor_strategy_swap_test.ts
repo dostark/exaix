@@ -10,6 +10,7 @@ import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "../helpers/db.ts";
 import { createTestConfig } from "../ai/helpers/test_config.ts";
+
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
@@ -21,6 +22,7 @@ import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loo
 import { MockProvider } from "../../src/ai/providers.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { ExecutionStrategyName, SecurityMode } from "../../src/shared/enums.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 const TEST_OPTIONS: IAgentExecutionOptions = {
   identity_id: "test-agent",
@@ -68,18 +70,8 @@ async function setupExecutor(
 
   const blueprintsDir = join(tempDir, "Blueprints", "Identities");
   await Deno.mkdir(blueprintsDir, { recursive: true });
-  await Deno.writeTextFile(
-    join(blueprintsDir, "test-agent.md"),
-    `---
-name: test-agent
-model: mock-model
-provider: mock
-capabilities: ["write"]
-allowed_paths: ["test.txt"]
----
-You are a test agent.
-`,
-  );
+  const fixture_1 = readFixtureTextSync(import.meta.url, "load", "agent_executor_strategy_swap_test", "fixture_1.md");
+  await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture_1);
 
   const logger = new EventLogger({ db });
   const pathResolver = new PathResolver(config);

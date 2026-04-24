@@ -8,6 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("amendment list discovers pending amendments", async () => {
   const root = await Deno.makeTempDir();
@@ -117,23 +118,13 @@ Deno.test("amendment approve applies patch to plan file", async () => {
     const plansDir = join(root, "Workspace", "Active");
     await Deno.mkdir(plansDir, { recursive: true });
 
-    const planContent = `---
-trace_id: "trace-1"
-request_id: "plan-1"
-status: amendment_pending
----
-
-# Test Plan
-
-## Execution Steps
-
-## Step 1: First
-Content 1
-
-## Step 2: Second
-Content 2
-`;
-
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "unit",
+      "cli",
+      "plan_amendment_actions_test",
+      "planContent.md",
+    );
     await Deno.writeTextFile(join(plansDir, "plan.md"), planContent);
 
     // Create amendment patch

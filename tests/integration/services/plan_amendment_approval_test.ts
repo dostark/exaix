@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentApprovalTest
  * @path tests/integration/services/plan_amendment_approval_test.ts
@@ -18,6 +19,7 @@ import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
@@ -29,7 +31,7 @@ import {
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
@@ -204,7 +206,7 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     // Should throw PlanAmendmentPendingError when trigger fires
     await assertRejects(
@@ -236,25 +238,13 @@ Deno.test("applyApprovedAmendment correctly applies patch to plan content", asyn
     const mockLlm = castTo<IModelProvider>({});
     const service = new PlanAmendmentService(config, mockLlm);
 
-    const planContent = `---
-trace_id: "trace-1"
-request_id: "req-1"
-status: amendment_pending
----
-
-# Test Plan
-
-## Execution Steps
-
-## Step 1: Initial Setup
-Setup the environment.
-
-## Step 2: Process Data
-Process the incoming data.
-
-## Step 3: Generate Report
-Generate final report.
-`;
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "services",
+      "plan_amendment_approval_test",
+      "planContent.md",
+    );
 
     const patch: IPlanAmendmentPatch = {
       amendmentId: crypto.randomUUID(),

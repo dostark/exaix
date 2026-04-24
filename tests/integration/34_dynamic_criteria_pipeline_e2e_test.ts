@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module DynamicCriteriaPipelineE2ETest
  * @path tests/integration/34_dynamic_criteria_pipeline_e2e_test.ts
@@ -272,7 +273,7 @@ Deno.test(
     ]);
     // Minimal confidence scorer mock for test
     const scorer = {
-      assess: (_req: string, _res: string, _ctx: unknown, critique: ICritique) =>
+      assess: (_req: string, _res: string, _ctx: any, critique: ICritique) =>
         Promise.resolve({
           confidence: { score: critique.confidence },
         }),

@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorDetectionTest
  * @path tests/services/plan/plan_executor_detection_test.ts
@@ -12,9 +13,11 @@ import { parse as parseYaml } from "@std/yaml";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 describe("Plan Executor - Detection", () => {
   let tempDir: string;
@@ -38,19 +41,13 @@ describe("Plan Executor - Detection", () => {
   describe("File Detection", () => {
     it("should detect plan file by _plan.md suffix", async () => {
       // Arrange: Create a plan file
-      const planContent = `---
-trace_id: "550e8400-e29b-41d4-a716-446655440000"
-request_id: "request-550e8400"
-status: approved
-created_at: "2025-12-03T10:00:00.000Z"
----
-
-# Plan: request-550e8400
-
-## Proposed Plan
-Implement hello world function.
-`;
-
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_detection_test",
+        "planContent.md",
+      );
       const planPath = join(activePath, "request-550e8400_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -113,15 +110,13 @@ Implement hello world function.
   describe("Plan File Reading", () => {
     it("should read plan file content correctly", async () => {
       // Arrange
-      const planContent = `---
-trace_id: "test-trace-id"
-request_id: "request-test"
-status: approved
----
-
-# Plan Content
-This is the plan body.
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_detection_test",
+        "planContent_1.md",
+      );
       const planPath = join(activePath, "request-test_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -136,16 +131,13 @@ This is the plan body.
 
     it("should parse YAML frontmatter from plan", async () => {
       // Arrange
-      const planContent = `---
-trace_id: "550e8400-e29b-41d4-a716-446655440000"
-request_id: "request-550e8400"
-identity_id: "senior-coder"
-status: approved
-created_at: "2025-12-03T10:00:00.000Z"
----
-
-# Plan body
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_detection_test",
+        "planContent_2.md",
+      );
       const planPath = join(activePath, "request-550e8400_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -159,7 +151,7 @@ created_at: "2025-12-03T10:00:00.000Z"
         request_id?: string;
         identity_id?: string;
         status?: string;
-        [key: string]: unknown;
+        [key: string]: any;
       };
 
       // Assert
@@ -171,20 +163,13 @@ created_at: "2025-12-03T10:00:00.000Z"
 
     it("should extract plan body after frontmatter", async () => {
       // Arrange
-      const planContent = `---
-trace_id: "test-id"
-status: approved
----
-
-# Proposed Plan
-
-## Overview
-Implementation details here.
-
-## Steps
-1. Step one
-2. Step two
-`;
+      const planContent = readFixtureTextSync(
+        import.meta.url,
+        "services",
+        "plan",
+        "plan_executor_detection_test",
+        "planContent_3.md",
+      );
       const planPath = join(activePath, "test_plan.md");
       await Deno.writeTextFile(planPath, planContent);
 
@@ -281,7 +266,7 @@ status: approved
         request_id?: string;
         identity_id?: string;
         status?: string;
-        [key: string]: unknown;
+        [key: string]: any;
       };
 
       // Assert

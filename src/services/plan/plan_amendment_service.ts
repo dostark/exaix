@@ -17,7 +17,7 @@ import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject, JSONValue } from "../../shared/types/json.ts";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
@@ -26,7 +26,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 /** Raw YAML frontmatter before validation */
 interface RawFrontmatter {
   status?: string;
-  [key: string]: unknown;
+  [key: string]: JSONValue;
 }
 
 /**

@@ -6,7 +6,6 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-
 import {
   appendToRequest,
   extractSection,
@@ -15,6 +14,7 @@ import {
   templateFill,
 } from "../../src/flows/transforms.ts";
 import { jsonExtract } from "../../src/shared/types/json.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 /**
  * Test suite for built-in transform functions in flow inter-step communication
@@ -36,13 +36,7 @@ Deno.test("Transform Functions - passthrough", async (t) => {
   });
 
   await t.step("should handle complex markdown", () => {
-    const input = `# Title
-
-Some content with **bold** and *italic* text.
-
-## Section
-
-More content.`;
+    const input = readFixtureTextSync(import.meta.url, "flows", "transforms_test", "input.md");
     const result = passthrough(input);
     assertEquals(result, input);
   });
@@ -77,32 +71,14 @@ Single output`;
   await t.step("should handle inputs with markdown headers", () => {
     const inputs = ["# Existing Header\nContent", "## Another Header\nMore content"];
     const result = mergeAsContext(inputs);
-    const expected = `## Step 1
-# Existing Header
-Content
-
-## Step 2
-## Another Header
-More content`;
+    const expected = readFixtureTextSync(import.meta.url, "flows", "transforms_test", "expected.md");
     assertEquals(result, expected);
   });
 });
 
 Deno.test("Transform Functions - extractSection", async (t) => {
   await t.step("should extract specific markdown section", () => {
-    const input = `# Main Title
-
-Some intro content.
-
-## Analysis
-
-This is the analysis section content.
-It has multiple lines.
-
-## Conclusion
-
-This is the conclusion.`;
-
+    const input = readFixtureTextSync(import.meta.url, "flows", "transforms_test", "input_1.md");
     const result = extractSection(input, "Analysis");
     const expected = `This is the analysis section content.
 It has multiple lines.`;

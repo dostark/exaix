@@ -248,7 +248,7 @@ Deno.test("Integration: Context Overflow - Deeply nested imports", async () => {
 function generateLargeContent(index: number, size: number): string {
   const header = `// Large file ${index}\n// Auto-generated for context overflow testing\n\n`;
   const functionTemplate = `
-export function process${index}_$i(data: unknown): unknown {
+export function process${index}_$i(data: any): any {
   // Complex processing logic here
   const result = {
     index: ${index},

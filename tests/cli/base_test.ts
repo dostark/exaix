@@ -7,10 +7,10 @@
 
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
-
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { BaseCommand, type ICommandContext } from "../../src/cli/base.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
+import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 // Concrete implementation of BaseCommand for testing
 class TestCommand extends BaseCommand {
@@ -89,16 +89,7 @@ describe("BaseCommand", () => {
 
   describe("extractFrontmatter", () => {
     it("should extract valid YAML frontmatter from markdown", () => {
-      const markdown = `---
-title: Test Plan
-status: review
-trace_id: abc-123
----
-
-# Plan Content
-
-This is the body.`;
-
+      const markdown = readFixtureTextSync(import.meta.url, "cli", "base_test", "markdown.md");
       const result = testCommand.testExtractFrontmatter(markdown);
       assertEquals(result.title, "Test Plan");
       assertEquals(result.status, "review");
@@ -106,14 +97,7 @@ This is the body.`;
     });
 
     it("should handle quoted values in YAML", () => {
-      const markdown = `---
-title: "Quoted Title"
-status: single-quoted
-description: "Value with: colon"
----
-
-Body`;
-
+      const markdown = readFixtureTextSync(import.meta.url, "cli", "base_test", "markdown_1.md");
       const result = testCommand.testExtractFrontmatter(markdown);
       assertEquals(result.title, "Quoted Title");
       assertEquals(result.status, "single-quoted");
@@ -140,14 +124,7 @@ Body`;
     });
 
     it("should handle complex YAML values", () => {
-      const markdown = `---
-title: Valid
-tags: [feature, api]
-nested: value
----
-
-Body`;
-
+      const markdown = readFixtureTextSync(import.meta.url, "cli", "base_test", "markdown_2.md");
       const result = testCommand.testExtractFrontmatter(markdown);
       assertEquals(result.title, "Valid");
       assertEquals(result.tags, "[feature, api]");
@@ -244,16 +221,7 @@ Body content`;
     });
 
     it("should preserve body content", () => {
-      const content = `---
-title: Test
----
-
-# Heading
-
-Paragraph 1
-
-Paragraph 2`;
-
+      const content = readFixtureTextSync(import.meta.url, "cli", "base_test", "content.md");
       const updated = testCommand.testUpdateFrontmatter(content, {
         status: MemoryStatus.APPROVED,
       });

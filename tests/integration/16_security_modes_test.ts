@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module SecurityModesIntegrationTest
  * @path tests/integration/16_security_modes_test.ts
@@ -159,7 +160,7 @@ Deno.test("Integration Test 16.2: Hybrid Mode - Audit Detection", async () => {
     // Verify audit events were logged
     const auditEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'security.%' ORDER BY timestamp")
-      .all(traceId) as unknown) as ActivityRow[];
+      .all(traceId) as any) as ActivityRow[];
 
     assert(auditEvents.length >= 2, "Should have logged audit detection and revert");
 
@@ -214,7 +215,7 @@ Deno.test("Integration Test 16.3: Permission Validation - Agent Not Allowed", as
 
     const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.agent_not_allowed'")
-      .all(traceId) as unknown) as ActivityRow[];
+      .all(traceId) as any) as ActivityRow[];
 
     assertEquals(permissionEvents.length, 1, "Should have logged permission denial");
 
@@ -259,7 +260,7 @@ Deno.test("Integration Test 16.4: Permission Validation - Operation Not Allowed"
 
     const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.operation_not_allowed'")
-      .all(traceId) as unknown) as ActivityRow[];
+      .all(traceId) as any) as ActivityRow[];
 
     assertEquals(permissionEvents.length, 1, "Should have logged operation denial");
 
@@ -302,7 +303,7 @@ Deno.test("Integration Test 16.5: Permission Validation - Portal Not Found", asy
 
     const permissionEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type = 'permission.portal_not_found'")
-      .all(traceId) as unknown) as ActivityRow[];
+      .all(traceId) as any) as ActivityRow[];
 
     assertEquals(permissionEvents.length, 1, "Should have logged portal not found error");
 
@@ -366,7 +367,7 @@ Deno.test("Integration Test 16.6: Hybrid Mode - Read Access Allowed", async () =
 
     const securityEvents = (env.db.instance
       .prepare("SELECT * FROM activity WHERE trace_id = ? AND action_type LIKE 'security.%' ORDER BY timestamp")
-      .all(traceId) as unknown) as ActivityRow[];
+      .all(traceId) as any) as ActivityRow[];
 
     assert(securityEvents.length >= 2, "Should have logged read and write operations");
 

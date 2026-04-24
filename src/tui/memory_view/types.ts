@@ -7,10 +7,11 @@
  */
 
 import type { TuiNodeType } from "../../shared/enums.ts";
-
 import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
 
 export type ITreeNodeType = TuiNodeType;
+
+type TreeNodeData = object | string | number | boolean | null;
 
 export interface ITreeNode {
   id: string;
@@ -19,7 +20,7 @@ export interface ITreeNode {
   expanded: boolean;
   children: ITreeNode[];
   badge?: number;
-  data?: unknown;
+  data?: TreeNodeData;
 }
 
 export type { IMemoryService };

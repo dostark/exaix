@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanCommandsSkillsTest
  * @path tests/cli/plan_commands_skills_test.ts
@@ -15,7 +16,7 @@ import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 interface Frontmatter {
   status?: string;
   skills?: string[];
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 Deno.test("PlanCommands - Skills Injection on Approve", async (t) => {

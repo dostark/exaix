@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ProviderUsageMappingTest
  * @path tests/ai/providers/provider_usage_mapping_test.ts
@@ -28,7 +29,7 @@ Deno.test("Provider.generate returns IGenerateResult with usage and cost", async
     cost_usd: 0.001,
   };
 
-  const proto = Object.getPrototypeOf(provider) as { attemptGenerate: unknown };
+  const proto = Object.getPrototypeOf(provider) as { attemptGenerate: any };
   const originalAttempt = proto.attemptGenerate;
   // deno-lint-ignore require-await
   proto.attemptGenerate = async function (): Promise<IGenerateResult> {

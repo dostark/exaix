@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MCPStdioLoopTest
  * @path tests/cli/mcp_stdio_loop_test.ts
@@ -24,7 +25,7 @@ Deno.test("runMcpStdioLoop: writes JSON responses and ignores blank lines", asyn
 
   const server: IMcpStdioServer = {
     start: () => {},
-    handleRequest: (req: unknown) => Promise.resolve({ ok: true, echo: (req as { id?: number }).id }),
+    handleRequest: (req: any) => Promise.resolve({ ok: true, echo: (req as { id?: number }).id }),
   };
 
   await runMcpStdioLoop(server, {
@@ -45,13 +46,13 @@ Deno.test("runMcpStdioLoop: reports parse errors via onError", async () => {
 
   const server: IMcpStdioServer = {
     start: () => {},
-    handleRequest: (_req: unknown) => Promise.resolve(null),
+    handleRequest: (_req: any) => Promise.resolve(null),
   };
 
   await runMcpStdioLoop(server, {
     stdin: streamFromText("not-json\n"),
     writeStdout: () => Promise.resolve(0),
-    onError: (m: string, e: unknown) => errors.push(`${m} ${String(e)}`),
+    onError: (m: string, e: any) => errors.push(`${m} ${String(e)}`),
   });
 
   assertEquals(errors.length, 1);

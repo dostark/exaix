@@ -13,7 +13,14 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { z } from "zod";
 import type { JSONValue } from "../shared/types/json.ts";
 
-function getErrorMessage(error: unknown): string {
+interface RawLlmError {
+  message?: string;
+  [key: string]: JSONValue | undefined;
+}
+
+type LlmErrorPayload = Error | string | object | null | undefined;
+
+function getErrorMessage(error: LlmErrorPayload): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -137,9 +144,9 @@ export class LlmClient implements ILlmClient {
       }
 
       throw new Error("Invalid reasoning response format: missing tool name for tool_call");
-    } catch (error: unknown) {
+    } catch (error) {
       // For now, fail loudly on schema validation
-      throw new Error(`Failed to parse LLM response: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to parse LLM response: ${getErrorMessage(error as LlmErrorPayload)}`);
     }
   }
 }

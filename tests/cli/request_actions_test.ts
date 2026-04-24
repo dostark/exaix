@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestActionsTest
  * @path tests/cli/request_actions_test.ts
@@ -25,7 +26,7 @@ type TestPayload = {
   token_provider?: string;
   token_model?: string;
   token_cost_usd?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 class MockEventLogger extends EventLogger {

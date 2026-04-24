@@ -8,6 +8,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { BlueprintLoader } from "../../../src/services/blueprint/blueprint_loader.ts";
 import { CandidateDiscovery } from "../../../src/services/routing/candidate_discovery.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 let testDir: string;
 let blueprintsPath: string;
@@ -33,28 +34,28 @@ Deno.test("CandidateDiscovery: returns explicit identity candidates first", asyn
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
+    const fixture_1 = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "routing",
+      "candidate_discovery_test",
+      "fixture_1.md",
+    );
     await Deno.writeTextFile(
       join(identitiesDir, "alpha.md"),
-      `---
-identity_id: "alpha"
-name: "Alpha"
-capabilities: ["code_review"]
-version: "1.0.0"
----
-Alpha agent
-`,
+      fixture_1,
     );
 
+    const fixture_2 = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "routing",
+      "candidate_discovery_test",
+      "fixture_2.md",
+    );
     await Deno.writeTextFile(
       join(identitiesDir, "beta.md"),
-      `---
-identity_id: "beta"
-name: "Beta"
-capabilities: ["code_review"]
-version: "1.0.0"
----
-Beta agent
-`,
+      fixture_2,
     );
 
     const loader = new BlueprintLoader({ blueprintsPath });
@@ -72,29 +73,28 @@ Deno.test("CandidateDiscovery: filters candidates by capability and excludes dep
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
+    const fixture_3 = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "routing",
+      "candidate_discovery_test",
+      "fixture_3.md",
+    );
     await Deno.writeTextFile(
       join(identitiesDir, "alpha.md"),
-      `---
-identity_id: "alpha"
-name: "Alpha"
-capabilities: ["analysis"]
-version: "1.0.0"
----
-Alpha agent
-`,
+      fixture_3,
     );
 
+    const fixture_4 = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "routing",
+      "candidate_discovery_test",
+      "fixture_4.md",
+    );
     await Deno.writeTextFile(
       join(identitiesDir, "beta.md"),
-      `---
-identity_id: "beta"
-name: "Beta"
-capabilities: ["code_review"]
-version: "1.0.0"
-deprecated: true
----
-Beta agent
-`,
+      fixture_4,
     );
 
     const loader = new BlueprintLoader({ blueprintsPath });

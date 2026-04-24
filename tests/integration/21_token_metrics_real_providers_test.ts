@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module TokenMetricsProvidersIntegrationTest
  * @path tests/integration/21_token_metrics_real_providers_test.ts
@@ -99,7 +100,7 @@ interface ActivityRow {
   id: number;
   action_type: string;
   trace_id: string;
-  [key: string]: unknown;
+  [key: string]: any;
   payload: string;
   timestamp: string;
 }

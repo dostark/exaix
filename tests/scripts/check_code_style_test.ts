@@ -20,13 +20,7 @@ Deno.test("check_code_style flags inline multiline fixture text in test files", 
  */
 
 Deno.test("inline fixture markdown", () => {
-  const markdown = \`---
-identity_id: coder-agent
-status: pending
----
-
-# Bad
-\`;
+  const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'scripts', 'check_code_style_test', 'markdown.md'));
   assertEquals(markdown.includes("Bad"), true);
 });
 `,
@@ -56,13 +50,7 @@ Deno.test("check_code_style does not flag same inline multiline text in non-test
  * @description Temporary non-test fixture file for code style regression coverage.
  */
 
-const markdown = \`---
-identity_id: coder-agent
-status: pending
----
-
-# Bad
-\`;
+const markdown = \Deno.readTextFileSync(join(FIXTURE_ROOT, 'scripts', 'check_code_style_test', 'markdown.md'));
 export { markdown };
 `,
   );

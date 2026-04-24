@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ProviderEndpointRegressionTest
  * @path tests/ai/provider_endpoint_regression_test.ts
@@ -27,11 +28,11 @@ import * as TEST_CONSTANTS from "../config/constants.ts";
 
 const TEST_PROMPT = TEST_CONSTANTS.REGRESSION_TEST_PROMPT;
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function getErrorName(error: unknown): string {
+function getErrorName(error: any): string {
   return error instanceof Error ? error.name : "UnknownError";
 }
 
@@ -61,7 +62,7 @@ Deno.test({
           response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
       const errorMessage = getErrorMessage(error);
       console.log(`${TEST_CONSTANTS.LOG_PREFIX_GOOGLE_ERROR} ${getErrorName(error)} - ${errorMessage}`);
@@ -99,7 +100,7 @@ Deno.test({
           response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
       const errorMessage = getErrorMessage(error);
       console.log(`${TEST_CONSTANTS.LOG_PREFIX_OPENAI_ERROR} ${getErrorName(error)} - ${errorMessage}`);
@@ -137,7 +138,7 @@ Deno.test({
           response.content.substring(0, TEST_CONSTANTS.TEST_LOG_PREVIEW_LENGTH)
         }...`,
       );
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
       const errorMessage = getErrorMessage(error);
       console.log(`${TEST_CONSTANTS.LOG_PREFIX_ANTHROPIC_ERROR} ${getErrorName(error)} - ${errorMessage}`);

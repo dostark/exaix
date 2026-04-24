@@ -18,6 +18,7 @@ import { SecurityMode } from "../../../src/shared/enums.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { ToolRegistryTestHelper } from "../../helpers/tool_registry_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => {
   const helper = await ToolRegistryTestHelper.create("mcp-real-exec");
@@ -107,19 +108,14 @@ Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => 
   await Deno.mkdir(identitiesDir, { recursive: true });
 
   // Create a blueprint that allows write_file but restricts paths
-  await Deno.writeTextFile(
-    join(identitiesDir, "test-agent.md"),
-    `---
-identity_id: test-agent
-name: test-agent
-model: gpt-4
-provider: openai
-capabilities: ["mcp", "write"]
-permitted_tools: ["write_file"]
-allowed_paths: ["authorized.txt"]
----
-You are a test agent.`,
+  const fixture_1 = readFixtureTextSync(
+    import.meta.url,
+    "integration",
+    "agent",
+    "mcp_real_execution_test",
+    "fixture_1.md",
   );
+  await Deno.writeTextFile(join(identitiesDir, "test-agent.md"), fixture_1);
 
   try {
     // 1. Test Authorized Write

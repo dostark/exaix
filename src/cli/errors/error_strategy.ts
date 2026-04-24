@@ -6,10 +6,14 @@
  * * @related-files [src/cli/exactl.ts]
  */
 
+export type ErrorPayload = Error | string | object | null | undefined;
+
+export type ErrorArgs = object | null | undefined;
+
 export interface IErrorContext {
   commandName: string;
-  args?: unknown;
-  error: Error | unknown;
+  args?: ErrorArgs;
+  error: ErrorPayload;
 }
 
 /**

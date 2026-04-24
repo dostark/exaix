@@ -19,14 +19,38 @@ export function passthrough(input: string): string {
  * Merge multiple outputs as markdown sections
  * Creates a combined document with each input as a separate section
  */
+function normalizeMarkdownHeaders(input: string): string {
+  return input.replace(/^(#{1,6} .+)\n([^\n#])/gm, "$1\n\n$2");
+}
+
 export function mergeAsContext(inputs: string[]): string {
   if (inputs.length === 0) {
     return "";
   }
 
-  return inputs
-    .map((input, index) => `## Step ${index + 1}\n${input}`)
+  let prefix = "";
+  const updatedInputs = [...inputs];
+  const firstInput = updatedInputs[0];
+  const headerMatch = firstInput.match(/^(#\s.+?)\n/);
+
+  if (headerMatch) {
+    prefix = `${headerMatch[1]}\n\n`;
+    updatedInputs[0] = firstInput.slice(headerMatch[0].length);
+  }
+
+  const hasHeaderInput = updatedInputs.some((input) => /^#{1,6}\s/.test(input.trimStart()));
+
+  const merged = updatedInputs
+    .map((input, index) => {
+      const normalizedInput = normalizeMarkdownHeaders(input);
+      const startsWithHeader = /^#{1,6}\s/.test(normalizedInput.trimStart());
+      const stepHeader = `## Step ${index + 1}\n${index === 0 && prefix ? "\n" : startsWithHeader ? "\n" : ""}`;
+      return `${stepHeader}${normalizedInput}`;
+    })
     .join("\n\n");
+
+  const output = `${prefix}${merged}`;
+  return hasHeaderInput && !output.endsWith("\n") ? `${output}\n` : output;
 }
 
 /**

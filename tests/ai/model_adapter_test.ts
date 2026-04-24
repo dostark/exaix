@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ModelAdapterTest
  * @path tests/ai/model_adapter_test.ts
@@ -53,7 +54,7 @@ Deno.test("MockProvider ignores prompt content", async () => {
 
 Deno.test("OllamaProvider sends correct JSON payload to /api/generate", async () => {
   let capturedRequest: Request | undefined;
-  let capturedBody: unknown = null;
+  let capturedBody: any = null;
 
   // Mock fetch to capture the request
   const originalFetch = globalThis.fetch;
@@ -348,7 +349,7 @@ Deno.test("MockProvider handles empty prompt", async () => {
 });
 
 Deno.test("OllamaProvider handles empty prompt", async () => {
-  let capturedBody: unknown = null;
+  let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {
@@ -369,7 +370,7 @@ Deno.test("OllamaProvider handles empty prompt", async () => {
 
 Deno.test("OllamaProvider handles very long prompts", async () => {
   const longPrompt = "a".repeat(100000); // 100k characters
-  let capturedBody: unknown = null;
+  let capturedBody: any = null;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = ((_input: string | URL | Request, init?: RequestInit) => {

@@ -10,10 +10,12 @@ import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
 import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -38,16 +40,14 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     // 2. Setup agent blueprint
     const blueprintsDir = join(tempDir, "Blueprints", "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(blueprintsDir, "code-analyst.md"),
-      `---
-identity_id: code-analyst
-name: Code Analyst
-model: mock
-provider: mock
----
-You are a code analyst. portal context follows.`,
+    const fixture_1 = readFixtureTextSync(
+      import.meta.url,
+      "services",
+      "portal",
+      "portal_context_grounding_test",
+      "fixture_1.md",
     );
+    await Deno.writeTextFile(join(blueprintsDir, "portal-agent.md"), fixture_1);
 
     // 3. Setup Mock LLM to capture prompt
     const mockProvider = new MockLLMProvider(MockStrategy.SCRIPTED, {

@@ -15,6 +15,7 @@ import { ensureDir } from "@std/fs";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { IPattern } from "@exaix/schemas/memory_bank.ts";
+import type { JSONValue } from "@exaix/core/shared/types/json.ts";
 
 // ---------------------------------------------------------------------------
 // Internal constants
@@ -117,7 +118,7 @@ export async function loadKnowledge(
     return null;
   }
   try {
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: JSONValue = JSON.parse(raw) as JSONValue;
     const result = PortalKnowledgeSchema.safeParse(parsed);
     return result.success ? result.data : null;
   } catch {

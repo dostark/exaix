@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module SubjectPropagationTest
  * @path tests/services/subject/subject_propagation_test.ts
@@ -85,7 +86,7 @@ Follow instructions
       default_provider: "mock",
     },
     quality_gate: { enabled: false },
-  } as unknown;
+  } as any;
   const config = configRaw as Config;
 
   const db = new DatabaseService(config);
@@ -134,7 +135,7 @@ Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", asy
 </content>`),
         ),
     };
-    const mockProvider = (mockProviderRaw as unknown) as IModelProvider;
+    const mockProvider = (mockProviderRaw as any) as IModelProvider;
 
     const context: IApplicationContext = {
       config: createStubConfig(config),
@@ -208,7 +209,7 @@ Deno.test("RequestProcessor - Subject Propagation - Explicit Subject Wins over A
 </content>`),
         ),
     };
-    const mockProvider = (_mockProviderRaw as unknown) as IModelProvider;
+    const mockProvider = (_mockProviderRaw as any) as IModelProvider;
 
     const context: IApplicationContext = {
       config: createStubConfig(config),

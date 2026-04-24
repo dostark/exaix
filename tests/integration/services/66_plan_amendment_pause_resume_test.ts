@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentPauseResumeTest
  * @path tests/integration/services/66_plan_amendment_pause_resume_test.ts
@@ -15,11 +16,12 @@ import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
+import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.
  */
-function castTo<T>(val: unknown): T {
+function castTo<T>(val: any): T {
   return val as T;
 }
 
@@ -92,7 +94,7 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     // Execution should throw PlanAmendmentPendingError when trigger fires
     await assertRejects(
@@ -180,7 +182,7 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     await assertRejects(
       async () => {
@@ -228,23 +230,13 @@ Deno.test("applyApprovedAmendment updates plan status to approved", async () => 
     const mockLlm = castTo<IModelProvider>({});
     const service = new PlanAmendmentService(config, mockLlm);
 
-    const planContent = `---
-trace_id: "trace-1"
-request_id: "req-1"
-status: amendment_pending
----
-
-# Plan
-
-## Execution Steps
-
-## Step 1: First
-Content 1
-
-## Step 2: Second
-Content 2
-`;
-
+    const planContent = readFixtureTextSync(
+      import.meta.url,
+      "integration",
+      "services",
+      "66_plan_amendment_pause_resume_test",
+      "planContent.md",
+    );
     const patch: IPlanAmendmentPatch = {
       amendmentId: crypto.randomUUID(),
       planId: "req-1",
@@ -317,7 +309,7 @@ Deno.test("PlanExecutor does not trigger amendment when disabled", async () => {
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: unknown }>(executor).createAgentExecutor = () => agentExecutor;
+    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
 
     // Should NOT throw PlanAmendmentPendingError since amendment is disabled
     const result = await executor.execute("plan.md", context);

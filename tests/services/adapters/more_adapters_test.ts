@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MoreAdaptersTest
  * @path tests/services/adapters/more_adapters_test.ts
@@ -14,7 +15,7 @@ import { MemoryExtractorService } from "../../../src/services/memory/memory_extr
 import { MemoryType, PortalExecutionStrategy } from "../../../src/shared/enums.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
-function cast<T>(obj: unknown): T {
+function cast<T>(obj: any): T {
   return obj as T;
 }
 

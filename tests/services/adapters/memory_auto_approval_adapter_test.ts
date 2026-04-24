@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module MemoryAutoApprovalAdapterTest
  * @path tests/services/adapters/memory_auto_approval_adapter_test.ts
@@ -25,11 +26,11 @@ type EligibleProposalWithAt = IMemoryUpdateProposal & {
   };
 };
 
-function asConfig(value: unknown): Config {
+function asConfig(value: any): Config {
   return value as Config;
 }
 
-function asMemoryExtractorService(value: unknown): IMemoryExtractorService {
+function asMemoryExtractorService(value: any): IMemoryExtractorService {
   return value as IMemoryExtractorService;
 }
 

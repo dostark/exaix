@@ -12,13 +12,14 @@ import { assertEquals, assertRejects, assertStrictEquals } from "@std/assert";
 import { assertStringIncludes, assertThrows } from "@std/assert";
 import { ensureScenarioUsesFixtureOnly, loadRequestFixture } from "../../runner/request_fixtures.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
+import type { JSONValue } from "../../../../src/shared/types/json.ts";
 
-interface IScenarioPortalShape {
+interface IScenarioPortalShape extends Record<string, JSONValue> {
   alias: string;
   source_path: string;
 }
 
-interface IScenarioCriterionShape {
+interface IScenarioCriterionShape extends Record<string, JSONValue> {
   id: string;
   kind: string;
   path?: string;
@@ -27,7 +28,7 @@ interface IScenarioCriterionShape {
   equals?: number;
 }
 
-interface IScenarioStepShape {
+interface IScenarioStepShape extends Record<string, JSONValue> {
   id: string;
   type: string;
   command: string;
@@ -35,7 +36,7 @@ interface IScenarioStepShape {
   output_criteria: IScenarioCriterionShape[];
 }
 
-interface IScenarioDocumentShape {
+interface IScenarioDocumentShape extends Record<string, JSONValue> {
   schema_version: string;
   id: string;
   title: string;
@@ -145,7 +146,7 @@ Deno.test("[ScenarioFrameworkRequestFixtures] rejects embedded prompt bodies whe
   };
 
   const error = assertThrows(() => {
-    ensureScenarioUsesFixtureOnly(rawScenario);
+    ensureScenarioUsesFixtureOnly(rawScenario as JSONValue);
   }, Error);
 
   assertStringIncludes(error.message, "embedded request content");
@@ -161,12 +162,12 @@ Deno.test("[ScenarioFrameworkRequestFixtures] shared fixtures can be referenced 
     await Deno.mkdir(`${frameworkHome}/fixtures/requests/shared`, { recursive: true });
     await Deno.writeTextFile(fixtureAbsolutePath, "# Shared Request\n\nThis content should remain stable.\n");
 
-    const scenarioA = ensureScenarioUsesFixtureOnly(createValidScenarioDocument(fixtureRelativePath));
+    const scenarioA = ensureScenarioUsesFixtureOnly(createValidScenarioDocument(fixtureRelativePath) as JSONValue);
     const scenarioB = ensureScenarioUsesFixtureOnly({
       ...createValidScenarioDocument(fixtureRelativePath),
       id: "step2-fixture-only-b",
       title: "Fixture-only validation B",
-    });
+    } as JSONValue);
 
     const fixtureA = await loadRequestFixture({
       frameworkHome,

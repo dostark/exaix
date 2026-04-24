@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module LoggingDecoratorUnitTest
  * @path tests/services/decorators/logging_unit_test.ts
@@ -9,18 +10,18 @@ import { LogMethod } from "../../../src/services/decorators/logging.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 
 interface MockPayload {
-  args?: unknown;
-  error?: unknown;
+  args?: any;
+  error?: any;
 }
 
 Deno.test("LogMethod (standard decorator): handles errors and custom action", async () => {
   const logCalls: Array<{ level: string; msg: string; payload: MockPayload }> = [];
   const mockLogger: EventLogger = Object.assign(Object.create(EventLogger.prototype), {
-    info: (msg: string, _action: string, payload: unknown) =>
+    info: (msg: string, _action: string, payload: any) =>
       Promise.resolve(logCalls.push({ level: "info", msg, payload: payload as MockPayload })),
-    error: (msg: string, _action: string, payload: unknown) =>
+    error: (msg: string, _action: string, payload: any) =>
       Promise.resolve(logCalls.push({ level: "error", msg, payload: payload as MockPayload })),
-    debug: (msg: string, _action: string, payload: unknown) =>
+    debug: (msg: string, _action: string, payload: any) =>
       Promise.resolve(logCalls.push({ level: "debug", msg, payload: payload as MockPayload })),
   });
 

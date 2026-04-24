@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module ReviewCommandsCoverageTest
  * @path tests/cli/review_commands_coverage_test.ts
@@ -25,12 +26,12 @@ interface IReviewCommandsInternals {
     branch: string,
   ): Promise<string | null>;
   createPortalGitService(rootPath: string, traceId: string): Promise<unknown>;
-  deleteBranchWithWorktreeHandling(gitService: unknown, branch: string, rootPath: string): Promise<void>;
+  deleteBranchWithWorktreeHandling(gitService: any, branch: string, rootPath: string): Promise<void>;
   updateArtifactStatus(artifactId: string, status: string): Promise<void>;
   bestEffortLinkRequestRejection(requestId: string, rejectedPath: string): Promise<void>;
 }
 
-function cast<T>(obj: unknown): T {
+function cast<T>(obj: any): T {
   return obj as T;
 }
 

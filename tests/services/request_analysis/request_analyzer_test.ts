@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestAnalyzerTest
  * @path tests/services/request_analysis/request_analyzer_test.ts
@@ -158,7 +159,7 @@ Deno.test("[RequestAnalyzer] populates analyzedAt timestamp", async () => {
 Deno.test("[RequestAnalyzer] logs activity to database when db provided", async () => {
   const logged: string[] = [];
   const mockDb = {
-    logActivity: (actor: string, _actionType: string, _target: string | null, _payload: unknown) => {
+    logActivity: (actor: string, _actionType: string, _target: string | null, _payload: any) => {
       logged.push(actor);
     },
   };
