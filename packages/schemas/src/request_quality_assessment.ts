@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { QualityGateMode } from "../../../src/shared/enums.ts";
+import { QualityGateMode } from "@exaix/core/shared/enums.ts";
 
 // ============================================================================
 // Enums

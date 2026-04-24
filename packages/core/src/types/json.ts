@@ -49,10 +49,22 @@ export const JSONValueSchema: z.ZodType<JSONValue> = z.lazy(() =>
 );
 
 /**
+ * Input values accepted by `toSafeJson`.
+ */
+export type SafeJsonInput =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | SafeJsonInput[]
+  | { [key: string]: SafeJsonInput };
+
+/**
  * Safely converts any value to a JSONValue by stripping undefined properties.
  * This is useful for passing complex types to the IActivity Journal.
  */
-export function toSafeJson(value: unknown): JSONValue {
+export function toSafeJson(value: SafeJsonInput): JSONValue {
   if (value === undefined || value === null) return null;
 
   if (Array.isArray(value)) {

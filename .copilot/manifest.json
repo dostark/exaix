@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-23T18:51:07.563Z",
+  "generated_at": "2026-04-24T19:32:18.292Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -681,23 +681,22 @@
       "path": ".copilot/cross-reference.md",
       "agent": "general",
       "scope": "dev",
-      "title": "Agent Documentation Cross-Reference Map",
-      "short_summary": "Quick reference mapping task types to relevant agent documentation files.",
+      "title": "Cross Reference Guide",
+      "short_summary": "Mapping of common agent tasks to .copilot docs, workflows, and provider guidance.",
       "version": "0.1",
       "topics": [
-        "navigation",
-        "quick-reference",
-        "task-mapping"
+        "cross-reference",
+        "workflow",
+        "testing",
+        "agents",
+        "self-improvement"
       ],
       "chunks": [
         ".copilot/chunks/cross-reference.md.chunk0.txt",
         ".copilot/chunks/cross-reference.md.chunk1.txt",
         ".copilot/chunks/cross-reference.md.chunk2.txt",
         ".copilot/chunks/cross-reference.md.chunk3.txt",
-        ".copilot/chunks/cross-reference.md.chunk4.txt",
-        ".copilot/chunks/cross-reference.md.chunk5.txt",
-        ".copilot/chunks/cross-reference.md.chunk6.txt",
-        ".copilot/chunks/cross-reference.md.chunk7.txt"
+        ".copilot/chunks/cross-reference.md.chunk4.txt"
       ]
     },
     {

@@ -17,8 +17,8 @@ import {
   FlowStepType,
   McpToolName,
   StepExecutionMode,
-} from "../../../src/shared/enums.ts";
-import { JSONValueSchema } from "../../../src/shared/types/json.ts";
+} from "@exaix/core/shared/enums.ts";
+import { JSONValueSchema } from "@exaix/core/types/json.ts";
 import {
   DEFAULT_FLOW_MAX_RETRIES,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
@@ -27,7 +27,7 @@ import {
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_MAX_RETRIES_MAX,
   FLOW_MAX_RETRIES_MIN,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core/shared/constants.ts";
 
 const DateOrStringSchema = z.union([z.string().datetime(), z.date()]).transform((value) => {
   return value instanceof Date ? value.toISOString() : value;

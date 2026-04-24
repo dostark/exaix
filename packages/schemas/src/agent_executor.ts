@@ -7,8 +7,8 @@
  */
 
 import { z } from "zod";
-import { AgentExecutionErrorType, SecurityMode } from "../../../src/shared/enums.ts";
-import { JSONValueSchema } from "../../../src/shared/types/json.ts";
+import { AgentExecutionErrorType, SecurityMode } from "@exaix/core/shared/enums.ts";
+import { JSONValueSchema } from "@exaix/core/types/json.ts";
 
 /**
  * Security mode for agent execution

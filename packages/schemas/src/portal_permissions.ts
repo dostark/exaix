@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { PermissionAction, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
+import { PermissionAction, PortalOperation, SecurityMode } from "@exaix/core/shared/enums.ts";
 import { TEST_DEFAULT_BRANCH } from "../../../tests/helpers/constants.ts";
 
 // ============================================================================

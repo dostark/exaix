@@ -1,14 +1,12 @@
 ---
-identity: claude
 agent: general
 scope: dev
-title: Agent Documentation Cross-Reference Map
-short_summary: "Quick reference mapping task types to relevant agent documentation files."
+title: "Cross Reference Guide"
+short_summary: "Mapping of common agent tasks to .copilot docs, workflows, and provider guidance."
 version: "0.1"
-topics: ["navigation", "quick-reference", "task-mapping"]
+identity: documentation
+topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 ---
-
-## Agent Documentation Cross-Reference Map
 
 ## Task → Agent Doc Quick Reference
 
@@ -184,103 +182,9 @@ topics: ["navigation", "quick-reference", "task-mapping"]
 
 ## Workflow Examples
 
-### "I want to add a new feature"
+Use these examples to navigate common development patterns and agent workflows.
 
-1. Read [planning/](../exaix-dev-docs/planning/) to find or create the relevant Implementation Plan phase.
-
-1.
-1.
-
-### "I want to fix a bug"
-
-1. Check Implementation Plan for related step
-
-1.
-1.
-
-### "I want to use Claude effectively"
-
-1. Read [providers/claude.md](providers/claude.md) for prompt templates
-
-1.
-1.
-
-### "I want to use Gemini effectively"
-
-1. Read [providers/google.md](providers/google.md) for optimized prompts
-
-1.
-
-### "I want to add security tests"
-
-1. Review [workflows/testing.md](workflows/testing.md) security section
-
-1.
-1.
-
-## Provider-Specific Quick Links
-
-### Claude
-
-- **Main guide**: [providers/claude.md](providers/claude.md)
-- **System prompts**: TDD, Refactoring, Debugging, Documentation (in claude.md)
-- **Context window**: 200k tokens (4-6 chunks recommended)
-
-### VS Code Copilot
-
-- **Main guide**: [workflows/exaix-development.md](workflows/exaix-development.md) (Standard development & Copilot guidelines)
-- **Pattern**: Consult `.copilot/manifest.json` first
-
-### OpenAI
-
-- **Main guide**: [providers/openai.md](providers/openai.md)
-- **Prompt templates**: See `.copilot/prompts/openai-*.md`
-- **Budgets**: Uses simple/standard/complex output budgets (see openai.md)
-
-### Google
-
-- **Main guide**: [providers/google.md](providers/google.md)
-- **Long-context**: [providers/google-long-context.md](providers/google-long-context.md)
-- **Context window**: 1M-2M tokens (use "Saturation" pattern)
-
-### Qwen Code
-
-- **Main guide**: [README.md](README.md) (#Qwen Code Integration)
-- **Skills directory**: [../.qwen/skills/](../.qwen/skills/)
-- **Pattern**: Skills are auto-discovered from `.qwen/skills/<name>/SKILL.md`; each wrapper references a canonical source in `.copilot/prompts/`
-
-## Common Task Patterns
-
-### Test-Driven Development (TDD)
-
-1. **Docs**: [workflows/exaix-development.md](workflows/exaix-development.md), [workflows/testing.md](workflows/testing.md)
-
-1.
-
-### Code Refactoring
-
-1. **Docs**: [workflows/exaix-development.md](workflows/exaix-development.md), [providers/claude.md](providers/claude.md)
-
-1.
-
-### Documentation Updates
-
-1. **Docs**: [workflows/documentation.md](workflows/documentation.md)
-
-1.
-
-### Debugging
-
-1. **Docs**: [providers/claude.md](providers/claude.md) (Debugging section)
-
-1.
-
-## Canonical Prompt (Short)
-
-"You are a developer working on Exaix. Before starting work, consult this cross-reference map to find the most relevant agent documentation. Use the task-to-doc mapping table to quickly locate guidance for your specific task type."
-
-## Examples
-
-- Example prompt: "I need to add a security feature. Which docs should I read?" → Answer: Start with [.copilot/workflows/testing.md](workflows/testing.md) security section and [.workflows/exaix-development.md](workflows/exaix-development.md) system constraints.
-- Example prompt: "How do I set up Claude effectively?" → Answer: Read [providers/claude.md](providers/claude.md) for optimized prompts and thinking protocols.
-- Example prompt: "What's the TDD workflow?" → Answer: See [workflows/exaix-development.md](workflows/exaix-development.md) and [workflows/testing.md](workflows/testing.md) for patterns and helpers.
+- Create new agent docs and prompts using `.copilot/prompts/` and `.copilot/process/`.
+- Validate docs and manifest with `scripts/build_agents_index.ts`.
+- Reference provider-specific guidance in `.copilot/providers/claude.md` when writing prompts for Claude.
+- Use self-improvement process documentation in `.copilot/process/self-improvement.md` for iterative content enhancement.

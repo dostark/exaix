@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { AiConfigSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
-import * as DEFAULTS from "../../../src/shared/constants.ts";
+import * as DEFAULTS from "@exaix/core/shared/constants.ts";
 import { ProviderTypeSchema } from "./ai_config.ts";
 import {
   ConfidenceAssessmentLevel,
@@ -19,10 +19,10 @@ import {
   ProviderCostTier,
   QualityGateMode,
   SqliteJournalMode,
-} from "../../../src/shared/enums.ts";
-import type { PortalOperation } from "../../../src/shared/enums.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
+} from "@exaix/core/shared/enums.ts";
+import type { PortalOperation } from "@exaix/core/shared/enums.ts";
+import { AnalysisMode } from "@exaix/core/shared/types/request.ts";
+import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core/shared/version.ts";
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
 

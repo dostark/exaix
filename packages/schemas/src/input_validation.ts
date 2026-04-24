@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { MockStrategy, ProviderType, SecurityMode } from "../../../src/shared/enums.ts";
+import { MockStrategy, ProviderType, SecurityMode } from "@exaix/core/shared/enums.ts";
 import {
   BLUEPRINT_NAME_MAX_LENGTH,
   FILENAME_MAX_LENGTH,
@@ -17,7 +17,7 @@ import {
   PATH_MAX_LENGTH,
   PLAN_CONTENT_MAX_LENGTH,
   USER_REQUEST_MAX_LENGTH,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core/shared/constants.ts";
 import { AgentExecutionOptionsSchema } from "./agent_executor.ts";
 
 /**
@@ -157,6 +157,9 @@ export const ExecutionContextSchema = z.object({
   skills_context: z.string().optional(),
 }).strict();
 
+type ExecutionContextInput = z.input<typeof ExecutionContextSchema>;
+type AgentExecutionOptionsInput = z.input<typeof AgentExecutionOptionsSchema>;
+
 /**
  * Input validation utility class
  */
@@ -164,28 +167,30 @@ export class InputValidator {
   /**
    * Validates execution context
    */
-  static validateExecutionContext(rawContext: unknown): z.infer<typeof ExecutionContextSchema> {
+  static validateExecutionContext(rawContext: ExecutionContextInput): z.infer<typeof ExecutionContextSchema> {
     return ExecutionContextSchema.parse(rawContext);
   }
 
   /**
    * Validates agent execution options
    */
-  static validateAgentExecutionOptions(rawOptions: unknown): z.output<typeof AgentExecutionOptionsSchema> {
+  static validateAgentExecutionOptions(
+    rawOptions: AgentExecutionOptionsInput,
+  ): z.output<typeof AgentExecutionOptionsSchema> {
     return AgentExecutionOptionsSchema.parse(rawOptions);
   }
 
   /**
    * Validates blueprint name
    */
-  static validateBlueprintName(rawName: unknown): z.infer<typeof BlueprintNameSchema> {
+  static validateBlueprintName(rawName: z.input<typeof BlueprintNameSchema>): z.infer<typeof BlueprintNameSchema> {
     return BlueprintNameSchema.parse(rawName);
   }
 
   /**
    * Validates model configuration
    */
-  static validateModelConfig(rawConfig: unknown): z.infer<typeof ModelConfigSchema> {
+  static validateModelConfig(rawConfig: z.input<typeof ModelConfigSchema>): z.infer<typeof ModelConfigSchema> {
     return ModelConfigSchema.parse(rawConfig);
   }
 }

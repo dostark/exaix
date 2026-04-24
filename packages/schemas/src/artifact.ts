@@ -7,9 +7,9 @@
  */
 
 import { z } from "zod";
-import { REVIEW_STATUS_VALUES, ReviewStatus as ReviewStatusValue } from "../../../src/reviews/review_status.ts";
-import type { IReviewStatus } from "../../../src/reviews/review_status.ts";
-import { ArtifactSubtype as ArtifactType } from "../../../src/shared/enums.ts";
+import { REVIEW_STATUS_VALUES, ReviewStatus as ReviewStatusValue } from "@exaix/core/reviews/review_status.ts";
+import type { IReviewStatus } from "@exaix/core/reviews/review_status.ts";
+import { ArtifactSubtype as ArtifactType } from "@exaix/core/shared/enums.ts";
 
 /**
  * Artifact status values

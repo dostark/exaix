@@ -9,16 +9,18 @@
  */
 import { generateManifestObject } from "./build_agents_index.ts";
 
+type ManifestValue = string | number | boolean | null | undefined | ManifestValue[] | { [key: string]: ManifestValue };
+
 interface IManifestDocLike {
   path?: string;
   chunks?: string[];
-  [key: string]: unknown;
+  [key: string]: ManifestValue;
 }
 
 interface IManifestLike {
   generated_at?: string;
   docs?: IManifestDocLike[];
-  [key: string]: unknown;
+  [key: string]: ManifestValue;
 }
 
 function normalize(obj: IManifestLike): IManifestLike {

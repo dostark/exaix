@@ -7,8 +7,8 @@
  * * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
-import { ProviderRegistry } from "../../../src/ai/provider_registry.ts";
-import { MockStrategy, ProviderType } from "../../../src/shared/enums.ts";
+import { ProviderRegistry } from "@exaix/core/ai/provider_registry.ts";
+import { MockStrategy, ProviderType } from "@exaix/core/shared/enums.ts";
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
@@ -35,7 +35,7 @@ import {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core/shared/constants.ts";
 
 /**
  * Dynamic provider type schema - validates against registered providers
@@ -120,8 +120,7 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
   timeout_ms: DEFAULT_AI_TIMEOUT_MS,
 };
 
-// Dynamic import required for registry initialization (documented in CODE_STYLE.md)
-// This must remain a dynamic import because the module is only needed at runtime for registry setup.
+// style-exclude:RUNTIME_REGISTRY - Dynamic import is required at runtime for provider registry initialization and cannot be converted to a static top-level import.
 const dynamicImport = (specifier: string) => import(specifier);
 
 function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<string, T> {

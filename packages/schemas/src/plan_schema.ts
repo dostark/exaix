@@ -7,10 +7,10 @@
  */
 
 import { z } from "zod";
-import { McpToolName } from "../../../src/shared/enums.ts";
-import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
-import { DEFAULT_QUERY_LIMIT } from "../../../src/shared/constants.ts";
-import { JSONValueSchema } from "../../../src/shared/types/json.ts";
+import { McpToolName } from "@exaix/core/shared/enums.ts";
+import { PlanStatus } from "@exaix/core/shared/status/plan_status.ts";
+import { DEFAULT_QUERY_LIMIT } from "@exaix/core/shared/constants.ts";
+import { JSONValueSchema } from "@exaix/core/types/json.ts";
 import { RequestAnalysisSchema } from "./request_analysis.ts";
 
 /**

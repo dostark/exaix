@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { SystemCommand } from "../../../src/shared/enums.ts";
+import { SystemCommand } from "@exaix/core/shared/enums.ts";
 
 // ============================================================================
 // Sub-schemas

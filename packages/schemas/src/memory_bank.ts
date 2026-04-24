@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_SKILL_INDEX_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core/shared/constants.ts";
 import {
   type ActivityType,
   ConfidenceAssessmentLevel,
@@ -22,9 +22,9 @@ import {
   type SkillImmutableField,
   type SkillManagedField,
   SkillStatus,
-} from "../../../src/shared/enums.ts";
-import { MEMORY_STATUS_VALUES } from "../../../src/shared/status/memory_status.ts";
-import { DEFAULT_QUERY_LIMIT } from "../../../src/shared/constants.ts";
+} from "@exaix/core/shared/enums.ts";
+import { MEMORY_STATUS_VALUES } from "@exaix/core/shared/status/memory_status.ts";
+import { DEFAULT_QUERY_LIMIT } from "@exaix/core/shared/constants.ts";
 
 // ===== Project Memory Schemas =====
 
