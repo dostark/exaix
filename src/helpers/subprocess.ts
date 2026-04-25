@@ -6,14 +6,14 @@
  * * @related-files [src/services/tool_reflector.ts]
  */
 
-import { DEFAULT_SUBPROCESS_TIMEOUT_MS } from "../shared/constants.ts";
-
 export interface ISubprocessOptions {
   timeoutMs?: number;
   abortSignal?: AbortSignal;
   cwd?: string;
   env?: Record<string, string>;
 }
+
+const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
 
 export class SafeSubprocess {
   /**

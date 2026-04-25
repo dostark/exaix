@@ -17,8 +17,8 @@ import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";
 import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
-import { RequestSource } from "../shared/enums.ts";
-import { DEFAULT_MCP_IDENTITY_ID } from "../shared/constants.ts";
+import { RequestSource } from "@exaix/core";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 /**
  * Tool for creating new Exaix requests

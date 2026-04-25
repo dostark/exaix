@@ -8,7 +8,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ChangesetResultSchema } from "@exaix/schemas/agent_executor.ts";
-import { SecurityMode } from "../../src/shared/enums.ts";
+import { SecurityMode } from "@exaix/core";
 import { join } from "@std/path";
 import { initTestDbService } from "../helpers/db.ts";
 import { createTestConfig } from "../ai/helpers/test_config.ts";

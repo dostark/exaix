@@ -6,7 +6,7 @@
  * * @related-files [src/schemas/flow.ts, src/enums.ts]
  */
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 export function defineFlow(config: {
   id: string;

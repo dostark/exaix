@@ -5,7 +5,7 @@
  * @architectural-layer Services
  * * @related-files [src/services/event_logger.ts, src/services/structured_logger.ts]
  */
-import type { ActorType, AgentKind, LogLevel } from "../../shared/enums.ts";
+import type { ActorType, AgentKind, LogLevel } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
 /**

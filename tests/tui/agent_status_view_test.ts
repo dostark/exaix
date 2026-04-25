@@ -20,7 +20,7 @@ import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../src
 import type { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
 import { TEST_MODEL_OPENAI } from "../config/constants.ts";
 import { AgentStatus } from "../../src/shared/status/agent_status.ts";
-import { AgentHealth, CritiqueSeverity, LogLevel, TuiGroupBy } from "../../src/shared/enums.ts";
+import { AgentHealth, CritiqueSeverity, LogLevel, TuiGroupBy } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { assertEquals, assertExists } from "@std/assert";
 

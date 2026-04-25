@@ -14,7 +14,7 @@ import {
   STREAMING_EVENT_LLM_STREAM,
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
-} from "@exaix/core/shared/constants.ts";
+} from "@exaix/core";
 
 /**
  * Schema for streaming events emitted during agent execution.

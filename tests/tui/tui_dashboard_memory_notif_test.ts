@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { MemoryOperation, MemoryScope } from "../../src/shared/enums.ts";
+import { MemoryOperation, MemoryScope } from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { createTuiDashboardWithNotification } from "./dashboard_helper.ts";

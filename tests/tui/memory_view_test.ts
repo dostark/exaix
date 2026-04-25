@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { MemoryScope } from "../../src/shared/enums.ts";
+import { MemoryScope } from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 
 import { MemoryView, MemoryViewTuiSession } from "../../src/tui/memory_view.ts";

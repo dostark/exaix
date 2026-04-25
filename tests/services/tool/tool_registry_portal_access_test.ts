@@ -9,8 +9,8 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "../../../src/shared/constants.ts";
-import { ToolName } from "../../../src/shared/enums.ts";
+import { ExaPathDefaults } from "@exaix/core";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry should allow access to portal targets", async () => {
   const portalDir = await Deno.makeTempDir({ prefix: "portal-target-" });

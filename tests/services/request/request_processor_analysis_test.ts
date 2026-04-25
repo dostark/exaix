@@ -10,7 +10,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "@exaix/core";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { applyAnalysisToRequest, buildParsedRequest } from "../../../src/services/request/request_common.ts";
 import { loadAnalysis } from "../../../src/services/request_analysis/mod.ts";
@@ -24,7 +24,7 @@ import {
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import { RequestSource } from "../../../src/shared/enums.ts";
+import { RequestSource } from "@exaix/core";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
 import type { initTestDbService as _initTestDbService } from "../../helpers/db.ts";

@@ -11,7 +11,7 @@ import { RateLimitedProvider, RateLimitError } from "../../src/ai/rate_limited_p
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
-import { PROVIDER_OPENAI } from "../../src/shared/constants.ts";
+import { PROVIDER_OPENAI } from "@exaix/ai";
 import { initTestDbService } from "../helpers/db.ts";
 
 function makeResult(content: string): IGenerateResult {

@@ -11,7 +11,7 @@ import { ensureDir } from "@std/fs";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
 import { DatabaseService } from "../../src/services/core/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { initActivityTableSchema } from "../helpers/db.ts";

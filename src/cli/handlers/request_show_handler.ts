@@ -14,9 +14,9 @@ import type { IRequestShowResult } from "../../shared/types/request.ts";
 import { coerceRequestStatus } from "../../shared/status/request_status.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
-import { RequestKind, RequestPriority } from "../../shared/enums.ts";
+import { RequestKind, RequestPriority } from "@exaix/core";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
-import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "../../shared/constants.ts";
+import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
 
 export class RequestShowHandler extends BaseCommand {
   private workspaceRequestsDir: string;

@@ -7,7 +7,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 
 import {

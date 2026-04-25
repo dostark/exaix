@@ -11,7 +11,7 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import { DEFAULT_AMENDMENT_THRESHOLD } from "../../../src/shared/constants.ts";
+import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 
 /**

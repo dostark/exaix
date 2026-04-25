@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "../../../src/shared/enums.ts";
+import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
 import {
   createCodeReviewReflexiveAgent,
   type ICritique,

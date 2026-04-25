@@ -8,7 +8,7 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import { ConfidenceAssessmentLevel } from "../../shared/enums.ts";
+import { ConfidenceAssessmentLevel } from "@exaix/core";
 import type { IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
 

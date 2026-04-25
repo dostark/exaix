@@ -6,8 +6,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ProviderType } from "../../src/shared/enums.ts";
-import { DEFAULT_OLLAMA_ENDPOINT } from "../../src/shared/constants.ts";
+import { ProviderType } from "@exaix/core";
+import { DEFAULT_OLLAMA_ENDPOINT } from "@exaix/core";
 import { LlamaProviderFactory } from "../../src/ai/factories/llama_factory.ts";
 import type { LlamaProvider } from "../../src/ai/providers/llama_provider.ts";
 

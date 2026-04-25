@@ -11,9 +11,9 @@
  */
 
 import { z } from "zod";
-import { ANALYZER_VERSION } from "@exaix/core/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 
-import { TaskComplexity, TaskType } from "@exaix/core/shared/enums.ts";
+import { TaskComplexity, TaskType } from "@exaix/core";
 
 export type RequestAnalysisComplexity = TaskComplexity;
 export const RequestAnalysisComplexity = TaskComplexity;
@@ -33,7 +33,7 @@ export enum AmbiguityImpact {
   HIGH = "high",
 }
 
-import { AnalysisMode } from "@exaix/core/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/request.ts";
 
 // ============================================================================
 // Sub-schemas

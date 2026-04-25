@@ -5,8 +5,8 @@
  * strict confinement of agent operations to authorized portal root boundaries.
  */
 
+import { McpToolName } from "@exaix/mcp";
 import { assert, assertEquals, assertExists, type assertRejects as _assertRejects } from "@std/assert";
-import { McpToolName } from "../../src/shared/enums.ts";
 
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";

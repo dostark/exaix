@@ -14,7 +14,7 @@ import {
   MemoryBankSource,
   MemoryOperation,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 
 /**

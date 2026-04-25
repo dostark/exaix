@@ -14,7 +14,7 @@ import {
   MemoryReferenceType,
   MemoryScope,
   type MemoryType as _MemoryType,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { KEYS } from "../../../src/tui/helpers/keyboard.ts";
 import type {
@@ -27,7 +27,7 @@ import type {
 import type { IMemoryService } from "../../../src/tui/memory_view/types.ts";
 import { MemoryViewTuiSession } from "../../../src/tui/memory_view.ts";
 import type { DialogBase } from "../../../src/tui/helpers/dialog_base.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 // ===== Interfaces =====
 
 export interface IMemoryViewServiceOptions {

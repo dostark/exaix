@@ -17,7 +17,7 @@ import {
   RequestQualityLevel,
   RequestQualityRecommendation,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { QualityGateMode } from "../../shared/enums.ts";
+import { QualityGateMode } from "@exaix/core";
 import { AmbiguityImpact, type IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   DEFAULT_QG_ENRICHMENT_THRESHOLD,
@@ -38,7 +38,7 @@ import {
   QG_STRUCTURED_REQUIREMENTS_BONUS,
   QG_TECH_SPECIFICS_PATTERN,
   QG_TECHNICAL_SPECIFICS_BONUS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Helpers

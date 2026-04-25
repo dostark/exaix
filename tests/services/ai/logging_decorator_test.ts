@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { LogMethod } from "../../../src/services/decorators/logging.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
-import { LogLevel } from "../../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 type LoggedCall = {

@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createTestConfig } from "../../ai/helpers/test_config.ts";
-import { ToolName } from "../../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry should include allowed roots in access denied error", async () => {
   const workspaceDir = await Deno.makeTempDir({ prefix: "workspace-" });

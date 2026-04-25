@@ -16,9 +16,9 @@ import {
   RequestQualityLevel,
   RequestQualityRecommendation,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { QualityGateMode } from "../../../src/shared/enums.ts";
+import { QualityGateMode } from "@exaix/core";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
-import { RequestSource } from "../../../src/shared/enums.ts";
+import { RequestSource } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";

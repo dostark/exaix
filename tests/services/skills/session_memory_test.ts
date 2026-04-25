@@ -31,7 +31,7 @@ import {
   MemoryBankSource,
   MemoryScope,
   MemoryType,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 
 // ===== Mock Services =====

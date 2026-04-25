@@ -5,9 +5,9 @@
  * correctly validated against the tool registry and sanitized of markdown artifacts.
  */
 
+import { McpToolName } from "@exaix/mcp";
 import { assertEquals } from "@std/assert";
 import { PlanAdapter } from "../../../src/services/plan/plan_adapter.ts";
-import { McpToolName } from "../../../src/shared/enums.ts";
 
 Deno.test("PlanAdapter: Plan validation fails for unsupported tool names", () => {
   const adapter = new PlanAdapter();

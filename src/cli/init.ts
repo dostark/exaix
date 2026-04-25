@@ -12,14 +12,14 @@ import { GitService } from "../services/core/git_service.ts";
 import { EventLogger } from "../services/core/event_logger.ts";
 import { ProviderFactory } from "../ai/provider_factory.ts";
 import { FlowLoader } from "../flows/flow_loader.ts";
-import { ExaPathDefaults } from "../shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { ActivityActor } from "../shared/enums.ts";
+import { ActivityActor } from "@exaix/core";
 
 // Concrete services for adapters
 import { MemoryBankService } from "../services/memory/memory_bank.ts";

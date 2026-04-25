@@ -18,7 +18,7 @@ import {
   SOURCE_ICONS,
   STATUS_ICONS,
 } from "../../src/tui/skills_manager_view.ts";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "../../src/shared/enums.ts";
+import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import {
   createSkillsManagerTuiSession,
   createSkillsManagerViewWithMock,
@@ -28,7 +28,7 @@ import {
   testSkillsSessionRender,
 } from "./helpers.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== Test Data =====
 

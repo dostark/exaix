@@ -13,7 +13,7 @@ import {
   MemoryScope,
   MemoryType,
   UIOutputFormat,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
 import { SkillsService } from "../../src/services/skills/skills.ts";

@@ -9,14 +9,10 @@
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowExecutionError, FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FLOW_EVENT_NAMESPACE_READ,
-} from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_NAMESPACE_READ } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "../helpers/paths_helper.ts";

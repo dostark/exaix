@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
+import { MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../../src/config/paths.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
@@ -24,7 +24,7 @@ import { ensureDir } from "@std/fs/ensure-dir";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
-import { EXECUTION_REPORT_FILENAME } from "../../../src/shared/constants.ts";
+import { EXECUTION_REPORT_FILENAME } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 

@@ -7,8 +7,8 @@
  */
 
 import { colorize, getTheme } from "./colors.ts";
-import { SpinnerStyle } from "../../shared/enums.ts";
-import { SECONDS_PER_HOUR } from "../../shared/constants.ts";
+import { SpinnerStyle } from "@exaix/core";
+import { SECONDS_PER_HOUR } from "@exaix/core";
 
 export interface ISpinnerConfig {
   style: SpinnerStyle;

@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { SecurityMode } from "../../../src/shared/enums.ts";
+import { SecurityMode } from "@exaix/core";
+import { PROVIDER_OPENAI } from "@exaix/ai";
 
 import { AgentExecutionOptionsSchema } from "@exaix/schemas/agent_executor.ts";
 import {
@@ -21,7 +22,6 @@ import {
   TraceIdSchema,
   UserRequestSchema,
 } from "@exaix/schemas/input_validation.ts";
-import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 Deno.test("Input Validation - BlueprintNameSchema", async (t) => {

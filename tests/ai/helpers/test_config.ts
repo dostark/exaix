@@ -8,17 +8,17 @@
 
 import { type AiConfig, AiConfigSchema } from "@exaix/schemas/ai_config.ts";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import {
   ConfidenceAssessmentLevel,
   LogLevel,
-  McpTransportType,
   MemoryBankSource,
   PortalAnalysisMode,
   ProviderType,
   QualityGateMode,
   SqliteJournalMode,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
+import { McpTransportType } from "@exaix/mcp";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { ProviderFactory } from "../../../src/ai/provider_factory.ts";

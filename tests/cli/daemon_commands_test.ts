@@ -5,7 +5,7 @@
  * logic, PID file management, and background process orchestration.
  */
 
-import { RequestSource } from "../../src/shared/enums.ts";
+import { RequestSource } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";

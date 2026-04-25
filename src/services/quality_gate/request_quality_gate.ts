@@ -20,13 +20,13 @@ import type {
   IRequestQualityGateConfig,
   IRequestQualityGateService,
 } from "../../shared/interfaces/i_request_quality_gate_service.ts";
-import { QualityGateMode } from "../../shared/enums.ts";
+import { QualityGateMode } from "@exaix/core";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_QG_ENRICHMENT_THRESHOLD,
   DEFAULT_QG_MINIMUM_THRESHOLD,
   DEFAULT_QG_PROCEED_THRESHOLD,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { assessHeuristic } from "./heuristic_assessor.ts";
 import { LlmQualityAssessor } from "./llm_assessor.ts";
 import { enrichRequest } from "./request_enricher_llm.ts";

@@ -6,7 +6,7 @@
  * * @related-files [src/shared/interfaces/i_log_service.ts]
  */
 
-import type { LogLevel } from "../enums.ts";
+import type { LogLevel } from "@exaix/core";
 import type { LogMetadata } from "./json.ts";
 
 /**

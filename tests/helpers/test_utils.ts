@@ -5,7 +5,7 @@
  * wait-based synchronization, temporary file cleanup, and process capturing.
  */
 
-import { MemoryBankSource, RequestSource, SkillStatus } from "../../src/shared/enums.ts";
+import { MemoryBankSource, RequestSource, SkillStatus } from "@exaix/core";
 import { PlanStatus, type PlanStatusType } from "../../src/shared/status/plan_status.ts";
 import { RequestStatus, type RequestStatusType } from "../../src/shared/status/request_status.ts";
 

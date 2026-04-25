@@ -9,14 +9,11 @@
 import { join, resolve } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import {
-  type PortalAnalysisMode,
-  type PortalExecutionStrategy,
-  PortalStatus,
-  VerificationStatus,
-} from "../../shared/enums.ts";
+import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
-import { DEFAULT_PROJECTS_MEMORY_PATH, GIT_CMD_BRANCH, PORTAL_ALIAS_MAX_LENGTH } from "../../shared/constants.ts";
+import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
+import { GIT_CMD_BRANCH } from "@exaix/git";
+import { PORTAL_ALIAS_MAX_LENGTH } from "./constants.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { loadKnowledge, saveKnowledge } from "../portal_knowledge/knowledge_persistence.ts";
 import type {

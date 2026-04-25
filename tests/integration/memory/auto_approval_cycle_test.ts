@@ -16,7 +16,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async () => {

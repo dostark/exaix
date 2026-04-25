@@ -16,7 +16,7 @@ import type {
   IArtifactWithContent,
 } from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "../../shared/constants.ts";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
 
 interface IArtifactRow {
   id: string;
@@ -39,7 +39,7 @@ function shortId(): string {
   return crypto.randomUUID().split("-")[0];
 }
 
-import { ArtifactSubtype as ArtifactType } from "../../shared/enums.ts";
+import { ArtifactSubtype as ArtifactType } from "@exaix/core";
 
 /**
  * Service for managing read-only agent artifacts

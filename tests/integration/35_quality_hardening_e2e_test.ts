@@ -12,7 +12,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { CritiqueQuality } from "../../src/shared/enums.ts";
+import { CritiqueQuality } from "@exaix/core";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
@@ -26,12 +26,12 @@ import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 import {
   ANALYSIS_COMPLEX_BULLET_THRESHOLD,
   ANALYSIS_COMPLEX_CHAR_THRESHOLD,
   ANALYSIS_COMPLEX_FILE_THRESHOLD,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Shared fixtures

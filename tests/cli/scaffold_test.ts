@@ -8,7 +8,7 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..");

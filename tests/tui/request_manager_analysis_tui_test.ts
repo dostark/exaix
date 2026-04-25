@@ -14,9 +14,9 @@ import {
   RequestAnalysisComplexity,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
-import { RequestPriority, RequestSource } from "../../src/shared/enums.ts";
+import { RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 
 Deno.test("RequestManagerTuiSession - Detail View includes Analysis section", async () => {
   const analysis: IRequestAnalysis = {

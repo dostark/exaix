@@ -7,7 +7,7 @@
 
 import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
 import type { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
-import { MemoryReferenceType } from "../../src/shared/enums.ts";
+import { MemoryReferenceType } from "@exaix/core";
 
 /**
  * Creates a test project memory using the Builder pattern and persistence

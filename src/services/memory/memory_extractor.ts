@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
-import { DEFAULT_TITLE_PLACEHOLDER, MEMORY_EVENT_AUTO_APPROVED } from "../../shared/constants.ts";
+import { DEFAULT_TITLE_PLACEHOLDER, MEMORY_EVENT_AUTO_APPROVED } from "@exaix/core";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -21,7 +21,7 @@ import type {
   IProposalLearning,
 } from "@exaix/schemas/memory_bank.ts";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
-import { MemoryOperation, MemoryReferenceType, MemoryScope } from "../../shared/enums.ts";
+import { MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import { LearningExtractor } from "../memory/learning_extractor.ts";
 import { toSafeJson } from "../../shared/types/json.ts";

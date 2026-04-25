@@ -24,8 +24,9 @@ import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_r
 import type { EventLogger } from "../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
-import { AGENT_EVENT_SECURITY_VIOLATION, GIT_EMPTY_SHA } from "../../src/shared/constants.ts";
-import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "../../src/shared/enums.ts";
+import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
+import { GIT_EMPTY_SHA } from "@exaix/git";
+import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { LogMetadata } from "../../src/shared/types/json.ts";
 import { createMockConfig } from "../helpers/config.ts";

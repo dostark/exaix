@@ -13,7 +13,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import { MemoryScope } from "../../shared/enums.ts";
+import { MemoryScope } from "@exaix/core";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { ANSI } from "../helpers/colors.ts";
 import {

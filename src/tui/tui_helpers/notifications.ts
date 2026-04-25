@@ -8,7 +8,7 @@
 
 import { KEYS } from "../helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "../helpers/colors.ts";
-import { SECONDS_PER_HOUR } from "../../shared/constants.ts";
+import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";

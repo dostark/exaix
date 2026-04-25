@@ -6,9 +6,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { EvaluationCategory } from "../../../src/shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 import { CriteriaGenerator } from "../../../src/services/skills/criteria_generator.ts";
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import {
@@ -16,7 +16,7 @@ import {
   DEFAULT_GOAL_WEIGHT,
   MAX_DYNAMIC_CRITERIA,
   PRIORITY_1_GOAL_WEIGHT,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 
 function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
   return {

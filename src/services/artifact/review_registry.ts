@@ -17,7 +17,7 @@ import {
   ReviewSchema,
 } from "@exaix/schemas/review.ts";
 import { type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
-import { ACTIVITY_ACTOR_AGENT } from "../../shared/constants.ts";
+import { ACTIVITY_ACTOR_AGENT } from "@exaix/core";
 
 export class ReviewRegistry {
   constructor(

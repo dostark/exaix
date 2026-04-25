@@ -1,12 +1,14 @@
 /**
  * @module MemoryStatus
  * @path src/shared/status/memory_status.ts
- * @description Shared type definitions and coercion utilities for memory record statuses.
+ * @description Shared type definitions and coercion utilities for memory record status values.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/memory_bank.ts]
+ * @related-files [src/shared/status/mod.ts, src/shared/status/plan_status.ts]
  */
-import { MemoryRecordStatus } from "../enums.ts";
+
+import { MemoryRecordStatus } from "@exaix/core";
 import type { JSONValue } from "../types/json.ts";
+
 export const MemoryStatus = {
   PENDING: MemoryRecordStatus.PENDING,
   APPROVED: MemoryRecordStatus.APPROVED,

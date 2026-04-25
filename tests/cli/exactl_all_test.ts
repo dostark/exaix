@@ -10,7 +10,7 @@ import "./helpers/set_test_mode.ts";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { BINARY_VERSION } from "../../src/shared/version.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import {
   FlowInputSource,
   MemoryBankSource,
@@ -21,7 +21,7 @@ import {
   RequestSource,
   ReviewType,
   VerificationStatus,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";

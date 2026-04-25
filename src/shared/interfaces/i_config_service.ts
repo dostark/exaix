@@ -7,7 +7,7 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import type { PortalExecutionStrategy, PortalOperation } from "../enums.ts";
+import type { PortalExecutionStrategy, PortalOperation } from "@exaix/core";
 
 export interface IPortalConfigEntry {
   alias: string;

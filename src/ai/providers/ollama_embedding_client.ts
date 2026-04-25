@@ -11,11 +11,7 @@
 import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";
 import type { JSONValue } from "@exaix/core";
 import { EmbeddingError } from "../embeddings/embedding_errors.ts";
-import {
-  DEFAULT_OLLAMA_BASE_URL,
-  DEFAULT_OLLAMA_EMBED_CHUNK_SIZE,
-  DEFAULT_OLLAMA_TIMEOUT_MS,
-} from "../../shared/constants.ts";
+import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, DEFAULT_OLLAMA_TIMEOUT_MS } from "@exaix/ai";
 
 /**
  * Ollama /api/embed response validated by Zod before consumption (OWASP A08).

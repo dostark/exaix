@@ -9,7 +9,7 @@
 import type { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
 import type { ConfigService } from "../../config/service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { PortalExecutionStrategy } from "../../shared/enums.ts";
+import type { PortalExecutionStrategy } from "@exaix/core";
 
 /**
  * Adapter that implements the IConfigService interface

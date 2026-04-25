@@ -22,6 +22,7 @@ import { CostCommands } from "./commands/cost_commands.ts";
 import { RoutingCommands } from "./commands/routing_commands.ts";
 import {
   FlowInputSource,
+  GeneralStatus,
   type MemoryBankSource,
   MemoryScope,
   type PortalAnalysisMode,
@@ -31,7 +32,7 @@ import {
   RequestOperation,
   RequestPriority,
   UIOutputFormat,
-} from "../shared/enums.ts";
+} from "@exaix/core";
 import { AnalysisMode } from "../shared/types/request.ts";
 import { type IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
 import { CLI_DEFAULTS } from "./cli.config.ts";
@@ -41,12 +42,8 @@ import type { ICliApplicationContext } from "./cli_context.ts";
 import { GitService } from "../services/core/git_service.ts";
 import type { OutputFormat } from "./memory_types.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
-import {
-  DAEMON_IDENTITY_ID,
-  DEFAULT_UNKNOWN_ERROR_MESSAGE,
-  GIT_CMD_STATUS,
-  PORTAL_LABEL,
-} from "../shared/constants.ts";
+import { DAEMON_IDENTITY_ID, DEFAULT_UNKNOWN_ERROR_MESSAGE, PORTAL_LABEL } from "@exaix/core";
+import { GIT_CMD_STATUS } from "@exaix/git";
 import { WatchCommand } from "./commands/watch.ts";
 
 // Extracted action handlers
@@ -1640,7 +1637,7 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "pending",
+        GeneralStatus.PENDING,
         new Command()
           .description("Manage pending memory update proposals")
           .option(CLI_OUTPUT_FORMAT_OPTION, CLI_OUTPUT_FORMAT_HELP, CLI_OUTPUT_FORMAT_DEFAULT)

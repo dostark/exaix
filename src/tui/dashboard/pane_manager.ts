@@ -6,7 +6,7 @@
  * * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/renderer.ts]
  */
 
-import { MessageType, SplitDirection } from "../../shared/enums.ts";
+import { MessageType, SplitDirection } from "@exaix/core";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "../helpers/constants.ts";
 
 import type { IPane, ITuiView } from "../tui_dashboard.ts";

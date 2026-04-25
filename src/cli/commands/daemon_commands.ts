@@ -11,7 +11,7 @@ import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import { CLI_DEFAULTS } from "../cli.config.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
-import { DAEMON_STOP_TIMEOUT_MS } from "../../shared/constants.ts";
+import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { isProcessAlive } from "../process_utils.ts";
 import type { JSONObject } from "../../shared/types/json.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../shared/version.ts";

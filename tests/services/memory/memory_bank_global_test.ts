@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { EvaluationCategory, MemoryReferenceType } from "../../../src/shared/enums.ts";
+import { EvaluationCategory, MemoryReferenceType } from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
@@ -19,17 +19,11 @@ import {
   type IProjectMemory,
   LearningSchema,
 } from "@exaix/schemas/memory_bank.ts";
-import {
-  ConfidenceAssessmentLevel,
-  LearningCategory,
-  MemoryBankSource,
-  MemoryScope,
-  MemoryType,
-} from "../../../src/shared/enums.ts";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { getMemoryGlobalDir } from "../../helpers/paths_helper.ts";
 import { createSampleLearning, createTestMemoryBankWithGlobal } from "../helpers/memory_bank_test_helpers.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== ILearning Schema Tests =====
 

@@ -5,7 +5,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowOutputFormat, McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
+import { FlowOutputFormat, StepExecutionMode } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 /**

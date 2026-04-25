@@ -14,14 +14,9 @@ import {
   assertStringIncludes,
   assertThrows,
 } from "@std/assert";
-import {
-  ExecutionStrategyName,
-  McpToolName,
-  MemoryOperation,
-  PortalOperation,
-  SecurityMode,
-  ToolName,
-} from "../../../src/shared/enums.ts";
+import { ExecutionStrategyName, MemoryOperation, PortalOperation, SecurityMode, ToolName } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
+import { PROVIDER_OPENAI } from "@exaix/ai";
 import { join } from "@std/path";
 
 import {
@@ -39,7 +34,7 @@ import { createTestConfig } from "../../ai/helpers/test_config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
-import { PROVIDER_OPENAI, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/shared/constants.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";

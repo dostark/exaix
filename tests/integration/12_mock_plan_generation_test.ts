@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { EvaluationCategory } from "../../src/shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 

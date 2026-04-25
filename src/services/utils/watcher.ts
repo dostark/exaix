@@ -14,8 +14,8 @@ import {
   DEFAULT_UNKNOWN_LABEL,
   DEFAULT_WATCHER_STABILITY_BACKOFF_MS,
   DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS,
-} from "../../shared/constants.ts";
-import { ActivityActor } from "../../shared/enums.ts";
+} from "@exaix/core";
+import { ActivityActor } from "@exaix/core";
 import { delay } from "../../helpers/async_utils.ts";
 
 /**

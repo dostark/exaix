@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { AgentExecutionErrorType, SecurityMode } from "@exaix/core/shared/enums.ts";
+import { AgentExecutionErrorType, SecurityMode } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core/types/json.ts";
 
 /**

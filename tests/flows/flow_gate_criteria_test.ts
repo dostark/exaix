@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
+import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
 import {
   FlowRunner,
   type IAgentExecutor,

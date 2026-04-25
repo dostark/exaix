@@ -8,15 +8,10 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import {
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepType,
-  McpToolName,
-  StepExecutionMode,
-} from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 /**
  * Helper to create minimal valid step

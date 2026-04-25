@@ -6,10 +6,10 @@
  */
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
-import { ConfidenceAssessmentLevel, CritiqueQuality } from "../../../src/shared/enums.ts";
+import { ConfidenceAssessmentLevel, CritiqueQuality } from "@exaix/core";
 import { createConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import type { ICritique } from "../../../src/services/agent/reflexive_agent.ts";
-import { EXISTING_SCORE_CONFIDENCE_WEIGHT, GOAL_ALIGNMENT_CONFIDENCE_WEIGHT } from "../../../src/shared/constants.ts";
+import { EXISTING_SCORE_CONFIDENCE_WEIGHT, GOAL_ALIGNMENT_CONFIDENCE_WEIGHT } from "@exaix/core";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 
 // ---------------------------------------------------------------------------

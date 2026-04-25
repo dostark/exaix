@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import { LANG_TYPESCRIPT } from "../../shared/constants.ts";
+import { LANG_TYPESCRIPT } from "@exaix/core";
 import {
   ConfidenceAssessmentLevel,
   ExecutionStatus,
@@ -14,7 +14,7 @@ import {
   MemoryBankSource,
   MemoryReferenceType,
   MemoryScope,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 
 /**
  * Extracts learnings from agent executions.

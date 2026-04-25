@@ -6,7 +6,7 @@
  */
 
 import { assertExists, assertRejects } from "@std/assert";
-import { PortalOperation } from "../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 
 import { GitStatusTool } from "../../src/mcp/handlers/git_status_tool.ts";
 import { ReadFileTool } from "../../src/mcp/handlers/read_file_tool.ts";

@@ -6,8 +6,8 @@
  * * @related-files [src/cli/handlers/request_create_handler.ts]
  */
 
-import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
-import { RequestPriority } from "../../shared/enums.ts";
+import { DEFAULT_IDENTITY_ID } from "@exaix/core";
+import { RequestPriority } from "@exaix/core";
 import { join } from "@std/path";
 import type { ICommandContext } from "../base.ts";
 

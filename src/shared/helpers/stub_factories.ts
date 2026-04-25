@@ -10,7 +10,7 @@
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IGenerateResult } from "../../ai/providers/common.ts";
-import { GitBranchName } from "../../shared/enums.ts";
+import { GitBranchName } from "@exaix/git";
 
 /**
  * Create a stub IGitService with no-op implementations.

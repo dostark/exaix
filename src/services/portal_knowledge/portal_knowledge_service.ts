@@ -27,8 +27,8 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
-import { PortalAnalysisMode } from "../../shared/enums.ts";
-import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
+import { PortalAnalysisMode } from "@exaix/core";
+import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE } from "@exaix/core";
 
 export interface IPortalKnowledgeServiceOptions {
   config: IPortalKnowledgeConfig;

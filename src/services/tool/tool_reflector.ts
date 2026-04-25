@@ -14,7 +14,7 @@ import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator } from "./output_validator.ts";
 import type { IOutputValidator } from "./output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";
-import { ToolReflectionIssueType, ToolReflectionSeverity } from "../../shared/enums.ts";
+import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 

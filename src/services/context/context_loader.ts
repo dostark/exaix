@@ -13,8 +13,8 @@
  */
 
 import type { DatabaseService } from "../core/db.ts";
-import { ActivityActor } from "../../shared/enums.ts";
-import { DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
+import { ActivityActor } from "@exaix/core";
+import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 
 // ============================================================================
 // Types and Interfaces

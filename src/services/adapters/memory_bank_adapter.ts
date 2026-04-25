@@ -8,7 +8,7 @@
 
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
-import type { MemoryType } from "../../shared/enums.ts";
+import type { MemoryType } from "@exaix/core";
 import type {
   IActivitySummary,
   IDecision,

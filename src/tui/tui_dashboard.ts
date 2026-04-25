@@ -14,7 +14,7 @@
  * - Layout persistence
  */
 
-import { MessageType, type SplitDirection } from "../shared/enums.ts";
+import { MessageType, type SplitDirection } from "@exaix/core";
 import type { INotificationService } from "../shared/interfaces/i_notification_service.ts";
 import {
   TUI_DASHBOARD_ICONS,

@@ -72,10 +72,6 @@ export enum AgentKind {
 /**
  * MCP transport types.
  */
-export enum McpTransportType {
-  STDIO = "stdio",
-  SSE = "sse",
-}
 
 /**
  * Message roles (e.g., for LLM conversations).
@@ -97,18 +93,6 @@ export enum DataFormat {
   TOML = "toml",
   MARKDOWN = "markdown",
   TEXT = "text",
-}
-
-/**
- * Canonical git/default branch names used across services.
- */
-export enum GitBranchName {
-  MAIN = "main",
-  MASTER = "master",
-  DEVELOP = "develop",
-  DEVELOPMENT = "development",
-  PROD = "prod",
-  PRODUCTION = "production",
 }
 
 /**
@@ -333,35 +317,6 @@ export enum VerificationStatus {
 }
 
 /**
- * Common grouping modes for TUI views.
- */
-export enum GroupingMode {
-  IDENTITY = "identity",
-  ACTION = "action",
-  NONE = "none",
-  STATUS = "status",
-  PROJECT = "project",
-}
-
-/**
- * Split directions for TUI panes.
- */
-export enum SplitDirection {
-  VERTICAL = "vertical",
-  HORIZONTAL = "horizontal",
-}
-
-/**
- * Grouping modes for Request Manager.
- */
-export enum RequestGroupingMode {
-  NONE = "none",
-  STATUS = "status",
-  PRIORITY = "priority",
-  IDENTITY = "identity",
-}
-
-/**
  * Sources for request creation.
  */
 export enum RequestSource {
@@ -392,30 +347,6 @@ export enum RequestOperation {
 }
 
 /**
- * Grouping modes for Structured Log Viewer.
- */
-export enum LogGroupingMode {
-  CORRELATION = "correlation",
-  TRACE = "trace",
-  IDENTITY = "identity",
-  LEVEL = "level",
-  TIME = "time",
-  NONE = "none",
-}
-
-/**
- * Grouping modes for Skills Manager.
- */
-export enum SkillGroupingMode {
-  SOURCE = "source",
-  STATUS = "status",
-  NONE = "none",
-}
-
-/**
- * Fields to omit when creating or updating skills.
- */
-/**
  * Skill fields that are automatically managed by the system.
  */
 export enum SkillManagedField {
@@ -437,24 +368,6 @@ export enum SkillImmutableField {
  * @deprecated Use SkillManagedField instead.
  */
 export type SkillOmitFields = SkillManagedField;
-
-/**
- * Common purposes for dialogs.
- */
-export enum DialogPurpose {
-  SPLIT = "split",
-  CHANGE = "change",
-  NEW = "new",
-}
-
-/**
- * Common modes for layout management.
- */
-export enum LayoutMode {
-  SAVE = "save",
-  LOAD = "load",
-  DELETE = "delete",
-}
 
 /**
  * Severity levels for linting.
@@ -480,45 +393,6 @@ export enum NavDirection {
   DOWN = "down",
   FIRST = "first",
   LAST = "last",
-}
-
-/**
- * Directions for resizing panes.
- */
-export enum ResizeDirection {
-  LEFT = "left",
-  RIGHT = "right",
-  UP = "up",
-  DOWN = "down",
-}
-
-/**
- * Directions for scrolling content.
- */
-export enum ScrollDirection {
-  UP = "up",
-  DOWN = "down",
-  TOP = "top",
-  BOTTOM = "bottom",
-}
-
-/**
- * Keyboard modifiers for TUI input.
- */
-export enum KeyModifier {
-  CTRL = "ctrl",
-  ALT = "alt",
-  SHIFT = "shift",
-  META = "meta",
-}
-
-/**
- * User interface output formats.
- */
-export enum UIOutputFormat {
-  TABLE = "table",
-  JSON = "json",
-  MARKDOWN = "md",
 }
 
 /**
@@ -576,25 +450,6 @@ export enum ArtifactType {
 }
 
 /**
- * Operations that can be performed on a portal.
- */
-export enum PortalOperation {
-  READ = "read",
-  WRITE = "write",
-  GIT = "git",
-}
-
-/**
- * Strategy for how Exaix executes plans within a portal repository.
- * - BRANCH: execute directly in the repository checkout using feature branches
- * - WORKTREE: execute in a git worktree (feature branch still used for review)
- */
-export enum PortalExecutionStrategy {
-  BRANCH = "branch",
-  WORKTREE = "worktree",
-}
-
-/**
  * Cost tier classification for providers.
  */
 export enum ProviderCostTier {
@@ -624,16 +479,27 @@ export enum SecurityMode {
   HYBRID = "hybrid",
 }
 
-/**
- * TUI spinner and animation styles.
- */
-export enum SpinnerStyle {
-  DOTS = "dots",
-  BRAILLE = "braille",
-  LINE = "line",
-  ARC = "arc",
-  BOUNCE = "bounce",
-  PULSE = "pulse",
+export enum PortalOperation {
+  READ = "read",
+  WRITE = "write",
+  GIT = "git",
+}
+
+export enum PortalExecutionStrategy {
+  BRANCH = "branch",
+  WORKTREE = "worktree",
+}
+
+export enum PortalAnalysisMode {
+  QUICK = "quick",
+  STANDARD = "standard",
+  DEEP = "deep",
+}
+
+export enum PortalStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  BROKEN = "broken",
 }
 
 /**
@@ -703,30 +569,12 @@ export enum RequestPriority {
 }
 
 /**
- * Status for user requests.
- */
-// NOTE: RequestStatus/PlanStatus/MemoryStatus are no longer enums.
-// Use the canonical const-object + union-type modules:
-// - src/requests/request_status.ts
-// - src/plans/plan_status.ts
-// - src/memory/memory_status.ts
-
-/**
  * Status for skill lifecycle.
  */
 export enum SkillStatus {
   DRAFT = GeneralStatus.DRAFT,
   ACTIVE = GeneralStatus.ACTIVE,
   DEPRECATED = GeneralStatus.DEPRECATED,
-}
-
-/**
- * Status for portal lifecycle.
- */
-export enum PortalStatus {
-  ACTIVE = GeneralStatus.ACTIVE,
-  INACTIVE = GeneralStatus.INACTIVE,
-  BROKEN = GeneralStatus.BROKEN,
 }
 
 /**
@@ -854,19 +702,6 @@ export enum LogLevel {
 }
 
 /**
- * Canonical color tokens used by TUI log/status mappings.
- */
-export enum TuiColorName {
-  RED = "red",
-  GREEN = "green",
-  YELLOW = "yellow",
-  BLUE = "blue",
-  WHITE = "white",
-  GRAY = "gray",
-  MAGENTA = "magenta",
-}
-
-/**
  * Types of messages for status updates and notifications.
  * Used to categorize the nature of messages displayed to users.
  */
@@ -968,32 +803,6 @@ export enum FlowStepOnErrorAction {
   FALLBACK = "fallback",
   COMPENSATE = "compensate",
   ABORT = "abort",
-}
-
-/**
-/**
- * Standard MCP tool names used in the system.
- */
-export enum McpToolName {
-  READ_FILE = "read_file",
-  WRITE_FILE = "write_file",
-  RUN_COMMAND = "run_command",
-  LIST_DIRECTORY = "list_directory",
-  SEARCH_FILES = "search_files",
-  CREATE_DIRECTORY = "create_directory",
-  PATCH_FILE = "patch_file",
-  DELETE_FILE = "delete_file",
-  MOVE_FILE = "move_file",
-  GIT_CREATE_BRANCH = "git_create_branch",
-  GIT_COMMIT = "git_commit",
-  GIT_STATUS = "git_status",
-  // Domain tools
-  CREATE_REQUEST = "exaix_create_request",
-  LIST_PLANS = "exaix_list_plans",
-  APPROVE_PLAN = "exaix_approve_plan",
-  QUERY_JOURNAL = "exaix_query_journal",
-  GIT = "git",
-  FETCH_URL = "FETCH_URL",
 }
 
 /**
@@ -1226,35 +1035,6 @@ export enum HealthCheckVerdict {
 }
 
 /**
- * Types of nodes in the TUI tree view.
- */
-export enum TuiNodeType {
-  ROOT = "root",
-  SCOPE = "scope",
-  PROJECT = "project",
-  EXECUTION = "execution",
-  PORTAL = "portal",
-  LEARNING = "learning",
-  PATTERN = "pattern",
-  DECISION = "decision",
-  IDENTITY = "identity",
-  STATUS_GROUP = "status-group",
-  MODEL_GROUP = "model-group",
-  GROUP = "group",
-  PLAN = "plan",
-  ARTIFACT = "artifact",
-}
-
-/**
- * Grouping modes for TUI views.
- */
-export enum TuiGroupBy {
-  NONE = "none",
-  STATUS = "status",
-  MODEL = "model",
-}
-
-/**
  * Capabilities supported by AI providers.
  */
 export enum ProviderCapability {
@@ -1262,51 +1042,6 @@ export enum ProviderCapability {
   STREAMING = "streaming",
   VISION = "vision",
   TOOLS = "tools",
-}
-
-/**
- * Icons used in the TUI.
- */
-export enum TuiIcon {
-  IDENTITY = "🤖",
-  LEARNING = "🎯",
-  BRAIN = "🧠",
-  SUCCESS = "✅",
-  WARNING = "⚠️",
-  CRITICAL = "❌",
-  INFO = "ℹ️",
-  BULLET = "•",
-  PORTAL_ACTIVE = "🟢",
-  PORTAL_BROKEN = "🔴",
-  PORTAL_INACTIVE = "⚪",
-  FOLDER = "📂",
-}
-
-/**
- * Types of dialogs used in the Request Manager View.
- */
-export enum RequestDialogType {
-  SEARCH = "search",
-  FILTER_STATUS = "filter-status",
-  FILTER_IDENTITY = "filter-identity",
-  CREATE = "create",
-  PRIORITY = "priority",
-}
-
-/**
- * Actions for daemon control key bindings.
- */
-export enum DaemonKeyAction {
-  START = "start",
-  STOP = "stop",
-  RESTART = "restart",
-  VIEW_LOGS = "view-logs",
-  VIEW_CONFIG = "view-config",
-  REFRESH = "refresh",
-  AUTO_REFRESH = "auto-refresh",
-  HELP = "help",
-  QUIT = "quit",
-  CANCEL = "cancel",
 }
 
 /**
@@ -1330,30 +1065,6 @@ export enum ConnectionStatus {
 }
 
 /**
- * Status indicators for UI elements.
- */
-export enum StatusIndicator {
-  ACTIVE = "active",
-  PENDING = "pending",
-  COMPLETED = "completed",
-  FAILED = "failed",
-  APPROVED = "approved",
-  REJECTED = "rejected",
-  ARCHIVED = "archived",
-  RUNNING = "running",
-}
-
-/**
- * Fields used for grouping lists.
- */
-export enum GroupingField {
-  SOURCE = "source",
-  STATUS = "status",
-  CATEGORY = "category",
-  PRIORITY = "priority",
-}
-
-/**
  * Actions for daemon control.
  */
 export enum DaemonAction {
@@ -1368,18 +1079,6 @@ export enum DaemonAction {
 export enum ReActActionType {
   TOOL_CALL = "tool_call",
   COMPLETE = "complete",
-}
-
-/**
- * Analysis depth for portal codebase knowledge gathering.
- */
-export enum PortalAnalysisMode {
-  /** Directory scan + config parsing only — no LLM (<5 s). */
-  QUICK = "quick",
-  /** Adds architecture inference (1 LLM call) + symbol extraction (~15 s). */
-  STANDARD = "standard",
-  /** Full convention mapping + complete symbol index (~60 s). */
-  DEEP = "deep",
 }
 
 /**
@@ -1406,23 +1105,6 @@ export enum ClarifyResultStatus {
   CANCELLED = "cancelled",
   /** No clarification session found for the given request. */
   NO_SESSION = "no_session",
-}
-
-/**
- * Canonical names for TUI views.
- */
-export enum TuiViewName {
-  DASHBOARD = "TuiDashboard",
-  PORTAL_MANAGER = "PortalManagerView",
-  MONITOR = "MonitorView",
-  PLAN_REVIEWER = "PlanReviewerView",
-  DAEMON_CONTROL = "DaemonControlView",
-  SKILLS_MANAGER = "SkillsManagerView",
-  MEMORY_VIEW = "MemoryView",
-  REQUEST_MANAGER = "RequestManagerView",
-  AGENT_STATUS = "AgentStatusView",
-  LOG_VIEWER = "LogViewer",
-  STRUCTURED_LOG_VIEWER = "StructuredLogViewer",
 }
 
 /**

@@ -43,7 +43,7 @@ import {
   DEFAULT_UNKNOWN_LABEL,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { PlanAdapter } from "../plan/plan_adapter.ts";
 
 /**

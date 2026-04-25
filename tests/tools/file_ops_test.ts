@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry: core file operations", async (t) => {
   const tempDir = await Deno.makeTempDir();

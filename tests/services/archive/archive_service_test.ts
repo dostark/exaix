@@ -7,7 +7,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ArchiveEntrySchema, ArchiveService } from "../../../src/services/artifact/archive_service.ts";
-import { ArchiveStatus } from "../../../src/shared/enums.ts";
+import { ArchiveStatus } from "@exaix/core";
 
 function createSampleEntry(overrides: Partial<ReturnType<typeof ArchiveEntrySchema.parse>> = {}) {
   return ArchiveEntrySchema.parse({

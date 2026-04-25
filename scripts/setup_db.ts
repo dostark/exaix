@@ -11,7 +11,7 @@
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { MigrationDirection } from "../src/shared/enums.ts";
+import { MigrationDirection } from "@exaix/core";
 
 const ROOT = Deno.cwd();
 const RUNTIME_DIR = join(ROOT, ".exa");

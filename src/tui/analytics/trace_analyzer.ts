@@ -8,7 +8,7 @@
 
 import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
 import type { TraceAnalysis } from "./types.ts";
-import { LogLevel } from "../../shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 
 /**
  * Analyze a trace through the system

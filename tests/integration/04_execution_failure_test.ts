@@ -6,13 +6,8 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import {
-  EvaluationVerdict,
-  FlowStepType,
-  McpToolName,
-  MemoryBankSource,
-  PortalOperation,
-} from "../../src/shared/enums.ts";
+import { EvaluationVerdict, FlowStepType, MemoryBankSource, PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 

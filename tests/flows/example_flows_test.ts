@@ -12,14 +12,14 @@ import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { defineFlow } from "../../src/flows/define_flow.ts";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
-import { EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "../../src/shared/enums.ts";
+import { EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";
-import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 describe("Example Flows - Step 7.9", {
   sanitizeResources: false,

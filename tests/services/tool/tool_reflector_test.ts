@@ -7,7 +7,8 @@
  */
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
-import { CritiqueSeverity, McpToolName } from "../../../src/shared/enums.ts";
+import { CritiqueSeverity } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { JSONObject } from "../../../src/shared/types/json.ts";
 
 import type { IModelProvider } from "../../../src/ai/types.ts";

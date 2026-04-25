@@ -21,8 +21,8 @@ import {
   TUI_PREFIX_PROJECT,
 } from "../helpers/constants.ts";
 import { renderCategoryBadge, renderConfidence, renderMarkdown } from "../helpers/markdown_renderer.ts";
-import { ConfidenceAssessmentLevel, ConfidenceLevel } from "../../shared/enums.ts";
-import { DEFAULT_NONE_VALUE } from "../../shared/constants.ts";
+import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
+import { DEFAULT_NONE_VALUE } from "@exaix/core";
 import type { IMemoryService, ITreeNode } from "./types.ts";
 
 function mapAssessmentConfidenceToConfidenceLevel(

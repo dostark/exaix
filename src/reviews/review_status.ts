@@ -6,12 +6,13 @@
  * * @related-files [src/services/review_registry.ts, src/shared/schemas/review.ts]
  */
 
+import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
 export const ReviewStatus = {
-  PENDING: "pending",
+  PENDING: GeneralStatus.PENDING,
   APPROVED: "approved",
-  REJECTED: "rejected",
+  REJECTED: GeneralStatus.REJECTED,
 } as const;
 
 export type IReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus];

@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { PortalOperation } from "../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 
 import { buildIndex, chunkText, extractFrontmatter } from "../../scripts/build_agents_index.ts";
 

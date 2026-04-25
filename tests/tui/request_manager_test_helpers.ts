@@ -7,7 +7,7 @@
 
 import type { ConfirmDialog, InputDialog } from "../../src/tui/helpers/dialog_base.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import type { MessageType } from "../../src/shared/enums.ts";
+import type { MessageType } from "@exaix/core";
 
 export interface IRequestManagerMockHandlers {
   handleSearchResult: (value: string) => void;

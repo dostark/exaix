@@ -9,7 +9,7 @@
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import {
   FlowExecutionError,
   FlowRunner,
@@ -27,7 +27,7 @@ import {
   FLOW_EVENT_CHECKPOINT_LOADED,
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 import type { JSONValue } from "../../../src/shared/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";

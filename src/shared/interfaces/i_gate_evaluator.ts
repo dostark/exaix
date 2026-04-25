@@ -8,7 +8,7 @@
 
 import type { EvaluationCriterion, EvaluationResult } from "../../flows/evaluation_criteria.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { FlowGateAction, FlowGateOnFail } from "../../shared/enums.ts";
+import type { FlowGateAction, FlowGateOnFail } from "@exaix/core";
 
 /**
  * Result of gate evaluation

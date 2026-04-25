@@ -7,7 +7,7 @@
  */
 
 import type { AgentStatusType } from "../status/agent_status.ts";
-import type { AgentHealth, LogLevel } from "../enums.ts";
+import type { AgentHealth, LogLevel } from "@exaix/core";
 
 /**
  * Information about an agent's current state and configuration.

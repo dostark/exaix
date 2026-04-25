@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { DialogStatus, type SkillStatus as _SkillStatus } from "../../../src/shared/enums.ts";
+import { DialogStatus, type SkillStatus as _SkillStatus } from "@exaix/core";
 import {
   BOX,
   ConfirmDialog,

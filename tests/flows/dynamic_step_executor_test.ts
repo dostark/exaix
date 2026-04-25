@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
+import { StepExecutionMode } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import {

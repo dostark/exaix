@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { MockStrategy, ProviderType, SecurityMode } from "@exaix/core/shared/enums.ts";
+import { MockStrategy, ProviderType, SecurityMode } from "@exaix/core";
 import {
   BLUEPRINT_NAME_MAX_LENGTH,
   FILENAME_MAX_LENGTH,
@@ -17,7 +17,7 @@ import {
   PATH_MAX_LENGTH,
   PLAN_CONTENT_MAX_LENGTH,
   USER_REQUEST_MAX_LENGTH,
-} from "@exaix/core/shared/constants.ts";
+} from "@exaix/core";
 import { AgentExecutionOptionsSchema } from "./agent_executor.ts";
 
 /**

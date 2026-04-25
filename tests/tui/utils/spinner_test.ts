@@ -25,7 +25,7 @@ import {
   stopSpinner,
   updateProgress,
 } from "../../../src/tui/helpers/spinner.ts";
-import { SpinnerStyle } from "../../../src/shared/enums.ts";
+import { SpinnerStyle } from "@exaix/core";
 
 // ===== Spinner Definitions Tests =====
 

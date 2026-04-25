@@ -6,7 +6,8 @@
  */
 
 import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
-import { CritiqueSeverity, EvaluationVerdict, McpToolName } from "../../../src/shared/enums.ts";
+import { CritiqueSeverity, EvaluationVerdict } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { z } from "zod";
 import {
   createOutputValidator,

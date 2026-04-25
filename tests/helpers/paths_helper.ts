@@ -6,7 +6,7 @@
  */
 
 import { join } from "@std/path";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 
 export function getWorkspaceDir(argDir: string): string {
   return join(argDir, ExaPathDefaults.workspace);

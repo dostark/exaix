@@ -11,14 +11,7 @@ import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { ConfirmDialog, type InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
-import {
-  DaemonAction,
-  DaemonStatus,
-  DialogStatus,
-  GeneralStatus,
-  MessageType,
-  SystemCommand,
-} from "../shared/enums.ts";
+import { DaemonAction, DaemonStatus, DialogStatus, GeneralStatus, MessageType, SystemCommand } from "@exaix/core";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } from "./helpers/constants.ts";
 import { ANSI } from "./helpers/colors.ts";

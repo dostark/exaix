@@ -7,8 +7,8 @@
  * * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
  */
 
-import { READ_ONLY_TOOLS, WRITE_TOOLS } from "../shared/constants.ts";
-import { StepExecutionMode } from "../shared/enums.ts";
+import { READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
+import { StepExecutionMode } from "@exaix/core";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 
 /**

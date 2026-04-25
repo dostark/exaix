@@ -14,7 +14,7 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { MockStrategy, PortalAnalysisMode, PortalOperation } from "../../src/shared/enums.ts";
+import { MockStrategy, PortalAnalysisMode, PortalOperation } from "@exaix/core";
 import { PortalKnowledgeService } from "../../src/services/portal_knowledge/portal_knowledge_service.ts";
 import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symbol_extractor.ts";
 import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";

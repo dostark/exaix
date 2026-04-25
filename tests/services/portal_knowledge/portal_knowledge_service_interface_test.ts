@@ -8,7 +8,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
+import { PortalAnalysisMode } from "@exaix/core";
 import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,

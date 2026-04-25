@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { PermissionAction, PortalOperation, SecurityMode } from "../../../src/shared/enums.ts";
+import { PermissionAction, PortalOperation, SecurityMode } from "@exaix/core";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";

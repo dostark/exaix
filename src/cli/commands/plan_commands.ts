@@ -27,7 +27,7 @@ import {
   PLAN_REVIEW_COMMENTS_HEADER,
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";

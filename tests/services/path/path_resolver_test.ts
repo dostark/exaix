@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
-import { MemoryReferenceType } from "../../../src/shared/enums.ts";
+import { MemoryReferenceType } from "@exaix/core";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { join } from "@std/path";

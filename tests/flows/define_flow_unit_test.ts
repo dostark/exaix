@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { defineFlow } from "../../src/flows/define_flow.ts";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 
 function cast<T>(obj: any): T {
   return obj as T;

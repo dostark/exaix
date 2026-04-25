@@ -10,14 +10,8 @@
 import { assertEquals } from "@std/assert";
 import { PortalAdapter } from "../../../src/services/adapters/portal_adapter.ts";
 import type { IPortalDetails, IPortalInfo } from "../../../src/shared/types/portal.ts";
-import { DEFAULT_SKILL_INDEX_VERSION } from "../../../src/shared/constants.ts";
-import {
-  ArchiveStatus,
-  DaemonStatus,
-  PortalExecutionStrategy,
-  PortalStatus,
-  VerificationStatus,
-} from "../../../src/shared/enums.ts";
+import { DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
+import { ArchiveStatus, DaemonStatus, PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
 import type { PortalService } from "../../../src/services/portal/portal.ts";
 import { MemoryServiceAdapter } from "../../../src/services/adapters/memory_adapter.ts";
 import type { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";

@@ -7,8 +7,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowSchema, FlowStepSchema, ZFlowParallelConfig, ZParallelMergeMode } from "@exaix/schemas/flow.ts";
 
 Deno.test("ZFlowParallelConfig: applies merge defaults", () => {

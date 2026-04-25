@@ -7,8 +7,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
+import { ANALYZER_VERSION } from "@exaix/core";
 import {
   FlowRunner,
   type IAgentExecutor,

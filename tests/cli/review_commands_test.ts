@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { FlowStepType, MemoryOperation } from "../../src/shared/enums.ts";
+import { FlowStepType, MemoryOperation } from "@exaix/core";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";

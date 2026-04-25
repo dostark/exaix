@@ -10,7 +10,7 @@ import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import type { IDatabaseService } from "../../src/services/core/db.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";

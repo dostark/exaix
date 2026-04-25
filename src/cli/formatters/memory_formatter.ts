@@ -8,7 +8,7 @@
 
 import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";
 import type { IMemoryBankSummary } from "../memory_types.ts";
-import { MemoryScope } from "../../shared/enums.ts";
+import { MemoryScope } from "@exaix/core";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -43,8 +43,8 @@ import {
   CLI_TRUNCATE_ID_SHORT,
   CLI_TRUNCATE_TITLE_MEDIUM,
   CLI_TRUNCATE_TITLE_SHORT,
-  DEFAULT_NONE_VALUE,
-} from "../../shared/constants.ts";
+} from "../constants.ts";
+import { DEFAULT_NONE_VALUE } from "@exaix/core";
 
 const CLI_BOX_SEPARATOR = "├─────────────────────────────────────────────────────────────┤";
 

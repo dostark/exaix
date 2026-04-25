@@ -15,8 +15,8 @@ import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
-import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
-import { ToolName } from "../../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
+import { PROVIDER_OPENAI } from "@exaix/ai";
 
 /**
  * TDD Tests for Agent Capability Differentiation

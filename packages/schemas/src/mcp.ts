@@ -7,14 +7,10 @@
  */
 
 import { z } from "zod";
-import { McpTransportType } from "@exaix/core/shared/enums.ts";
-import { PLAN_STATUS_VALUES } from "@exaix/core/shared/status/plan_status.ts";
-import {
-  DEFAULT_AGENT_MODEL,
-  DEFAULT_MCP_IDENTITY_ID,
-  DEFAULT_MCP_VERSION,
-  DEFAULT_QUERY_LIMIT,
-} from "@exaix/core/shared/constants.ts";
+import { McpTransportType } from "@exaix/mcp";
+import { PLAN_STATUS_VALUES } from "@exaix/core";
+import { DEFAULT_AGENT_MODEL, DEFAULT_QUERY_LIMIT } from "@exaix/core";
+import { DEFAULT_MCP_IDENTITY_ID, DEFAULT_MCP_VERSION } from "@exaix/mcp";
 
 // ============================================================================
 // MCP Configuration Schema

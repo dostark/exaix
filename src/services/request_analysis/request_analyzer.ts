@@ -32,7 +32,7 @@ import {
   HEURISTIC_SCORE_AMBIGUITY_PENALTY,
   HEURISTIC_SCORE_BASELINE,
   HEURISTIC_SCORE_COMPLEXITY_BONUS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Helpers

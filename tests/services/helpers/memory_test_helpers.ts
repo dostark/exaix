@@ -13,7 +13,7 @@ import {
   MemoryOperation,
   MemoryScope,
   ReviewSource,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import type { IExecutionMemory, ILearning, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";

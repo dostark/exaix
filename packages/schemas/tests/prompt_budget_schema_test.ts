@@ -16,7 +16,7 @@ import {
   MODEL_PRICING_MAP,
   SECTION_FLOORS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 import { PromptBudgetSection, ZBudgetPolicy, ZPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 
 Deno.test("[PromptBudgetSchema] validates a complete prompt budget", () => {

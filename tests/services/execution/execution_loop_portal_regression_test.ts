@@ -14,7 +14,7 @@ import { ReviewRegistry } from "../../../src/services/artifact/review_registry.t
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
-import { PortalOperation } from "../../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 
 Deno.test("[regression] ExecutionLoop: targets portal directory and creates review", async () => {
   const rootDir = await Deno.makeTempDir({ prefix: "exec-portal-reg-" });

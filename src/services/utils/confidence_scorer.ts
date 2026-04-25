@@ -12,7 +12,7 @@ import type { DatabaseService } from "../core/db.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
 import { logDebug } from "../logger/structured_logger.ts";
-import { ConfidenceAssessmentLevel, FactorImpact } from "../../shared/enums.ts";
+import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";
 
 export interface IConfidenceScorerConfig {
   lowConfidenceThreshold?: number;
@@ -74,7 +74,7 @@ import {
   CONFIDENCE_THRESHOLD_VERY_LOW,
   EXISTING_SCORE_CONFIDENCE_WEIGHT,
   GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import type { ICritique } from "../agent/reflexive_agent.ts";
 
 // ============================================================================

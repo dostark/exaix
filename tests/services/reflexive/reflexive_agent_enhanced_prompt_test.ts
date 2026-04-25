@@ -8,7 +8,7 @@
  * @architectural-layer Tests
  * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
 import {
   createReflexiveAgent,
@@ -24,7 +24,7 @@ import type {
   IParsedRequest,
 } from "../../../src/services/agent/agent_runner.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
-import { MAX_CRITIQUE_REQUIREMENTS } from "../../../src/shared/constants.ts";
+import { MAX_CRITIQUE_REQUIREMENTS } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Helpers

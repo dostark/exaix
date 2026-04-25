@@ -10,7 +10,7 @@
 
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
-import type { QualityGateMode } from "../enums.ts";
+import type { QualityGateMode } from "@exaix/core";
 
 /**
  * Score thresholds that drive quality gate routing decisions.

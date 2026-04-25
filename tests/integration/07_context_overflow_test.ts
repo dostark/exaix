@@ -5,8 +5,8 @@
  * system remains stable when processing massive file references or deep import trees.
  */
 
+import { McpToolName } from "@exaix/mcp";
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { McpToolName } from "../../src/shared/enums.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 
 import { join } from "@std/path";

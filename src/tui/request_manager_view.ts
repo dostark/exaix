@@ -38,7 +38,7 @@ import {
   RequestPriority,
   RequestSource,
   TuiNodeType,
-} from "../shared/enums.ts";
+} from "@exaix/core";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 
 import type {

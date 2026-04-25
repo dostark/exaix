@@ -4,7 +4,7 @@
  * @description Mock agent for testing MCP-based agent execution.
  */
 import { TextLineStream } from "@std/streams";
-import { ToolName } from "../../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 async function main() {
   console.error("DEBUG: Mock agent started");

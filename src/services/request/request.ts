@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { RequestStatus, type RequestStatusType } from "../../shared/status/request_status.ts";
-import { RequestPriority, RequestSource } from "../../shared/enums.ts";
+import { RequestPriority, RequestSource } from "@exaix/core";
 import type {
   IRequestEntry,
   IRequestMetadata,
@@ -26,7 +26,7 @@ import { AnalysisMode } from "../../shared/types/request.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
-import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";
+import { DEFAULT_IDENTITY_ID } from "@exaix/core";
 
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 

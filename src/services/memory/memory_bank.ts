@@ -23,10 +23,10 @@ import {
   MemoryReferenceType,
   MemoryScope,
   type MemoryType,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import {
-  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_GLOBAL_MEMORY_PATH,
   DEFAULT_GLOBAL_MEMORY_VERSION,
@@ -34,7 +34,7 @@ import {
   DEFAULT_PROJECTS_MEMORY_PATH,
   DEFAULT_TASKS_MEMORY_PATH,
   LOCK_ACQUIRE_TIMEOUT_MS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import {
   ExecutionMemorySchema,
   GlobalMemorySchema,

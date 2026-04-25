@@ -1,14 +1,14 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module GitServiceTest
- * @path tests/services/git/git_service_test.ts
+ * @path packages/git/tests/git_service_test.ts
  * @description Verifies the Git service wrapper, ensuring stable execution of
  * version control operations and correct parsing of git status and diff outputs.
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { FlowStepType } from "../../../src/shared/enums.ts";
+import { FlowStepType } from "@exaix/core";
 import {
   GitCorruptionError,
   GitError,
@@ -16,10 +16,10 @@ import {
   GitNothingToCommitError,
   GitRepositoryError,
   GitService,
-} from "../../../src/services/core/git_service.ts";
-import { DEFAULT_GIT_EXIT_CODE_FATAL } from "../../../src/shared/constants.ts";
-import { createMockConfig } from "../../helpers/config.ts";
-import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
+} from "../src/git_service.ts";
+import { DEFAULT_GIT_EXIT_CODE_FATAL } from "@exaix/git";
+import { createMockConfig } from "./helpers/config.ts";
+import { createGitTestContext, GitTestHelper } from "./helpers/git_test_helper.ts";
 
 /**
  * Tests for Step 4.2: Git Integration (Identity Aware)

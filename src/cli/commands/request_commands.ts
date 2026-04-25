@@ -17,7 +17,7 @@ import {
   RequestClarifyHandler,
 } from "../handlers/request_clarify_handler.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { RequestSource } from "../../shared/enums.ts";
+import { RequestSource } from "@exaix/core";
 import {
   AnalysisMode,
   type IRequestEntry,

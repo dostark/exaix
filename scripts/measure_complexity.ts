@@ -150,7 +150,11 @@ export function traverse(node: Node, cb: (n: Node, parent?: Node) => void, paren
 }
 
 // New traversal helper that provides the full ancestor chain to the callback.
-export function traverseWithAncestors(node: Node, cb: (n: Node, ancestors: Node[]) => void, ancestors: Node[] = []): void {
+export function traverseWithAncestors(
+  node: Node,
+  cb: (n: Node, ancestors: Node[]) => void,
+  ancestors: Node[] = [],
+): void {
   if (!node || typeof node !== "object") return;
   cb(node, ancestors);
 

@@ -15,12 +15,12 @@ import {
   DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
   DEFAULT_MEMORY_CRITICAL_PERCENT,
   DEFAULT_MEMORY_WARN_PERCENT,
-} from "../../shared/constants.ts";
-import { HealthCheckVerdict, HealthStatus } from "../../shared/enums.ts";
+} from "@exaix/core";
+import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { EventLogger } from "../core/event_logger.ts";
 import { LogMethod } from "../decorators/logging.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
-import { DEFAULT_MCP_VERSION } from "../../shared/constants.ts";
+import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import type { JSONValue } from "@exaix/core";

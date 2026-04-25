@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { EvaluationCategory, type EvaluationCriterionProperty } from "../shared/enums.ts";
+import { EvaluationCategory, type EvaluationCriterionProperty } from "@exaix/core";
 
 /**
  * Schema for an evaluation criterion

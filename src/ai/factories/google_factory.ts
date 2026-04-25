@@ -8,7 +8,7 @@
 import { AbstractKeyBasedProviderFactory } from "./abstract_provider_factory.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { GoogleProvider } from "../providers/google_provider.ts";
-import { PROVIDER_GOOGLE } from "../../shared/constants.ts";
+import { PROVIDER_GOOGLE } from "@exaix/ai";
 
 export class GoogleProviderFactory extends AbstractKeyBasedProviderFactory {
   constructor() {

@@ -30,15 +30,15 @@ import {
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
   COMPLEXITY_FILE_REF_PATTERN,
   COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
-  DEFAULT_AI_TIMEOUT_MS,
   DEFAULT_ANALYZER_MODE,
   DEFAULT_IDENTITIES_PATH,
-  DEFAULT_MCP_VERSION,
   MEMORY_CONTEXT_KEY,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
+import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type { IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
@@ -64,7 +64,7 @@ import type {
   IRequestAnalyzerConfig,
   IRequestAnalyzerService,
 } from "../../shared/interfaces/i_request_analyzer_service.ts";
-import { ProviderType, RequestKind, TaskComplexity } from "../../shared/enums.ts";
+import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
 
 import type { AnalysisMode } from "../../shared/types/request.ts";
 import type { IRequestQualityGateService } from "../../shared/interfaces/i_request_quality_gate_service.ts";

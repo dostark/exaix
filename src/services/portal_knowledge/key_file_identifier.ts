@@ -9,7 +9,7 @@
  * * @related-files [src/services/portal_knowledge/config_parser.ts, src/services/portal_knowledge/pattern_detector.ts]
  */
 
-import { PORTAL_ENTRYPOINT_NAMES, PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS } from "../../shared/constants.ts";
+import { PORTAL_ENTRYPOINT_NAMES, PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS } from "@exaix/core";
 import type { IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------

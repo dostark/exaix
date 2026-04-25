@@ -6,7 +6,7 @@
  * * @related-files [src/ai/providers.ts]
  */
 
-import { CircuitState } from "../shared/enums.ts";
+import { CircuitState } from "@exaix/core";
 import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 

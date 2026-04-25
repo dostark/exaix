@@ -7,7 +7,7 @@
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ActivityRepository, LogActivityRequest } from "../../../src/repositories/activity_repository.ts";
-import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
+import { ActorType, AgentKind } from "@exaix/core";
 
 /**
  * Tests for Step 55.1: EventLogger field forwarding

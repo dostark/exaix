@@ -13,7 +13,7 @@ import type {
   IPlanAmendmentTrigger,
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
+import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";

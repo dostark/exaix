@@ -12,7 +12,7 @@ import {
   MemoryOperation,
   type MemoryReferenceType as _MemoryReferenceType,
   MemoryScope,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";

@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { JournalFormatter } from "../../src/cli/formatters/journal_formatter.ts";
 import type { ActivityRecord } from "../../src/services/core/db.ts";
 import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
-import { DataFormat, UIOutputFormat } from "../../src/shared/enums.ts";
+import { DataFormat, UIOutputFormat } from "@exaix/core";
 import { captureConsoleOutput } from "./helpers/console_utils.ts";
 import {
   JOURNAL_ACTIVITY_COUNT,

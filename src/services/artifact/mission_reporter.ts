@@ -18,11 +18,11 @@ import {
   DEFAULT_EXECUTION_MEMORY_PATH,
   DEFAULT_MEMORY_PATH,
   DEFAULT_PORTALS_PATH,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
-import { ActivityActor, ExecutionStatus } from "../../shared/enums.ts";
+import { ActivityActor, ExecutionStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { exists } from "@std/fs";

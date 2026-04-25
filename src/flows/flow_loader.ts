@@ -10,9 +10,9 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
-import { StepExecutionMode } from "../shared/enums.ts";
+import { StepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import { WRITE_TOOLS } from "../shared/constants.ts";
+import { WRITE_TOOLS } from "@exaix/mcp";
 
 /**
  * Validate that dynamic steps do not contain write tools in permitted_tools.

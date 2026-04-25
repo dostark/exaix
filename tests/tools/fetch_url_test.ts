@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { stub } from "@std/testing/mock";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry: fetch_url", async (t) => {
   // Mock config with fetch_url enabled

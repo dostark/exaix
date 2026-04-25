@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { GateEvaluateSchema } from "@exaix/schemas/flow.ts";
 import { GateConfigSchema } from "../../src/flows/gate_evaluator.ts";
-import { FlowGateOnFail } from "../../src/shared/enums.ts";
+import { FlowGateOnFail } from "@exaix/core";
 
 const BASE_GATE_EVALUATE = {
   identity: "judge-agent",

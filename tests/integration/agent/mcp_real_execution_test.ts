@@ -14,7 +14,7 @@ import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
-import { SecurityMode } from "../../../src/shared/enums.ts";
+import { SecurityMode } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { ToolRegistryTestHelper } from "../../helpers/tool_registry_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";

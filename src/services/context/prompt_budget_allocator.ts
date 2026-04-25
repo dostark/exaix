@@ -13,7 +13,7 @@ import {
   MODEL_CONTEXT_WINDOWS,
   SECTION_BASE_WEIGHTS,
   SECTION_FLOORS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import {
   type IBudgetPolicy,
   type IPromptBudget,

@@ -6,8 +6,8 @@
  * * @related-files [src/cli/main.ts]
  */
 
-import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "../shared/constants.ts";
-import { RequestPriority, UIOutputFormat } from "../shared/enums.ts";
+import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "@exaix/core";
+import { RequestPriority, UIOutputFormat } from "@exaix/core";
 
 export const MEMORY_COMMAND_DEFAULTS = {
   LIMIT: 20,

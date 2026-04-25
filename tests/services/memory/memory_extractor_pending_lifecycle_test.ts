@@ -16,7 +16,7 @@ import {
   MemoryOperation,
   MemoryReferenceType,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { createMockConfig } from "../../helpers/config.ts";

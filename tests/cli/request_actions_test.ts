@@ -17,7 +17,7 @@ import {
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
 import { EventLogger, type IEventLoggerConfig } from "../../src/services/core/event_logger.ts";
 
-import { LogLevel } from "../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 
 type TestPayload = {
   input_tokens?: number;

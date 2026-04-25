@@ -1,6 +1,6 @@
 /**
  * @module GitServicePortalTest
- * @path tests/services/git/git_service_portal_test.ts
+ * @path packages/git/tests/git_service_portal_test.ts
  * @description Verifies GitService operations within the context of multiple portals,
  * ensuring correct isolation and repository discovery for partitioned datasets.
  */
@@ -9,9 +9,9 @@ import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { GitService } from "../../../src/services/core/git_service.ts";
-import { GitTestHelper } from "../../helpers/git_test_helper.ts";
-import { setupPortalGitRepos } from "../../helpers/portal_test_utils.ts";
+import { GitService } from "../src/git_service.ts";
+import { GitTestHelper } from "./helpers/git_test_helper.ts";
+import { setupPortalGitRepos } from "./helpers/portal_test_utils.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /**

@@ -18,7 +18,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "../../helpers/paths_helper.ts";
 import {

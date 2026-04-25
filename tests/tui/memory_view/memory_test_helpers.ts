@@ -5,7 +5,7 @@
  * verifying execution context state within TUI memory tests.
  */
 
-import type { DialogStatus } from "../../../src/shared/enums.ts";
+import type { DialogStatus } from "@exaix/core";
 import type { IMemoryService } from "../../../src/tui/memory_view/types.ts";
 
 export interface IMemoryViewTestContext {

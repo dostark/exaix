@@ -13,7 +13,7 @@ import {
   RequestSource,
   TaskComplexity,
   TaskType,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import {
   AnalysisMode,

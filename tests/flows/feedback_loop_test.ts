@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowConsensusMethod } from "../../src/shared/enums.ts";
+import { FlowConsensusMethod } from "@exaix/core";
 import {
   createFeedbackLoop,
   FeedbackLoop,

@@ -8,7 +8,7 @@
 
 import type { DatabaseService } from "../core/db.ts";
 import { dirname, join } from "@std/path";
-import type { SecurityEventResult, SecurityEventType, SecuritySeverity } from "../../shared/enums.ts";
+import type { SecurityEventResult, SecurityEventType, SecuritySeverity } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
 // ============================================================================

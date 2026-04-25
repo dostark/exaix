@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import {
@@ -16,7 +16,7 @@ import {
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 import { getMemoryExecutionDir } from "../helpers/paths_helper.ts";

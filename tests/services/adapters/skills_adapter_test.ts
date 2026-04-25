@@ -11,7 +11,7 @@ import { spy } from "@std/testing/mock";
 
 import { SkillsAdapter } from "../../../src/services/adapters/skills_adapter.ts";
 import type { SkillsService } from "../../../src/services/skills/skills.ts";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "../../../src/shared/enums.ts";
+import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import type { ISkill, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 
 interface SpyLike {

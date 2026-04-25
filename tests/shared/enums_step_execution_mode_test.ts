@@ -5,8 +5,8 @@
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { McpToolName, StepExecutionMode } from "../../src/shared/enums.ts";
-import { READ_ONLY_TOOLS, WRITE_TOOLS } from "../../src/shared/constants.ts";
+import { StepExecutionMode } from "@exaix/core";
+import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 
 /**
  * Tests for Phase 56 Step 1.1-1.4: Schema and Enum Updates

@@ -15,7 +15,7 @@ import {
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PLAN_AMENDMENT_EVENT_REJECTED,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 
 describe("Plan Amendment CLI", () => {
   let tempDir: string;

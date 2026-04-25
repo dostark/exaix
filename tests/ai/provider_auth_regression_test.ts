@@ -10,7 +10,7 @@ import { AnthropicProviderFactory } from "../../src/ai/factories/anthropic_facto
 import { GoogleProviderFactory } from "../../src/ai/factories/google_factory.ts";
 import { OpenAIProviderFactory } from "../../src/ai/factories/openai_factory.ts";
 import type { IResolvedProviderOptions } from "../../src/ai/types.ts";
-import { MockStrategy, ProviderType } from "../../src/shared/enums.ts";
+import { MockStrategy, ProviderType } from "@exaix/core";
 import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
 import * as TEST_CONSTANTS from "../config/constants.ts";
 

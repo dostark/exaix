@@ -7,7 +7,7 @@
  */
 
 import { join, normalize } from "@std/path";
-import { FileOperation } from "../../shared/enums.ts";
+import { FileOperation } from "@exaix/core";
 
 /**
  * Represents a file change to be applied

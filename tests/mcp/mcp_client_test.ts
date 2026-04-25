@@ -5,7 +5,7 @@
  */
 import { assertEquals, assertRejects } from "@std/assert";
 import { McpClient } from "../../src/mcp/mcp_client.ts";
-import { McpToolName } from "../../src/shared/enums.ts";
+import { McpToolName } from "@exaix/mcp";
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { JSONValue } from "../../src/shared/types/json.ts";

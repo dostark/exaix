@@ -8,7 +8,7 @@
 
 import type { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
 import type { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
-import { DaemonStatus } from "../../shared/enums.ts";
+import { DaemonStatus } from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 

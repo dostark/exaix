@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { EvaluationVerdict } from "../../src/shared/enums.ts";
+import { EvaluationVerdict } from "@exaix/core";
 import { CircuitBreaker, CircuitBreakerProvider } from "../../src/ai/circuit_breaker.ts";
 import type { IModelOptions } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";

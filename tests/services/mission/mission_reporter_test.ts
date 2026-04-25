@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { ExecutionStatus, MemoryOperation, PortalOperation } from "../../../src/shared/enums.ts";
+import { ExecutionStatus, MemoryOperation, PortalOperation } from "@exaix/core";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";

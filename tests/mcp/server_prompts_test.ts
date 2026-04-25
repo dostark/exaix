@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MemoryBankSource } from "../../src/shared/enums.ts";
+import { MemoryBankSource } from "@exaix/core";
 import { initSimpleMCPServer } from "./helpers/test_setup.ts";
 
 type IMCPServerTestContext = Awaited<ReturnType<typeof initSimpleMCPServer>>;

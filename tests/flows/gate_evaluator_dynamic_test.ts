@@ -11,9 +11,9 @@ import type { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
-import { FlowGateOnFail } from "../../src/shared/enums.ts";
+import { FlowGateOnFail } from "@exaix/core";
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 
 const BASE_CONFIG: GateConfig = {
   identity: "judge-agent",

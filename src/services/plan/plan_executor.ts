@@ -18,13 +18,10 @@ import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";
 import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
-import { ActivityActor, ExecutionStatus, SecurityMode } from "../../shared/enums.ts";
+import { ActivityActor, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
-  DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
-  GIT_CMD_REV_PARSE,
-  GIT_ERROR_NOTHING_TO_COMMIT,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PORTAL_ALIAS_WORKSPACE,
@@ -32,14 +29,15 @@ import {
   PROMPT_PLAN_STEP_TASK_PREFIX,
   REPORT_GENERATION_MAX_TOKENS,
   REPORT_GENERATION_TEMPERATURE,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
+import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE, GIT_ERROR_NOTHING_TO_COMMIT } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import { DEFAULT_AMENDMENT_THRESHOLD } from "../../shared/constants.ts";
+import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { PlanAmendmentPendingError } from "./errors.ts";
 
 export interface IPlanStep {

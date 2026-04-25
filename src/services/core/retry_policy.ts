@@ -14,12 +14,8 @@
  */
 
 import { z } from "zod";
-import {
-  DEFAULT_AI_TIMEOUT_MS,
-  RETRYABLE_ERROR_TYPES,
-  RETRYABLE_HTTP_STATUS_CODES,
-  RETRYABLE_MESSAGE_PATTERNS,
-} from "../../shared/constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { RETRYABLE_ERROR_TYPES, RETRYABLE_HTTP_STATUS_CODES, RETRYABLE_MESSAGE_PATTERNS } from "@exaix/core";
 
 // ============================================================================
 // Types

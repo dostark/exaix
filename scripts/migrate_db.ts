@@ -10,7 +10,7 @@
 import { Database } from "@db/sqlite";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { MigrationDirection } from "../src/shared/enums.ts";
+import { MigrationDirection } from "@exaix/core";
 
 import { ConfigService } from "../src/config/service.ts";
 

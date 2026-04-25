@@ -12,7 +12,7 @@
 
 import { walk } from "@std/fs";
 import { extname, join, normalize } from "@std/path";
-import { MarkdownListKind, Severity } from "../src/shared/enums.ts";
+import { MarkdownListKind, Severity } from "@exaix/core";
 
 export interface IFinding {
   filePath: string;

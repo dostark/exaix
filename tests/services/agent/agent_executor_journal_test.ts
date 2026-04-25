@@ -8,13 +8,13 @@ import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
-import { ActorType, AgentKind } from "../../../src/shared/enums.ts";
+import { ActorType, AgentKind } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_STARTED,
   AGENT_EVENT_OUTPUT,
   AGENT_EVENT_SECURITY_VIOLATION,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import type { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";

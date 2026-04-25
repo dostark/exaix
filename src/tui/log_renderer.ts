@@ -6,22 +6,10 @@
  * * @related-files [src/tui/monitor_view.ts, src/tui/structured_log_viewer.ts]
  */
 
-import {
-  CLI_SEPARATOR_WIDE,
-  LOG_RENDERER_MAX_MESSAGE_LENGTH,
-  LOG_RENDERER_SEPARATOR_LENGTH,
-  LOG_RENDERER_TRACE_ID_LENGTH,
-  TIME_MS_PER_HOUR,
-  TIME_MS_PER_MINUTE,
-  TIME_MS_PER_SECOND,
-} from "../shared/constants.ts";
 import { ANSI, colorize, type ITuiTheme } from "./helpers/colors.ts";
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
-import { LogLevel, TuiColorName } from "../shared/enums.ts";
+import { LogLevel, TuiColorName } from "@exaix/core";
 
-/**
- * Log rendering options
- */
 export interface ILogRenderOptions {
   /** Whether to show timestamps */
   showTimestamp: boolean;
@@ -38,6 +26,32 @@ export interface ILogRenderOptions {
   /** Theme for coloring */
   theme: ITuiTheme;
 }
+
+export interface ILogRenderOptions {
+  /** Whether to show timestamps */
+  showTimestamp: boolean;
+  /** Whether to show context badges */
+  showContext: boolean;
+  /** Whether to show performance metrics */
+  showPerformance: boolean;
+  /** Whether to use colors */
+  useColors: boolean;
+  /** Maximum message length */
+  maxMessageLength: number;
+  /** Whether to truncate long messages */
+  truncateMessages: boolean;
+  /** Theme for coloring */
+  theme: ITuiTheme;
+}
+
+const LOG_RENDERER_MAX_MESSAGE_LENGTH = 100;
+const LOG_RENDERER_TRACE_ID_LENGTH = 8;
+const LOG_RENDERER_SEPARATOR_LENGTH = 50;
+const LOG_RENDERER_SEPARATOR_WIDTH = 80;
+
+const TIME_MS_PER_SECOND = 1000;
+const TIME_MS_PER_MINUTE = 60_000;
+const TIME_MS_PER_HOUR = 3_600_000;
 
 /**
  * Default rendering options
@@ -214,7 +228,7 @@ export function renderDetailedLogEntry(entry: IStructuredLogEntry, options: Part
   lines.push(renderLogEntry(entry, opts));
 
   // Separator
-  lines.push(colorize("─".repeat(CLI_SEPARATOR_WIDE), opts.theme.border, opts.theme.reset));
+  lines.push(colorize("─".repeat(LOG_RENDERER_SEPARATOR_WIDTH), opts.theme.border, opts.theme.reset));
 
   // Context details()()
   if (Object.keys(entry.context).some((key) => entry.context[key as keyof typeof entry.context])) {
@@ -392,7 +406,7 @@ export function renderCorrelationVisualization(
   const lines: string[] = [];
 
   lines.push(colorize(`Correlation: ${correlationId}`, opts.theme.h1, opts.theme.reset));
-  lines.push(colorize("═".repeat(CLI_SEPARATOR_WIDE), opts.theme.border, opts.theme.reset));
+  lines.push(colorize("═".repeat(LOG_RENDERER_SEPARATOR_WIDTH), opts.theme.border, opts.theme.reset));
 
   // Sort by timestamp
   const sortedEntries = entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());

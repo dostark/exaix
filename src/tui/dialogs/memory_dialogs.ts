@@ -18,8 +18,8 @@ import {
   renderProposalInfo,
   setupDialogRender,
 } from "../helpers/dialog_base.ts";
-import { DialogStatus, MemoryScope } from "../../shared/enums.ts";
-import { DEFAULT_DESCRIPTION_PLACEHOLDER } from "../../shared/constants.ts";
+import { DialogStatus, MemoryScope } from "@exaix/core";
+import { DEFAULT_DESCRIPTION_PLACEHOLDER } from "@exaix/core";
 
 // ===== Dialog Types =====
 

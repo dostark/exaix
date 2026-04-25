@@ -5,7 +5,7 @@
  * simulating daemon state, lifecycle operations, and activity logs.
  */
 
-import type { DaemonStatus } from "../../src/shared/enums.ts";
+import type { DaemonStatus } from "@exaix/core";
 import { DaemonControlView, MinimalDaemonServiceMock } from "../../src/tui/daemon_control_view.ts";
 
 export function setupDaemonTest(options: {

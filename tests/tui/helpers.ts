@@ -56,14 +56,14 @@ import {
   RequestPriority,
   RequestSource,
   SkillStatus,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import type { IMemoryService } from "../../src/shared/interfaces/i_memory_service.ts";
 import { MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import type { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
 import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
 import type { IJournalService } from "../../src/shared/interfaces/i_journal_service.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
-import type { PortalAnalysisMode } from "../../src/shared/enums.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
+import type { PortalAnalysisMode } from "@exaix/core";
 
 export interface IPortalInfoOverrides {
   alias?: string;

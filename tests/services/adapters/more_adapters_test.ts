@@ -12,7 +12,7 @@ import { MemoryExtractorAdapter } from "../../../src/services/adapters/memory_ex
 import { ConfigService } from "../../../src/config/service.ts";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
-import { MemoryType, PortalExecutionStrategy } from "../../../src/shared/enums.ts";
+import { MemoryType, PortalExecutionStrategy } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 
 function cast<T>(obj: any): T {

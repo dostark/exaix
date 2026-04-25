@@ -12,7 +12,7 @@ import {
   FlowNamespaceService,
   NamespaceQuotaExceededError,
 } from "../../../src/services/flow/flow_namespace_service.ts";
-import { DEFAULT_NAMESPACE_MAX_BYTES } from "../../../src/shared/constants.ts";
+import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 
 Deno.test("FlowNamespaceService rejects writes that exceed the namespace quota before persisting", async () => {

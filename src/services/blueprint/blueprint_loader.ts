@@ -11,9 +11,10 @@ import { basename, join } from "@std/path";
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
-import { DataFormat, McpToolName } from "../../shared/enums.ts";
+import { DataFormat } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH } from "../../shared/constants.ts";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH } from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint

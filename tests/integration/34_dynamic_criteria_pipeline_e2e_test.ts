@@ -9,15 +9,9 @@
  * @architectural-layer Tests
  * * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
  */
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 import { assert, assertEquals, assertGreater, assertStringIncludes } from "@std/assert";
-import {
-  CritiqueQuality,
-  FlowGateOnFail,
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepType,
-} from "../../src/shared/enums.ts";
+import { CritiqueQuality, FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import {
   FlowRunner,
@@ -34,7 +28,7 @@ import type {
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
 import type { ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";
-import { EvaluationCategory } from "../../src/shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";

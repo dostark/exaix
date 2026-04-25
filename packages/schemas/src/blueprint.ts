@@ -7,8 +7,9 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core/shared/constants.ts";
-import { ActivityActor, McpToolName, TaskType } from "@exaix/core/shared/enums.ts";
+import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
+import { ActivityActor, TaskType } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 
 // ============================================================================
 // Blueprint Interfaces

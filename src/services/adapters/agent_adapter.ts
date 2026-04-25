@@ -9,10 +9,10 @@
 import { BaseCommand, type ICommandContext } from "../../cli/base.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { ActivityActor, AgentHealth } from "../../shared/enums.ts";
+import { ActivityActor, AgentHealth } from "@exaix/core";
 import { AgentStatus } from "../../shared/status/agent_status.ts";
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../shared/types/agent.ts";
-import { DEFAULT_AGENT_MODEL } from "../../shared/constants.ts";
+import { DEFAULT_AGENT_MODEL } from "@exaix/core";
 import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
 
 export class AgentServiceAdapter extends BaseCommand implements IAgentService {

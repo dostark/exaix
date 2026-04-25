@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix/core";
 import {
   FlowAbortError,
   FlowExecutionError,
@@ -19,13 +19,8 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import { RetryPolicy } from "../../src/services/core/retry_policy.ts";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FLOW_EVENT_STEP_RETRY,
-  PROVIDER_ANTHROPIC,
-  PROVIDER_OPENAI,
-} from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_STEP_RETRY } from "@exaix/core";
+import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
 import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";

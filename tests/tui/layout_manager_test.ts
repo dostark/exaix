@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { DaemonStatus, LayoutMode, ResizeDirection, SplitDirection } from "../../src/shared/enums.ts";
+import { DaemonStatus, LayoutMode, ResizeDirection, SplitDirection } from "@exaix/core";
 import {
   createLayoutManager,
   type ILayoutPane,

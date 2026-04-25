@@ -6,10 +6,10 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "../../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
 import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 // Test FlowStep schema validation
 Deno.test("FlowStepSchema: validates valid step definition", () => {

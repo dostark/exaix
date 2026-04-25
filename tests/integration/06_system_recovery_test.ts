@@ -6,7 +6,8 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { FlowStepType, McpToolName, MemoryOperation, PortalOperation } from "../../src/shared/enums.ts";
+import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { DatabaseService } from "../../src/services/core/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 

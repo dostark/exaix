@@ -12,7 +12,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { join } from "@std/path";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { initTestDbService } from "../../helpers/db.ts";

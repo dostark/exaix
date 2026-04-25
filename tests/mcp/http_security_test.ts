@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { McpTransportType } from "../../src/shared/enums.ts";
+import { McpTransportType } from "@exaix/mcp";
 
 import { MCPServer } from "../../src/mcp/server.ts";
 import { initTestDbService } from "../helpers/db.ts";

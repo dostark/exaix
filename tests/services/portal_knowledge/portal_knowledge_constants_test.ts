@@ -21,7 +21,7 @@ import {
   PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS,
   PORTAL_KNOWLEDGE_PRIORITY_PATTERNS,
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Numeric constants — correct types and sensible values

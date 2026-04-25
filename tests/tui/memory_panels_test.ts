@@ -16,7 +16,7 @@ import {
   MemoryReferenceType,
   MemoryScope,
   MemoryType,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 
 import {
   type IPanelRenderOptions,
@@ -37,7 +37,7 @@ import type {
   IMemoryUpdateProposal,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 const defaultOptions: IPanelRenderOptions = {
   width: 80,

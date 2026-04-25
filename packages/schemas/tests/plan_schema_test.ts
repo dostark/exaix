@@ -5,8 +5,8 @@
  * validation of step definitions, tool arguments, and human-review state.
  */
 
+import { McpToolName } from "@exaix/mcp";
 import { describe, it } from "@std/testing/bdd";
-import { McpToolName } from "../../../src/shared/enums.ts";
 
 import { assertEquals, assertExists } from "@std/assert";
 import type { ZodError } from "zod";

@@ -8,7 +8,7 @@
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
 import { TokenCounter } from "../../../src/services/context/token_counter.ts";
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../../src/shared/constants.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
 // ============================================================================
 // Test 1: Heuristic token counting uses 4:1 char ratio

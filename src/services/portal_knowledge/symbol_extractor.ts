@@ -12,8 +12,8 @@
  */
 
 import type { ISymbolEntry } from "@exaix/schemas/portal_knowledge.ts";
-import { SystemCommand } from "../../shared/enums.ts";
-import { DEFAULT_SYMBOL_MAP_LIMIT, LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
+import { SystemCommand } from "@exaix/core";
+import { DEFAULT_SYMBOL_MAP_LIMIT, LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,7 +87,7 @@ export interface IDenoDocNode {
   jsDoc?: IDenoDocJsDoc;
 }
 
-import { DENO_DOC_TIMEOUT_MS } from "../../shared/constants.ts";
+import { DENO_DOC_TIMEOUT_MS } from "@exaix/core";
 
 class DenoDocCommandRunner implements IDocCommandRunner {
   async run(entrypoint: string, portalPath: string): Promise<string | null> {

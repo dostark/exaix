@@ -9,7 +9,7 @@
  */
 
 import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
-import { EvaluationCategory } from "../../shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 import type { ICriteriaGeneratorService } from "../../shared/interfaces/i_criteria_generator_service.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
@@ -19,7 +19,7 @@ import {
   DEFAULT_GOAL_WEIGHT,
   MAX_DYNAMIC_CRITERIA,
   PRIORITY_1_GOAL_WEIGHT,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 
 const PRIORITY_1 = 1;
 const PRIORITY_REQUIRED_THRESHOLD = 2;

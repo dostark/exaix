@@ -10,12 +10,12 @@ import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { PortalService } from "../../../src/services/portal/portal.ts";
-import { ExaPathDefaults } from "../../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
 import type { IContextCardGeneratorService } from "../../../src/shared/interfaces/i_context_card_generator_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
+import { PortalAnalysisMode } from "@exaix/core";
 
 function makeMockContextCardGenerator(): IContextCardGeneratorService {
   return { generate: () => Promise.resolve() };

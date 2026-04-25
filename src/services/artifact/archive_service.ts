@@ -8,7 +8,7 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { z } from "zod";
-import { ArchiveStatus } from "../../shared/enums.ts";
+import { ArchiveStatus } from "@exaix/core";
 
 export const ArchiveEntrySchema = z.object({
   trace_id: z.string().uuid(),

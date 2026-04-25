@@ -8,7 +8,7 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "../../integration/helpers/test_environment.ts";
 import { join } from "@std/path";
-import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
+import { MockStrategy, PortalOperation } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt", async () => {

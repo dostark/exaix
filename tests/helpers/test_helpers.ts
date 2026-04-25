@@ -16,10 +16,10 @@ import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
 import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
 import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import type { PortalExecutionStrategy } from "../../src/shared/enums.ts";
+import type { PortalExecutionStrategy } from "@exaix/core";
 import type { JSONObject, JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
-import { LogLevel, PortalOperation } from "../../src/shared/enums.ts";
+import { ExaPathDefaults } from "@exaix/core";
+import { LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 

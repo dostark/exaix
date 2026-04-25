@@ -13,7 +13,7 @@ import {
   PLAN_AMENDMENT_EVENT_EXPIRED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PLAN_AMENDMENT_EVENT_REJECTED,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 
 Deno.test("all 6 PLAN_AMENDMENT_EVENT_* constants have correct string values", () => {
   assertEquals(PLAN_AMENDMENT_EVENT_PROPOSED, "plan.amendment.proposed");

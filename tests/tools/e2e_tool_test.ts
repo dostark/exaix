@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { stub } from "@std/testing/mock";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry: E2E Workflow", async (t) => {
   const tempDir = await Deno.makeTempDir();

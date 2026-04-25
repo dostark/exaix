@@ -12,7 +12,7 @@
  * * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
  */
 
-import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "../../shared/constants.ts";
+import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
 import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";

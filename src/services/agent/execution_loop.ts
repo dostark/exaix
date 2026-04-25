@@ -20,7 +20,8 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IModelProvider } from "../../ai/types.ts";
-import { GitService, type IGitService } from "../core/git_service.ts";
+import { GitService } from "../core/git_service.ts";
+import type { IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
@@ -29,7 +30,7 @@ import type { ReviewRegistry } from "../artifact/review_registry.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MissionReporter } from "../artifact/mission_reporter.ts";
 import { PlanExecutor } from "../plan/plan_executor.ts";
-import { ExecutionStatus, PortalExecutionStrategy } from "../../shared/enums.ts";
+import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/structured_plan_parser.ts";
 import { isReadOnlyAgentCapabilities } from "./agent_capabilities.ts";
@@ -45,9 +46,9 @@ import {
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
   EXECUTION_REPORT_FILENAME,
-  GIT_CMD_WORKTREE,
   PLAN_AMENDMENT_EVENT_EXPIRED,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
+import { GIT_CMD_WORKTREE } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 
 /** Represents raw YAML frontmatter before validation */

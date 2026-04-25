@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "../../src/shared/enums.ts";
+import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
 import {
   FlowRunner,
   type IAgentExecutor,
@@ -19,7 +19,7 @@ import type { IAgentExecutionResult } from "../../src/services/agent/agent_runne
 import type { JSONValue } from "../../src/shared/types/json.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
-import { ANALYZER_VERSION } from "../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 
 // ============================================================
 // Mock infrastructure

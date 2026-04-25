@@ -6,9 +6,9 @@
  * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 import type { IExecutionMemory, ILearning, IMemorySearchResult, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import { MemoryType } from "../../shared/enums.ts";
+import { MemoryType } from "@exaix/core";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
-import { DEFAULT_QUERY_LIMIT, DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
+import { DEFAULT_QUERY_LIMIT, DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 
 export interface ISearchDeps {
   projectsDir: string;

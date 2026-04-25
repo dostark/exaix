@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { MessageType, SpinnerStyle, StatusIndicator } from "../../../src/shared/enums.ts";
+import { MessageType, SpinnerStyle, StatusIndicator } from "@exaix/core";
 import {
   addStatusLine,
   clearStatusMessage,

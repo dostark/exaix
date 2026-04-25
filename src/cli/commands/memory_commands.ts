@@ -6,12 +6,12 @@
  * * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
  */
 
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "../../shared/constants.ts";
+import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import { MemoryAutoApprovalAdapter } from "../../services/adapters/memory_auto_approval_adapter.ts";
-import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus, UIOutputFormat } from "../../shared/enums.ts";
+import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus, UIOutputFormat } from "@exaix/core";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";

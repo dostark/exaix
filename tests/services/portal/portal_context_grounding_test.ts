@@ -12,7 +12,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
-import { MockStrategy, PortalOperation } from "../../../src/shared/enums.ts";
+import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";

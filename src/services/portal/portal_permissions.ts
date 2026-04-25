@@ -22,7 +22,7 @@ import {
   SecurityEventType,
   SecurityMode,
   SecuritySeverity,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 import { toSafeJson } from "../../shared/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 

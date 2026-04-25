@@ -21,7 +21,7 @@ import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "../../src/ai/providers.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { ExecutionStrategyName, SecurityMode } from "../../src/shared/enums.ts";
+import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 const TEST_OPTIONS: IAgentExecutionOptions = {

@@ -9,8 +9,8 @@ import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import { ConfigService } from "../../src/config/service.ts";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";
-import { SqliteJournalMode } from "../../src/shared/enums.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { SqliteJournalMode } from "@exaix/core";
+import { ExaPathDefaults } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**

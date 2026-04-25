@@ -18,7 +18,7 @@ import { RequestStatus } from "../../../src/shared/status/request_status.ts";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { QualityGateMode, RequestSource } from "../../../src/shared/enums.ts";
+import { QualityGateMode, RequestSource } from "@exaix/core";
 import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import {

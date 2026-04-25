@@ -13,7 +13,7 @@ import type {
 } from "../../src/shared/interfaces/i_log_service.ts";
 import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "../../src/shared/types/logging.ts";
 import type { LogMetadata } from "../../src/shared/types/json.ts";
-import { LogLevel } from "../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { InputDialog } from "../../src/tui/helpers/dialog_base.ts";
 

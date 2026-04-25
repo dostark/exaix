@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { OpenAIProvider } from "../../src/ai/providers/openai_provider.ts";
 import { AnthropicProvider } from "../../src/ai/providers/anthropic_provider.ts";
 import { GoogleProvider } from "../../src/ai/providers/google_provider.ts";
-import * as DEFAULTS from "../../src/shared/constants.ts";
+import * as DEFAULTS from "@exaix/ai";
 
 Deno.test("[regression] verify default openai model is gpt-5-mini", () => {
   const provider = new OpenAIProvider({ apiKey: "test-key" });

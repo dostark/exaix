@@ -29,7 +29,7 @@ import {
   PortalStatus,
   TuiIcon,
   TuiNodeType,
-} from "../shared/enums.ts";
+} from "@exaix/core";
 import { formatKnowledge } from "../shared/formatters/portal_knowledge.ts";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,

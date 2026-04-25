@@ -13,7 +13,7 @@ import {
   MODEL_CONTEXT_WINDOWS,
   SECTION_BASE_WEIGHTS,
   SECTION_FLOORS,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 
 // ============================================================================
 // Test 1: Base allocation respects model windows and safety buffer

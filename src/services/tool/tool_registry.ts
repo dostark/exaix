@@ -11,15 +11,10 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
-import { ActivityActor, GitBranchName, LogLevel, SystemCommand, ToolName } from "../../shared/enums.ts";
-import {
-  BYTES_PER_KB,
-  DEFAULT_MCP_IDENTITY_ID,
-  GIT_CMD_BRANCH,
-  GIT_CMD_REV_PARSE,
-  GIT_CMD_STATUS,
-  PORTAL_PREFIX_PATTERN,
-} from "../../shared/constants.ts";
+import { ActivityActor, BYTES_PER_KB, LogLevel, SystemCommand, ToolName } from "@exaix/core";
+import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
+import { PORTAL_PREFIX_PATTERN } from "@exaix/core";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";

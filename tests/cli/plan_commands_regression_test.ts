@@ -10,12 +10,12 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createStubConfig } from "../helpers/test_helpers.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 import type { IPlanMetadata } from "../../src/shared/types/plan.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { LogLevel } from "../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 
 const TEST_AGENT_ID = "test-agent";
 const TEST_CREATED_AT = "2026-01-17T00:00:00.000Z";

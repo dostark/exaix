@@ -5,7 +5,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { MemoryBankSource } from "../../src/shared/enums.ts";
+import { MemoryBankSource } from "@exaix/core";
 
 import { initActivityTableSchema, initTestDbService } from "../helpers/db.ts";
 import { DatabaseService } from "../../src/services/core/db.ts";

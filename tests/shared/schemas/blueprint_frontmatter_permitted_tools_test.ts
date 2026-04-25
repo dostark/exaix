@@ -4,9 +4,10 @@
  * @description Verifies BlueprintFrontmatterSchema supports permitted_tools field for Phase 56 dynamic tool selection.
  */
 
+import { McpToolName } from "@exaix/mcp";
+
 import { assertEquals, assertThrows } from "@std/assert";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
-import { McpToolName } from "../../../src/shared/enums.ts";
 
 /**
  * Tests for Phase 56 Step 1.3: BlueprintFrontmatterSchema Updates

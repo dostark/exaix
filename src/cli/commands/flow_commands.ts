@@ -10,7 +10,7 @@ import { Table } from "@cliffy/table";
 import { join } from "@std/path";
 import { FlowLoader } from "../../flows/flow_loader.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import { DEFAULT_NONE_LABEL } from "../../shared/constants.ts";
+import { DEFAULT_NONE_LABEL } from "@exaix/core";
 import { BaseCommand } from "../base.ts";
 import type { ICliApplicationContext } from "../cli_context.ts";
 

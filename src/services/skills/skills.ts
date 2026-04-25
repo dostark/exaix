@@ -12,9 +12,9 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
-import { ActivityActor, type MemoryBankSource, MemoryScope, SkillStatus } from "../../shared/enums.ts";
+import { ActivityActor, type MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import { extractKeywords } from "../../helpers/text.ts";
-import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILL_INDEX_VERSION } from "../../shared/constants.ts";
+import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 import {
   type ISkill,
   type ISkillIndex,

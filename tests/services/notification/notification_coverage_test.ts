@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { createStubDb } from "../../helpers/test_helpers.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { NotificationService } from "../../../src/services/notification/notification.ts";
-import { MemoryScope } from "../../../src/shared/enums.ts";
+import { MemoryScope } from "@exaix/core";
 import { type JSONValue, toSafeJson } from "../../../src/shared/types/json.ts";
 
 interface NotificationRow {

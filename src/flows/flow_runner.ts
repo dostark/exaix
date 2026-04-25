@@ -20,7 +20,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { FlowInputSource, FlowStepOnErrorAction, FlowStepType, StepExecutionMode } from "../shared/enums.ts";
+import { FlowInputSource, FlowStepOnErrorAction, FlowStepType, StepExecutionMode } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "../journal/activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
@@ -57,7 +57,7 @@ import {
   FLOW_EVENT_STEP_RETRY,
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_VALIDATION_FAILED,
-} from "../shared/constants.ts";
+} from "@exaix/core";
 
 /**
  * Interface for agent executors (AgentRunner or similar)

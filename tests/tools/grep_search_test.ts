@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry: grep_search", async (t) => {
   // Setup temp directory with fixtures

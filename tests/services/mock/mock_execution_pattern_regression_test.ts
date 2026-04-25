@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
-import { MockStrategy } from "../../../src/shared/enums.ts";
+import { MockStrategy } from "@exaix/core";
 
 const TAG_THOUGHT = "<thought>";
 const TAG_CONTENT = "<content>";

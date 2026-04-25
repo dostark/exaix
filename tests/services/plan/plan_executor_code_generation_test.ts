@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MemoryOperation } from "../../../src/shared/enums.ts";
+import { MemoryOperation } from "@exaix/core";
 import { join } from "@std/path";
 
 Deno.test("Plan Executor - Code Generation", async (t) => {

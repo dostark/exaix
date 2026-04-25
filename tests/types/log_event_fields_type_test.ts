@@ -8,7 +8,7 @@
  * If any field is renamed or removed, `deno check` will fail.
  */
 
-import { ActorType, AgentKind } from "../../src/shared/enums.ts";
+import { ActorType, AgentKind } from "@exaix/core";
 import type { ILogEvent, IServiceContext } from "../../src/services/common/types.ts";
 
 // ============================================================================

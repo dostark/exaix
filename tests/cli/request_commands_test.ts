@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { CritiqueSeverity, RequestPriority, RequestSource } from "../../src/shared/enums.ts";
+import { CritiqueSeverity, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";

@@ -6,7 +6,8 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
-import { McpToolName, StepExecutionMode } from "../../../src/shared/enums.ts";
+import { StepExecutionMode } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 
 /**
  * Tests for Phase 56 Step 1.2: FlowStepSchema Updates

@@ -9,14 +9,14 @@ import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loo
 import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
-import { ExecutionStrategyName, SecurityMode, ToolName } from "../../src/shared/enums.ts";
+import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 
 class MockModelProvider implements IModelProvider {

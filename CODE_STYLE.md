@@ -6,7 +6,7 @@ copilot_knowledge_base: true
 version: 1.1
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
-  - "src/shared/constants.ts"
+  - "packages/core/src/constants.ts"
   - "scripts/check_code_style.ts"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---

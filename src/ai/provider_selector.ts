@@ -12,7 +12,7 @@ import type { CostTracker } from "../services/cost/cost_tracker.ts";
 import type { HealthCheckService } from "../services/core/health_check_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { getValidatedEnvOverrides, isCIMode, isTestMode } from "../config/env_schema.ts";
-import { PricingTier, ProviderCostTier, TaskComplexity } from "../shared/enums.ts";
+import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 
 /**
  * Criteria for selecting a provider

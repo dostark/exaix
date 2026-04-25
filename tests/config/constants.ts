@@ -11,7 +11,7 @@
 // This module contains constants used exclusively in test files.
 // For production constants, see src/config/constants.ts
 
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 
 // Test Prompts
 export const REGRESSION_TEST_PROMPT = "Hello, reply with 'OK'";

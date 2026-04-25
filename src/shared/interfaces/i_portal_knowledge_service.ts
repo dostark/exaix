@@ -9,7 +9,7 @@
  */
 
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { PortalAnalysisMode } from "../enums.ts";
+import type { PortalAnalysisMode } from "@exaix/core";
 
 /**
  * Configuration for the PortalKnowledgeService.

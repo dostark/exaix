@@ -6,7 +6,7 @@
  * * @related-files [src/tui/tui_dashboard.ts]
  */
 
-import { MessageType } from "../../shared/enums.ts";
+import { MessageType } from "@exaix/core";
 import type { IPane, ITuiView } from "../tui_dashboard.ts";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
 

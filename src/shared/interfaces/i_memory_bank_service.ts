@@ -6,7 +6,7 @@
  * * @related-files [src/shared/schemas/memory_bank.ts]
  */
 
-import type { MemoryType } from "../enums.ts";
+import type { MemoryType } from "@exaix/core";
 import type {
   IActivitySummary,
   IDecision,

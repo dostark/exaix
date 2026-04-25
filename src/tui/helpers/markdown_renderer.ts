@@ -6,7 +6,7 @@
  * * @related-files [src/enums.ts, src/helpers/constants.ts]
  */
 
-import { ConfidenceLevel } from "../../shared/enums.ts";
+import { ConfidenceLevel } from "@exaix/core";
 import { TUI_LAYOUT_FULL_WIDTH } from "./constants.ts";
 import { ANSI } from "./colors.ts";
 

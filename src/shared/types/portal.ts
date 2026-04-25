@@ -6,7 +6,7 @@
  * * @related-files [src/shared/interfaces/i_portal_service.ts]
  */
 
-import type { PortalExecutionStrategy, PortalStatus, VerificationStatus } from "../enums.ts";
+import type { PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
 
 /**
  * Basic information about a portal.

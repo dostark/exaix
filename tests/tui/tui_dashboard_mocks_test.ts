@@ -18,7 +18,7 @@ import {
   MockStructuredLoggerService,
 } from "../../src/tui/tui_dashboard_mocks.ts";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
-import { RequestPriority } from "../../src/shared/enums.ts";
+import { RequestPriority } from "@exaix/core";
 import type { IStructuredLogEntry } from "../../src/shared/types/logging.ts";
 import {
   TEST_MODEL_OPENAI,

@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import {
   FlowRunner,
   type IAgentExecutor,
@@ -20,7 +20,7 @@ import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,
   FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 
 class CapturingExecutor implements IAgentExecutor {

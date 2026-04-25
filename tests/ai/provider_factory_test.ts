@@ -12,7 +12,7 @@ import { ProviderFactoryError } from "../../src/ai/errors.ts";
 import type { IGenerateResult } from "../../src/ai/types.ts";
 import { RateLimitError } from "../../src/ai/rate_limited_provider.ts";
 import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
-import { DaemonStatus, MockStrategy, ProviderType } from "../../src/shared/enums.ts";
+import { DaemonStatus, MockStrategy, ProviderType } from "@exaix/core";
 
 import { AiConfigSchema } from "@exaix/schemas/ai_config.ts";
 import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";

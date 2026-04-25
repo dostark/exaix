@@ -8,10 +8,10 @@
 
 import { z } from "zod";
 import { type EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
-import { FlowGateOnFail, GeneralStatus } from "../shared/enums.ts";
+import { FlowGateOnFail, GeneralStatus } from "@exaix/core";
 import type { GateEvaluator } from "./gate_evaluator.ts";
 import type { IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
-import { ICON_FAILURE, ICON_SUCCESS } from "../shared/constants.ts";
+import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import type { CriterionResult } from "./evaluation_criteria.ts";
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import { assert, assertStringIncludes } from "@std/assert";
-import { FlowInputSource } from "../../src/shared/enums.ts";
+import { FlowInputSource } from "@exaix/core";
 import { readUserGuide } from "./helpers.ts";
 
 // ============================================================================

@@ -8,7 +8,7 @@
 
 import { TuiSessionBase } from "./tui_common.ts";
 import { TUI_ELEMENT_ACTION_BUTTONS } from "./helpers/constants.ts";
-import { TuiNodeType } from "../shared/enums.ts";
+import { TuiNodeType } from "@exaix/core";
 // Redundant import removed
 import { MemoryFormatter } from "./memory_view/formatters.ts";
 import { TreeBuilder } from "./memory_view/tree_builder.ts";

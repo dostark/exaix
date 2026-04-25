@@ -12,6 +12,7 @@ import {
   getDefaultModels,
   getDefaultRetryConfig,
 } from "@exaix/schemas/ai_config.ts";
+import { initializeRegistry, ProviderRegistry } from "@exaix/ai";
 import {
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
@@ -32,10 +33,10 @@ import {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-} from "../../src/shared/constants.ts";
+} from "@exaix/ai";
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
-import { initializeRegistry } from "../../src/ai/provider_factory.ts";
-import { PricingTier, ProviderCostTier, ProviderType } from "../../src/shared/enums.ts";
+import { initializeRegistry } from "@exaix/ai/provider_factory.ts";
+import { PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import type { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
 import {
   TEST_AI_INVALID_URL,

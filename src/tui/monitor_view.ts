@@ -13,7 +13,7 @@ import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts"
 import type { DialogBase } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import type { IActivityRecord, IJournalFilterOptions } from "../shared/types/database.ts";
-import { DialogStatus, GroupingMode } from "../shared/enums.ts";
+import { DialogStatus, GroupingMode } from "@exaix/core";
 import type { JSONObject } from "../shared/types/json.ts";
 import type { IJournalService } from "../shared/interfaces/i_journal_service.ts";
 import { LOG_COLORS, LOG_ICONS, MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";

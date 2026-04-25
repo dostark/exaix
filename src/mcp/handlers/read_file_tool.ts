@@ -9,7 +9,8 @@ import { ToolHandler } from "../tool_handler.ts";
 import type { JSONValue } from "@exaix/core";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { ReadFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { McpToolName, PortalOperation } from "../../shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 
 /**
  * ReadFileTool - Reads file content from a portal

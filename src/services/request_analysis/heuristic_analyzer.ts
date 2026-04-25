@@ -28,7 +28,7 @@ import {
   ANALYSIS_HEDGING_WORDS,
   ANALYSIS_SIMPLE_MAX_CHARS,
   ANALYSIS_TASK_TYPE_VERBS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import type { IRequestAnalysisContext } from "../../shared/interfaces/i_request_analyzer_service.ts";
 
 // ---------------------------------------------------------------------------

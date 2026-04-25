@@ -5,8 +5,9 @@
  * frontmatter, ensuring correct schema validation and default value application.
  */
 
+import { McpToolName } from "@exaix/mcp";
+import { PROVIDER_OPENAI } from "@exaix/ai";
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { McpToolName } from "../../../src/shared/enums.ts";
 
 import { join } from "@std/path";
 
@@ -17,7 +18,6 @@ import {
   loadBlueprint,
 } from "../../../src/services/blueprint/blueprint_loader.ts";
 import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
-import { PROVIDER_OPENAI } from "../../../src/shared/constants.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // Test directory setup

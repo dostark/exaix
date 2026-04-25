@@ -8,7 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { WatchCommand } from "../../src/cli/commands/watch.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { ActivityActor } from "../../src/shared/enums.ts";
+import { ActivityActor } from "@exaix/core";
 
 // ============================================================================
 // Helpers

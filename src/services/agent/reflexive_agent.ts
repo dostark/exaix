@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "../../shared/enums.ts";
+import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
@@ -36,7 +36,7 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
   DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
   MAX_CRITIQUE_REQUIREMENTS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { type ConfidenceAssessment, ConfidenceScorer } from "../utils/confidence_scorer.ts";
 
 export interface IReflexiveAgentConvergenceConfig {

@@ -19,7 +19,7 @@ import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 
 // ===== Dialog Types =====
 
-import { DialogStatus, MemoryScope, RequestOperation } from "../../shared/enums.ts";
+import { DialogStatus, MemoryScope, RequestOperation } from "@exaix/core";
 import { KEYS } from "./keyboard.ts";
 
 export type DialogState = DialogStatus;

@@ -7,7 +7,8 @@
  */
 import type { ILlmClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
-import { McpToolName, ReActActionType } from "../shared/enums.ts";
+import { ReActActionType } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { ModelFactory } from "./providers.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { z } from "zod";

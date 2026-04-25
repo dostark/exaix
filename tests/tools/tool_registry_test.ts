@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { DaemonStatus, ToolName } from "../../src/shared/enums.ts";
+import { DaemonStatus, ToolName } from "@exaix/core";
 import { join } from "@std/path";
 import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../helpers/config.ts";

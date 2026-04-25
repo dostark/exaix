@@ -17,7 +17,7 @@ import {
   type IClarificationSession,
 } from "@exaix/schemas/clarification_session.ts";
 import { RequestStatus } from "../../shared/status/request_status.ts";
-import { ClarifyResultStatus } from "../../shared/enums.ts";
+import { ClarifyResultStatus } from "@exaix/core";
 
 /** Minimal engine interface used for DI (test stubs or real ClarificationEngine). */
 export interface IClarificationEngineForCLI {

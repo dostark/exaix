@@ -7,8 +7,8 @@
 
 import { assertEquals } from "@std/assert";
 import { HealthCheckService } from "../../../src/services/core/health_check_service.ts";
-import { HealthCheckVerdict, HealthStatus } from "../../../src/shared/enums.ts";
-import { DEFAULT_MCP_VERSION } from "../../../src/shared/constants.ts";
+import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
+import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 
 Deno.test("HealthCheckService.checkProvider: caches results", async () => {
   const svc = new HealthCheckService(DEFAULT_MCP_VERSION);

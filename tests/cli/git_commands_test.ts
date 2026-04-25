@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { MemoryOperation } from "../../src/shared/enums.ts";
+import { MemoryOperation } from "@exaix/core";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { GitCommands } from "../../src/cli/commands/git_commands.ts";

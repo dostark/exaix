@@ -7,7 +7,7 @@
  * @related-files [src/services/context/prompt_budget_allocator.ts, src/shared/constants.ts]
  */
 
-import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "../../shared/constants.ts";
+import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
 /**
  * TokenCounter estimates token counts using a heuristic 4:1 character-to-token ratio.

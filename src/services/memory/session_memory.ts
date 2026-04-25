@@ -14,7 +14,7 @@ import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import {
   ConfidenceAssessmentLevel,
   ConfidenceLevel,
@@ -22,7 +22,7 @@ import {
   MemoryBankSource,
   MemoryScope,
   MemoryType,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 
 function mapConfidenceLevelToAssessment(

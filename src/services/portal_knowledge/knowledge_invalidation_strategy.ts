@@ -10,7 +10,7 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import {
   KnowledgeAnalysisMode as SharedKnowledgeAnalysisMode,
   KnowledgeValidityReason as SharedKnowledgeValidityReason,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
 
 export type KnowledgeValidityReason = SharedKnowledgeValidityReason;

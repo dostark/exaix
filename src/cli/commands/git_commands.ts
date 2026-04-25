@@ -7,7 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { GIT_CMD_BRANCH } from "../../shared/constants.ts";
+import { GIT_CMD_BRANCH } from "@exaix/git";
 
 export interface IBranchInfo {
   name: string;

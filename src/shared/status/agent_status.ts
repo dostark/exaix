@@ -6,7 +6,7 @@
  * * @related-files [src/tui/agent_status_view.ts]
  */
 
-import { MessageType } from "../../shared/enums.ts";
+import { MessageType } from "@exaix/core";
 import type { JSONValue } from "../types/json.ts";
 
 export const AgentStatus = {

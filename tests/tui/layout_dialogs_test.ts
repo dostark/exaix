@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { DialogPurpose, LayoutMode } from "../../src/shared/enums.ts";
+import { DialogPurpose, LayoutMode } from "@exaix/core";
 import { getTheme } from "../../src/tui/helpers/colors.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import {

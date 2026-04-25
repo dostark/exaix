@@ -10,7 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { ProviderType } from "../../shared/enums.ts";
+import { ProviderType } from "@exaix/core";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";

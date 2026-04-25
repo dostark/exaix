@@ -9,13 +9,13 @@
 // This test is ignored by default to avoid calling external endpoints in CI.
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
-import { EvaluationCategory } from "../../src/shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ModelFactory } from "../../src/ai/providers.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { getTestModel } from "../ai/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
-import { DEFAULT_OPENAI_BASE_URL } from "../../src/shared/constants.ts";
+import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai";
 import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";

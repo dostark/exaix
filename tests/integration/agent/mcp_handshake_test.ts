@@ -9,7 +9,7 @@ import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_age
 import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
 import type { AgentExecutor, IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { SecurityMode } from "../../../src/shared/enums.ts";
+import { SecurityMode } from "@exaix/core";
 
 type IMcpHandshakeExecutor = Pick<
   AgentExecutor,

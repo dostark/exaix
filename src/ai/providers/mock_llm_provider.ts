@@ -11,11 +11,11 @@
  * * @related-files [src/ai/factories/mock_factory.ts, tests/ai/mock_llm_provider_test.ts]
  */
 
-import { MockStrategy, ProviderType } from "../../shared/enums.ts";
+import { MockStrategy, ProviderType } from "@exaix/core";
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";
-import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "../../shared/constants.ts";
-import { ToolName } from "../../shared/enums.ts";
+import { MOCK_DELAY_MS, MOCK_INPUT_TOKENS, MOCK_OUTPUT_TOKENS } from "@exaix/ai";
+import { ToolName } from "@exaix/core";
 
 // ============================================================================
 // Types and Interfaces

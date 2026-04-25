@@ -11,7 +11,7 @@ import { createSpinnerState, nextFrame, type SpinnerState, startSpinner, stopSpi
 import { createStatusBarState, type IStatusBarState, setStatusMessage } from "./helpers/status_bar.ts";
 import { KEYS } from "./helpers/keyboard.ts";
 import type { IKeyBinding, KeyHandler } from "./helpers/keyboard.ts";
-import { MessageType } from "../shared/enums.ts";
+import { MessageType } from "@exaix/core";
 
 // ===== View State Types =====
 

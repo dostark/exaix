@@ -11,7 +11,7 @@ import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "../../../ai/types.ts";
-import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
+import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "../../observability/event_bus_service.ts";
@@ -28,7 +28,7 @@ import {
   REACT_TOOL_ERROR_PREFIX,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "../../../shared/constants.ts";
+} from "@exaix/core";
 
 interface IReActLoopExecutor {
   logAgentOutput: AgentExecutor["logAgentOutput"];

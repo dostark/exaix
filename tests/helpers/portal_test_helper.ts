@@ -21,7 +21,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import { PortalAnalysisMode } from "../../src/shared/enums.ts";
+import { PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "./paths_helper.ts";
 
 /**

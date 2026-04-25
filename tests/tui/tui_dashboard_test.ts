@@ -15,7 +15,7 @@ import {
   renderPaneTitleBar,
   renderViewPicker,
 } from "../../src/tui/tui_dashboard.ts";
-import { PortalStatus, SplitDirection } from "../../src/shared/enums.ts";
+import { PortalStatus, SplitDirection } from "@exaix/core";
 
 import { assertEquals } from "@std/assert";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";

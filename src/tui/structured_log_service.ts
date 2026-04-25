@@ -6,7 +6,7 @@
  * * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
  */
 
-import { DEFAULT_LOG_BUFFER_SIZE } from "../shared/constants.ts";
+import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";
 import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
 import type { ILogger } from "../shared/interfaces/i_log_service.ts";
 import type { ILogService } from "../shared/interfaces/i_log_service.ts";

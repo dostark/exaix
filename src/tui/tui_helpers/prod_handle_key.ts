@@ -6,7 +6,7 @@
  * @architectural-layer TUI
  * * @related-files [src/tui/tui_helpers/handle_key.ts, src/tui/tui_dashboard.ts]
  */
-import { MessageType, SplitDirection } from "../../shared/enums.ts";
+import { MessageType, SplitDirection } from "@exaix/core";
 import type { IDashboardViewState, IPane, ITuiView } from "../tui_dashboard.ts";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";

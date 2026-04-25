@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import { PortalOperation } from "../../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";

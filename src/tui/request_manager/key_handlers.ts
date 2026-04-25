@@ -7,7 +7,7 @@
  */
 
 import { KEYS } from "../helpers/keyboard.ts";
-import { NavDirection, type RequestGroupingMode as _RequestGroupingMode, TuiNodeType } from "../../shared/enums.ts";
+import { NavDirection, type RequestGroupingMode as _RequestGroupingMode, TuiNodeType } from "@exaix/core";
 import type { ITreeNode } from "../helpers/tree_view.ts";
 import { collapseAll, expandAll, findNode, flattenTree, toggleNode } from "../helpers/tree_view.ts";
 

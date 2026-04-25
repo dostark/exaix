@@ -15,7 +15,7 @@ import {
   MemoryOperation,
   MemoryRecordStatus,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IMemoryExtractorService } from "../../../src/shared/interfaces/i_memory_extractor_service.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";

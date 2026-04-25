@@ -9,9 +9,9 @@
 
 import { assertEquals } from "@std/assert";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "@exaix/core";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
-import { RequestSource, TaskComplexity } from "../../../src/shared/enums.ts";
+import { RequestSource, TaskComplexity } from "@exaix/core";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { RequestStatus } from "../../../src/shared/status/request_status.ts";
@@ -22,7 +22,7 @@ import {
   COMPLEXITY_BODY_LENGTH_LOW,
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
   COMPLEXITY_FILE_REF_THRESHOLD_HIGH,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 import { makeAnalysis } from "./request_test_helpers.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 

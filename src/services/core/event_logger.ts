@@ -9,9 +9,9 @@
 
 import type { IDatabaseService } from "../core/db.ts";
 import type { ActivityRepository } from "../../repositories/activity_repository.ts";
-import { ActivityActor, LogLevel } from "../../shared/enums.ts";
+import { ActivityActor, LogLevel } from "@exaix/core";
 import type { Actor, ILogEvent } from "../common/types.ts";
-import { SHARED_DEFAULT_ICONS } from "../../shared/constants.ts";
+import { SHARED_DEFAULT_ICONS } from "@exaix/core";
 import { EventBusService, type IEventBusService } from "../observability/event_bus_service.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
@@ -20,7 +20,7 @@ import {
   STREAMING_EVENT_LLM_STREAM,
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 

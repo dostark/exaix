@@ -9,7 +9,7 @@ import { assert, assertEquals, assertExists, assertMatch, assertStringIncludes }
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
-import { PortalExecutionStrategy, PortalOperation } from "../../src/shared/enums.ts";
+import { PortalExecutionStrategy, PortalOperation } from "@exaix/core";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import {

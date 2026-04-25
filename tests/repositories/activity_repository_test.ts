@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { MemoryBankSource } from "../../src/shared/enums.ts";
+import { MemoryBankSource } from "@exaix/core";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "../../src/repositories/activity_repository.ts";
 import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";

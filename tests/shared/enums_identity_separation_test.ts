@@ -16,7 +16,7 @@ import {
   RequestGroupingMode,
   RequestKind,
   TuiNodeType,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 
 /**
  * Tests for Step 55.8: Enum value contracts

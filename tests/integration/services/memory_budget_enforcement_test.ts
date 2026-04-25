@@ -23,8 +23,8 @@ import type {
   IPattern,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "../../../src/shared/enums.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../../src/shared/constants.ts";
+import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 
 class BudgetMemoryBankMock implements IMemoryBankService {

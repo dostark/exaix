@@ -5,7 +5,7 @@
  * detailed diff visualization, approval workflows, and status synchronization with the Workspace.
  */
 
-import { RequestSource } from "../../src/shared/enums.ts";
+import { RequestSource } from "@exaix/core";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";
@@ -27,7 +27,7 @@ import {
   PLAN_REVIEW_COMMENTS_HEADER,
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 describe("PlanCommands", () => {

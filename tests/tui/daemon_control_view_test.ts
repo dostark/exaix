@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { DaemonKeyAction, DaemonStatus } from "../../src/shared/enums.ts";
+import { DaemonKeyAction, DaemonStatus } from "@exaix/core";
 import { setupDaemonTest } from "./daemon_test_utils.ts";
 import type { IDaemonService } from "../../src/shared/interfaces/i_daemon_service.ts";
 import {

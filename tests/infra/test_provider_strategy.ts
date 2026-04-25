@@ -9,8 +9,8 @@
 // Tests provider switching, fallback chains, budget enforcement, and concurrent requests
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
-import { DEFAULT_MCP_VERSION } from "../../src/shared/constants.ts";
-import { HealthCheckVerdict } from "../../src/shared/enums.ts";
+import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
+import { HealthCheckVerdict } from "@exaix/core";
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { ProviderSelector } from "../../src/ai/provider_selector.ts";
 import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
@@ -19,7 +19,7 @@ import { MockProviderFactory } from "../../src/ai/factories/mock_factory.ts";
 import { OllamaProviderFactory } from "../../src/ai/factories/ollama_factory.ts";
 import { OpenAIProviderFactory } from "../../src/ai/factories/openai_factory.ts";
 import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
-import { PricingTier, ProviderCostTier, TaskComplexity } from "../../src/shared/enums.ts";
+import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 
 Deno.test("Provider Strategy: Full agent execution with provider switching", async (t) => {
   // Initialize provider registry for testing

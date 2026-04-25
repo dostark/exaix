@@ -13,7 +13,7 @@ import {
   type IRequestMetadata,
   PlanWriter,
 } from "../../../src/services/plan/plan_writer.ts";
-import { ANALYZER_VERSION } from "../../../src/shared/constants.ts";
+import { ANALYZER_VERSION } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";

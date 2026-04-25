@@ -10,8 +10,8 @@
  */
 
 import { join } from "@std/path";
-import { LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "../../shared/constants.ts";
-import { DependencyCategory, SystemCommand } from "../../shared/enums.ts";
+import { LANG_JAVASCRIPT, LANG_TYPESCRIPT } from "@exaix/core";
+import { DependencyCategory, SystemCommand } from "@exaix/core";
 import type { IDependencyInfo } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ import {
   PLAN_AMENDMENT_EVENT_EXPIRED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PLAN_AMENDMENT_EVENT_REJECTED,
-} from "../../../src/shared/constants.ts";
+} from "@exaix/core";
 
 /**
  * Helper to bypass strict casting rules in tests without using double casting.

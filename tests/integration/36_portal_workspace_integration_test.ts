@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { WorkspaceExecutionContextBuilder } from "../../src/services/portal/workspace_execution_context.ts";
-import { PortalOperation } from "../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 

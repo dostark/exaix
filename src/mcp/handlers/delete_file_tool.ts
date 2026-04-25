@@ -8,7 +8,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { DeleteFileToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "../../shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
 /**

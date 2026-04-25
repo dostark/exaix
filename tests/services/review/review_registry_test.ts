@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { MemoryBankSource } from "../../../src/shared/enums.ts";
+import { MemoryBankSource } from "@exaix/core";
 import { ReviewStatus } from "../../../src/reviews/review_status.ts";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";

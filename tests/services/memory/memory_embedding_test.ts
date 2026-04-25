@@ -12,7 +12,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import {

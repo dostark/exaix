@@ -6,7 +6,7 @@
  * * @related-files [src/services/agent_executor.ts, src/services/agent_runner.ts]
  */
 
-import { ToolName } from "../../shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 export const WRITE_CAPABILITIES_REQUIRING_GIT_TRACKING = [
   ToolName.WRITE_FILE,

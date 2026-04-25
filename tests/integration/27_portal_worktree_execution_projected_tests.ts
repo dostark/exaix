@@ -19,7 +19,7 @@ import {
   setupWorktreePortalRepo,
   withSingleWorktreePortal,
 } from "./helpers/worktree_portal_test_utils.ts";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 async function setupPortalWorktreeExecutionLoop(env: TestEnvironment) {
   const portalAlias = "worktree-portal";

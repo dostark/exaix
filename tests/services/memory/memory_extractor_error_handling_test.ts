@@ -9,12 +9,7 @@ import { assertEquals } from "@std/assert";
 
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import {
-  ConfidenceAssessmentLevel,
-  LearningCategory,
-  MemoryBankSource,
-  MemoryScope,
-} from "../../../src/shared/enums.ts";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";

@@ -1,23 +1,24 @@
 /**
- * @module SharedPlanStatus
+ * @module PlanStatus
  * @path src/shared/status/plan_status.ts
- * @description Shared type definitions and coercion utilities for execution plan statuses.
+ * @description Shared type definitions and coercion utilities for plan execution lifecycle states.
  * @architectural-layer Shared
- * * @related-files [src/shared/status/request_status.ts]
+ * @related-files [src/shared/status/mod.ts, src/shared/status/request_status.ts]
  */
 
+import { GeneralStatus } from "../enums.ts";
 import type { JSONValue } from "../types/json.ts";
 
 export const PlanStatus = {
   REVIEW: "review",
   APPROVED: "approved",
   ACTIVE: "active",
-  COMPLETED: "completed",
+  COMPLETED: GeneralStatus.COMPLETED,
   FAILED: "failed",
   ERROR: "error",
-  REJECTED: "rejected",
+  REJECTED: GeneralStatus.REJECTED,
   NEEDS_REVISION: "needs_revision",
-  PENDING: "pending",
+  PENDING: GeneralStatus.PENDING,
   AMENDMENT_PENDING: "amendment_pending",
 } as const;
 

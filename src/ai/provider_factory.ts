@@ -7,7 +7,7 @@
  * * @related-files [src/ai/provider_registry.ts, src/ai/providers.ts]
  */
 
-import * as DEFAULTS from "../shared/constants.ts";
+import * as DEFAULTS from "@exaix/ai/constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { type AiConfig, getDefaultModels } from "@exaix/schemas/ai_config.ts";
 import { LlamaProvider } from "./providers/llama_provider.ts";
@@ -25,7 +25,7 @@ import { OllamaProviderFactory } from "./factories/ollama_factory.ts";
 import { OpenAIProviderFactory } from "./factories/openai_factory.ts";
 import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_factory.ts";
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
-import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "../shared/enums.ts";
+import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
 import type { EventLogger } from "../services/core/event_logger.ts";

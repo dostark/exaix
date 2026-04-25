@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { McpToolName, MessageRole } from "../../src/shared/enums.ts";
+import { McpToolName } from "@exaix/mcp";
+import { MessageRole } from "@exaix/core";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import {

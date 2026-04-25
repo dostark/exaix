@@ -7,14 +7,15 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, McpToolName } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { FlowSchema, ZFlowCheckpoint, ZFlowStepOnError } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_MAX_RETRIES,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
   FLOW_MAX_RETRIES_MAX,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 
 Deno.test("ZFlowStepOnError parses all recovery action variants", () => {
   const retryResult = ZFlowStepOnError.parse({ action: "retry", maxRetries: 2 });

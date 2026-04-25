@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { FileOperation } from "../../../src/shared/enums.ts";
+import { FileOperation } from "@exaix/core";
 
 import {
   countOperations,

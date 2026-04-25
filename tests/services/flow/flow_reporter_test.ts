@@ -6,7 +6,7 @@
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { FlowInputSource, FlowOutputFormat } from "../../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
@@ -17,7 +17,7 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IFlowResult, IStepResult } from "../../../src/flows/flow_runner.ts";
 import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../../config/constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_FLOW_VERSION } from "../../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 describe("FlowReporter", () => {
   let tempDir: string;

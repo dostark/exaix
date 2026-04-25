@@ -7,7 +7,7 @@
  */
 
 import { SafeSubprocess } from "../../helpers/subprocess.ts";
-import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE } from "../../shared/constants.ts";
+import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE } from "@exaix/git";
 
 export interface IGitHeadResolver {
   resolve(portalPath: string): Promise<string | null>;

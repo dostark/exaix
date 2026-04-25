@@ -12,7 +12,7 @@ import { loadKnowledge, saveKnowledge } from "../../../src/services/portal_knowl
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPattern, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
+import { PortalAnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Fixtures

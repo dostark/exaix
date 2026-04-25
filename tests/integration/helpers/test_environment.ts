@@ -22,13 +22,8 @@ import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
-import {
-  FlowStepType,
-  McpToolName,
-  MemoryOperation,
-  MockStrategy,
-  PortalOperation,
-} from "../../../src/shared/enums.ts";
+import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";

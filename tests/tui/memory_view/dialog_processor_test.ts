@@ -16,7 +16,7 @@ import {
   TUI_STATUS_MSG_PROPOSAL_REJECTED,
 } from "../../../src/tui/helpers/constants.ts";
 import { DialogProcessor } from "../../../src/tui/memory_view/dialog_processor.ts";
-import { DialogStatus } from "../../../src/shared/enums.ts";
+import { DialogStatus } from "@exaix/core";
 import type {
   AddLearningDialog,
   BulkApproveDialog,

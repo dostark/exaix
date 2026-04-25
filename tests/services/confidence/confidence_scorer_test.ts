@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertGreater, assertLess } from "@std/assert";
-import { ConfidenceAssessmentLevel } from "../../../src/shared/enums.ts";
+import { ConfidenceAssessmentLevel } from "@exaix/core";
 import {
   ConfidenceSchema,
   createConfidenceScorer,

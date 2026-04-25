@@ -26,7 +26,7 @@ import {
   MemoryOperation,
   MemoryScope,
   TuiNodeType,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { createMockService } from "./memory_test_helpers.ts";
 import {
   TUI_DETAIL_MAX_OVERVIEW_CHARS,

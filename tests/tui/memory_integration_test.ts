@@ -17,7 +17,7 @@ import {
   MemoryOperation,
   MemoryScope,
   MemoryType,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -38,7 +38,7 @@ import {
   wrapText,
 } from "../../src/tui/helpers/markdown_renderer.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== Mock Service with Full Data =====
 

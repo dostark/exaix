@@ -12,7 +12,7 @@ import {
   FLOW_EVENT_NAMESPACE_INITIALIZED,
   FLOW_EVENT_NAMESPACE_READ,
   FLOW_EVENT_NAMESPACE_WRITE,
-} from "../../src/shared/constants.ts";
+} from "@exaix/core";
 
 Deno.test("[SharedConstants] namespace event names and defaults are exported", () => {
   assertEquals(FLOW_EVENT_NAMESPACE_INITIALIZED, "flow.namespace.initialized");

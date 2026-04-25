@@ -12,7 +12,7 @@ import {
   type IDocCommandRunner,
   SymbolExtractor,
 } from "../../../src/services/portal_knowledge/symbol_extractor.ts";
-import { DEFAULT_SYMBOL_MAP_LIMIT } from "../../../src/shared/constants.ts";
+import { DEFAULT_SYMBOL_MAP_LIMIT } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Mock helpers

@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubDb } from "../helpers/test_helpers.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";

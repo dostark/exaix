@@ -12,7 +12,7 @@ import {
   performProviderCall,
   tokenMapperAnthropic,
 } from "../provider_common_utils.ts";
-import * as DEFAULTS from "../../shared/constants.ts";
+import * as DEFAULTS from "@exaix/ai";
 import { BaseProvider, type IBaseProviderOptions } from "./base_provider.ts";
 import type { IGenerateResult } from "./common.ts";
 

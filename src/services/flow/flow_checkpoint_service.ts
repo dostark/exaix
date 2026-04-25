@@ -8,7 +8,7 @@
 
 import { ensureDir, exists } from "@std/fs";
 import { dirname, join } from "@std/path";
-import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "../../shared/constants.ts";
+import { FLOW_CHECKPOINT_SCHEMA_VERSION } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
 import { ZFlowCheckpoint } from "@exaix/schemas/flow.ts";

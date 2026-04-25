@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { handleHealthCheck, type HealthCheckService } from "../../../src/services/core/health_check_service.ts";
-import { HealthStatus } from "../../../src/shared/enums.ts";
+import { HealthStatus } from "@exaix/core";
 
 Deno.test("handleHealthCheck: returns 200 with JSON body and response time header", async () => {
   const health = {

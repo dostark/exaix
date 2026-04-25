@@ -19,7 +19,7 @@ import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
 import type { EventLogger } from "../../src/services/core/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
-import { PortalOperation } from "../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";

@@ -9,7 +9,7 @@
 import type { PortalService } from "../portal/portal.ts";
 import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
-import type { PortalAnalysisMode, PortalExecutionStrategy } from "../../shared/enums.ts";
+import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 export class PortalAdapter implements IPortalService {

@@ -19,7 +19,7 @@ import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { MockStrategy, PricingTier, ProviderCostTier } from "../../../src/shared/enums.ts";
+import { MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
 import {
   getBlueprintsIdentitiesDir,
   getWorkspaceDir,

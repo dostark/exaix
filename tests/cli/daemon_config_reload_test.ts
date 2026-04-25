@@ -9,10 +9,10 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "../../src/config/service.ts";
 import { FileWatcher } from "../../src/services/utils/watcher.ts";
-import { ExaPathDefaults } from "../../src/shared/constants.ts";
+import { ExaPathDefaults } from "@exaix/core";
 import type { ConfigReloadLogger } from "../../src/config/config_reload_handler.ts";
 import { createConfigReloadHandler } from "../../src/config/config_reload_handler.ts";
-import { LogLevel } from "../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 import type { LogMetadata } from "../../src/shared/types/json.ts";
 
 /**

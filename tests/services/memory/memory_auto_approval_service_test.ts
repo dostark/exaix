@@ -12,7 +12,7 @@ import {
   MemoryOperation,
   MemoryRecordStatus,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";

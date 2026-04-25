@@ -6,7 +6,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { RunCommandTool } from "../../../src/mcp/handlers/run_command_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
-import { McpToolName, PortalOperation } from "../../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IToolRegistry, IToolResult } from "../../../src/shared/interfaces/i_tool_registry.ts";

@@ -6,7 +6,7 @@
  * * @related-files [src/cli/memory_commands.ts, src/cli/formatters/memory_formatter.ts]
  */
 
-import type { UIOutputFormat } from "../shared/enums.ts";
+import type { UIOutputFormat } from "@exaix/core";
 
 export type OutputFormat = UIOutputFormat;
 

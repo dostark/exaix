@@ -7,7 +7,8 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
 import { join } from "@std/path";
-import { McpToolName, StepExecutionMode, ToolName } from "../../src/shared/enums.ts";
+import { StepExecutionMode, ToolName } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 
 /**
  * Tests for Phase 56 Step 2: FlowLoader Validation Layer

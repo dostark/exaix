@@ -5,9 +5,10 @@
  * and secure lifecycle management of agent secrets and API keys.
  */
 
+import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
+
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
-import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "../../src/shared/constants.ts";
 
 // ============================================================================
 // Unit Tests for SecureCredentialStore

@@ -19,8 +19,8 @@ import {
   DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
   DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
   TOKENS_PER_COST_UNIT,
-} from "../../shared/constants.ts";
-import { ProviderType } from "../../shared/enums.ts";
+} from "@exaix/core";
+import { ProviderType } from "@exaix/core";
 
 /**
  * Service for tracking and managing LLM provider costs.

@@ -6,8 +6,8 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { DEFAULT_MCP_VERSION } from "../../../src/shared/constants.ts";
-import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "../../../src/shared/enums.ts";
+import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
+import { ExecutionStatus, HealthCheckVerdict, HealthStatus, MockStrategy } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import {
   DatabaseHealthCheck,

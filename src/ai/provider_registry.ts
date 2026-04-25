@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * * @related-files [src/ai/providers.ts, src/services/agent_runner.ts]
  */
-import { PricingTier, PriorityLevel, type ProviderCostTier } from "../shared/enums.ts";
+import { PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 
 /**
@@ -30,7 +30,7 @@ export interface IProviderMetadata {
   /** Pricing tier for cost-based sorting */
   pricingTier: PricingTier;
   /** Task types this provider excels at */
-  strengths: string[];
+  strengths: readonly string[];
 }
 
 // ============================================================================

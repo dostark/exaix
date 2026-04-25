@@ -34,9 +34,9 @@ import {
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
   MOCK_DELAY_MS,
-} from "../shared/constants.ts";
+} from "@exaix/ai/constants.ts";
 
-import { type MockStrategy, ProviderType } from "../shared/enums.ts";
+import { type MockStrategy, ProviderType } from "@exaix/core";
 import { ConnectionError, ModelProviderError, TimeoutError } from "./providers/common.ts";
 
 declare const Deno: { env: { get(key: string): string | undefined } };

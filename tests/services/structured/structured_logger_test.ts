@@ -20,7 +20,7 @@ import {
   resetGlobalLogger,
   StructuredLogger,
 } from "../../../src/services/logger/structured_logger.ts";
-import { LogLevel } from "../../../src/shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 // Removed db.ts IIStructuredLogEntry import as it conflicts with structured_logger IStructuredLogEntry
 
 // ============================================================================

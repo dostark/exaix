@@ -18,8 +18,8 @@ import { PortalPermissionsService } from "../../src/services/portal/portal_permi
 import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
 import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
-import { ExecutionStrategyName, PortalOperation } from "../../src/shared/enums.ts";
-import { GIT_EMPTY_SHA } from "../../src/shared/constants.ts";
+import { ExecutionStrategyName, PortalOperation } from "@exaix/core";
+import { GIT_EMPTY_SHA } from "@exaix/git";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";

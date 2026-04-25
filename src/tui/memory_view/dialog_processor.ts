@@ -5,7 +5,7 @@
  * @architectural-layer TUI
  * * @related-files [src/tui/dialogs/memory_dialogs.ts]
  */
-import { DialogStatus } from "../../shared/enums.ts";
+import { DialogStatus } from "@exaix/core";
 import type {
   AddLearningDialog,
   BulkApproveDialog,

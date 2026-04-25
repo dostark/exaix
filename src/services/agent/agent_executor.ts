@@ -28,6 +28,14 @@ import {
   AGENT_EXECUTION_EXAMPLE_TIME_MS,
   AGENT_EXECUTOR_ID,
   AGENT_GENERATION_COMPLETED,
+  DEFAULT_IDENTITIES_PATH,
+  MAX_NAME_LENGTH,
+  MAX_PROMPT_LENGTH,
+  MAX_USER_INPUT_LENGTH,
+  MODEL_PRICING_MAP,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "@exaix/core";
+import {
   DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
   DEFAULT_GIT_CLEAN_TIMEOUT_MS,
   DEFAULT_GIT_DIFF_TIMEOUT_MS,
@@ -36,17 +44,11 @@ import {
   DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
   DEFAULT_GIT_REVERT_CONCURRENCY_LIMIT,
   DEFAULT_GIT_STATUS_TIMEOUT_MS,
-  DEFAULT_IDENTITIES_PATH,
-  DEFAULT_MCP_IDENTITY_ID,
   GIT_CMD_REV_PARSE,
   GIT_CMD_STATUS,
   GIT_EMPTY_SHA,
-  MAX_NAME_LENGTH,
-  MAX_PROMPT_LENGTH,
-  MAX_USER_INPUT_LENGTH,
-  MODEL_PRICING_MAP,
-  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
-} from "../../shared/constants.ts";
+} from "@exaix/git";
+import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { isReadOnlyAgentCapabilities, requiresGitTracking } from "./agent_capabilities.ts";
 import {
   ChangesetResultSchema,
@@ -63,7 +65,7 @@ import {
   ExecutionStrategyName,
   LogLevel,
   SecurityMode,
-} from "../../shared/enums.ts";
+} from "@exaix/core";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { JSONValue } from "@exaix/core";

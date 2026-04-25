@@ -15,7 +15,7 @@ import {
   type IRequestQualityAssessment,
   RequestQualityAssessmentSchema,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { QualityGateMode } from "../../shared/enums.ts";
+import { QualityGateMode } from "@exaix/core";
 import { assessHeuristic } from "./heuristic_assessor.ts";
 
 // Schema for the LLM response — excludes `metadata` which is injected by the

@@ -7,7 +7,8 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, SearchFilesToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { McpToolName, PortalOperation } from "../../shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import { join } from "@std/path";
 

@@ -14,12 +14,7 @@ import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { MemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import {
-  ConfidenceAssessmentLevel,
-  LearningCategory,
-  MemoryBankSource,
-  MemoryScope,
-} from "../../../src/shared/enums.ts";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import { getMemoryGlobalDir, getMemoryIndexDir } from "../../helpers/paths_helper.ts";
 
 // ===== Test Setup Helpers =====

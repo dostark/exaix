@@ -7,10 +7,7 @@
  */
 
 import { z } from "zod";
-import {
-  DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
-  DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
-} from "@exaix/core/shared/constants.ts";
+import { DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED, DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED } from "@exaix/core";
 
 export enum PromptBudgetSection {
   SYSTEM = "system",

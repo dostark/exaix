@@ -20,7 +20,7 @@ import {
   type SkillStatus as _SkillStatus,
   UIOutputFormat,
   VerificationStatus,
-} from "../../src/shared/enums.ts";
+} from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
 import { PlanStatus } from "../../src/shared/status/plan_status.ts";
 import { RequestStatus } from "../../src/shared/status/request_status.ts";

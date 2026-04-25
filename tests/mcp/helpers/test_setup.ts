@@ -12,7 +12,8 @@ import { assertEquals, assertExists } from "@std/assert";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
-import { McpTransportType, PortalOperation } from "../../../src/shared/enums.ts";
+import { McpTransportType } from "@exaix/mcp";
+import { PortalOperation } from "@exaix/core";
 import { MCPServer } from "../../../src/mcp/server.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";

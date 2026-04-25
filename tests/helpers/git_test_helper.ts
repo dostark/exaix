@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { FlowStepType, MemoryOperation, PortalOperation } from "../../src/shared/enums.ts";
+import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { GitService } from "../../src/services/core/git_service.ts";
 import { createMockConfig } from "./config.ts";

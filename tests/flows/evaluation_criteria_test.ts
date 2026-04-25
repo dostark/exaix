@@ -19,7 +19,7 @@ import {
   getCriteriaByNames,
   RequirementFulfillmentSchema,
 } from "../../src/flows/evaluation_criteria.ts";
-import { EvaluationCategory } from "../../src/shared/enums.ts";
+import { EvaluationCategory } from "@exaix/core";
 
 // ============================================================
 // CRITERIA Constants Tests

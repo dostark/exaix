@@ -8,7 +8,7 @@
 
 import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
 import type { CorrelationAnalysis } from "./types.ts";
-import { LogLevel } from "../../shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 
 /**
  * Analyze correlation across multiple log entries

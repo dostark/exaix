@@ -20,14 +20,10 @@ import { isReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import type { IReviewStatus } from "../../reviews/review_status.ts";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
 import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
-import {
-  type ArtifactSubtype,
-  GitBranchName,
-  ReviewType,
-  ReviewTypeFilter as ReviewFilterEnum,
-} from "../../shared/enums.ts";
+import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
+import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../services/adapters/git_adapter.ts";
-import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "../../shared/constants.ts";
+import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "@exaix/git";
 
 export interface IReviewMetadata {
   type?: ReviewType;

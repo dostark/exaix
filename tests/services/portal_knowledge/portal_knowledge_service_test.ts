@@ -16,7 +16,7 @@ import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
 import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
 import type { IDocCommandRunner } from "../../../src/services/portal_knowledge/symbol_extractor.ts";
-import { PortalAnalysisMode } from "../../../src/shared/enums.ts";
+import { PortalAnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Mock helpers

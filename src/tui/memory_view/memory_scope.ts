@@ -7,13 +7,14 @@
  */
 
 import { TUI_ACTION_SEARCH } from "../helpers/constants.ts";
+import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
 export const MemoryTuiScope = {
   GLOBAL: "global",
   PROJECTS: "projects",
   EXECUTIONS: "executions",
-  PENDING: "pending",
+  PENDING: GeneralStatus.PENDING,
   SEARCH: TUI_ACTION_SEARCH,
 } as const;
 

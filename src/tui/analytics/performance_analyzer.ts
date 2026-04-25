@@ -6,7 +6,7 @@
  * * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import { LogLevel } from "../../shared/enums.ts";
+import { LogLevel } from "@exaix/core";
 import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
 import type { PerformanceStats } from "./types.ts";
 

@@ -7,7 +7,7 @@ import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PatchFileTool } from "../../../src/mcp/handlers/patch_file_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
-import { PortalOperation } from "../../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { join } from "@std/path";

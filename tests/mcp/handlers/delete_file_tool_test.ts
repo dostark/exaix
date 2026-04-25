@@ -6,7 +6,7 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { DeleteFileTool } from "../../../src/mcp/handlers/delete_file_tool.ts";
 import { initToolPermissionTest } from "../helpers/test_setup.ts";
-import { PortalOperation } from "../../../src/shared/enums.ts";
+import { PortalOperation } from "@exaix/core";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { join } from "@std/path";

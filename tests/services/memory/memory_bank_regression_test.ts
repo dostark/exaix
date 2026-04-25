@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { MemoryType } from "../../../src/shared/enums.ts";
+import { MemoryType } from "@exaix/core";
 import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
 import {
   type ISearchDeps,
@@ -22,7 +22,7 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-} from "../../../src/shared/enums.ts";
+} from "@exaix/core";
 
 Deno.test("[regression] searchByKeyword finds patterns, decisions and overview", async () => {
   const projectsDir = await Deno.makeTempDir({ prefix: "exatest-" });

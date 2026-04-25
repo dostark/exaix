@@ -7,14 +7,10 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat } from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import {
-  DEFAULT_FLOW_STEP_BACKOFF_MS,
-  DEFAULT_FLOW_VERSION,
-  FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
-} from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_PARALLEL_GROUP_COMPLETED } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 

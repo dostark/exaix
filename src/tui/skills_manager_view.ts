@@ -15,7 +15,7 @@ import {
   SkillGroupingMode,
   SkillStatus,
   TuiNodeType,
-} from "../shared/enums.ts";
+} from "@exaix/core";
 import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import type { DialogBase } from "./helpers/dialog_base.ts";

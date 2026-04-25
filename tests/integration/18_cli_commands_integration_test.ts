@@ -10,7 +10,7 @@
 // Covers: request list, request show, plan list, plan show, review list, review show, portal add/remove/refresh, dashboard
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { FlowInputSource, MemoryOperation, RequestSource } from "../../src/shared/enums.ts";
+import { FlowInputSource, MemoryOperation, RequestSource } from "@exaix/core";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ArtifactRegistry } from "../../src/services/artifact/artifact_registry.ts";

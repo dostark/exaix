@@ -19,7 +19,7 @@ import {
   STREAMING_EVENT_LLM_STREAM,
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
 import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 

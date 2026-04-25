@@ -9,13 +9,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import {
-  FlowInputSource,
-  FlowOutputFormat,
-  FlowStepOnErrorAction,
-  McpToolName,
-  PortalOperation,
-} from "../../src/shared/enums.ts";
+import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction, PortalOperation } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import {
   FlowExecutionError,
   FlowRunner,
@@ -25,7 +20,7 @@ import {
 } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import { DEFAULT_FLOW_VERSION } from "../../src/shared/constants.ts";
+import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "../../src/shared/types/json.ts";
 import { DeleteFileTool } from "../../src/mcp/handlers/delete_file_tool.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";

@@ -28,9 +28,9 @@ import {
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import type { IRequestQualityGateService } from "../../src/shared/interfaces/i_request_quality_gate_service.ts";
-import { QualityGateMode } from "../../src/shared/enums.ts";
+import { QualityGateMode } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { MockStrategy } from "../../src/shared/enums.ts";
+import { MockStrategy } from "@exaix/core";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";

@@ -14,7 +14,7 @@ import { assert, assertFalse } from "@std/assert";
 import { McpAgentStrategy } from "../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import type { AgentExecutor, IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_executor.ts";
-import { SecurityMode } from "../../src/shared/enums.ts";
+import { SecurityMode } from "@exaix/core";
 
 /** Minimal blueprint sufficient for buildAgentArgs (no blueprint fields are read) */
 const TEST_BLUEPRINT: IAgentFileBlueprint = {

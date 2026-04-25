@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { McpToolName, McpTransportType } from "../../src/shared/enums.ts";
+import { McpToolName, McpTransportType } from "@exaix/mcp";
 import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup.ts";
 
 /**

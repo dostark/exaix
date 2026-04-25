@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { McpTransportType, type PortalOperation } from "../../src/shared/enums.ts";
+import { McpTransportType } from "@exaix/mcp";
+import type { PortalOperation } from "@exaix/core";
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";

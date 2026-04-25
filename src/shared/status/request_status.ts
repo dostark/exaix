@@ -1,27 +1,24 @@
 /**
- * @module SharedRequestStatus
+ * @module RequestStatus
  * @path src/shared/status/request_status.ts
- * @description Shared type definitions and utility functions for Request lifecycle states.
+ * @description Shared type definitions and coercion utilities for request lifecycle states.
  * @architectural-layer Shared
- * * @related-files [src/shared/status/plan_status.ts]
+ * @related-files [src/shared/status/mod.ts, src/shared/status/plan_status.ts]
  */
 
+import { GeneralStatus } from "../enums.ts";
 import type { JSONValue } from "../types/json.ts";
 
 export const RequestStatus = {
-  PENDING: "pending",
+  PENDING: GeneralStatus.PENDING,
   PLANNED: "planned",
   IN_PROGRESS: "in_progress",
-  COMPLETED: "completed",
+  COMPLETED: GeneralStatus.COMPLETED,
   FAILED: "failed",
   CANCELLED: "cancelled",
-  /** Request is awaiting human answers to clarification questions. */
   NEEDS_CLARIFICATION: "needs_clarification",
-  /** Active Q&A loop in progress between planning agent and user. */
   REFINING: "refining",
-  /** LLM-based automatic enrichment of the request body is in progress. */
   ENRICHING: "enriching",
-  /** Intent analysis is currently in progress. */
   ANALYZING: "analyzing",
 } as const;
 

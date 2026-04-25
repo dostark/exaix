@@ -17,7 +17,7 @@ import {
   LANG_TYPESCRIPT,
   PORTAL_KNOWLEDGE_ARCH_LAYER_DIRS,
   PORTAL_KNOWLEDGE_PRIORITY_PATTERNS,
-} from "../../shared/constants.ts";
+} from "@exaix/core";
 import type { IArchitectureLayer, IMonorepoPackage, IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------

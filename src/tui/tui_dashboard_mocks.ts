@@ -11,7 +11,6 @@ import {
   ConfidenceAssessmentLevel,
   DaemonStatus,
   ExecutionStatus,
-  GitBranchName,
   LearningCategory,
   LogLevel,
   MemoryBankSource,
@@ -26,7 +25,8 @@ import {
   RequestSource,
   SkillStatus,
   TuiIcon,
-} from "../shared/enums.ts";
+} from "@exaix/core";
+import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
 import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
@@ -78,7 +78,7 @@ import type { ISkillMatchRequest } from "../shared/types/skill.ts";
 import type { IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";
 import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "../shared/types/database.ts";
-import { SECONDS_PER_HOUR } from "../shared/constants.ts";
+import { SECONDS_PER_HOUR } from "@exaix/core";
 
 /** Default identity ID used across all mock service implementations */
 const MOCK_IDENTITY_ID = "test-agent";

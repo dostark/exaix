@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import type { JSONObject } from "../../src/shared/types/json.ts";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
-import { ToolName } from "../../src/shared/enums.ts";
+import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry: patch_file", async (t) => {
   const tempDir = await Deno.makeTempDir();
