@@ -783,11 +783,11 @@ Deno.test("createFailingMock helper creates failing provider", async () => {
 Deno.test("createSlowMock helper creates delayed provider", async () => {
   const provider = createSlowMock(100);
 
-  const start = Date.now();
+  const start = performance.now();
   await provider.generate("test");
-  const elapsed = Date.now() - start;
+  const elapsed = performance.now() - start;
 
-  assert(elapsed >= 100, `Expected at least 100ms delay, got ${elapsed}ms`);
+  assert(elapsed >= 100, `Expected at least 100ms delay, got ${elapsed.toFixed(2)}ms`);
 });
 
 // ============================================================================
