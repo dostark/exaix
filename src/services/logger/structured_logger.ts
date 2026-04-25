@@ -24,7 +24,8 @@ import * as DEFAULTS from "../../shared/constants.ts";
 // ============================================================================
 
 import { LogLevel, type LogRotationInterval } from "../../shared/enums.ts";
-import type { JSONValue, LogMetadata } from "../../shared/types/json.ts";
+import type { LogMetadata } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type * as LogServiceTypes from "../../shared/interfaces/i_log_service.ts";
 import type * as LoggingTypes from "../../shared/types/logging.ts";
 

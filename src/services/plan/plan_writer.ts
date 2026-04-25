@@ -20,7 +20,7 @@ import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 export interface IRequestMetadata {

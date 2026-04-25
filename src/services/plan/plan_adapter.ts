@@ -15,7 +15,7 @@
 import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
 import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 // ============================================================================
 // Types

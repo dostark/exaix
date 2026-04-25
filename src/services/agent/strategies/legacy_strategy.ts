@@ -11,7 +11,7 @@ import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } fro
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "../../../ai/types.ts";
 import { parse as parseToml } from "@std/toml";
-import type { JSONValue } from "../../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { AgentExecutionErrorType, type McpToolName } from "../../../shared/enums.ts";
 import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
 import {

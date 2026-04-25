@@ -6,7 +6,7 @@
  * * @related-files [src/cli/base.ts]
  */
 
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export interface IHelperResult {
   success: boolean;

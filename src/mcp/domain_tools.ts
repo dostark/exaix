@@ -12,7 +12,7 @@ import {
   type MCPToolResponse,
   QueryJournalToolArgsSchema,
 } from "@exaix/schemas/mcp.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";

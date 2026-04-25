@@ -15,7 +15,7 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type {
   IBranchOptions,
   ICommitOptions,

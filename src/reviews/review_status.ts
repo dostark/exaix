@@ -6,7 +6,7 @@
  * * @related-files [src/services/review_registry.ts, src/shared/schemas/review.ts]
  */
 
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export const ReviewStatus = {
   PENDING: "pending",

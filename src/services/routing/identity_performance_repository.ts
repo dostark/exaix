@@ -8,7 +8,7 @@
 
 import type { IActivityRecord } from "../../shared/types/database.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export interface IIdentityPerformanceSnapshot {
   identityId: string;

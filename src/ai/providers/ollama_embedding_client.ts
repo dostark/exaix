@@ -9,7 +9,7 @@
  */
 
 import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { EmbeddingError } from "../embeddings/embedding_errors.ts";
 import {
   DEFAULT_OLLAMA_BASE_URL,

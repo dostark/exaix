@@ -21,7 +21,8 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "../../shared/constants.ts";
-import { type JSONValue, type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
+import { type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Configuration for EventLogger

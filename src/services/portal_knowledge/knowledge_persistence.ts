@@ -15,7 +15,7 @@ import { ensureDir } from "@std/fs";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
 import type { IPattern } from "@exaix/schemas/memory_bank.ts";
-import type { JSONValue } from "@exaix/core/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Internal constants

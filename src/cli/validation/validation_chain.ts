@@ -7,7 +7,8 @@
  */
 
 import type { ValidationResult } from "../base/command.ts";
-import type { JSONObject, JSONValue } from "../../shared/types/json.ts";
+import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export type ValidationRule = (value: JSONValue) => string | null;
 

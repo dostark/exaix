@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { PortalOperation } from "../../shared/enums.ts";
 import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 

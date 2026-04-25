@@ -8,7 +8,7 @@
 
 import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "./evaluation_criteria.ts";
 import type { IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Context object for agent requests

@@ -9,7 +9,7 @@ import type { IMcpClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import type { McpToolName } from "../shared/enums.ts";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export class McpClient implements IMcpClient {
   private readonly tools = new Map<string, ToolHandler>();

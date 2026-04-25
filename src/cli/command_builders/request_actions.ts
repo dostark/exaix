@@ -13,7 +13,8 @@ import { isRequestStatus, REQUEST_STATUS_VALUES, type RequestStatus } from "../.
 import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
 import { PRIORITY_ICONS } from "../cli.config.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 export interface IRequestActionContext {

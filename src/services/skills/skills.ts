@@ -26,7 +26,8 @@ import {
   SkillSchema,
   type SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
 

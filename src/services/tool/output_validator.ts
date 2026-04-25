@@ -19,7 +19,8 @@ import { PlanSchema, PlanStepSchema } from "@exaix/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "../../shared/enums.ts";
 import { repairJSON } from "../utils/json_repair.ts";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
-import { type JSONValue, JSONValueSchema } from "../../shared/types/json.ts";
+import { JSONValueSchema } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "../../shared/constants.ts";
 
 /**

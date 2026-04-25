@@ -23,7 +23,7 @@ import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "../../shared/constants.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Interface for individual health check implementations

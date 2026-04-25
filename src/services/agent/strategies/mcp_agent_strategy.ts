@@ -13,7 +13,7 @@ import { SafeSubprocess } from "../../../helpers/subprocess.ts";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
 import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode, SystemCommand } from "../../../shared/enums.ts";
-import type { JSONValue } from "../../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
 
 import {

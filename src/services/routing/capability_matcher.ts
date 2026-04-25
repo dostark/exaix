@@ -9,7 +9,7 @@
 import { ZRoutingCandidate } from "@exaix/schemas/routing_policy.ts";
 import type { ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
 import type { IRoutingMatchCriteria } from "@exaix/schemas/routing_policy.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 type BlueprintFrontmatterMap = {
   [key: string]: JSONValue;

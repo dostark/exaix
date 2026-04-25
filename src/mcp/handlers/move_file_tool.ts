@@ -10,7 +10,7 @@ import { dirname } from "@std/path";
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, MoveFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { McpToolName, PortalOperation } from "../../shared/enums.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * MoveFileTool — moves or renames a file within a portal.

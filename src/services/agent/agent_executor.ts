@@ -66,7 +66,7 @@ import {
 } from "../../shared/enums.ts";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";

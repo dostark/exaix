@@ -23,7 +23,8 @@ import {
   SecurityMode,
   SecuritySeverity,
 } from "../../shared/enums.ts";
-import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Service for validating portal permissions

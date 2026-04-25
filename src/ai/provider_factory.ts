@@ -15,7 +15,7 @@ import { InputValidator, type ModelConfigSchema } from "@exaix/schemas/input_val
 import type { z } from "zod";
 import { CostTracker } from "../services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../services/core/db.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { createAPIRetryPolicy, RetryPolicy } from "../services/core/retry_policy.ts";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";

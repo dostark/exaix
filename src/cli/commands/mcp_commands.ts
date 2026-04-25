@@ -10,7 +10,7 @@ import { BaseCommand, type ICommandContext } from "../base.ts";
 import { MCPServer } from "../../mcp/server.ts";
 import { McpTransportType } from "../../shared/enums.ts";
 import { DEFAULT_MCP_HTTP_PORT } from "../../shared/constants.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 interface JSONRPCRequest {
   jsonrpc: string;

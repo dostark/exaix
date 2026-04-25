@@ -24,7 +24,8 @@ import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryOperation, MemoryReferenceType, MemoryScope } from "../../shared/enums.ts";
 import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import { LearningExtractor } from "../memory/learning_extractor.ts";
-import { type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Memory Extractor Service

@@ -6,7 +6,7 @@
  * * @related-files [tests/helpers/subject_generator_test.ts]
  */
 
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Extracts a fallback subject from a text description (e.g., first line).

@@ -9,7 +9,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, PatchFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { McpToolName, PortalOperation } from "../../shared/enums.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * PatchFileTool — applies an exact string replacement within a portal file.

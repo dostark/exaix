@@ -33,7 +33,7 @@ import {
   REPORT_GENERATION_MAX_TOKENS,
   REPORT_GENERATION_TEMPERATURE,
 } from "../../shared/constants.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";

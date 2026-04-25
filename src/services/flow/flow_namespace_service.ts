@@ -54,7 +54,7 @@ interface IParsedNamespaceSection {
   value: string;
 }
 
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 type INamespacePathObject = { [key: string]: JSONValue };
 

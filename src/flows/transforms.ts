@@ -6,7 +6,7 @@
  * @architectural-layer Flows
  * * @related-files [src/flows/runner.ts, src/flows/condition_evaluator.ts]
  */
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Passthrough transform - returns input unchanged

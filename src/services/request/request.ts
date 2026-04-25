@@ -23,7 +23,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import { AnalysisMode } from "../../shared/types/request.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import { DEFAULT_IDENTITY_ID } from "../../shared/constants.ts";

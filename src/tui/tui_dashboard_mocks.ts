@@ -27,7 +27,7 @@ import {
   SkillStatus,
   TuiIcon,
 } from "../shared/enums.ts";
-import type { JSONValue as _JSONValue } from "../shared/types/json.ts";
+import type { JSONValue as _JSONValue } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
 import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
 import type {

@@ -31,7 +31,7 @@ import {
 import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
 

@@ -8,7 +8,7 @@
 
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { IActivityRecord } from "../shared/types/database.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Domain entity representing an activity/event

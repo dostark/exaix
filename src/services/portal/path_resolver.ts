@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID, DEFAULT_UNKNOWN_LABEL } from "../../shared/constants.ts";
 
 export interface IPathResolverConfig {

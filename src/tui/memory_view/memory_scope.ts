@@ -7,7 +7,7 @@
  */
 
 import { TUI_ACTION_SEARCH } from "../helpers/constants.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export const MemoryTuiScope = {
   GLOBAL: "global",

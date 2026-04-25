@@ -12,7 +12,7 @@ import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { type McpToolName, StepExecutionMode } from "../shared/enums.ts";
 import { READ_ONLY_TOOLS } from "../shared/constants.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * Tool call arguments - JSON-compatible key-value pairs

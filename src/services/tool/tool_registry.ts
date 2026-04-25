@@ -23,7 +23,7 @@ import {
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 

@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "../../shared/enums.ts";
 import type { IModelProvider } from "../../ai/types.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
 import {
   AgentRunner,

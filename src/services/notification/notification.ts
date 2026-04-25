@@ -17,7 +17,8 @@ import { DEFAULT_TITLE_PLACEHOLDER } from "../../shared/constants.ts";
 import { MemoryScope } from "../../shared/enums.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, type JSONValue, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, toSafeJson } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 /**
  * Interface for Notification Service to support mocks and strict typing

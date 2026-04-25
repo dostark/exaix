@@ -11,7 +11,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { BaseCommand } from "../base.ts";
 import { createRoutingPolicyService, loadRoutingPolicy } from "../../services/adapters/routing_adapter.ts";
 import { ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IRoutingContext, IRoutingMatchCriteria, IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 
 export class RoutingCommands extends BaseCommand {

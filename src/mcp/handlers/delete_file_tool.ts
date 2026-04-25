@@ -9,7 +9,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import { DeleteFileToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PortalOperation } from "../../shared/enums.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * DeleteFileTool — removes a single file from a portal.

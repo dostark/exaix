@@ -10,7 +10,7 @@
  */
 
 import { type IRequestAnalysis, RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Path helpers

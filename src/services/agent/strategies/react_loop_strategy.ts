@@ -13,7 +13,7 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import type { IModelProvider } from "../../../ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "../../../shared/enums.ts";
 import { parse as parseToml } from "@std/toml";
-import type { JSONValue } from "../../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "../../observability/event_bus_service.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {

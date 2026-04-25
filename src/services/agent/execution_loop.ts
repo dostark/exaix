@@ -48,7 +48,7 @@ import {
   GIT_CMD_WORKTREE,
   PLAN_AMENDMENT_EVENT_EXPIRED,
 } from "../../shared/constants.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /** Represents raw YAML frontmatter before validation */
 interface RawFrontmatter {

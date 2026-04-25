@@ -9,7 +9,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import { JsonRpcErrorCode, McpTransportType } from "../shared/enums.ts";
 import type { ToolHandler } from "./tool_handler.ts";
 import { EventBusService } from "../services/observability/event_bus_service.ts";

@@ -13,7 +13,7 @@ import type { IFlowResult } from "../../flows/flow_runner.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "../../shared/constants.ts";
 import { ActivityActor } from "../../shared/enums.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 // ============================================================================
 // Types and Interfaces

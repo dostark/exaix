@@ -9,7 +9,7 @@ import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, WriteFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { McpToolName, PortalOperation } from "../../shared/enums.ts";
 import { dirname } from "@std/path";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * WriteFileTool - Writes file content to a portal

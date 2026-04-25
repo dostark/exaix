@@ -13,7 +13,7 @@ import { ensureDirSync } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "../../shared/constants.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
 import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 

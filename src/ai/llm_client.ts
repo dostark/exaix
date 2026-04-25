@@ -11,7 +11,7 @@ import { McpToolName, ReActActionType } from "../shared/enums.ts";
 import { ModelFactory } from "./providers.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { z } from "zod";
-import type { JSONValue } from "../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 interface RawLlmError {
   message?: string;

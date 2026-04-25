@@ -8,7 +8,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { McpToolName, PortalOperation } from "../../shared/enums.ts";
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 /**
  * ListDirectoryTool - Lists files and directories in a portal path

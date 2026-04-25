@@ -55,7 +55,7 @@ interface RouterRequest {
   requestAnalysis?: IRequestAnalysis;
 }
 
-import type { JSONValue } from "../../shared/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 type RouterRequestFrontmatterMap = IRequestFrontmatter & {
   [key: string]: JSONValue;
