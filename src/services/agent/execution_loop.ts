@@ -439,7 +439,7 @@ export class ExecutionLoop {
   }
 
   private buildPortalWorktreePath(portalAlias: string, traceId: string): string {
-    return join(this.config.system.root, ".exa", "worktrees", portalAlias, traceId, traceId);
+    return join(this.config.system.root, ".exa", "worktrees", portalAlias, traceId);
   }
 
   private async addWorktreeOrThrow(

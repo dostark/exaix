@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { MemoryScope } from "@exaix/core";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 
 import { MemoryView, MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import type { IMemoryService } from "../../src/tui/memory_view/types.ts";
@@ -191,7 +191,7 @@ Deno.test("MemoryViewTuiSession: 'n' jumps to pending scope", async () => {
   await session.initialize();
 
   await session.handleKey(KEYS.N);
-  assertEquals(session.getActiveScope(), MemoryStatus.PENDING);
+  assertEquals(session.getActiveScope(), MemoryTuiScope.PENDING);
 });
 
 // ===== Search Tests =====

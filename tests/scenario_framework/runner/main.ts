@@ -111,7 +111,9 @@ await new Command()
           mode: runtimeConfig.mode,
           interactiveAllowed: runtimeConfig.mode !== ScenarioExecutionMode.AUTO,
           verbose: runtimeConfig.verbose,
-          exactlExecutable: Deno.env.get("EXA_BIN_PATH") ? `${Deno.env.get("EXA_BIN_PATH")}/exactl` : undefined,
+          exactlExecutable: Deno.env.get("EXA_BIN_PATH")
+            ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
+            : resolve(frameworkHome, "bin/exactl"),
         });
 
         console.log(`Outcome: ${result.manifest.outcome}`);

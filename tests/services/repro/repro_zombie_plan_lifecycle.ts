@@ -121,14 +121,15 @@ Description: Intentionally fail for test
     const existsInActive = await exists(planPath);
     assert(!existsInActive, "Plan should be removed from Active (Fix Verified)");
 
-    // Assertion 2: Plan file moved to Requests with Error status
-    const requestPlanPath = join(requestsPath, `${planId}.md`);
-    const existsInRequests = await exists(requestPlanPath);
-    assert(existsInRequests, "Plan should be moved back to Requests (Fix Verified)");
+    // Assertion 2: Plan file moved to Rejected with Error status
+    const rejectedDir = join(workspacePath, "Rejected");
+    const rejectedPlanPath = join(rejectedDir, `${planId}_failed.md`);
+    const existsInRejected = await exists(rejectedPlanPath);
+    assert(existsInRejected, "Plan should be moved to Rejected on failure (Fix Verified)");
 
     // Check content for error status
-    const newContent = await Deno.readTextFile(requestPlanPath);
-    assert(newContent.includes("status: error"), "Request file should have status: error");
+    const newContent = await Deno.readTextFile(rejectedPlanPath);
+    assert(newContent.includes("status: error"), "Rejected plan file should have status: error");
 
     // Assertion 3: Failure report generated
     const failureReportPath = join(executionPath, traceId, "failure.md");

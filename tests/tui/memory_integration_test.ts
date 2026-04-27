@@ -7,6 +7,7 @@
 
 import { assertEquals, assertExists, assertGreater, assertStringIncludes } from "@std/assert";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 
 import {
   ConfidenceAssessmentLevel,
@@ -395,7 +396,7 @@ Deno.test("TUI Integration: keyboard accessibility - full navigation", async () 
   assertEquals(session.getState().activeScope, "executions");
 
   await session.handleKey(KEYS.N);
-  assertEquals(session.getState().activeScope, MemoryStatus.PENDING);
+  assertEquals(session.getState().activeScope, MemoryTuiScope.PENDING);
 
   // Test help
   await session.handleKey(KEYS.QUESTION);

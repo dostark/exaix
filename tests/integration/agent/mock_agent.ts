@@ -81,4 +81,6 @@ async function main() {
   Deno.exit(0);
 }
 
-main();
+if (import.meta.main) {
+  main();
+}

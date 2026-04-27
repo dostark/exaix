@@ -6,7 +6,7 @@
  * @related-files [src/shared/status/mod.ts, src/shared/status/request_status.ts]
  */
 
-import { GeneralStatus } from "../enums.ts";
+import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "../types/json.ts";
 
 export const PlanStatus = {
@@ -23,7 +23,7 @@ export const PlanStatus = {
 } as const;
 
 export type PlanStatus = typeof PlanStatus[keyof typeof PlanStatus];
-export type PlanStatusType = PlanStatus;
+export type PlanStatusType = `${PlanStatus}`;
 
 export const PLAN_STATUS_VALUES = [
   PlanStatus.REVIEW,

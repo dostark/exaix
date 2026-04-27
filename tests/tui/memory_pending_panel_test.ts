@@ -14,6 +14,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import { renderPendingPanel, renderStatsPanel } from "../../src/tui/memory_panels/index.ts";
@@ -180,7 +181,7 @@ Deno.test("MemoryViewTuiSession: 'n' jumps to pending scope", async () => {
 
   await session.handleKey(KEYS.N);
 
-  assertEquals(session.getActiveScope(), MemoryStatus.PENDING);
+  assertEquals(session.getActiveScope(), MemoryTuiScope.PENDING);
 });
 
 Deno.test("MemoryViewTuiSession: pending badge shows count", async () => {

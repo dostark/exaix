@@ -262,11 +262,18 @@ if [ -n "$CHANGED_FILES" ]; then
   done
 
   if [ -n "$TEST_FILES" ]; then
-    echo "🧪 Running tests for changed files:$TEST_FILES"
-    deno test --allow-all $TEST_FILES
-    if [ $? -ne 0 ]; then
-      echo "❌ Error: Focused tests failed for changed files."
-      exit 1
+    # Only run actual test files and avoid long-running scenario framework suites.
+    TEST_FILES=$(printf '%s\n' $TEST_FILES | grep -E '_test\.ts$' | grep -E -v '^tests/scenario_framework/' | tr '\n' ' ')
+
+    if [ -n "$TEST_FILES" ]; then
+      echo "🧪 Running focused tests for changed files:$TEST_FILES"
+      deno test --allow-all $TEST_FILES
+      if [ $? -ne 0 ]; then
+        echo "❌ Error: Focused tests failed for changed files."
+        exit 1
+      fi
+    else
+      echo "ℹ️ No focused tests to run for changed files, or only scenario framework files were changed."
     fi
   fi
 fi

@@ -17,7 +17,7 @@ import {
   MockStructuredLogger,
   MockStructuredLoggerService,
 } from "../../src/tui/tui_dashboard_mocks.ts";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { RequestStatus } from "../../src/shared/status/request_status.ts";
 import { RequestPriority } from "@exaix/core";
 import type { IStructuredLogEntry } from "../../src/shared/types/logging.ts";
 import {
@@ -108,8 +108,8 @@ Deno.test("MockRequestService: all methods", async () => {
   const service = new MockRequestService();
   const all = await service.listRequests();
   if (!Array.isArray(all)) throw new Error("listRequests failed");
-  const pending = await service.listRequests(MemoryStatus.PENDING);
-  if (!Array.isArray(pending) || pending.some((r) => r.status !== MemoryStatus.PENDING)) {
+  const pending = await service.listRequests(RequestStatus.PENDING);
+  if (!Array.isArray(pending) || pending.some((r) => r.status !== RequestStatus.PENDING)) {
     throw new Error("listRequests status filter failed");
   }
   const content = await service.getRequestContent("test-id");

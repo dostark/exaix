@@ -34,8 +34,6 @@ import {
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
 } from "@exaix/ai";
-import { ProviderRegistry } from "../../src/ai/provider_registry.ts";
-import { initializeRegistry } from "@exaix/ai/provider_factory.ts";
 import { PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import type { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
 import {

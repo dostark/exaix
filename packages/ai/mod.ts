@@ -5,5 +5,5 @@
  */
 
 export * from "./src/constants.ts";
-export * from "./src/provider_registry.ts";
+export { ProviderRegistry } from "../../src/ai/provider_registry.ts";
 export { initializeRegistry } from "../../src/ai/provider_factory.ts";

@@ -1,0 +1,29 @@
+{
+  "scenarioId": "plan-amendment-lifecycle",
+  "pack": "agent_flows",
+  "mode": "auto",
+  "outcome": "scenario-failure",
+  "steps": [
+    {
+      "stepId": "setup-db",
+      "stepType": "shell",
+      "executionStatus": "passed",
+      "criterionResults": [
+        {
+          "criterion_id": "setup-done",
+          "kind": "command-exit-code",
+          "phase": "output",
+          "status": "passed",
+          "message": "setup-done passed",
+          "evidence_refs": []
+        }
+      ]
+    },
+    {
+      "stepId": "add-portal",
+      "stepType": "exactl",
+      "executionStatus": "execution-failed",
+      "criterionResults": []
+    }
+  ]
+}

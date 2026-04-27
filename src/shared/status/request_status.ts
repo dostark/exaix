@@ -6,7 +6,7 @@
  * @related-files [src/shared/status/mod.ts, src/shared/status/plan_status.ts]
  */
 
-import { GeneralStatus } from "../enums.ts";
+import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "../types/json.ts";
 
 export const RequestStatus = {
@@ -23,7 +23,7 @@ export const RequestStatus = {
 } as const;
 
 export type RequestStatus = typeof RequestStatus[keyof typeof RequestStatus];
-export type RequestStatusType = RequestStatus;
+export type RequestStatusType = `${RequestStatus}`;
 
 export const REQUEST_STATUS_VALUES = [
   RequestStatus.PENDING,

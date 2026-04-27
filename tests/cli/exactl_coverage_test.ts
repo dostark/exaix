@@ -926,7 +926,7 @@ Deno.test("request create with all options", async () => {
         source: RequestSource.CLI as const,
         created_by: "tester",
         created: "now",
-        status: MemoryStatus.PENDING,
+        status: RequestStatus.PENDING,
       });
     };
     await captureConsoleOutput(async () => {
@@ -965,7 +965,7 @@ Deno.test("request create with flow option", async () => {
         source: RequestSource.CLI as const,
         created_by: "tester",
         created: "now",
-        status: MemoryStatus.PENDING,
+        status: RequestStatus.PENDING,
         identity: "agent",
       });
     };
@@ -1016,7 +1016,7 @@ Deno.test("request list shows different priority icons", async () => {
           identity: "a",
           created_by: "u",
           created: "t",
-          status: MemoryStatus.PENDING,
+          status: RequestStatus.PENDING,
           filename: "f",
           path: "p",
           source: RequestSource.CLI,
@@ -1027,7 +1027,7 @@ Deno.test("request list shows different priority icons", async () => {
           identity: "a",
           created_by: "u",
           created: "t",
-          status: MemoryStatus.PENDING,
+          status: RequestStatus.PENDING,
           filename: "f",
           path: "p",
           source: RequestSource.CLI,
@@ -1038,7 +1038,7 @@ Deno.test("request list shows different priority icons", async () => {
           identity: "a",
           created_by: "u",
           created: "t",
-          status: MemoryStatus.PENDING,
+          status: RequestStatus.PENDING,
           filename: "f",
           path: "p",
           source: RequestSource.CLI,
@@ -1073,7 +1073,7 @@ Deno.test("end-to-end flow request workflow", async () => {
         source: RequestSource.CLI as const,
         created_by: "tester",
         created: "now",
-        status: MemoryStatus.PENDING,
+        status: RequestStatus.PENDING,
         identity: "agent",
       });
     };
