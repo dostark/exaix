@@ -7,7 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import type { RequestStatusType } from "../../shared/status/request_status.ts";
+import type { RequestStatusType } from "@exaix/core";
 import { RequestCreateHandler } from "../handlers/request_create_handler.ts";
 import { RequestListHandler } from "../handlers/request_list_handler.ts";
 import { RequestShowHandler } from "../handlers/request_show_handler.ts";

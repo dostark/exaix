@@ -14,7 +14,7 @@ import type {
   IRequestAnalyzerService,
 } from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
 import { RequestSource } from "@exaix/core";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { PortalAnalysisMode } from "@exaix/core";

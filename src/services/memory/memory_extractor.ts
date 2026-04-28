@@ -12,7 +12,7 @@ import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import type {
   IExecutionMemory,
   ILearning,
@@ -22,9 +22,9 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
-import { MemoryStatus } from "../../shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import { LearningExtractor } from "../memory/learning_extractor.ts";
-import { toSafeJson } from "../../shared/types/json.ts";
+import { toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 
 /**

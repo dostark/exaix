@@ -12,7 +12,7 @@ import { assertEquals, assertRejects, assertStrictEquals } from "@std/assert";
 import { assertStringIncludes, assertThrows } from "@std/assert";
 import { ensureScenarioUsesFixtureOnly, loadRequestFixture } from "../../runner/request_fixtures.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
-import type { JSONValue } from "../../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 interface IScenarioPortalShape extends Record<string, JSONValue> {
   alias: string;

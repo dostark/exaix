@@ -6,7 +6,7 @@
  * * @related-files [src/shared/types/database.ts]
  */
 
-import type { JSONValue } from "../types/json.ts";
+import type { JSONValue } from "@exaix/core";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "../types/database.ts";
 
 export interface IDatabaseService {

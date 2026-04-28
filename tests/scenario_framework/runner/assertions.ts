@@ -20,7 +20,7 @@ import {
   type ICriterionResult,
   type IScenarioStep,
 } from "../schema/step_schema.ts";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
 

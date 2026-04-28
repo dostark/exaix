@@ -8,7 +8,7 @@ import type { AnalysisMode, IRequestAnalysis, IRequestOptions } from "../../src/
 import type { IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
 import { RequestManagerTuiSession } from "../../src/tui/request_manager_view.ts";
 import type { IRequest } from "../../src/shared/types/request.ts";
-import { RequestStatus, type RequestStatusType } from "../../src/shared/status/request_status.ts";
+import { RequestStatus, type RequestStatusType } from "@exaix/core";
 import { RequestPriority, RequestSource } from "@exaix/core";
 
 class MockRequestService implements IRequestService {

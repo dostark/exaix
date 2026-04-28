@@ -9,8 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
-import { RequestStatus } from "../../shared/status/request_status.ts";
+import { RequestKind, RequestPriority, RequestSource, RequestStatus } from "@exaix/core";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";

@@ -8,7 +8,7 @@
 
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
 import type { StructuredLoggerService } from "./structured_log_service.ts";
-import type { JSONObject } from "../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import { ConnectionStatus } from "@exaix/core";
 

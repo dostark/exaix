@@ -15,7 +15,7 @@ import {
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
-import { RequestStatus } from "../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { ANALYZER_VERSION } from "@exaix/core";
 
 Deno.test("RequestManagerTuiSession - Detail View includes Analysis section", async () => {

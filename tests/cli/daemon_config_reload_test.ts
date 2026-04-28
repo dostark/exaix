@@ -13,7 +13,7 @@ import { ExaPathDefaults } from "@exaix/core";
 import type { ConfigReloadLogger } from "../../src/config/config_reload_handler.ts";
 import { createConfigReloadHandler } from "../../src/config/config_reload_handler.ts";
 import { LogLevel } from "@exaix/core";
-import type { LogMetadata } from "../../src/shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 
 /**
  * Test for "Investigate why exactl portal add not showing in daemon logs"

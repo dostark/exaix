@@ -11,7 +11,7 @@ import type { DatabaseService as DatabaseService } from "../../src/services/core
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { getMemoryProjectsDir } from "./paths_helper.ts";
-import { type JSONObject, type JSONValue, toSafeJson } from "../../src/shared/types/json.ts";
+import { type JSONObject, type JSONValue, toSafeJson } from "@exaix/core/types/json.ts";
 import type { IToolResult } from "../../src/shared/interfaces/i_tool_registry.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 

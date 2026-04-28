@@ -14,7 +14,7 @@ import { MemoryExtractorService } from "../../../src/services/memory/memory_extr
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 import { ExecutionStatus, LearningCategory } from "@exaix/core";
-import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import {
   getMemoryExecutionDir,
   getMemoryGlobalDir,

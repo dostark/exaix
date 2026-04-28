@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";
-import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";

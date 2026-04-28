@@ -12,7 +12,7 @@ import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import type { PortalOperation } from "@exaix/core";
-import { type LogMetadata, toSafeJson } from "../shared/types/json.ts";
+import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 
 /**

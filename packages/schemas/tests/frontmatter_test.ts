@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { RequestSchema } from "@exaix/schemas/request.ts";
 
 /**

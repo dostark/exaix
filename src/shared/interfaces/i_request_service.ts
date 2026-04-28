@@ -6,7 +6,7 @@
  * * @related-files [src/shared/types/request.ts]
  */
 
-import type { RequestStatusType } from "../status/request_status.ts";
+import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
 import type { RequestSource } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "../types/request.ts";
 

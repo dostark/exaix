@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { PlanStatus } from "../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 
@@ -21,7 +21,7 @@ import { createPlanReviewerSession, sampleBasicPlans, samplePendingPlans, sample
 import { PlanAdapter } from "../../src/services/adapters/plan_adapter.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
-import type { JSONObject, JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 
 function yamlFrontmatter(obj: Record<string, string>): string {

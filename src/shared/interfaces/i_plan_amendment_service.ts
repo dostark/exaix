@@ -8,7 +8,7 @@
 
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../services/plan/plan_executor.ts";
-import type { JSONObject } from "../types/json.ts";
+import type { JSONObject } from "@exaix/core";
 
 /**
  * Interface for the Plan Amendment Service

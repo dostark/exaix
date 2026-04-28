@@ -17,7 +17,7 @@ import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "../../shared/types/json.ts";
+import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IMemoryNotification } from "../../shared/types/notification.ts";
 /**

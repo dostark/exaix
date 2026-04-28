@@ -17,7 +17,7 @@ import {
   REACT_THOUGHT_PREFIX,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 class MockModelProvider implements IModelProvider {
   readonly id = "mock-react-provider";

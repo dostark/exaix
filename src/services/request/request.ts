@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { RequestStatus, type RequestStatusType } from "../../shared/status/request_status.ts";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import type {
   IRequestEntry,

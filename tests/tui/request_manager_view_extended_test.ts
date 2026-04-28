@@ -14,7 +14,7 @@ import {
   TaskComplexity,
   TaskType,
 } from "@exaix/core";
-import { RequestStatus } from "../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import {
   AnalysisMode,
   type IRequest,

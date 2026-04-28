@@ -28,7 +28,7 @@ import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import type { LogMetadata } from "../../src/shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
 import { initTestDbService } from "../helpers/db.ts";

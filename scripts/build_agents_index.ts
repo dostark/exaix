@@ -11,7 +11,7 @@
 
 import { walk } from "@std/fs";
 import { parse } from "@std/yaml";
-import type { JSONObject } from "../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 const AGENTS_DIR = ".copilot";
 const SUBMODULE_DIR = "exaix-dev-docs";

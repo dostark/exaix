@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertGreater, assertStringIncludes } from "@std/assert";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 
 import {

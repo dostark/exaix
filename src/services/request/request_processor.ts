@@ -23,8 +23,8 @@ import { applyAnalysisToRequest, buildParsedRequest } from "./request_common.ts"
 import { BlueprintLoader, type ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
 import { type IRequestMetadata, PlanWriter } from "../plan/plan_writer.ts";
 import { PlanValidationError } from "../plan/plan_adapter.ts";
-import { RequestStatus } from "../../shared/status/request_status.ts";
-import { PlanStatus } from "../../shared/status/plan_status.ts";
+import { RequestStatus } from "@exaix/core/status/request_status.ts";
+import { PlanStatus } from "@exaix/core/status/plan_status.ts";
 import {
   COMPLEXITY_BODY_LENGTH_LOW,
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
@@ -55,7 +55,7 @@ import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
 import type { IRequestFrontmatter, ParsedRequestFile } from "../request_processing/types.ts";
 import { OutputValidator } from "../tool/output_validator.ts";
-import type { LogMetadata } from "../../shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";

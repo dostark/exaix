@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { parse as parseYaml } from "@std/yaml";
 import { join } from "@std/path";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
 

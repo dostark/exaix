@@ -10,10 +10,10 @@ import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
 import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 function parseFrontmatter(content: string): JSONObject {

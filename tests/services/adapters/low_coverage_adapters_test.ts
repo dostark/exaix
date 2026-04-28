@@ -13,7 +13,7 @@ import { JournalServiceAdapter } from "../../../src/services/adapters/journal_ad
 import { AgentServiceAdapter } from "../../../src/services/adapters/agent_adapter.ts";
 import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts";
 import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "@exaix/core";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";

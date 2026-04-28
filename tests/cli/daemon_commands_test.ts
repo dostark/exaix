@@ -19,7 +19,7 @@ import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../src/shared/version.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 

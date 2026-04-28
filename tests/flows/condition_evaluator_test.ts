@@ -7,11 +7,11 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import { ConditionEvaluator, type IConditionContext } from "../../src/flows/condition_evaluator.ts";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IStepResult } from "../../src/flows/flow_runner.ts";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 const createContext = (

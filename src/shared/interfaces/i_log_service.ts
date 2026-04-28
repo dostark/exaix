@@ -6,7 +6,7 @@
  * * @related-files [src/shared/types/logging.ts]
  */
 
-import type { LogMetadata } from "../types/json.ts";
+import type { LogMetadata } from "@exaix/core";
 import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "../types/logging.ts";
 
 /**

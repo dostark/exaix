@@ -6,7 +6,7 @@
  * * @related-files [src/shared/types/plan.ts]
  */
 
-import type { PlanStatusType } from "../status/plan_status.ts";
+import type { PlanStatusType } from "@exaix/core/status/plan_status.ts";
 import type { IPlanDetails, IPlanMetadata } from "../types/plan.ts";
 
 export interface IPlanService {

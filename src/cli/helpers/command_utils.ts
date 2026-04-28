@@ -7,7 +7,7 @@
  */
 
 import type { ValidationResult } from "../base/command.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 export const CommandUtils = {
   /**

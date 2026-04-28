@@ -8,7 +8,7 @@
 
 import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
 import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
-import { PlanStatus, type PlanStatusType } from "../../shared/status/plan_status.ts";
+import { PlanStatus, type PlanStatusType } from "@exaix/core";
 
 interface IPlanCommandService {
   approve(planId: string, skills?: string[]): Promise<void>;

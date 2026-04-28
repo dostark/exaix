@@ -6,7 +6,7 @@
 
 import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 interface ICreateRegistryOptions {
   tools?: JSONObject;

@@ -20,7 +20,7 @@ import {
   REACT_SUMMARY_PREFIX,
   STREAMING_EVENT_HEARTBEAT,
 } from "@exaix/core";
-import type { JSONValue } from "../../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 // ============================================================================
 // Helpers

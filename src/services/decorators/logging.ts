@@ -7,7 +7,7 @@
  */
 import type { EventLogger } from "../core/event_logger.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
-import { toSafeJson } from "../../shared/types/json.ts";
+import { toSafeJson } from "@exaix/core/types/json.ts";
 
 type SafeJsonInput = string | number | boolean | null | undefined | SafeJsonInput[] | { [key: string]: SafeJsonInput };
 

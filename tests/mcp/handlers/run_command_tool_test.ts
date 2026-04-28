@@ -11,7 +11,7 @@ import { McpToolName } from "@exaix/mcp";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IToolRegistry, IToolResult } from "../../../src/shared/interfaces/i_tool_registry.ts";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 class MockToolRegistry implements IToolRegistry {
   private result: IToolResult = { success: true };

@@ -6,7 +6,7 @@
  * * @related-files [src/cli/command_builders/plan_actions.ts, src/cli/command_builders/request_actions.ts]
  */
 
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 interface WithTokenFields {
   input_tokens?: string | number;

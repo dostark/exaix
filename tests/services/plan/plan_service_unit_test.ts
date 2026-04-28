@@ -8,7 +8,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { PlanService } from "../../../src/services/plan/plan.ts";
-import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "../../helpers/test_helpers.ts";
 

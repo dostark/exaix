@@ -10,7 +10,7 @@ import { colorize, type ITuiTheme } from "./colors.ts";
 import { renderLayoutPresetListLines } from "./layout_rendering.ts";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID, TUI_SEPARATOR_ROW } from "./constants.ts";
 import { ResizeDirection, SplitDirection, TuiViewName } from "@exaix/core";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 
 // ===== Layout Interfaces =====

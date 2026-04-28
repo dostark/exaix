@@ -19,7 +19,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { ILogEvent } from "../../src/services/common/types.ts";
 import type { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
-import type { JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
+import type { JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { LogLevel } from "@exaix/core";
 import { createTestConfig } from "../ai/helpers/test_config.ts";
 

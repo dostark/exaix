@@ -14,7 +14,7 @@ import { join } from "@std/path";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { finalizeAndWritePending } from "../../../src/services/quality_gate/clarification_persistence.ts";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";

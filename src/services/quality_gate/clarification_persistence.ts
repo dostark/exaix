@@ -11,7 +11,7 @@
 import { basename, dirname, extname, join } from "@std/path";
 import { ClarificationSessionSchema, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
-import { RequestStatus } from "../../shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core/status/request_status.ts";
 
 // ---------------------------------------------------------------------------
 // Path derivation

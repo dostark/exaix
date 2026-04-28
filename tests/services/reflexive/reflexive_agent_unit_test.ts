@@ -24,7 +24,7 @@ import type {
   OutputValidator,
 } from "../../../src/services/tool/output_validator.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 function createMockRunner(
   runFn: (blueprint: IBlueprint, request: IParsedRequest) => Promise<IAgentExecutionResult>,

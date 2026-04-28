@@ -8,14 +8,20 @@
 
 import type { RequestCommands } from "../commands/request_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
-import { FlowInputSource, type RequestPriority } from "@exaix/core";
-import { isRequestStatus, REQUEST_STATUS_VALUES, type RequestStatus } from "../../shared/status/request_status.ts";
+import {
+  DEFAULT_NONE_LABEL,
+  DEFAULT_UNKNOWN_ERROR_MESSAGE,
+  FlowInputSource,
+  isRequestStatus,
+  type JSONValue,
+  REQUEST_STATUS_VALUES,
+  type RequestPriority,
+  type RequestStatus,
+} from "@exaix/core";
 import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
 import { PRIORITY_ICONS } from "../cli.config.ts";
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import { type JSONObject, toSafeJson } from "../../shared/types/json.ts";
-import type { JSONValue } from "@exaix/core";
-import { DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
+import { type JSONObject, toSafeJson } from "@exaix/core";
 
 export interface IRequestActionContext {
   requestCommands: RequestCommands;

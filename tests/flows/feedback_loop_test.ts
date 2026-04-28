@@ -22,7 +22,7 @@ import type {
   IGateResult as _IGateResult,
 } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CRITERIA } from "../../src/flows/evaluation_criteria.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 /**
  * Mock improvement agent for testing

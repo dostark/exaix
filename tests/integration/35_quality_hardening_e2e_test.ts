@@ -13,7 +13,7 @@
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { CritiqueQuality } from "@exaix/core";
-import { RequestStatus } from "../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";

@@ -6,7 +6,7 @@
  * * @related-files [src/services/adapters/display_adapter.ts, src/cli/cli_context.ts, src/cli/commands/blueprint_commands.ts]
  */
 
-import type { LogMetadata } from "../types/json.ts";
+import type { LogMetadata } from "@exaix/core";
 
 export interface IDisplayService {
   /** Output info level message */

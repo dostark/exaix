@@ -6,8 +6,8 @@
  */
 
 import { MemoryBankSource, RequestSource, SkillStatus } from "@exaix/core";
-import { PlanStatus, type PlanStatusType } from "../../src/shared/status/plan_status.ts";
-import { RequestStatus, type RequestStatusType } from "../../src/shared/status/request_status.ts";
+import { PlanStatus, type PlanStatusType } from "@exaix/core";
+import { RequestStatus, type RequestStatusType } from "@exaix/core";
 
 // ===== Test Data Factories =====
 

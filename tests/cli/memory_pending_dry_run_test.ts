@@ -5,7 +5,7 @@
  */
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals } from "@std/assert";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import type { OutputFormat } from "../../src/cli/memory_types.ts";
 import { captureConsoleOutput, withTestMod } from "./helpers/test_utils.ts";
 

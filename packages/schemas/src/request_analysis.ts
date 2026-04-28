@@ -33,7 +33,7 @@ export enum AmbiguityImpact {
   HIGH = "high",
 }
 
-import { AnalysisMode } from "@exaix/core/types/request.ts";
+import { AnalysisMode } from "@exaix/core/request/mod.ts";
 
 // ============================================================================
 // Sub-schemas

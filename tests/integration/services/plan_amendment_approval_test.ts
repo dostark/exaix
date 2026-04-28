@@ -17,7 +17,7 @@ import type { IPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import {

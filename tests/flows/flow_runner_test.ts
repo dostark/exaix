@@ -21,7 +21,7 @@ import type { IAgentExecutionResult } from "../../src/services/agent/agent_runne
 import { RetryPolicy } from "../../src/services/core/retry_policy.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_STEP_RETRY } from "@exaix/core";
 import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
 import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
 import { createMockConfig } from "../helpers/config.ts";

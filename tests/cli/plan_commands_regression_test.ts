@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createStubConfig } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "@exaix/core";
-import { PlanStatus } from "../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import type { IPlanMetadata } from "../../src/shared/types/plan.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";

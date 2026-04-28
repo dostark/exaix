@@ -21,7 +21,7 @@ import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
 import { type ILogEntry, MonitorView } from "../../src/tui/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../../src/tui/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../helpers/test_utils.ts";
-import { RequestStatus, type RequestStatusType } from "../../src/shared/status/request_status.ts";
+import { RequestStatus, type RequestStatusType } from "@exaix/core";
 import type {
   IPortalDetails,
   IPortalInfo,
@@ -43,7 +43,7 @@ import type {
   IProjectMemory,
   IProposalLearning,
 } from "@exaix/schemas/memory_bank.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import {
   ConfidenceAssessmentLevel,
   EvaluationCategory,

@@ -6,8 +6,8 @@
  * * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
  */
 import type { EventLogger } from "../core/event_logger.ts";
-import type { RequestStatusType } from "../../shared/status/request_status.ts";
-import { RequestStatus } from "../../shared/status/request_status.ts";
+import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
+import { RequestStatus } from "@exaix/core/status/request_status.ts";
 
 export class StatusManager {
   constructor(private readonly logger: EventLogger) {}

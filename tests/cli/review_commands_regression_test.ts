@@ -10,7 +10,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { type IReviewMetadata, ReviewCommands } from "../../src/cli/commands/review_commands.ts";
-import { PlanStatus } from "../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";

@@ -13,7 +13,7 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
-import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import { PortalOperation } from "@exaix/core";
 
 Deno.test("[regression] ExecutionLoop: targets portal directory and creates review", async () => {

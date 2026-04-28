@@ -14,7 +14,7 @@ import { buildParsedRequest } from "../../../src/services/request/request_common
 import { RequestSource, TaskComplexity } from "@exaix/core";
 import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";

@@ -13,7 +13,7 @@ import {
   type MemoryReferenceType as _MemoryReferenceType,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { MemoryViewTuiSession as _MemoryViewTuiSession } from "../../src/tui/memory_view.ts";

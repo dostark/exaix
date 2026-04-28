@@ -7,7 +7,7 @@
  */
 
 import type { ConfigService } from "./service.ts";
-import type { LogMetadata } from "../shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 
 export type ConfigReloadLogger = {
   info: (

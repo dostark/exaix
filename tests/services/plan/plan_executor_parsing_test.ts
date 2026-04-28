@@ -12,7 +12,7 @@ import { ensureDir } from "@std/fs";
 import { getWorkspaceActiveDir } from "../../helpers/paths_helper.ts";
 import { parse } from "@std/yaml";
 
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 interface Frontmatter {

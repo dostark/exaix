@@ -6,7 +6,7 @@
  * * @related-files [src/services/adapters/archive_adapter.ts, src/cli/cli_context.ts]
  */
 
-import type { MemoryStatusType } from "../status/memory_status.ts";
+import type { MemoryStatusType } from "@exaix/core";
 
 export interface IArchiveEntry {
   trace_id: string;

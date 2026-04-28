@@ -10,7 +10,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { MockProvider, ModelFactory, OllamaProvider } from "../../src/ai/providers.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import { ConnectionError, ModelProviderError, TimeoutError } from "../../src/ai/providers/common.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 // ============================================================================
 // Test 1: MockProvider returns configured response

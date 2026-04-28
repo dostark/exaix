@@ -11,7 +11,7 @@ import { KeyBindingCategory } from "./helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "./tui_common.ts";
 import type { AnalysisMode } from "../shared/types/request.ts";
-import { isRequestStatus, RequestStatus, type RequestStatusType } from "../shared/status/request_status.ts";
+import { isRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
 import { createGroupNode, createNode, findNode, flattenTree, type ITreeNode, renderTree } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import type { IKeyBinding } from "./helpers/keyboard.ts";

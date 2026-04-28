@@ -12,12 +12,10 @@ import {
   type MCPToolResponse,
   QueryJournalToolArgsSchema,
 } from "@exaix/schemas/mcp.ts";
-import type { JSONValue } from "@exaix/core";
 import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";
-import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
-import { RequestSource } from "@exaix/core";
+import { type JSONValue, PlanStatus, type PlanStatusType, RequestSource } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 /**

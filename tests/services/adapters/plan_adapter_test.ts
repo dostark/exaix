@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { PlanAdapter } from "../../../src/services/adapters/plan_adapter.ts";
-import { PlanStatus } from "../../../src/shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core";
 import type { IPlanDetails, IPlanMetadata } from "../../../src/shared/types/plan.ts";
 
 function createPlanCommandService(overrides: Partial<{

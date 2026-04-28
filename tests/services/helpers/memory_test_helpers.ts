@@ -14,10 +14,10 @@ import {
   MemoryScope,
   ReviewSource,
 } from "@exaix/core";
-import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 import type { IExecutionMemory, ILearning, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 export function createSuccessfulExecutionMemory(portal: string, traceId: string): IExecutionMemory {
   return {

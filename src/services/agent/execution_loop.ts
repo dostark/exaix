@@ -31,7 +31,7 @@ import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MissionReporter } from "../artifact/mission_reporter.ts";
 import { PlanExecutor } from "../plan/plan_executor.ts";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
-import { PlanStatus } from "../../shared/status/plan_status.ts";
+import { PlanStatus } from "@exaix/core/status/plan_status.ts";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/structured_plan_parser.ts";
 import { isReadOnlyAgentCapabilities } from "./agent_capabilities.ts";
 import { ArtifactRegistry } from "../artifact/artifact_registry.ts";

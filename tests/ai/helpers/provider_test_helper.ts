@@ -10,7 +10,7 @@ import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../../src/ai/providers/common.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { EventLogger } from "../../../src/services/core/event_logger.ts";
-import type { JSONObject, JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
 
 /**
  * Payload body accepted by the test response stub.

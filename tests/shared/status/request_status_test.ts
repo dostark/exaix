@@ -5,16 +5,11 @@
  * Phase 47 new clarification lifecycle values (NEEDS_CLARIFICATION, REFINING,
  * ENRICHING) in addition to the existing statuses.
  * @architectural-layer Shared
- * @related-files [src/shared/status/request_status.ts]
+ * @related-files [packages/core/src/status/request_status.ts]
  */
 
 import { assertEquals, assertStrictEquals } from "@std/assert";
-import {
-  coerceRequestStatus,
-  isRequestStatus,
-  REQUEST_STATUS_VALUES,
-  RequestStatus,
-} from "../../../src/shared/status/request_status.ts";
+import { coerceRequestStatus, isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Existing statuses (regression)

@@ -9,7 +9,7 @@ import { assert, assertEquals } from "@std/assert";
 import { parse } from "@std/yaml";
 import { join } from "@std/path";
 import { getDefaultPaths } from "../../src/config/paths.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 const paths = getDefaultPaths(".");
 const providersDir = join(paths.blueprints, "../.copilot/providers");

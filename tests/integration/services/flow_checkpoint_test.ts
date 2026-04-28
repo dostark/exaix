@@ -28,7 +28,7 @@ import {
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
 } from "@exaix/core";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
 

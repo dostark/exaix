@@ -11,7 +11,7 @@
 
 import { extname, isAbsolute, resolve } from "@std/path";
 import { type IScenario, ScenarioSchema } from "../schema/scenario_schema.ts";
-import type { JSONValue } from "../../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 export interface IRequestFixtureLoadOptions {
   frameworkHome: string;

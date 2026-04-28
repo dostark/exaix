@@ -17,7 +17,7 @@ import {
   RequestQualityRecommendation,
 } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "@exaix/core";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { RequestSource } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";

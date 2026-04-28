@@ -41,7 +41,7 @@ import type {
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
 import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
 import type { ILogContext } from "../shared/types/logging.ts";
-import type { LogMetadata } from "../shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 import type {
   IActivitySummary,
   IDecision,
@@ -69,10 +69,10 @@ import type { ILogService, IStructuredLogger } from "../shared/interfaces/i_log_
 import type { IJournalService } from "../shared/interfaces/i_journal_service.ts";
 import type { IMemoryService } from "../shared/interfaces/i_memory_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PlanStatus, type PlanStatusType } from "../shared/status/plan_status.ts";
-import { RequestStatus, type RequestStatusType } from "../shared/status/request_status.ts";
+import { PlanStatus, type PlanStatusType } from "@exaix/core";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
-import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "../shared/status/memory_status.ts";
+import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status/memory_status.ts";
 import type { IMemoryNotification } from "../shared/types/notification.ts";
 import type { ISkillMatchRequest } from "../shared/types/skill.ts";
 import type { IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";

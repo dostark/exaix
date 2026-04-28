@@ -18,7 +18,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 
 describe("Example Flows - Step 7.9", {

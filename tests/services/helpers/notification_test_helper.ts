@@ -15,7 +15,7 @@ import {
   MemoryOperation,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "../../../src/shared/status/memory_status.ts";
+import { MemoryStatus } from "@exaix/core";
 
 /**
  * Creates test environment for notification tests

@@ -25,7 +25,7 @@ import {
 } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../../src/shared/types/request.ts";
 import { RequestSource } from "@exaix/core";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
 import type { initTestDbService as _initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";

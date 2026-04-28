@@ -13,7 +13,7 @@ import { DependencyResolver } from "./dependency_resolver.ts";
 import type { IAgentExecutionResult } from "../services/agent/agent_runner.ts";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
-import { jsonExtract } from "../shared/types/json.ts";
+import { jsonExtract } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";

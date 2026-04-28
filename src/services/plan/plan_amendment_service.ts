@@ -13,15 +13,14 @@ import type {
   IPlanAmendmentTrigger,
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
+import { DEFAULT_AMENDMENT_THRESHOLD, PlanStatus } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
-import type { JSONObject } from "../../shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
 import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
-import { PlanStatus } from "../../shared/status/plan_status.ts";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 
 /** Raw YAML frontmatter before validation */

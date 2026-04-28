@@ -6,7 +6,7 @@
 import { assertEquals } from "@std/assert";
 import { ActivityJournal } from "../../src/journal/activity_journal.ts";
 import type { IFlowEventLogger, IFlowEventPayloadMap } from "../../src/flows/flow_runner.ts";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 
 interface ILoggedEvent {
   action?: string;

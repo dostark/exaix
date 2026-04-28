@@ -9,7 +9,7 @@
  */
 
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
-import type { RequestStatusType } from "../../src/shared/status/request_status.ts";
+import type { RequestStatusType } from "@exaix/core";
 
 // ============================================================================
 // Type Contract Verification

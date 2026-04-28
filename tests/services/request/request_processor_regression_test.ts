@@ -17,7 +17,7 @@ import {
 } from "../../../src/services/logger/structured_logger.ts";
 import { REPO_ROOT } from "../../helpers/repo_root.ts";
 import { LogLevel } from "@exaix/core";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import { createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 

@@ -6,7 +6,7 @@
 
 import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
 import type { EventLogger } from "../core/event_logger.ts";
-import type { LogMetadata } from "../../shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 export class DisplayAdapter implements IDisplayService {

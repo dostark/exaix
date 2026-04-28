@@ -11,7 +11,7 @@ import { CRITERIA, type EvaluationResult as _EvaluationResult } from "../../src/
 import { EvaluationCategory } from "@exaix/core";
 import type { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { createJudgeEvaluator, JudgeEvaluator } from "../../src/flows/judge_evaluator.ts";
-import type { JSONObject } from "../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 /**
  * Mock AgentRunner for testing JudgeEvaluator

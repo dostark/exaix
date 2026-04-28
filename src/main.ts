@@ -34,7 +34,7 @@ import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import type { ILogOutput } from "./shared/interfaces/i_log_service.ts";
-import { type LogMetadata, toSafeJson } from "./shared/types/json.ts";
+import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
 import type { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
 import { DAEMON_IDENTITY_ID, DEFAULT_IDENTITIES_PATH } from "@exaix/core";

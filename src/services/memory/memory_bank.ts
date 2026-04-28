@@ -15,16 +15,16 @@ import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { JSONValue } from "@exaix/core";
 import {
   ActivityActor,
   ActivityType,
+  type JSONValue,
   MemoryBankSource,
   MemoryReferenceType,
   MemoryScope,
+  MemoryStatus,
   type MemoryType,
 } from "@exaix/core";
-import { MemoryStatus } from "../../shared/status/memory_status.ts";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import {
   DEFAULT_EXECUTION_MEMORY_PATH,

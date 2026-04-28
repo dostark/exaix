@@ -17,7 +17,7 @@ import type { IDisplayService } from "../../src/shared/interfaces/i_display_serv
 import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
-import type { JSONObject, JSONValue, LogMetadata } from "../../src/shared/types/json.ts";
+import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import { LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";

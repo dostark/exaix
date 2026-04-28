@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";
-import { RequestStatus } from "../../../src/shared/status/request_status.ts";
+import { RequestStatus } from "@exaix/core";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import {
   TEST_LOG_ACTION_FILE_NOT_FOUND,
@@ -27,7 +27,7 @@ import {
   TEST_REQUEST_STATUS_VALID,
   TEST_REQUEST_TRACE_ID,
 } from "../../config/constants.ts";
-import type { JSONObject } from "../../../src/shared/types/json.ts";
+import type { JSONObject } from "@exaix/core/types/json.ts";
 
 interface LoggedError {
   action: string;

@@ -27,7 +27,7 @@ import { stub } from "@std/testing/mock";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { LogLevel } from "@exaix/core";
 import type { IPlanDetails } from "../../src/shared/types/plan.ts";
-import type { LogMetadata } from "../../src/shared/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 
 function createDisplay() {
   const calls: Array<{ level: LogLevel; a: string; b: string; c: LogMetadata }> = [];

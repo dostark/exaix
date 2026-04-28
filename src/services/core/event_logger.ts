@@ -21,7 +21,7 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
-import { type LogMetadata, toSafeJson } from "../../shared/types/json.ts";
+import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 
 /**

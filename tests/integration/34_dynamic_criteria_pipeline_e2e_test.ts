@@ -32,7 +32,7 @@ import { EvaluationCategory } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "../../src/shared/types/request.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import type { JSONValue } from "../../src/shared/types/json.ts";
+import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
