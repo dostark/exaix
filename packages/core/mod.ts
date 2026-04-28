@@ -8,6 +8,8 @@ export * from "./src/enums.ts";
 export * from "./src/constants.ts";
 export * from "./src/version.ts";
 export * from "./src/status/mod.ts";
+export * from "./src/request/mod.ts";
+export * from "./src/types/mod.ts";
 export * from "../../src/shared/enums/ui.ts";
 
 export type { JSONArray, JSONObject, JSONValue, LogMetadata } from "./src/types/json.ts";

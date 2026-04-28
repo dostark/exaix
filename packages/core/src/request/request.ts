@@ -1,19 +1,13 @@
 /**
- * @module Request
- * @path src/shared/types/request.ts
- * @description Module for Request.
- * @architectural-layer Shared
- * * @related-files [src/shared/interfaces/i_request_service.ts]
+ * @module RequestTypes
+ * @path packages/core/src/request/request.ts
+ * @description Request analysis type definitions for @exaix/core consumers.
  */
 
-import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
+import type { RequestStatusType } from "../status/request_status.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { RequestPriority, RequestSource } from "@exaix/core";
 
-/**
- * AnalysisMode enum for triggering request analysis.
- * Exported here to maintain shared type hierarchy.
- */
 export enum AnalysisMode {
   HEURISTIC = "heuristic",
   LLM = "llm",
@@ -22,23 +16,15 @@ export enum AnalysisMode {
 
 export type { IRequestAnalysis };
 
-/**
- * Detailed skills information for a request.
- */
 export interface IRequestSkills {
-  explicit?: string[]; // User-specified skills
-  autoMatched?: string[]; // Skills matched by triggers
-  fromDefaults?: string[]; // Skills from agent defaults
-  skipped?: string[]; // Skills excluded by user
+  explicit?: string[];
+  autoMatched?: string[];
+  fromDefaults?: string[];
+  skipped?: string[];
 }
 
-/**
- * Options for creating a request
- */
 export interface IRequestOptions {
-  /** @deprecated Use identity instead */
   agent?: string;
-  /** Identity blueprint to use (Phase 53 canonical field) */
   identity?: string;
   priority?: RequestPriority;
   portal?: string;
@@ -50,19 +36,10 @@ export interface IRequestOptions {
   subject?: string;
   analyze?: boolean;
   analysis_engine?: AnalysisMode;
-  /** Explicit acceptance criteria passed via CLI --acceptance-criteria flag (Phase 49). */
   acceptanceCriteria?: string[];
-  /** Expected outcomes passed via CLI --expected-outcome flag (Phase 49). */
   expectedOutcomes?: string[];
 }
 
-/**
- * Source of request creation
- */
-
-/**
- * Metadata returned when a request is created or listed
- */
 export interface IRequestMetadata {
   trace_id: string;
   filename: string;
@@ -89,21 +66,12 @@ export interface IRequestMetadata {
   analysis?: IRequestAnalysis;
 }
 
-/**
- * Request entry when listing (includes potential error)
- */
 export interface IRequestEntry extends IRequestMetadata {
   error?: string;
 }
 
-/**
- * Standard alias for compatibility.
- */
 export type IRequest = IRequestEntry;
 
-/**
- * Result of showing a request's full details
- */
 export interface IRequestShowResult {
   metadata: IRequestEntry;
   content: string;

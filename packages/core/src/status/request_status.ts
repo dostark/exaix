@@ -1,9 +1,9 @@
 /**
  * @module SharedRequestStatus
- * @path src/shared/status/request_status.ts
+ * @path packages/core/src/status/request_status.ts
  * @description Shared type definitions and utility functions for Request lifecycle states.
  * @architectural-layer Shared
- * * @related-files [src/shared/status/plan_status.ts]
+ * * @related-files [packages/core/src/status/plan_status.ts]
  */
 
 import { GeneralStatus } from "../enums.ts";
@@ -26,7 +26,7 @@ export const RequestStatus = {
   ANALYZING: "analyzing",
 } as const;
 
-export type RequestStatus = typeof RequestStatus[keyof typeof RequestStatus];
+export type RequestStatus = `${typeof RequestStatus[keyof typeof RequestStatus]}`;
 export type RequestStatusType = RequestStatus;
 
 export const REQUEST_STATUS_VALUES = [

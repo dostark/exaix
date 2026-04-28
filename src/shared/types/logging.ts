@@ -7,7 +7,7 @@
  */
 
 import type { LogLevel } from "@exaix/core";
-import type { LogMetadata } from "./json.ts";
+import type { LogMetadata } from "@exaix/core/types/json.ts";
 
 /**
  * Metadata for a structured log entry.

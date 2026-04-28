@@ -1,9 +1,9 @@
 /**
  * @module SharedTypes
- * @path src/shared/types/json.ts
+ * @path packages/core/src/types/json.ts
  * @description Centralized JSON-related types and utilities shared between Core and TUI.
  * @architectural-layer Shared
- * * @related-files [src/shared/constants.ts, src/shared/schemas/*.ts]
+ * * @related-files [packages/core/src/constants.ts, packages/core/src/schemas/*.ts]
  */
 import { z } from "zod";
 

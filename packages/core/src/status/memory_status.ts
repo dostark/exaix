@@ -1,9 +1,9 @@
 /**
  * @module MemoryStatus
- * @path src/shared/status/memory_status.ts
+ * @path packages/core/src/status/memory_status.ts
  * @description Shared type definitions and coercion utilities for memory record statuses.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/memory_bank.ts]
+ * * @related-files [packages/core/src/schemas/memory_bank.ts]
  */
 import { MemoryRecordStatus } from "../enums.ts";
 import type { JSONValue } from "../types/json.ts";
@@ -14,7 +14,7 @@ export const MemoryStatus = {
   ARCHIVED: MemoryRecordStatus.ARCHIVED,
 } as const;
 
-export type MemoryStatus = MemoryRecordStatus;
+export type MemoryStatus = `${typeof MemoryStatus[keyof typeof MemoryStatus]}`;
 export type MemoryStatusType = MemoryStatus;
 
 export const MEMORY_STATUS_VALUES = [
