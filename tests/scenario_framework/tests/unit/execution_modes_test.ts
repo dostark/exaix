@@ -11,6 +11,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import {
+  ExecutionStateStatus,
   loadExecutionState,
   runScenarioInMode,
   selectScenariosForExecution,
@@ -82,7 +83,7 @@ Deno.test("[ScenarioFrameworkExecutionModes] runner state persists and resumes c
         mode: ScenarioExecutionMode.STEP,
         nextStepIndex: 1,
         executedStepIds: ["step-1"],
-        status: "paused",
+        status: ExecutionStateStatus.PAUSED,
       },
     });
 

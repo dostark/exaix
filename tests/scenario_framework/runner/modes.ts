@@ -19,12 +19,19 @@ import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { type IScenarioStep, ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { CI_EXCLUDED_TAGS } from "./scenario_catalog.ts";
 
+export enum ExecutionStateStatus {
+  PAUSED = "paused",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  SKIPPED = "skipped",
+}
+
 export interface IExecutionState {
   scenarioId: string;
   mode: ScenarioExecutionMode;
   nextStepIndex: number;
   executedStepIds: string[];
-  status: "paused" | "completed" | "failed" | "skipped";
+  status: ExecutionStateStatus;
 }
 
 export interface IExecutionStateWriteOptions {
@@ -52,13 +59,27 @@ export interface IRunScenarioInModeOptions {
   executeStep: (args: IExecuteStepCallbackArgs) => Promise<IScenarioStepExecutionResult>;
 }
 
+export enum ExecutionOutcome {
+  SUCCESS = "success",
+  SCENARIO_FAILURE = "scenario-failure",
+}
+
+export enum ExecutionSkipReason {
+  INTERACTIVE_NOT_ALLOWED = "interactive-not-allowed",
+}
+
+export enum ExecutionPauseReason {
+  STEP = "step",
+  CHECKPOINT = "checkpoint",
+}
+
 export interface IRunScenarioInModeResult {
-  status: "paused" | "completed" | "failed" | "skipped";
+  status: ExecutionStateStatus;
   nextStepIndex: number;
   executedStepIds: string[];
-  outcome?: "success" | "scenario-failure";
-  skipReason?: "interactive-not-allowed";
-  pauseReason?: "step" | "checkpoint";
+  outcome?: ExecutionOutcome;
+  skipReason?: ExecutionSkipReason;
+  pauseReason?: ExecutionPauseReason;
   reviewBundle?: IReviewBundle;
 }
 
@@ -88,10 +109,10 @@ export async function runScenarioInMode(
 ): Promise<IRunScenarioInModeResult> {
   if (options.interactiveAllowed === false && isInteractiveMode(options.mode)) {
     return {
-      status: "skipped",
+      status: ExecutionStateStatus.SKIPPED,
       nextStepIndex: options.startStepIndex ?? 0,
       executedStepIds: [],
-      skipReason: "interactive-not-allowed",
+      skipReason: ExecutionSkipReason.INTERACTIVE_NOT_ALLOWED,
     };
   }
 
@@ -109,28 +130,28 @@ export async function runScenarioInMode(
 
     if (isFailed) {
       return {
-        status: "failed",
+        status: ExecutionStateStatus.FAILED,
         nextStepIndex: stepIndex,
         executedStepIds,
-        outcome: "scenario-failure",
+        outcome: ExecutionOutcome.SCENARIO_FAILURE,
       };
     }
 
     if (options.mode === ScenarioExecutionMode.STEP) {
       return {
-        status: "paused",
+        status: ExecutionStateStatus.PAUSED,
         nextStepIndex: stepIndex + 1,
         executedStepIds,
-        pauseReason: "step",
+        pauseReason: ExecutionPauseReason.STEP,
       };
     }
 
     if (options.mode === ScenarioExecutionMode.MANUAL_CHECKPOINT && step.checkpoint) {
       return {
-        status: "paused",
+        status: ExecutionStateStatus.PAUSED,
         nextStepIndex: stepIndex + 1,
         executedStepIds,
-        pauseReason: "checkpoint",
+        pauseReason: ExecutionPauseReason.CHECKPOINT,
         reviewBundle: {
           checkpointId: step.checkpoint,
           stepId: step.id,
@@ -141,10 +162,10 @@ export async function runScenarioInMode(
   }
 
   return {
-    status: "completed",
+    status: ExecutionStateStatus.COMPLETED,
     nextStepIndex: options.steps.length,
     executedStepIds,
-    outcome: "success",
+    outcome: ExecutionOutcome.SUCCESS,
   };
 }
 

@@ -13,6 +13,7 @@ import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import {
   planPortalMount,
   PortalLifecycleAction,
+  PortalOwnership,
   resolveScenarioSelection,
   RuntimeConfigSchema,
   ScenarioCiProfile,
@@ -289,7 +290,7 @@ Deno.test("[ScenarioFrameworkContract] portal lifecycle planner rejects destruct
         existingMount: {
           alias: "portal-app",
           sourcePath: "/tmp/current-path",
-          ownership: "framework",
+          ownership: PortalOwnership.FRAMEWORK,
         },
         allowDestructiveRemount: false,
       });
@@ -307,7 +308,7 @@ Deno.test("[ScenarioFrameworkContract] portal lifecycle planner reuses exact mat
     existingMount: {
       alias: "portal-app",
       sourcePath: "/tmp/current-path",
-      ownership: "user",
+      ownership: PortalOwnership.USER,
     },
     allowDestructiveRemount: false,
   });

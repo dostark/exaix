@@ -302,13 +302,15 @@ function mapExecutionStatus(outcome: IScenarioStepOutcome): string {
   return "failed";
 }
 
+type CriterionPathField = "path" | "target_file";
+
 function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>): IScenarioStep {
   return {
     ...step,
     command: step.command ? expandInString(step.command, env) : step.command,
     args: step.args?.map((arg) => expandInString(arg, env)),
     input_criteria: step.input_criteria.map((criterion: ICriterion) => {
-      const updates: Partial<Record<"path" | "target_file", string>> = {};
+      const updates: Partial<Record<CriterionPathField, string>> = {};
       if ("path" in criterion && typeof criterion.path === "string") {
         updates.path = expandInString(criterion.path, env);
       }
@@ -318,7 +320,7 @@ function expandVariablesInStep(step: IScenarioStep, env: Record<string, string>)
       return { ...criterion, ...updates } as ICriterion;
     }),
     output_criteria: step.output_criteria.map((criterion: ICriterion) => {
-      const updates: Partial<Record<"path" | "target_file", string>> = {};
+      const updates: Partial<Record<CriterionPathField, string>> = {};
       if ("path" in criterion && typeof criterion.path === "string") {
         updates.path = expandInString(criterion.path, env);
       }

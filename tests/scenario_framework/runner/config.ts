@@ -30,7 +30,7 @@ export interface IResolvedScenarioSelection {
 export interface IExistingPortalMount {
   alias: string;
   sourcePath: string;
-  ownership: PortalOwnership | "framework" | "user";
+  ownership: PortalOwnership;
 }
 
 export interface IPortalMountPlanInput {
