@@ -9,8 +9,18 @@
   "deno.suggest.imports.autoDiscover": true,
   "deno.importMap": "./deno.json",
   "deno.suggest.imports.hosts": {
-    "https://deno.land": true
+    "https://deno.land": true,
+    "https://raw.githubusercontent.com": true
   },
+  "json.schemaDownload.enable": true,
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "**/deno.json"
+      ],
+      "url": "./schemas/deno-config.schema.json"
+    }
+  ],
   // Exclude build artifacts and caches from file watcher
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -30,6 +40,7 @@
   "chat.tools.terminal.autoApprove": {
     "timeout": true,
     "git checkout": true,
-    "true": true
+    "true": true,
+    "tee": true
   }
 }

@@ -7,6 +7,7 @@
     "./packages/parsing",
     "./packages/core",
     "./packages/ai",
+    "./packages/tui",
     "./packages/mcp",
     "./packages/git",
     "./packages/cli",
@@ -100,6 +101,8 @@
     "@exaix/parsing/": "./packages/parsing/src/",
     "@exaix/core": "./packages/core/mod.ts",
     "@exaix/core/": "./packages/core/src/",
+    "@exaix/tui": "./packages/tui/mod.ts",
+    "@exaix/tui/": "./packages/tui/src/",
     "@exaix/testing": "./packages/testing/mod.ts",
     "@exaix/testing/": "./packages/testing/src/"
   },

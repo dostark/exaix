@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-29T10:53:14.233Z",
+  "generated_at": "2026-04-29T14:12:45.912Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -426,6 +426,27 @@
         ".copilot/chunks/post-gap-analysis.md.chunk5.txt",
         ".copilot/chunks/post-gap-analysis.md.chunk6.txt",
         ".copilot/chunks/post-gap-analysis.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/clean-codebase.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Clean Codebase Template (#clean-codebase)",
+      "short_summary": "Template for removing all errors, warnings, and style violations from the repository.",
+      "version": "0.1",
+      "topics": [
+        "cleanup",
+        "validation",
+        "linting",
+        "style",
+        "qa"
+      ],
+      "chunks": [
+        ".copilot/chunks/clean-codebase.md.chunk0.txt",
+        ".copilot/chunks/clean-codebase.md.chunk1.txt",
+        ".copilot/chunks/clean-codebase.md.chunk2.txt",
+        ".copilot/chunks/clean-codebase.md.chunk3.txt"
       ]
     },
     {

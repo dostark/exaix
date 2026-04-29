@@ -17,7 +17,17 @@
       "type": ["boolean", "string"]
     },
     "exports": {
-      "type": "string"
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "tasks": {
       "type": "object",

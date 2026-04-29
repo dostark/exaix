@@ -184,7 +184,7 @@ import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
 ```
 
-**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules; re-exporting from external packages or arbitrary non-root modules remains prohibited.
+**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited.
 
 ```ts
 // packages/core/mod.ts
@@ -192,6 +192,14 @@ export type { IToolRegistry } from "./src/interfaces/i_tool_registry.ts";
 export type { IActivityRecord } from "./src/types/database.ts";
 export { PortalOperation } from "./src/enums.ts";
 ```
+
+**Prohibited in package entrypoints:**
+
+```ts
+export * from "../../src/shared/enums/ui.ts";
+```
+
+Package entrypoints must only expose package-local source exports, not direct repository `src/*` imports.
 
 ### Multi-line Named Imports
 

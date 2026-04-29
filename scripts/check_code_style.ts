@@ -28,6 +28,15 @@ interface Rule {
   pathFilter?: (path: string) => boolean;
 }
 
+function isPackageEntrypoint(path: string): boolean {
+  return path.endsWith("/mod.ts") || path.endsWith("/index.ts");
+}
+
+function isSamePackageReExport(line: string): boolean {
+  const match = line.match(/from\s+["']([^"']+)["']/);
+  return !!match && match[1].startsWith("./");
+}
+
 const args = new Set(Deno.args);
 const strictImports = args.has("--strict-imports");
 const convertWarnings = args.has("--convert-warnings-to-errors");
@@ -198,6 +207,15 @@ const rules: Rule[] = [
     pathFilter: (path: string) => !path.endsWith("/mod.ts") && !path.endsWith("/index.ts"),
   },
   {
+    name: "package-entrypoint-root-src-reexport",
+    regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
+    message:
+      "Package entrypoints must not re-export entities directly from repo 'src/*' paths. Use package-local public exports instead.",
+    severity: "error" as const,
+    pathFilter: (path: string) =>
+      path.startsWith("packages/") && (path.endsWith("/mod.ts") || path.endsWith("/index.ts")),
+  },
+  {
     name: "magic-union-type",
     // Match inline union of string literals: "foo" | "bar"
     // Use word boundaries and double quotes to identify string literals
@@ -293,6 +311,7 @@ function stripQuotedStringsAndComments(line: string): string {
 }
 
 async function checkFile(path: string) {
+  const repoPath = path.startsWith(REPO_ROOT + "/") ? path.slice(REPO_ROOT.length + 1) : path;
   const text = await Deno.readTextFile(path);
   const lines = text.split(/\r?\n/);
 
@@ -865,7 +884,7 @@ async function checkFile(path: string) {
 
   rules.forEach((rule) => {
     // Skip rule if path does not match rule's pathFilter
-    if (rule.pathFilter && !rule.pathFilter(path)) {
+    if (rule.pathFilter && !rule.pathFilter(repoPath)) {
       return;
     }
 
@@ -920,6 +939,9 @@ async function checkFile(path: string) {
         }
       }
       if (rule.regex.test(lineToTest)) {
+        if (rule.name === "re-export-imported" && isPackageEntrypoint(path) && isSamePackageReExport(lineToTest)) {
+          return;
+        }
         if (rule.severity === "warn") {
           // Check for exclusion comment above
           if (masked && !showAllWarnings) {

@@ -12,6 +12,7 @@ Key points
 - Review changes with `git status` and `git diff` before committing.
 - Unless the prompt explicitly says otherwise, include ALL current repository changes in the commit workflow: both already-staged changes and any unstaged changes you created or modified while doing the task.
 - If the work contains more than one logically distinct change, split it into separate commits by logical batch unless the prompt explicitly requires a single combined commit.
+- Ensure the series of commits covers all current staged and unstaged changes in the repository.
 - Run the required pre-commit validation for the affected changes before proposing the final commit command.
 - Use conventional commit format for the subject line: `<type>(<scope>): <summary>`.
 - ALL commits (non-auto) MUST follow the Exaix structured format in the body.
@@ -19,7 +20,7 @@ Key points
 
 Default commit scope and batching
 - Start by reviewing both staged and unstaged changes with `git status`, `git diff --staged`, and `git diff`.
-- If no narrower scope is stated in the prompt, assume the goal is to commit all relevant current changes rather than only the staged subset.
+- If no narrower scope is stated in the prompt, assume the goal is to commit all current staged and unstaged changes in one or more logically bundled batches rather than only the staged subset.
 - Stage files intentionally. If the changes represent multiple unrelated or loosely related concerns, group files into logically coherent batches and create one structured commit per batch.
 - Only keep changes out of the commit when the prompt explicitly excludes them or the user has clearly indicated they are unrelated and should remain separate.
 - When splitting into batches, each batch must still satisfy the full structured commit schema below.
@@ -65,7 +66,7 @@ model: <YOUR actual model name and version>
 
 Canonical prompt (short):
 "You've completed [work]. Create a MANDATORY structured commit message.
-Review all staged and unstaged changes first, split them into logical commit batches unless the prompt says otherwise, run the required pre-commit checks, then follow the schema: subject line, then what:, rationale:, tests:, who:, and impact: (grounded in ARCHITECTURE.md).
+Review all staged and unstaged changes first, split them into logical commit batches unless the prompt says otherwise, commit the full current scope in those batches, run the required pre-commit checks, then follow the schema: subject line, then what:, rationale:, tests:, who:, and impact: (grounded in ARCHITECTURE.md).
 Ensure you identify your actual model correctly (e.g., Gemini) to prevent hallucinations."
 
 Examples:

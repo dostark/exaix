@@ -200,6 +200,7 @@ export class ExecutionLoop {
     let requestId: string | undefined;
     let portalGitService: IGitService | undefined;
     let worktreePath: string | undefined;
+    let leaseAcquired = false;
 
     try {
       // Parse plan frontmatter first (validates before lease)
@@ -216,6 +217,7 @@ export class ExecutionLoop {
 
       // Acquire lease on the plan
       this.ensureLease(planPath, traceId);
+      leaseAcquired = true;
 
       // Log execution start
       this.logActivity("execution.started", traceId, {
@@ -295,7 +297,7 @@ export class ExecutionLoop {
       }
 
       const errorMessage = error instanceof Error ? error.message : String(error);
-      if (traceId && requestId) {
+      if (traceId && requestId && leaseAcquired) {
         await this.handleFailure(planPath, traceId, requestId, errorMessage, {
           portalGitService,
           worktreePath,
@@ -1024,6 +1026,7 @@ export class ExecutionLoop {
     await this.generateFailureReport(traceId, requestId, error);
 
     // Persist the failed plan as an execution artifact for trace inspection.
+    let planContent: string | null = null;
     try {
       const execDir = join(
         this.config.system.root,
@@ -1032,10 +1035,14 @@ export class ExecutionLoop {
         traceId,
       );
       await Deno.mkdir(execDir, { recursive: true });
-      const planContent = await Deno.readTextFile(planPath);
+      planContent = await Deno.readTextFile(planPath);
       await Deno.writeTextFile(join(execDir, "plan.md"), planContent);
     } catch (e) {
-      console.error("Failed to persist plan artifact on failure:", e);
+      if (!(e instanceof Deno.errors.NotFound)) {
+        console.error("Failed to persist plan artifact on failure:", e);
+      } else {
+        console.warn("Plan file missing during failure persistence:", planPath);
+      }
     }
 
     // Move plan to Workspace/Rejected
@@ -1046,20 +1053,28 @@ export class ExecutionLoop {
     const rejectedPlanName = planFileName.replace(".md", "_failed.md");
     const targetRejectedPath = join(rejectedDir, rejectedPlanName);
 
-    // Read plan, update frontmatter status (YAML format)
-    const content = await Deno.readTextFile(planPath);
-    let updatedContent = content.replace(
-      /status: "?(active|approved|review)"?/,
-      `status: ${PlanStatus.ERROR}`,
-    );
+    if (planContent !== null) {
+      let updatedContent = planContent.replace(
+        /status: "?(active|approved|review)"?/,
+        `status: ${PlanStatus.ERROR}`,
+      );
 
-    // Append error to frontmatter if possible
-    if (!updatedContent.includes("error:")) {
+      // Append error to frontmatter if possible
+      if (!updatedContent.includes("error:")) {
+        const displayError = (error || "Unknown error").replace(/"/g, '\\"');
+        updatedContent = updatedContent.replace(/---\n/, `---\nerror: "${displayError}"\n`);
+      }
+
+      await Deno.writeTextFile(targetRejectedPath, updatedContent);
+    } else {
       const displayError = (error || "Unknown error").replace(/"/g, '\\"');
-      updatedContent = updatedContent.replace(/---\n/, `---\nerror: "${displayError}"\n`);
+      const fallbackContent = `---\nstatus: ${PlanStatus.ERROR}\nerror: "${displayError}"\n---\n`;
+      await Deno.writeTextFile(targetRejectedPath, fallbackContent);
+      console.warn(
+        "Wrote fallback rejected plan content because the original plan file was missing:",
+        targetRejectedPath,
+      );
     }
-
-    await Deno.writeTextFile(targetRejectedPath, updatedContent);
 
     // Move the original request to Workspace/Rejected along with the plan
     // This keeps Workspace/Requests as an active 'Inbox' for new/planned work.

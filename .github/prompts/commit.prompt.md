@@ -19,10 +19,11 @@ Canonical source of truth:
 
 Use this command to:
 
-1. Inspect current repository changes with `git status`, `git diff --staged`, and `git diff`.
+1. Inspect all current repository changes, both staged and unstaged, with `git status`, `git diff --staged`, and `git diff`.
 1. Follow the exact structured commit format and commit-scope rules defined in `../../.copilot/prompts/commit-message.md`.
 1. Run the required linting, tests, and other pre-commit checks relevant to the touched files. For test validation use `deno task test_parallel` (runs the full parallel suite followed by CLI-subprocess-heavy tests sequentially, then prints a combined summary).
 1. Split the changes into logically related commit batches unless the prompt explicitly requires a single combined commit.
+1. Commit all staged and unstaged changes in a series of logically bundled commits that cover the full current scope.
 1. Output the full commit message and the final `git add` and `git commit` commands for each batch.
 
 Execution requirements:
@@ -32,7 +33,7 @@ Execution requirements:
 1. Require the mandatory fields `what:`, `rationale:`, `tests:`, `who:`, and `impact:`.
 1. Reference `../../ARCHITECTURE.md` for valid `impact:` component grounding.
 1. Do not use `--no-verify`.
-1. Unless the prompt explicitly narrows scope, treat both staged and unstaged task changes as part of the commit workflow.
+1. Unless the prompt explicitly narrows scope, treat all current staged and unstaged changes as part of the commit workflow and commit them in a series of logically bundled batches.
 1. If multiple logical batches are needed, provide one structured commit message and one exact commit command per batch.
 1. If required checks fail or were not run, report that as a blocking issue and do not present the commit as ready.
 1. **Branch safety**: Direct commits on `main` are blocked by a pre-commit hook (Gate 0). Always work on a feature branch.
