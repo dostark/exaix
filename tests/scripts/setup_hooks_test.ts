@@ -46,5 +46,9 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes("deno task check:test-placement"),
       "pre-commit hook should run test placement validation",
     );
+    assert(
+      hookInstaller.includes('deno test --allow-all --filter "[security]" tests/'),
+      "pre-push hook should run only the security regression suite",
+    );
   });
 });
