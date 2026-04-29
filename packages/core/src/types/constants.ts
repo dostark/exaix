@@ -33,7 +33,7 @@ export const DEFAULT_PENDING_MEMORY_PATH = "Pending";
 export const DEFAULT_TASKS_MEMORY_PATH = "Tasks";
 export const DEFAULT_GLOBAL_MEMORY_PATH = "Global";
 
-export const ExaPathDefaults = {
+export const ExaPathDefaults: Record<string, string> = {
   workspace: DEFAULT_WORKSPACE_PATH,
   runtime: DEFAULT_RUNTIME_PATH,
   memory: DEFAULT_MEMORY_PATH,

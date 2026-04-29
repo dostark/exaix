@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
@@ -400,7 +400,7 @@ Deno.test("IFlow as Flow schemas: can be imported and used by other modules", ()
     name: "Test Step",
     type: FlowStepType.AGENT,
     identity: "test-agent",
-    execution_mode: StepExecutionMode.DECLARED,
+    execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: {
       source: FlowInputSource.REQUEST,

@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
@@ -130,7 +130,7 @@ Deno.test("DynamicStepExecutor: successful execution with tool calls", async () 
     id: "step-1",
     name: "Search for bugs",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE],
   });
 
@@ -174,7 +174,7 @@ Deno.test("DynamicStepExecutor: stops at max iterations", async () => {
     id: "step-1",
     name: "Infinite loop",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     timeout: 2000, // This will set maxIterations to 2 (Math.min(10, 2000/1000))
   });
 
@@ -214,7 +214,7 @@ Deno.test("DynamicStepExecutor: throws when model selects non-permitted tool", a
     id: "step-1",
     name: "Illegal tool",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE],
   });
 
@@ -249,7 +249,7 @@ Deno.test("DynamicStepExecutor: filters non-read-only tools from identity", asyn
     id: "step-1",
     name: "Filtered tool",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
   });
 
   llmClient.setDecisions([
@@ -273,7 +273,7 @@ Deno.test("DynamicStepExecutor: throws on non-dynamic step", async () => {
     id: "id",
     name: "Standard",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DECLARED,
+    execution_mode: FlowStepExecutionMode.DECLARED,
   });
 
   const identity = BlueprintFrontmatterSchema.parse({

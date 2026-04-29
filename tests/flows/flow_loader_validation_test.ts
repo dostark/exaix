@@ -7,7 +7,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowLoader } from "../../src/flows/flow_loader.ts";
 import { join } from "@std/path";
-import { StepExecutionMode, ToolName } from "@exaix/core";
+import { FlowStepExecutionMode, ToolName } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
 /**
@@ -117,7 +117,7 @@ steps:
     const flow = await loader.loadFlow("test");
 
     assertEquals(flow.id, "test");
-    assertEquals(flow.steps[0].execution_mode, StepExecutionMode.DECLARED);
+    assertEquals(flow.steps[0].execution_mode, FlowStepExecutionMode.DECLARED);
   } finally {
     await cleanup();
   }
@@ -149,7 +149,7 @@ steps:
     const flow = await loader.loadFlow("test");
 
     assertEquals(flow.id, "test");
-    assertEquals(flow.steps[0].execution_mode, StepExecutionMode.DYNAMIC);
+    assertEquals(flow.steps[0].execution_mode, FlowStepExecutionMode.DYNAMIC);
     assertEquals(flow.steps[0].permitted_tools, [
       McpToolName.READ_FILE,
       McpToolName.LIST_DIRECTORY,
@@ -183,7 +183,7 @@ steps:
     const flow = await loader.loadFlow("test");
 
     assertEquals(flow.id, "test");
-    assertEquals(flow.steps[0].execution_mode, StepExecutionMode.DYNAMIC);
+    assertEquals(flow.steps[0].execution_mode, FlowStepExecutionMode.DYNAMIC);
     assertEquals(flow.steps[0].permitted_tools, []);
   } finally {
     await cleanup();

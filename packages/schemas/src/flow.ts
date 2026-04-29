@@ -13,9 +13,9 @@ import {
   FlowGateOnFail,
   FlowInputSource,
   FlowOutputFormat,
+  FlowStepExecutionMode,
   FlowStepOnErrorAction,
   FlowStepType,
-  StepExecutionMode,
 } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { JSONValueSchema } from "@exaix/core/types/json.ts";
@@ -164,7 +164,7 @@ export const FlowStepSchema = z.object({
   /** Identity reference (required for agent type, optional for others) */
   identity: z.string().min(1, "Identity reference cannot be empty"),
   /** Execution mode: DECLARED (default) or DYNAMIC (ReAct-style tool selection) */
-  execution_mode: z.nativeEnum(StepExecutionMode).optional().default(StepExecutionMode.DECLARED),
+  execution_mode: z.nativeEnum(FlowStepExecutionMode).optional().default(FlowStepExecutionMode.DECLARED),
   /** For DYNAMIC mode: tools the model may select from at runtime (read-only tools only) */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
   dependsOn: z.array(z.string()).default([]),

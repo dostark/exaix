@@ -10,7 +10,7 @@
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import type { McpToolName } from "@exaix/mcp";
 import { READ_ONLY_TOOLS } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
@@ -121,7 +121,7 @@ export class DynamicStepExecutor {
     input: string,
     opts: IDynamicStepExecutorOptions,
   ): Promise<IDynamicStepResult> {
-    if (step.execution_mode !== StepExecutionMode.DYNAMIC) {
+    if (step.execution_mode !== FlowStepExecutionMode.DYNAMIC) {
       throw new Error(
         `DynamicStepExecutor called on step "${step.id}" which is not in dynamic mode`,
       );

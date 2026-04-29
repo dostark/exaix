@@ -5,7 +5,7 @@
  * @architectural-layer Shared
  * * @related-files [packages/core/src/schemas/memory_bank.ts]
  */
-import { MemoryRecordStatus } from "../enums.ts";
+import { MemoryRecordStatus } from "../types/enums.ts";
 import type { JSONValue } from "../types/json.ts";
 export const MemoryStatus = {
   PENDING: MemoryRecordStatus.PENDING,

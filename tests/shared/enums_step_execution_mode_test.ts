@@ -1,26 +1,26 @@
 /**
- * @module StepExecutionModeTest
+ * @module FlowStepExecutionModeTest
  * @path tests/shared/enums_step_execution_mode_test.ts
- * @description Verifies the StepExecutionMode enum and tool classification constants for dynamic flow steps.
+ * @description Verifies the FlowStepExecutionMode enum and tool classification constants for dynamic flow steps.
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 
 /**
  * Tests for Phase 56 Step 1.1-1.4: Schema and Enum Updates
  *
  * Success Criteria:
- * - StepExecutionMode enum has DECLARED and DYNAMIC values
+ * - FlowStepExecutionMode enum has DECLARED and DYNAMIC values
  * - READ_ONLY_TOOLS contains read_file, list_directory, search_files
  * - WRITE_TOOLS contains write_file, run_command, create_directory
  * - Tool classification is mutually exclusive
  */
 
-Deno.test("StepExecutionMode enum has correct values", () => {
-  assertEquals(StepExecutionMode.DECLARED, "declared");
-  assertEquals(StepExecutionMode.DYNAMIC, "dynamic");
+Deno.test("FlowStepExecutionMode enum has correct values", () => {
+  assertEquals(FlowStepExecutionMode.DECLARED, "declared");
+  assertEquals(FlowStepExecutionMode.DYNAMIC, "dynamic");
 });
 
 Deno.test("READ_ONLY_TOOLS contains correct tools", () => {

@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowOutputFormat, StepExecutionMode } from "@exaix/core";
+import { FlowOutputFormat, FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
@@ -24,11 +24,11 @@ Deno.test("FlowRunner: step with execution_mode dynamic identified", () => {
     id: "dynamic-step",
     name: "Dynamic exploration",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
   };
 
-  assertEquals(dynamicStep.execution_mode, StepExecutionMode.DYNAMIC);
+  assertEquals(dynamicStep.execution_mode, FlowStepExecutionMode.DYNAMIC);
 });
 
 Deno.test("FlowRunner: step with execution_mode declared identified", () => {
@@ -37,10 +37,10 @@ Deno.test("FlowRunner: step with execution_mode declared identified", () => {
     id: "declared-step",
     name: "Write output",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DECLARED,
+    execution_mode: FlowStepExecutionMode.DECLARED,
   } as IFlowStep;
 
-  assertEquals(declaredStep.execution_mode, StepExecutionMode.DECLARED);
+  assertEquals(declaredStep.execution_mode, FlowStepExecutionMode.DECLARED);
 });
 
 Deno.test("FlowRunner: step without execution_mode defaults to declared", () => {
@@ -71,23 +71,23 @@ Deno.test("FlowRunner: flow with mixed execution modes", () => {
         id: "explore",
         name: "Explore codebase",
         identity: "senior-coder",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY],
       },
       {
         id: "write",
         name: "Write output",
         identity: "senior-coder",
-        execution_mode: StepExecutionMode.DECLARED,
+        execution_mode: FlowStepExecutionMode.DECLARED,
       },
     ] as IFlowStep[],
   };
 
   const dynamicSteps = flow.steps.filter(
-    (s) => s.execution_mode === StepExecutionMode.DYNAMIC,
+    (s) => s.execution_mode === FlowStepExecutionMode.DYNAMIC,
   );
   const declaredSteps = flow.steps.filter(
-    (s) => s.execution_mode === StepExecutionMode.DECLARED,
+    (s) => s.execution_mode === FlowStepExecutionMode.DECLARED,
   );
 
   assertEquals(dynamicSteps.length, 1);
@@ -100,7 +100,7 @@ Deno.test("FlowRunner: dynamic step has permitted_tools", () => {
     id: "dynamic-step",
     name: "Explore",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.READ_FILE, McpToolName.LIST_DIRECTORY, McpToolName.SEARCH_FILES],
   };
 

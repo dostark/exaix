@@ -6,7 +6,7 @@
  * * @related-files [packages/core/src/status/plan_status.ts]
  */
 
-import { GeneralStatus } from "../enums.ts";
+import { GeneralStatus } from "../types/enums.ts";
 import type { JSONValue } from "../types/json.ts";
 
 export const RequestStatus = {

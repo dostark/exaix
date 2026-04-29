@@ -365,11 +365,6 @@ export enum SkillImmutableField {
 }
 
 /**
- * @deprecated Use SkillManagedField instead.
- */
-export type SkillOmitFields = SkillManagedField;
-
-/**
  * Severity levels for linting.
  */
 export enum Severity {
@@ -790,7 +785,7 @@ export enum FlowOutputFormat {
  * - DECLARED: tools are committed in the plan before execution (default, current behavior)
  * - DYNAMIC: model selects tools from permitted_tools at runtime (ReAct-style)
  */
-export enum StepExecutionMode {
+export enum FlowStepExecutionMode {
   DECLARED = "declared",
   DYNAMIC = "dynamic",
 }

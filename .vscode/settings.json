@@ -28,6 +28,8 @@
     "editor.formatOnSave": true
   },
   "chat.tools.terminal.autoApprove": {
-    "timeout": true
+    "timeout": true,
+    "git checkout": true,
+    "true": true
   }
 }

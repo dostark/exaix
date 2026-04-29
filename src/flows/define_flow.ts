@@ -6,7 +6,7 @@
  * * @related-files [src/schemas/flow.ts, src/enums.ts]
  */
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 export function defineFlow(config: {
   id: string;
@@ -61,7 +61,7 @@ export function defineFlow(config: {
       name: step.name,
       type: FlowStepType.AGENT, // Default step type
       identity: step.identity,
-      execution_mode: StepExecutionMode.DECLARED,
+      execution_mode: FlowStepExecutionMode.DECLARED,
       dependsOn: step.dependsOn ?? [],
       input: {
         source: (step.input?.source as FlowInputSource) ?? FlowInputSource.REQUEST,

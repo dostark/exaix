@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
@@ -22,7 +22,7 @@ function createStep(overrides: Partial<IFlowStep> = {}): IFlowStep {
     name: "Test Step",
     identity: "test-agent",
     type: FlowStepType.AGENT,
-    execution_mode: StepExecutionMode.DECLARED,
+    execution_mode: FlowStepExecutionMode.DECLARED,
     dependsOn: [],
     input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
     retry: { maxAttempts: 1, backoffMs: 1000 },
@@ -54,8 +54,8 @@ import { validateFlowForCli } from "../../src/cli/flow_validation.ts";
 Deno.test("validateFlowForCli: returns valid result for flow with no dynamic steps", () => {
   const flow = createFlow({
     steps: [
-      createStep({ id: "step1", execution_mode: StepExecutionMode.DECLARED }),
-      createStep({ id: "step2", execution_mode: StepExecutionMode.DECLARED }),
+      createStep({ id: "step1", execution_mode: FlowStepExecutionMode.DECLARED }),
+      createStep({ id: "step2", execution_mode: FlowStepExecutionMode.DECLARED }),
     ],
   });
 
@@ -71,7 +71,7 @@ Deno.test("validateFlowForCli: returns error for dynamic step with write_file in
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.WRITE_FILE],
       }),
     ],
@@ -90,7 +90,7 @@ Deno.test("validateFlowForCli: returns error for dynamic step with run_command i
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE, McpToolName.RUN_COMMAND],
       }),
     ],
@@ -108,7 +108,7 @@ Deno.test("validateFlowForCli: returns error for dynamic step with create_direct
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.CREATE_DIRECTORY],
       }),
     ],
@@ -126,7 +126,7 @@ Deno.test("validateFlowForCli: accepts dynamic step with only read-only tools", 
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [
           McpToolName.READ_FILE,
           McpToolName.LIST_DIRECTORY,
@@ -147,7 +147,7 @@ Deno.test("validateFlowForCli: returns warning for dynamic step with no permitte
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: undefined,
         timeout: 60000, // Set timeout to isolate permitted_tools warning
       }),
@@ -168,7 +168,7 @@ Deno.test("validateFlowForCli: returns warning for dynamic step with empty permi
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [],
         timeout: 60000, // Set timeout to isolate permitted_tools warning
       }),
@@ -188,7 +188,7 @@ Deno.test("validateFlowForCli: returns warning for dynamic step with no timeout"
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE],
         timeout: undefined,
       }),
@@ -209,7 +209,7 @@ Deno.test("validateFlowForCli: no warning for dynamic step with timeout set", ()
     steps: [
       createStep({
         id: "explore",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE],
         timeout: 60000,
       }),
@@ -228,19 +228,19 @@ Deno.test("validateFlowForCli: multiple errors and warnings for complex flow", (
     steps: [
       createStep({
         id: "bad-step",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.WRITE_FILE],
         timeout: undefined,
       }),
       createStep({
         id: "unconfigured-step",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: undefined,
         timeout: 30000,
       }),
       createStep({
         id: "good-step",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE],
         timeout: 60000,
       }),
@@ -260,12 +260,12 @@ Deno.test("validateFlowForCli: handles mixed declared and dynamic steps", () => 
     steps: [
       createStep({
         id: "declared-step",
-        execution_mode: StepExecutionMode.DECLARED,
+        execution_mode: FlowStepExecutionMode.DECLARED,
         permitted_tools: [McpToolName.WRITE_FILE], // Allowed in declared mode
       }),
       createStep({
         id: "dynamic-step",
-        execution_mode: StepExecutionMode.DYNAMIC,
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
         permitted_tools: [McpToolName.READ_FILE],
         timeout: 60000,
       }),

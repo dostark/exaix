@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { WRITE_TOOLS } from "@exaix/mcp";
 
@@ -22,7 +22,7 @@ function validateDynamicStepTools(steps: IFlowStep[]): string[] {
   const errors: string[] = [];
 
   for (const step of steps) {
-    if (step.execution_mode !== StepExecutionMode.DYNAMIC) continue;
+    if (step.execution_mode !== FlowStepExecutionMode.DYNAMIC) continue;
     if (!step.permitted_tools || step.permitted_tools.length === 0) continue;
 
     for (const tool of step.permitted_tools) {

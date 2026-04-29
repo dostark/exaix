@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core";
 import { ConditionEvaluator, type IConditionContext } from "../../src/flows/condition_evaluator.ts";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
@@ -45,7 +45,7 @@ const createMockStep = (overrides: Partial<IFlowStep> = {}): IFlowStep => ({
   name: "Test Step",
   type: FlowStepType.AGENT,
   identity: "test-agent",
-  execution_mode: StepExecutionMode.DECLARED,
+  execution_mode: FlowStepExecutionMode.DECLARED,
   dependsOn: [],
   input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
   retry: { maxAttempts: 1, backoffMs: 1000 },

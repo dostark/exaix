@@ -20,7 +20,7 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
-import { FlowInputSource, FlowStepOnErrorAction, FlowStepType, StepExecutionMode } from "@exaix/core";
+import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "../journal/activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
@@ -1968,7 +1968,7 @@ export class FlowRunner implements IFlowRunner {
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     stepRequest: IFlowStepRequest,
   ): Promise<IAgentExecutionResult> {
-    if (step.execution_mode === StepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
+    if (step.execution_mode === FlowStepExecutionMode.DYNAMIC && this.dynamicStepExecutor) {
       return this.executeDynamicStep(step, request, stepRequest);
     }
     return this.executeDeclaredStep(step, stepRequest);

@@ -6,7 +6,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
 /**
@@ -24,12 +24,12 @@ Deno.test("FlowStepSchema: accepts execution_mode: declared", () => {
     id: "test-step",
     name: "Test Step",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DECLARED,
+    execution_mode: FlowStepExecutionMode.DECLARED,
   };
 
   const result = FlowStepSchema.parse(step);
 
-  assertEquals(result.execution_mode, StepExecutionMode.DECLARED);
+  assertEquals(result.execution_mode, FlowStepExecutionMode.DECLARED);
 });
 
 Deno.test("FlowStepSchema: accepts execution_mode: dynamic", () => {
@@ -37,12 +37,12 @@ Deno.test("FlowStepSchema: accepts execution_mode: dynamic", () => {
     id: "test-step",
     name: "Test Step",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
   };
 
   const result = FlowStepSchema.parse(step);
 
-  assertEquals(result.execution_mode, StepExecutionMode.DYNAMIC);
+  assertEquals(result.execution_mode, FlowStepExecutionMode.DYNAMIC);
 });
 
 Deno.test("FlowStepSchema: defaults execution_mode to DECLARED", () => {
@@ -55,7 +55,7 @@ Deno.test("FlowStepSchema: defaults execution_mode to DECLARED", () => {
 
   const result = FlowStepSchema.parse(step);
 
-  assertEquals(result.execution_mode, StepExecutionMode.DECLARED);
+  assertEquals(result.execution_mode, FlowStepExecutionMode.DECLARED);
 });
 
 Deno.test("FlowStepSchema: accepts permitted_tools array", () => {
@@ -63,7 +63,7 @@ Deno.test("FlowStepSchema: accepts permitted_tools array", () => {
     id: "test-step",
     name: "Test Step",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [
       McpToolName.READ_FILE,
       McpToolName.LIST_DIRECTORY,
@@ -85,7 +85,7 @@ Deno.test("FlowStepSchema: accepts empty permitted_tools", () => {
     id: "test-step",
     name: "Test Step",
     identity: "senior-coder",
-    execution_mode: StepExecutionMode.DYNAMIC,
+    execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [],
   };
 

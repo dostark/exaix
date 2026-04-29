@@ -8,7 +8,7 @@
  */
 
 import { READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
-import { StepExecutionMode } from "@exaix/core";
+import { FlowStepExecutionMode } from "@exaix/core";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 
 /**
@@ -33,7 +33,7 @@ export function validateFlowForCli(flow: IFlow): ICliValidationReport {
 
   for (const step of flow.steps) {
     // Skip non-dynamic steps
-    if (step.execution_mode !== StepExecutionMode.DYNAMIC) {
+    if (step.execution_mode !== FlowStepExecutionMode.DYNAMIC) {
       continue;
     }
 

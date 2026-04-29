@@ -11,10 +11,9 @@ import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestShowResult } from "../../shared/types/request.ts";
-import { coerceRequestStatus } from "@exaix/core/status/request_status.ts";
 import { DEFAULT_IDENTITY_ID, PlanStatus, PORTAL_LABEL } from "@exaix/core";
 import { AnalysisMode } from "../../shared/types/request.ts";
-import { RequestKind, RequestPriority } from "@exaix/core";
+import { coerceRequestStatus, RequestKind, RequestPriority } from "@exaix/core";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 
 export class RequestShowHandler extends BaseCommand {
