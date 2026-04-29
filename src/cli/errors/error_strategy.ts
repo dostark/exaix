@@ -3,7 +3,7 @@
  * @path src/cli/errors/error_strategy.ts
  * @description Defines the default error handling strategy for CLI commands, ensuring consistent error reporting and exit codes.
  * @architectural-layer CLI
- * * @related-files [src/cli/exactl.ts]
+ * @related-files [src/cli/exactl.ts]
  */
 
 export type ErrorPayload = Error | string | object | null | undefined;

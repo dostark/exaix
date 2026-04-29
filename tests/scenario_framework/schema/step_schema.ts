@@ -5,7 +5,7 @@
  * criteria, portal declarations, and criterion result payloads used by the
  * scenario framework.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts]
+ * @related-files [tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts]
  */
 
 import { z } from "zod";

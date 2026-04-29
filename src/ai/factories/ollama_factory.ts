@@ -3,7 +3,7 @@
  * @path src/ai/factories/ollama_factory.ts
  * @description Factory for creating Ollama provider instances, configured via local endpoints.
  * @architectural-layer AI
- * * @related-files [src/ai/providers/llama_provider.ts]
+ * @related-files [src/ai/providers/llama_provider.ts]
  */
 import { AbstractProviderFactory } from "./abstract_provider_factory.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";

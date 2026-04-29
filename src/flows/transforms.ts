@@ -4,7 +4,7 @@
  * @description Transform functions for flow execution pipeline. Provides data transformation,
  * merging, and extraction utilities for flow step processing.
  * @architectural-layer Flows
- * * @related-files [src/flows/runner.ts, src/flows/condition_evaluator.ts]
+ * @related-files [src/flows/runner.ts, src/flows/condition_evaluator.ts]
  */
 import type { JSONValue } from "@exaix/core";
 

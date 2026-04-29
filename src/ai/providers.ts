@@ -3,7 +3,7 @@
  * @path src/ai/providers.ts
  * @description Unified adapter interface for interacting with various LLM providers, abstracting connection details and authentication.
  * @architectural-layer AI
- * * @related-files [src/ai/provider_registry.ts, src/ai/factories/abstract_provider_factory.ts]
+ * @related-files [src/ai/provider_registry.ts, src/ai/factories/abstract_provider_factory.ts]
  */
 
 import { ProviderRegistry } from "./provider_registry.ts";

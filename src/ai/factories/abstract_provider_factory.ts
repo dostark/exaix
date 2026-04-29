@@ -3,7 +3,7 @@
  * @path src/ai/factories/abstract_provider_factory.ts
  * @description Base abstractions for provider factories, defining interfaces and common logic for API key retrieval and ID generation.
  * @architectural-layer AI
- * * @related-files [src/ai/provider_registry.ts, src/ai/factories/anthropic_factory.ts]
+ * @related-files [src/ai/provider_registry.ts, src/ai/factories/anthropic_factory.ts]
  */
 import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import { getApiKeyWithOptionalPersistence } from "../provider_api_key.ts";

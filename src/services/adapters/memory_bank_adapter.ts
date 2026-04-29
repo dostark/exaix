@@ -3,10 +3,10 @@
  * @path src/services/adapters/memory_bank_adapter.ts
  * @description Adapter for MemoryBankService that satisfies the IMemoryBankService interface.
  * @architectural-layer Services/Adapters
- * * @related-files [src/services/memory_bank.ts, src/shared/interfaces/i_memory_bank_service.ts]
+ * @related-files [src/services/memory_bank.ts, src/shared/interfaces/i_memory_bank_service.ts]
  */
 
-import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService, IMemoryEmbeddingService } from "@exaix/core/types";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
 import type { MemoryType } from "@exaix/core";
 import type {
@@ -19,8 +19,6 @@ import type {
   IPattern,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryEmbeddingService } from "../../shared/interfaces/i_memory_embedding_service.ts";
-
 export class MemoryBankAdapter implements IMemoryBankService {
   constructor(private inner: MemoryBankService) {}
 

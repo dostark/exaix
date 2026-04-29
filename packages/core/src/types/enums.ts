@@ -3,7 +3,7 @@
  * @path src/shared/enums.ts
  * @description Centralized enums share between Core and TUI.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/*.ts, src/shared/status/*.ts]
+ * @related-files [src/shared/schemas/*.ts, src/shared/status/*.ts]
  */
 
 export enum GeneralStatus {

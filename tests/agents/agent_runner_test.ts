@@ -8,12 +8,11 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "../../src/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "../../src/services/agent/agent_runner.ts";
-import { PORTAL_CONTEXT_KEY } from "@exaix/core";
+import { MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
 import { buildPortalContextBlock } from "../../src/services/context/prompt_context.ts";
-import type { ISkillsService } from "../../src/shared/interfaces/i_skills_service.ts";
-import type { ISkillMatchRequest } from "../../src/shared/types/skill.ts";
+import type { ISkillsService } from "@exaix/core/types";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import type { IGenerateResult } from "../../src/ai/types.ts";
 
 // ============================================================================

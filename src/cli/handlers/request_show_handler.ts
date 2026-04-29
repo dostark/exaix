@@ -3,16 +3,16 @@
  * @path src/cli/handlers/request_show_handler.ts
  * @description Handles displaying detailed information for a specific request, including body extraction and associated plan token statistics.
  * @architectural-layer CLI
- * * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
  */
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IRequestShowResult } from "../../shared/types/request.ts";
+import type { IRequestShowResult } from "@exaix/core/types/mod.ts";
 import { DEFAULT_IDENTITY_ID, PlanStatus, PORTAL_LABEL } from "@exaix/core";
-import { AnalysisMode } from "../../shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { coerceRequestStatus, RequestKind, RequestPriority } from "@exaix/core";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 

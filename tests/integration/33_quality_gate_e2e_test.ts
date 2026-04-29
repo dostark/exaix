@@ -13,11 +13,11 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { basename } from "@std/path";
+import { basename, join } from "@std/path";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
 import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
-import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import {
@@ -27,14 +27,11 @@ import {
 } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
-import type { IRequestQualityGateService } from "../../src/shared/interfaces/i_request_quality_gate_service.ts";
-import { QualityGateMode } from "@exaix/core";
+import { MockStrategy, QualityGateMode } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { MockStrategy } from "@exaix/core";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
-import { join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 
 // ---------------------------------------------------------------------------

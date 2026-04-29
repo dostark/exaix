@@ -13,8 +13,7 @@ import { type IReviewMetadata, ReviewCommands } from "../../src/cli/commands/rev
 import { PlanStatus } from "@exaix/core";
 import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
-
+import type { IGitService } from "@exaix/core/types";
 const TEST_REQUEST_ID = "request-test123";
 const TEST_TRACE_ID = "test-trace-123";
 const TEST_AGENT_ID = "test-agent";

@@ -26,10 +26,10 @@ import { MemoryStatus } from "@exaix/core";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
-import type { IRequestOptions } from "../../src/shared/types/request.ts";
+import type { IRequestOptions } from "@exaix/core/types/mod.ts";
 import type { RequestStatusType } from "@exaix/core";
 import type { PlanStatusType } from "@exaix/core";
-import type { IPlanMetadata } from "../../src/shared/types/plan.ts";
+import type { IPlanMetadata } from "@exaix/core/types/plan.ts";
 import type { BlueprintCreateOptions, BlueprintRemoveOptions } from "../../src/cli/commands/blueprint_commands.ts";
 
 /*

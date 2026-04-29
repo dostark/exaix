@@ -6,15 +6,21 @@
  * Skills encode domain expertise, procedures, and best practices as reusable
  * instruction modules that agents apply to tasks.
  * @architectural-layer Services
- * * @related-files [src/schemas/memory_bank.ts, src/services/agent_runner.ts]
+ * @related-files [src/schemas/memory_bank.ts, src/services/agent_runner.ts]
  */
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "../core/db.ts";
-import { ActivityActor, type MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
+import {
+  ActivityActor,
+  DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
+  DEFAULT_SKILL_INDEX_VERSION,
+  type MemoryBankSource,
+  MemoryScope,
+  SkillStatus,
+} from "@exaix/core";
 import { extractKeywords } from "../../helpers/text.ts";
-import { DEFAULT_SKILL_CONTEXT_CHAR_BUDGET, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 import {
   type ISkill,
   type ISkillIndex,
@@ -28,8 +34,8 @@ import {
 } from "@exaix/schemas/memory_bank.ts";
 import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
-import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
+import type { ISkillsService } from "@exaix/core/types";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
 
 /**
  * Skills Service Configuration

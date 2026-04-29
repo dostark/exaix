@@ -99,6 +99,7 @@
     "@exaix/schemas/": "./packages/schemas/src/",
     "@exaix/parsing": "./packages/parsing/mod.ts",
     "@exaix/parsing/": "./packages/parsing/src/",
+    "@exaix/core/types": "./packages/core/src/types/mod.ts",
     "@exaix/core": "./packages/core/mod.ts",
     "@exaix/core/": "./packages/core/src/",
     "@exaix/tui": "./packages/tui/mod.ts",

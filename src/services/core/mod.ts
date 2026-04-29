@@ -3,7 +3,7 @@
  * @path src/services/core/mod.ts
  * @description Barrel export for core infrastructure service modules.
  * @architectural-layer Services
- * * @related-files [src/services/core/*.ts]
+ * @related-files [src/services/core/*.ts]
  */
 
 export * from "./db.ts";

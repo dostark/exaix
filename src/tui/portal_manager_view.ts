@@ -3,12 +3,12 @@
  * @path src/tui/portal_manager_view.ts
  * @description TUI view for managing portals (environment symlinks), supporting status visualization, opening/closing, and removal.
  * @architectural-layer TUI
- * * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { ConfirmDialog, type DialogBase } from "./helpers/dialog_base.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";

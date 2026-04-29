@@ -3,7 +3,7 @@
  * @path src/services/utils/confidence_scorer.ts
  * @description Evaluates agent outputs to extract confidence scores and reasoning, flagging low-confidence results for human review.
  * @architectural-layer Services
- * * @related-files [src/services/agent/agent_runner.ts, src/services/agent/reflexive_agent.ts]
+ * @related-files [src/services/agent/agent_runner.ts, src/services/agent/reflexive_agent.ts]
  */
 
 import { z } from "zod";

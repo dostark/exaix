@@ -3,7 +3,7 @@
  * @path src/services/portal_knowledge/knowledge_invalidation_strategy.ts
  * @description Git-based invalidation logic for portal knowledge cache.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/git_head_resolver.ts]
+ * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/git_head_resolver.ts]
  */
 
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";

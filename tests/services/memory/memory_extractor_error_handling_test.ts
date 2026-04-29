@@ -11,7 +11,7 @@ import { MemoryExtractorService } from "../../../src/services/memory/memory_extr
 import { createMockConfig } from "../../helpers/config.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 
 Deno.test("MemoryExtractorService: logActivity errors do not break createProposal", async () => {

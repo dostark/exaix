@@ -3,11 +3,10 @@
  * @path src/cli/cli_context.ts
  * @description Defines the ICliApplicationContext interface used by CLI commands.
  * @architectural-layer CLI
- * * @related-files [src/cli/commands/, src/cli/main.ts]
+ * @related-files [src/cli/commands/, src/cli/main.ts]
  */
 
-import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
-
+import type { IApplicationContext } from "@exaix/core/types";
 /**
  * Interface that defines the CLI-specific application context.
  * Inherits from IApplicationContext but can be extended with CLI-specific services.
@@ -30,4 +29,4 @@ export type {
   IRequestService,
   ISkillsService,
   IToolRegistry,
-} from "../shared/interfaces/i_application_context.ts";
+} from "@exaix/core/types";

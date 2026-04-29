@@ -4,7 +4,7 @@
  * @description Adapter for clarification session persistence, exposing
  * loadClarification and saveClarification for CLI layer consumption.
  * @architectural-layer Services
- * * @related-files [src/services/quality_gate/clarification_persistence.ts, src/cli/handlers/request_clarify_handler.ts]
+ * @related-files [src/services/quality_gate/clarification_persistence.ts, src/cli/handlers/request_clarify_handler.ts]
  */
 
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";

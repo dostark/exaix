@@ -3,7 +3,7 @@
  * @path src/ai/providers/llama_provider.ts
  * @description IModelProvider implementation for Llama and CodeLlama models, typically served via Ollama.
  * @architectural-layer AI
- * * @related-files [src/ai/factories/llama_factory.ts, src/ai/factories/ollama_factory.ts]
+ * @related-files [src/ai/factories/llama_factory.ts, src/ai/factories/ollama_factory.ts]
  */
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import type { Config } from "@exaix/schemas/config.ts";

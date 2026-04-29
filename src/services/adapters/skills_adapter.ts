@@ -3,12 +3,12 @@
  * @path src/services/adapters/skills_adapter.ts
  * @description Adapter for SkillsService that satisfies the ISkillsService interface.
  * @architectural-layer Services/Adapters
- * * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
+ * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
 
-import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
+import type { ISkillsService } from "@exaix/core/types";
 import type { SkillsService } from "../skills/skills.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
 import { MemoryBankSource, SkillStatus } from "@exaix/core";
 
 export class SkillsAdapter implements ISkillsService {

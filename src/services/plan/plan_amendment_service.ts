@@ -20,7 +20,7 @@ import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import { type IStructuredPlanStep, parseStructuredPlanFromMarkdown } from "./structured_plan_parser.ts";
-import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
+import type { IPlanAmendmentService } from "@exaix/core/types";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 
 /** Raw YAML frontmatter before validation */

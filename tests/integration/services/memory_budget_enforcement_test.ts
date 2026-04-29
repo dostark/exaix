@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
 import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import { SkillsService } from "../../../src/services/skills/skills.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type {
   IActivitySummary,
   IDecision,
@@ -23,8 +23,7 @@ import type {
   IPattern,
   IProjectMemory,
 } from "@exaix/schemas/memory_bank.ts";
-import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION, MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 
 class BudgetMemoryBankMock implements IMemoryBankService {

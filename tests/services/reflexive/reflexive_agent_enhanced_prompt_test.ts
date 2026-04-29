@@ -6,7 +6,7 @@
  * Tests complementary to reflexive_agent_criteria_test.ts — covers only
  * behaviors not already tested there (cap logic, no-goals analysis, etc.).
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { ANALYZER_VERSION } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
@@ -16,7 +16,7 @@ import {
 } from "../../../src/services/agent/reflexive_agent.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type {
   IAgentExecutionResult,
   IAgentRunner,

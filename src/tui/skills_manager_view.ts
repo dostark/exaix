@@ -3,15 +3,15 @@
  * @path src/tui/skills_manager_view.ts
  * @description Interactive TUI view for managing Skills (agent capabilities), supporting discovery, status filtering, and skill deletion.
  * @architectural-layer TUI
- * * @related-files [src/services/skill_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/skill_service.ts, src/tui/tui_dashboard.ts]
  */
 
 import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus } from "@exaix/core";
 import { GroupingField, SkillGroupingMode, TuiNodeType } from "@exaix/tui";
-import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
+import type { ISkillsService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import type { DialogBase } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory } from "./helpers/keyboard.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
@@ -26,10 +26,8 @@ import {
   TUI_SOURCE_ICONS,
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
-import { KEYS } from "./helpers/keyboard.ts";
-import type { ISkill, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "../shared/types/skill.ts";
-import type { ISkillMatch } from "@exaix/schemas/memory_bank.ts";
+import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
 
 // ===== Interfaces =====
 

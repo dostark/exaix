@@ -3,7 +3,7 @@
  * @path src/tui/helpers/colors.ts
  * @description TUI color theme system and ANSI styling utilities.
  * @architectural-layer Helpers
- * * @related-files [src/helpers/tree_view.ts, src/helpers/status_bar.ts]
+ * @related-files [src/helpers/tree_view.ts, src/helpers/status_bar.ts]
  */
 
 // ===== Theme Interface =====

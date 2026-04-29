@@ -3,7 +3,7 @@
  * @path src/shared/types/plan.ts
  * @description Module for Plan.
  * @architectural-layer Shared
- * * @related-files [src/shared/interfaces/i_plan_service.ts]
+ * @related-files [src/shared/interfaces/i_plan_service.ts]
  */
 
 import type { PlanStatusType } from "@exaix/core/status/plan_status.ts";

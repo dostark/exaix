@@ -15,7 +15,7 @@ import {
   RequestTaskType,
   RequirementSchema,
 } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Fixtures

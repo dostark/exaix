@@ -3,7 +3,7 @@
  * @path src/tui/tui_helpers/handle_key.ts
  * @description Centralized key handling for the TUI dashboard, managing overlays, state toggles, and pane navigation.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_dashboard.ts, src/tui/tui_helpers/prod_handle_key.ts]
+ * @related-files [src/tui/tui_dashboard.ts, src/tui/tui_helpers/prod_handle_key.ts]
  */
 
 import type { IPane, ITuiDashboard, ITuiView } from "../tui_dashboard.ts";

@@ -9,8 +9,7 @@
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
-import type { ICostTracker } from "../../shared/interfaces/i_cost_tracker.ts";
-
+import type { ICostTracker } from "@exaix/core/types";
 export interface ICostCommandOptions {
   traceId?: string;
   portal?: string;

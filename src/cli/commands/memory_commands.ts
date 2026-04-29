@@ -3,7 +3,7 @@
  * @path src/cli/commands/memory_commands.ts
  * @description Provides CLI commands for interacting with Memory Banks, including list, search, project, execution, and proposal management.
  * @architectural-layer CLI
- * * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
+ * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
  */
 
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
@@ -14,7 +14,7 @@ import { MemoryAutoApprovalAdapter } from "../../services/adapters/memory_auto_a
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "../../shared/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";
 import { MemoryFormatter } from "../formatters/memory_formatter.ts";

@@ -9,10 +9,7 @@
 
 import { assertEquals } from "@std/assert";
 import { PortalAnalysisMode } from "@exaix/core";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 // ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@
  * - Handle agent feedback loops
  *
  * @architectural-layer Services
- * * @related-files [src/services/request_processor.ts, src/services/blueprint_loader.ts]
+ * @related-files [src/services/request_processor.ts, src/services/blueprint_loader.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
@@ -18,8 +18,8 @@ import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import {
   createLLMRetryPolicy,
   createRetryPolicy,
@@ -30,7 +30,6 @@ import {
 } from "../core/retry_policy.ts";
 
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
-import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import { renderSkillsSection } from "./prompt_formatter.ts";
 import type { ISkillsContext } from "../../shared/types/prompt_context.ts";

@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { loadKnowledge, saveKnowledge } from "../../../src/services/portal_knowledge/knowledge_persistence.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPattern, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { PortalAnalysisMode } from "@exaix/core";

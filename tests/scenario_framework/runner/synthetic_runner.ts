@@ -5,7 +5,7 @@
  * integration tests by composing the existing loader, step
  * execution, criterion evaluation, mode control, and manifest persistence.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
+ * @related-files [tests/scenario_framework/tests/integration/synthetic_runner_test.ts, tests/scenario_framework/runner/scenario_loader.ts]
  */
 
 import { join } from "@std/path";

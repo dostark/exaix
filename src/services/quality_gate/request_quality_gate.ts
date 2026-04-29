@@ -6,7 +6,7 @@
  * quality gate pipeline, delegating to HeuristicAssessor, LlmQualityAssessor,
  * and RequestEnricherLlm based on configuration and score thresholds.
  * @architectural-layer Services
- * * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
+ * @related-files [src/services/quality_gate/mod.ts, src/shared/interfaces/i_request_quality_gate_service.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
@@ -15,11 +15,7 @@ import type { IEventLogger } from "../core/event_logger.ts";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
-import type {
-  IRequestQualityContext,
-  IRequestQualityGateConfig,
-  IRequestQualityGateService,
-} from "../../shared/interfaces/i_request_quality_gate_service.ts";
+import type { IRequestQualityContext, IRequestQualityGateConfig, IRequestQualityGateService } from "@exaix/core/types";
 import { QualityGateMode } from "@exaix/core";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,

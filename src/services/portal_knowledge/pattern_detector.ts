@@ -7,7 +7,7 @@
  * key files to detect import styles and DI patterns.
  * Pure function module — zero LLM dependencies, sandboxed-safe.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/key_file_identifier.ts, src/services/portal_knowledge/config_parser.ts]
+ * @related-files [src/services/portal_knowledge/key_file_identifier.ts, src/services/portal_knowledge/config_parser.ts]
  */
 
 import { basename, extname } from "@std/path";

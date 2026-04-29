@@ -20,7 +20,7 @@ import {
 import { createPlanReviewerSession, sampleBasicPlans, samplePendingPlans, samplePlansWithStatuses } from "./helpers.ts";
 import { PlanAdapter } from "../../src/services/adapters/plan_adapter.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
-import type { IPlanDetails } from "../../src/shared/types/plan.ts";
+import type { IPlanDetails } from "@exaix/core/types/plan.ts";
 import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 

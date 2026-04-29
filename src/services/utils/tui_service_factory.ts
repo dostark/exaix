@@ -4,7 +4,7 @@
  * @description Factory for creating service instances used by the TUI dashboard.
  * This module bridges the core services with the TUI interface layer.
  * @architectural-layer Services
- * * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
+ * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
  */
 
 import { join } from "@std/path";
@@ -30,19 +30,21 @@ import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import { SkillsService } from "../skills/skills.ts";
 import { GitBranchName } from "@exaix/git";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
-import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
-import type { IStructuredLogger } from "../../shared/interfaces/i_log_service.ts";
-import type { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
-import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
-import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
-import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
-import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
-import type { ILogService } from "../../shared/interfaces/i_log_service.ts";
-import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type {
+  IAgentService,
+  IConfigService,
+  IPlanService,
+  IPortalConfigEntry,
+  IPortalService,
+  IRequestService,
+  ISkillsService,
+} from "@exaix/core/types";
+import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
+import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
+import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
+import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IConfigService, IPortalConfigEntry } from "../../shared/interfaces/i_config_service.ts";
 import type { ICliApplicationContext } from "../../cli/cli_context.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 

@@ -5,7 +5,7 @@
  * expected_outcomes, scope) propagation in buildParsedRequest().
  * Phase 49, Step 10.
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals } from "@std/assert";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";

@@ -3,10 +3,10 @@
  * @path src/services/routing/identity_performance_repository.ts
  * @description Aggregates historical routing performance metrics from the activity journal.
  * @architectural-layer Services
- * * @related-files [src/services/core/db.ts, src/services/routing/routing_policy_service.ts]
+ * @related-files [src/services/core/db.ts, src/services/routing/routing_policy_service.ts]
  */
 
-import type { IActivityRecord } from "../../shared/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types/database.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import type { JSONValue } from "@exaix/core";
 

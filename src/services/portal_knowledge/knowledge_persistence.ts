@@ -7,13 +7,13 @@
  * when the <!-- mission-reported --> sentinel is absent. Never writes
  * references.md or decisions.md (ownership preserved for MissionReporter).
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/mod.ts]
+ * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/services/portal_knowledge/mod.ts]
  */
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { type IPortalKnowledge, PortalKnowledgeSchema } from "@exaix/schemas/portal_knowledge.ts";
-import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { IPattern } from "@exaix/schemas/memory_bank.ts";
 import type { JSONValue } from "@exaix/core";
 

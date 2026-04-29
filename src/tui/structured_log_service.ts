@@ -3,13 +3,13 @@
  * @path src/tui/structured_log_service.ts
  * @description Service layer for StructuredLogger TUI integration, enabling real-time log streaming, querying, and correlation tracking.
  * @architectural-layer TUI
- * * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
+ * @related-files [src/services/structured_logger.ts, src/tui/structured_log_viewer.ts]
  */
 
 import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";
-import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
-import type { ILogger } from "../shared/interfaces/i_log_service.ts";
-import type { ILogService } from "../shared/interfaces/i_log_service.ts";
+import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
+import type { ILogger } from "@exaix/core/types/i_log_service.ts";
+import type { ILogService } from "@exaix/core/types/i_log_service.ts";
 
 /**
  * Implementation of ILogService using ILogger

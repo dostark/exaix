@@ -19,7 +19,7 @@ import {
 } from "../../src/tui/tui_dashboard_mocks.ts";
 import { RequestStatus } from "@exaix/core";
 import { RequestPriority } from "@exaix/core";
-import type { IStructuredLogEntry } from "../../src/shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import {
   TEST_MODEL_OPENAI,
   TEST_PROPOSAL_ID,

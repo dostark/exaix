@@ -3,7 +3,7 @@
  * @path src/cli/base.ts
  * @description Provides the abstract base class for all CLI command handlers, offering shared utilities for configuration, database access, user identity, and YAML frontmatter processing.
  * @architectural-layer CLI
- * * @related-files [src/cli/exactl.ts]
+ * @related-files [src/cli/exactl.ts]
  */
 
 import type {
@@ -294,15 +294,15 @@ export abstract class BaseCommand {
    * Get the command line as a single string for logging
    * @returns Command line string like "exactl daemon start --force"
    */
+  protected getCommandLineString(): string {
+    return `exactl ${Deno.args.join(" ")}`;
+  }
+
   /**
    * Get the system configuration
    * @returns Config object
    */
   public getConfig(): Config {
     return this.config;
-  }
-
-  protected getCommandLineString(): string {
-    return `exactl ${Deno.args.join(" ")}`;
   }
 }

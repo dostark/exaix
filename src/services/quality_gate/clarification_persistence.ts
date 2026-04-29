@@ -5,7 +5,7 @@
  * IClarificationSession as `<request-basename>_clarification.json` alongside
  * the request `.md` file, using atomic write (tmp + rename) for safety.
  * @architectural-layer Services
- * * @related-files [src/services/quality_gate/mod.ts, src/services/quality_gate/clarification_engine.ts]
+ * @related-files [src/services/quality_gate/mod.ts, src/services/quality_gate/clarification_engine.ts]
  */
 
 import { basename, dirname, extname, join } from "@std/path";

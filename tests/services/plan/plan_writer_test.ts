@@ -16,8 +16,8 @@ import type {
   IPlanWriterConfig,
   IRequestMetadata,
 } from "../../../src/services/plan/plan_writer.ts";
-import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
-import type { IActivityRecord } from "../../../src/shared/types/database.ts";
+import type { IDatabaseService } from "@exaix/core/types";
+import type { IActivityRecord } from "@exaix/core/types/database.ts";
 
 /**
  * Helper: Retrieve calls from a spy

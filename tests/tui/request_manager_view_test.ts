@@ -10,7 +10,7 @@ import { RequestPriority, RequestSource } from "@exaix/core";
 import { RequestGroupingMode } from "@exaix/tui";
 import { RequestStatus } from "@exaix/core";
 import { commonTestData } from "../helpers/test_utils.ts";
-import type { IRequest } from "../../src/shared/types/request.ts";
+import type { IRequest } from "@exaix/core/types/mod.ts";
 
 import {
   MinimalRequestServiceMock,

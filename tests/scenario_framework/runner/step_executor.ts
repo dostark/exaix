@@ -6,7 +6,7 @@
  * combined output for shell and exactl step kinds.
  * Supports wait-for-file steps with polling and timeout.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
+ * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
  */
 
 import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
@@ -57,6 +57,7 @@ export async function executeScenarioStep(
     args: commandSpec.args,
     cwd: options.cwd,
     env: options.env,
+    stdin: "null",
     stdout: "piped",
     stderr: "piped",
   }).output();

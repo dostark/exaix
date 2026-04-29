@@ -3,7 +3,7 @@
  * @path src/shared/schemas/request.ts
  * @description Defines Zod validation schema for agent request frontmatter (YAML), supporting trace IDs, status, priority, and skill overrides.
  * @architectural-layer Schemas
- * * @related-files [src/cli/handlers/request_create_handler.ts]
+ * @related-files [src/cli/handlers/request_create_handler.ts]
  */
 
 import { z } from "zod";

@@ -3,7 +3,7 @@
  * @path src/services/memory_bank/formatters.ts
  * @description Formatter utilities for generating markdown summaries of execution memory.
  * @architectural-layer Services
- * * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
  */
 
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";

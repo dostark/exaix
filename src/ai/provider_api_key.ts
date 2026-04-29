@@ -4,7 +4,7 @@
  * @path src/ai/provider_api_key.ts
  * @description utility for retrieving AI provider API keys from environment variables with optional persistence to secure storage.
  * @architectural-layer AI
- * * @related-files [src/ai/factories/abstract_provider_factory.ts]
+ * @related-files [src/ai/factories/abstract_provider_factory.ts]
  */
 import { SecureCredentialStore } from "../helpers/credential_security.ts";
 

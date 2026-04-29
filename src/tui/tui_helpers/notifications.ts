@@ -3,16 +3,15 @@
  * @path src/tui/tui_helpers/notifications.ts
  * @description Helper functions for rendering and managing TUI notifications, including time formatting and interaction logic.
  * @architectural-layer TUI
- * * @related-files [src/services/notification.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/notification.ts, src/tui/tui_dashboard.ts]
  */
 
 import { KEYS } from "../helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "../helpers/colors.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
-import type { IMemoryNotification } from "../../shared/types/notification.ts";
-import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";
-
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { INotificationService } from "@exaix/core/types";
 interface ITuiNotification extends IMemoryNotification {
   icon?: string;
 }

@@ -21,7 +21,7 @@ import { MemoryStatus } from "@exaix/core";
 import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 
 function makeProposalLearning(overrides: Partial<IProposalLearning> = {}): IProposalLearning {

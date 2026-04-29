@@ -3,7 +3,7 @@
  * @path src/helpers/credential_security.ts
  * @description Secure credential storage using AES-GCM encryption for API keys and sensitive tokens.
  * @architectural-layer Helpers
- * * @related-files [src/services/db.ts]
+ * @related-files [src/services/db.ts]
  */
 
 export class SecureCredentialStore {

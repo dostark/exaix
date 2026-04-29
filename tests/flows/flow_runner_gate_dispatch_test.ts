@@ -18,7 +18,7 @@ import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { ANALYZER_VERSION } from "@exaix/core";
 
 // ============================================================

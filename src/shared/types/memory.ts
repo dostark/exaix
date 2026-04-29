@@ -3,7 +3,7 @@
  * @path src/shared/types/memory.ts
  * @description Module for Memory.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/memory_bank.ts]
+ * @related-files [src/shared/schemas/memory_bank.ts]
  */
 
 /**

@@ -39,7 +39,13 @@ import {
 } from "@exaix/core";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
-import type { IPortalKnowledgeService } from "../../shared/interfaces/i_portal_knowledge_service.ts";
+import type {
+  IApplicationContext,
+  IPortalKnowledgeService,
+  IRequestAnalyzerConfig,
+  IRequestAnalyzerService,
+  IRequestQualityGateService,
+} from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { EventLogger } from "../core/event_logger.ts";
@@ -60,14 +66,9 @@ import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
-import type {
-  IRequestAnalyzerConfig,
-  IRequestAnalyzerService,
-} from "../../shared/interfaces/i_request_analyzer_service.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
 
-import type { AnalysisMode } from "../../shared/types/request.ts";
-import type { IRequestQualityGateService } from "../../shared/interfaces/i_request_quality_gate_service.ts";
+import type { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { buildQualityGateConfig, RequestQualityGate } from "../quality_gate/request_quality_gate.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
@@ -87,8 +88,6 @@ export interface IRequestProcessingContext extends IServiceContext {
   portalKnowledge?: IPortalKnowledge;
   memoryContext?: EnhancedRequest;
 }
-
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IRequestProcessorConfig {
   workspacePath: string;

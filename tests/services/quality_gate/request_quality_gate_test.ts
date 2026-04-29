@@ -17,9 +17,8 @@ import type { IEventLogger } from "../../../src/services/core/event_logger.ts";
 import type { ILogEvent } from "../../../src/services/common/types.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
-import { RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
-import { buildQualityGateConfig } from "../../../src/services/quality_gate/request_quality_gate.ts";
-import type { IRequestQualityGateConfig } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
+import { buildQualityGateConfig, RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
+import type { IRequestQualityGateConfig } from "@exaix/core/types";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_QG_ENRICHMENT_THRESHOLD,

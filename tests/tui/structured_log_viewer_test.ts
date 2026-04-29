@@ -7,17 +7,14 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { StructuredLogViewer } from "../../src/tui/structured_log_viewer.ts";
-import type {
-  ILogger as IStructuredLogger,
-  ILogService as IStructuredLogService,
-} from "../../src/shared/interfaces/i_log_service.ts";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "../../src/shared/types/logging.ts";
+import type { ILogger, ILogService } from "@exaix/core/types";
+import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { LogLevel } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { InputDialog } from "../../src/tui/helpers/dialog_base.ts";
 
-class MockLogService implements IStructuredLogService {
+class MockLogService implements ILogService {
   logs: IStructuredLogEntry[] = [];
   subscribers: ((entry: IStructuredLogEntry) => void)[] = [];
 
@@ -58,9 +55,9 @@ class MockLogService implements IStructuredLogService {
   }
 }
 
-class MockStructuredLogger implements IStructuredLogger {
+class MockStructuredLogger implements ILogger {
   setContext(_context: Partial<ILogContext>): void {}
-  child(_additionalContext: Partial<ILogContext>): IStructuredLogger {
+  child(_additionalContext: Partial<ILogContext>): ILogger {
     return this;
   }
   debug(_message: string, _metadata?: LogMetadata): void {}

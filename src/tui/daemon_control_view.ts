@@ -3,7 +3,7 @@
  * @path src/tui/daemon_control_view.ts
  * @description Interactive TUI view for managing the Exaix daemon, featuring status visualization, log tailing, and configuration viewing.
  * @architectural-layer TUI
- * * @related-files [src/services/daemon_service.ts, src/cli/daemon_commands.ts]
+ * @related-files [src/services/daemon_service.ts, src/cli/daemon_commands.ts]
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
@@ -17,7 +17,7 @@ import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } fr
 import { ANSI } from "./helpers/colors.ts";
 import { TUI_SECTION } from "./helpers/decorations.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import type { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
+import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
 
 // ===== View State =====
 

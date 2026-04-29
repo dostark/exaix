@@ -6,29 +6,31 @@
  * session simulators, and assertion utilities for all terminal views.
  */
 
-import { RequestManagerView } from "../../src/tui/request_manager_view.ts";
+import {
+  LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession,
+  RequestManagerView,
+} from "../../src/tui/request_manager_view.ts";
 import type {
   IRequestAnalysis,
   IRequestEntry as IRequest,
   IRequestMetadata as _IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "../../src/shared/types/request.ts";
-import type { AnalysisMode } from "../../src/shared/types/request.ts";
-import type { IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
-import { LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession } from "../../src/tui/request_manager_view.ts";
+} from "@exaix/core/types/mod.ts";
+import type { AnalysisMode } from "@exaix/core/types/mod.ts";
+import type { IJournalService, IMemoryService, IPortalService, IRequestService } from "@exaix/core/types";
 import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
 import { type ILogEntry, MonitorView } from "../../src/tui/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../../src/tui/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../helpers/test_utils.ts";
-import { RequestStatus, type RequestStatusType } from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION, RequestStatus, type RequestStatusType } from "@exaix/core";
 import type {
   IPortalDetails,
   IPortalInfo,
   IVerificationResult as _IVerificationResult,
-} from "../../src/shared/types/portal.ts";
+} from "@exaix/core/types/portal.ts";
 import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
-import type { IActivityRecord, IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";
 import {
   type ISkillSummary,
   MinimalSkillsServiceMock,
@@ -57,12 +59,8 @@ import {
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
-import type { IMemoryService } from "../../src/shared/interfaces/i_memory_service.ts";
 import { MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import type { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
-import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
-import type { IJournalService } from "../../src/shared/interfaces/i_journal_service.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import type { PortalAnalysisMode } from "@exaix/core";
 
 export interface IPortalInfoOverrides {

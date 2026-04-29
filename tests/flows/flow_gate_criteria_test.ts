@@ -14,7 +14,7 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import type { IGateConfig, IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { IGateConfig, IGateResult } from "@exaix/core/types";
 import { FlowSchema, type IFlow, type IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";

@@ -3,7 +3,7 @@
  * @path src/flows/dependency_resolver.ts
  * @description Resolves dependencies in flow steps, detects cycles, and organizes execution waves for parallel processing.
  * @architectural-layer Core
- * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 

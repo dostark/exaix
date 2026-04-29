@@ -7,11 +7,18 @@
  * across the pipeline: FlowRunner -> GateEvaluator -> CriteriaGenerator ->
  * ReflexiveAgent -> ConfidenceScorer (Phase 48, Step 12).
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
+ * @related-files [.copilot/planning/phase-48-acceptance-criteria-propagation.md]
  */
-import { ANALYZER_VERSION } from "@exaix/core";
+import {
+  ANALYZER_VERSION,
+  CritiqueQuality,
+  EvaluationCategory,
+  FlowGateOnFail,
+  FlowInputSource,
+  FlowOutputFormat,
+  FlowStepType,
+} from "@exaix/core";
 import { assert, assertEquals, assertGreater, assertStringIncludes } from "@std/assert";
-import { CritiqueQuality, FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import {
   FlowRunner,
@@ -22,15 +29,14 @@ import {
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
 import type {
+  ICriteriaGeneratorService,
   IGateConfig as _GateConfig,
   IGateResult as _IGateResult,
-} from "../../src/shared/interfaces/i_gate_evaluator.ts";
+} from "@exaix/core/types";
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
-import type { ICriteriaGeneratorService } from "../../src/shared/interfaces/i_criteria_generator_service.ts";
-import { EvaluationCategory } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";

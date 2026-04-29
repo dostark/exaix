@@ -3,7 +3,7 @@
  * @path packages/core/src/status/plan_status.ts
  * @description Shared type definitions and coercion utilities for execution plan statuses.
  * @architectural-layer Shared
- * * @related-files [packages/core/src/status/request_status.ts]
+ * @related-files [packages/core/src/status/request_status.ts]
  */
 
 import { GeneralStatus } from "../types/enums.ts";

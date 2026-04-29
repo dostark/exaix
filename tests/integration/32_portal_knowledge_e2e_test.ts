@@ -20,12 +20,8 @@ import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symb
 import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";
 import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
-import type { IApplicationContext } from "../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../src/shared/interfaces/i_portal_knowledge_service.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";

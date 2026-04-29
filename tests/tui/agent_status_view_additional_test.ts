@@ -7,9 +7,9 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { AgentHealth, LogLevel } from "@exaix/core";
-import { AgentStatus } from "../../src/shared/status/agent_status.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../src/shared/types/agent.ts";
-import type { IAgentService } from "../../src/shared/interfaces/i_agent_service.ts";
+import { AgentStatus } from "@exaix/core/status/agent_status.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { IAgentService } from "@exaix/core/types";
 import { AgentStatusView } from "../../src/tui/agent_status_view.ts";
 
 class EmptyAgentService implements IAgentService {

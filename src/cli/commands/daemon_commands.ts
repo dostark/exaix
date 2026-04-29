@@ -3,7 +3,7 @@
  * @path src/cli/commands/daemon_commands.ts
  * @description Provides CLI commands for controlling the Exaix daemon lifecycle, including start, stop, restart, status, and log tailing.
  * @architectural-layer CLI
- * * @related-files [src/main.ts, src/cli/main.ts]
+ * @related-files [src/main.ts, src/cli/main.ts]
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -16,7 +16,7 @@ import { isProcessAlive } from "../process_utils.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../shared/version.ts";
 
-import type { IDaemonStatus } from "../../shared/types/daemon.ts";
+import type { IDaemonStatus } from "@exaix/core/types/daemon.ts";
 
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";

@@ -3,7 +3,7 @@
  * @path src/constants.ts
  * @description Global internal constants for the Exaix system, including HTTP codes and hash parameters.
  * @architectural-layer Core
- * * @related-files []
+ * @related-files []
  */
 
 // HTTP Status Codes

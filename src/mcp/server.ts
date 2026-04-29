@@ -3,7 +3,7 @@
  * @path src/mcp/server.ts
  * @description core MCP server implementation, handling JSON-RPC transport, tool registration, and security orchestration.
  * @architectural-layer MCP
- * * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
+ * @related-files [src/mcp/tools.ts, src/mcp/resources.ts, src/mcp/prompts.ts]
  */
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";

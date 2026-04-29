@@ -7,7 +7,7 @@
  * replaces the raw request body as the contract driving agent execution and
  * evaluation.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/mod.ts, src/shared/schemas/clarification_session.ts, src/services/quality_gate/clarification_engine.ts]
+ * @related-files [src/shared/schemas/mod.ts, src/shared/schemas/clarification_session.ts, src/services/quality_gate/clarification_engine.ts]
  */
 
 import { z } from "zod";

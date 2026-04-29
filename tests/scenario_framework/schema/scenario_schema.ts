@@ -4,7 +4,7 @@
  * @description Defines the Step 1 top-level scenario schema for the
  * scenario framework.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts]
+ * @related-files [tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/tests/unit/framework_contract_test.ts]
  */
 
 import { z } from "zod";

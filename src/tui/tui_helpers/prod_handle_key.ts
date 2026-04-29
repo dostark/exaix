@@ -4,13 +4,13 @@
  * @description Production key handler for the TUI dashboard, wiring pane
  * management, layout persistence, and notification dispatch to keyboard events.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_helpers/handle_key.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/tui/tui_helpers/handle_key.ts, src/tui/tui_dashboard.ts]
  */
 import { MessageType } from "@exaix/core";
 import { SplitDirection } from "@exaix/tui";
 import type { IDashboardViewState, IPane, ITuiView } from "../tui_dashboard.ts";
-import type { IMemoryNotification } from "../../shared/types/notification.ts";
-import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { INotificationService } from "@exaix/core/types";
 import { closePane, maximizePane, resizePane, splitPane } from "../dashboard/pane_manager.ts";
 import { KEYS } from "../helpers/keyboard.ts";
 

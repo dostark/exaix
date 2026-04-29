@@ -16,7 +16,7 @@ import { isProcessAlive } from "../../src/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
-import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";

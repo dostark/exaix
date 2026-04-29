@@ -3,11 +3,11 @@
  * @path src/tui/analytics/error_analyzer.ts
  * @description Detects and classifies error patterns in logs to aid in troubleshooting and failure analysis.
  * @architectural-layer TUI
- * * @related-files [src/tui/structured_log_viewer.ts]
+ * @related-files [src/tui/structured_log_viewer.ts]
  */
 
 import { LogLevel } from "@exaix/core";
-import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import type { ErrorPattern } from "./types.ts";
 
 /**

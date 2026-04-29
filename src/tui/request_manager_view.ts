@@ -3,14 +3,13 @@
  * @path src/tui/request_manager_view.ts
  * @description TUI view for managing user requests, featuring tree-based navigation, status/priority grouping, and request creation.
  * @architectural-layer TUI
- * * @related-files [src/services/request_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/request_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import { KEYS } from "./helpers/keyboard.ts";
-import { KeyBindingCategory } from "./helpers/keyboard.ts";
+import { KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "./tui_common.ts";
-import type { AnalysisMode } from "../shared/types/request.ts";
+import type { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { isRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
 import { createGroupNode, createNode, findNode, flattenTree, type ITreeNode, renderTree } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
@@ -38,8 +37,8 @@ import type {
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "../shared/types/request.ts";
-import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
+} from "@exaix/core/types/mod.ts";
+import type { IRequestService } from "@exaix/core/types";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,
   TUI_KEY_LABEL_ENTER,

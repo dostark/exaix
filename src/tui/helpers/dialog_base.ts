@@ -3,7 +3,7 @@
  * @path src/tui/helpers/dialog_base.ts
  * @description TUI Dialog Base Framework providing common classes and utilities for modal dialogs.
  * @architectural-layer Helpers
- * * @related-files [src/helpers/dialog_rendering.ts, src/helpers/keyboard.ts]
+ * @related-files [src/helpers/dialog_rendering.ts, src/helpers/keyboard.ts]
  */
 
 import { ANSI, colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";

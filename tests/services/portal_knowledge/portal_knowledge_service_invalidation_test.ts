@@ -10,13 +10,10 @@ import type {
   IKnowledgeInvalidationStrategy,
   IKnowledgeValidityCheck,
 } from "../../../src/services/portal_knowledge/knowledge_invalidation_strategy.ts";
-import { KnowledgeAnalysisMode, KnowledgeValidityReason } from "@exaix/core";
+import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
 import { PortalKnowledgeService } from "../../../src/services/portal_knowledge/portal_knowledge_service.ts";
-import type { IPortalKnowledgeConfig } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
-import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "@exaix/core";
 
 class FakeInvalidationStrategy implements IKnowledgeInvalidationStrategy {
   constructor(private readonly _result: IKnowledgeValidityCheck) {}

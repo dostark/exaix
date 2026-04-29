@@ -21,7 +21,7 @@ import {
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
-import type { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
 
 /**
  * WatchCommand provides real-time execution tailing via SSE or historical fallback.

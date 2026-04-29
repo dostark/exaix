@@ -7,7 +7,7 @@
  * agent and the user, including questions, answers, refined body, and quality
  * score progression.
  * @architectural-layer Shared
- * * @related-files [src/shared/schemas/mod.ts, src/shared/schemas/request_specification.ts, src/services/quality_gate/clarification_engine.ts]
+ * @related-files [src/shared/schemas/mod.ts, src/shared/schemas/request_specification.ts, src/services/quality_gate/clarification_engine.ts]
  */
 
 import { z } from "zod";

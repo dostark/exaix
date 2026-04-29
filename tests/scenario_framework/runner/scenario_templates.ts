@@ -4,7 +4,7 @@
  * @description Implements Step 8 starter-template rendering so new
  * scenario packs can be authored without changing core framework code.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/templates/scenario_template.yaml, tests/scenario_framework/tests/unit/pack_generalization_test.ts]
+ * @related-files [tests/scenario_framework/templates/scenario_template.yaml, tests/scenario_framework/tests/unit/pack_generalization_test.ts]
  */
 
 import { SCHEMA_VERSION } from "../schema/version.ts";

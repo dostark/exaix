@@ -3,7 +3,7 @@
  * @path src/tui/request_manager/formatters.ts
  * @description Formatting utilities for the Request Manager View, converting request metadata and content into stylized TUI panels.
  * @architectural-layer TUI
- * * @related-files [src/tui/request_manager_view.ts]
+ * @related-files [src/tui/request_manager_view.ts]
  */
 
 import {
@@ -13,7 +13,7 @@ import {
   TUI_LAYOUT_VALUE_WIDTH,
   TUI_MSG_PRESS_QUIT,
 } from "../helpers/constants.ts";
-import type { IRequest } from "../../shared/types/request.ts";
+import type { IRequest } from "@exaix/core/types/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 
 /**

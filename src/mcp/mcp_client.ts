@@ -3,12 +3,12 @@
  * @path src/mcp/mcp_client.ts
  * @description Wrapper around existing MCP tool execution, providing the IMcpClient interface.
  * @architectural-layer MCP
- * * @related-files [src/mcp/tool_handler.ts, src/flows/dynamic_step_executor.ts]
+ * @related-files [src/mcp/tool_handler.ts, src/flows/dynamic_step_executor.ts]
  */
 import type { IMcpClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
-import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 export class McpClient implements IMcpClient {

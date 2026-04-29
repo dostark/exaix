@@ -3,7 +3,7 @@
  * @path src/tui/tui_dashboard.ts
  * @description Main entry point and orchestrator for the Exaix TUI dashboard, managing layout, view switching, and cross-view state.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_common.ts, src/tui/agent_status_view.ts, src/tui/daemon_control_view.ts]
+ * @related-files [src/tui/tui_common.ts, src/tui/agent_status_view.ts, src/tui/daemon_control_view.ts]
  *
  * This is the main entry point for the Exaix TUI, integrating all
  * enhanced views into a unified dashboard with:
@@ -16,7 +16,7 @@
 
 import { MessageType } from "@exaix/core";
 import type { SplitDirection } from "@exaix/tui";
-import type { INotificationService } from "../shared/interfaces/i_notification_service.ts";
+import type { INotificationService, IPortalService } from "@exaix/core/types";
 import {
   TUI_DASHBOARD_ICONS,
   TUI_DASHBOARD_VIEW_PICKER_WIDTH,
@@ -26,24 +26,22 @@ import {
   TUI_TREE_ICONS,
 } from "./helpers/constants.ts";
 import { colorize, getTheme, type ITuiTheme } from "./helpers/colors.ts";
-import { KeyBindingCategory } from "./helpers/keyboard.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import {
   handleMemoryNotifications as _handleMemoryNotifications,
   type IDashboardContext,
   renderNotificationPanel,
 } from "./tui_helpers/notifications.ts";
-import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
-import type { IPortalInfo } from "../shared/types/portal.ts";
-import type { IMemoryNotification } from "../shared/types/notification.ts";
+import type { IPortalInfo } from "@exaix/core/types/portal.ts";
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
 import {
   resetToDefault as helperResetToDefault,
   restoreLayout as helperRestoreLayout,
   saveLayout as helperSaveLayout,
 } from "./tui_helpers/layout_persistence.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { type IKeyBinding, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";

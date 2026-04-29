@@ -17,10 +17,6 @@ import {
   SimpleImprovementAgent,
 } from "../../src/flows/feedback_loop.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import type {
-  IGateConfig as _GateConfig,
-  IGateResult as _IGateResult,
-} from "../../src/shared/interfaces/i_gate_evaluator.ts";
 import { CRITERIA } from "../../src/flows/evaluation_criteria.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 

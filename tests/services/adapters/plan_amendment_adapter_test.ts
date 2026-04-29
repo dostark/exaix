@@ -7,7 +7,7 @@
 import { assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { PlanAmendmentAdapter } from "../../../src/services/adapters/plan_amendment_adapter.ts";
-import type { IPlanAmendmentService } from "../../../src/shared/interfaces/i_plan_amendment_service.ts";
+import type { IPlanAmendmentService } from "@exaix/core/types";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";

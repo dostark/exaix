@@ -6,7 +6,7 @@
  * and the `assessed_at` re-assessment bypass in `RequestProcessor.process()`.
  * Directly covers Phase 47 Gap §1 (skip semantics) and Gap §2 (re-entry mechanism).
  * @architectural-layer Services
- * * @related-files [src/services/quality_gate/clarification_persistence.ts, src/services/request/request_processor.ts, src/services/request_processing/types.ts]
+ * @related-files [src/services/quality_gate/clarification_persistence.ts, src/services/request/request_processor.ts, src/services/request_processing/types.ts]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -14,12 +14,10 @@ import { join } from "@std/path";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { finalizeAndWritePending } from "../../../src/services/quality_gate/clarification_persistence.ts";
-import { RequestStatus } from "@exaix/core";
+import { QualityGateMode, RequestSource, RequestStatus } from "@exaix/core";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
-import { QualityGateMode, RequestSource } from "@exaix/core";
-import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
 import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import {
   type IRequestQualityAssessment,

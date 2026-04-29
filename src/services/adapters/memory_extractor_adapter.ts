@@ -3,10 +3,10 @@
  * @path src/services/adapters/memory_extractor_adapter.ts
  * @description Adapter for MemoryExtractorService that satisfies the IMemoryExtractorService interface.
  * @architectural-layer Services/Adapters
- * * @related-files [src/services/memory_extractor.ts, src/shared/interfaces/i_memory_extractor_service.ts]
+ * @related-files [src/services/memory_extractor.ts, src/shared/interfaces/i_memory_extractor_service.ts]
  */
 
-import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
+import type { IMemoryExtractorService } from "@exaix/core/types";
 import type { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 

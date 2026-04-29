@@ -11,19 +11,15 @@
  * never lost. Activity is logged to the database journal when a `db` instance
  * is provided.
  * @architectural-layer Services
- * * @related-files [src/services/request_analysis/mod.ts, src/services/request_processor.ts]
+ * @related-files [src/services/request_analysis/mod.ts, src/services/request_processor.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type {
-  IRequestAnalysisContext,
-  IRequestAnalyzerConfig,
-  IRequestAnalyzerService,
-} from "../../shared/interfaces/i_request_analyzer_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IRequestAnalysisContext, IRequestAnalyzerConfig, IRequestAnalyzerService } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { analyzeHeuristic } from "./heuristic_analyzer.ts";
 import { LlmAnalyzer } from "./llm_analyzer.ts";
 import {

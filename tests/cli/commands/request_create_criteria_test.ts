@@ -4,7 +4,7 @@
  * @description Tests for --acceptance-criteria and --expected-outcome CLI flag
  * propagation to YAML frontmatter (Phase 49, Step 11).
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";

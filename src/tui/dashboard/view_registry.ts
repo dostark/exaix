@@ -3,7 +3,7 @@
  * @path src/tui/dashboard/view_registry.ts
  * @description Central registry and initialization logic for all TUI views, facilitating service injection and focus management.
  * @architectural-layer TUI
- * * @related-files [src/tui/dashboard_view.ts]
+ * @related-files [src/tui/dashboard_view.ts]
  */
 
 import { PortalManagerView } from "../portal_manager_view.ts";
@@ -16,9 +16,9 @@ import { RequestManagerView } from "../request_manager_view.ts";
 import { MemoryView } from "../memory_view.ts";
 import { SkillsManagerView } from "../skills_manager_view.ts";
 import type { ITuiView } from "../tui_dashboard.ts";
-import type { ILogService } from "../../shared/interfaces/i_log_service.ts";
-import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
-import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
+import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
+import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
+import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
 import {
   MockAgentService,
   MockDaemonService,
@@ -32,15 +32,10 @@ import {
   MockStructuredLoggerService,
 } from "../tui_dashboard_mocks.ts";
 
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
-import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
-import type { IStructuredLogger } from "../../shared/interfaces/i_log_service.ts";
-import type { IDaemonService } from "../../shared/interfaces/i_daemon_service.ts";
-import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IAgentService, IPlanService, IPortalService, IRequestService, ISkillsService } from "@exaix/core/types";
+import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
 import { TUI_ELEMENT_ACTION_BUTTONS, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
-import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
-import type { ISkillsService } from "../../shared/interfaces/i_skills_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /**

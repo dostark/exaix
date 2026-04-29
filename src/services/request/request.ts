@@ -3,32 +3,24 @@
  * @path src/services/request/request.ts
  * @description Core service for managing agent requests.
  * @architectural-layer Services
- * * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
+ * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
  */
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
-import { RequestPriority, RequestSource } from "@exaix/core";
-import type {
-  IRequestEntry,
-  IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "../../shared/types/request.ts";
-import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
-import type { IConfigService } from "../../shared/interfaces/i_config_service.ts";
+import { DEFAULT_IDENTITY_ID, RequestPriority, RequestSource } from "@exaix/core";
+import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/types/mod.ts";
+import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
+import type { IApplicationContext, IConfigService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import { AnalysisMode } from "../../shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IModelProvider } from "../../ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
-import { DEFAULT_IDENTITY_ID } from "@exaix/core";
-
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
 
 export interface IRequestServiceConfig {
   config: Config;

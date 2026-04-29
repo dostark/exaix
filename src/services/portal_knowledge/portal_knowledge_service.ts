@@ -6,7 +6,7 @@
  * SymbolExtractor. Implements IPortalKnowledgeService with quick/standard/deep
  * modes, in-memory staleness check, and async background re-analysis on stale cache.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/mod.ts, src/shared/interfaces/i_portal_knowledge_service.ts]
+ * @related-files [src/services/portal_knowledge/mod.ts, src/shared/interfaces/i_portal_knowledge_service.ts]
  */
 
 import { join } from "@std/path";
@@ -19,16 +19,11 @@ import { type IDocCommandRunner, SymbolExtractor } from "./symbol_extractor.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
 import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./knowledge_invalidation_strategy.ts";
 import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../shared/interfaces/i_portal_knowledge_service.ts";
+import type { IMemoryBankService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IModelProvider } from "../../ai/types.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
-import { PortalAnalysisMode } from "@exaix/core";
-import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE } from "@exaix/core";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE, PortalAnalysisMode } from "@exaix/core";
 
 export interface IPortalKnowledgeServiceOptions {
   config: IPortalKnowledgeConfig;

@@ -12,10 +12,14 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import type { IModelProvider } from "../../../ai/types.ts";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
-import { AgentExecutionErrorType } from "@exaix/core";
+import {
+  AgentExecutionErrorType,
+  LEGACY_EXECUTION_MAX_TOKENS,
+  LEGACY_EXECUTION_TEMPERATURE,
+  TOML_BLOCK_PATTERN,
+} from "@exaix/core";
 import type { McpToolName } from "@exaix/mcp";
-import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
-import { LEGACY_EXECUTION_MAX_TOKENS, LEGACY_EXECUTION_TEMPERATURE, TOML_BLOCK_PATTERN } from "@exaix/core";
+import type { IToolResult } from "@exaix/core/types";
 import { WRITE_TOOLS } from "@exaix/mcp";
 
 /**

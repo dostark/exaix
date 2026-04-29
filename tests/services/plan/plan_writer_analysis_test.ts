@@ -16,7 +16,7 @@ import {
 import { ANALYZER_VERSION } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 
 function createMockAnalysis(): IRequestAnalysis {
   return {

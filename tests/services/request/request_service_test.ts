@@ -13,7 +13,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { saveAnalysis } from "../../../src/services/request_analysis/mod.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 
 function createTestRequestService(root: string, overrides?: {

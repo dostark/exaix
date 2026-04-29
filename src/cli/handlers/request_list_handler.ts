@@ -3,13 +3,13 @@
  * @path src/cli/handlers/request_list_handler.ts
  * @description Handles listing and filtering agent requests from the workspace inbox, including status coercion and sorting.
  * @architectural-layer CLI
- * * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
  */
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import type { IRequestEntry } from "../../shared/types/request.ts";
+import type { IRequestEntry } from "@exaix/core/types/mod.ts";
 import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./request_paths.ts";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";
 import { coerceRequestStatus, RequestKind, RequestPriority, type RequestStatusType } from "@exaix/core";

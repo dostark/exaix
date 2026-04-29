@@ -3,7 +3,7 @@
  * @path packages/core/src/status/memory_status.ts
  * @description Shared type definitions and coercion utilities for memory record statuses.
  * @architectural-layer Shared
- * * @related-files [packages/core/src/schemas/memory_bank.ts]
+ * @related-files [packages/core/src/schemas/memory_bank.ts]
  */
 import { MemoryRecordStatus } from "../types/enums.ts";
 import type { JSONValue } from "../types/json.ts";

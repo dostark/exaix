@@ -12,7 +12,7 @@ import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createStubConfig } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "@exaix/core";
-import type { IPlanMetadata } from "../../src/shared/types/plan.ts";
+import type { IPlanMetadata } from "@exaix/core/types/plan.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { LogLevel } from "@exaix/core";

@@ -7,8 +7,14 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
-import { ANALYZER_VERSION } from "@exaix/core";
+import {
+  ANALYZER_VERSION,
+  FlowGateOnFail,
+  FlowInputSource,
+  FlowOutputFormat,
+  FlowStepType,
+  PlanStatus,
+} from "@exaix/core";
 import {
   FlowRunner,
   type IAgentExecutor,
@@ -16,14 +22,13 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
-import type { IGateConfig, IGateResult } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { IGateConfig, IGateResult } from "@exaix/core/types";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
-import { PlanStatus } from "@exaix/core";
 
 // ============================================================
 // Mock infrastructure

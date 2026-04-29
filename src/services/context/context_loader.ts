@@ -9,7 +9,7 @@
  * - Handle portal and workspace directory boundaries
  *
  * @architectural-layer Services
- * * @related-files [src/services/agent_runner.ts]
+ * @related-files [src/services/agent_runner.ts]
  */
 
 import type { DatabaseService } from "../core/db.ts";

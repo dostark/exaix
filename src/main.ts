@@ -5,7 +5,7 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Core System
- * * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
+ * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
  */
 import { ConfigService } from "./config/service.ts";
 import { DaemonStatus, type LogLevel } from "@exaix/core";
@@ -33,10 +33,10 @@ import {
 import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import type { ILogOutput } from "./shared/interfaces/i_log_service.ts";
+import type { ILogOutput } from "@exaix/core/types/mod.ts";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
-import type { IApplicationContext } from "./shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import { DAEMON_IDENTITY_ID, DEFAULT_IDENTITIES_PATH } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 

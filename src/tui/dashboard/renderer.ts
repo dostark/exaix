@@ -3,7 +3,7 @@
  * @path src/tui/dashboard/renderer.ts
  * @description Production renderer for the TUI dashboard, managing window sizing, header/footer rendering, and pane layout.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/pane_manager.ts]
+ * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/pane_manager.ts]
  */
 
 import process from "node:process";
@@ -11,13 +11,11 @@ import type { ITuiTheme } from "../helpers/colors.ts";
 import { TUI_MSG_DASHBOARD_HEADER, TUI_MSG_PRESS_CLOSE_HELP, TUI_STATUS_MSG_READY } from "../helpers/constants.ts";
 import { type IPane, renderGlobalHelpOverlay, renderPaneTitleBar, renderViewIndicator } from "../tui_dashboard.ts";
 import { renderNotificationPanel } from "../tui_helpers/notifications.ts";
-import type { IMemoryNotification } from "../../shared/types/notification.ts";
-import type { INotificationService } from "../../shared/interfaces/i_notification_service.ts";
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { INotificationService, IPortalService } from "@exaix/core/types";
 import type { IDashboardViewState } from "../tui_dashboard.ts";
 import { Table } from "@cliffy/table";
 import { KEYS } from "../helpers/keyboard.ts";
-import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
-
 async function renderActivePaneContent(
   panes: IPane[],
   activePaneId: string,

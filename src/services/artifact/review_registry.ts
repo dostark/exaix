@@ -4,7 +4,7 @@
  * @description Manages the lifecycle of agent-created reviews, including registration,
  * status updates, and diff generation for approval workflows.
  * @architectural-layer Services
- * * @related-files [src/services/execution_loop.ts, src/services/db.ts]
+ * @related-files [src/services/execution_loop.ts, src/services/db.ts]
  */
 
 import type { IDatabaseService, SqliteParam } from "../core/db.ts";

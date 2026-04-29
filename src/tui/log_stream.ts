@@ -3,10 +3,10 @@
  * @path src/tui/log_stream.ts
  * @description Manager for real-time log streaming to the TUI, featuring buffering, filtering, and connection management.
  * @architectural-layer TUI
- * * @related-files [src/tui/structured_log_viewer.ts]
+ * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "../shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import type { StructuredLoggerService } from "./structured_log_service.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";

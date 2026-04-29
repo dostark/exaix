@@ -12,7 +12,7 @@
  * - --allow-write, --allow-read (for log rotation)
  *
  * @architectural-layer Services
- * * @related-files [src/services/event_logger.ts, src/main.ts]
+ * @related-files [src/services/event_logger.ts, src/main.ts]
  */
 
 import { dirname, join } from "@std/path";
@@ -26,8 +26,8 @@ import * as DEFAULTS from "@exaix/core";
 import { LogLevel, type LogRotationInterval } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
-import type * as LogServiceTypes from "../../shared/interfaces/i_log_service.ts";
-import type * as LoggingTypes from "../../shared/types/logging.ts";
+import type * as LogServiceTypes from "@exaix/core/types/i_log_service.ts";
+import type * as LoggingTypes from "@exaix/core/types/logging.ts";
 
 export type ILogger = LogServiceTypes.ILogger;
 export type ILogOutput = LogServiceTypes.ILogOutput;

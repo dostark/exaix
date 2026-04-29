@@ -6,12 +6,12 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "@exaix/core/types";
 import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
 import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import { createPortalTuiWithPortals } from "./helpers.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../src/shared/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
 
 type IPortalAddOptions = { defaultBranch?: string; executionStrategy?: PortalExecutionStrategy };
 type IPortalRemoveOptions = { keepCard?: boolean };

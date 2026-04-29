@@ -3,7 +3,7 @@
  * @path src/tui/dashboard/pane_manager.ts
  * @description Manager for TUI dashboard panes, handling splitting, closing, resizing, and focus switching logic.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/renderer.ts]
+ * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/renderer.ts]
  */
 
 import { MessageType } from "@exaix/core";

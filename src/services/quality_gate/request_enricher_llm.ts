@@ -6,7 +6,7 @@
  * LLM call fails the original body is returned unchanged so the enrichment is
  * never a hard dependency.
  * @architectural-layer Services
- * * @related-files [src/services/quality_gate/request_quality_gate.ts, src/services/quality_gate/llm_assessor.ts]
+ * @related-files [src/services/quality_gate/request_quality_gate.ts, src/services/quality_gate/llm_assessor.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";

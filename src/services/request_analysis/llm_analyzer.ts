@@ -6,7 +6,7 @@
  * `RequestAnalysisSchema` via `IOutputValidator`. Falls back to a minimal
  * safe `IRequestAnalysis` on any failure so callers never receive an exception.
  * @architectural-layer Services
- * * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
+ * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";
@@ -17,8 +17,8 @@ import {
   RequestAnalysisSchema,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../shared/types/request.ts";
-import type { IRequestAnalysisContext } from "../../shared/interfaces/i_request_analyzer_service.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import type { IRequestAnalysisContext } from "@exaix/core/types";
 import { ANALYZER_VERSION } from "@exaix/core";
 
 const RequestAnalysisCoreSchema = RequestAnalysisSchema.omit({ metadata: true });

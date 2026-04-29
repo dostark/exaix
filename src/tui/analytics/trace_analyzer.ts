@@ -3,10 +3,10 @@
  * @path src/tui/analytics/trace_analyzer.ts
  * @description Analyzes system traces to visualize the sequence of operations and identify bottlenecks or failures.
  * @architectural-layer TUI
- * * @related-files [src/tui/structured_log_viewer.ts]
+ * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import type { TraceAnalysis } from "./types.ts";
 import { LogLevel } from "@exaix/core";
 

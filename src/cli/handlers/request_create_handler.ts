@@ -3,7 +3,7 @@
  * @path src/cli/handlers/request_create_handler.ts
  * @description Handles the creation of agent requests, including input validation, unique trace ID generation, and YAML frontmatter serialization.
  * @architectural-layer CLI
- * * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
  */
 
 import { join } from "@std/path";
@@ -13,13 +13,10 @@ import { RequestKind, RequestPriority, RequestSource, RequestStatus } from "@exa
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";
-import type {
-  IRequestMetadata as RequestMetadata,
-  IRequestOptions as RequestOptions,
-} from "../../shared/types/request.ts";
+import type { IRequestMetadata, IRequestOptions } from "@exaix/core/types/mod.ts";
 import { resolveSubject } from "../helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
-import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
+import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/types/mod.ts";
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";
 
 const VALID_PRIORITIES: RequestPriority[] = [
@@ -39,9 +36,9 @@ export class RequestCreateHandler extends BaseCommand {
 
   async create(
     description: string,
-    options: RequestOptions = {},
+    options: IRequestOptions = {},
     source: RequestSource = RequestSource.CLI,
-  ): Promise<RequestMetadata> {
+  ): Promise<IRequestMetadata> {
     try {
       const trimmedDescription = description.trim();
       const priority = options.priority || RequestPriority.NORMAL;
@@ -151,7 +148,7 @@ export class RequestCreateHandler extends BaseCommand {
     }
   }
 
-  private validateCreateInputs(description: string, options: RequestOptions, priority: RequestPriority): void {
+  private validateCreateInputs(description: string, options: IRequestOptions, priority: RequestPriority): void {
     const validation = new ValidationChain()
       .addRule("description", (val) => (!val) ? "cannot be empty" : null)
       .addRule(
@@ -186,7 +183,7 @@ export class RequestCreateHandler extends BaseCommand {
 
   private addOptionalFrontmatterFields(
     frontmatterFields: Record<string, string | boolean | number>,
-    options: RequestOptions,
+    options: IRequestOptions,
     portal: string | undefined,
   ): void {
     if (portal) {
@@ -220,8 +217,8 @@ export class RequestCreateHandler extends BaseCommand {
 
   async createFromFile(
     filePath: string,
-    options: RequestOptions = {},
-  ): Promise<RequestMetadata> {
+    options: IRequestOptions = {},
+  ): Promise<IRequestMetadata> {
     try {
       // Check file exists
       if (!await exists(filePath)) {

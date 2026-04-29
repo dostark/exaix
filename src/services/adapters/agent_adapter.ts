@@ -3,18 +3,16 @@
  * @path src/services/adapters/agent_adapter.ts
  * @description Module for AgentAdapter.
  * @architectural-layer Services
- * * @related-files [src/services/agent_manager.ts, src/shared/interfaces/i_agent_service.ts]
+ * @related-files [src/services/agent_manager.ts, @exaix/core/types/i_agent_service.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../../cli/base.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { ActivityActor, AgentHealth } from "@exaix/core";
-import { AgentStatus } from "../../shared/status/agent_status.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../../shared/types/agent.ts";
-import { DEFAULT_AGENT_MODEL } from "@exaix/core";
-import type { IAgentService } from "../../shared/interfaces/i_agent_service.ts";
-
+import { ActivityActor, AgentHealth, DEFAULT_AGENT_MODEL } from "@exaix/core";
+import { AgentStatus } from "@exaix/core/status/agent_status.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { IAgentService } from "@exaix/core/types";
 export class AgentServiceAdapter extends BaseCommand implements IAgentService {
   private identitiesDir: string;
 

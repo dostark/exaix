@@ -3,7 +3,7 @@
  * @path src/services/core/database_connection_pool.ts
  * @description Manages a pool of SQLite database connections with WAL mode and busy timeout handling.
  * @architectural-layer Services
- * * @related-files [src/services/db.ts]
+ * @related-files [src/services/db.ts]
  */
 import { Database } from "@db/sqlite";
 import { join } from "@std/path";

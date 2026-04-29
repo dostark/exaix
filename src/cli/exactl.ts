@@ -3,7 +3,7 @@
  * @path src/cli/exactl.ts
  * @description Main entry point for the Exaix CLI (exactl). Orchestrates all commands, subcommands, and service initializations.
  * @architectural-layer CLI
- * * @related-files [src/cli/init.ts, src/cli/cli.config.ts]
+ * @related-files [src/cli/init.ts, src/cli/cli.config.ts]
  */
 
 import { Command } from "@cliffy/command";
@@ -33,7 +33,7 @@ import {
   RequestPriority,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
-import { AnalysisMode } from "../shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core";
 import { type IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
 import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";

@@ -3,7 +3,7 @@
  * @path src/ai/factories/mock_factory.ts
  * @description Factory for creating MockLLMProvider instances with configurable strategies and fixtures.
  * @architectural-layer AI
- * * @related-files [src/ai/providers/mock_llm_provider.ts]
+ * @related-files [src/ai/providers/mock_llm_provider.ts]
  */
 import { AbstractProviderFactory } from "./abstract_provider_factory.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "../types.ts";

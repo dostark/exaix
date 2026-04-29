@@ -3,7 +3,7 @@
  * @path src/services/request_processing/request_parser.ts
  * @description Parses request files, extracting YAML frontmatter and body while normalizing status.
  * @architectural-layer Services
- * * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
+ * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
  */
 import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";

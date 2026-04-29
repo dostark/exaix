@@ -3,7 +3,7 @@
  * @path src/cli/base/command.ts
  * @description Defines the standard interfaces and abstract classes for CLI commands, following the Command pattern.
  * @architectural-layer CLI
- * * @related-files [src/cli/base.ts]
+ * @related-files [src/cli/base.ts]
  */
 
 import type { JSONValue } from "@exaix/core";

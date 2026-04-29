@@ -3,7 +3,7 @@
  * @path src/flows/condition_evaluator.ts
  * @description Evaluates dynamic step conditions using safe JavaScript execution against a context of previous results and request metadata.
  * @architectural-layer Flows
- * * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
  */
 
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";

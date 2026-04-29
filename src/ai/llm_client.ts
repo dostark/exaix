@@ -3,7 +3,7 @@
  * @path src/ai/llm_client.ts
  * @description ReAct reasoning engine that prompts LLM for next action selection.
  * @architectural-layer AI
- * * @related-files [src/flows/dynamic_step_executor.ts, src/ai/providers.ts]
+ * @related-files [src/flows/dynamic_step_executor.ts, src/ai/providers.ts]
  */
 import type { ILlmClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";

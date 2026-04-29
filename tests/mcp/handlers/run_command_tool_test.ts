@@ -10,7 +10,7 @@ import { PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import type { IToolRegistry, IToolResult } from "../../../src/shared/interfaces/i_tool_registry.ts";
+import type { IToolRegistry, IToolResult } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 
 class MockToolRegistry implements IToolRegistry {

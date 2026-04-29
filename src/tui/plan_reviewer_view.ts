@@ -3,17 +3,16 @@
  * @path src/tui/plan_reviewer_view.ts
  * @description Interactive TUI view for reviewing and approving/rejecting execution plans, featuring side-by-side diff visualization.
  * @architectural-layer TUI
- * * @related-files [src/services/plan_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/plan_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
-import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
+import { DEFAULT_UNKNOWN_LABEL, DialogStatus } from "@exaix/core";
 import { TUI_ACTION_SEARCH, TUI_ELEMENT_ACTION_BUTTONS, TUI_LABEL_CANCEL } from "./helpers/constants.ts";
-import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
+import type { IPlanService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { coercePlanStatus, PlanStatus, type PlanStatusType } from "@exaix/core/status/plan_status.ts";
 import { ConfirmDialog, type DialogBase, InputDialog } from "./helpers/dialog_base.ts";
-import { DialogStatus } from "@exaix/core";
 import { TuiNodeType } from "@exaix/tui";
 import { createGroupNode, createNode, flattenTree, type ITreeNode } from "./helpers/tree_view.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";

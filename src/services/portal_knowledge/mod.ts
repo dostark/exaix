@@ -5,7 +5,7 @@
  * Re-exports all public classes, interfaces, and utilities used by consumers
  * of the portal knowledge gathering subsystem (Phase 46).
  * @architectural-layer Services
- * * @related-files [src/shared/interfaces/i_portal_knowledge_service.ts, src/shared/schemas/portal_knowledge.ts]
+ * @related-files [src/shared/interfaces/i_portal_knowledge_service.ts, src/shared/schemas/portal_knowledge.ts]
  */
 
 export { PortalKnowledgeService } from "./portal_knowledge_service.ts";

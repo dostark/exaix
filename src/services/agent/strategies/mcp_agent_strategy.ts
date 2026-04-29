@@ -12,11 +12,18 @@ import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from
 import { SafeSubprocess } from "../../../helpers/subprocess.ts";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
-import { AgentExecutionErrorType, ExecutionStrategyName, SecurityMode, SystemCommand } from "@exaix/core";
+import {
+  AgentExecutionErrorType,
+  DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS,
+  ENV_AGENT_MODE,
+  ENV_PORTAL_ALIAS,
+  ENV_TRACE_ID,
+  ExecutionStrategyName,
+  SecurityMode,
+  SystemCommand,
+} from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { IToolResult } from "../../../shared/interfaces/i_tool_registry.ts";
-
-import { DEFAULT_AGENT_HANDSHAKE_TIMEOUT_MS, ENV_AGENT_MODE, ENV_PORTAL_ALIAS, ENV_TRACE_ID } from "@exaix/core";
+import type { IToolResult } from "@exaix/core/types";
 
 /**
  * MCP execution strategy that spawns a separate Deno process

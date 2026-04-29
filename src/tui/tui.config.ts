@@ -3,7 +3,7 @@
  * @path src/tui/tui.config.ts
  * @description TUI configuration and constants, including icons, colors for log entries, and refresh intervals.
  * @architectural-layer TUI
- * * @related-files [src/tui/tui_dashboard.ts]
+ * @related-files [src/tui/tui_dashboard.ts]
  */
 
 import { TuiColorName } from "@exaix/tui";

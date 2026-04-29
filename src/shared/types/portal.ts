@@ -3,7 +3,7 @@
  * @path src/shared/types/portal.ts
  * @description Module for Portal.
  * @architectural-layer Shared
- * * @related-files [src/shared/interfaces/i_portal_service.ts]
+ * @related-files [src/shared/interfaces/i_portal_service.ts]
  */
 
 import type { PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";

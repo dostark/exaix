@@ -3,10 +3,10 @@
  * @path src/tui/analytics/correlation_analyzer.ts
  * @description Analyzes correlation across multiple log entries to identify related operations and system flows.
  * @architectural-layer TUI
- * * @related-files [src/tui/structured_log_viewer.ts]
+ * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import type { CorrelationAnalysis } from "./types.ts";
 import { LogLevel } from "@exaix/core";
 

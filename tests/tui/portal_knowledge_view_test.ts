@@ -11,9 +11,9 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { PortalManagerTuiSession, renderKnowledgeSection } from "../../src/tui/portal_manager_view.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { IPortalService } from "@exaix/core/types";
 import { PortalStatus, SystemCommand } from "@exaix/core";
-import type { IPortalInfo } from "../../src/shared/types/portal.ts";
+import type { IPortalInfo } from "@exaix/core/types/portal.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Fixtures

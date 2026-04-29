@@ -3,7 +3,7 @@
  * @path src/services/routing/routing_policy_loader.ts
  * @description Loads and validates routing policy YAML files for the routing policy layer.
  * @architectural-layer Services
- * * @related-files [src/shared/schemas/routing_policy.ts]
+ * @related-files [src/shared/schemas/routing_policy.ts]
  */
 
 import { join } from "@std/path";

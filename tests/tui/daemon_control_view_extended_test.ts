@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus } from "@exaix/core";
-import type { IDaemonService } from "../../src/shared/interfaces/i_daemon_service.ts";
+import type { IDaemonService } from "@exaix/core/types";
 import {
   DaemonControlView,
   LegacyDaemonControlTuiSession,

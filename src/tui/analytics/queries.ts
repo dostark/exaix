@@ -3,10 +3,10 @@
  * @path src/tui/analytics/queries.ts
  * @description Collection of query functions for filtering and grouping logs by correlation, trace, and agent IDs.
  * @architectural-layer TUI
- * * @related-files [src/tui/structured_log_viewer.ts]
+ * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "../../shared/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 
 /**
  * Find related logs by correlation ID

@@ -3,7 +3,7 @@
  * @path src/flows/gate_evaluator.ts
  * @description Implements quality gates for flow steps, orchestrating judge invocations and pass/fail/retry logic based on criteria.
  * @architectural-layer Flows
- * * @related-files [src/flows/flow_runner.ts, src/flows/evaluation_criteria.ts]
+ * @related-files [src/flows/flow_runner.ts, src/flows/evaluation_criteria.ts]
  */
 
 import { z } from "zod";
@@ -17,11 +17,15 @@ import {
 } from "./evaluation_criteria.ts";
 import type { IStepResult } from "./flow_runner.ts";
 import { FlowGateAction, FlowGateOnFail } from "@exaix/core";
-import type { ICriteriaGeneratorService } from "../shared/interfaces/i_criteria_generator_service.ts";
+import type {
+  ICriteriaGeneratorService,
+  IGateConfig,
+  IGateEvaluator,
+  IGateResult,
+  IJudgeInvoker,
+} from "@exaix/core/types";
 import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IGateConfig, IGateEvaluator, IGateResult, IJudgeInvoker } from "../shared/interfaces/i_gate_evaluator.ts";
-
 /**
  * Gate configuration schema
  */

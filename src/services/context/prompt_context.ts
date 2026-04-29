@@ -4,7 +4,7 @@
  * @description Utility for building structured prompt context blocks,
  * including portal information and required actions.
  * @architectural-layer Services
- * * @related-files [src/services/request_router.ts, src/services/agent_runner.ts]
+ * @related-files [src/services/request_router.ts, src/services/agent_runner.ts]
  */
 import {
   PORTAL_CONTEXT_ALIAS_LABEL,

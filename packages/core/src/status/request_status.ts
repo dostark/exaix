@@ -3,7 +3,7 @@
  * @path packages/core/src/status/request_status.ts
  * @description Shared type definitions and utility functions for Request lifecycle states.
  * @architectural-layer Shared
- * * @related-files [packages/core/src/status/plan_status.ts]
+ * @related-files [packages/core/src/status/plan_status.ts]
  */
 
 import { GeneralStatus } from "../types/enums.ts";

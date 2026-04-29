@@ -7,16 +7,11 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IContextCardGeneratorService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { PortalService } from "../../../src/services/portal/portal.ts";
 import { PortalAnalysisMode, PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
-import type { IContextCardGeneratorService } from "../../../src/shared/interfaces/i_context_card_generator_service.ts";
-
 function createMockContextCardGenerator(): IContextCardGeneratorService {
   return {
     generate: () => Promise.resolve(),

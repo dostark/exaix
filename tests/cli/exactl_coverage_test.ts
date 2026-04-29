@@ -28,7 +28,7 @@ import { ReviewStatus } from "../../src/reviews/review_status.ts";
 import { GitService } from "../../src/services/core/git_service.ts";
 import type { OutputFormat } from "../../src/cli/memory_types.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
-import type { IRequestOptions } from "../../src/shared/types/request.ts";
+import type { IRequestOptions } from "@exaix/core/types/mod.ts";
 import type { RequestStatusType } from "@exaix/core";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";

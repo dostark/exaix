@@ -8,7 +8,7 @@
  * transition between orchestrated flows and individual agent executions.
  *
  * @architectural-layer Services
- * * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
+ * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
  */
 import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
@@ -19,16 +19,15 @@ import {
   WorkspaceExecutionContextBuilder,
 } from "../portal/workspace_execution_context.ts";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
-import { PORTAL_CONTEXT_KEY } from "@exaix/core";
+import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../request_processing/types.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
 import type { IRoutingPolicyService } from "../routing/routing_policy_service.ts";
 import { GitBranchName } from "@exaix/git";
-import { RequestKind } from "@exaix/core";
 
 /**
  * RequestRouter - Routes requests to appropriate execution engine

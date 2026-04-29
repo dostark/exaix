@@ -6,7 +6,7 @@
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus, MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/services/request/request_processor.ts";
@@ -19,14 +19,13 @@ import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
 import {
   getBlueprintsIdentitiesDir,
   getWorkspaceDir,
   getWorkspacePlansDir,
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 

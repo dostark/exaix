@@ -5,7 +5,7 @@
  * objective and iteratively selects tools from permitted_tools via a ReAct loop
  * until the objective is satisfied or max_iterations is reached.
  * @architectural-layer Flows
- * * @related-files [src/flows/flow_runner.ts, src/shared/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, src/shared/schemas/flow.ts]
  */
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";

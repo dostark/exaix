@@ -10,13 +10,9 @@
 import { assert, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode, SystemCommand } from "@exaix/core";
-import { ExaPathDefaults } from "@exaix/core";
+import { ExaPathDefaults, PortalAnalysisMode, SystemCommand } from "@exaix/core";
 import { initPortalTest } from "../helpers/test_setup.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────

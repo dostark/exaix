@@ -3,11 +3,11 @@
  * @path src/services/adapters/plan_adapter.ts
  * @description Module for PlanAdapter.
  * @architectural-layer Services
- * * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
+ * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
  */
 
-import type { IPlanService } from "../../shared/interfaces/i_plan_service.ts";
-import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
+import type { IPlanService } from "@exaix/core/types";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
 import { PlanStatus, type PlanStatusType } from "@exaix/core";
 
 interface IPlanCommandService {

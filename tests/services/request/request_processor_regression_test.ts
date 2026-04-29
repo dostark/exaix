@@ -8,16 +8,14 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { DatabaseService } from "../../../src/services/core/db.ts";
 import { ConfigService } from "../../../src/config/service.ts";
 import { join } from "@std/path";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-
+import type { IApplicationContext } from "@exaix/core/types";
 import {
   ConsoleOutput,
   initializeGlobalLogger,
   resetGlobalLogger,
 } from "../../../src/services/logger/structured_logger.ts";
 import { REPO_ROOT } from "../../helpers/repo_root.ts";
-import { LogLevel } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
+import { LogLevel, RequestStatus } from "@exaix/core";
 import { createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 

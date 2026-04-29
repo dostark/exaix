@@ -3,7 +3,7 @@
  * @path src/services/context/mod.ts
  * @description Barrel export for context service modules.
  * @architectural-layer Services
- * * @related-files [src/services/context/*.ts]
+ * @related-files [src/services/context/*.ts]
  */
 
 export * from "./context_card_generator.ts";

@@ -3,12 +3,12 @@
  * @path src/services/adapters/journal_adapter.ts
  * @description Adapter for Journal Service using DatabaseService.
  * @architectural-layer Services
- * * @related-files [src/services/db.ts, src/shared/interfaces/i_journal_service.ts]
+ * @related-files [src/services/db.ts, @exaix/core/types/i_journal_service.ts]
  */
 
-import type { IJournalService } from "../../shared/interfaces/i_journal_service.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IActivityRecord, IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";
 
 /**
  * Adapter that implements the IJournalService interface

@@ -13,9 +13,9 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddingSearchResult } from "../../shared/types/memory.ts";
+import type { IEmbeddingSearchResult } from "@exaix/core/types/memory.ts";
 import type { IEmbeddingProvider } from "../../ai/embeddings/embedding_provider.ts";
-import type { IMemoryEmbeddingService } from "../../shared/interfaces/i_memory_embedding_service.ts";
+import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { cosineSimilarity } from "./memory_embedding.ts";
 import { OLLAMA_EMBED_CACHE_MAX_ENTRIES } from "@exaix/ai";
 

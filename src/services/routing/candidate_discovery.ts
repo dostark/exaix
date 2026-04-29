@@ -3,7 +3,7 @@
  * @path src/services/routing/candidate_discovery.ts
  * @description Discovers routing candidates from available blueprints and ranks them.
  * @architectural-layer Services
- * * @related-files [src/services/routing/capability_matcher.ts, src/services/routing/routing_policy_service.ts]
+ * @related-files [src/services/routing/capability_matcher.ts, src/services/routing/routing_policy_service.ts]
  */
 
 import type { BlueprintLoader } from "../blueprint/blueprint_loader.ts";

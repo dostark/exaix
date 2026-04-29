@@ -3,7 +3,7 @@
  * @path src/tui/tui_dashboard_mocks.ts
  * @description Mock implementations of core services (Portal, Plan, Log, Daemon, Request, Agent, Memory, Skills) for TUI dashboard testing and TDD.
  * @architectural-layer TUI
- * * @related-files [src/tui/dashboard_view.ts]
+ * @related-files [src/tui/dashboard_view.ts]
  */
 import {
   ActivityType,
@@ -28,8 +28,8 @@ import {
 import { TuiIcon } from "@exaix/tui";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";
-import type { IPlanDetails, IPlanMetadata } from "../shared/types/plan.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
 import type {
   AnalysisMode,
   IRequestAnalysis,
@@ -37,10 +37,9 @@ import type {
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "../shared/types/request.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
-import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
-import type { ILogContext } from "../shared/types/logging.ts";
+} from "@exaix/core/types/mod.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import type {
   IActivitySummary,
@@ -57,28 +56,29 @@ import type {
   SkillImmutableFields as _SkillImmutableFields,
   SkillManagedFields,
 } from "@exaix/schemas/memory_bank.ts";
-import type { IPortalService } from "../shared/interfaces/i_portal_service.ts";
-import type { IPlanService } from "../shared/interfaces/i_plan_service.ts";
-import type { IRequestService } from "../shared/interfaces/i_request_service.ts";
-import type { IDaemonService } from "../shared/interfaces/i_daemon_service.ts";
-import type { IAgentService } from "../shared/interfaces/i_agent_service.ts";
-import type { IMemoryBankService } from "../shared/interfaces/i_memory_bank_service.ts";
-import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
-import type { INotificationService } from "../shared/interfaces/i_notification_service.ts";
-import type { ILogService, IStructuredLogger } from "../shared/interfaces/i_log_service.ts";
-import type { IJournalService } from "../shared/interfaces/i_journal_service.ts";
-import type { IMemoryService } from "../shared/interfaces/i_memory_service.ts";
+import type {
+  IAgentService,
+  IMemoryBankService,
+  IMemoryEmbeddingService,
+  INotificationService,
+  IPlanService,
+  IPortalService,
+  IRequestService,
+  ISkillsService,
+} from "@exaix/core/types";
+import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
+import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
+import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
+import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PlanStatus, type PlanStatusType } from "@exaix/core";
+import { PlanStatus, type PlanStatusType, SECONDS_PER_HOUR } from "@exaix/core";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
-import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
+import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status/agent_status.ts";
 import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status/memory_status.ts";
-import type { IMemoryNotification } from "../shared/types/notification.ts";
-import type { ISkillMatchRequest } from "../shared/types/skill.ts";
-import type { IMemoryEmbeddingService } from "../shared/interfaces/i_memory_embedding_service.ts";
-import type { IDatabaseService } from "../shared/interfaces/i_database_service.ts";
-import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "../shared/types/database.ts";
-import { SECONDS_PER_HOUR } from "@exaix/core";
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types/database.ts";
 
 /** Default identity ID used across all mock service implementations */
 const MOCK_IDENTITY_ID = "test-agent";

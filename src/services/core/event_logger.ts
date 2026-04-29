@@ -4,7 +4,7 @@
  * @description Unified logging service that writes to both console and IActivity Journal.
  * Supports child loggers, structured payloads, and consistent log levels across the system.
  * @architectural-layer Services
- * * @related-files [src/services/db.ts, src/repositories/activity_repository.ts, src/services/common/types.ts]
+ * @related-files [src/services/db.ts, src/repositories/activity_repository.ts, src/services/common/types.ts]
  */
 
 import type { IDatabaseService } from "../core/db.ts";

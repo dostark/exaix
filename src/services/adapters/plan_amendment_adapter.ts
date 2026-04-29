@@ -6,7 +6,7 @@
  * @related-files [src/services/plan/plan_amendment_service.ts, src/shared/interfaces/i_plan_amendment_service.ts]
  */
 
-import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
+import type { IPlanAmendmentService } from "@exaix/core/types";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../plan/plan_executor.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";

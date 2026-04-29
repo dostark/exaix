@@ -6,7 +6,7 @@
  * dependency information, tech stack details, and gitignore patterns.
  * Pure function module — zero LLM / network dependencies, sandboxed-safe.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/directory_analyzer.ts, src/services/portal_knowledge/key_file_identifier.ts]
+ * @related-files [src/services/portal_knowledge/directory_analyzer.ts, src/services/portal_knowledge/key_file_identifier.ts]
  */
 
 import { join } from "@std/path";

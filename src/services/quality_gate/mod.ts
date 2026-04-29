@@ -5,12 +5,12 @@
  * single import point for the RequestQualityGate orchestrator and its supporting
  * assessors, enricher, and persistence helpers.
  * @architectural-layer Services
- * * @related-files [src/shared/interfaces/i_request_quality_gate_service.ts]
+ * @related-files [src/shared/interfaces/i_request_quality_gate_service.ts]
  */
 
 export { buildQualityGateConfig, RequestQualityGate } from "./request_quality_gate.ts";
 export { type IQualityGateTomlConfig } from "./request_quality_gate.ts";
-export { type IRequestQualityGateConfig } from "../../shared/interfaces/i_request_quality_gate_service.ts";
+export { type IRequestQualityGateConfig } from "@exaix/core/types/i_request_quality_gate_service.ts";
 export { assessHeuristic } from "./heuristic_assessor.ts";
 export { LlmQualityAssessor } from "./llm_assessor.ts";
 export { enrichRequest } from "./request_enricher_llm.ts";

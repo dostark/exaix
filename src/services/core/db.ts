@@ -4,7 +4,7 @@
  * @description Provides persistent storage for the Activity Journal and system state using SQLite.
  * Implements batched writes, transactions with retries, and circuit breaker protection.
  * @architectural-layer Services
- * * @related-files [src/services/event_logger.ts, src/services/database_connection_pool.ts]
+ * @related-files [src/services/event_logger.ts, src/services/database_connection_pool.ts]
  */
 import { z } from "zod";
 import { Database } from "@db/sqlite";
@@ -14,8 +14,8 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
 
 export type SqliteParam = string | number | boolean | null;
 

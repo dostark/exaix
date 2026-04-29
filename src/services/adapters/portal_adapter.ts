@@ -3,12 +3,12 @@
  * @path src/services/adapters/portal_adapter.ts
  * @description Module for PortalAdapter.
  * @architectural-layer Services
- * * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
+ * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
  */
 
 import type { PortalService } from "../portal/portal.ts";
-import type { IPortalService } from "../../shared/interfaces/i_portal_service.ts";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../../shared/types/portal.ts";
+import type { IPortalService } from "@exaix/core/types";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 

@@ -3,14 +3,14 @@
  * @path src/cli/command_builders/plan_actions.ts
  * @description Provides builders and helper functions for defining plan-related CLI actions and subcommands.
  * @architectural-layer CLI
- * * @related-files [src/cli/exactl.ts, src/cli/plan_commands.ts]
+ * @related-files [src/cli/exactl.ts, src/cli/plan_commands.ts]
  */
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
 import type { JSONValue, PlanStatus } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
-import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
 import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
 
 export interface IPlanActionContext {

@@ -17,10 +17,7 @@ import { createStubDisplay, createStubGit, createStubProvider } from "../helpers
 import { PortalService } from "../../src/services/portal/portal.ts";
 import { PortalAdapter } from "../../src/services/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "./paths_helper.ts";
 

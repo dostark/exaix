@@ -25,7 +25,7 @@ import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts"
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import {
   getBlueprintsIdentitiesDir,

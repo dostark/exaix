@@ -10,7 +10,7 @@
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { ExaPathDefaults } from "@exaix/core";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core";
 import { LogLevel } from "@exaix/core";
 
 // ---------------------------------------------------------------------------

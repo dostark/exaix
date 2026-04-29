@@ -9,7 +9,7 @@
  * bullet count, file count, phase keywords), ambiguity signals (hedging language,
  * question marks, vague pronoun phrases), and task type from leading verbs.
  * @architectural-layer Services
- * * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
+ * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
 import {
@@ -29,8 +29,7 @@ import {
   ANALYSIS_SIMPLE_MAX_CHARS,
   ANALYSIS_TASK_TYPE_VERBS,
 } from "@exaix/core";
-import type { IRequestAnalysisContext } from "../../shared/interfaces/i_request_analyzer_service.ts";
-
+import type { IRequestAnalysisContext } from "@exaix/core/types";
 // ---------------------------------------------------------------------------
 // File reference extraction
 // ---------------------------------------------------------------------------

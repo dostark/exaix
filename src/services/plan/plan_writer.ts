@@ -9,12 +9,12 @@
  * - Converts validated plan to markdown for storage
  *
  * @architectural-layer Services
- * * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
+ * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
  */
 
 import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR, PlanStatus } from "@exaix/core";
 import { stringify as stringifyYaml } from "@std/yaml";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";

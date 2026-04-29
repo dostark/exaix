@@ -4,25 +4,22 @@
  * @description Central registry for available tools. Maps abstract tool names (e.g., 'read_file')
  * to concrete implementations with security validation and logging.
  * @architectural-layer Services
- * * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
+ * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
  */
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
-import { ActivityActor, BYTES_PER_KB, LogLevel, SystemCommand, ToolName } from "@exaix/core";
+import { ActivityActor, BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
 import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
-import { PORTAL_PREFIX_PATTERN } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import type { JSONValue } from "@exaix/core";
-import type { ITool, IToolRegistry, IToolResult } from "../../shared/interfaces/i_tool_registry.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
+import type { IApplicationContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 
 export interface IToolRegistryConfig {
   config: Config;

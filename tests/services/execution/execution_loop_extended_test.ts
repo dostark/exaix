@@ -9,7 +9,7 @@ import { join } from "@std/path";
 import { assertEquals } from "@std/assert";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
-import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";

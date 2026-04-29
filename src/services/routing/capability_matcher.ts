@@ -3,7 +3,7 @@
  * @path src/services/routing/capability_matcher.ts
  * @description Matches blueprints to routing criteria and assigns capability scores.
  * @architectural-layer Services
- * * @related-files [src/shared/schemas/routing_policy.ts, src/services/routing/candidate_discovery.ts]
+ * @related-files [src/shared/schemas/routing_policy.ts, src/services/routing/candidate_discovery.ts]
  */
 
 import { ZRoutingCandidate } from "@exaix/schemas/routing_policy.ts";

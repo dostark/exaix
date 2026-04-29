@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext } from "@exaix/core/types";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IRequestProcessingContext } from "../../../src/services/request/request_processor.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";

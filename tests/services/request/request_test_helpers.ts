@@ -5,19 +5,12 @@
  */
 
 import { join } from "@std/path";
-import { ANALYZER_VERSION } from "@exaix/core";
+import { ANALYZER_VERSION, PortalAnalysisMode, RequestSource, RequestStatus } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type {
-  IRequestAnalysisContext,
-  IRequestAnalyzerService,
-} from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
-import { RequestSource } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
-import type { IPortalKnowledgeService } from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledgeService, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PortalAnalysisMode } from "@exaix/core";
 
 export function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
   return {

@@ -3,7 +3,7 @@
  * @path src/ai/factories/abstract_provider_factory.ts
  * @description Base abstractions for provider factories, defining a lightweight factory interface used by the AI provider registry.
  * @architectural-layer AI
- * * @related-files [src/ai/provider_registry.ts]
+ * @related-files [src/ai/provider_registry.ts]
  */
 
 export interface IProviderFactory<TOptions = object, TResult = object> {

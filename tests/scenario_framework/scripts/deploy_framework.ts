@@ -5,7 +5,7 @@
  * copying so the scenario framework can run from an external destination with
  * rewritten runtime configuration.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/deployment_framework_test.ts]
+ * @related-files [tests/scenario_framework/runner/config.ts, tests/scenario_framework/tests/unit/deployment_framework_test.ts]
  */
 
 import { ensureDir, walk } from "@std/fs";

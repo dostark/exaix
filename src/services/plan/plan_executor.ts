@@ -4,7 +4,7 @@
  * @description Orchestrates the Step-by-Step execution of approved plans.
  * Managing the ReAct loop: prompting LLM for actions, executing tools, and committing results.
  * @architectural-layer Services
- * * @related-files [src/services/tool_registry.ts, src/services/execution_loop.ts]
+ * @related-files [src/services/tool_registry.ts, src/services/execution_loop.ts]
  */
 
 import { join } from "@std/path";
@@ -18,7 +18,7 @@ import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";
 import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
-import { ActivityActor, ExecutionStatus, SecurityMode } from "@exaix/core";
+import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
@@ -32,12 +32,10 @@ import {
 } from "@exaix/core";
 import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE, GIT_ERROR_NOTHING_TO_COMMIT } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
-import type { IApplicationContext } from "../../shared/interfaces/i_application_context.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
-import type { IPlanAmendmentService } from "../../shared/interfaces/i_plan_amendment_service.ts";
+import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { PlanAmendmentPendingError } from "./errors.ts";
 
 export interface IPlanStep {

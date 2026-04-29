@@ -3,7 +3,7 @@
  * @path src/cli/commands/plan_commands.ts
  * @description Provides CLI commands for human review of AI-generated plans, including approval, rejection, and revision requests.
  * @architectural-layer CLI
- * * @related-files [src/schemas/plan_schema.ts, src/cli/main.ts]
+ * @related-files [src/schemas/plan_schema.ts, src/cli/main.ts]
  */
 
 import { join } from "@std/path";
@@ -32,7 +32,7 @@ import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/pl
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { JSONValue } from "@exaix/core";
 
-import type { IPlanDetails, IPlanMetadata } from "../../shared/types/plan.ts";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
 
 const FIELD_PLAN_ID = "planId";
 

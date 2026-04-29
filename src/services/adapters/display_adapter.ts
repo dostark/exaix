@@ -2,9 +2,9 @@
  * @module DisplayAdapter
  * @path src/services/adapters/display_adapter.ts
  * @description Adapter for EventLogger that satisfies the IDisplayService interface.
- * @architectural-layer Services/Adapters * * @related-files [src/shared/interfaces/i_display_service.ts, src/tui/] */
+ * @architectural-layer Services/Adapters * @related-files [@exaix/core/types/i_display_service.ts, src/tui/] */
 
-import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
 import type { EventLogger } from "../core/event_logger.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";

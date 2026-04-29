@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { AgentStatus } from "../../src/shared/status/agent_status.ts";
+import { AgentStatus } from "@exaix/core/status/agent_status.ts";
 import { RequestStatus } from "@exaix/core";
 import type { ISkillSummary } from "../../src/tui/skills_manager_view.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
@@ -14,7 +14,7 @@ import { createSkillsManagerTuiSession, sampleTestSkills, testSkillsSessionRende
 import { TEST_MODEL_OPENAI } from "../config/constants.ts";
 import { AgentStatusView, MinimalAgentServiceMock } from "../../src/tui/agent_status_view.ts";
 import { MinimalRequestServiceMock, RequestManagerView } from "../../src/tui/request_manager_view.ts";
-import type { IRequest } from "../../src/shared/types/request.ts";
+import type { IRequest } from "@exaix/core/types/mod.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
 
 // ===== Test Data =====

@@ -5,12 +5,12 @@
  * criteria) into EvaluationCriterion arrays suitable for quality gate evaluation.
  * Implements ICriteriaGeneratorService for dependency injection.
  * @architectural-layer Services
- * * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
+ * @related-files [src/shared/interfaces/i_criteria_generator_service.ts, src/flows/evaluation_criteria.ts]
  */
 
 import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "@exaix/core";
-import type { ICriteriaGeneratorService } from "../../shared/interfaces/i_criteria_generator_service.ts";
+import type { ICriteriaGeneratorService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   ACCEPTANCE_CRITERION_WEIGHT,

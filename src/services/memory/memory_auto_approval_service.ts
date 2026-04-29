@@ -4,14 +4,13 @@
  * @description Manages the automated approval and promotion of high-confidence agent learnings.
  * Implements filtering by source, confidence threshold, and quiet-period delay.
  * @architectural-layer Services
- * * @related-files [src/services/memory/memory_extractor.ts, src/shared/schemas/config.ts]
+ * @related-files [src/services/memory/memory_extractor.ts, src/shared/schemas/config.ts]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
 import { ConfidenceAssessmentLevel } from "@exaix/core";
 import type { IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
-
+import type { IMemoryExtractorService } from "@exaix/core/types";
 export type IEligibleMemoryUpdateProposal = IMemoryUpdateProposal & {
   learning: IProposalLearning & { eligible_at: string };
 };

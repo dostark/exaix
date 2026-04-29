@@ -3,7 +3,7 @@
  * @path src/services/agent/agent_capabilities.ts
  * @description Helper functions for evaluating and enforcing agent tool capabilities.
  * @architectural-layer Services
- * * @related-files [src/services/agent_executor.ts, src/services/agent_runner.ts]
+ * @related-files [src/services/agent_executor.ts, src/services/agent_runner.ts]
  */
 
 import { ToolName } from "@exaix/core";

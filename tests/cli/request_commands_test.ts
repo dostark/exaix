@@ -18,7 +18,7 @@ import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import { AnalysisMode, type IRequestOptions } from "../../src/shared/types/request.ts";
+import { AnalysisMode, type IRequestOptions } from "@exaix/core/types/mod.ts";
 
 describe("RequestCommands", () => {
   let tempDir: string;

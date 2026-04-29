@@ -12,7 +12,7 @@ import {
   type Insight,
   SessionMemoryService,
 } from "../../../src/services/memory/session_memory.ts";
-import type { IMemoryBankService } from "../../../src/shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import type {
   IActivitySummary,

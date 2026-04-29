@@ -9,16 +9,13 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
-import type { IRequestQualityGateService } from "../../../src/shared/interfaces/i_request_quality_gate_service.ts";
+import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import {
   type IRequestQualityAssessment,
   RequestQualityLevel,
   RequestQualityRecommendation,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { QualityGateMode } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
-import { RequestSource } from "@exaix/core";
+import { QualityGateMode, RequestSource, RequestStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";

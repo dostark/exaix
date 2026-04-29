@@ -7,7 +7,7 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IMemoryExtractorService } from "../../shared/interfaces/i_memory_extractor_service.ts";
+import type { IMemoryExtractorService } from "@exaix/core/types";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import { MemoryAutoApprovalService } from "../memory/memory_auto_approval_service.ts";
 

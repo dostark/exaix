@@ -3,12 +3,12 @@
  * @path src/cli/commands/journal_commands.ts
  * @description Provides CLI access to the IActivity Journal, allowing users to query, filter, and display system activities and agent logs.
  * @architectural-layer CLI
- * * @related-files [src/services/db.ts, src/cli/main.ts]
+ * @related-files [src/services/db.ts, src/cli/main.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
-import type { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
 import type { UIOutputFormat } from "@exaix/tui";
 

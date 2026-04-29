@@ -3,7 +3,7 @@
  * @path src/services/middleware/pipeline.ts
  * @description Generic middleware pipeline for executing a chain of interceptors.
  * @architectural-layer Services
- * * @related-files [src/services/common/types.ts]
+ * @related-files [src/services/common/types.ts]
  */
 import type { IServiceContext } from "../common/types.ts";
 

@@ -4,7 +4,7 @@
  * @description AI provider configuration schemas and validation. Defines Zod schemas for
  * validating provider settings, retry policies, timeouts, and model configurations.
  * @architectural-layer Configuration
- * * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
+ * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
 import { initializeRegistry, ProviderRegistry } from "@exaix/ai";

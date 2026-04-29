@@ -7,14 +7,13 @@
  */
 
 import process from "node:process";
-import type { IPane } from "../../src/tui/tui_dashboard.ts";
+import type { IDashboardViewState, IPane } from "../../src/tui/tui_dashboard.ts";
 import { noColorTheme } from "../../src/tui/helpers/colors.ts";
 import { prodRender } from "../../src/tui/dashboard/renderer.ts";
 import type { INotificationService } from "../../src/services/notification/notification.ts";
-import type { IMemoryNotification } from "../../src/shared/types/notification.ts";
-import type { IPortalDetails, IPortalInfo } from "../../src/shared/types/portal.ts";
-import type { IDashboardViewState } from "../../src/tui/tui_dashboard.ts";
-import type { IPortalService } from "../../src/shared/interfaces/i_portal_service.ts";
+import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IPortalDetails, IPortalInfo } from "@exaix/core/types/portal.ts";
+import type { IPortalService } from "@exaix/core/types";
 import { makePane } from "./layout_test_utils.ts";
 
 // ===== Types =====

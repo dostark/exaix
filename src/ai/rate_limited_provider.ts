@@ -3,12 +3,12 @@
  * @path src/ai/rate_limited_provider.ts
  * @description Resiliency wrapper for AI providers that enforces rate limits (calls/tokens/cost) to prevent cost exhaustion attacks.
  * @architectural-layer AI
- * * @related-files [src/ai/providers.ts, src/services/cost_tracker.ts]
+ * @related-files [src/ai/providers.ts, src/services/cost_tracker.ts]
  */
 
 import type { IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
-import type { ICostTracker } from "../shared/interfaces/i_cost_tracker.ts";
+import type { ICostTracker } from "@exaix/core/types";
 import {
   RATE_LIMIT_WINDOW_DAY_MS,
   RATE_LIMIT_WINDOW_HOUR_MS,

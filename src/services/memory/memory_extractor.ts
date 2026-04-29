@@ -3,15 +3,22 @@
  * @path src/services/memory/memory_extractor.ts
  * @description Analyzes execution results to extract learnings and patterns, managing the lifecycle of pending memory update proposals.
  * @architectural-layer Services
- * * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
+ * @related-files [src/services/memory/memory_bank.ts, src/services/core/db.ts]
  */
 
-import { DEFAULT_TITLE_PLACEHOLDER, MEMORY_EVENT_AUTO_APPROVED } from "@exaix/core";
+import {
+  DEFAULT_TITLE_PLACEHOLDER,
+  MEMORY_EVENT_AUTO_APPROVED,
+  MemoryOperation,
+  MemoryReferenceType,
+  MemoryScope,
+  MemoryStatus,
+} from "@exaix/core";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import type {
   IExecutionMemory,
@@ -21,8 +28,6 @@ import type {
   IProposalLearning,
 } from "@exaix/schemas/memory_bank.ts";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
-import { MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
 import { LearningExtractor } from "../memory/learning_extractor.ts";
 import { toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";

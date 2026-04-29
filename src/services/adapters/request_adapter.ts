@@ -3,20 +3,20 @@
  * @path src/services/adapters/request_adapter.ts
  * @description Module for RequestAdapter.
  * @architectural-layer Services
- * * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
+ * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
  */
 
-import type { IRequestService } from "../../shared/interfaces/i_request_service.ts";
+import type { IRequestService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
-import type { AnalysisMode } from "../../shared/types/request.ts";
-import type { RequestSource } from "@exaix/core";
 import type {
+  AnalysisMode,
   IRequestEntry,
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "../../shared/types/request.ts";
+} from "@exaix/core/types/mod.ts";
+import type { RequestSource } from "@exaix/core";
 
 interface IRequestCommandService {
   create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata>;

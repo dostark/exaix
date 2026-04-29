@@ -9,7 +9,7 @@ import { assert, assertEquals } from "@std/assert";
 import { DaemonStatus } from "@exaix/core";
 import { DaemonKeyAction } from "@exaix/tui";
 import { setupDaemonTest } from "./daemon_test_utils.ts";
-import type { IDaemonService } from "../../src/shared/interfaces/i_daemon_service.ts";
+import type { IDaemonService } from "@exaix/core/types";
 import {
   CLIDaemonService,
   DAEMON_KEY_BINDINGS,

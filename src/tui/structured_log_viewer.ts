@@ -3,7 +3,7 @@
  * @path src/tui/structured_log_viewer.ts
  * @description Advanced TUI component for visualizing structured logs, with support for correlation-based tracing and performance metrics.
  * @architectural-layer TUI
- * * @related-files [src/services/structured_logger.ts, src/tui/monitor_view.ts]
+ * @related-files [src/services/structured_logger.ts, src/tui/monitor_view.ts]
  */
 
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
@@ -15,8 +15,8 @@ import type { ITreeViewState } from "./base/tree_view_state.ts";
 import type {
   ILogger as IStructuredLogger,
   ILogService as IStructuredLogService,
-} from "../shared/interfaces/i_log_service.ts";
-import type { IStructuredLogEntry, LogQueryOptions } from "../shared/types/logging.ts";
+} from "@exaix/core/types/i_log_service.ts";
+import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import {
   TUI_ACTION_SEARCH,

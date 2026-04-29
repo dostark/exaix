@@ -3,7 +3,7 @@
  * @path src/services/adapters/routing_adapter.ts
  * @description Adapter for routing policy services to satisfy CLI boundary requirements.
  * @architectural-layer Services/Adapters
- * * @related-files [src/services/routing/routing_policy_service.ts, src/cli/commands/routing_commands.ts]
+ * @related-files [src/services/routing/routing_policy_service.ts, src/cli/commands/routing_commands.ts]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";

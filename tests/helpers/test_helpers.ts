@@ -11,14 +11,11 @@ import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
-import type { IGitService } from "../../src/shared/interfaces/i_git_service.ts";
-import type { IDisplayService } from "../../src/shared/interfaces/i_display_service.ts";
-import type { IConfigService, IPortalConfigEntry } from "../../src/shared/interfaces/i_config_service.ts";
+import type { IConfigService, IDisplayService, IGitService, IPortalConfigEntry } from "@exaix/core/types";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
 import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
-import { ExaPathDefaults } from "@exaix/core";
-import { LogLevel, PortalOperation } from "@exaix/core";
+import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 

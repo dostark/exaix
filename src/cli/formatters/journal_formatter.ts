@@ -3,13 +3,13 @@
  * @path src/cli/formatters/journal_formatter.ts
  * @description Provides formatting and rendering logic for IActivity Journal records in the CLI, supporting table, text, and JSON outputs.
  * @architectural-layer CLI
- * * @related-files [src/cli/commands/journal.ts]
+ * @related-files [src/cli/commands/journal.ts]
  */
 
 import { Table } from "@cliffy/table";
 import * as colors from "@std/fmt/colors";
-import type { IActivityRecord } from "../../shared/types/database.ts";
-import type { IJournalFilterOptions } from "../../shared/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
 import { DataFormat } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 

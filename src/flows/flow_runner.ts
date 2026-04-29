@@ -6,7 +6,15 @@
  * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
  */
 
-import type { IFlow, IFlowNamespaceWrite, IFlowStep, IGateEvaluate, IParallelMergeMode } from "@exaix/schemas/flow.ts";
+import type {
+  IFlow,
+  IFlowCheckpoint,
+  IFlowNamespaceWrite,
+  IFlowStep,
+  IFlowStepResultSnapshot,
+  IGateEvaluate,
+  IParallelMergeMode,
+} from "@exaix/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
@@ -29,11 +37,9 @@ import type { ToolHandler } from "../mcp/tool_handler.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { RetryPolicy } from "../services/core/retry_policy.ts";
-import type { IApplicationContext } from "../shared/interfaces/i_application_context.ts";
-import type { IGateConfig, IGateEvaluator, IGateResult } from "../shared/interfaces/i_gate_evaluator.ts";
+import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
 import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
-import type { IFlowCheckpoint, IFlowStepResultSnapshot } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,

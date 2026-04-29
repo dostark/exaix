@@ -3,12 +3,12 @@
  * @path src/tui/agent_status/tree_builder.ts
  * @description Tree builder utilities for Agent Status View, supporting flat and grouped (by status or model) tree constructions.
  * @architectural-layer TUI
- * * @related-files [src/tui/agent_status_view.ts]
+ * @related-files [src/tui/agent_status_view.ts]
  */
 
 import { createGroupNode, createNode, type ITreeNode } from "../helpers/tree_view.ts";
-import type { IAgentStatusItem } from "../../shared/types/agent.ts";
-import { AGENT_STATUS_ORDER, AgentStatus, type AgentStatusType } from "../../shared/status/agent_status.ts";
+import type { IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import { AGENT_STATUS_ORDER, AgentStatus, type AgentStatusType } from "@exaix/core/status/agent_status.ts";
 import {
   TUI_AGENT_STATUS_ICONS,
   TUI_ICON_AGENT,

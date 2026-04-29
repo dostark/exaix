@@ -6,7 +6,7 @@
  * test-helper, routing, types, migration, build), and returns them sorted by
  * significance. Pure function module — zero LLM / network dependencies.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/config_parser.ts, src/services/portal_knowledge/pattern_detector.ts]
+ * @related-files [src/services/portal_knowledge/config_parser.ts, src/services/portal_knowledge/pattern_detector.ts]
  */
 
 import { PORTAL_ENTRYPOINT_NAMES, PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS } from "@exaix/core";

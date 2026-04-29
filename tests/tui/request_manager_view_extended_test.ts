@@ -22,8 +22,8 @@ import {
   type IRequestEntry,
   type IRequestMetadata,
   type IRequestShowResult,
-} from "../../src/shared/types/request.ts";
-import type { IRequestService } from "../../src/shared/interfaces/i_request_service.ts";
+} from "@exaix/core/types/mod.ts";
+import type { IRequestService } from "@exaix/core/types";
 import { RequestAdapter } from "../../src/services/adapters/request_adapter.ts";
 import {
   createLegacyTuiSession,

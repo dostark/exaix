@@ -4,7 +4,7 @@
  * @description Selects the best identity and version using routing rules,
  * capability candidates, journal performance, and deterministic experiments.
  * @architectural-layer Services
- * * @related-files [src/services/routing/routing_policy_loader.ts, src/services/routing/candidate_discovery.ts, src/services/routing/identity_performance_repository.ts]
+ * @related-files [src/services/routing/routing_policy_loader.ts, src/services/routing/candidate_discovery.ts, src/services/routing/identity_performance_repository.ts]
  */
 
 import {

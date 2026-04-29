@@ -3,7 +3,7 @@
  * @path src/cli/commands/review_commands.ts
  * @description Provides CLI commands for reviewing agent-generated changes, including approval/rejection of code branches and artifacts.
  * @architectural-layer CLI
- * * @related-files [src/reviews/review_status.ts, src/cli/main.ts]
+ * @related-files [src/reviews/review_status.ts, src/cli/main.ts]
  */
 
 import { dirname, isAbsolute, join, resolve } from "@std/path";
@@ -19,7 +19,7 @@ import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
 import type { IReviewStatus } from "../../reviews/review_status.ts";
 import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/schemas/artifact.ts";
-import type { IGitService } from "../../shared/interfaces/i_git_service.ts";
+import type { IGitService } from "@exaix/core/types/mod.ts";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { GitBranchName } from "@exaix/git";
 import { createGitService } from "../../services/adapters/git_adapter.ts";

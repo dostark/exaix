@@ -3,11 +3,11 @@
  * @path src/services/memory/session_memory.ts
  * @description Integrates with Memory Bank to provide automatic semantic memory lookup and context enhancement for agent execution.
  * @architectural-layer Services
- * * @related-files [src/services/memory_bank.ts, src/services/agent_runner.ts]
+ * @related-files [src/services/memory_bank.ts, src/services/agent_runner.ts]
  */
 
 import { z } from "zod";
-import type { IMemoryBankService } from "../../shared/interfaces/i_memory_bank_service.ts";
+import type { IMemoryBankService } from "@exaix/core/types";
 import type { IMemoryEmbeddingService } from "./memory_embedding.ts";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import {

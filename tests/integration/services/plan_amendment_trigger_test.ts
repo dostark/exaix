@@ -11,7 +11,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 
 /**

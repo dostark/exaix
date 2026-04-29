@@ -23,7 +23,7 @@ import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_STEP_RET
 import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
-import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
 import { createMockConfig } from "../helpers/config.ts";
 
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */

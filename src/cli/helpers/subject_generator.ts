@@ -3,7 +3,7 @@
  * @path src/cli/helpers/subject_generator.ts
  * @description Utilities for generating and validating entity subjects (mnemonic names).
  * @architectural-layer CLI
- * * @related-files [tests/helpers/subject_generator_test.ts]
+ * @related-files [tests/helpers/subject_generator_test.ts]
  */
 
 import type { JSONValue } from "@exaix/core";

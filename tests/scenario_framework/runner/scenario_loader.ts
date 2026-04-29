@@ -5,7 +5,7 @@
  * them against the scenario contracts, and resolves the referenced request
  * fixture content for execution.
  * @architectural-layer Test
- * * @related-files [tests/scenario_framework/runner/request_fixtures.ts, tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
+ * @related-files [tests/scenario_framework/runner/request_fixtures.ts, tests/scenario_framework/schema/scenario_schema.ts, tests/scenario_framework/tests/unit/scenario_loader_execution_core_test.ts]
  */
 
 import { isAbsolute, resolve } from "@std/path";

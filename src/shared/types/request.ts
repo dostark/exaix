@@ -3,7 +3,7 @@
  * @path src/shared/types/request.ts
  * @description Module for Request.
  * @architectural-layer Shared
- * * @related-files [src/shared/interfaces/i_request_service.ts]
+ * @related-files [src/shared/interfaces/i_request_service.ts]
  */
 
 import type { RequestStatusType } from "@exaix/core/status/request_status.ts";

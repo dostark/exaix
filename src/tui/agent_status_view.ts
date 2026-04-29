@@ -3,11 +3,21 @@
  * @path src/tui/agent_status_view.ts
  * @description TUI view for monitoring agent status, health, and logs, featuring tree-based navigation and real-time updates.
  * @architectural-layer TUI
- * * @related-files [src/services/agent_manager.ts, src/tui/tui_dashboard.ts]
+ * @related-files [src/services/agent_manager.ts, src/tui/tui_dashboard.ts]
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
-import { DEFAULT_IDENTITIES_PATH, DEFAULT_NONE_LABEL, DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
+import {
+  AgentHealth,
+  DEFAULT_IDENTITIES_PATH,
+  DEFAULT_NONE_LABEL,
+  DEFAULT_QUERY_LIMIT,
+  DEFAULT_UNKNOWN_LABEL,
+  DialogStatus,
+  LogLevel,
+  MessageType,
+  SECONDS_PER_HOUR,
+} from "@exaix/core";
 import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
 import type { ITreeNode } from "./helpers/tree_view.ts";
 import {
@@ -22,8 +32,8 @@ import {
   renderTree,
   toggleNode,
 } from "./helpers/tree_view.ts";
-import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
-import { TuiColorName } from "@exaix/tui";
+import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status/agent_status.ts";
+import { TuiColorName, TuiGroupBy } from "@exaix/tui";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { type ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
@@ -38,15 +48,12 @@ import {
   TUI_LOG_LEVEL_ICONS,
 } from "./helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { DEFAULT_QUERY_LIMIT, SECONDS_PER_HOUR } from "@exaix/core";
 
 // Extracted utilities
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
-import { AgentHealth, DialogStatus, LogLevel, MessageType } from "@exaix/core";
-import { TuiGroupBy } from "@exaix/tui";
-import type { IAgentService } from "../shared/interfaces/i_agent_service.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
+import type { IAgentService } from "@exaix/core/types";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
 
 // ===== View State =====
 

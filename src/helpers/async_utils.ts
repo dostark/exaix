@@ -3,7 +3,7 @@
  * @path src/helpers/async_utils.ts
  * @description Asynchronous utilities for non-blocking operations and delays.
  * @architectural-layer Helpers
- * * @related-files []
+ * @related-files []
  */
 
 /**

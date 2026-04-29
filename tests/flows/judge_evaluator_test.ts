@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 
 import { CRITERIA, type EvaluationResult as _EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { EvaluationCategory } from "@exaix/core";
-import type { IJudgeInvoker } from "../../src/shared/interfaces/i_gate_evaluator.ts";
+import type { IJudgeInvoker } from "@exaix/core/types";
 import { createJudgeEvaluator, JudgeEvaluator } from "../../src/flows/judge_evaluator.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 

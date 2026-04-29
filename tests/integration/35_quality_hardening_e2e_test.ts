@@ -8,7 +8,7 @@
  *   Gap 3: Content-based complexity classification (heuristic + constants)
  *   Gap 4: Structured frontmatter criteria flow through pipeline
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
@@ -20,7 +20,7 @@ import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_
 import { buildParsedRequest } from "../../src/services/request/request_common.ts";
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
 import type { IGenerateResult } from "../../src/ai/providers/common.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";

@@ -3,13 +3,13 @@
  * @path src/services/cost/cost_tracker.ts
  * @description Service for tracking and managing LLM provider costs, token usage, and budget enforcement.
  * @architectural-layer Services
- * * @related-files [src/services/core/db.ts, src/config/schema.ts]
+ * @related-files [src/services/core/db.ts, src/config/schema.ts]
  */
 import type { SqliteParam } from "../core/db.ts";
-import type { IDatabaseService } from "../../shared/interfaces/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { ICostTracker } from "../../shared/interfaces/i_cost_tracker.ts";
-import type { ICostFilter, IProviderCostRecord } from "../../shared/types/database.ts";
+import type { ICostTracker } from "@exaix/core/types";
+import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types/database.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,

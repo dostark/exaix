@@ -3,7 +3,7 @@
  * @path src/helpers/path_security.ts
  * @description Secure path resolution and validation utilities to prevent directory traversal.
  * @architectural-layer Helpers
- * * @related-files [src/mcp/tool_handler.ts]
+ * @related-files [src/mcp/tool_handler.ts]
  */
 import { join } from "@std/path";
 export class PathSecurity {

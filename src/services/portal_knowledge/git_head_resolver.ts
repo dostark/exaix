@@ -3,7 +3,7 @@
  * @path src/services/portal_knowledge/git_head_resolver.ts
  * @description Helper for resolving git HEAD SHA and changed files since a cached commit.
  * @architectural-layer Services
- * * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts]
+ * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts]
  */
 
 import { SafeSubprocess } from "../../helpers/subprocess.ts";

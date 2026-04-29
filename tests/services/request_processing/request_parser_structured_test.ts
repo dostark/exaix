@@ -5,7 +5,7 @@
  * guards (acceptance_criteria, expected_outcomes, scope) in RequestParser
  * (Phase 49, Step 9).
  * @architectural-layer Tests
- * * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
+ * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";

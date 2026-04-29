@@ -8,7 +8,7 @@
  * - "failing": Simulate API failures.
  * - "slow": Simulate network latency.
  * @architectural-layer AI
- * * @related-files [src/ai/factories/mock_factory.ts, tests/ai/mock_llm_provider_test.ts]
+ * @related-files [src/ai/factories/mock_factory.ts, tests/ai/mock_llm_provider_test.ts]
  */
 
 import { MockStrategy, ProviderType } from "@exaix/core";

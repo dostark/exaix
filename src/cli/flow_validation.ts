@@ -4,7 +4,7 @@
  * @description Provides CLI validation for flow dynamic step execution mode,
  * outputting errors for write tools and warnings for missing configurations.
  * @architectural-layer CLI
- * * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
+ * @related-files [src/cli/commands/flow_commands.ts, src/shared/constants.ts]
  */
 
 import { READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";

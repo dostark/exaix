@@ -20,10 +20,7 @@ import { getMemoryProjectsDir } from "../../helpers/paths_helper.ts";
 import { GitTestHelper, setupGitRepo } from "../../helpers/git_test_helper.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../helpers/portal_test_helper.ts";
-import type {
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "../../../src/shared/interfaces/i_portal_knowledge_service.ts";
+import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 
 /**

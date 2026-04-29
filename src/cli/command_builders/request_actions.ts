@@ -3,7 +3,7 @@
  * @path src/cli/command_builders/request_actions.ts
  * @description Provides builders and helper functions for defining request-related CLI actions and subcommands.
  * @architectural-layer CLI
- * * @related-files [src/cli/exactl.ts, src/cli/request_commands.ts]
+ * @related-files [src/cli/exactl.ts, src/cli/request_commands.ts]
  */
 
 import type { RequestCommands } from "../commands/request_commands.ts";
@@ -18,9 +18,9 @@ import {
   type RequestPriority,
   type RequestStatus,
 } from "@exaix/core";
-import { AnalysisMode, type IRequestAnalysis } from "../../shared/types/request.ts";
+import { AnalysisMode, type IRequestAnalysis } from "@exaix/core";
 import { PRIORITY_ICONS } from "../cli.config.ts";
-import type { IDisplayService } from "../../shared/interfaces/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 
 export interface IRequestActionContext {

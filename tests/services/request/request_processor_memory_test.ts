@@ -7,7 +7,7 @@
  * @architectural-layer Tests
  */
 import { assertEquals, assertExists } from "@std/assert";
-import type { IApplicationContext } from "../../../src/shared/interfaces/i_application_context.ts";
+import type { IApplicationContext, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
@@ -18,11 +18,6 @@ import {
   makeFakeAnalyzer,
   makeRequestProcessorEnv as makeEnv,
 } from "./request_test_helpers.ts";
-import type {
-  IRequestAnalysisContext,
-  IRequestAnalyzerService,
-} from "../../../src/shared/interfaces/i_request_analyzer_service.ts";
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

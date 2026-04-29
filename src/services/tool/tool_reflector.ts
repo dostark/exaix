@@ -3,7 +3,7 @@
  * @path src/services/tool/tool_reflector.ts
  * @description Orchestrates tool execution with automated reflection, evaluation, and retry logic to improve agent reliability.
  * @architectural-layer Services
- * * @related-files [src/services/agent/agent_runner.ts, src/mcp/server.ts]
+ * @related-files [src/services/agent/agent_runner.ts, src/mcp/server.ts]
  */
 
 import { z } from "zod";

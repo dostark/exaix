@@ -12,12 +12,11 @@ import { DisplayAdapter } from "../../../src/services/adapters/display_adapter.t
 import { JournalServiceAdapter } from "../../../src/services/adapters/journal_adapter.ts";
 import { AgentServiceAdapter } from "../../../src/services/adapters/agent_adapter.ts";
 import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts";
-import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
-import type { IDatabaseService } from "../../../src/shared/interfaces/i_database_service.ts";
+import { LogLevel, RequestPriority, RequestSource, RequestStatus, TaskComplexity, TaskType } from "@exaix/core";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
-import type { IStructuredLogEntry } from "../../../src/shared/types/logging.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
 import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/logger/structured_logger.ts";
 import type { EventLogger } from "../../../src/services/core/event_logger.ts";
 import { createMockConfig } from "../../helpers/config.ts";

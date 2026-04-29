@@ -18,7 +18,7 @@ import {
 } from "../../../src/services/tool/output_validator.ts";
 import { LlmAnalyzer } from "../../../src/services/request_analysis/llm_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "../../../src/shared/types/request.ts";
+import { AnalysisMode } from "@exaix/core/types/mod.ts";
 
 // ---------------------------------------------------------------------------
 // Fixtures

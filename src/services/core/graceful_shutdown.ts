@@ -3,7 +3,7 @@
  * @path src/services/core/graceful_shutdown.ts
  * @description Module for GracefulShutdown.
  * @architectural-layer Services
- * * @related-files [src/main.ts, src/services/structured_logger.ts]
+ * @related-files [src/main.ts, src/services/structured_logger.ts]
  */
 
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
