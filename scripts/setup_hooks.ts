@@ -279,7 +279,8 @@ if [ -n "$CHANGED_FILES" ]; then
 fi
 
 # 3. Security Regression Tests (always run — small, fast, critical)
-deno task test:security
+#    Run only the security-tagged regression suite, not the full test suite.
+deno test --allow-all --filter "[security]" tests/
 if [ $? -ne 0 ]; then
   echo "❌ Error: Security regression tests failed."
   exit 1
