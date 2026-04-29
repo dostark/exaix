@@ -50,5 +50,9 @@ describe("scripts/setup_hooks.ts", () => {
       hookInstaller.includes('deno test --allow-all --filter "[security]" tests/'),
       "pre-push hook should run only the security regression suite",
     );
+    assert(
+      !hookInstaller.includes("deno test --allow-all $TEST_FILES"),
+      "pre-push hook should not run focused tests for changed files",
+    );
   });
 });

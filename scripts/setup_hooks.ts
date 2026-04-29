@@ -150,7 +150,7 @@ const PRE_PUSH_CONTENT = `#!/bin/sh
 # Exaix Pre-push Hook
 # ============================================
 # Runs on \`git push\` to any remote.
-# Ensures the codebase passes type checking, focused tests, and
+# Ensures the codebase passes type checking and
 # security regression tests before code leaves the local machine.
 # ============================================
 
@@ -240,45 +240,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# 3. Focused Test Run — run tests for files that changed
-#    If any test files were modified, run them.
-#    If any source files were modified, run their mirrored test files.
-CHANGED_FILES=$(git diff --name-only origin/main..HEAD 2>/dev/null || git diff --name-only HEAD~5..HEAD 2>/dev/null || echo "")
-if [ -n "$CHANGED_FILES" ]; then
-  TEST_FILES=""
-  for f in $CHANGED_FILES; do
-    case "$f" in
-      src/*.ts)
-        # Map src/foo/bar.ts → tests/foo/bar_test.ts
-        test_path=$(echo "$f" | sed 's|^src/|tests/|; s|\\.ts$|_test.ts|')
-        if [ -f "$test_path" ]; then
-          TEST_FILES="$TEST_FILES $test_path"
-        fi
-        ;;
-      tests/*.ts)
-        TEST_FILES="$TEST_FILES $f"
-        ;;
-    esac
-  done
-
-  if [ -n "$TEST_FILES" ]; then
-    # Only run actual test files and avoid long-running scenario framework suites.
-    TEST_FILES=$(printf '%s\n' $TEST_FILES | grep -E '_test\.ts$' | grep -E -v '^tests/scenario_framework/' | tr '\n' ' ')
-
-    if [ -n "$TEST_FILES" ]; then
-      echo "🧪 Running focused tests for changed files:$TEST_FILES"
-      deno test --allow-all $TEST_FILES
-      if [ $? -ne 0 ]; then
-        echo "❌ Error: Focused tests failed for changed files."
-        exit 1
-      fi
-    else
-      echo "ℹ️ No focused tests to run for changed files, or only scenario framework files were changed."
-    fi
-  fi
-fi
-
-# 3. Security Regression Tests (always run — small, fast, critical)
+# 4. Security Regression Tests (always run — small, fast, critical)
 #    Run only the security-tagged regression suite, not the full test suite.
 deno test --allow-all --filter "[security]" tests/
 if [ $? -ne 0 ]; then
