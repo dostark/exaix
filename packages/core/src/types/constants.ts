@@ -33,7 +33,7 @@ export const DEFAULT_PENDING_MEMORY_PATH = "Pending";
 export const DEFAULT_TASKS_MEMORY_PATH = "Tasks";
 export const DEFAULT_GLOBAL_MEMORY_PATH = "Global";
 
-export const ExaPathDefaults: Record<string, string> = {
+export const ExaPathDefaults = {
   workspace: DEFAULT_WORKSPACE_PATH,
   runtime: DEFAULT_RUNTIME_PATH,
   memory: DEFAULT_MEMORY_PATH,
@@ -53,7 +53,7 @@ export const ExaPathDefaults: Record<string, string> = {
   memoryPending: `${DEFAULT_MEMORY_PATH}/${DEFAULT_PENDING_MEMORY_PATH}`,
   memoryTasks: `${DEFAULT_MEMORY_PATH}/${DEFAULT_TASKS_MEMORY_PATH}`,
   memoryGlobal: `${DEFAULT_MEMORY_PATH}/${DEFAULT_GLOBAL_MEMORY_PATH}`,
-};
+} as const;
 
 // Plan amendment constants (Phase 66)
 export const AMENDMENT_ARTIFACTS_DIR = "amendments";

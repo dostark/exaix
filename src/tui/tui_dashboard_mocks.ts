@@ -24,8 +24,8 @@ import {
   RequestPriority,
   RequestSource,
   SkillStatus,
-  TuiIcon,
 } from "@exaix/core";
+import { TuiIcon } from "@exaix/tui";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "../shared/types/portal.ts";

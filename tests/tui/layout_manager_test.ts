@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { DaemonStatus, LayoutMode, ResizeDirection, SplitDirection } from "@exaix/core";
+import { DaemonStatus } from "@exaix/core";
+import { LayoutMode, ResizeDirection, SplitDirection } from "@exaix/tui";
 import {
   createLayoutManager,
   type ILayoutPane,

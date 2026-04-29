@@ -9,7 +9,8 @@
 import { colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";
 import { renderSpinner, type SpinnerState } from "./spinner.ts";
 import { TUI_ICON_SUCCESS } from "./constants.ts";
-import { MessageType, type SpinnerStyle, StatusIndicator } from "@exaix/core";
+import { MessageType } from "@exaix/core";
+import { type SpinnerStyle, StatusIndicator } from "@exaix/tui";
 
 // ===== Status Bar Interfaces =====
 

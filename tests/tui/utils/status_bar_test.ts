@@ -6,7 +6,8 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { MessageType, SpinnerStyle, StatusIndicator } from "@exaix/core";
+import { MessageType } from "@exaix/core";
+import { SpinnerStyle, StatusIndicator } from "@exaix/tui";
 import {
   addStatusLine,
   clearStatusMessage,

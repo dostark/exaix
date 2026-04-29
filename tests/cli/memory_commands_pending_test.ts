@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { UIOutputFormat } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core";
 
 import { TestEnvironmentFactory } from "../fixtures/test_environment_factory.ts";

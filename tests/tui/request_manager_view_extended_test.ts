@@ -8,12 +8,12 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import {
   type CritiqueSeverity as _CritiqueSeverity,
-  RequestGroupingMode,
   RequestPriority,
   RequestSource,
   TaskComplexity,
   TaskType,
 } from "@exaix/core";
+import { RequestGroupingMode } from "@exaix/tui";
 import { RequestStatus } from "@exaix/core";
 import {
   AnalysisMode,

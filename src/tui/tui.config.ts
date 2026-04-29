@@ -6,7 +6,7 @@
  * * @related-files [src/tui/tui_dashboard.ts]
  */
 
-import { TuiColorName } from "@exaix/core";
+import { TuiColorName } from "@exaix/tui";
 import { TUI_LOG_ICONS } from "./helpers/constants.ts";
 
 export const LOG_ICONS: Record<string, string> = {

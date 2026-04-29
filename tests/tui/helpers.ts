@@ -872,13 +872,18 @@ export function createMockDialogRenderOptions(width: number = 60, height: number
 // Skills Manager helpers
 // -------------------------
 
+export enum SkillSource {
+  CORE = "core",
+  PROJECT = "project",
+}
+
 export interface ISkillSummaryOverrides {
   id?: string;
   skill_id?: string;
   name?: string;
   version?: string;
   status?: SkillStatus;
-  source?: MemoryBankSource | "core" | "project";
+  source?: MemoryBankSource | SkillSource;
   description?: string;
   triggers?: { keywords?: string[]; taskTypes?: string[]; filePatterns?: string[]; [key: string]: any };
   instructions?: string;

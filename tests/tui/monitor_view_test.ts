@@ -6,7 +6,8 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { DaemonStatus, DialogStatus, GroupingMode, LogGroupingMode } from "@exaix/core";
+import { DaemonStatus, DialogStatus } from "@exaix/core";
+import { GroupingMode, LogGroupingMode } from "@exaix/tui";
 import { MONITOR_KEY_BINDINGS, MonitorView } from "../../src/tui/monitor_view.ts";
 import { LOG_COLORS, LOG_ICONS } from "../../src/tui/tui.config.ts";
 import type { ILogEntry } from "../../src/tui/monitor_view.ts";

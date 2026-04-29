@@ -76,9 +76,11 @@ export function createTestProposal(idOrOverrides?: string | Partial<IMemoryUpdat
   };
 }
 
+type NotificationTestContextKeys = "notification" | "db" | "config";
+
 type INotificationTestContext = Pick<
   Awaited<ReturnType<typeof initNotificationTest>>,
-  "notification" | "db" | "config"
+  NotificationTestContextKeys
 >;
 
 /**

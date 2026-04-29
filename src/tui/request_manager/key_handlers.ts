@@ -7,7 +7,8 @@
  */
 
 import { KEYS } from "../helpers/keyboard.ts";
-import { NavDirection, type RequestGroupingMode as _RequestGroupingMode, TuiNodeType } from "@exaix/core";
+import { NavDirection } from "@exaix/core";
+import { type RequestGroupingMode as _RequestGroupingMode, TuiNodeType } from "@exaix/tui";
 import type { ITreeNode } from "../helpers/tree_view.ts";
 import { collapseAll, expandAll, findNode, flattenTree, toggleNode } from "../helpers/tree_view.ts";
 

@@ -18,7 +18,7 @@ import {
   matchesKey,
   parseKey,
 } from "../../../src/tui/helpers/keyboard.ts";
-import { KeyModifier } from "@exaix/core";
+import { KeyModifier } from "@exaix/tui";
 
 // ===== Key Constants Tests =====
 

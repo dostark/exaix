@@ -5,7 +5,8 @@
  * initialization, listing, and cross-project pattern retrieval.
  */
 
-import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope, MemoryType, UIOutputFormat } from "@exaix/core";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryScope, MemoryType } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironmentFactory } from "../fixtures/test_environment_factory.ts";
 import { LearningBuilder } from "../fixtures/memory_builder.ts";

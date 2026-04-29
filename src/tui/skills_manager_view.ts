@@ -6,16 +6,8 @@
  * * @related-files [src/services/skill_service.ts, src/tui/tui_dashboard.ts]
  */
 
-import {
-  DialogStatus,
-  GroupingField,
-  MemoryBankSource,
-  MemoryScope,
-  MessageType,
-  SkillGroupingMode,
-  SkillStatus,
-  TuiNodeType,
-} from "@exaix/core";
+import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus } from "@exaix/core";
+import { GroupingField, SkillGroupingMode, TuiNodeType } from "@exaix/tui";
 import type { ISkillsService } from "../shared/interfaces/i_skills_service.ts";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import type { DialogBase } from "./helpers/dialog_base.ts";

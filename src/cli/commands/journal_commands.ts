@@ -10,7 +10,7 @@ import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
 import type { IJournalFilterOptions } from "../../shared/types/database.ts";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
-import type { UIOutputFormat } from "@exaix/core";
+import type { UIOutputFormat } from "@exaix/tui";
 
 export interface IJournalCommandOptions {
   filter?: string[];

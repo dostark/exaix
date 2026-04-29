@@ -31,8 +31,8 @@ import {
   RequestKind,
   RequestOperation,
   RequestPriority,
-  UIOutputFormat,
 } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "../shared/types/request.ts";
 import { type IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
 import { CLI_DEFAULTS } from "./cli.config.ts";

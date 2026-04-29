@@ -29,16 +29,8 @@ import {
   processDialogCompletion as helperProcessDialogCompletion,
   type RequestDialogTypeUnion,
 } from "./request_manager/dialog_handlers.ts";
-import {
-  MessageType,
-  type NavDirection,
-  RequestDialogType,
-  RequestGroupingMode,
-  RequestOperation,
-  RequestPriority,
-  RequestSource,
-  TuiNodeType,
-} from "@exaix/core";
+import { MessageType, type NavDirection, RequestOperation, RequestPriority, RequestSource } from "@exaix/core";
+import { RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 
 import type {

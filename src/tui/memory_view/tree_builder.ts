@@ -7,7 +7,7 @@
  */
 
 import { renderSpinnerFrame } from "../helpers/spinner.ts";
-import { TuiIcon, TuiNodeType } from "@exaix/core";
+import { TuiIcon, TuiNodeType } from "@exaix/tui";
 import { MemoryTuiScope } from "./memory_scope.ts";
 import {
   TUI_LABEL_EXECUTIONS,

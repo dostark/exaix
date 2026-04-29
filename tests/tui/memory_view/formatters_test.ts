@@ -25,8 +25,8 @@ import {
   MemoryBankSource,
   MemoryOperation,
   MemoryScope,
-  TuiNodeType,
 } from "@exaix/core";
+import { TuiNodeType } from "@exaix/tui";
 import { createMockService } from "./memory_test_helpers.ts";
 import {
   TUI_DETAIL_MAX_OVERVIEW_CHARS,

@@ -12,8 +12,8 @@ import {
   LearningCategory,
   MemoryBankSource,
   MemoryScope,
-  UIOutputFormat,
 } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core";
 
 import { assertEquals, assertExists, assertGreaterOrEqual, assertStringIncludes } from "@std/assert";

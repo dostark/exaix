@@ -26,7 +26,8 @@ import {
   TUI_LIMIT_LOGS_MAX,
 } from "./helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
-import { DialogStatus, LogGroupingMode, LogLevel, MessageType, TuiColorName, TuiNodeType } from "@exaix/core";
+import { DialogStatus, LogLevel, MessageType } from "@exaix/core";
+import { LogGroupingMode, TuiColorName, TuiNodeType } from "@exaix/tui";
 
 // ===== View State =====
 

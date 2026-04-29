@@ -8,7 +8,8 @@
 
 import { ANSI, colorize, type ITuiTheme } from "./helpers/colors.ts";
 import type { IStructuredLogEntry } from "../shared/types/logging.ts";
-import { LogLevel, TuiColorName } from "@exaix/core";
+import { LogLevel } from "@exaix/core";
+import { TuiColorName } from "@exaix/tui";
 
 export interface ILogRenderOptions {
   /** Whether to show timestamps */

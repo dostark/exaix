@@ -6,7 +6,7 @@
  * * @related-files [src/services/memory_bank.ts, src/enums.ts]
  */
 
-import type { TuiNodeType } from "@exaix/core";
+import type { TuiNodeType } from "@exaix/tui";
 import type { IMemoryService } from "../../shared/interfaces/i_memory_service.ts";
 
 export type ITreeNodeType = TuiNodeType;

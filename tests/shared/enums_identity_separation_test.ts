@@ -5,19 +5,8 @@
  */
 
 import { assertEquals, assertFalse, assertNotEquals } from "@std/assert";
-import {
-  ActivityActor,
-  ActorType,
-  AgentKind,
-  GroupingMode,
-  LogGroupingMode,
-  MemoryBankSource,
-  RequestDialogType,
-  RequestGroupingMode,
-  RequestKind,
-  TuiNodeType,
-} from "@exaix/core";
-
+import { ActivityActor, ActorType, AgentKind, MemoryBankSource, RequestKind } from "@exaix/core";
+import { GroupingMode, LogGroupingMode, RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
 /**
  * Tests for Step 55.8: Enum value contracts
  *

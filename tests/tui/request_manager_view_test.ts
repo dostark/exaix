@@ -6,7 +6,8 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { RequestGroupingMode, RequestPriority, RequestSource } from "@exaix/core";
+import { RequestPriority, RequestSource } from "@exaix/core";
+import { RequestGroupingMode } from "@exaix/tui";
 import { RequestStatus } from "@exaix/core";
 import { commonTestData } from "../helpers/test_utils.ts";
 import type { IRequest } from "../../src/shared/types/request.ts";

@@ -23,7 +23,7 @@ import {
   toggleHelpDialog,
 } from "../../../src/tui/helpers/help_renderer.ts";
 import type { IKeyBinding } from "../../../src/tui/helpers/keyboard.ts";
-import { ScrollDirection } from "@exaix/core";
+import { ScrollDirection } from "@exaix/tui";
 
 // ===== renderHelpScreen tests =====
 

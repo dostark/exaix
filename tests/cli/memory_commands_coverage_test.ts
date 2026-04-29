@@ -12,8 +12,8 @@ import {
   MemoryBankSource,
   MemoryScope,
   MemoryType,
-  UIOutputFormat,
 } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
 import { SkillsService } from "../../src/services/skills/skills.ts";

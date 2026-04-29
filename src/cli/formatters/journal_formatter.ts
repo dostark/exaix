@@ -10,7 +10,8 @@ import { Table } from "@cliffy/table";
 import * as colors from "@std/fmt/colors";
 import type { IActivityRecord } from "../../shared/types/database.ts";
 import type { IJournalFilterOptions } from "../../shared/types/database.ts";
-import { DataFormat, UIOutputFormat } from "@exaix/core";
+import { DataFormat } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 
 const ERR_KEYWORD = "error";
 const COST_PRECISION = 6;

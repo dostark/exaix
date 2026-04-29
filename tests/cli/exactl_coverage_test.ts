@@ -18,9 +18,9 @@ import {
   RequestSource,
   ReviewType,
   type SkillStatus as _SkillStatus,
-  UIOutputFormat,
   VerificationStatus,
 } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { MemoryStatus } from "@exaix/core";
 import { PlanStatus } from "@exaix/core";
 import { RequestStatus } from "@exaix/core";

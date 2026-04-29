@@ -13,7 +13,8 @@ import {
   AgentStatusView,
   MinimalAgentServiceMock,
 } from "../../src/tui/agent_status_view.ts";
-import { AgentHealth, TuiGroupBy } from "@exaix/core";
+import { AgentHealth } from "@exaix/core";
+import { TuiGroupBy } from "@exaix/tui";
 import { AgentStatus } from "../../src/shared/status/agent_status.ts";
 
 function makeAgent(id: string, overrides: Partial<IAgentStatusItem> = {}): IAgentStatusItem {

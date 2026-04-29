@@ -23,7 +23,7 @@ import {
   toggleNode,
 } from "./helpers/tree_view.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "../shared/status/agent_status.ts";
-import { TuiColorName } from "@exaix/core";
+import { TuiColorName } from "@exaix/tui";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { type ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
@@ -43,7 +43,8 @@ import { DEFAULT_QUERY_LIMIT, SECONDS_PER_HOUR } from "@exaix/core";
 // Extracted utilities
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
-import { AgentHealth, DialogStatus, LogLevel, MessageType, TuiGroupBy } from "@exaix/core";
+import { AgentHealth, DialogStatus, LogLevel, MessageType } from "@exaix/core";
+import { TuiGroupBy } from "@exaix/tui";
 import type { IAgentService } from "../shared/interfaces/i_agent_service.ts";
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "../shared/types/agent.ts";
 

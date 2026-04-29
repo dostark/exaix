@@ -7,7 +7,8 @@
  */
 
 import { ConfirmDialog, InputDialog } from "../helpers/dialog_base.ts";
-import { DialogStatus, MessageType, RequestDialogType } from "@exaix/core";
+import { DialogStatus, MessageType } from "@exaix/core";
+import { RequestDialogType } from "@exaix/tui";
 
 export type RequestDialogTypeUnion = RequestDialogType | null;
 

@@ -84,16 +84,16 @@ model = "test"
         }
       }
       // Close the underlying Database instance if present
-      const dbAny = ctx.db as any;
+      const dbCandidate = ctx.db as { instance?: { close?: () => Promise<void> | void } } | undefined;
       if (
-        dbAny &&
-        typeof dbAny === "object" &&
-        "instance" in dbAny &&
-        typeof (dbAny as { instance?: any }).instance === "object" &&
-        typeof (dbAny as { instance?: { close?: any } }).instance?.close === "function"
+        dbCandidate &&
+        typeof dbCandidate === "object" &&
+        "instance" in dbCandidate &&
+        typeof dbCandidate.instance === "object" &&
+        typeof dbCandidate.instance?.close === "function"
       ) {
         try {
-          await (dbAny as { instance: { close: () => Promise<void> } }).instance.close();
+          await dbCandidate.instance.close();
         } catch (err) {
           console.error("[withTestMod] Error closing db.instance:", err);
         }

@@ -14,7 +14,7 @@ import {
   TUI_SEPARATOR_ROW,
   TUI_VIEW_PICKER_INNER_WIDTH,
 } from "../helpers/constants.ts";
-import { DialogPurpose, LayoutMode } from "@exaix/core";
+import { DialogPurpose, LayoutMode } from "@exaix/tui";
 import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "../helpers/layout_rendering.ts";
 
 // ===== View Picker Dialog =====

@@ -7,7 +7,8 @@
  */
 
 import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "@exaix/core";
-import { RequestPriority, UIOutputFormat } from "@exaix/core";
+import { RequestPriority } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 
 export const MEMORY_COMMAND_DEFAULTS = {
   LIMIT: 20,

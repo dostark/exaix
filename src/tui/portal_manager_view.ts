@@ -22,14 +22,8 @@ import {
   type ITreeNode,
   type TreeRenderOptions,
 } from "./helpers/tree_view.ts";
-import {
-  DialogStatus,
-  type PortalAnalysisMode,
-  type PortalExecutionStrategy,
-  PortalStatus,
-  TuiIcon,
-  TuiNodeType,
-} from "@exaix/core";
+import { DialogStatus, type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
+import { TuiIcon, TuiNodeType } from "@exaix/tui";
 import { formatKnowledge } from "../shared/formatters/portal_knowledge.ts";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module TestHelpersSelfTest
  * @path tests/helpers/test_helpers.ts
@@ -53,7 +52,7 @@ export function createStubDb(overrides: Partial<IDatabaseService> = {}): IDataba
     getActivitiesByTraceSafe: async function (this: IDatabaseService, _traceId: string) {
       if (typeof this.getActivitiesByTrace === "function") {
         const r = this.getActivitiesByTrace(_traceId);
-        return r instanceof Promise ? await r : (r as any[]);
+        return r instanceof Promise ? await r : r;
       }
       return [];
     },
@@ -61,7 +60,7 @@ export function createStubDb(overrides: Partial<IDatabaseService> = {}): IDataba
     getActivitiesByActionTypeSafe: async function (this: IDatabaseService, _actionType: string) {
       if (typeof this.getActivitiesByActionType === "function") {
         const r = this.getActivitiesByActionType(_actionType);
-        return r instanceof Promise ? await r : (r as any[]);
+        return r instanceof Promise ? await r : r;
       }
       return [];
     },

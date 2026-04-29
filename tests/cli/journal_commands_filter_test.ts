@@ -8,7 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { JournalCommands } from "../../src/cli/commands/journal_commands.ts";
 import type { IJournalFilterOptions } from "../../src/shared/types/database.ts";
-import { UIOutputFormat } from "@exaix/core";
+import { UIOutputFormat } from "@exaix/tui";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
