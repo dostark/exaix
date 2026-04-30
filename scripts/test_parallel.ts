@@ -39,6 +39,7 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",
   "tests/services/deploy/deploy_workspace_test.ts",
   "tests/cli/exactl_all_test.ts",
+  "tests/ai/provider_factory_test.ts",
 ];
 
 interface TestStats {

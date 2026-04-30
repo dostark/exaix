@@ -13,9 +13,16 @@ import type { IGenerateResult } from "../../src/ai/types.ts";
 import { RateLimitError } from "../../src/ai/rate_limited_provider.ts";
 import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
 import { DaemonStatus, MockStrategy, ProviderType } from "@exaix/core";
-
 import { AiConfigSchema } from "@exaix/schemas/ai_config.ts";
 import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";
+
+const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";
+function parallelSafeTest(
+  name: string,
+  fn: () => void | Promise<void>,
+): void {
+  Deno.test({ name, ignore: skipInParallel, fn });
+}
 
 // ============================================================================
 // Test Fixtures
@@ -127,7 +134,7 @@ Deno.test("ProviderFactory: defaults to MockLLMProvider when ai section missing"
 // Environment Variable Tests
 // ============================================================================
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: EXA_LLM_PROVIDER=mock creates MockLLMProvider",
   withEnvVars({ EXA_LLM_PROVIDER: "mock" }, async () => {
     const config = createTestConfig();
@@ -139,7 +146,7 @@ Deno.test(
   }),
 );
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: EXA_LLM_PROVIDER=ollama creates OllamaProvider",
   withEnvVars({ EXA_LLM_PROVIDER: "ollama" }, async () => {
     const config = createTestConfig();
@@ -150,7 +157,7 @@ Deno.test(
   }),
 );
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: EXA_LLM_MODEL overrides config model",
   withEnvVars({ EXA_LLM_PROVIDER: "ollama", EXA_LLM_MODEL: "codellama" }, async () => {
     const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
@@ -161,7 +168,7 @@ Deno.test(
   }),
 );
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: env var overrides config",
   withEnvVars({ EXA_LLM_PROVIDER: "mock" }, async () => {
     const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
