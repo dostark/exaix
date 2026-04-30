@@ -8,3 +8,4 @@ export * from "./src/constants.ts";
 export * from "./src/enums.ts";
 export * from "./src/i_git_service.ts";
 export * from "./src/git_service.ts";
+export * from "./mod.ts";

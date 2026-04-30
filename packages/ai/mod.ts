@@ -7,3 +7,4 @@
 export * from "./src/constants.ts";
 export { ProviderRegistry } from "./src/provider_registry.ts";
 export { initializeRegistry } from "./src/provider_factory.ts";
+export * from "./mod.ts";
