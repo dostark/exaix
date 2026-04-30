@@ -3,7 +3,7 @@
  * @path @exaix/core/types/database.ts
  * @description Module for Database.
  * @architectural-layer Shared
- * @related-files [src/services/db.ts]
+ * @related-files ["src/services/core/db.ts"]
  */
 
 /**

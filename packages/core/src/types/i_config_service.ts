@@ -3,7 +3,7 @@
  * @path src/shared/interfaces/i_config_service.ts
  * @description Module for IconfigService.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/config.ts]
+ * @related-files ["packages/schemas/src/config.ts"]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";

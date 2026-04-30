@@ -3,10 +3,10 @@
  * @path @exaix/core/types/portal.ts
  * @description Module for Portal.
  * @architectural-layer Shared
- * @related-files [src/shared/interfaces/i_portal_service.ts]
+ * @related-files ["packages/core/src/types/i_portal_service.ts"]
  */
 
-import type { PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
+import type { VerificationStatus } from "@exaix/core";
 
 /**
  * Basic information about a portal.
@@ -38,4 +38,27 @@ export interface IVerificationResult {
   alias: string;
   status: VerificationStatus;
   issues?: string[];
+}
+
+export enum PortalOperation {
+  READ = "read",
+  WRITE = "write",
+  GIT = "git",
+}
+
+export enum PortalExecutionStrategy {
+  BRANCH = "branch",
+  WORKTREE = "worktree",
+}
+
+export enum PortalAnalysisMode {
+  QUICK = "quick",
+  STANDARD = "standard",
+  DEEP = "deep",
+}
+
+export enum PortalStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  BROKEN = "broken",
 }

@@ -3,7 +3,7 @@
  * @path packages/core/src/types/request.ts
  * @description Module for Request.
  * @architectural-layer Shared
- * @related-files [src/shared/interfaces/i_request_service.ts]
+ * @related-files ["packages/core/src/types/i_request_service.ts"]
  */
 
 import { z } from "zod";

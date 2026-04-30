@@ -14,6 +14,9 @@ import { walk } from "@std/fs";
 const ROOT = Deno.cwd();
 const SRC_DIR = join(ROOT, "src");
 const TESTS_DIR = join(ROOT, "tests");
+const PACKAGES_DIR = join(ROOT, "packages");
+const SCRIPTS_DIR = join(ROOT, "scripts");
+const COPILOT_DIR = join(ROOT, ".copilot");
 const ARCH_DOC = join(ROOT, "ARCHITECTURE.md");
 
 interface ModuleInfo {
@@ -36,6 +39,7 @@ async function validate() {
 
   const srcFiles = new Set<string>();
   const testFiles = new Set<string>();
+  const packageFiles = new Set<string>();
 
   // 1. Gather all .ts files in src/
   for await (const entry of walk(SRC_DIR, { includeDirs: false })) {
@@ -57,7 +61,32 @@ async function validate() {
     }
   }
 
+  // 1.2 Gather all .ts files in packages/
+  if (await Deno.stat(PACKAGES_DIR).then((s) => s.isDirectory).catch(() => false)) {
+    for await (const entry of walk(PACKAGES_DIR, { includeDirs: false })) {
+      if (!entry.path.endsWith(".ts")) continue;
+      packageFiles.add(relative(ROOT, entry.path));
+    }
+  }
+
+  // 1.3 Gather all .ts files in scripts/
+  if (await Deno.stat(SCRIPTS_DIR).then((s) => s.isDirectory).catch(() => false)) {
+    for await (const entry of walk(SCRIPTS_DIR, { includeDirs: false })) {
+      if (!entry.path.endsWith(".ts")) continue;
+      packageFiles.add(relative(ROOT, entry.path));
+    }
+  }
+
+  // 1.4 Gather .md files in .copilot/
+  if (await Deno.stat(COPILOT_DIR).then((s) => s.isDirectory).catch(() => false)) {
+    for await (const entry of walk(COPILOT_DIR, { includeDirs: false })) {
+      if (!entry.path.endsWith(".md")) continue;
+      packageFiles.add(relative(ROOT, entry.path));
+    }
+  }
+
   const allModules = new Set([...srcFiles, ...testFiles]);
+  const allKnownFiles = new Set([...srcFiles, ...testFiles, ...packageFiles]);
 
   // 2. Parse ARCHITECTURE.md for explicit grounding
   const archContent = await Deno.readTextFile(ARCH_DOC);
@@ -120,11 +149,22 @@ async function validate() {
     moduleMap.set(relPath, info);
   }
 
-  // 4. Perform reachability analysis (Transitive Grounding)
+  // 4. Perform related-files reference validation and reachability analysis
   const moduleNameToPath = new Map<string, string>();
   for (const [path, info] of moduleMap.entries()) {
     if (info.moduleName) {
       moduleNameToPath.set(info.moduleName, path);
+    }
+  }
+
+  for (const [relPath, info] of moduleMap.entries()) {
+    for (const related of info.relatedFiles) {
+      if (!(await resolveReference(related, relPath, moduleNameToPath, allKnownFiles))) {
+        console.error(
+          `❌ Invalid related-files reference in ${relPath}: '${related}' does not resolve to a known file or module.`,
+        );
+        headerFailures++;
+      }
     }
   }
 
@@ -223,10 +263,13 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
     if (description) info.description = description[1].trim();
 
     // Parse array @related-files
-    const relatedMatch = header.match(/@related-files\s+\[(.*?)\]/);
+    const relatedMatch = header.match(/@related-files\s+\[([\s\S]*?)\]/);
     if (relatedMatch) {
       info.relatedFilesProvided = true;
-      info.relatedFiles = relatedMatch[1].split(",").map((s) => s.trim().replace(/^['"]|['"]$/g, "")).filter((s) => s);
+      info.relatedFiles = relatedMatch[1]
+        .split(/\s*(?:,|\n)\s*/)
+        .map((s) => s.trim().replace(/^[*\s]*|[*\s]*$/g, "").replace(/^['"]|['"]$/g, ""))
+        .filter((s) => s);
     }
 
     // Manual @dependencies (deprecated but still supported)
@@ -250,6 +293,199 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
   }
 
   return info;
+}
+
+async function resolveReference(
+  link: string,
+  currentPath: string,
+  moduleNameToPath: Map<string, string>,
+  allKnownFiles: Set<string>,
+): Promise<string | undefined> {
+  if (allKnownFiles.has(link)) {
+    return link;
+  }
+
+  const moduleResolved = moduleNameToPath.get(link);
+  if (moduleResolved) {
+    return moduleResolved;
+  }
+
+  if (link === "@exaix/core") {
+    return allKnownFiles.has("packages/core/mod.ts") ? "packages/core/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/core/")) {
+    const absolutePath = join(ROOT, "packages/core/src", link.substring("@exaix/core/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/schemas") {
+    return allKnownFiles.has("packages/schemas/mod.ts") ? "packages/schemas/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/schemas/")) {
+    const absolutePath = join(ROOT, "packages/schemas/src", link.substring("@exaix/schemas/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/parsing") {
+    return allKnownFiles.has("packages/parsing/mod.ts") ? "packages/parsing/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/parsing/")) {
+    const absolutePath = join(ROOT, "packages/parsing/src", link.substring("@exaix/parsing/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/ai") {
+    return allKnownFiles.has("packages/ai/mod.ts") ? "packages/ai/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/ai/")) {
+    const absolutePath = join(ROOT, "packages/ai/src", link.substring("@exaix/ai/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/cli") {
+    return allKnownFiles.has("packages/cli/mod.ts") ? "packages/cli/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/cli/")) {
+    const absolutePath = join(ROOT, "packages/cli/src", link.substring("@exaix/cli/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/mcp") {
+    return allKnownFiles.has("packages/mcp/mod.ts") ? "packages/mcp/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/mcp/")) {
+    const absolutePath = join(ROOT, "packages/mcp/src", link.substring("@exaix/mcp/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/git") {
+    return allKnownFiles.has("packages/git/mod.ts") ? "packages/git/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/git/")) {
+    const absolutePath = join(ROOT, "packages/git/src", link.substring("@exaix/git/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/tui") {
+    return allKnownFiles.has("packages/tui/mod.ts") ? "packages/tui/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/tui/")) {
+    const absolutePath = join(ROOT, "packages/tui/src", link.substring("@exaix/tui/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link === "@exaix/testing") {
+    return allKnownFiles.has("packages/testing/mod.ts") ? "packages/testing/mod.ts" : undefined;
+  }
+
+  if (link.startsWith("@exaix/testing/")) {
+    const absolutePath = join(ROOT, "packages/testing/src", link.substring("@exaix/testing/".length));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link.startsWith("@/")) {
+    const absolutePath = join(ROOT, link.substring(2));
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link.startsWith(".copilot/")) {
+    const docsRoot = join(ROOT, "exaix-dev-docs");
+    if (await exists(docsRoot)) {
+      const candidate = join(docsRoot, link.replace(/^\.copilot\//, ""));
+      if (await exists(candidate)) {
+        return relative(ROOT, candidate);
+      }
+    }
+  }
+
+  if (link.startsWith("src/") || link.startsWith("tests/") || link.startsWith("packages/")) {
+    const normalized = link.replace(/^\/+/, "");
+    if (allKnownFiles.has(normalized)) {
+      return normalized;
+    }
+    const absolutePath = join(ROOT, normalized);
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  if (link.startsWith(".") || link.startsWith("..")) {
+    const currentDir = join(ROOT, currentPath, "..");
+    const absolutePath = resolve(currentDir, link);
+    return await resolveFileOrPattern(absolutePath);
+  }
+
+  return undefined;
+}
+
+async function resolveFileOrPattern(
+  absolutePath: string,
+): Promise<string | undefined> {
+  if (absolutePath.endsWith("/*.ts")) {
+    const dir = absolutePath.slice(0, -5);
+    if (await isDirectory(dir)) {
+      const firstMatch = await findTypeScriptFile(dir);
+      if (firstMatch) {
+        return relative(ROOT, firstMatch);
+      }
+    }
+    return undefined;
+  }
+
+  if (absolutePath.endsWith("/")) {
+    if (await isDirectory(absolutePath)) {
+      return relative(ROOT, absolutePath).replace(/\/+$|\\+$/, "");
+    }
+  }
+
+  const candidates = [
+    absolutePath,
+    `${absolutePath}.ts`,
+    `${absolutePath}.tsx`,
+    join(absolutePath, "mod.ts"),
+    join(absolutePath, "index.ts"),
+  ];
+
+  for (const candidate of candidates) {
+    if (await exists(candidate)) {
+      return relative(ROOT, candidate);
+    }
+  }
+
+  return undefined;
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    const stat = await Deno.stat(path);
+    return stat.isFile || stat.isDirectory;
+  } catch {
+    return false;
+  }
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  try {
+    const stat = await Deno.stat(path);
+    return stat.isDirectory;
+  } catch {
+    return false;
+  }
+}
+
+async function findTypeScriptFile(dir: string): Promise<string | undefined> {
+  for await (const entry of walk(dir, { includeDirs: false })) {
+    if (entry.path.endsWith(".ts")) {
+      return entry.path;
+    }
+  }
+  return undefined;
 }
 
 if (import.meta.main) {

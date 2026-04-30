@@ -4,7 +4,7 @@
  * @description Tests for the agents.convergence section of ConfigSchema,
  * covering defaults, valid values, and invalid value rejection.
  * @architectural-layer Config
- * @related-files [src/shared/schemas/config.ts]
+ * @related-files ["packages/schemas/src/config.ts"]
  */
 
 import { assertEquals } from "@std/assert";

@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_git_service.ts
  * @description Interface for Git operations.
  * @architectural-layer Shared
- * @related-files [src/services/core/git_service.ts, src/cli/cli_context.ts, src/cli/commands/review_commands.ts, src/services/plan_executor.ts, src/services/execution_loop.ts, src/cli/exactl.ts]
+ * @related-files [src/services/core/git_service.ts, src/cli/cli_context.ts, src/cli/commands/review_commands.ts, "src/services/plan/plan_executor.ts", "src/services/agent/execution_loop.ts", src/cli/exactl.ts]
  */
 
 export interface IBranchOptions {

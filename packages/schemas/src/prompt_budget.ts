@@ -3,7 +3,7 @@
  * @path src/shared/schemas/prompt_budget.ts
  * @description Defines Zod schemas and types for model-aware prompt budgeting.
  * @architectural-layer Shared
- * @related-files [src/shared/constants.ts, src/shared/schemas/mod.ts]
+ * @related-files ["src/constants.ts", src/shared/schemas/mod.ts]
  */
 
 import { z } from "zod";

@@ -474,29 +474,6 @@ export enum SecurityMode {
   HYBRID = "hybrid",
 }
 
-export enum PortalOperation {
-  READ = "read",
-  WRITE = "write",
-  GIT = "git",
-}
-
-export enum PortalExecutionStrategy {
-  BRANCH = "branch",
-  WORKTREE = "worktree",
-}
-
-export enum PortalAnalysisMode {
-  QUICK = "quick",
-  STANDARD = "standard",
-  DEEP = "deep",
-}
-
-export enum PortalStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive",
-  BROKEN = "broken",
-}
-
 /**
  * Types of reviews or artifacts.
  */

@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_journal_service.ts
  * @description Formal service interface for Journal operations consumed by the TUI.
  * @architectural-layer Shared
- * @related-files [src/services/adapters/journal_adapter.ts, src/services/db.ts]
+ * @related-files [src/services/adapters/journal_adapter.ts, "src/services/core/db.ts"]
  */
 
 import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";

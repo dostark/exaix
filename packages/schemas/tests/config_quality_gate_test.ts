@@ -4,7 +4,7 @@
  * @description Tests for the quality_gate section of ConfigSchema (Phase 47).
  * Covers defaults, valid values, nested thresholds, and invalid value rejection.
  * @architectural-layer Config
- * @related-files [src/shared/schemas/config.ts, src/shared/enums.ts]
+ * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/enums.ts"]
  */
 
 import { assertEquals } from "@std/assert";

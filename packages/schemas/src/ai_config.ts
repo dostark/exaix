@@ -134,7 +134,7 @@ function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<str
  * @module AIConfigSchema
  * @path src/config/ai_config.ts
  * @description Defines the Zod schema for AI provider configuration, including model selection, retry strategies, and mock provider settings.
- * @architectural-layer Config * @related-files [src/config/schema.ts, src/ai/provider_factory.ts]
+ * @architectural-layer Config * @related-files ["packages/schemas/src/config.ts", src/ai/provider_factory.ts]
  */
 
 /**

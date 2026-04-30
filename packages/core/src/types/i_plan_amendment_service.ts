@@ -3,7 +3,7 @@
  * @path src/shared/interfaces/i_plan_amendment_service.ts
  * @description Standard interface for the plan amendment service, enabling mid-execution replanning.
  * @architectural-layer Shared/Interfaces
- * @related-files [src/services/plan/plan_amendment_service.ts, src/shared/schemas/plan_amendment.ts]
+ * @related-files [src/services/plan/plan_amendment_service.ts, "packages/schemas/src/plan_amendment.ts"]
  */
 
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";

@@ -3,7 +3,7 @@
  * @path packages/core/src/types/prompt_context.ts
  * @description Types for structured prompt context (Phase 70).
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/config.ts, src/services/agent/agent_runner.ts]
+ * @related-files ["packages/schemas/src/config.ts", src/services/agent/agent_runner.ts]
  */
 
 import { z } from "zod";

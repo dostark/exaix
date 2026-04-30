@@ -9,7 +9,7 @@
  */
 
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { PortalAnalysisMode } from "@exaix/core";
+import type { PortalAnalysisMode } from "@exaix/core/types";
 
 /**
  * Configuration for the PortalKnowledgeService.
