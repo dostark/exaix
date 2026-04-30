@@ -14,7 +14,7 @@ import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { isProcessAlive } from "../process_utils.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../shared/version.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
 
 import type { IDaemonStatus } from "@exaix/core/types/daemon.ts";
 

@@ -9,7 +9,7 @@
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
-import { formatKnowledge } from "../../shared/formatters/portal_knowledge.ts";
+import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 
 /**
  * CLI command handler for portal operations.

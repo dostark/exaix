@@ -22,7 +22,7 @@ import {
 } from "../schema/step_schema.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const JSON_PATH_ROOT = "$";

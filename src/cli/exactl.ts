@@ -41,8 +41,13 @@ import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "./cli_context.ts";
 import { GitService } from "../services/core/git_service.ts";
 import type { OutputFormat } from "./memory_types.ts";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../shared/version.ts";
-import { DAEMON_IDENTITY_ID, DEFAULT_UNKNOWN_ERROR_MESSAGE, PORTAL_LABEL } from "@exaix/core";
+import {
+  BINARY_VERSION,
+  DAEMON_IDENTITY_ID,
+  DEFAULT_UNKNOWN_ERROR_MESSAGE,
+  PORTAL_LABEL,
+  WORKSPACE_SCHEMA_VERSION,
+} from "@exaix/core";
 import { GIT_CMD_STATUS } from "@exaix/git";
 import { WatchCommand } from "./commands/watch.ts";
 

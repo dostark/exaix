@@ -21,7 +21,7 @@ import { McpTransportType } from "@exaix/mcp";
 import { AnalysisMode } from "@exaix/core";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import { ProviderFactory } from "../../../src/ai/provider_factory.ts";
-import { WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
+import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 /**
  * Create a minimal config for testing.

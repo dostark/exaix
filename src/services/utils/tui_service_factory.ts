@@ -25,7 +25,7 @@ import { EventLogger } from "../core/event_logger.ts";
 import { DisplayAdapter } from "../adapters/display_adapter.ts";
 import { ContextCardGenerator } from "../context/context_card_generator.ts";
 import { PortalService } from "../portal/portal.ts";
-import { createGitServiceStub } from "../../shared/helpers/stub_factories.ts";
+import { createGitServiceStub } from "@exaix/testing/helpers/stub_factories.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import { SkillsService } from "../skills/skills.ts";
@@ -40,11 +40,14 @@ import type {
   IRequestService,
   ISkillsService,
 } from "@exaix/core/types";
-import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
-import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
-import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
-import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
-import type { Config } from "@exaix/schemas/config.ts";
+import type {
+  IDaemonService,
+  IJournalService,
+  ILogService,
+  IMemoryService,
+  IStructuredLogger,
+} from "@exaix/core/types";
+import type { Config } from "@exaix/schemas";
 import type { ICliApplicationContext } from "../../cli/cli_context.ts";
 import type { IModelProvider } from "../../ai/types.ts";
 

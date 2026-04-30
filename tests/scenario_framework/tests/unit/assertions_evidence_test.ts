@@ -13,7 +13,7 @@ import { join } from "@std/path";
 import { evaluateCriterion, evaluateStepOutcome } from "../../runner/assertions.ts";
 import { copyEvidenceArtifact, writeRunManifest } from "../../runner/evidence_collector.ts";
 import { CriterionKind, CriterionPhase, CriterionStatus, ScenarioStepType } from "../../schema/step_schema.ts";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../../src/shared/version.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 async function withTempWorkspace(
   fn: (workspaceRoot: string) => Promise<void>,

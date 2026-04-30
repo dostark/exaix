@@ -7,7 +7,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../../src/shared/version.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 

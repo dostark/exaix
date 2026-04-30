@@ -16,7 +16,7 @@ import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
 import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
-import { createGitServiceStub } from "../../src/shared/helpers/stub_factories.ts";
+import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 /**
@@ -168,7 +168,6 @@ export function createStubProvider(responseContent = "Mock response"): IModelPro
 /**
  * Create a stub IGitService for tests.
  * Returns an object matching `IGitService` with no-op implementations.
- * @deprecated Use createGitServiceStub from src/shared/helpers/stub_factories.ts instead
  */
 export function createStubGit(overrides: Partial<IGitService> = {}): IGitService {
   // Backwards compatibility: provide legacy defaults for existing tests

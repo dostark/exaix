@@ -10,65 +10,65 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 ## Task → Agent Doc Quick Reference
 
-| Task Type | Primary Doc | Secondary Docs |
-| --- | --- | --- |
-| OpenAI Debugging: Reproduce → Diagnose → Fix → Verify | [prompts/openai-debugging-systematic.md](prompts/openai-debugging-systematic.md) | |
-| Implement Feature Step Template (#step) | [prompts/step.md](prompts/step.md) | |
-| Linting/Formatting Template (#lint) | [prompts/lint.md](prompts/lint.md) | |
-| Dependency/Version Upgrade Template  (#upgrade) | [prompts/upgrade.md](prompts/upgrade.md) | |
-| Refactoring with Thinking Protocol Prompt | [prompts/refactoring-with-thinking.md](prompts/refactoring-with-thinking.md) | |
-| Detailed Commit Message Prompt (#commit) | [prompts/commit-message.md](prompts/commit-message.md) | |
-| Systematic Debugging Prompt | [prompts/debugging-systematic.md](prompts/debugging-systematic.md) | |
-| Submodule Workflow Guidance | [prompts/submodule-workflow.md](prompts/submodule-workflow.md) | |
-| Gemini Quickstart Prompt | [prompts/google-quickstart.md](prompts/google-quickstart.md) | |
-| OpenAI TDD Workflow (tests first) | [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md) | |
-| Planning Document Pre-Implementation Gap Analysis (#pre-gap-analysis) | [prompts/pre-gap-analysis.md](prompts/pre-gap-analysis.md) | |
-| Exaix Agent Prompt Templates Library | [prompts/README.md](prompts/README.md) | |
-| TDD Workflow Prompt Example (#tdd) | [prompts/tdd-workflow.md](prompts/tdd-workflow.md) | |
-| Security Patch Template (#security) | [prompts/security.md](prompts/security.md) | |
-| Test Creation Template (#test) | [prompts/test.md](prompts/test.md) | |
-| Infrastructure/Config Template (#infra) | [prompts/infra.md](prompts/infra.md) | |
-| Gemini TDD Workflow Prompt | [prompts/google-tdd-workflow.md](prompts/google-tdd-workflow.md) | |
-| Bug/Test Fix Template (#fix) | [prompts/fix.md](prompts/fix.md) | |
-| TDD Red-Green-Refactor Phase Steps (#next-steps) | [prompts/tdd-phase-steps.md](prompts/tdd-phase-steps.md) | |
-| Comprehensive Refactor Prompt for check:magic Violations | [prompts/refactor-check-magic-comprehensive.md](prompts/refactor-check-magic-comprehensive.md) | |
-| Phase Planning Document Deep Review (#post-gap-analysis) | [prompts/post-gap-analysis.md](prompts/post-gap-analysis.md) | |
-| Clean Codebase Template (#clean-codebase) | [prompts/clean-codebase.md](prompts/clean-codebase.md) | |
-| Code Review Template (#review) | [prompts/review.md](prompts/review.md) | |
-| Phase Planning Document Lifecycle (#plan) | [prompts/plan.md](prompts/plan.md) | |
-| OpenAI Quickstart: Use agents/ first | [prompts/openai-quickstart.md](prompts/openai-quickstart.md) | |
-| Codebase Exploration Template (#explore) | [prompts/explore.md](prompts/explore.md) | |
-| Refactoring Template (#refactor) | [prompts/refactor.md](prompts/refactor.md) | |
-| Reduce Code Duplication (#duplication) | [prompts/duplication.md](prompts/duplication.md) | |
-| Documentation Template (#doc) | [prompts/doc.md](prompts/doc.md) | |
-| Implementation Plan Driven Development Prompt | [prompts/implementation-plan-driven.md](prompts/implementation-plan-driven.md) | |
-| Cross-Reference Navigation Prompt | [prompts/cross-reference-navigation.md](prompts/cross-reference-navigation.md) | |
-| Regression Test Template (#regression) | [prompts/regression.md](prompts/regression.md) | |
-| Update Building with AI Agents Documentation | [prompts/update-building-with-ai-agents.md](prompts/update-building-with-ai-agents.md) | |
-| Self-improvement loop prompt template | [prompts/self-improvement-loop.md](prompts/self-improvement-loop.md) | |
-| .copilot/ — IDE & Dev Agent Instructions | [README.md](README.md) | |
-| Agent Thought Section Standardization | [workflows/agent-thought-standardization.md](workflows/agent-thought-standardization.md) | |
-| Exaix Test Development Guidelines | [workflows/testing.md](workflows/testing.md) | |
-| Submodule Workflow & Pointer Policy | [workflows/submodule-workflow.md](workflows/submodule-workflow.md) | |
-| Refactor Magic Check Workflow | [workflows/refactor-check-magic.md](workflows/refactor-check-magic.md) | |
-| Next Steps Workflow | [workflows/next-steps.md](workflows/next-steps.md) | |
-| Pre-Gap Analysis Workflow | [workflows/pre-gap-analysis.md](workflows/pre-gap-analysis.md) | |
-| Exaix Workflow Guidelines | [workflows/README.md](workflows/README.md) | |
-| Agent Content Schema Reference | [workflows/agent-content-schema.md](workflows/agent-content-schema.md) | |
-| Commit Workflow | [workflows/commit.md](workflows/commit.md) | |
-| Exaix Documentation Development Guidelines | [workflows/documentation.md](workflows/documentation.md) | |
-| Post-Gap Analysis Workflow | [workflows/post-gap-analysis.md](workflows/post-gap-analysis.md) | |
-| Exaix Source Development Guidelines | [workflows/exaix-development.md](workflows/exaix-development.md) | |
-| Plan Workflow | [workflows/plan.md](workflows/plan.md) | |
-| jscpd Code Duplication Detection Guide | [workflows/jscpd-guide.md](workflows/jscpd-guide.md) | |
-| Specification-Driven Development in Exaix | [process/specification-driven-development.md](process/specification-driven-development.md) | |
-| Self-improvement loop for agent instructions | [process/self-improvement.md](process/self-improvement.md) | |
-| .copilot/process/ — Project Governance & Methodology | [process/README.md](process/README.md) | |
-| Review-Research-Improvement Pattern | [process/review-research-improvement.md](process/review-research-improvement.md) | |
-| Claude provider adaptation notes | [providers/claude.md](providers/claude.md) | |
-| Google Gemini Provider Adaptation Guide | [providers/google.md](providers/google.md) | |
-| Gemini Long-Context Reasoning Guide | [providers/google-long-context.md](providers/google-long-context.md) | |
-| OpenAI adaptation notes | [providers/openai.md](providers/openai.md) | |
+| Task Type                                                             | Primary Doc                                                                                    | Secondary Docs |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
+| OpenAI Debugging: Reproduce → Diagnose → Fix → Verify                 | [prompts/openai-debugging-systematic.md](prompts/openai-debugging-systematic.md)               |                |
+| Implement Feature Step Template (#step)                               | [prompts/step.md](prompts/step.md)                                                             |                |
+| Linting/Formatting Template (#lint)                                   | [prompts/lint.md](prompts/lint.md)                                                             |                |
+| Dependency/Version Upgrade Template (#upgrade)                        | [prompts/upgrade.md](prompts/upgrade.md)                                                       |                |
+| Refactoring with Thinking Protocol Prompt                             | [prompts/refactoring-with-thinking.md](prompts/refactoring-with-thinking.md)                   |                |
+| Detailed Commit Message Prompt (#commit)                              | [prompts/commit-message.md](prompts/commit-message.md)                                         |                |
+| Systematic Debugging Prompt                                           | [prompts/debugging-systematic.md](prompts/debugging-systematic.md)                             |                |
+| Submodule Workflow Guidance                                           | [prompts/submodule-workflow.md](prompts/submodule-workflow.md)                                 |                |
+| Gemini Quickstart Prompt                                              | [prompts/google-quickstart.md](prompts/google-quickstart.md)                                   |                |
+| OpenAI TDD Workflow (tests first)                                     | [prompts/openai-tdd-workflow.md](prompts/openai-tdd-workflow.md)                               |                |
+| Planning Document Pre-Implementation Gap Analysis (#pre-gap-analysis) | [prompts/pre-gap-analysis.md](prompts/pre-gap-analysis.md)                                     |                |
+| Exaix Agent Prompt Templates Library                                  | [prompts/README.md](prompts/README.md)                                                         |                |
+| TDD Workflow Prompt Example (#tdd)                                    | [prompts/tdd-workflow.md](prompts/tdd-workflow.md)                                             |                |
+| Security Patch Template (#security)                                   | [prompts/security.md](prompts/security.md)                                                     |                |
+| Test Creation Template (#test)                                        | [prompts/test.md](prompts/test.md)                                                             |                |
+| Infrastructure/Config Template (#infra)                               | [prompts/infra.md](prompts/infra.md)                                                           |                |
+| Gemini TDD Workflow Prompt                                            | [prompts/google-tdd-workflow.md](prompts/google-tdd-workflow.md)                               |                |
+| Bug/Test Fix Template (#fix)                                          | [prompts/fix.md](prompts/fix.md)                                                               |                |
+| TDD Red-Green-Refactor Phase Steps (#next-steps)                      | [prompts/tdd-phase-steps.md](prompts/tdd-phase-steps.md)                                       |                |
+| Comprehensive Refactor Prompt for check:magic Violations              | [prompts/refactor-check-magic-comprehensive.md](prompts/refactor-check-magic-comprehensive.md) |                |
+| Phase Planning Document Deep Review (#post-gap-analysis)              | [prompts/post-gap-analysis.md](prompts/post-gap-analysis.md)                                   |                |
+| Clean Codebase Template (#clean-codebase)                             | [prompts/clean-codebase.md](prompts/clean-codebase.md)                                         |                |
+| Code Review Template (#review)                                        | [prompts/review.md](prompts/review.md)                                                         |                |
+| Phase Planning Document Lifecycle (#plan)                             | [prompts/plan.md](prompts/plan.md)                                                             |                |
+| OpenAI Quickstart: Use agents/ first                                  | [prompts/openai-quickstart.md](prompts/openai-quickstart.md)                                   |                |
+| Codebase Exploration Template (#explore)                              | [prompts/explore.md](prompts/explore.md)                                                       |                |
+| Refactoring Template (#refactor)                                      | [prompts/refactor.md](prompts/refactor.md)                                                     |                |
+| Reduce Code Duplication (#duplication)                                | [prompts/duplication.md](prompts/duplication.md)                                               |                |
+| Documentation Template (#doc)                                         | [prompts/doc.md](prompts/doc.md)                                                               |                |
+| Implementation Plan Driven Development Prompt                         | [prompts/implementation-plan-driven.md](prompts/implementation-plan-driven.md)                 |                |
+| Cross-Reference Navigation Prompt                                     | [prompts/cross-reference-navigation.md](prompts/cross-reference-navigation.md)                 |                |
+| Regression Test Template (#regression)                                | [prompts/regression.md](prompts/regression.md)                                                 |                |
+| Update Building with AI Agents Documentation                          | [prompts/update-building-with-ai-agents.md](prompts/update-building-with-ai-agents.md)         |                |
+| Self-improvement loop prompt template                                 | [prompts/self-improvement-loop.md](prompts/self-improvement-loop.md)                           |                |
+| .copilot/ — IDE & Dev Agent Instructions                              | [README.md](README.md)                                                                         |                |
+| Agent Thought Section Standardization                                 | [workflows/agent-thought-standardization.md](workflows/agent-thought-standardization.md)       |                |
+| Exaix Test Development Guidelines                                     | [workflows/testing.md](workflows/testing.md)                                                   |                |
+| Submodule Workflow & Pointer Policy                                   | [workflows/submodule-workflow.md](workflows/submodule-workflow.md)                             |                |
+| Refactor Magic Check Workflow                                         | [workflows/refactor-check-magic.md](workflows/refactor-check-magic.md)                         |                |
+| Next Steps Workflow                                                   | [workflows/next-steps.md](workflows/next-steps.md)                                             |                |
+| Pre-Gap Analysis Workflow                                             | [workflows/pre-gap-analysis.md](workflows/pre-gap-analysis.md)                                 |                |
+| Exaix Workflow Guidelines                                             | [workflows/README.md](workflows/README.md)                                                     |                |
+| Agent Content Schema Reference                                        | [workflows/agent-content-schema.md](workflows/agent-content-schema.md)                         |                |
+| Commit Workflow                                                       | [workflows/commit.md](workflows/commit.md)                                                     |                |
+| Exaix Documentation Development Guidelines                            | [workflows/documentation.md](workflows/documentation.md)                                       |                |
+| Post-Gap Analysis Workflow                                            | [workflows/post-gap-analysis.md](workflows/post-gap-analysis.md)                               |                |
+| Exaix Source Development Guidelines                                   | [workflows/exaix-development.md](workflows/exaix-development.md)                               |                |
+| Plan Workflow                                                         | [workflows/plan.md](workflows/plan.md)                                                         |                |
+| jscpd Code Duplication Detection Guide                                | [workflows/jscpd-guide.md](workflows/jscpd-guide.md)                                           |                |
+| Specification-Driven Development in Exaix                             | [process/specification-driven-development.md](process/specification-driven-development.md)     |                |
+| Self-improvement loop for agent instructions                          | [process/self-improvement.md](process/self-improvement.md)                                     |                |
+| .copilot/process/ — Project Governance & Methodology                  | [process/README.md](process/README.md)                                                         |                |
+| Review-Research-Improvement Pattern                                   | [process/review-research-improvement.md](process/review-research-improvement.md)               |                |
+| Claude provider adaptation notes                                      | [providers/claude.md](providers/claude.md)                                                     |                |
+| Google Gemini Provider Adaptation Guide                               | [providers/google.md](providers/google.md)                                                     |                |
+| Gemini Long-Context Reasoning Guide                                   | [providers/google-long-context.md](providers/google-long-context.md)                           |                |
+| OpenAI adaptation notes                                               | [providers/openai.md](providers/openai.md)                                                     |                |
 
 ## Search by Topic
 

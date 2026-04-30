@@ -20,7 +20,7 @@ import type { IDisplayService } from "@exaix/core/types";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
-import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "../../src/shared/version.ts";
+import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 /**

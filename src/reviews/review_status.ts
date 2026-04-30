@@ -11,7 +11,7 @@ import type { JSONValue } from "@exaix/core";
 
 export const ReviewStatus = {
   PENDING: GeneralStatus.PENDING,
-  APPROVED: "approved",
+  APPROVED: GeneralStatus.APPROVED,
   REJECTED: GeneralStatus.REJECTED,
 } as const;
 

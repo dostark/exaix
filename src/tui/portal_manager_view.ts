@@ -24,7 +24,7 @@ import {
 } from "./helpers/tree_view.ts";
 import { DialogStatus, type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import { TuiIcon, TuiNodeType } from "@exaix/tui";
-import { formatKnowledge } from "../shared/formatters/portal_knowledge.ts";
+import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,
   TUI_KEY_LABEL_ENTER,

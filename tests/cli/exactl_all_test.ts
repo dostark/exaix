@@ -9,7 +9,7 @@
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { BINARY_VERSION } from "../../src/shared/version.ts";
+import { BINARY_VERSION } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import {
   FlowInputSource,

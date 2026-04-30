@@ -18,7 +18,7 @@ import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "../ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
-import { createGitServiceStub, createProviderStub } from "../shared/helpers/stub_factories.ts";
+import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import { ActivityActor } from "@exaix/core";
 
 // Concrete services for adapters
