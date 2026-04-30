@@ -16,7 +16,7 @@ import {
   RegisterReviewSchema,
   ReviewSchema,
 } from "@exaix/schemas/review.ts";
-import { type IReviewStatus, ReviewStatus } from "../../reviews/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { ACTIVITY_ACTOR_AGENT } from "@exaix/core";
 
 export class ReviewRegistry {

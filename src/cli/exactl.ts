@@ -34,7 +34,7 @@ import {
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "@exaix/core";
-import { type IReviewStatus, ReviewStatus } from "../reviews/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";

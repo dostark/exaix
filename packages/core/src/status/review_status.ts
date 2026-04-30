@@ -1,8 +1,8 @@
 /**
  * @module ReviewStatus
- * @path src/reviews/review_status.ts
+ * @path packages/core/src/status/review_status.ts
  * @description Type definitions and utility functions for Review outcome states.
- * @architectural-layer Reviews
+ * @architectural-layer Shared
  * @related-files ["src/services/artifact/review_registry.ts", "packages/schemas/src/review.ts"]
  */
 

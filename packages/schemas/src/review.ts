@@ -7,8 +7,8 @@
  */
 
 import { z } from "zod";
-import { REVIEW_STATUS_VALUES } from "@exaix/core/reviews/review_status.ts";
-import type { IReviewStatus } from "@exaix/core/reviews/review_status.ts";
+import { REVIEW_STATUS_VALUES } from "@exaix/core/status/review_status.ts";
+import type { IReviewStatus } from "@exaix/core/status/review_status.ts";
 
 /**
  * Review status values

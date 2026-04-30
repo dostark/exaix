@@ -10,7 +10,7 @@ import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { join } from "@std/path";
 import { ArtifactRegistry } from "../../../src/services/artifact/artifact_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { ReviewStatus } from "../../../src/reviews/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 
 async function createTestContext(): Promise<{ tempDir: string; db: DatabaseService; cleanup: () => Promise<void> }> {
   const { db, tempDir, cleanup } = await initTestDbService();

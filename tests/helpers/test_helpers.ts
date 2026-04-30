@@ -6,7 +6,7 @@
  */
 
 import type { IDatabaseService } from "../../src/services/core/db.ts";
-import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
+import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "../../src/ai/types.ts";

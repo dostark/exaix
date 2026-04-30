@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
-import { DatabaseActivityRepository, type LogActivityRequest } from "../../src/repositories/activity_repository.ts";
+import { DatabaseActivityRepository, type LogActivityRequest } from "@exaix/core/repositories/activity_repository.ts";
 import { initTestDbService } from "../helpers/db.ts";
 
 /**

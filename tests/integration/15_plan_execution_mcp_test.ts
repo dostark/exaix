@@ -9,7 +9,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryOperation, PortalOperation, SecurityMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import { ReviewStatus } from "../../src/reviews/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { join } from "@std/path";
 
 import { ensureDir } from "@std/fs";

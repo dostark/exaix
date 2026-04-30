@@ -16,7 +16,7 @@ import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { EventLogger } from "../../src/services/core/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
-import { type IReviewStatus, ReviewStatus } from "../../src/reviews/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";

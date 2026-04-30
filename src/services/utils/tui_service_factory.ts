@@ -30,7 +30,6 @@ import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import { SkillsService } from "../skills/skills.ts";
 import { GitBranchName } from "@exaix/git";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type {
   IAgentService,
   IConfigService,
@@ -42,6 +41,7 @@ import type {
 } from "@exaix/core/types";
 import type {
   IDaemonService,
+  IDatabaseService,
   IJournalService,
   ILogService,
   IMemoryService,

@@ -9,7 +9,7 @@ import { DatabaseService } from "../../src/services/core/db.ts";
 import { createMockConfig } from "./config.ts";
 import { existsSync } from "@std/fs";
 import { join } from "@std/path";
-import { REVIEW_STATUS_VALUES } from "../../src/reviews/review_status.ts";
+import { REVIEW_STATUS_VALUES } from "@exaix/core/status/review_status.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /**

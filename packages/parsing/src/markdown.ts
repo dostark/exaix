@@ -3,7 +3,7 @@
  * @path packages/parsing/src/markdown.ts
  * @description Frontmatter parser implementation for the @exaix/parsing package.
  * @architectural-layer Parsing
- * @related-files [src/parsers/markdown.ts, @exaix/schemas/request.ts]
+ * @related-files [@exaix/schemas/request.ts]
  */
 import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "@exaix/schemas/request.ts";

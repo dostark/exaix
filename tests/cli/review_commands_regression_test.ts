@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { type IReviewMetadata, ReviewCommands } from "../../src/cli/commands/review_commands.ts";
 import { PlanStatus } from "@exaix/core";
-import { ReviewStatus } from "../../src/reviews/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import type { IGitService } from "@exaix/core/types";
 const TEST_REQUEST_ID = "request-test123";

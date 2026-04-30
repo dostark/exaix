@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
-import { ReviewStatus } from "../../../src/reviews/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";

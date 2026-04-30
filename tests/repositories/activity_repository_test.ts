@@ -8,8 +8,8 @@
 import { assertEquals } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 import { assertSpyCalls, spy } from "@std/testing/mock";
-import { DatabaseActivityRepository } from "../../src/repositories/activity_repository.ts";
-import type { ActivityRepository } from "../../src/repositories/activity_repository.ts";
+import { DatabaseActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
+import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
 import { createStubDb } from "../helpers/test_helpers.ts";
 

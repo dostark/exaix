@@ -4,11 +4,11 @@
  * @description Unified logging service that writes to both console and IActivity Journal.
  * Supports child loggers, structured payloads, and consistent log levels across the system.
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", src/repositories/activity_repository.ts, src/services/common/types.ts]
+ * @related-files ["src/services/core/db.ts", "packages/core/src/repositories/activity_repository.ts", src/services/common/types.ts]
  */
 
 import type { IDatabaseService } from "../core/db.ts";
-import type { ActivityRepository } from "../../repositories/activity_repository.ts";
+import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
 import { ActivityActor, LogLevel } from "@exaix/core";
 import type { Actor, ILogEvent } from "../common/types.ts";
 import { SHARED_DEFAULT_ICONS } from "@exaix/core";

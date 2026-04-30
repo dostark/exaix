@@ -27,6 +27,5 @@ export * from "./request_quality_assessment.ts";
 export * from "./request_specification.ts";
 export * from "./review.ts";
 export * from "./schema_describer.ts";
-import * as PortalPermissionsSchemas from "./portal_permissions.ts";
 export * from "./plan_amendment.ts";
 export { PortalPermissionsSchemas };

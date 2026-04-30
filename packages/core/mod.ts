@@ -9,6 +9,7 @@ export * from "./src/types/constants.ts";
 export * from "./src/version.ts";
 export * from "./src/status/mod.ts";
 export * from "./src/request/mod.ts";
+export * from "./src/repositories/mod.ts";
 export type { IPortalDetails, IPortalInfo, IVerificationResult } from "./src/types/portal.ts";
 export { PortalAnalysisMode, PortalExecutionStrategy, PortalOperation, PortalStatus } from "./src/types/portal.ts";
 
