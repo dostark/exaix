@@ -5,7 +5,7 @@
  * displays architecture overview, key files, conventions, dependencies, and
  * the no-analysis fallback message. Also verifies the 'a' keybinding triggers
  * re-analysis via service.getKnowledge().
- * @related-files [src/tui/portal_manager_view.ts, src/shared/interfaces/i_portal_service.ts, src/shared/schemas/portal_knowledge.ts]
+ * @related-files [src/tui/portal_manager_view.ts, "packages/core/src/types/i_portal_service.ts", "packages/schemas/src/portal_knowledge.ts"]
  */
 
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";

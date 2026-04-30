@@ -3,7 +3,7 @@
  * @path tests/flows/parallel_group_validation_test.ts
  * @description Verifies Phase 65 cross-step parallel group validation in FlowRunner.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, src/shared/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { assertRejects, assertStringIncludes } from "@std/assert";

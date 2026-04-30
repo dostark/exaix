@@ -3,7 +3,7 @@
  * @path tests/services/flow/flow_namespace_markdown_render_test.ts
  * @description Unit coverage for deterministic markdown rendering of persisted flow namespace entries.
  * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, src/shared/schemas/flow.ts]
+ * @related-files [src/services/flow/flow_namespace_service.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { assertEquals } from "@std/assert";

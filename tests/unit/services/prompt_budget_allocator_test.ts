@@ -3,7 +3,7 @@
  * @path tests/unit/services/prompt_budget_allocator_test.ts
  * @description Tests for Phase 62 Step 62.2 PromptBudgetAllocator service.
  * @architectural-layer Test
- * @related-files [src/services/context/prompt_budget_allocator.ts, src/shared/schemas/prompt_budget.ts]
+ * @related-files [src/services/context/prompt_budget_allocator.ts, "packages/schemas/src/prompt_budget.ts"]
  */
 
 import { assertEquals, assertGreater } from "@std/assert";

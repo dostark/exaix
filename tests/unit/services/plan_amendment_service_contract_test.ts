@@ -3,7 +3,7 @@
  * @module PlanAmendmentServiceContractTest
  * @path tests/unit/services/plan_amendment_service_contract_test.ts
  * @description Contract tests for PlanAmendmentService ensuring interface compliance and lifecycle behavior.
- * @related-files [src/services/plan/plan_amendment_service.ts, src/shared/interfaces/i_plan_amendment_service.ts]
+ * @related-files [src/services/plan/plan_amendment_service.ts, "packages/core/src/types/i_plan_amendment_service.ts"]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

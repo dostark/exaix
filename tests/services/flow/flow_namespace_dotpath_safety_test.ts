@@ -3,7 +3,7 @@
  * @path tests/services/flow/flow_namespace_dotpath_safety_test.ts
  * @description Unit coverage for FlowNamespaceService key validation and dot-path extraction safety rules.
  * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, src/shared/constants.ts]
+ * @related-files [src/services/flow/flow_namespace_service.ts, "src/constants.ts"]
  */
 
 import { assertEquals } from "@std/assert";

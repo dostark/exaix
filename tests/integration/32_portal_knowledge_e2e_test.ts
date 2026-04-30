@@ -5,10 +5,7 @@
  * pipeline: analysis → persistence → retrieval → request-context injection.
  * Covers quick and standard modes, knowledge.json round-trip, IProjectMemory
  * file updates, and RequestProcessor portal-knowledge injection.
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts,
- *   src/services/portal_knowledge/knowledge_persistence.ts,
- *   src/services/request_processor.ts,
- *   src/shared/schemas/portal_knowledge.ts]
+ * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, *   src/services/portal_knowledge/knowledge_persistence.ts, "src/services/request/request_processor.ts", "packages/schemas/src/portal_knowledge.ts"]
  */
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";

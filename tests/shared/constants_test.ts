@@ -3,7 +3,7 @@
  * @path tests/shared/constants_test.ts
  * @description Verifies shared flow namespace constants are exported with stable values.
  * @architectural-layer Tests
- * @related-files [src/shared/constants.ts]
+ * @related-files ["src/constants.ts"]
  */
 
 import { assertEquals } from "@std/assert";

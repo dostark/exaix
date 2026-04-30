@@ -3,7 +3,7 @@
  * @path tests/flows/parallel_group_schema_test.ts
  * @description Verifies Phase 65 parallel group schema parsing and backward compatibility.
  * @architectural-layer Tests
- * @related-files [src/shared/schemas/flow.ts]
+ * @related-files ["packages/schemas/src/flow.ts"]
  */
 
 import { assertEquals } from "@std/assert";

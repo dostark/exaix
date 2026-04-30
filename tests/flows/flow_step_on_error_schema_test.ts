@@ -3,7 +3,7 @@
  * @path tests/flows/flow_step_on_error_schema_test.ts
  * @description TDD tests for Phase 63 flow recovery schemas, including checkpoint schema versioning.
  * @architectural-layer Test
- * @related-files [src/shared/schemas/flow.ts, .copilot/planning/phase-63-flow-error-recovery.md]
+ * @related-files ["packages/schemas/src/flow.ts", .copilot/planning/phase-63-flow-error-recovery.md]
  */
 
 import { assertEquals, assertThrows } from "@std/assert";

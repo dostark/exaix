@@ -5,10 +5,7 @@
  * analysis → _analysis.json → plan pipeline. Covers heuristic mode injection,
  * default analysis via MockLLMProvider, _analysis.json persistence and schema
  * round-trip, plan frontmatter annotations, and flow request analysis.
- * @related-files [src/services/request_processor.ts,
- *   src/services/request_analysis/request_analyzer.ts,
- *   src/services/request_analysis/analysis_persistence.ts,
- *   src/shared/schemas/request_analysis.ts]
+ * @related-files ["src/services/request/request_processor.ts", *   src/services/request_analysis/request_analyzer.ts, *   src/services/request_analysis/analysis_persistence.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";

@@ -5,11 +5,7 @@
  * pipeline from request file through assessment, enrichment, and clarification
  * session creation. Tests both the RequestProcessor integration path and the
  * clarification session lifecycle independently.
- * @related-files [src/services/request_processor.ts,
- *   src/services/quality_gate/request_quality_gate.ts,
- *   src/services/quality_gate/clarification_engine.ts,
- *   src/services/quality_gate/clarification_persistence.ts,
- *   src/shared/interfaces/i_request_quality_gate_service.ts]
+ * @related-files ["src/services/request/request_processor.ts", *   src/services/quality_gate/request_quality_gate.ts, *   src/services/quality_gate/clarification_engine.ts, *   src/services/quality_gate/clarification_persistence.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";

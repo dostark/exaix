@@ -2,7 +2,7 @@
  * @module MissionReporterAmendmentSummaryTest
  * @path tests/unit/services/mission_reporter_amendment_summary_test.ts
  * @description Unit tests for MissionReporter's handling of amendment lifecycle events in reports.
- * @related-files [src/services/artifact/mission_reporter.ts, src/shared/schemas/plan_amendment.ts]
+ * @related-files [src/services/artifact/mission_reporter.ts, "packages/schemas/src/plan_amendment.ts"]
  */
 
 import { assertEquals } from "@std/assert";

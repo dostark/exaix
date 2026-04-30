@@ -4,7 +4,7 @@
  * @description Verifies that RequestProcessor's classifyTaskComplexity method
  * uses structured analysis (Phase 45), content heuristics, and agent-ID fallbacks
  * correctly to categorize task complexity.
- * @related-files [src/services/request/request_processor.ts, src/shared/schemas/request_analysis.ts, src/shared/enums.ts]
+ * @related-files [src/services/request/request_processor.ts, "packages/schemas/src/request_analysis.ts", "packages/core/src/types/enums.ts"]
  */
 
 import { assertEquals } from "@std/assert";
