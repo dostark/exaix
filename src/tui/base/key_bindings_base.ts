@@ -3,7 +3,7 @@
  * @path src/tui/base/key_bindings_base.ts
  * @description Base class for defining typed key binding collections, ensuring consistency across TUI components.
  * @architectural-layer TUI
- * @related-files [src/helpers/keyboard.ts]
+ * @related-files ["src/tui/helpers/keyboard.ts"]
  */
 
 import type { IKeyBinding, KeyHandler } from "../helpers/keyboard.ts";

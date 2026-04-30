@@ -4,7 +4,7 @@
  * @description Monitors the workspace for file system events (new requests, approved plans).
  * Implements debouncing and stability verification to ensure files are fully written before processing.
  * @architectural-layer Services
- * @related-files [src/main.ts, src/services/request_processor.ts]
+ * @related-files [src/main.ts, "src/services/request/request_processor.ts"]
  */
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";

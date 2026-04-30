@@ -3,7 +3,7 @@
  * @path src/cli/commands/memory_commands.ts
  * @description Provides CLI commands for interacting with Memory Banks, including list, search, project, execution, and proposal management.
  * @architectural-layer CLI
- * @related-files [src/services/memory_bank.ts, src/cli/main.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "src/main.ts"]
  */
 
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";

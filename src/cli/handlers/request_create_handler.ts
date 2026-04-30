@@ -3,7 +3,7 @@
  * @path src/cli/handlers/request_create_handler.ts
  * @description Handles the creation of agent requests, including input validation, unique trace ID generation, and YAML frontmatter serialization.
  * @architectural-layer CLI
- * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * @related-files ["src/cli/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
 import { join } from "@std/path";

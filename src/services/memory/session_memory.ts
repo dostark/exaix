@@ -3,7 +3,7 @@
  * @path src/services/memory/session_memory.ts
  * @description Integrates with Memory Bank to provide automatic semantic memory lookup and context enhancement for agent execution.
  * @architectural-layer Services
- * @related-files [src/services/memory_bank.ts, src/services/agent_runner.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "src/services/agent/agent_runner.ts"]
  */
 
 import { z } from "zod";

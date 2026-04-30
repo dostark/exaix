@@ -3,7 +3,7 @@
  * @path src/cli/commands/archive_commands.ts
  * @description Provides CLI commands for interacting with the execution archive, including listing, showing details, and searching by date or agent.
  * @architectural-layer CLI
- * @related-files [src/services/archive_service.ts, src/cli/main.ts]
+ * @related-files ["src/services/artifact/archive_service.ts", "src/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

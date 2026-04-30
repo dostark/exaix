@@ -3,7 +3,7 @@
  * @path src/services/adapters/plan_adapter.ts
  * @description Module for PlanAdapter.
  * @architectural-layer Services
- * @related-files [src/cli/commands/plan_commands.ts, src/shared/interfaces/i_plan_service.ts]
+ * @related-files [src/cli/commands/plan_commands.ts, "packages/core/src/types/i_plan_service.ts"]
  */
 
 import type { IPlanService } from "@exaix/core/types";

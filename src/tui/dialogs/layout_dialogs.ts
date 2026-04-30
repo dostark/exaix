@@ -3,7 +3,7 @@
  * @path src/tui/dialogs/layout_dialogs.ts
  * @description Dialog components for management of TUI layouts, including split views, presets, and named layouts.
  * @architectural-layer TUI
- * @related-files [src/helpers/layout_manager.ts, src/tui/dashboard_view.ts]
+ * @related-files ["src/tui/helpers/layout_manager.ts", "src/tui/tui_dashboard.ts"]
  */
 
 import { KEYS } from "../helpers/keyboard.ts";

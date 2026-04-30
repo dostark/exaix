@@ -9,7 +9,7 @@
  * - Converts validated plan to markdown for storage
  *
  * @architectural-layer Services
- * @related-files [src/services/plan_adapter.ts, src/services/request_processor.ts]
+ * @related-files ["src/services/plan/plan_adapter.ts", "src/services/request/request_processor.ts"]
  */
 
 import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR, PlanStatus } from "@exaix/core";

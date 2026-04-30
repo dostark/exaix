@@ -3,7 +3,7 @@
  * @path src/tui/tui_dashboard_mocks.ts
  * @description Mock implementations of core services (Portal, Plan, Log, Daemon, Request, Agent, Memory, Skills) for TUI dashboard testing and TDD.
  * @architectural-layer TUI
- * @related-files [src/tui/dashboard_view.ts]
+ * @related-files ["src/tui/tui_dashboard.ts"]
  */
 import {
   ActivityType,
@@ -18,13 +18,11 @@ import {
   MemoryRecordStatus,
   MemoryScope,
   MemoryType,
-  type PortalAnalysisMode,
-  type PortalExecutionStrategy,
-  PortalStatus,
   RequestPriority,
   RequestSource,
   SkillStatus,
 } from "@exaix/core";
+import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core/types";
 import { TuiIcon } from "@exaix/tui";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";

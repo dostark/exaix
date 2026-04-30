@@ -3,7 +3,7 @@
  * @path src/cli/commands/blueprint_commands.ts
  * @description Provides CLI commands for identity blueprint management, including creation from templates, listing, showing details, and validation.
  * @architectural-layer CLI
- * @related-files [src/schemas/blueprint.ts, src/cli/main.ts]
+ * @related-files ["packages/schemas/src/blueprint.ts", "src/main.ts"]
  */
 
 import { ensureDir, exists } from "@std/fs";

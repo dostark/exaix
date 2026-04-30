@@ -3,7 +3,7 @@
  * @path src/cli/formatters/memory_formatter.ts
  * @description Handles formatting of Memory Bank data for CLI output, supporting tables and markdown for projects, executions, learnings, and skills.
  * @architectural-layer CLI
- * @related-files [src/cli/memory_commands.ts]
+ * @related-files ["src/cli/commands/memory_commands.ts"]
  */
 
 import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";

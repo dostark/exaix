@@ -3,7 +3,7 @@
  * @path src/tui/memory_view/key_handlers.ts
  * @description Key handler utilities for Memory View, extracting complex keyboard logic for navigation, search, and shortcuts.
  * @architectural-layer TUI
- * @related-files [src/helpers/keyboard.ts, src/tui/memory_view/memory_scope.ts]
+ * @related-files ["src/tui/helpers/keyboard.ts", src/tui/memory_view/memory_scope.ts]
  */
 
 import type { ITreeNode } from "./types.ts";

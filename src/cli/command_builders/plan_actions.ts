@@ -3,7 +3,7 @@
  * @path src/cli/command_builders/plan_actions.ts
  * @description Provides builders and helper functions for defining plan-related CLI actions and subcommands.
  * @architectural-layer CLI
- * @related-files [src/cli/exactl.ts, src/cli/plan_commands.ts]
+ * @related-files [src/cli/exactl.ts, "src/cli/commands/plan_commands.ts"]
  */
 
 import type { PlanCommands } from "../commands/plan_commands.ts";

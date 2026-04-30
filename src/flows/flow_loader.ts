@@ -3,7 +3,7 @@
  * @path src/flows/flow_loader.ts
  * @description Handles loading and managing flow definitions from the file system, including dynamic import and import rewriting for blueprint execution.
  * @architectural-layer Flows
- * @related-files [src/flows/flow_runner.ts, src/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { join } from "@std/path";

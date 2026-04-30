@@ -3,7 +3,7 @@
  * @path src/tui/helpers/markdown_renderer.ts
  * @description TUI Markdown renderer for ANSI-styled terminal output with support for headers, code blocks, and badges.
  * @architectural-layer Helpers
- * @related-files [src/enums.ts, src/helpers/constants.ts]
+ * @related-files ["packages/core/src/types/enums.ts", "src/constants.ts"]
  */
 
 import { ConfidenceLevel } from "@exaix/core";

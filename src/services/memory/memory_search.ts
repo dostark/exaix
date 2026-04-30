@@ -3,7 +3,7 @@
  * @path src/services/memory/memory_search.ts
  * @description Search implementation for memory banks, supporting query, tag, and keyword-based searches.
  * @architectural-layer Services
- * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
 import type { IExecutionMemory, ILearning, IMemorySearchResult, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { DEFAULT_QUERY_LIMIT, DEFAULT_TITLE_PLACEHOLDER, MemoryStatus, MemoryType } from "@exaix/core";

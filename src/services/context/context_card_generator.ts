@@ -3,7 +3,7 @@
  * @path src/services/context/context_card_generator.ts
  * @description Generates and updates portal context cards in the memory bank, preserving user notes.
  * @architectural-layer Services
- * @related-files [src/services/memory_bank.ts, src/services/db.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "src/services/core/db.ts"]
  */
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
 import { dirname, join } from "@std/path";

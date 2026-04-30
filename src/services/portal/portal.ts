@@ -3,7 +3,7 @@
  * @path src/services/portal/portal.ts
  * @description Core service for managing external project portals.
  * @architectural-layer Services
- * @related-files [src/cli/commands/portal_commands.ts, src/shared/interfaces/i_portal_service.ts]
+ * @related-files [src/cli/commands/portal_commands.ts, "packages/core/src/types/i_portal_service.ts"]
  */
 
 import { join, resolve } from "@std/path";

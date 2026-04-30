@@ -9,7 +9,7 @@
  * - Support for multi-line string normalization
  *
  * @architectural-layer Services
- * @related-files [src/services/output_validator.ts, src/services/plan_adapter.ts]
+ * @related-files ["src/services/tool/output_validator.ts", "src/services/plan/plan_adapter.ts"]
  */
 const JSON_REPAIR_PATTERNS: Array<{
   name: string;

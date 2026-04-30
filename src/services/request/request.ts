@@ -3,7 +3,7 @@
  * @path src/services/request/request.ts
  * @description Core service for managing agent requests.
  * @architectural-layer Services
- * @related-files [src/cli/commands/request_commands.ts, src/shared/interfaces/i_request_service.ts]
+ * @related-files [src/cli/commands/request_commands.ts, "packages/core/src/types/i_request_service.ts"]
  */
 
 import { join } from "@std/path";

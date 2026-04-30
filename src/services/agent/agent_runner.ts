@@ -10,7 +10,7 @@
  * - Handle agent feedback loops
  *
  * @architectural-layer Services
- * @related-files [src/services/request_processor.ts, src/services/blueprint_loader.ts]
+ * @related-files ["src/services/request/request_processor.ts", "src/services/blueprint/blueprint_loader.ts"]
  */
 
 import type { IModelProvider } from "../../ai/types.ts";

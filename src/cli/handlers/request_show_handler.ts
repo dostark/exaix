@@ -3,7 +3,7 @@
  * @path src/cli/handlers/request_show_handler.ts
  * @description Handles displaying detailed information for a specific request, including body extraction and associated plan token statistics.
  * @architectural-layer CLI
- * @related-files [src/cli/request_commands.ts, src/schemas/request.ts]
+ * @related-files ["src/cli/commands/request_commands.ts", "packages/schemas/src/request.ts"]
  */
 
 import { join } from "@std/path";

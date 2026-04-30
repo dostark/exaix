@@ -3,7 +3,7 @@
  * @path src/tui/tui_helpers/notifications.ts
  * @description Helper functions for rendering and managing TUI notifications, including time formatting and interaction logic.
  * @architectural-layer TUI
- * @related-files [src/services/notification.ts, src/tui/tui_dashboard.ts]
+ * @related-files ["src/services/notification/notification.ts", src/tui/tui_dashboard.ts]
  */
 
 import { KEYS } from "../helpers/keyboard.ts";

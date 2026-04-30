@@ -3,7 +3,7 @@
  * @path src/services/request_processing/status_manager.ts
  * @description Manages atomic updates to request file status and error tracking.
  * @architectural-layer Services
- * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
+ * @related-files ["src/services/request/request_processor.ts", "packages/core/src/status/request_status.ts"]
  */
 import type { EventLogger } from "../core/event_logger.ts";
 import type { RequestStatusType } from "@exaix/core/status/request_status.ts";

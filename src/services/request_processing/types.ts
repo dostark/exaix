@@ -3,7 +3,7 @@
  * @path src/services/request_processing/types.ts
  * @description Type definitions for request processing, including frontmatter and parsed file structures.
  * @architectural-layer Services
- * @related-files [src/services/request_processor.ts, src/requests/request_status.ts]
+ * @related-files ["src/services/request/request_processor.ts", "packages/core/src/status/request_status.ts"]
  */
 import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
 

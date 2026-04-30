@@ -3,7 +3,7 @@
  * @path src/services/memory/learning_extractor.ts
  * @description Analyzes execution memory to automatically extract potential patterns, decisions, and troubleshooting insights.
  * @architectural-layer Services
- * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { LANG_TYPESCRIPT } from "@exaix/core";

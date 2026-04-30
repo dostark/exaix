@@ -3,7 +3,7 @@
  * @path src/tui/dashboard/view_registry.ts
  * @description Central registry and initialization logic for all TUI views, facilitating service injection and focus management.
  * @architectural-layer TUI
- * @related-files [src/tui/dashboard_view.ts]
+ * @related-files ["src/tui/tui_dashboard.ts"]
  */
 
 import { PortalManagerView } from "../portal_manager_view.ts";

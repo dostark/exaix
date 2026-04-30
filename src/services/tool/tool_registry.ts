@@ -4,7 +4,7 @@
  * @description Central registry for available tools. Maps abstract tool names (e.g., 'read_file')
  * to concrete implementations with security validation and logging.
  * @architectural-layer Services
- * @related-files [src/services/plan_executor.ts, src/mcp/tools.ts]
+ * @related-files ["src/services/plan/plan_executor.ts", src/mcp/tools.ts]
  */
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";

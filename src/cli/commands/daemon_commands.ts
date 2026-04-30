@@ -3,7 +3,7 @@
  * @path src/cli/commands/daemon_commands.ts
  * @description Provides CLI commands for controlling the Exaix daemon lifecycle, including start, stop, restart, status, and log tailing.
  * @architectural-layer CLI
- * @related-files [src/main.ts, src/cli/main.ts]
+ * @related-files [src/main.ts, "src/main.ts"]
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";

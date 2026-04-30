@@ -3,7 +3,7 @@
  * @path src/services/plan/plan_amendment_service.ts
  * @description Core service for managing mid-execution plan amendment proposals, approvals, and application.
  * @architectural-layer Services
- * @related-files [src/services/plan/plan_executor.ts, src/shared/schemas/plan_amendment.ts]
+ * @related-files [src/services/plan/plan_executor.ts, "packages/schemas/src/plan_amendment.ts"]
  */
 
 import type { IPlanStep } from "./plan_executor.ts";

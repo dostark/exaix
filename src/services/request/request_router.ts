@@ -8,7 +8,7 @@
  * transition between orchestrated flows and individual agent executions.
  *
  * @architectural-layer Services
- * @related-files [src/services/request/request_processor.ts, src/services/flows/flow_runner.ts, src/services/flow/flow_validator.ts]
+ * @related-files [src/services/request/request_processor.ts, "src/flows/flow_runner.ts", src/services/flow/flow_validator.ts]
  */
 import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";

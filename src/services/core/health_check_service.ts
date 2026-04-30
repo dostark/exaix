@@ -4,7 +4,7 @@
  * @description Orchestrates system-wide health checks, including database connectivity,
  * LLM provider availability, disk space, and memory usage.
  * @architectural-layer Services
- * @related-files [src/main.ts, src/services/db.ts]
+ * @related-files [src/main.ts, "src/services/core/db.ts"]
  */
 import type { DatabaseService } from "../core/db.ts";
 import type { IModelProvider } from "../../ai/types.ts";

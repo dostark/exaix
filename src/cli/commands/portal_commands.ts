@@ -3,7 +3,7 @@
  * @path src/cli/commands/portal_commands.ts
  * @description Provides CLI commands for managing portals, delegating business logic to PortalService.
  * @architectural-layer CLI
- * @related-files [src/services/portal.ts, src/shared/interfaces/i_portal_service.ts]
+ * @related-files ["src/services/portal/portal.ts", "packages/core/src/types/i_portal_service.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

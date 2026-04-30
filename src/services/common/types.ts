@@ -3,7 +3,7 @@
  * @path src/services/common/types.ts
  * @description Shared type definitions for services, including ILogEvent and IServiceContext.
  * @architectural-layer Services
- * @related-files [src/services/event_logger.ts, src/services/structured_logger.ts]
+ * @related-files ["src/services/core/event_logger.ts", "src/services/logger/structured_logger.ts"]
  */
 import type { ActorType, AgentKind, LogLevel } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";

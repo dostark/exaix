@@ -3,7 +3,7 @@
  * @path src/cli/commands/review_commands.ts
  * @description Provides CLI commands for reviewing agent-generated changes, including approval/rejection of code branches and artifacts.
  * @architectural-layer CLI
- * @related-files [src/reviews/review_status.ts, src/cli/main.ts]
+ * @related-files [src/reviews/review_status.ts, "src/main.ts"]
  */
 
 import { dirname, isAbsolute, join, resolve } from "@std/path";

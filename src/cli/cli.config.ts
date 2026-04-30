@@ -3,7 +3,7 @@
  * @path src/cli/cli.config.ts
  * @description Defines user-tunable constants and default settings for Exaix CLI commands, including limits, formatting, and priorities.
  * @architectural-layer CLI
- * @related-files [src/cli/main.ts]
+ * @related-files ["src/main.ts"]
  */
 
 import { DEFAULT_AGENT_MODEL, SHARED_PRIORITY_ICONS } from "@exaix/core";

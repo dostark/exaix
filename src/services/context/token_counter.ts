@@ -4,7 +4,7 @@
  * @description Utility for estimating token counts from text using heuristic and optional
  * fast local tokenization. Phase 62 Step 62.2 implementation.
  * @architectural-layer Services
- * @related-files [src/services/context/prompt_budget_allocator.ts, src/shared/constants.ts]
+ * @related-files [src/services/context/prompt_budget_allocator.ts, "src/constants.ts"]
  */
 
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";

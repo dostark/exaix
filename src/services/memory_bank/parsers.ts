@@ -3,7 +3,7 @@
  * @path src/services/memory_bank/parsers.ts
  * @description Parser utilities for extracting patterns and decisions from memory bank markdown content.
  * @architectural-layer Services
- * @related-files [src/services/memory_bank.ts, src/schemas/memory_bank.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
 
 import type { IDecision, IPattern } from "@exaix/schemas/memory_bank.ts";

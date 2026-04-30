@@ -3,7 +3,7 @@
  * @path src/services/adapters/plan_amendment_adapter.ts
  * @description Adapter for the PlanAmendmentService to expose it to the application context.
  * @architectural-layer Services/Adapters
- * @related-files [src/services/plan/plan_amendment_service.ts, src/shared/interfaces/i_plan_amendment_service.ts]
+ * @related-files [src/services/plan/plan_amendment_service.ts, "packages/core/src/types/i_plan_amendment_service.ts"]
  */
 
 import type { IPlanAmendmentService } from "@exaix/core/types";

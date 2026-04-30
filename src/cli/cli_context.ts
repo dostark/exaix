@@ -3,7 +3,7 @@
  * @path src/cli/cli_context.ts
  * @description Defines the ICliApplicationContext interface used by CLI commands.
  * @architectural-layer CLI
- * @related-files [src/cli/commands/, src/cli/main.ts]
+ * @related-files [src/cli/commands/, "src/main.ts"]
  */
 
 import type { IApplicationContext } from "@exaix/core/types";

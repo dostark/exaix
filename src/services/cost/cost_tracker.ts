@@ -3,7 +3,7 @@
  * @path src/services/cost/cost_tracker.ts
  * @description Service for tracking and managing LLM provider costs, token usage, and budget enforcement.
  * @architectural-layer Services
- * @related-files [src/services/core/db.ts, src/config/schema.ts]
+ * @related-files [src/services/core/db.ts, "packages/schemas/src/config.ts"]
  */
 import type { SqliteParam } from "../core/db.ts";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";

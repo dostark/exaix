@@ -11,7 +11,7 @@
  * - Validation metrics tracking
  *
  * @architectural-layer Services
- * @related-files [src/services/agent_runner.ts, src/services/json_repair.ts]
+ * @related-files ["src/services/agent/agent_runner.ts", "src/services/utils/json_repair.ts"]
  */
 
 import { z, ZodError, type ZodType, type ZodTypeDef } from "zod";

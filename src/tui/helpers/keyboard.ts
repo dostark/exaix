@@ -3,7 +3,7 @@
  * @path src/tui/helpers/keyboard.ts
  * @description TUI keyboard handling utilities for consistent key management and binding.
  * @architectural-layer Helpers
- * @related-files [src/helpers/tree_view.ts]
+ * @related-files ["src/tui/helpers/tree_view.ts"]
  */
 
 import { KeyModifier } from "@exaix/tui";

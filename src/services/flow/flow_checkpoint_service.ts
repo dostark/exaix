@@ -3,7 +3,7 @@
  * @path src/services/flow/flow_checkpoint_service.ts
  * @description Persistence service for FlowRunner step checkpoints under Memory/Execution/{traceId}/checkpoint.json.
  * @architectural-layer Services
- * @related-files [src/flows/flow_runner.ts, src/shared/schemas/flow.ts]
+ * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { ensureDir, exists } from "@std/fs";

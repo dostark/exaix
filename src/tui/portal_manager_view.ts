@@ -3,7 +3,7 @@
  * @path src/tui/portal_manager_view.ts
  * @description TUI view for managing portals (environment symlinks), supporting status visualization, opening/closing, and removal.
  * @architectural-layer TUI
- * @related-files [src/services/portal_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files ["src/services/portal/portal.ts", src/tui/tui_dashboard.ts]
  */
 
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";

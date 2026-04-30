@@ -4,7 +4,7 @@
  * @description Orchestrates LLM agent execution via MCP with security mode enforcement.
  * Handles blueprint loading, subprocess spawning, MCP connection, and git audit.
  * @architectural-layer Services
- * @related-files [src/services/agent_runner.ts, src/services/execution_loop.ts]
+ * @related-files ["src/services/agent/agent_runner.ts", "src/services/agent/execution_loop.ts"]
  */
 
 import { isAbsolute, join } from "@std/path";

@@ -10,7 +10,7 @@
  * - File access is restricted to allowed paths to prevent traversal
  *
  * @architectural-layer Services
- * @related-files [src/services/request_router.ts, src/services/execution_loop.ts]
+ * @related-files ["src/services/request/request_router.ts", "src/services/agent/execution_loop.ts"]
  */
 
 import { join, normalize } from "@std/path";

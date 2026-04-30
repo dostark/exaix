@@ -9,7 +9,7 @@
  * - Coordinate with PlanWriter and WorkflowManager
  *
  * @architectural-layer Services
- * @related-files [src/main.ts, src/services/plan_executor.ts]
+ * @related-files [src/main.ts, "src/services/plan/plan_executor.ts"]
  */
 
 import { join } from "@std/path";

@@ -5,7 +5,7 @@
  * /api/embed endpoint with localhost-only SSRF validation.
  * @architectural-layer AI
  * @dependencies [src/ai/embeddings/embedding_provider.ts, src/ai/embeddings/embedding_errors.ts, src/shared/constants.ts]
- * @related-files [src/ai/embeddings/embedding_provider_factory.ts, src/shared/interfaces/i_memory_embedding_service.ts]
+ * @related-files [src/ai/embeddings/embedding_provider_factory.ts, "packages/core/src/types/i_memory_embedding_service.ts"]
  */
 
 import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";

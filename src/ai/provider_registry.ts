@@ -3,7 +3,7 @@
  * @path src/ai/provider_registry.ts
  * @description central registry for all LLM provider factories, managing provider discovery, metadata, and selection logic.
  * @architectural-layer AI
- * @related-files [src/ai/providers.ts, src/services/agent_runner.ts]
+ * @related-files [src/ai/providers.ts, "src/services/agent/agent_runner.ts"]
  */
 import { PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";

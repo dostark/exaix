@@ -3,7 +3,7 @@
  * @path src/tui/memory_view/types.ts
  * @description Core types and interfaces for the Memory View TUI components, including ITreeNode and MemoryServiceInterface.
  * @architectural-layer TUI
- * @related-files [src/services/memory_bank.ts, src/enums.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "packages/core/src/types/enums.ts"]
  */
 
 import type { TuiNodeType } from "@exaix/tui";

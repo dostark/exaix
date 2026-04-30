@@ -3,7 +3,7 @@
  * @path src/tui/helpers/dialog_rendering.ts
  * @description Shared dialog rendering utilities providing common patterns for dialog buttons, titles, and lines.
  * @architectural-layer Helpers
- * @related-files [src/helpers/dialog_base.ts]
+ * @related-files ["src/tui/helpers/dialog_base.ts"]
  */
 
 import { colorize, type ITuiTheme, visibleLength } from "./colors.ts";

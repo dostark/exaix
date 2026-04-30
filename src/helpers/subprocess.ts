@@ -3,7 +3,7 @@
  * @path src/helpers/subprocess.ts
  * @description Safe subprocess execution utilities with timeout protection and error handling.
  * @architectural-layer Helpers
- * @related-files [src/services/tool_reflector.ts]
+ * @related-files ["src/services/tool/tool_reflector.ts"]
  */
 
 export interface ISubprocessOptions {

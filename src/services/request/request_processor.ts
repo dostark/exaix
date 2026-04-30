@@ -4,7 +4,7 @@
  * @description Validates incoming request files, determines routing strategies (Agent vs Flow),
  * and generates execution plans. Acts as the primary entry point for the "Request Processing" phase.
  * @architectural-layer Services
- * @related-files [src/services/request_router.ts, src/services/agent_runner.ts]
+ * @related-files ["src/services/request/request_router.ts", "src/services/agent/agent_runner.ts"]
  * @architectural-link [ARCHITECTURE.md#request-processing-flow]
  */
 

@@ -6,7 +6,7 @@
  * SymbolExtractor. Implements IPortalKnowledgeService with quick/standard/deep
  * modes, in-memory staleness check, and async background re-analysis on stale cache.
  * @architectural-layer Services
- * @related-files [src/services/portal_knowledge/mod.ts, src/shared/interfaces/i_portal_knowledge_service.ts]
+ * @related-files [src/services/portal_knowledge/mod.ts, "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
 import { join } from "@std/path";

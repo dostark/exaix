@@ -4,7 +4,7 @@
  * @description Manages the automated approval and promotion of high-confidence agent learnings.
  * Implements filtering by source, confidence threshold, and quiet-period delay.
  * @architectural-layer Services
- * @related-files [src/services/memory/memory_extractor.ts, src/shared/schemas/config.ts]
+ * @related-files [src/services/memory/memory_extractor.ts, "packages/schemas/src/config.ts"]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";

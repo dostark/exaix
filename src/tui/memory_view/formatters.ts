@@ -3,7 +3,7 @@
  * @path src/tui/memory_view/formatters.ts
  * @description Specialized formatters for the TUI Memory View, converting memory models and tree nodes into human-readable markdown and TUI lines.
  * @architectural-layer TUI
- * @related-files [src/tui/memory_view/index.ts]
+ * @related-files ["src/tui/memory_panels/index.ts"]
  */
 
 import type {

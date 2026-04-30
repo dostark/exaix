@@ -3,7 +3,7 @@
  * @path src/tui/request_manager_view.ts
  * @description TUI view for managing user requests, featuring tree-based navigation, status/priority grouping, and request creation.
  * @architectural-layer TUI
- * @related-files [src/services/request_service.ts, src/tui/tui_dashboard.ts]
+ * @related-files ["src/services/request/request.ts", src/tui/tui_dashboard.ts]
  */
 
 import { KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";

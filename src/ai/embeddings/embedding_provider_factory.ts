@@ -6,7 +6,7 @@
  * provider (Ollama, OpenAI, llama.cpp) based on the provider field.
  * @architectural-layer AI
  * @dependencies [src/ai/embeddings/embedding_provider.ts, src/ai/embeddings/embedding_errors.ts, src/ai/providers/ollama_embedding_client.ts]
- * @related-files [src/shared/interfaces/i_memory_embedding_service.ts]
+ * @related-files ["packages/core/src/types/i_memory_embedding_service.ts"]
  */
 
 import type { IEmbeddingProvider } from "./embedding_provider.ts";

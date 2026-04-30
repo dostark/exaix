@@ -3,7 +3,7 @@
  * @path src/repositories/activity_repository.ts
  * @description Implements the Repository pattern for IActivity Journal data access, abstracting database operations from domain logic.
  * @architectural-layer Repositories
- * @related-files [src/services/db.ts, src/services/event_logger.ts]
+ * @related-files ["src/services/core/db.ts", "src/services/core/event_logger.ts"]
  */
 
 import type { IDatabaseService } from "../services/core/db.ts";

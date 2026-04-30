@@ -3,7 +3,7 @@
  * @path src/services/adapters/context_card_adapter.ts
  * @description Adapter for ContextCardGenerator that satisfies the IContextCardGeneratorService interface.
  * @architectural-layer Services/Adapters
- * @related-files [src/services/context_card_generator.ts, src/shared/interfaces/i_context_card_generator_service.ts]
+ * @related-files ["src/services/context/context_card_generator.ts", "packages/core/src/types/i_context_card_generator_service.ts"]
  */
 
 import type { IContextCardGeneratorService, IContextCardPortalInfo } from "@exaix/core/types";

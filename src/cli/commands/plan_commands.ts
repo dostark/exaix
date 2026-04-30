@@ -3,7 +3,7 @@
  * @path src/cli/commands/plan_commands.ts
  * @description Provides CLI commands for human review of AI-generated plans, including approval, rejection, and revision requests.
  * @architectural-layer CLI
- * @related-files [src/schemas/plan_schema.ts, src/cli/main.ts]
+ * @related-files ["packages/schemas/src/plan_schema.ts", "src/main.ts"]
  */
 
 import { join } from "@std/path";

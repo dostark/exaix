@@ -6,7 +6,7 @@
  * JSON files alongside an LRU cache for duplicate input deduplication.
  * @architectural-layer Services
  * @dependencies [src/ai/embeddings/embedding_provider.ts, src/services/memory/memory_embedding.ts, src/shared/constants.ts]
- * @related-files [src/services/memory/memory_bank.ts, src/shared/interfaces/i_memory_embedding_service.ts]
+ * @related-files [src/services/memory/memory_bank.ts, "packages/core/src/types/i_memory_embedding_service.ts"]
  */
 
 import { join } from "@std/path";

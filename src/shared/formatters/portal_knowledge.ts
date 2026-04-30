@@ -3,7 +3,7 @@
  * @path src/shared/formatters/portal_knowledge.ts
  * @description Provides logic for formatting IPortalKnowledge objects into human-readable text.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/portal_knowledge.ts, src/cli/commands/portal_commands.ts]
+ * @related-files ["packages/schemas/src/portal_knowledge.ts", src/cli/commands/portal_commands.ts]
  */
 
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";

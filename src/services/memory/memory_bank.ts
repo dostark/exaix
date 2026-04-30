@@ -7,7 +7,7 @@
  * - Search and indexing operations
  * - IActivity Journal integration
  * @architectural-layer Services
- * @related-files [src/services/db.ts, src/schemas/memory_bank.ts]
+ * @related-files ["src/services/core/db.ts", "packages/schemas/src/memory_bank.ts"]
  * @architectural-link [ARCHITECTURE.md#memory-banks-architecture]
  */
 

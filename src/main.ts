@@ -5,7 +5,7 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Core System
- * @related-files [src/services/execution_loop.ts, src/services/watcher.ts, src/cli/daemon_commands.ts]
+ * @related-files ["src/services/agent/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "./config/service.ts";
 import { DaemonStatus, type LogLevel } from "@exaix/core";

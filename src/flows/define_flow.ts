@@ -3,7 +3,7 @@
  * @path src/flows/define_flow.ts
  * @description Helper utility to construct Flow objects with sensible defaults and schema validation.
  * @architectural-layer Core
- * @related-files [src/schemas/flow.ts, src/enums.ts]
+ * @related-files ["packages/schemas/src/flow.ts", "packages/core/src/types/enums.ts"]
  */
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";

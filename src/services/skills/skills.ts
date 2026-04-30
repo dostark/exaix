@@ -6,7 +6,7 @@
  * Skills encode domain expertise, procedures, and best practices as reusable
  * instruction modules that agents apply to tasks.
  * @architectural-layer Services
- * @related-files [src/schemas/memory_bank.ts, src/services/agent_runner.ts]
+ * @related-files ["packages/schemas/src/memory_bank.ts", "src/services/agent/agent_runner.ts"]
  */
 
 import { join } from "@std/path";

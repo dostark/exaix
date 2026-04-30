@@ -3,7 +3,7 @@
  * @path src/services/adapters/skills_adapter.ts
  * @description Adapter for SkillsService that satisfies the ISkillsService interface.
  * @architectural-layer Services/Adapters
- * @related-files [src/shared/interfaces/i_skills_service.ts, src/services/skills.ts] */
+ * @related-files ["packages/core/src/types/i_skills_service.ts", "src/services/skills/skills.ts"] */
 
 import type { ISkillsService } from "@exaix/core/types";
 import type { SkillsService } from "../skills/skills.ts";
