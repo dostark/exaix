@@ -2,7 +2,7 @@
 agent: agent
 description: "Deep post-implementation review of a phase planning document — verifies what was built against the plan, finds gaps, and writes remediation steps back into the document"
 tools:
-  - search/codebase
+  - search_files
   - read_file
   - patch_file
   - run_command

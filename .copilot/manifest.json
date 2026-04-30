@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-30T08:44:07.717Z",
+  "generated_at": "2026-04-30T11:12:16.983Z",
   "docs": [
     {
       "path": ".copilot/prompts/openai-debugging-systematic.md",
@@ -93,7 +93,7 @@
     },
     {
       "path": ".copilot/prompts/commit-message.md",
-      "agent": "general",
+      "agent": "agent",
       "scope": "dev",
       "title": "Detailed Commit Message Prompt (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
@@ -430,7 +430,7 @@
     },
     {
       "path": ".copilot/prompts/clean-codebase.md",
-      "agent": "general",
+      "agent": "agent",
       "scope": "dev",
       "title": "Clean Codebase Template (#clean-codebase)",
       "short_summary": "Template for removing all errors, warnings, and style violations from the repository.",

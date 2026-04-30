@@ -1,5 +1,10 @@
 ---
-agent: general
+agent: agent
+tools:
+  - git_status
+  - search_files
+  - patch_file
+  - run_command
 scope: dev
 title: "Clean Codebase Template (#clean-codebase)"
 short_summary: "Template for removing all errors, warnings, and style violations from the repository."
@@ -11,11 +16,11 @@ topics: ["cleanup", "validation", "linting", "style", "qa"]
 Key points
 - Target complete repository cleanliness for build, lint, and style checks
 - Fix code, import boundaries, and style violations with minimal changes
-- Validate with the exact commands required by the project
+- Validate with the exact commands required by the project, including architecture header validation
 - No errors, no warnings, no violations accepted
 
 Canonical prompt:
-"Clean the codebase so that `deno check .`, `deno lint .`, `deno fmt .`, and `deno run -A scripts/check_code_style.ts` all pass with zero errors, warnings, or violations."
+"Clean the codebase so that `deno check .`, `deno lint .`, `deno fmt .`, `deno run --allow-read scripts/validate_architecture.ts`, and `deno run -A scripts/check_code_style.ts` all pass with zero errors, warnings, or violations."
 
 Examples
 - Example prompt: "Remove the remaining package entrypoint style violations and make the repo pass all Deno checks cleanly."
@@ -53,6 +58,7 @@ Make clean results - no errors, no warnings, no violations, for:
 - `deno check .`
 - `deno lint .`
 - `deno fmt .`
+- `deno run --allow-read scripts/validate_architecture.ts`
 - `deno run -A scripts/check_code_style.ts`
 
 ## Validation Criteria
@@ -60,5 +66,6 @@ Make clean results - no errors, no warnings, no violations, for:
 - `deno check .` passes
 - `deno lint .` passes without warnings or errors
 - `deno fmt .` passes without formatting violations
+- `deno run --allow-read scripts/validate_architecture.ts` passes with no reported failures
 - `deno run -A scripts/check_code_style.ts` passes with no reported violations
 - No new regressions introduced by the cleanup

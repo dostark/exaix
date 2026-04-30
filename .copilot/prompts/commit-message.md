@@ -1,5 +1,10 @@
 ---
-agent: general
+agent: agent
+tools:
+  - git_status
+  - git_commit
+  - search_files
+  - run_command
 scope: dev
 title: "Detailed Commit Message Prompt (#commit)"
 short_summary: "Enforces structured, informative commit messages for agents and human developers."

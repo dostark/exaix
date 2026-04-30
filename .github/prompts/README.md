@@ -2,7 +2,7 @@
 agent: agent
 description: "Explains the purpose of .github/prompts and how it differs from .copilot/prompts"
 tools:
-  - search/codebase
+  - search_files
 ---
 
 # GitHub slash-command prompts

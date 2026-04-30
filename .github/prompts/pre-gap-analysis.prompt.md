@@ -2,7 +2,7 @@
 agent: agent
 description: "Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts"
 tools:
-  - search/codebase
+  - search_files
   - read_file
   - patch_file
   - run_command

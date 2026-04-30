@@ -2,7 +2,7 @@
 agent: agent
 description: "Drafts a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability"
 tools:
-  - search/codebase
+  - search_files
   - read_file
   - patch_file
   - run_command

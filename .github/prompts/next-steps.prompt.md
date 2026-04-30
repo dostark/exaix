@@ -2,7 +2,7 @@
 agent: agent
 description: "Run plan-driven TDD step-by-step workflow with CI gates and per-step commits"
 tools:
-  - search/codebase
+  - search_files
   - patch_file
   - run_command
   - git_status
