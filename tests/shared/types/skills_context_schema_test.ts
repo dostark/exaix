@@ -5,8 +5,7 @@
  */
 import { assertEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { ZSkillsContext } from "../../../src/shared/types/prompt_context.ts";
-
+import { ZSkillsContext } from "@exaix/core/types";
 describe("ZSkillsContext", () => {
   it("should validate a valid skills context", () => {
     const validContext = {

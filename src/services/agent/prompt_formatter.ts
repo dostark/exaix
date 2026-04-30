@@ -6,8 +6,7 @@
  * @related-files [src/services/agent/agent_runner.ts]
  */
 
-import type { ISkillsContext } from "../../shared/types/prompt_context.ts";
-
+import type { ISkillsContext } from "@exaix/core/types";
 /**
  * Render matched skills into a formatted prompt section with budget awareness.
  */

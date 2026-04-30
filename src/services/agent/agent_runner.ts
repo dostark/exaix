@@ -18,7 +18,7 @@ import type { IGenerateResult } from "../../ai/providers/common.ts";
 import { toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
-import type { IApplicationContext, ISkillsService } from "@exaix/core/types";
+import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import {
   createLLMRetryPolicy,
@@ -32,7 +32,6 @@ import {
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import { renderSkillsSection } from "./prompt_formatter.ts";
-import type { ISkillsContext } from "../../shared/types/prompt_context.ts";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,
