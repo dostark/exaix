@@ -1,5 +1,5 @@
 ---
-title: TOOLS.md
+title: "Agent Instructions"
 description: Developer tools and runtime capability map
 agent_priority: high
 copilot_knowledge_base: true
@@ -9,15 +9,6 @@ links:
   - "docs/dev/Exaix_Tools.md"
   - "scripts/sync_tool_schemas.ts"
 copilot_instructions: .copilot/blueprints/senior-coder.md
----
-
----
-agent: all
-scope: dev
-title: Developer Tools Quick Reference
-short_summary: "Essential tools for Exaix development — what each tool does and when to use it."
-version: "1.0"
-topics: ["tools", "productivity", "quick-reference"]
 ---
 
 # Exaix Developer Tools — Quick Reference
@@ -71,7 +62,7 @@ docker --version    # Containers
 
 ---
 
-## � Related
+## 🔗 Related
 
 - **Installation & Detailed Guide**: [docs/dev/Exaix_Tools.md](./docs/dev/Exaix_Tools.md)
 - **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md)
@@ -79,9 +70,7 @@ docker --version    # Containers
 
 ---
 
-**Last Updated**: March 2026 | **Exaix Version**: 1.0.2
-
-## 🤖 Agent Tool Index (MCP) {#agent-tools}
+**Last Updated**: May 2026 | **Exaix Version**: 1.0.2
 
 <!-- AGENT_TOOLS_START -->
 

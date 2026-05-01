@@ -1,5 +1,5 @@
 ---
-title: README.md
+title: "Agent Instructions"
 description: Exaix Orchestration Platform - Overview and Quickstart
 agent_priority: critical
 copilot_knowledge_base: true
@@ -18,14 +18,14 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 [![CI](https://img.shields.io/github/actions/workflow/status/dostark/exaix/ci.yml)](https://github.com/dostark/exaix/actions)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-Exaix enables secure, auditable multi-agent workflows with human-in-the-loop supervision — unlike LangChain or CrewAI, it guarantees full reproducibility via persistent SQLite journals and filesystem-based APIs. [cite:3]
+Exaix enables secure, auditable multi-agent workflows with human-in-the-loop supervision — unlike LangChain or CrewAI, it guarantees full reproducibility via persistent SQLite journals and filesystem-based APIs.
 
 ## Why Exaix
 
 - **Permanent audit trail**: Every agent action (plan, tool call, file change) is journaled immutably.
 - **Human oversight**: Agents propose structured Plans requiring explicit approval before execution.
 - **Files-as-API**: Workspaces use disk files (Requests, Plans, Changesets) for easy CI/integration.
-- **Local-first security**: Deno permissions + optional cloud LLMs keep data on your machine by default. [cite:3]
+- **Local-first security**: Deno permissions + optional cloud LLMs keep data on your machine by default.
 
 ## Key Concepts
 
@@ -43,7 +43,7 @@ Exaix enables secure, auditable multi-agent workflows with human-in-the-loop sup
 
 ## Architecture Overview
 
-`````mermaid
+```mermaid
 graph TD
     A[User Request] --> B[Agent Planning]
     B --> C[Human Review/Approve]
@@ -52,14 +52,16 @@ graph TD
     E --> F[Journal Activity]
     F --> G[Memory Update]
     G --> B
-``` [web:14]
+```
 
 ## Prerequisites
+
 - Deno 2.0+
 - SQLite (built-in)
 - Optional: API keys for cloud LLMs (Anthropic, OpenAI, Google)
 
 ## Quick Start
+
 ```bash
 # 1. Clone & deploy workspace
 git clone https://github.com/dostark/exaix.git
@@ -74,11 +76,11 @@ cd ~/MyExaixWorkspace
 deno task start &
 exactl request "Refactor src/cli.ts to use new JournalService"
 
-# 4. Review & approve in dashboard (new tab)
+# 4. Review & approve in dashboard
 exactl dashboard
-````text
+```
 
-**Full CLI install**: `deno install -A --unstable https://deno.land/x/exactl@latest` [cite:3]
+**Full CLI install**: `deno install -A --unstable https://deno.land/x/exactl@latest`
 
 ## Repo Structure
 
@@ -91,9 +93,9 @@ exaix/
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons
-```text
+```
 
-Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state). [cite:4]
+Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state).
 
 ## LLM Configuration
 
@@ -105,47 +107,55 @@ Exaix auto-selects providers by cost/performance. Edit `exa.config.toml`:
 [ai]
 provider = "ollama"
 model = "llama3.2"
-```text
+```
 
 **Advanced Multi-Provider**:
 
 ```toml
-[models.default] provider = "anthropic" model = "claude-3.5-sonnet"
-[models.fast]   provider = "openai"    model = "gpt-4o-mini"
-[models.local]  provider = "ollama"    model = "llama3.2"
+[models.default]
+provider = "anthropic"
+model = "claude-3.5-sonnet"
+
+[models.fast]
+provider = "openai"
+model = "gpt-4o-mini"
+
+[models.local]
+provider = "ollama"
+model = "llama3.2"
 
 [provider_strategy]
 prefer_free = true
 max_daily_cost_usd = 5.00
-```text
+```
 
-Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDER=ollama exactl request ...` [cite:3]
+Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDER=ollama exactl request ...`
 
 ## Operator Features
 
 - **TUI Dashboard**: `exactl dashboard` — monitor, review Plans, approve Changesets.
 - **CLI Commands**: `exactl request`, `exactl list`, `exactl apply`, `exactl journal`.
-- **Least-privilege**: Deno sandbox per agent task. [cite:3]
+- **Least-privilege**: Deno sandbox per agent task.
 
 ## Testing & Contributing
 
 ```bash
 deno task test      # Unit tests
 deno task ci        # Full CI: fmt, lint, test, coverage
-```text
+```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regression tests mandatory (`[regression]` prefix). [cite:3][cite:4]
+See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regression tests mandatory (`[regression]` prefix).
 
 ## Documentation
 
 - **Quick Tools**: [TOOLS.md](./TOOLS.md)
 - **User Guide**: [docs/Exaix_User_Guide.md](./docs/Exaix_User_Guide.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md) [cite:4]
+- **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md)
 
 ## License
 
-Proprietary © Exaix Development Team. See [LICENSE](./LICENSE). [cite:4]
+Proprietary © Exaix Development Team. See [LICENSE](./LICENSE).
 
 ---
 
@@ -155,4 +165,3 @@ Proprietary © Exaix Development Team. See [LICENSE](./LICENSE). [cite:4]
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
 - **Dev Docs**: [exaix-dev-docs/](./exaix-dev-docs/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
-`````

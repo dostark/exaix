@@ -48,7 +48,7 @@ grep -rEn --include='*.ts' '"(ollama|anthropic|openai|pending|active|timeout)"' 
 
 ## 3. Migration Guide
 
-If you are updating legacy code, refer to `docs/dev/Migration_Guide_Phase27.md` for detailed instructions on replacing hardcoded values with the new configuration system.
+If you are updating legacy code, refer to `CODE_STYLE.md` §2 (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
 
 ## 4. AI Agent Development Workflow
 
@@ -57,13 +57,12 @@ If you are updating legacy code, refer to `docs/dev/Migration_Guide_Phase27.md` 
 **If you are an AI agent (Claude, Copilot, etc.), you MUST:**
 
 1. **Read [`CLAUDE.md`](CLAUDE.md)** for project orientation and quick reference
-
-1.
+2. **Read relevant `.copilot/` docs** for your task type:
    - `.copilot/workflows/exaix-development.md` — Source code patterns
    - `.copilot/workflows/testing.md` — Test patterns and helpers
    - `.copilot/workflows/documentation.md` — Documentation guidelines
    - `.copilot/planning/*.md` — Phase planning documents
-1.
+3. **Cite** which docs guided your approach in your implementation plan
 
 **Example citation:**
 
@@ -251,8 +250,8 @@ Authoritative guidance:
 - [ ] No new magic numbers or strings introduced.
 - [ ] New configuration options added to `exa.config.sample.toml`.
 - [ ] Zod schema updated in `src/config/schema.ts`.
-- [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (per §1.5).
-- [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (per §1.6).
+- [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `CODE_STYLE.md` §1).
+- [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `CODE_STYLE.md` §5).
 - [ ] **Environment Variables:** If using `EXA_LLM_*` vars, validated via `getValidatedEnvOverrides()` (no direct `Deno.env.get()`).
 - [ ] **Test Variables:** Test-related env vars use `EXA_TEST_*` prefix and helper functions (`isTestMode()`, `isCIMode()`).
 - [ ] Tests added for new configuration options.
@@ -262,7 +261,7 @@ Authoritative guidance:
 
 ## 7. Architecture
 
-For a comprehensive overview of the system architecture, component interactions, and code organization, please refer to [ARCHITECTURE.md](../ARCHITECTURE.md) in the project root. This document is the ground truth for understanding how Exaix works.
+For a comprehensive overview of the system architecture, component interactions, and code organization, please refer to [ARCHITECTURE.md](./ARCHITECTURE.md) in the project root. This document is the ground truth for understanding how Exaix works.
 
 ---
 
@@ -272,4 +271,3 @@ For a comprehensive overview of the system architecture, component interactions,
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
 - **Planning**: [.copilot/planning/](./.copilot/planning/)
 - **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
-  x

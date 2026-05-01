@@ -1,5 +1,5 @@
 ---
-title: CLAUDE.md
+title: "Agent Instructions"
 description: Agent coordination and task-specific guidance index
 agent_priority: critical
 copilot_knowledge_base: true
@@ -37,16 +37,14 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 
 ---
 
-## 🔍 Documentation Discovery Mandate {#discovery-mandate}
+## 🔍 Context Discovery — Before Making Changes
 
-Exaix uses an **Agent-Native Documentation Nervous System**. Agents are **MANDATED** to discover context before proposing changes:
+Before proposing or implementing changes:
 
-1. **Scan Frontmatter**: Always read the first 20 lines of root `.md` files to identify `copilot_knowledge_base: true` and relevant `capabilities`.
-2. **Follow Stable Links**: Use symbol-based links (e.g., `src/file.ts:Symbol`) for precise navigation instead of line numbers.
-3. **Internalize AGENT_LOGIC**: Before modifying a core flow, read the `AGENT_LOGIC` YAML block in `ARCHITECTURE.md` to ensure mental model consistency with other agents.
-4. **Sync Tooling**: Use `deno task docs-sync-schemas` if you modify MCP tool handlers in `src/mcp/handlers/`.
-
-**Rationale**: This reduces context saturation and prevents "Ingestion Blind Spots" by providing machine-readable metadata and stable navigation anchors.
+1. **Read frontmatter** of root `.md` files — the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document.
+2. **Use symbol-based links** (e.g., `src/file.ts:Symbol`) when referencing code locations — line numbers shift; symbols stay stable.
+3. **Read `ARCHITECTURE.md`** before modifying any core flow — it contains an `AGENT_LOGIC` YAML block that describes expected behavior and invariants.
+4. **Run `deno task docs-sync-schemas`** after modifying MCP tool handlers in `src/mcp/handlers/` to keep `TOOLS.md` in sync.
 
 ---
 
@@ -87,9 +85,9 @@ deno task docs-sync-schemas   # Sync MCP tool schemas to TOOLS.md
 ### TDD-First (MANDATORY)
 
 1. Write failing tests first
-
-1.
-1.
+2. Run the test and confirm it fails
+3. Implement the minimum code to make it pass
+4. Refactor, keeping tests green
 
 ### Coding Standards
 
@@ -170,10 +168,9 @@ deno run -A scripts/ci.ts test --quick
 **If CI fails:**
 
 1. **DO NOT** claim the task is complete
-
-1.
-1.
-1.
+2. Read the full error output to identify the root cause
+3. Fix the issue (do not bypass checks with `--no-verify` or similar flags)
+4. Re-run the failing check to confirm it passes before continuing
 
 **Common CI Failures:**
 
@@ -211,9 +208,7 @@ src/
 └── main.ts      # Entry point
 
 tests/           # Mirror of src/ structure
-.copilot/          # AI assistant guidance (see below)
-tests/           # Mirror of src/ structure
-.copilot/          # AI assistant guidance (see below)
+.copilot/        # AI assistant guidance (see below)
 docs/            # User documentation (Architecture moved to /ARCHITECTURE.md)
 ARCHITECTURE.md  # System Architecture & Knowledge Base
 ```
@@ -290,6 +285,8 @@ await withEnv({ MY_VAR: "value" }, async () => { ... });
 
 ## Current Project Status
 
+> Last updated: 2026-05-01. Check `.copilot/planning/` for the authoritative current state.
+
 ### Completed Phases
 
 - **Phase 12:** Obsidian Retirement, Memory Banks v2
@@ -311,15 +308,15 @@ Check `.copilot/planning/` for:
 ### "Add a new feature"
 
 1. Check `.copilot/planning/` for relevant phase
-
-1.
-1.
+2. Consult `.copilot/workflows/exaix-development.md` for patterns
+3. Write failing tests first, then implement
+4. Run `deno run -A scripts/ci.ts all` before marking complete
 
 ### "Fix a bug"
 
-1. Write failing test first
-
-1.
+1. Write a failing test that reproduces the bug
+2. Fix the root cause (not just the symptom)
+3. Confirm the test now passes and no regressions exist
 
 ### "Update agent docs"
 
@@ -340,7 +337,7 @@ These are **REQUIRED** for all code tasks:
 - **MUST** read matching `.copilot/` docs and cite them in your plan
 - **MUST** use established test helpers (`initTestDbService`, `createCliTestContext`, etc.)
 - **MUST** place new tests under the correct `tests/` domain folder; do not add new `*_test.ts` files outside `tests/`, and do not place service tests directly in `tests/services/`
-- **MUST** keep Problems tab clean (fix TS errors before completing)
+- **MUST** have no TypeScript errors (`deno check src/main.ts`) before completing
 - **MUST** run `deno task test` before committing
 - **MUST** verify all CI checks pass locally before claiming task completion (see CI Verification section)
 

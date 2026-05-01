@@ -19,6 +19,20 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 **Version:** 2.0.0\
 **Date:** January 16, 2026
 
+## Quick Agent Summary
+
+Key facts for agents reading this file under token constraints:
+
+- **Entry point**: `src/main.ts` — starts the daemon, wires all services
+- **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
+- **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
+- **AI providers**: selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory` (Ollama, Claude, OpenAI, Gemini, Mock)
+- **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in the [Request Processing Flow](#request-processing-flow) section before modifying any core flow
+- **Boundary rules**: TUI (`src/tui/`) and CLI (`src/cli/commands/`) must not import directly from `src/services/` — use interfaces in `src/shared/interfaces/`
+- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `src/mcp/handlers/`
+
+---
+
 This document provides a comprehensive architectural overview of Exaix components using Mermaid diagrams. Exaix is available in **three editions** (Solo, Team, Enterprise) with components differentiated by availability.
 
 > **Edition Legend:** Components marked with 🟢 are available in all editions. Components marked with 🔵 require **Team+** edition. Components marked with 🟣 require **Enterprise** edition.

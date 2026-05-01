@@ -321,7 +321,7 @@ export class MyClass {
 
 ---
 
-## 4. Dependency Injection & Interfaces {#di-and-interfaces}
+## 5. Dependency Injection & Interfaces {#di-and-interfaces}
 
 - **Interface naming:** **All exported interfaces** (injectable or otherwise)
   **must** use the `IInterfaceName` prefix convention (starting with a capital `I`).
@@ -357,7 +357,7 @@ export class PlanExecutor {
 
 ---
 
-## 5. Environment Variables {#env-vars}
+## 6. Environment Variables {#env-vars}
 
 Environment‑variable rules were formalised in Phase 28 and are part of the
 style guide:
@@ -376,7 +376,7 @@ runtime bugs.
 
 ---
 
-## 6. Module Structure & Placement {#module-structure}
+## 7. Module Structure & Placement {#module-structure}
 
 - **Module Structure Order:** Every module **must** follow this specific structural order:
   1. **Header Comment:** A brief description of the module and the Implementation Plan step it satisfies (warning if missing).
@@ -387,7 +387,7 @@ runtime bugs.
 
 ---
 
-## 7. Module Boundaries & TUI Isolation {#tui-boundaries}
+## 8. Module Boundaries & TUI Isolation {#tui-boundaries}
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
 
@@ -413,7 +413,7 @@ Boundary checks run as part of the standard quality gates in pre-commit hooks an
 
 ---
 
-## 8. Module Boundaries & CLI Isolation {#cli-boundaries}
+## 9. Module Boundaries & CLI Isolation {#cli-boundaries}
 
 Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
 
@@ -436,22 +436,18 @@ These rules are enforced by:
 
 ---
 
-## 9. Related Documents {#related-docs}
+## 10. Related Documents {#related-docs}
 
-This file is the single source for code style. Original sections remain in the
-following documents only as cross‑references:
+This file is the single authoritative source for code style. The following documents reference it but do not duplicate its content:
 
-- [`CLAUDE.md`](CLAUDE.md)
-- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`CLAUDE.md`](CLAUDE.md) — delegates to this file for all style rules
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
 - [`.copilot/workflows/exaix-development.md`](.copilot/workflows/exaix-development.md)
 - [`.copilot/README.md`](.copilot/README.md)
 
-When editing those documents in the future, update the link above if this file's
-location changes.
-
 ---
 
-## 10. Function & Method Complexity {#complexity-rules}
+## 11. Function & Method Complexity {#complexity-rules}
 
 - **Parameter Limit:** Functions and methods **must not** exceed **7 parameters**.
 - If a method requires 8 or more parameters, it **must** be refactored to use:
@@ -462,7 +458,7 @@ location changes.
 
 ---
 
-## 11. Utility Scripting & Headers {#utility-scripts}
+## 12. Utility Scripting & Headers {#utility-scripts}
 
 - **Preferred Runtime**: Deno TypeScript is the strictly preferred runtime for all repository maintenance, automation, and CI/CD utility scripts. Avoid Bash or standalone Node.js scripts to leverage type safety and the Deno standard library.
 - **Shebang**: Every script in `scripts/` must begin with the standard Deno shebang:
