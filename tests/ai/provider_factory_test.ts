@@ -206,7 +206,7 @@ Deno.test("ProviderFactory: config ai.provider=mock creates MockLLMProvider", as
 // API Key Tests
 // ============================================================================
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: anthropic requires ANTHROPIC_API_KEY",
   withEnvVars({ EXA_LLM_PROVIDER: "anthropic", ANTHROPIC_API_KEY: "" }, async () => {
     // Ensure API key is not in secure store
@@ -222,7 +222,7 @@ Deno.test(
   }),
 );
 
-Deno.test(
+parallelSafeTest(
   "ProviderFactory: openai requires OPENAI_API_KEY",
   withEnvVars({ EXA_LLM_PROVIDER: "openai", OPENAI_API_KEY: "" }, async () => {
     // Ensure API key is not in secure store

@@ -6,6 +6,11 @@
 
 export * from "./src/types/enums.ts";
 export * from "./src/types/constants.ts";
+export { ActorType } from "./src/types/actor.ts";
+export type { Actor } from "./src/types/actor.ts";
+export type { ILogEvent } from "./src/types/i_log_event.ts";
+export { EventBusService } from "./src/observability/mod.ts";
+export type { IEventBusService } from "./src/observability/mod.ts";
 export * from "./src/version.ts";
 export * from "./src/status/mod.ts";
 export * from "./src/request/mod.ts";
