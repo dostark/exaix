@@ -7,7 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { TEST_MODEL_ANTHROPIC, TEST_PROVIDER_ID_ANTHROPIC } from "../config/constants.ts";
+import { TEST_MODEL_ANTHROPIC, TEST_PROVIDER_ID_ANTHROPIC } from "@exaix/testing";
 import {
   handleRequestAnalyze,
   handleRequestCreate,

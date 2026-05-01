@@ -18,7 +18,7 @@ import {
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import { RetryPolicy } from "../../src/services/core/retry_policy.ts";
+import { RetryPolicy } from "../../packages/core/src/request/retry_policy.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_STEP_RETRY } from "@exaix/core";
 import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core/types/json.ts";

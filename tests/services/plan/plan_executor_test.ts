@@ -13,8 +13,8 @@ import {
 } from "@exaix/core";
 import { join } from "@std/path";
 import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
-import { MockProvider } from "../../../src/ai/providers.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import { MockProvider } from "@exaix/ai/providers.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";

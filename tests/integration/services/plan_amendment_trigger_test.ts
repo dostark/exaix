@@ -9,8 +9,8 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 

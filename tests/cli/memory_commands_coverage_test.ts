@@ -34,7 +34,7 @@ import {
   TEST_SKILL_NAME,
   TEST_SKILL_REQUEST_TEXT,
   TEST_SKILL_TASK_TYPE,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 import { join } from "@std/path";
 
 /**

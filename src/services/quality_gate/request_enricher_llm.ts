@@ -9,7 +9,7 @@
  * @related-files [src/services/quality_gate/request_quality_gate.ts, src/services/quality_gate/llm_assessor.ts]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 
 // ---------------------------------------------------------------------------

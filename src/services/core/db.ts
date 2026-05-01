@@ -11,7 +11,7 @@ import { Database } from "@db/sqlite";
 import { join } from "@std/path";
 import { ensureDirSync } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
+import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";

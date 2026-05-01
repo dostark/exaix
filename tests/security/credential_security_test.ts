@@ -8,7 +8,7 @@
 import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { SecureCredentialStore } from "../../src/helpers/credential_security.ts";
+import { SecureCredentialStore } from "@exaix/core";
 
 // ============================================================================
 // Unit Tests for SecureCredentialStore

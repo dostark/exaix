@@ -9,7 +9,7 @@
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
 import { initTestDbService } from "../helpers/db.ts";
-import { createTestConfig } from "../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts";
 
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
@@ -19,7 +19,7 @@ import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executo
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
-import { MockProvider } from "../../src/ai/providers.ts";
+import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";

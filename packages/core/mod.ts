@@ -11,6 +11,8 @@ export type { Actor } from "./src/types/actor.ts";
 export type { ILogEvent } from "./src/types/i_log_event.ts";
 export { EventBusService } from "./src/observability/mod.ts";
 export type { IEventBusService } from "./src/observability/mod.ts";
+export type { ICostTracker } from "./src/types/i_cost_tracker.ts";
+export type { IDatabaseService } from "./src/types/i_database_service.ts";
 export * from "./src/version.ts";
 export * from "./src/status/mod.ts";
 export * from "./src/request/mod.ts";
@@ -20,4 +22,11 @@ export { PortalAnalysisMode, PortalExecutionStrategy, PortalOperation, PortalSta
 
 export type { JSONArray, JSONObject, JSONValue, LogMetadata } from "./src/types/json.ts";
 export { jsonExtract, JSONValueSchema, toSafeJson } from "./src/types/json.ts";
-export * from "./mod.ts";
+
+export { SecureCredentialStore } from "./src/helpers/credential_security.ts";
+export {
+  createAPIRetryPolicy,
+  createLLMRetryPolicy,
+  createRetryPolicy,
+  RetryPolicy,
+} from "./src/request/retry_policy.ts";

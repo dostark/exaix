@@ -18,7 +18,7 @@ import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledg
 import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
-import { MockLLMProvider } from "../../src/ai/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";

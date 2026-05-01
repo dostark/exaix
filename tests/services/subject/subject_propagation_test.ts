@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { DatabaseService } from "../../../src/services/core/db.ts";
-import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";
 import type { IApplicationContext } from "@exaix/core/types";

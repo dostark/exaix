@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IDatabaseService } from "../core/db.ts";
 import { AgentRunner } from "../agent/agent_runner.ts";
 import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";

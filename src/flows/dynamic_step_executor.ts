@@ -11,14 +11,9 @@
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
-import type { McpToolName } from "@exaix/mcp";
-import { READ_ONLY_TOOLS } from "@exaix/mcp";
+import { type McpToolName, READ_ONLY_TOOLS } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
-
-/**
- * Tool call arguments - JSON-compatible key-value pairs
- */
-export type ToolArgs = Record<string, JSONValue>;
+import type { ILlmClient, ToolArgs } from "@exaix/ai";
 
 /**
  * Journal entry for activity logging
@@ -69,30 +64,6 @@ export interface IMcpClient {
     inputSchema: Record<string, JSONValue>;
   }>;
 }
-
-/**
- * LLM client interface for reasoning about next action
- */
-export interface ILlmClient {
-  reasonNextAction(params: {
-    identity: IBlueprintFrontmatter;
-    stepObjective: string;
-    accumulatedContext: string;
-    availableTools: Array<{
-      name: string;
-      description: string;
-      inputSchema: Record<string, JSONValue>;
-    }>;
-    iteration: number;
-    maxIterations: number;
-  }): Promise<{
-    done: boolean;
-    tool?: McpToolName;
-    args?: ToolArgs;
-    output?: string;
-  }>;
-}
-
 /**
  * Activity journal interface for audit logging
  */

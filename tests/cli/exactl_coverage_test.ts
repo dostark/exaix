@@ -32,7 +32,7 @@ import type { IRequestOptions } from "@exaix/core/types/mod.ts";
 import type { RequestStatusType } from "@exaix/core";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
-import { TEST_MODEL_OPENAI } from "../config/constants.ts";
+import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 type IPruneWorktreesOptions = Parameters<GitService["pruneWorktrees"]>[0];
 

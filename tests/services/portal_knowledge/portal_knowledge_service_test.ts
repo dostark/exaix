@@ -12,7 +12,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalKnowledgeService } from "../../../src/services/portal_knowledge/portal_knowledge_service.ts";
 import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IDocCommandRunner } from "../../../src/services/portal_knowledge/symbol_extractor.ts";
 import { PortalAnalysisMode } from "@exaix/core";
 

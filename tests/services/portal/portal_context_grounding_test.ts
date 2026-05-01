@@ -11,7 +11,7 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
-import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";

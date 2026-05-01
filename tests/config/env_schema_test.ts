@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { withEnv } from "../helpers/env.ts";
+import { withEnv } from "@exaix/testing";
 import { getValidatedEnvOverrides } from "@exaix/core/config/env_schema.ts";
 
 Deno.test("EnvLLMOverride: returns empty object when no env vars set", async () => {

@@ -6,9 +6,9 @@
  */
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
-import { CritiqueQuality, CritiqueSeverity } from "@exaix/core";
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import { CritiqueQuality, CritiqueSeverity, TaskType } from "@exaix/core";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import {
   createCodeReviewReflexiveAgent,
   createHighQualityReflexiveAgent,
@@ -21,7 +21,6 @@ import {
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
-import { TaskType } from "@exaix/core";
 
 function makeXMLResponse(thought: string, content: string): string {
   return `<thought>${thought}</thought><content>${content}</content>`;

@@ -19,7 +19,7 @@ import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis
 import type { IDatabaseService } from "../core/db.ts";
 import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 
 export interface IRequestServiceConfig {

@@ -9,7 +9,7 @@
  * @related-files [src/services/quality_gate/heuristic_assessor.ts, src/services/quality_gate/request_quality_gate.ts]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   type IRequestQualityAssessment,

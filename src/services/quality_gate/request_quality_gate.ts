@@ -9,7 +9,7 @@
  * @related-files [src/services/quality_gate/mod.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";

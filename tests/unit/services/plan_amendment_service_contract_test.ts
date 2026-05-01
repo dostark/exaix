@@ -9,7 +9,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";

@@ -18,7 +18,7 @@ import {
 } from "../../src/tui/agent_status_view.ts";
 import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
 import type { IAgentService } from "@exaix/core/types";
-import { TEST_MODEL_OPENAI } from "../config/constants.ts";
+import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { AgentStatus } from "@exaix/core/status/agent_status.ts";
 import { AgentHealth, CritiqueSeverity, LogLevel } from "@exaix/core";
 import { TuiGroupBy } from "@exaix/tui";

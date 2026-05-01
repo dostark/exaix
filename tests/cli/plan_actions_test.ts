@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../config/constants.ts";
+import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import {
   handlePlanAmendmentApprove,
   handlePlanAmendmentApproveAll,

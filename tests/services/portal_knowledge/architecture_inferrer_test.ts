@@ -12,8 +12,8 @@ import {
   ArchitectureInferrer,
   type IArchitectureValidator,
 } from "../../../src/services/portal_knowledge/architecture_inferrer.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IValidationResult } from "../../../src/services/tool/output_validator.ts";
 import type { ICodeConvention, IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 import { ARCHITECTURE_INFERRER_MAX_FILE_TOKENS, ARCHITECTURE_INFERRER_TOKEN_BUDGET } from "@exaix/core";

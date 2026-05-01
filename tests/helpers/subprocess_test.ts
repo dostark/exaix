@@ -10,7 +10,7 @@ import {
   TEST_SUBPROCESS_ABORT_DELAY_MS,
   TEST_SUBPROCESS_LONG_RUNNING_MS,
   TEST_SUBPROCESS_TIMEOUT_MS_SHORT,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 import { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "../../src/helpers/subprocess.ts";
 
 function getDenoCmd(): string {

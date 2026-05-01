@@ -10,8 +10,9 @@ import {
   createAPIRetryPolicy,
   createLLMRetryPolicy,
   createRetryPolicy,
+  type IRetryContext,
   RetryPolicy,
-} from "../../../src/services/core/retry_policy.ts";
+} from "../../../packages/core/src/request/retry_policy.ts";
 
 // ============================================================================
 // RetryPolicy.execute() Tests
@@ -180,7 +181,7 @@ Deno.test("[RetryPolicy] increases temperature on retry", async () => {
   const temperatures: number[] = [];
 
   await policy.execute(
-    ({ temperature }) => {
+    ({ temperature }: { temperature: number }) => {
       temperatures.push(temperature);
       if (temperatures.length < 3) {
         return Promise.reject(new Error("timeout"));
@@ -210,7 +211,7 @@ Deno.test("[RetryPolicy] caps temperature at maxTemperature", async () => {
   const temperatures: number[] = [];
 
   await policy.execute(
-    ({ temperature }) => {
+    ({ temperature }: { temperature: number }) => {
       temperatures.push(temperature);
       if (temperatures.length < 5) {
         return Promise.reject(new Error("timeout"));
@@ -237,7 +238,7 @@ Deno.test("[RetryPolicy] calls onRetry callback", async () => {
 
   const retryContexts: { attempt: number }[] = [];
 
-  policy.setOnRetry((ctx) => {
+  policy.setOnRetry((ctx: IRetryContext) => {
     retryContexts.push({ attempt: ctx.attempt });
   });
 

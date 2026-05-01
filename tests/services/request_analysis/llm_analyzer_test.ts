@@ -8,9 +8,9 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MockProvider } from "../../../src/ai/providers.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import { MockProvider } from "@exaix/ai/providers.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   createOutputValidator,
   type IOutputSchemaName,

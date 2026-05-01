@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { HealthCheckService, type IHealthCheck } from "../../../src/services/core/health_check_service.ts";
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
-import { createTestConfig } from "../../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 
 class SlowCheck {

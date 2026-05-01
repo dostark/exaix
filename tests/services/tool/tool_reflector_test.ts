@@ -9,10 +9,10 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueSeverity } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
 
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import {
   createFastToolReflector,
   createStrictToolReflector,
@@ -21,7 +21,6 @@ import {
   type IToolResult,
   ToolReflectionSchema,
 } from "../../../src/services/tool/tool_reflector.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
 
 // ============================================================================
 // Mock LLM Provider

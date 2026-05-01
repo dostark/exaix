@@ -32,11 +32,11 @@ import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction, FlowStep
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
-import { LlmClient } from "../ai/llm_client.ts";
+import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ToolHandler } from "../mcp/tool_handler.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
-import { RetryPolicy } from "../services/core/retry_policy.ts";
+import { RetryPolicy } from "../../packages/core/src/request/retry_policy.ts";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
 import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";

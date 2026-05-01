@@ -16,7 +16,7 @@ import {
   TEST_EVENT_UNHANDLED_REJECTION,
   TEST_SIGNAL_SIGINT,
   TEST_SIGNAL_SIGTERM,
-} from "../../config/constants.ts";
+} from "@exaix/testing";
 
 /**
  * Tests for GracefulShutdown - Comprehensive Graceful Shutdown Handling

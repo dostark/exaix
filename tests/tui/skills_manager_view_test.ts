@@ -11,7 +11,7 @@ import { RequestStatus } from "@exaix/core";
 import type { ISkillSummary } from "../../src/tui/skills_manager_view.ts";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { createSkillsManagerTuiSession, sampleTestSkills, testSkillsSessionRender } from "./helpers.ts";
-import { TEST_MODEL_OPENAI } from "../config/constants.ts";
+import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { AgentStatusView, MinimalAgentServiceMock } from "../../src/tui/agent_status_view.ts";
 import { MinimalRequestServiceMock, RequestManagerView } from "../../src/tui/request_manager_view.ts";
 import type { IRequest } from "@exaix/core/types/mod.ts";

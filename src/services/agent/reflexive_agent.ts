@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
 import {
@@ -21,7 +21,7 @@ import {
 } from "./agent_runner.ts";
 import { createOutputValidator, type IOutputValidator } from "../tool/output_validator.ts";
 import { logDebug } from "@exaix/core/logger/structured_logger.ts";
-import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
+import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { LogMethod } from "../decorators/logging.ts";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";

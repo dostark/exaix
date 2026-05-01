@@ -8,7 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
-import { createTestConfig } from "../../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { ToolName } from "@exaix/core";
 
 Deno.test("ToolRegistry should include allowed roots in access denied error", async () => {

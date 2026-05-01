@@ -14,7 +14,7 @@
  * @related-files [src/services/request_analysis/mod.ts, "src/services/request/request_processor.ts"]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { IRequestAnalysisContext, IRequestAnalyzerConfig, IRequestAnalyzerService } from "@exaix/core/types";

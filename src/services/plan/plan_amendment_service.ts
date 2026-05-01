@@ -14,7 +14,7 @@ import type {
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD, PlanStatus } from "@exaix/core";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";

@@ -13,7 +13,7 @@ import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { createTestConfig } from "../../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 

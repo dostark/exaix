@@ -5,8 +5,8 @@
  * stable control over agent responses, token usage, and error states.
  */
 
-import type { IModelProvider } from "../../src/ai/types.ts";
-import type { IGenerateResult } from "../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import { makeGenerateResult } from "./test_helpers.ts";
 
 /**

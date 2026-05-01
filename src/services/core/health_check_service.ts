@@ -7,7 +7,7 @@
  * @related-files [src/main.ts, "src/services/core/db.ts"]
  */
 import type { DatabaseService } from "../core/db.ts";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
   BYTES_PER_KB,
@@ -19,7 +19,7 @@ import {
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { LogMethod } from "../decorators/logging.ts";
-import { CircuitBreaker } from "../../ai/circuit_breaker.ts";
+import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "../common/types.ts";

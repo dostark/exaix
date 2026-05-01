@@ -19,7 +19,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GitService } from "../core/git_service.ts";
 import type { IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";

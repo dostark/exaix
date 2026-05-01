@@ -10,16 +10,15 @@ import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config/service.ts";
 import { GitService } from "../services/core/git_service.ts";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import { ProviderFactory } from "../ai/provider_factory.ts";
+import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "../flows/flow_loader.ts";
-import { ExaPathDefaults } from "@exaix/core";
+import { ActivityActor, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
-import type { IModelProvider } from "../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
-import { ActivityActor } from "@exaix/core";
 
 // Concrete services for adapters
 import { MemoryBankService } from "../services/memory/memory_bank.ts";

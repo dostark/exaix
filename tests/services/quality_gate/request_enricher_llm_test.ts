@@ -9,8 +9,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import {
   type IRequestQualityIssue,
   RequestQualityIssueSeverity,

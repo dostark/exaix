@@ -8,10 +8,10 @@
  * @related-files ["src/services/agent/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config/service.ts";
-import { DaemonStatus, type LogLevel } from "@exaix/core";
+import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
 import { FileWatcher } from "./services/utils/watcher.ts";
 import { DatabaseService } from "./services/core/db.ts";
-import { ProviderFactory } from "./ai/provider_factory.ts";
+import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "./services/request/request_processor.ts";
 import { ReviewRegistry } from "./services/artifact/review_registry.ts";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
@@ -37,7 +37,6 @@ import type { ILogOutput } from "@exaix/core/types/mod.ts";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import { GitService } from "./services/core/git_service.ts";
 import type { IApplicationContext } from "@exaix/core/types";
-import { DAEMON_IDENTITY_ID, DEFAULT_IDENTITIES_PATH } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 if (import.meta.main) {

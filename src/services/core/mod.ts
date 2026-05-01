@@ -12,5 +12,5 @@ export * from "@exaix/core/logger/event_logger.ts";
 export * from "./audit_logger.ts";
 export * from "./health_check_service.ts";
 export * from "./graceful_shutdown.ts";
-export * from "./retry_policy.ts";
+export * from "../../../packages/core/src/request/retry_policy.ts";
 export * from "./git_service.ts";

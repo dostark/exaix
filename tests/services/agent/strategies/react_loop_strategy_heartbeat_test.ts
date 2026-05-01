@@ -10,8 +10,8 @@ import { ReActLoopStrategy } from "../../../../src/services/agent/strategies/rea
 import { EventBusService } from "@exaix/core/observability/mod.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "../../../../src/services/agent/agent_executor.ts";
-import type { IModelProvider } from "../../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {

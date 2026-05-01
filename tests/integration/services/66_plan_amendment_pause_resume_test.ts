@@ -12,7 +12,7 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { IGenerateResult, IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";

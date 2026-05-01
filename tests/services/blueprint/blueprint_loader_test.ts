@@ -17,7 +17,7 @@ import {
   createBlueprintLoader,
   loadBlueprint,
 } from "../../../src/services/blueprint/blueprint_loader.ts";
-import { TEST_MODEL_OPENAI } from "../../config/constants.ts";
+import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // Test directory setup

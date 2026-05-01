@@ -9,7 +9,7 @@
  */
 
 import { basename, dirname, join } from "@std/path";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { DatabaseService } from "../core/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
@@ -50,12 +50,11 @@ import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
-import { ProviderFactory } from "../../ai/provider_factory.ts";
-import { ProviderSelector } from "../../ai/provider_selector.ts";
-import { ProviderRegistry } from "../../ai/provider_registry.ts";
+import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
+import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "../cost/cost_tracker.ts";
 import { HealthCheckService } from "../core/health_check_service.ts";
-import { CircuitBreaker, CircuitBreakerProvider } from "../../ai/circuit_breaker.ts";
+import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
 import { LogMethod } from "../decorators/logging.ts";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";

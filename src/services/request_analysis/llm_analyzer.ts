@@ -9,7 +9,7 @@
  * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 import {
   type IRequestAnalysis,

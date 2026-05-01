@@ -33,7 +33,7 @@ import {
   JOURNAL_TRACE_ID_TWO,
   JOURNAL_TRUNCATE_MAX,
   JournalAction,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 
 const baseActivities: ActivityRecord[] = [
   {

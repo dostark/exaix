@@ -10,7 +10,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";

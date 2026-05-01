@@ -35,7 +35,7 @@ import {
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
 } from "@exaix/ai";
 import { PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
-import type { IProviderFactory } from "../../src/ai/factories/abstract_provider_factory.ts";
+import type { IProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
 import {
   TEST_AI_INVALID_URL,
   TEST_CUSTOM_PROVIDER_CAPABILITY,
@@ -49,10 +49,9 @@ import {
   TEST_EMPTY_STRING,
   TEST_RETRY_BACKOFF_BASE_MS_ZERO,
   TEST_RETRY_MAX_ATTEMPTS_SINGLE,
-} from "./constants.ts";
+} from "@exaix/testing";
 
-import type { IGenerateResult } from "../../src/ai/providers/common.ts";
-
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 const customProviderFactory: IProviderFactory = {
   create: () =>
     Promise.resolve({

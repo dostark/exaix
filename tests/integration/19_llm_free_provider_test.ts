@@ -11,9 +11,9 @@
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ModelFactory } from "../../src/ai/providers.ts";
+import { ModelFactory } from "@exaix/ai/providers.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
-import { getTestModel } from "../ai/helpers/test_model.ts";
+import { getTestModel } from "../../packages/ai/tests/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai";
 import type { IApplicationContext } from "@exaix/core/types";

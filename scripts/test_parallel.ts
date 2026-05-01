@@ -38,8 +38,11 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/24_portal_e2e_workflow_test.ts",
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",
   "tests/services/deploy/deploy_workspace_test.ts",
+  "tests/cli/review_commands_test.ts",
   "tests/cli/exactl_all_test.ts",
-  "tests/ai/provider_factory_test.ts",
+  "packages/ai/tests/providers/free_providers_test.ts",
+  "packages/ai/tests/providers/openai_shim_retry_test.ts",
+  "packages/ai/tests/provider_factory_test.ts",
 ];
 
 interface TestStats {
@@ -378,9 +381,10 @@ export async function main(args: string[]): Promise<number> {
   // Batch 1: full test suite in parallel
   // ---------------------------------------------------------------------------
   const batch1Env: Record<string, string> = { ...Deno.env.toObject(), DENO_JOBS: "8" };
+  const batch1IgnoreArg = `--ignore=${SEQUENTIAL_FILES.join(",")}`;
 
   const batch1Stats = await runAndCapture(
-    ["--parallel", ...forwardedArgs],
+    ["--parallel", batch1IgnoreArg, ...forwardedArgs],
     "Batch 1 – Parallel suite",
     batch1Env,
     reporter,

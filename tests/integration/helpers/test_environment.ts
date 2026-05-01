@@ -6,7 +6,7 @@
  * integration tests, including workspace setup, Git mock repositories, and DB initialization.
  */
 
-import type { IRecordedResponse } from "../../../src/ai/providers/mock_llm_provider.ts";
+import type { IRecordedResponse } from "@exaix/ai/providers/mock_llm_provider.ts";
 /**
  * Test Environment Helper for Integration Tests
  *
@@ -21,7 +21,7 @@ import { copySync, ensureDir, exists } from "@std/fs";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";

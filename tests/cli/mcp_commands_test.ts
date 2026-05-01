@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { MCPServer } from "../../src/mcp/server.ts";
 import { McpCommands } from "../../src/cli/commands/mcp_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { TEST_MCP_DEFAULT_PORT, TEST_MCP_PORT } from "../config/constants.ts";
+import { TEST_MCP_DEFAULT_PORT, TEST_MCP_PORT } from "@exaix/testing";
 
 Deno.test("McpCommands.start(sse): calls MCPServer.startHTTPServer with requested/default port", async () => {
   const { context, cleanup } = await createCliTestContext();

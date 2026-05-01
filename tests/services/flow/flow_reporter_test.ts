@@ -15,7 +15,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IFlowResult, IStepResult } from "../../../src/flows/flow_runner.ts";
-import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "../../config/constants.ts";
+import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 

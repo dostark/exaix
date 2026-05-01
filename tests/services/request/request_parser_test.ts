@@ -26,7 +26,7 @@ import {
   TEST_REQUEST_STATUS_UNKNOWN,
   TEST_REQUEST_STATUS_VALID,
   TEST_REQUEST_TRACE_ID,
-} from "../../config/constants.ts";
+} from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 
 interface LoggedError {

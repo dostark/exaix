@@ -26,7 +26,7 @@ import {
   TEST_SKILL_ID_LEARNED,
   TEST_SKILL_ID_USER,
   TEST_UNKNOWN_PROPOSAL_ID,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 
 Deno.test("MockPortalService: returns portals", async () => {
   const service = new MockPortalService();

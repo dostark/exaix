@@ -11,10 +11,10 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/services/request/request_processor.ts";
 
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import { ProviderRegistry } from "../../../src/ai/provider_registry.ts";
-import { MockProviderFactory } from "../../../src/ai/factories/mock_factory.ts";
-import { MockLLMProvider } from "../../../src/ai/providers/mock_llm_provider.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import { ProviderRegistry } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
+import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";

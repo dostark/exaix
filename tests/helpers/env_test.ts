@@ -5,7 +5,7 @@
  * stable nesting and restoration across synchronous and asynchronous tests.
  */
 
-import { withEnv } from "./env.ts";
+import { withEnv } from "@exaix/testing";
 import { assertEquals } from "@std/assert";
 
 Deno.test("withEnv sets and restores env vars (sync)", async () => {

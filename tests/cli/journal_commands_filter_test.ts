@@ -32,7 +32,7 @@ import {
   JOURNAL_TRACE_ID_ONE,
   JOURNAL_UNKNOWN_FILTER_PREFIX,
   JournalAction,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 
 Deno.test("JournalCommands maps explicit options into query filters", async () => {
   const { db, config, cleanup } = await initTestDbService();

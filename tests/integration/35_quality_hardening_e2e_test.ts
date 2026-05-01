@@ -12,8 +12,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { CritiqueQuality } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
+import { ANALYZER_VERSION, CritiqueQuality, RequestStatus } from "@exaix/core";
 import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.ts";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";
@@ -22,11 +21,10 @@ import { createOutputValidator } from "../../src/services/tool/output_validator.
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
-import type { IGenerateResult } from "../../src/ai/providers/common.ts";
-import type { IModelProvider } from "../../src/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
-import { ANALYZER_VERSION } from "@exaix/core";
 import {
   ANALYSIS_COMPLEX_BULLET_THRESHOLD,
   ANALYSIS_COMPLEX_CHAR_THRESHOLD,

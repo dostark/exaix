@@ -5,7 +5,8 @@
  * @architectural-layer MCP
  * @related-files [src/mcp/tool_handler.ts, src/flows/dynamic_step_executor.ts]
  */
-import type { IMcpClient, ToolArgs } from "../flows/dynamic_step_executor.ts";
+import type { ToolArgs } from "@exaix/ai";
+import type { IMcpClient } from "../flows/dynamic_step_executor.ts";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { IApplicationContext } from "@exaix/core/types";

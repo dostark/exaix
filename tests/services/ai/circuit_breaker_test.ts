@@ -6,8 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { CircuitBreaker } from "../../../src/ai/circuit_breaker.ts";
-
+import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 Deno.test("CircuitBreaker opens after failure threshold and recovers", async () => {
   const cb = new CircuitBreaker({
     failureThreshold: 2,

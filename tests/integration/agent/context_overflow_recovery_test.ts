@@ -14,7 +14,7 @@ import { PortalPermissionsService } from "../../../src/services/portal/portal_pe
 import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import { createTestConfig } from "../../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 

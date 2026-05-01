@@ -21,7 +21,7 @@ import type { EventLogger, IEventLogger } from "@exaix/core/logger/event_logger.
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
 import type { JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { LogLevel } from "@exaix/core";
-import { createTestConfig } from "../ai/helpers/test_config.ts";
+import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts";
 
 type IMockFlowRunner = IFlowRunner & {
   executedFlows: Array<{ flow: IFlow; request: { userPrompt: string; traceId?: string; requestId?: string } }>;

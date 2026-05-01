@@ -13,8 +13,8 @@
  * @related-files ["src/services/request/request_processor.ts", "src/services/blueprint/blueprint_loader.ts"]
  */
 
-import type { IModelProvider } from "../../ai/types.ts";
-import type { IGenerateResult } from "../../ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import { toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
@@ -27,7 +27,7 @@ import {
   type IRetryPolicy,
   type IRetryPolicyConfig,
   type IRetryResult,
-} from "../core/retry_policy.ts";
+} from "../../../packages/core/src/request/retry_policy.ts";
 
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { extractKeywords } from "../../helpers/text.ts";

@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";

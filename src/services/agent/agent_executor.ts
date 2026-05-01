@@ -15,7 +15,7 @@ import type { DatabaseService } from "../core/db.ts";
 import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { PathResolver } from "../portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../portal/portal_permissions.ts";
-import type { IModelProvider } from "../../ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import { SafeError } from "@exaix/core/errors/safe_error.ts";
 import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";

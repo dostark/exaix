@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { withEnv } from "../helpers/env.ts";
+import { withEnv } from "@exaix/testing";
 import { isCIMode, isTestMode } from "@exaix/core/config/env_schema.ts";
 
 Deno.test({

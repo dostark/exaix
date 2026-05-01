@@ -15,8 +15,8 @@ import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_ass
 import { QualityGateMode } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { ILogEvent } from "@exaix/core";
-import type { IModelProvider } from "../../../src/ai/types.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import { buildQualityGateConfig, RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
 import type { IRequestQualityGateConfig } from "@exaix/core/types";
 import {

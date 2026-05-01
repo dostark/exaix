@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
 import type { ICommandContext } from "../../src/cli/base.ts";
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
-import { TEST_MODEL_ANTHROPIC } from "../config/constants.ts";
+import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 import {
   TEST_BLUEPRINT_ERROR_MISSING_FRONTMATTER,
   TEST_BLUEPRINT_MISSING_AGENT_ID,
@@ -25,7 +25,7 @@ import {
   TEST_BLUEPRINT_YAML_MODEL,
   TEST_BLUEPRINT_YAML_NAME,
   TEST_BLUEPRINT_YAML_VERSION,
-} from "../config/constants.ts";
+} from "@exaix/testing";
 
 // ============================================================================
 // Test Setup

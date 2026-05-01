@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { tokenMapperAnthropic, tokenMapperGoogle, tokenMapperOpenAI } from "../../../src/ai/provider_common_utils.ts";
+import { tokenMapperAnthropic, tokenMapperGoogle, tokenMapperOpenAI } from "@exaix/ai/provider_common_utils.ts";
 import { COST_RATE_ANTHROPIC, COST_RATE_GOOGLE, COST_RATE_OPENAI } from "@exaix/core";
 import {
   TEST_COMPLETION_TOKENS_ANTHROPIC,
@@ -27,7 +27,7 @@ import {
   TEST_TOTAL_TOKENS_ANTHROPIC,
   TEST_TOTAL_TOKENS_GOOGLE,
   TEST_TOTAL_TOKENS_OPENAI,
-} from "../../config/constants.ts";
+} from "@exaix/testing";
 
 Deno.test("[regression] Token usage logged at info level with cost calculation", () => {
   // Test that tokenMapperGoogle includes cost calculation

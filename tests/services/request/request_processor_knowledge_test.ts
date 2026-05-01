@@ -14,8 +14,8 @@ import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/serv
 import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, PortalOperation, RequestStatus } from "@exaix/core";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
-import type { IModelProvider } from "../../../src/ai/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   makeKnowledge,
   makeMockKnowledgeService,
