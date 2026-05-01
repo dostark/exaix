@@ -50,15 +50,18 @@ Before proposing or implementing changes:
 
 ## Quick Reference
 
-| Need                 | Location                                                                           |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)                         |
-| Source patterns      | [.copilot/workflows/exaix-development.md](.copilot/workflows/exaix-development.md) |
-| Testing patterns     | [.copilot/workflows/testing.md](.copilot/workflows/testing.md)                     |
-| Documentation guide  | [.copilot/workflows/documentation.md](.copilot/workflows/documentation.md)         |
-| Commit message guide | [.copilot/workflows/commit.md](.copilot/workflows/commit.md)                       |
-| Planning documents   | [.copilot/planning/](.copilot/planning/)                                           |
-| All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                                   |
+| Need                 | Location                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
+| Source patterns      | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
+| Testing patterns     | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
+| Documentation guide  | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
+| Commit skill         | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
+| Plan skill           | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
+| Next-steps skill     | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
+| Slash commands       | [.copilot/commands/](.copilot/commands/)                                             |
+| Planning documents   | [.copilot/planning/](.copilot/planning/)                                             |
+| All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                                     |
 
 ## Project Overview
 
@@ -223,24 +226,26 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 .copilot/
 ├── manifest.json       # Index of all agent docs (auto-generated)
 ├── cross-reference.md  # Task → Document quick reference
-├── workflows/          # Task-specific workflows and guidelines
-├── process/            # Development processes
-├── prompts/            # Example prompts for various tasks
-├── providers/          # Provider-specific guidance (Claude, OpenAI, etc.)
+├── commands/           # Slash commands (description: field, injected as user message)
+├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
+├── guidelines/         # Reference guidelines and process documents
+├── providers/          # Provider-specific guidance (Claude, OpenAI, Google)
 ├── planning/           # Phase planning documents
 └── chunks/             # Pre-chunked docs for RAG (auto-generated)
 ```
 
 ### When to Consult .copilot/
 
-| Task                  | Consult                                   |
-| --------------------- | ----------------------------------------- |
-| Writing tests         | `.copilot/workflows/testing.md`           |
-| Adding features       | `.copilot/workflows/exaix-development.md` |
-| Refactoring           | `.copilot/workflows/exaix-development.md` |
-| Documentation         | `.copilot/workflows/documentation.md`     |
-| Planning/roadmap      | `.copilot/planning/*.md`                  |
-| Finding the right doc | `.copilot/cross-reference.md`             |
+| Task                  | Consult                                                   |
+| --------------------- | --------------------------------------------------------- |
+| Writing tests         | `.copilot/guidelines/testing.md`                          |
+| Adding features       | `.copilot/guidelines/exaix-development.md`                |
+| Refactoring           | `.copilot/guidelines/exaix-development.md`                |
+| Documentation         | `.copilot/guidelines/documentation.md`                    |
+| Commit message        | `.copilot/skills/commit/SKILL.md`                         |
+| Planning/roadmap      | `.copilot/skills/plan/SKILL.md`, `.copilot/planning/*.md` |
+| Slash commands        | `.copilot/commands/`                                      |
+| Finding the right doc | `.copilot/cross-reference.md`                             |
 
 ## Key Patterns & Constraints
 
@@ -308,7 +313,7 @@ Check `.copilot/planning/` for:
 ### "Add a new feature"
 
 1. Check `.copilot/planning/` for relevant phase
-2. Consult `.copilot/workflows/exaix-development.md` for patterns
+2. Consult `.copilot/guidelines/exaix-development.md` for patterns
 3. Write failing tests first, then implement
 4. Run `deno run -A scripts/ci.ts all` before marking complete
 

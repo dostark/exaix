@@ -10,170 +10,44 @@ topics: ["provider-adaptations", "prompts", "tdd", "refactoring", "debugging", "
 
 ## Overview
 
-Claude 3.5 Sonnet provides a 200k context window and excellent reasoning capabilities. This guide provides task-specific prompt templates (including TDD test patterns), thinking protocols, and tool-use patterns optimized for Exaix development.
+Claude Sonnet 4.6 provides a 200k context window and excellent reasoning capabilities. This guide provides task-specific prompt templates (including TDD test patterns), thinking protocols, and tool-use patterns optimized for Exaix development.
 
 ## Self-improvement loop
 
 When Claude lacks enough Exaix-specific guidance to proceed safely, patch `.copilot/` during the task (minimal + test-backed), then continue.
 
-- Process: `.copilot/process/self-improvement.md`
-- Copy/paste template: `.copilot/prompts/self-improvement-loop.md`
+- Process: `.copilot/guidelines/self-improvement.md`
+- Copy/paste template: `.copilot/guidelines/self-improvement.md#template`
 - Claude-specific tip: use the thinking protocol to (1) list concrete instruction gaps, (2) propose the smallest doc patch, (3) rebuild/validate `.copilot/` artifacts, then (4) resume the primary task.
 
 ## Task-Specific System Prompts
 
 ### TDD Workflow
 
+Use `initTestDbService()` or `createCliTestContext()` for test setup. Propose 2-3 failing tests first, then implement the minimal code to pass them.
+
 **System prompt:**
+> "You are a TDD assistant for Exaix. Before implementing, propose 2-3 failing unit tests with explicit assertions. After tests fail, implement the minimum code to pass them. Clean up resources in `finally` blocks."
 
-`````text
-You are a test-driven development assistant for Exaix. Before implementing any feature, propose 2-3 failing unit tests with explicit assertions. Use `initTestDbService()` or `createCliTestContext()` for test setup. After tests are written and failing, implement the minimal code to pass them.
-
-Key patterns:
-
-- Read Implementation Plan step first
-- Write failing tests with clear assertions
-- Implement minimal code to pass
-- Verify coverage with `deno test --coverage`
-- Clean up test resources in finally blocks
-
-**Example interaction:**
-
-User: "Add error handling for missing config files in ConfigLoader"
-
-Claude response:
-
-````text
-<thinking>
-The ConfigLoader needs to handle missing files gracefully. I'll propose tests first, then implement.
-
-Tests needed:
-
-1. Missing file returns default config
-
-1.
-</thinking>
-
-Here are 3 failing tests:
-
-```typescript
-import { assertEquals, assertRejects } from "https://deno.land/std@0.203.0/assert/mod.ts";
-import { ConfigLoader } from "../src/config/loader.ts";
-import { createCliTestContext } from "./helpers/test_context.ts";
-import { join } from "https://deno.land/std@0.203.0/path/mod.ts";
-
-Deno.test("ConfigLoader: missing file returns default config", async () => {
-  const { tempDir, cleanup } = await createCliTestContext();
-  try {
-    const loader = new ConfigLoader(join(tempDir, "nonexistent.toml"));
-    const cfg = await loader.load();
-    assertEquals(cfg.mode, "sandboxed"); // default mode
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("ConfigLoader: invalid TOML throws clear error", async () => {
-  const { tempDir, cleanup } = await createCliTestContext();
-  try {
-    await Deno.writeTextFile(join(tempDir, "bad.toml"), "mode = [[[invalid");
-    const loader = new ConfigLoader(join(tempDir, "bad.toml"));
-    await assertRejects(
-      () => loader.load(),
-      Error,
-      "Invalid TOML syntax"
-    );
-  } finally {
-    await cleanup();
-  }
-});
-
-Deno.test("ConfigLoader: partial config merges with defaults", async () => {
-  const { tempDir, cleanup } = await createCliTestContext();
-  try {
-    await Deno.writeTextFile(join(tempDir, "partial.toml"), 'mode = "hybrid"');
-    const loader = new ConfigLoader(join(tempDir, "partial.toml"));
-    const cfg = await loader.load();
-    assertEquals(cfg.mode, "hybrid");
-    assertEquals(cfg.portals, []); // default value
-  } finally {
-    await cleanup();
-  }
-});
-````text
-
-Now run these tests (they should fail), then I'll implement the error handling.
-
-```text
 ### Refactoring
 
+Before changing code: read existing implementation and related tests. Never refactor without tests proving equivalence.
+
 **System prompt:**
-```text
+> "You are a refactoring assistant for Exaix. Before changing code: (1) read the implementation and tests, (2) propose equivalence tests, (3) refactor incrementally, (4) verify tests still pass."
 
-You are a refactoring assistant for Exaix. Before changing code:
-
-1. Read the existing implementation and all related tests
-
-1.
-1.
-
-Never refactor without tests proving equivalence.
-
-```text
-**Example interaction:**
-
-User: "Extract database initialization logic into a shared helper"
-
-Claude response:
-```text
-
-<thinking>
-Need to identify all places using database initialization, create a shared helper, and migrate incrementally.
-
-Steps:
-
-1. Search for database initialization patterns
-
-1.
-1.
-1.
-   </thinking>
-
-I'll search for existing patterns first, then propose a consolidated helper.
-
-```text
 ### Debugging
 
+Process: read error → reproduce → diagnose root cause → implement minimal fix → add regression test.
+
 **System prompt:**
-```text
+> "You are a debugging assistant for Exaix. Process: (1) read error messages and Implementation Plan step, (2) reproduce the bug in a test, (3) diagnose root cause, (4) implement minimal fix, (5) add regression test."
 
-You are a debugging assistant for Exaix. Process:
-
-1. Read error messages, stack traces, and the Implementation Plan step
-
-1.
-1.
-1.
-
-Always add a regression test for bugs.
-
-```text
 ### Documentation
 
 **System prompt:**
-```text
+> "You are a documentation assistant for Exaix. Workflow: (1) check the Implementation Plan for the related step, (2) update docs to match implementation, (3) keep docs concise and synchronized with the Plan."
 
-You are a documentation assistant for Exaix. Workflow:
-
-1. Check the Implementation Plan for the related step
-
-1.
-1.
-1.
-
-Keep docs concise and synchronized with Implementation Plan.
-
-```text
 ## Thinking Protocol for Complex Tasks
 
 Claude excels when given space to plan before acting. For multi-step work:
@@ -210,8 +84,8 @@ Plan:
    </thinking>
 
 [Execute tool calls for reading files, then provide implementation]
+```
 
-````text
 ## Tool-Use Patterns for Claude
 
 ### Parallel Reads (Context Gathering)
@@ -221,26 +95,22 @@ Plan:
 <antml_function_calls>
 <antml_invoke name="read_file">
 <antml_parameter name="filePath">src/services/plan_writer.ts</antml_parameter>
-<antml_parameter name="startLine">1</antml_parameter>
-<antml_parameter name="endLine">100</antml_parameter>
 </antml_invoke>
 <antml_invoke name="read_file">
 <antml_parameter name="filePath">tests/plan_writer_test.ts</antml_parameter>
-<antml_parameter name="startLine">1</antml_parameter>
-<antml_parameter name="endLine">100</antml_parameter>
 </antml_invoke>
 <antml_invoke name="grep_search">
 <antml_parameter name="query">PlanWriter</antml_parameter>
 <antml_parameter name="isRegexp">false</antml_parameter>
 </antml_invoke>
 </antml_function_calls>
-````text
+```
 
 ❌ **Avoid: Sequential reads**
 
-```text
+```
 Read file 1 → wait for result → read file 2 → wait for result → read file 3
-```text
+```
 
 ### Incremental Updates for Multi-Step Tasks
 
@@ -259,7 +129,7 @@ Use `manage_todo_list` to track progress:
 
 ## Token Budget Strategies
 
-- **Claude 3.5 Sonnet**: 200k context window
+- **Claude Sonnet 4.6**: 200k context window
 - **Recommended**: Include `short_summary` + 4-6 chunks (~2-3k tokens) for high-confidence tasks
 - **Maximum**: 10-12 chunks (~5-6k tokens) for complex multi-file refactoring
 - **Prefer explicit instruction**: "Consult `.copilot/manifest.json` and include `short_summary` and up to 4 chunks relevant to the task"
@@ -273,7 +143,7 @@ Use `manage_todo_list` to track progress:
 ```typescript
 const { db, tempDir, cleanup } = await initTestDbService();
 // test code without cleanup
-```text
+```
 
 ✅ **Good:**
 
@@ -284,7 +154,7 @@ try {
 } finally {
   await cleanup();
 }
-```text
+```
 
 ### 2. Not checking Implementation Plan
 
@@ -305,14 +175,14 @@ try {
 ```typescript
 const filePath = userInput;
 await Deno.readTextFile(filePath);
-```text
+```
 
 ✅ **Good:**
 
 ```typescript
 const filePath = pathResolver.resolve(userInput); // validates against Portal permissions
 await Deno.readTextFile(filePath);
-```text
+```
 
 ### 5. Hardcoding paths
 
@@ -320,13 +190,13 @@ await Deno.readTextFile(filePath);
 
 ```typescript
 "/home/user/Exaix/Workspace/Active";
-```text
+```
 
 ✅ **Good:**
 
 ```typescript
 join(workspaceRoot, "Workspace", "Active"); // use PathResolver
-```text
+```
 
 ### 6. Missing activity logging
 
@@ -336,7 +206,7 @@ join(workspaceRoot, "Workspace", "Active"); // use PathResolver
 
 ```typescript
 await eventLogger.log({ type: "file_write", path, result: "success" });
-```text
+```
 
 ### 7. Using deprecated Deno APIs
 
@@ -344,13 +214,13 @@ await eventLogger.log({ type: "file_write", path, result: "success" });
 
 ```typescript
 Deno.run({ cmd: ["deno", "test"] });
-```text
+```
 
 ✅ **Good:**
 
 ```typescript
 new Deno.Command("deno", { args: ["test"] }).output();
-```text
+```
 
 ### 8. Not validating frontmatter
 
@@ -376,7 +246,92 @@ new Deno.Command("deno", { args: ["test"] }).output();
 
 ## Resources
 
-- [Exaix Documentation Portal](https://docs.exaix.dev)
-- [Internal API Reference](https://api.exaix.dev)
-- [Security Guidelines](https://security.exaix.dev)
-`````
+- [Cross-Reference Map](./../cross-reference.md) — task → doc quick reference
+- [Testing Guidelines](./../guidelines/testing.md) — test helpers and patterns
+- [Development Guidelines](./../guidelines/exaix-development.md) — service architecture
+- [Security Guidelines](./../guidelines/security-review.md) — security review process
+
+---
+
+## Cross-Reference Navigation
+
+When starting a task, use the cross-reference map to find relevant docs before acting.
+
+**Pattern:**
+```
+I want to [task type].
+First, consult `.copilot/cross-reference.md` for the workflow. Find my task type and read the relevant docs. Then proceed.
+```
+
+**Examples by task type:**
+- `add feature` → `.copilot/guidelines/exaix-development.md`, `.copilot/skills/plan/SKILL.md`
+- `write tests` → `.copilot/guidelines/testing.md`
+- `fix TypeScript errors` → `.copilot/guidelines/exaix-development.md`
+- `security audit` → `.copilot/guidelines/security-review.md`
+- `embeddings/RAG` → `.copilot/providers/claude.md` (this file)
+
+After finding the task type, read the listed docs, then act on the primary task.
+
+---
+
+## Refactoring with Extended Thinking
+
+For complex refactoring, use explicit `<thinking>` blocks before each major step.
+
+**Prompt template:**
+```
+I need to refactor [component] to [goal].
+
+Use your thinking protocol:
+<thinking>
+1. ANALYZE: Read relevant files, check dependencies, identify risks
+2. PLAN: List tool calls needed (parallel reads where possible)
+3. EXECUTE: Make changes incrementally
+4. SYNTHESIZE: Verify tests pass, coverage maintained
+5. VERIFY: Check planning document requirements met
+</thinking>
+
+Requirements from .copilot/:
+- Follow Service Pattern from .copilot/guidelines/exaix-development.md
+- Maintain test coverage per .copilot/guidelines/testing.md
+- Update docs per .copilot/guidelines/documentation.md
+- Use PathResolver for all file operations
+- Log changes with EventLogger
+```
+
+**Expected response shape:** Claude shows `<thinking>` for each ANALYZE/PLAN/EXECUTE/SYNTHESIZE/VERIFY phase before executing tool calls.
+
+---
+
+## Systematic Debugging Protocol
+
+For bugs, use a structured 5-phase approach: Inject → Reproduce → Diagnose → Fix → Verify.
+
+**Prompt template:**
+```
+I have a bug: [description]
+
+1. CONTEXT: Inject .copilot/ context relevant to the failing area (4-6 chunks).
+2. REPRODUCE: Write a failing test. Run it. Show exact error message.
+3. DIAGNOSE: <thinking> Expected vs Actual vs Gap vs Files involved </thinking>
+4. FIX: Implement minimal fix. Verify test passes. Check no regressions.
+5. VERIFY: Add regression test. Update planning doc if needed.
+
+Error type: [TypeScript error / runtime error / test failure / logic bug]
+Component: [specific file or module]
+```
+
+**Example (test failure):**
+```
+I have a bug: tests/config_test.ts fails with "Database connection not cleaned up"
+
+1. Run: deno test --allow-all tests/config_test.ts — show exact error
+2. <thinking>
+   - Expected: cleanup() in finally block
+   - Actual: cleanup() called conditionally
+   - Gap: test setup doesn't guarantee cleanup
+   - Files: tests/config_test.ts, tests/helpers/db.ts
+   </thinking>
+3. Check if cleanup is in try/finally; fix if not
+4. Add regression test with proper cleanup pattern
+```

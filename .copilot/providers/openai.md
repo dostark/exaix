@@ -47,8 +47,8 @@ Ask-when-ambiguous rule
 
 Self-improvement loop
 - If you discover an instruction gap mid-task (missing examples, missing commands, missing invariants), patch `.copilot/` as part of the work:
-- Process: `.copilot/process/self-improvement.md`
-- Template: `.copilot/prompts/self-improvement-loop.md`
+- Process: `.copilot/guidelines/self-improvement.md`
+- Template: `.copilot/guidelines/self-improvement.md#template`
 - Keep the patch minimal and task-scoped; rebuild/validate `.copilot/` artifacts before continuing.
 
 RAG usage for OpenAI
@@ -84,4 +84,40 @@ Token guidance
 
 Maintenance
 - After updating this doc: rebuild manifest, regenerate chunks/embeddings (mock or openai), then run `validate_agents_docs.ts`.
+```
+
+---
+
+## Provider-Specific Workflow Notes
+
+### Quickstart (OpenAI)
+
+Before acting, retrieve context from `.copilot/` using `inject_agent_context.ts --agent openai`.
+Output format is mandatory: **Files → Plan → Diffs → Verification**. Cite agent doc paths used.
+Ask 1–3 clarifying questions if requirements are ambiguous.
+
+```
+"You are an OpenAI coding assistant for Exaix. Before acting, retrieve context from .copilot/
+with inject_agent_context. Output format: Files → Plan → Diffs → Verification. Cite docs used."
+```
+
+### TDD Workflow (OpenAI)
+
+Start by proposing failing tests with explicit assertions. Use existing Exaix test helpers
+(retrieve guidance from `.copilot/` first). Only then implement the minimal change to pass tests.
+
+```
+"You are implementing a change in Exaix using TDD. Inject .copilot/ context for testing patterns.
+Propose 2–4 failing tests with explicit assertions, then provide minimal file-scoped diffs.
+End with verification commands. Cite agent doc paths used."
+```
+
+### Debugging (OpenAI)
+
+Reproduce first (tests or exact commands). Diagnose with evidence. Fix minimally. Verify and add
+regression coverage. Output format: **Files → Plan → Diffs → Verification**.
+
+```
+"You are debugging Exaix. First, retrieve .copilot/ context relevant to the failing area.
+Then: (1) reproduce, (2) diagnose root cause, (3) propose minimal diffs, (4) verify with commands."
 ```
