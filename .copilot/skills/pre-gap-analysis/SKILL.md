@@ -207,6 +207,7 @@ A finding is classified 🔒 Security — always triaged above 🟡 Feasibility.
 ### Phase 3c — Traceability & Configurability Check
 
 For **every step** that introduces new behaviour, check:
+
 - Event naming, payload typing, audit chain completeness, event assertions.
 - Config-driven vs. constant-driven values, config schema declaration,
   feature enable/disable path, config validation tests.
@@ -216,6 +217,7 @@ For **every step** that introduces new behaviour, check:
 ### Phase 4 — Gap Classification
 
 Classify every gap:
+
 | Symbol         | Meaning                                                                       |
 | -------------- | ----------------------------------------------------------------------------- |
 | 🔴 Critical    | Blocks implementation — plan is contradictory or a required symbol is missing |
@@ -231,6 +233,7 @@ Build a gap summary table before detailed entries.
 ### Phase 5 — Write Gaps Into the Document
 
 Append at the end of the planning document:
+
 1. Pre-Gap Analysis header with ISO date and verdict.
 1. Detailed gap entries (one per gap).
 1. Gap summary table.

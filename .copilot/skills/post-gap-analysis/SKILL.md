@@ -148,13 +148,13 @@ config validation tests.
 
 ### Phase 4 — Gap Classification
 
-| Symbol          | Meaning                                                            |
-| --------------- | ------------------------------------------------------------------ |
-| 🔴 Critical     | Blocks correctness — code diverges from plan in a breaking way     |
-| 🔒 Security     | Security vulnerability or missing security control (OWASP Top 10)  |
-| 🟡 Feasibility  | Plan claim is unverifiable or implementation-risky                 |
-| 🟠 Testing      | Missing or under-specified test; implementation may ship uncovered |
-| 🔵 Conceptual   | Minor mismatch, missing doc marker, or style divergence            |
+| Symbol         | Meaning                                                            |
+| -------------- | ------------------------------------------------------------------ |
+| 🔴 Critical    | Blocks correctness — code diverges from plan in a breaking way     |
+| 🔒 Security    | Security vulnerability or missing security control (OWASP Top 10)  |
+| 🟡 Feasibility | Plan claim is unverifiable or implementation-risky                 |
+| 🟠 Testing     | Missing or under-specified test; implementation may ship uncovered |
+| 🔵 Conceptual  | Minor mismatch, missing doc marker, or style divergence            |
 
 Build a gap summary table before detailed entries.
 
@@ -163,6 +163,7 @@ Build a gap summary table before detailed entries.
 ### Phase 5 — Write Gaps and Remediation Steps Into the Document
 
 Append at end of planning document:
+
 1. Deep Review header with ISO date and verdict.
 1. Detailed gap entries (one per gap).
 1. Gap summary table.
