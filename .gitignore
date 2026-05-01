@@ -8,6 +8,11 @@
 .vscode/settings.json
 
 # --------------------------------------------
+# Claude Code local settings (machine-specific)
+# --------------------------------------------
+.copilot/settings.local.json
+
+# --------------------------------------------
 # Build & Cache
 # --------------------------------------------
 /.cache
