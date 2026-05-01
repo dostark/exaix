@@ -7,9 +7,9 @@
 import { assert } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 
-describe(".copilot/prompts/commit-message.md", () => {
+describe(".copilot/skills/commit/SKILL.md", () => {
   it("contains all mandatory headers for structured commits", async () => {
-    const content = await Deno.readTextFile(".copilot/prompts/commit-message.md");
+    const content = await Deno.readTextFile(".copilot/skills/commit/SKILL.md");
     assert(content.includes("what:"), "Prompt missing 'what:'");
     assert(content.includes("rationale:"), "Prompt missing 'rationale:'");
     assert(content.includes("tests:"), "Prompt missing 'tests:'");

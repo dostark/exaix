@@ -62,12 +62,12 @@ Deno.test("Claude enhancements: verify cross-reference.md structure", async () =
   // Verify it includes key task types (titles)
   assert(crossRefMd.includes("Exaix Test Development Guidelines"), "Should map Test Guidelines task");
   assert(crossRefMd.includes("Refactoring Template"), "Should map Refactoring task");
-  assert(crossRefMd.includes("Detailed Commit Message Prompt"), "Should map Commit task");
-  assert(crossRefMd.includes("Workflow Guidelines"), "Should map Workflow templates");
+  assert(crossRefMd.includes("Commit Skill"), "Should map Commit skill");
+  assert(crossRefMd.includes("guidelines/"), "Should link to guidelines directory");
 
   // Verify it links to other docs
-  assert(crossRefMd.includes("[workflows/testing.md]"), "Should link to testing.md");
-  assert(crossRefMd.includes("[workflows/exaix-development.md]"), "Should link to exaix.md");
+  assert(crossRefMd.includes("[guidelines/testing.md]"), "Should link to testing.md");
+  assert(crossRefMd.includes("[guidelines/exaix-development.md]"), "Should link to exaix.md");
   assert(crossRefMd.includes("[providers/claude.md]"), "Should link to claude.md");
 });
 

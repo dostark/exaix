@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-01T17:44:03.852Z",
+  "generated_at": "2026-05-01T20:06:06.444Z",
   "docs": [
     {
       "path": ".copilot/commands/step.md",
@@ -348,7 +348,8 @@
         ".copilot/chunks/README.md.chunk3.txt",
         ".copilot/chunks/README.md.chunk4.txt",
         ".copilot/chunks/README.md.chunk5.txt",
-        ".copilot/chunks/README.md.chunk6.txt"
+        ".copilot/chunks/README.md.chunk6.txt",
+        ".copilot/chunks/README.md.chunk7.txt"
       ]
     },
     {
@@ -539,9 +540,15 @@
       "path": ".copilot/guidelines/process-README.md",
       "agent": "general",
       "scope": "dev",
-      "title": ".copilot/process/ — Project Governance & Methodology",
+      "title": "Project Governance & Methodology",
       "short_summary": "Strategic guidelines for SDD, project lifecycle, and systemic improvement patterns.",
-      "version": "1.0",
+      "version": "1.1",
+      "topics": [
+        "governance",
+        "methodology",
+        "sdd",
+        "self-improvement"
+      ],
       "chunks": [
         ".copilot/chunks/process-README.md.chunk0.txt",
         ".copilot/chunks/process-README.md.chunk1.txt",
@@ -802,7 +809,8 @@
         ".copilot/chunks/cross-reference.md.chunk1.txt",
         ".copilot/chunks/cross-reference.md.chunk2.txt",
         ".copilot/chunks/cross-reference.md.chunk3.txt",
-        ".copilot/chunks/cross-reference.md.chunk4.txt"
+        ".copilot/chunks/cross-reference.md.chunk4.txt",
+        ".copilot/chunks/cross-reference.md.chunk5.txt"
       ]
     },
     {

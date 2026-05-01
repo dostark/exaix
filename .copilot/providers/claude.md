@@ -17,7 +17,6 @@ Claude Sonnet 4.6 provides a 200k context window and excellent reasoning capabil
 When Claude lacks enough Exaix-specific guidance to proceed safely, patch `.copilot/` during the task (minimal + test-backed), then continue.
 
 - Process: `.copilot/guidelines/self-improvement.md`
-- Copy/paste template: `.copilot/guidelines/self-improvement.md#template`
 - Claude-specific tip: use the thinking protocol to (1) list concrete instruction gaps, (2) propose the smallest doc patch, (3) rebuild/validate `.copilot/` artifacts, then (4) resume the primary task.
 
 ## Task-Specific System Prompts
@@ -27,6 +26,7 @@ When Claude lacks enough Exaix-specific guidance to proceed safely, patch `.copi
 Use `initTestDbService()` or `createCliTestContext()` for test setup. Propose 2-3 failing tests first, then implement the minimal code to pass them.
 
 **System prompt:**
+
 > "You are a TDD assistant for Exaix. Before implementing, propose 2-3 failing unit tests with explicit assertions. After tests fail, implement the minimum code to pass them. Clean up resources in `finally` blocks."
 
 ### Refactoring
@@ -34,6 +34,7 @@ Use `initTestDbService()` or `createCliTestContext()` for test setup. Propose 2-
 Before changing code: read existing implementation and related tests. Never refactor without tests proving equivalence.
 
 **System prompt:**
+
 > "You are a refactoring assistant for Exaix. Before changing code: (1) read the implementation and tests, (2) propose equivalence tests, (3) refactor incrementally, (4) verify tests still pass."
 
 ### Debugging
@@ -41,11 +42,13 @@ Before changing code: read existing implementation and related tests. Never refa
 Process: read error → reproduce → diagnose root cause → implement minimal fix → add regression test.
 
 **System prompt:**
+
 > "You are a debugging assistant for Exaix. Process: (1) read error messages and Implementation Plan step, (2) reproduce the bug in a test, (3) diagnose root cause, (4) implement minimal fix, (5) add regression test."
 
 ### Documentation
 
 **System prompt:**
+
 > "You are a documentation assistant for Exaix. Workflow: (1) check the Implementation Plan for the related step, (2) update docs to match implementation, (3) keep docs concise and synchronized with the Plan."
 
 ## Thinking Protocol for Complex Tasks
@@ -58,9 +61,9 @@ Claude excels when given space to plan before acting. For multi-step work:
 1.
 1.
 
-**Example: Multi-file refactoring**
-```text
+## Example: Multi-file refactoring
 
+```text
 <thinking>
 User wants to extract database initialization logic into a shared helper.
 
@@ -91,6 +94,7 @@ Plan:
 ### Parallel Reads (Context Gathering)
 
 ✅ **Good: Read multiple files in parallel**
+
 ```xml
 <antml_function_calls>
 <antml_invoke name="read_file">
@@ -108,7 +112,7 @@ Plan:
 
 ❌ **Avoid: Sequential reads**
 
-```
+```text
 Read file 1 → wait for result → read file 2 → wait for result → read file 3
 ```
 
@@ -258,12 +262,14 @@ new Deno.Command("deno", { args: ["test"] }).output();
 When starting a task, use the cross-reference map to find relevant docs before acting.
 
 **Pattern:**
-```
+
+```text
 I want to [task type].
 First, consult `.copilot/cross-reference.md` for the workflow. Find my task type and read the relevant docs. Then proceed.
 ```
 
 **Examples by task type:**
+
 - `add feature` → `.copilot/guidelines/exaix-development.md`, `.copilot/skills/plan/SKILL.md`
 - `write tests` → `.copilot/guidelines/testing.md`
 - `fix TypeScript errors` → `.copilot/guidelines/exaix-development.md`
@@ -279,7 +285,8 @@ After finding the task type, read the listed docs, then act on the primary task.
 For complex refactoring, use explicit `<thinking>` blocks before each major step.
 
 **Prompt template:**
-```
+
+```text
 I need to refactor [component] to [goal].
 
 Use your thinking protocol:
@@ -308,7 +315,8 @@ Requirements from .copilot/:
 For bugs, use a structured 5-phase approach: Inject → Reproduce → Diagnose → Fix → Verify.
 
 **Prompt template:**
-```
+
+```text
 I have a bug: [description]
 
 1. CONTEXT: Inject .copilot/ context relevant to the failing area (4-6 chunks).
@@ -322,7 +330,8 @@ Component: [specific file or module]
 ```
 
 **Example (test failure):**
-```
+
+```text
 I have a bug: tests/config_test.ts fails with "Database connection not cleaned up"
 
 1. Run: deno test --allow-all tests/config_test.ts — show exact error

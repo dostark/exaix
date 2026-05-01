@@ -48,7 +48,6 @@ Ask-when-ambiguous rule
 Self-improvement loop
 - If you discover an instruction gap mid-task (missing examples, missing commands, missing invariants), patch `.copilot/` as part of the work:
 - Process: `.copilot/guidelines/self-improvement.md`
-- Template: `.copilot/guidelines/self-improvement.md#template`
 - Keep the patch minimal and task-scoped; rebuild/validate `.copilot/` artifacts before continuing.
 
 RAG usage for OpenAI

@@ -22,7 +22,6 @@ Key points
 If the current `.copilot/` instructions are insufficient for the task, patch them during execution (minimal, grounded), then rebuild/validate artifacts before continuing.
 
 - Process: `.copilot/guidelines/self-improvement.md`
-- Template: `.copilot/guidelines/self-improvement.md#template`
 - Gemini-specific agent: general
   to include the relevant `agents/` docs + the exact gap list, then propose a small doc patch (examples/checklists) and continue.
 
@@ -61,12 +60,13 @@ Optimize for **broad reasoning** across module boundaries using the 2M token win
 Use **Long-Chain Reasoning** to identify systemic dependencies. Prefer **minimal diffs**
 for architectural changes.
 
-```
+```text
 "You are a Gemini developer. Saturate on all provided context. Analyze the global impact
 of [TASK] and propose a minimal, high-integrity implementation plan."
 ```
 
 Examples:
+
 - "Review all services in `src/services/`. Design a global error reporting pattern and show how 2 representative services implement it."
 - "Check the entire Implementation Plan and all current source files. Identify modules missing tests for Step 10.7."
 
@@ -75,13 +75,14 @@ Examples:
 Leverage long-context to find all existing **test patterns** and **helpers**.
 Draft **5+ failing test cases** covering happy paths, errors, and systemic edge cases.
 
-```
+```text
 "You are a TDD specialist for Exaix. Analyze all existing test helpers.
 Propose 5+ failing test cases for [FEATURE] with detailed assertions.
 Implement only once tests are approved."
 ```
 
 Do / Don't
+
 - ✅ Do research `tests/helpers/` for existing utilities before writing new ones.
 - ✅ Do include at least one "paranoid" security test case.
 - ❌ Don't implement before the user approves the test plan.

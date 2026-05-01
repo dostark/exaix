@@ -19,9 +19,6 @@ Deno.test("OpenAI enhancements: verify required files exist", async () => {
   const files = [
     ".copilot/providers/openai.md",
     ".copilot/cross-reference.md",
-    ".copilot/prompts/openai-quickstart.md",
-    ".copilot/prompts/openai-tdd-workflow.md",
-    ".copilot/prompts/openai-debugging-systematic.md",
   ];
 
   await assertFilesExist(files);
@@ -44,9 +41,6 @@ Deno.test("OpenAI enhancements: verify openai.md required sections", async () =>
 Deno.test("OpenAI enhancements: verify frontmatter schema + short_summary limits", async () => {
   const files = [
     ".copilot/providers/openai.md",
-    ".copilot/prompts/openai-quickstart.md",
-    ".copilot/prompts/openai-tdd-workflow.md",
-    ".copilot/prompts/openai-debugging-systematic.md",
   ];
 
   await assertFrontmatterSchemaAndShortSummary(files);
@@ -74,8 +68,7 @@ Deno.test("OpenAI enhancements: verify context injection works", async () => {
   const result = await inject("openai", "OpenAI TDD workflow", 4);
   assert(result.found, "Should find OpenAI-related doc");
   assert(
-    (result.path || "").includes(".copilot/providers/openai") ||
-      (result.path || "").includes(".copilot/prompts/openai-"),
-    "Should return an OpenAI agent doc or OpenAI prompt template",
+    (result.path || "").includes(".copilot/providers/openai"),
+    "Should return the OpenAI provider doc",
   );
 });

@@ -13,7 +13,6 @@ import type { JSONObject } from "@exaix/core/types/json.ts";
 
 const paths = getDefaultPaths(".");
 const providersDir = join(paths.blueprints, "../.copilot/providers");
-const promptsDir = join(paths.blueprints, "../.copilot/prompts");
 
 Deno.test("Google enhancements: verify sections in google.md", async () => {
   const content = await Deno.readTextFile(join(providersDir, "google.md"));
@@ -45,12 +44,14 @@ Deno.test("Google enhancements: verify frontmatter schema", async () => {
   }
 });
 
-Deno.test("Google enhancements: verify prompt templates", async () => {
-  for (const relPath of ["google-quickstart.md", "google-tdd-workflow.md"]) {
-    const content = await Deno.readTextFile(join(promptsDir, relPath));
-    assert(content.includes("identity: google"), `Agent tag missing in ${relPath}`);
-    assert(content.includes("Key points"), `Key points missing in ${relPath}`);
-    assert(content.includes("Canonical prompt (short):"), `Canonical prompt missing in ${relPath}`);
-    assert(content.includes("Examples"), `Examples missing in ${relPath}`);
-  }
+Deno.test("Google enhancements: verify provider-specific workflow notes", async () => {
+  // google-quickstart and google-tdd-workflow content was absorbed into providers/google.md
+  const content = await Deno.readTextFile(join(providersDir, "google.md"));
+  assert(content.includes("Key points"), "Key points missing in google.md");
+  assert(content.includes("Canonical prompt"), "Canonical prompt missing in google.md");
+  assert(content.includes("Examples"), "Examples missing in google.md");
+  assert(
+    content.includes("TDD") || content.includes("tdd") || content.includes("test"),
+    "TDD workflow guidance missing",
+  );
 });

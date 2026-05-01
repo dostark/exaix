@@ -102,7 +102,7 @@ Examples
 - Example: Missing provider-specific output contract
   - Task: “Perform a multi-file refactor with OpenAI.”
   - Gap: provider doc doesn’t enforce diff-first structure.
-  - Patch: add/update a prompt template under `.copilot/prompts/` requiring Files → Plan → Diffs → Verification.
+  - Patch: add/update a command template under `.copilot/commands/` requiring Files → Plan → Diffs → Verification.
 
 ## Related Documents
 

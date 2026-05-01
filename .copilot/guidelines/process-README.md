@@ -1,18 +1,17 @@
 ---
 agent: general
 scope: dev
-title: ".copilot/process/ — Project Governance & Methodology"
+title: "Project Governance & Methodology"
 short_summary: "Strategic guidelines for SDD, project lifecycle, and systemic improvement patterns."
-version: "1.0"
+version: "1.1"
+topics: ["governance", "methodology", "sdd", "self-improvement"]
 ---
 
-# Exaix Process Guidelines
-
-This directory contains high-level governance rules, systemic methodologies, and project-wide patterns that define **how** Exaix is built and improved.
+This document covers high-level governance rules, systemic methodologies, and project-wide patterns that define **how** Exaix is built and improved.
 
 ## Purpose
 
-While `workflows/` focus on tactical execution (how to do a task), `process/` focuses on **strategic governance**. These documents ensure that agents and humans follow consistent architectural patterns and quality loops throughout the repository's lifecycle.
+While `commands/` and `skills/` focus on tactical execution (how to do a task), these governance guidelines focus on **strategic quality**. They ensure that agents and humans follow consistent architectural patterns and quality loops throughout the repository's lifecycle.
 
 ## Governance Guidelines
 
@@ -20,18 +19,18 @@ While `workflows/` focus on tactical execution (how to do a task), `process/` fo
 - **[review-research-improvement.md](review-research-improvement.md)**: A systematic pattern for evaluating subsystems and planning architectural upgrades.
 - **[self-improvement.md](self-improvement.md)**: The loop for detecting and patching instruction gaps in `.copilot/` itself.
 
-## When to use `process/` vs `workflows/`
+## When to use which
 
-| Scenario                          | Location                                      | Reasoning                                  |
-| --------------------------------- | --------------------------------------------- | ------------------------------------------ |
-| Preparing a commit                | `workflows/commit.md`                         | Tactical operation task.                   |
-| Reviewing a module's architecture | `process/review-research-improvement.md`      | Systemic analysis and improvement pattern. |
-| Refining a request with Q&A       | `process/specification-driven-development.md` | High-level methodology for goal alignment. |
-| Implementing next plan step       | `workflows/next-steps.md`                     | Tactical execution step.                   |
-| Noticing a doc is out of date     | `process/self-improvement.md`                 | Feedback loop for instructions.            |
+| Scenario                          | Location                                         | Reasoning                                  |
+| --------------------------------- | ------------------------------------------------ | ------------------------------------------ |
+| Preparing a commit                | `skills/commit/SKILL.md`                         | Tactical skill.                            |
+| Reviewing a module's architecture | `guidelines/review-research-improvement.md`      | Systemic analysis and improvement pattern. |
+| Refining a request with Q&A       | `guidelines/specification-driven-development.md` | High-level methodology for goal alignment. |
+| Implementing next plan step       | `skills/next-steps/SKILL.md`                     | Tactical execution skill.                  |
+| Noticing a doc is out of date     | `guidelines/self-improvement.md`                 | Feedback loop for instructions.            |
 
 ## Documentation Boundaries
 
-- **Methodology (Process)**: Defines the rules of engagement.
-- **Task (Workflow)**: Defines the steps of execution.
-- **Prompt (Prompt)**: Defines the exact instructions send to the model.
+- **Governance (here)**: Defines the rules of engagement and quality standards.
+- **Skills** (`../skills/`): Defines multi-step autonomous workflows.
+- **Commands** (`../commands/`): Defines short slash-command invocation prompts.

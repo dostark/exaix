@@ -39,7 +39,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Exaix Development Guidelines | [guidelines/README.md](guidelines/README.md) | |
 | Agent Content Schema Reference | [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md) | |
 | Exaix Documentation Development Guidelines | [guidelines/documentation.md](guidelines/documentation.md) | |
-| .copilot/process/ — Project Governance & Methodology | [guidelines/process-README.md](guidelines/process-README.md) | |
+| Project Governance & Methodology | [guidelines/process-README.md](guidelines/process-README.md) | |
 | Exaix Source Development Guidelines | [guidelines/exaix-development.md](guidelines/exaix-development.md) | |
 | jscpd Code Duplication Detection Guide | [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md) | |
 | Review-Research-Improvement Pattern | [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md) | |
@@ -90,6 +90,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`gap-analysis`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`gemini`** → [providers/google-long-context.md](providers/google-long-context.md)
 - **`git`** → [guidelines/submodule-workflow.md](guidelines/submodule-workflow.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`governance`** → [guidelines/process-README.md](guidelines/process-README.md)
 - **`guidelines`** → [guidelines/README.md](guidelines/README.md)
 - **`helpers`** → [guidelines/testing.md](guidelines/testing.md)
 - **`implementation`** → [commands/step.md](commands/step.md)
@@ -104,7 +105,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`maintenance`** → [commands/upgrade.md](commands/upgrade.md), [commands/refactor.md](commands/refactor.md), [guidelines/self-improvement.md](guidelines/self-improvement.md)
 - **`meta`** → [commands/update-building-with-ai-agents.md](commands/update-building-with-ai-agents.md)
-- **`methodology`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/README.md](guidelines/README.md)
+- **`methodology`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/README.md](guidelines/README.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`navigation`** → [commands/explore.md](commands/explore.md)
 - **`parallel-tool-calls`** → [providers/google.md](providers/google.md)
 - **`patch`** → [commands/security.md](commands/security.md)
@@ -126,9 +127,9 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`review`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)
 - **`risk`** → [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`schema`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
-- **`sdd`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md)
+- **`sdd`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`security`** → [commands/security.md](commands/security.md), [guidelines/README.md](guidelines/README.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
-- **`self-improvement`** → [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- **`self-improvement`** → [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`setup`** → [commands/infra.md](commands/infra.md)
 - **`source`** → [guidelines/exaix-development.md](guidelines/exaix-development.md)
 - **`standardization`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
@@ -160,6 +161,13 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **Bug fix**: `#fix` → `#regression` → `#commit`
 - **Code quality**: `#clean-codebase` → `#duplication` → `#refactor-check-magic` → `#commit`
 - **Review**: `#post-gap-analysis` → `#review` → `#commit`
+
+## Canonical Paths
+
+- Testing guidelines: [guidelines/testing.md](guidelines/testing.md)
+- Development guidelines: [guidelines/exaix-development.md](guidelines/exaix-development.md)
+- Self-improvement process: [guidelines/self-improvement.md](guidelines/self-improvement.md)
+
 
 ## Directory Structure
 
