@@ -3,7 +3,7 @@
  * @module PlanAmendmentApprovalTest
  * @path tests/integration/services/plan_amendment_approval_test.ts
  * @description Integration tests for plan amendment approval workflow, event emission, and decision lifecycle.
- * @related-files [src/services/plan/plan_amendment_service.ts, src/services/core/event_logger.ts]
+ * @related-files [src/services/plan/plan_amendment_service.ts, packages/core/src/logger/event_logger.ts]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

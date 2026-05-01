@@ -12,7 +12,7 @@
  */
 import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
-import type { EventLogger } from "../core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import {
   type IWorkspaceExecutionContext,

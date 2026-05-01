@@ -3,7 +3,7 @@
  * @path src/tui/structured_log_viewer.ts
  * @description Advanced TUI component for visualizing structured logs, with support for correlation-based tracing and performance metrics.
  * @architectural-layer TUI
- * @related-files ["src/services/logger/structured_logger.ts", src/tui/monitor_view.ts]
+ * @related-files ["packages/core/src/logger/structured_logger.ts", src/tui/monitor_view.ts]
  */
 
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";

@@ -11,7 +11,7 @@ import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IRegisterReviewInput } from "@exaix/schemas/review.ts";
 

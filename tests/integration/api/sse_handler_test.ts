@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { EventBusService } from "../../../src/services/observability/event_bus_service.ts";
+import { EventBusService } from "@exaix/core/observability/mod.ts";
 import { SseHandler } from "../../../src/api/sse_handler.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_HEARTBEAT, STREAMING_EVENT_TOOL_START } from "@exaix/core";

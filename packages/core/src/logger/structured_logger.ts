@@ -1,6 +1,6 @@
 /**
  * @module StructuredLogger
- * @path src/services/logger/structured_logger.ts
+ * @path packages/core/src/logger/structured_logger.ts
  * @description Comprehensive observability service. Implements security audit item 17.
  *
  * Responsibilities:
@@ -12,7 +12,7 @@
  * - --allow-write, --allow-read (for log rotation)
  *
  * @architectural-layer Services
- * @related-files ["src/services/core/event_logger.ts", src/main.ts]
+ * @related-files ["packages/core/src/logger/event_logger.ts", src/main.ts]
  */
 
 import { dirname, join } from "@std/path";

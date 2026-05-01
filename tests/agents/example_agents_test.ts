@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { getDefaultPaths } from "../../src/config/paths.ts";
+import { getDefaultPaths } from "@exaix/core/config/paths.ts";
 import { parse as parseYaml } from "@std/yaml";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 

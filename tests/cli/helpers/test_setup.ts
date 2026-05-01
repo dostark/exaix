@@ -6,7 +6,7 @@
  */
 
 import { join } from "@std/path";
-import { ConfigService } from "../../../src/config/service.ts";
+import { ConfigService } from "@exaix/core/config/service.ts";
 import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
 import { ContextCardGenerator } from "../../../src/services/context/context_card_generator.ts";
 import { ContextCardAdapter } from "../../../src/services/adapters/context_card_adapter.ts";

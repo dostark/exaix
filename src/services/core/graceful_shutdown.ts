@@ -3,11 +3,11 @@
  * @path src/services/core/graceful_shutdown.ts
  * @description Module for GracefulShutdown.
  * @architectural-layer Services
- * @related-files [src/main.ts, "src/services/logger/structured_logger.ts"]
+ * @related-files [src/main.ts, "packages/core/src/logger/structured_logger.ts"]
  */
 
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
-import type { IStructuredLogger } from "../logger/structured_logger.ts";
+import type { IStructuredLogger } from "@exaix/core/logger/structured_logger.ts";
 
 /**
  * Cleanup task interface for graceful shutdown

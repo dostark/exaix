@@ -9,7 +9,7 @@
  */
 import { assertEquals, assertExists } from "@std/assert";
 import { RequestParser } from "../../../src/services/request_processing/request_parser.ts";
-import type { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import type { ParsedRequestFile } from "../../../src/services/request_processing/types.ts";
 

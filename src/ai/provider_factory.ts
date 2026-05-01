@@ -28,7 +28,7 @@ import { RateLimitedProvider } from "./rate_limited_provider.ts";
 import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
-import type { EventLogger } from "../services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
 

@@ -5,7 +5,7 @@
  * @description Verifies the memory auto-approval daemon maintenance helper.
  */
 import { assertEquals } from "@std/assert";
-import type { EventLogger } from "../../../src/services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { initializeMemoryAutoApprovalMaintenance } from "../../../src/services/memory/auto_approval_daemon.ts";
 import type { IMemoryExtractorService } from "@exaix/core/types";
 import type { MemoryAutoApprovalService } from "../../../src/services/memory/memory_auto_approval_service.ts";

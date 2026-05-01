@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";

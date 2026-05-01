@@ -8,7 +8,7 @@
  */
 
 import type { IDatabaseService, SqliteParam } from "../core/db.ts";
-import type { EventLogger } from "../core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import {
   type IRegisterReviewInput,
   type IReview,

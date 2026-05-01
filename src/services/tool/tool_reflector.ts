@@ -13,7 +13,7 @@ import { AgentRunner } from "../agent/agent_runner.ts";
 import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator } from "./output_validator.ts";
 import type { IOutputValidator } from "./output_validator.ts";
-import { logDebug } from "../logger/structured_logger.ts";
+import { logDebug } from "@exaix/core/logger/structured_logger.ts";
 import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";

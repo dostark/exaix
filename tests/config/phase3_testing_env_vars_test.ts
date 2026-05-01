@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { withEnv } from "../helpers/env.ts";
-import { isCIMode, isTestMode } from "../../src/config/env_schema.ts";
+import { isCIMode, isTestMode } from "@exaix/core/config/env_schema.ts";
 
 Deno.test({
   name: "Phase 3: isTestMode() returns false when EXA_TEST_MODE not set",

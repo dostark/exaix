@@ -5,10 +5,10 @@
  */
 import { assertEquals, assertMatch } from "@std/assert";
 import { FRONTMATTER_REGEX, ParserActivityActionType } from "@exaix/parsing";
-import { SYSTEM_ACTIVITY_ACTOR } from "@exaix/core";
+import { ActorType } from "@exaix/core";
 
 Deno.test("Parsing package constants are accessible and correct", () => {
-  assertEquals(SYSTEM_ACTIVITY_ACTOR, "system");
+  assertEquals(ActorType.SYSTEM, "system");
   assertEquals(ParserActivityActionType.REQUEST_VALIDATED, "request.validated");
   assertEquals(ParserActivityActionType.REQUEST_VALIDATION_FAILED, "request.validation_failed");
 

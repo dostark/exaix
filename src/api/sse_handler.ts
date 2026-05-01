@@ -5,11 +5,11 @@
  * EventBusService.subscribe. Binds to 127.0.0.1 only for security.
  * Validates traceId against z.string().uuid() before subscribing.
  * @architectural-layer API
- * @dependencies [src/services/observability/event_bus_service.ts, src/shared/schemas/streaming_event.ts]
- * @related-files [src/services/core/event_logger.ts, src/cli/commands/watch.ts]
+ * @dependencies [packages/core/src/observability/event_bus_service.ts, src/shared/schemas/streaming_event.ts]
+ * @related-files [packages/core/src/logger/event_logger.ts, src/cli/commands/watch.ts]
  */
 
-import type { IEventBusService } from "../services/observability/event_bus_service.ts";
+import type { IEventBusService } from "@exaix/core/observability/mod.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { ZStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 

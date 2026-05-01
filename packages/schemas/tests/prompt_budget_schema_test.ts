@@ -3,7 +3,7 @@
  * @path tests/schemas/prompt_budget_schema_test.ts
  * @description RED-first tests for Phase 62 Step 62.1 prompt budget schema and constants foundation.
  * @architectural-layer Test
- * @related-files ["packages/schemas/src/prompt_budget.ts", "src/constants.ts"]
+ * @related-files ["packages/schemas/src/prompt_budget.ts", "packages/core/src/types/constants.ts"]
  */
 
 import { assertEquals } from "@std/assert";

@@ -7,11 +7,11 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { ConfigService } from "../../src/config/service.ts";
+import { ConfigService } from "@exaix/core/config/service.ts";
 import { FileWatcher } from "../../src/services/utils/watcher.ts";
 import { ExaPathDefaults } from "@exaix/core";
-import type { ConfigReloadLogger } from "../../src/config/config_reload_handler.ts";
-import { createConfigReloadHandler } from "../../src/config/config_reload_handler.ts";
+import type { ConfigReloadLogger } from "@exaix/core/config/config_reload_handler.ts";
+import { createConfigReloadHandler } from "@exaix/core/config/config_reload_handler.ts";
 import { LogLevel } from "@exaix/core";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 

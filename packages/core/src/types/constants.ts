@@ -9,6 +9,14 @@
 import { LogLevel, RequestPriority, TaskType } from "./enums.ts";
 
 // ============================================================================
+// HTTP Status Codes
+// ============================================================================
+export const HTTP_UNAUTHORIZED = 401;
+export const HTTP_FORBIDDEN = 403;
+export const HTTP_TOO_MANY_REQUESTS = 429;
+export const HTTP_SERVER_ERROR = 500;
+
+// ============================================================================
 // Path Configuration Defaults
 // ============================================================================
 export const DEFAULT_WORKSPACE_PATH = "Workspace";
@@ -124,7 +132,6 @@ export const AGENT_MAX_ITERATIONS_MAX = 100;
 // Agent defaults
 export const DEFAULT_AGENT_MODEL = "default";
 export const DEFAULT_IDENTITY_ID = "default";
-export const SYSTEM_ACTIVITY_ACTOR = "system";
 export const DEFAULT_UNKNOWN_LABEL = "Unknown";
 export const DEFAULT_UNKNOWN_ERROR_MESSAGE = "Unknown error";
 export const DEFAULT_AGENT_TIMEOUT_SEC = 60;

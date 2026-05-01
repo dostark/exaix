@@ -13,7 +13,7 @@ import type { IModelProvider } from "../../ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { GitService } from "../core/git_service.ts";
 import { SafeSubprocess } from "../../helpers/subprocess.ts";
-import { EventLogger } from "../core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";

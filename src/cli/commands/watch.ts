@@ -5,7 +5,7 @@
  * SSE streams with color-coded output, falling back to historical DB queries
  * for completed traces.
  * @architectural-layer CLI
- * @dependencies [src/api/sse_handler.ts, src/services/observability/event_bus_service.ts]
+ * @dependencies [src/api/sse_handler.ts, packages/core/src/observability/event_bus_service.ts]
  * @related-files [src/cli/commands/journal_commands.ts, src/api/sse_handler.ts]
  */
 

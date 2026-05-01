@@ -10,14 +10,13 @@ import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import type { ConfigService } from "../../src/config/service.ts";
 import { DaemonCommands } from "../../src/cli/commands/daemon_commands.ts";
 import { isProcessAlive } from "../../src/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { IDisplayService } from "@exaix/core/types";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
@@ -96,7 +95,7 @@ describe("DaemonCommands", {
   let pidFile: string;
   let logFile: string;
   let mainScript: string;
-  let configService: ConfigService;
+  let configService: Awaited<ReturnType<typeof createCliTestContext>>["configService"];
   let testCleanup: () => Promise<void>;
 
   beforeEach(async () => {
@@ -575,7 +574,7 @@ describe("DaemonCommands - Edge Cases", {
   let db: DatabaseService;
   let daemonCommands: TestDaemonCommands;
   let pidFile: string;
-  let configService: ConfigService;
+  let configService: Awaited<ReturnType<typeof createCliTestContext>>["configService"];
   let cleanup: () => Promise<void>;
 
   beforeEach(async () => {

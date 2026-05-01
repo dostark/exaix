@@ -1,12 +1,12 @@
 /**
  * @module ActivityJournal
- * @path src/journal/activity_journal.ts
+ * @path src/flows/activity_journal.ts
  * @description Audit logging for dynamic step execution, integrating with existing event logger.
  * @architectural-layer Journal
  * @related-files [src/flows/dynamic_step_executor.ts, src/flows/flow_runner.ts]
  */
-import type { IActivityJournal, JournalEntry } from "../flows/dynamic_step_executor.ts";
-import type { IFlowEventLogger } from "../flows/flow_runner.ts";
+import type { IActivityJournal, JournalEntry } from "./dynamic_step_executor.ts";
+import type { IFlowEventLogger } from "./flow_runner.ts";
 
 export class ActivityJournal implements IActivityJournal {
   constructor(private readonly eventLogger: IFlowEventLogger) {}

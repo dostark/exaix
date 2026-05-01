@@ -1,18 +1,23 @@
 /**
  * @module EventLogger
- * @path src/services/core/event_logger.ts
+ * @path packages/core/src/logger/event_logger.ts
  * @description Unified logging service that writes to both console and IActivity Journal.
  * Supports child loggers, structured payloads, and consistent log levels across the system.
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", "packages/core/src/repositories/activity_repository.ts", src/services/common/types.ts]
+ * @related-files ["packages/core/src/logger/event_logger.ts", "packages/core/src/repositories/activity_repository.ts", "src/services/common/types.ts"]
  */
 
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
-import { ActivityActor, LogLevel } from "@exaix/core";
-import type { Actor, ILogEvent } from "../common/types.ts";
+import {
+  ActivityActor,
+  type Actor,
+  EventBusService,
+  type IEventBusService,
+  type ILogEvent,
+  LogLevel,
+} from "@exaix/core";
 import { SHARED_DEFAULT_ICONS } from "@exaix/core";
-import { EventBusService, type IEventBusService } from "../observability/event_bus_service.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   STREAMING_EVENT_FLOW_STATUS,

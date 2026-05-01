@@ -11,7 +11,7 @@ import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "@exaix/core";
 import { PortalOperation } from "@exaix/core";
@@ -64,7 +64,7 @@ Deno.test("[regression] ExecutionLoop: targets portal directory and creates revi
     const activeDir = join(rootDir, config.paths.workspace, "Active");
     await ensureDir(activeDir);
 
-    const logger = new EventLogger({ db, defaultActor: "test" });
+    const logger = new EventLogger({ db, defaultActor: "user:test" });
     const reviewRegistry = new ReviewRegistry(db, logger);
     const loop = new ExecutionLoop({
       config,

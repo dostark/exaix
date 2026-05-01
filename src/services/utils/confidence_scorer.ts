@@ -11,7 +11,7 @@ import type { IModelProvider } from "../../ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "../agent/agent_runner.ts";
 import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
-import { logDebug } from "../logger/structured_logger.ts";
+import { logDebug } from "@exaix/core/logger/structured_logger.ts";
 import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";
 
 export interface IConfidenceScorerConfig {

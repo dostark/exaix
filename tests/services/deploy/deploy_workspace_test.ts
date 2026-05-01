@@ -8,7 +8,7 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { getDefaultPaths } from "../../../src/config/paths.ts";
+import { getDefaultPaths } from "@exaix/core/config/paths.ts";
 import { withCliProcessMutex } from "../../helpers/cli_process_mutex.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";

@@ -16,8 +16,8 @@ import type {
 import type { IRoutingPolicyService } from "../../src/services/routing/routing_policy_service.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { ILogEvent } from "../../src/services/common/types.ts";
-import type { EventLogger, IEventLogger } from "../../src/services/core/event_logger.ts";
+import type { ILogEvent } from "@exaix/core";
+import type { EventLogger, IEventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
 import type { JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { LogLevel } from "@exaix/core";

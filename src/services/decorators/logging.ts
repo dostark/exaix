@@ -3,9 +3,9 @@
  * @path src/services/decorators/logging.ts
  * @description Method decorator for automated execution logging.
  * @architectural-layer Services
- * @related-files [src/services/core/event_logger.ts]
+ * @related-files [packages/core/src/logger/event_logger.ts]
  */
-import type { EventLogger } from "../core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { toSafeJson } from "@exaix/core/types/json.ts";
 

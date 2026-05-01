@@ -30,7 +30,7 @@ import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
-import { ActivityJournal } from "../journal/activity_journal.ts";
+import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
 import { LlmClient } from "../ai/llm_client.ts";
 import type { ToolHandler } from "../mcp/tool_handler.ts";

@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
-import { getDefaultPaths } from "../../../src/config/paths.ts";
+import { getDefaultPaths } from "@exaix/core/config/paths.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";

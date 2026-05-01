@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
 import { RequestStatus } from "@exaix/core";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
 
 Deno.test("StatusManager.updateStatus: rewrites status in frontmatter", async () => {

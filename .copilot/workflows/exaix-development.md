@@ -29,7 +29,7 @@ Do / Don't
 - ❌ Don't suggest Web UI/React for core features. Exaix is TUI-first (Terminal User Interface).
 - ✅ Do distinguish between `Flows/examples/` (runnable) and `Flows/templates/` (scaffolding).
 
-### Philosophy & Workflow
+## Philosophy & Workflow
 
 - **Refinement Loop (Critical)**: Before implementing, ask the agent to "Refine" a step with success criteria, examples, and error cases. If you can't write clear success criteria, you aren't ready to code.
 - **Walking Skeleton**: Build end-to-end minimal features (e.g., config -> db -> log -> watcher) rather than perfect isolated components. "Can I demo this?" should always be YES.
@@ -46,7 +46,7 @@ Examples section
 
 - `src/ai/` — AI/LLM provider implementations
 - `src/cli/` — CLI command implementations
-- `src/config/` — Configuration schemas and loaders
+- `@exaix/core/config/` — Configuration schemas and loaders
 - `src/parsers/` — File parsers (frontmatter, etc.)
 - `src/schemas/` — Zod validation schemas
 - `src/services/` — Core business logic services
@@ -120,7 +120,7 @@ const git = GitService.getInstance();
 
 **ALL magic numbers MUST be configurable constants** centralized appropriately:
 
-- **Production code:** `src/config/constants.ts`
+- **Production code:** `@exaix/core/config`
 - **Test code:** `tests/config/constants.ts` for test-specific constants (test prompts, mock data, test environment variables, etc.)
 
 Never use hardcoded numeric literals in business logic or test code.
@@ -185,7 +185,7 @@ Exaix supports only 4 production environment variables for runtime overrides:
 - ✅ Use `isTestMode()` and `isCIMode()` helpers for test detection
 - ✅ Use `EXA_TEST_*` prefix for all test-related environment variables
 - ✅ Never use direct `Deno.env.get()` for `EXA_LLM_*` vars without validation
-- ✅ All env vars validated via Zod schema in `src/config/env_schema.ts`
+- ✅ All env vars validated via Zod schema in `@exaix/core/config/env_schema.ts`
 
 **Examples:**
 

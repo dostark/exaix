@@ -24,7 +24,7 @@ import {
 } from "../../src/cli/command_builders/plan_actions.ts";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { stub } from "@std/testing/mock";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { LogLevel } from "@exaix/core";
 import type { IPlanDetails } from "@exaix/core/types/plan.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";

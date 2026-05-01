@@ -6,7 +6,7 @@
  * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
  */
 
-import type { EventLogger } from "../../services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelOptions, IModelProvider } from "../types.ts";
 import { type IGenerateResult, withRetry } from "./common.ts";

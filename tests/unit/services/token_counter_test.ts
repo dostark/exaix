@@ -3,7 +3,7 @@
  * @path tests/unit/services/token_counter_test.ts
  * @description Tests for Phase 62 Step 62.2 TokenCounter service.
  * @architectural-layer Test
- * @related-files [src/services/context/token_counter.ts, "src/constants.ts"]
+ * @related-files [src/services/context/token_counter.ts, "packages/core/src/types/constants.ts"]
  */
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";

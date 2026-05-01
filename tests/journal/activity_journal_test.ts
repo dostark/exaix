@@ -4,7 +4,7 @@
  * @description Unit tests for ActivityJournal audit logging.
  */
 import { assertEquals } from "@std/assert";
-import { ActivityJournal } from "../../src/journal/activity_journal.ts";
+import { ActivityJournal } from "../../src/flows/activity_journal.ts";
 import type { IFlowEventLogger, IFlowEventPayloadMap } from "../../src/flows/flow_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 

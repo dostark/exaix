@@ -1,9 +1,9 @@
 /**
  * @module ConfigReloadHandler
- * @path src/config/config_reload_handler.ts
+ * @path packages/core/src/config/config_reload_handler.ts
  * @description Provides a factory for creating file watcher events that trigger configuration reloads when exa.config.toml changes.
  * @architectural-layer Config
- * @related-files [src/config/service.ts, "packages/core/src/types/daemon.ts"]
+ * @related-files ["packages/core/src/config/service.ts", "packages/core/src/types/daemon.ts"]
  */
 
 import type { ConfigService } from "./service.ts";

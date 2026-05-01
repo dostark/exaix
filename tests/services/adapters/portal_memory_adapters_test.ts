@@ -24,7 +24,7 @@ import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DaemonServiceAdapter } from "../../../src/services/adapters/daemon_adapter.ts";
 import type { DaemonCommands } from "../../../src/cli/commands/daemon_commands.ts";
 import type { ConfigAdapter as _ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts";
-import type { ConfigService as _ConfigService } from "../../../src/config/service.ts";
+import type { ConfigService as _ConfigService } from "@exaix/core/config/service.ts";
 import { join } from "@std/path";
 
 // ──────────────────────────────────────────────────────────────────────

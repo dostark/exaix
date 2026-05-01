@@ -1,12 +1,12 @@
 /**
  * @module SafeError
- * @path src/errors/safe_error.ts
+ * @path packages/core/src/errors/safe_error.ts
  * @description Safe error wrapper that prevents information leakage by providing user-safe messages while securely logging internal details.
  * @architectural-layer Core
- * @related-files ["src/services/core/event_logger.ts"]
+ * @related-files ["packages/core/src/errors/safe_error.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
-import type { EventLogger } from "../services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 
 /**
  * Safe error that prevents information leakage

@@ -9,7 +9,8 @@
  */
 
 import { ActorType, AgentKind } from "@exaix/core";
-import type { ILogEvent, IServiceContext } from "../../src/services/common/types.ts";
+import type { ILogEvent } from "@exaix/core";
+import type { IServiceContext } from "../../src/services/common/types.ts";
 
 // ============================================================================
 // Type Contract Verification

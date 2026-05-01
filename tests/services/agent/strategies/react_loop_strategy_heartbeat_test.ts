@@ -7,7 +7,7 @@
 
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
 import { ReActLoopStrategy } from "../../../../src/services/agent/strategies/react_loop_strategy.ts";
-import { EventBusService } from "../../../../src/services/observability/event_bus_service.ts";
+import { EventBusService } from "@exaix/core/observability/mod.ts";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "../../../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "../../../../src/ai/types.ts";

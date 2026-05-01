@@ -9,7 +9,7 @@
 // Testing Constants
 // ============================================================================
 // This module contains constants used exclusively in test files.
-// For production constants, see src/config/constants.ts
+// For production constants, see @exaix/core/config.
 
 import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 

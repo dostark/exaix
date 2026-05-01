@@ -9,7 +9,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { type Request, RequestSchema } from "@exaix/schemas/request.ts";
 import type { JSONValue } from "@exaix/core";
 import { FRONTMATTER_REGEX } from "./constants.ts";
-import { SYSTEM_ACTIVITY_ACTOR } from "@exaix/core";
+import { ActorType } from "@exaix/core";
 import { ParserActivityActionType } from "./enums.ts";
 
 export interface IParsedRequest {
@@ -77,7 +77,7 @@ export class FrontmatterParser {
 
     try {
       this.db.logActivity(
-        SYSTEM_ACTIVITY_ACTOR,
+        ActorType.SYSTEM,
         actionType,
         (payload.file_path as string) ?? null,
         payload,

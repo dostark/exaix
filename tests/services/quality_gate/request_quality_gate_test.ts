@@ -13,8 +13,8 @@ import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "@exaix/core";
-import type { IEventLogger } from "../../../src/services/core/event_logger.ts";
-import type { ILogEvent } from "../../../src/services/common/types.ts";
+import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { ILogEvent } from "@exaix/core";
 import type { IModelProvider } from "../../../src/ai/types.ts";
 import type { IGenerateResult } from "../../../src/ai/providers/common.ts";
 import { buildQualityGateConfig, RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
@@ -199,7 +199,7 @@ Deno.test("[RequestQualityGate] recommends auto-enrich in enrichment range", asy
   const gate = new RequestQualityGate(
     makeConfig({ mode: QualityGateMode.HEURISTIC }),
   );
-  const result = await gate.assess("Create a new configuration file at src/config/settings.ts");
+  const result = await gate.assess("Create a new configuration file at packages/core/src/config/settings.ts");
   assertEquals(result.recommendation, RequestQualityRecommendation.AUTO_ENRICH);
 });
 
@@ -224,7 +224,7 @@ Deno.test("[RequestQualityGate] enriches request when autoEnrich enabled", async
   );
 
   // action verb + file ref → score 65 → AUTO_ENRICH → enrichment triggered
-  const result = await gate.assess("Create a new configuration file at src/config/settings.ts");
+  const result = await gate.assess("Create a new configuration file at packages/core/src/config/settings.ts");
   assertEquals(result.recommendation, RequestQualityRecommendation.AUTO_ENRICH);
   assertEquals(result.enrichedBody, enrichedText);
 });

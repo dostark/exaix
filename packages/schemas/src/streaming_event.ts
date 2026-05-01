@@ -4,7 +4,7 @@
  * @description Zod validation schema for live execution streaming events.
  * @architectural-layer Schemas
  * @dependencies [src/shared/constants.ts]
- * @related-files [src/services/observability/event_bus_service.ts, src/api/sse_handler.ts]
+ * @related-files [packages/core/src/observability/event_bus_service.ts, src/api/sse_handler.ts]
  */
 
 import { z } from "zod";

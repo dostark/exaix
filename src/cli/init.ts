@@ -7,9 +7,9 @@
  */
 
 import { join } from "@std/path";
-import { ConfigService } from "../config/service.ts";
+import { ConfigService } from "@exaix/core/config/service.ts";
 import { GitService } from "../services/core/git_service.ts";
-import { EventLogger } from "../services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { ProviderFactory } from "../ai/provider_factory.ts";
 import { FlowLoader } from "../flows/flow_loader.ts";
 import { ExaPathDefaults } from "@exaix/core";

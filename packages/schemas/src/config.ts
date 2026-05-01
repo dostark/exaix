@@ -3,7 +3,7 @@
  * @path src/shared/schemas/config.ts
  * @description Defines the master Zod schema for Exaix's configuration file (exa.config.toml), orchestrating system, path, AI, and portal settings.
  * @architectural-layer Config
- * @related-files [src/config/service.ts, "src/constants.ts"]
+ * @related-files [src/config/service.ts, "packages/core/src/types/constants.ts"]
  */
 
 import { z } from "zod";

@@ -3,11 +3,11 @@
  * @path src/services/adapters/config_adapter.ts
  * @description Adapter for Config Service.
  * @architectural-layer Services
- * @related-files [src/config/service.ts, "packages/core/src/types/i_config_service.ts"]
+ * @related-files [packages/core/src/config/service.ts, "packages/core/src/types/i_config_service.ts"]
  */
 
 import type { IConfigService, IPortalConfigEntry } from "@exaix/core/types";
-import type { ConfigService } from "../../config/service.ts";
+import type { ConfigService } from "@exaix/core/config/service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
 

@@ -13,7 +13,7 @@ import { ReviewStatus } from "@exaix/core/status/review_status.ts";
 import { join } from "@std/path";
 
 import { ensureDir } from "@std/fs";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import { parse as parseYaml } from "@std/yaml";

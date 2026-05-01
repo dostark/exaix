@@ -17,8 +17,8 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types/mod.ts";
 import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
-import { FileOutput, ObservableOutput, StructuredLogger } from "../../../src/services/logger/structured_logger.ts";
-import type { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { FileOutput, ObservableOutput, StructuredLogger } from "@exaix/core/logger/structured_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../../helpers/test_helpers.ts";
 

@@ -12,11 +12,11 @@ import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
-import type { EventLogger } from "../core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { PathResolver } from "../portal/path_resolver.ts";
 import type { PortalPermissionsService } from "../portal/portal_permissions.ts";
 import type { IModelProvider } from "../../ai/types.ts";
-import { SafeError } from "../../errors/safe_error.ts";
+import { SafeError } from "@exaix/core/errors/safe_error.ts";
 import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
 import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
 import {

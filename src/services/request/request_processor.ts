@@ -48,7 +48,7 @@ import type {
 } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
-import { EventLogger } from "../core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
 import { ProviderFactory } from "../../ai/provider_factory.ts";
 import { ProviderSelector } from "../../ai/provider_selector.ts";

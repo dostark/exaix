@@ -5,7 +5,7 @@
  * resolves portal knowledge pre-execution, injects a capped Markdown summary into
  * IParsedRequest.context via PORTAL_KNOWLEDGE_KEY, passes knowledge to both agent
  * and flow processing paths, and degrades gracefully on failure.
- * @related-files ["src/services/request/request_processor.ts", "src/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
+ * @related-files ["src/services/request/request_processor.ts", "packages/core/src/types/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";

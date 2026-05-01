@@ -246,7 +246,7 @@ Deno.test("[security] Service: prevents path traversal", async () => {
 Use `EXA_TEST_*` prefixed variables:
 
 ```typescript
-import { isCIMode, isTestMode } from "../../src/config/env_schema.ts";
+import { isCIMode, isTestMode } from "@exaix/core/config/env_schema.ts";
 
 Deno.test("Feature: works in test mode", () => {
   if (isCIMode() && !Deno.env.get("EXA_TEST_ENABLE_PAID_LLM")) {

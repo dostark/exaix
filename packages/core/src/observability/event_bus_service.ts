@@ -1,12 +1,12 @@
 /**
  * @module EventBusService
- * @path src/services/observability/event_bus_service.ts
+ * @path packages/core/src/observability/event_bus_service.ts
  * @description In-memory pub/sub event bus for live execution streaming.
  * Subscribers are mapped by traceId with wildcard support. Backpressure drops
  * events when a subscriber queue exceeds EVENT_BUS_MAX_SUBSCRIBER_QUEUE.
  * @architectural-layer Services
  * @dependencies [src/shared/constants.ts, src/shared/schemas/streaming_event.ts]
- * @related-files [src/services/core/event_logger.ts, src/api/sse_handler.ts]
+ * @related-files [packages/core/src/logger/event_logger.ts, src/api/sse_handler.ts]
  */
 
 import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE } from "@exaix/core";

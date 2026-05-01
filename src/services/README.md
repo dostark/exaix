@@ -465,24 +465,24 @@ Use your IDE's "Find References" to update all imports.
 
 ### Common Import Migrations
 
-| Old Path                          | New Path                                   |
-| --------------------------------- | ------------------------------------------ |
-| `./services/db.ts`                | `./services/core/db.ts`                    |
-| `./services/event_logger.ts`      | `./services/core/event_logger.ts`          |
-| `./services/agent_executor.ts`    | `./services/agent/agent_executor.ts`       |
-| `./services/memory_bank.ts`       | `./services/memory/memory_bank.ts`         |
-| `./services/request.ts`           | `./services/request/request.ts`            |
-| `./services/plan.ts`              | `./services/plan/plan.ts`                  |
-| `./services/portal.ts`            | `./services/portal/portal.ts`              |
-| `./services/tool_registry.ts`     | `./services/tool/tool_registry.ts`         |
-| `./services/blueprint_loader.ts`  | `./services/blueprint/blueprint_loader.ts` |
-| `./services/skills.ts`            | `./services/skills/skills.ts`              |
-| `./services/cost_tracker.ts`      | `./services/cost/cost_tracker.ts`          |
-| `./services/notification.ts`      | `./services/notification/notification.ts`  |
-| `./services/artifact_registry.ts` | `./services/artifact/artifact_registry.ts` |
-| `./services/structured_logger.ts` | `./services/logger/structured_logger.ts`   |
-| `./services/flow_reporter.ts`     | `./services/flow/flow_reporter.ts`         |
-| `./services/json_repair.ts`       | `./services/utils/json_repair.ts`          |
+| Old Path                          | New Path                                        |
+| --------------------------------- | ----------------------------------------------- |
+| `./services/db.ts`                | `./services/core/db.ts`                         |
+| `./services/event_logger.ts`      | `./services/core/event_logger.ts`               |
+| `./services/agent_executor.ts`    | `./services/agent/agent_executor.ts`            |
+| `./services/memory_bank.ts`       | `./services/memory/memory_bank.ts`              |
+| `./services/request.ts`           | `./services/request/request.ts`                 |
+| `./services/plan.ts`              | `./services/plan/plan.ts`                       |
+| `./services/portal.ts`            | `./services/portal/portal.ts`                   |
+| `./services/tool_registry.ts`     | `./services/tool/tool_registry.ts`              |
+| `./services/blueprint_loader.ts`  | `./services/blueprint/blueprint_loader.ts`      |
+| `./services/skills.ts`            | `./services/skills/skills.ts`                   |
+| `./services/cost_tracker.ts`      | `./services/cost/cost_tracker.ts`               |
+| `./services/notification.ts`      | `./services/notification/notification.ts`       |
+| `./services/artifact_registry.ts` | `./services/artifact/artifact_registry.ts`      |
+| `./services/structured_logger.ts` | `packages/core/src/logger/structured_logger.ts` |
+| `./services/flow_reporter.ts`     | `./services/flow/flow_reporter.ts`              |
+| `./services/json_repair.ts`       | `./services/utils/json_repair.ts`               |
 
 ---
 

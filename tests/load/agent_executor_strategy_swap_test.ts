@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { initTestDbService } from "../helpers/db.ts";
 import { createTestConfig } from "../ai/helpers/test_config.ts";
 
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
 import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";

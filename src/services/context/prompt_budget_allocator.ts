@@ -4,7 +4,7 @@
  * @description Dynamic prompt budget allocator with waterfall reallocation logic.
  * Phase 62 Step 62.2 implementation.
  * @architectural-layer Services
- * @related-files ["packages/schemas/src/prompt_budget.ts", "src/constants.ts"]
+ * @related-files ["packages/schemas/src/prompt_budget.ts", "packages/core/src/types/constants.ts"]
  */
 
 import {

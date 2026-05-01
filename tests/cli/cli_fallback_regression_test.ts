@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import type { IDatabaseService } from "../../src/services/core/db.ts";
@@ -24,7 +24,7 @@ const TEST_TARGET = "test-target";
 const CHILD_ACTION = "child.action";
 const CHILD_TARGET = "child-target";
 const TEST_TRACE_ID = "test-trace-123";
-const TEST_USER = "test-user";
+const TEST_USER = "user:test-user";
 
 // ============================================================================
 // Stub Database Interface Tests

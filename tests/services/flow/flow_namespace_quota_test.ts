@@ -3,7 +3,7 @@
  * @path tests/services/flow/flow_namespace_quota_test.ts
  * @description Unit coverage for FlowNamespaceService quota enforcement before persistence.
  * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, "src/constants.ts"]
+ * @related-files [src/services/flow/flow_namespace_service.ts, "packages/core/src/types/constants.ts"]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

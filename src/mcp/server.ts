@@ -13,7 +13,7 @@ import type { JSONValue } from "@exaix/core";
 import { JsonRpcErrorCode } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
-import { EventBusService } from "../services/observability/event_bus_service.ts";
+import { EventBusService } from "@exaix/core/observability/mod.ts";
 import { SseHandler } from "../api/sse_handler.ts";
 import { GitCommitTool } from "./handlers/git_commit_tool.ts";
 import { GitCreateBranchTool } from "./handlers/git_create_branch_tool.ts";
@@ -30,7 +30,7 @@ import { SearchFilesTool } from "./handlers/search_files_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
-import { logInfo } from "../services/logger/structured_logger.ts";
+import { logInfo } from "@exaix/core/logger/structured_logger.ts";
 
 type JsonRpcResult = JSONValue | object;
 type JsonRpcErrorData = JSONValue | object;

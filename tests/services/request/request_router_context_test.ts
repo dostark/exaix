@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { RequestRouter } from "../../../src/services/request/request_router.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";

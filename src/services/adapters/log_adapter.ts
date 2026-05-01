@@ -3,20 +3,24 @@
  * @path src/services/adapters/log_adapter.ts
  * @description Adapter implementing ILogService for TUI by wrapping StructuredLogger.
  * @architectural-layer Services
- * @related-files ["src/services/logger/structured_logger.ts", src/tui/structured_log_service.ts]
+ * @related-files ["packages/core/src/logger/structured_logger.ts", src/tui/structured_log_service.ts]
  */
 
-import type { ILogService } from "@exaix/core/types/i_log_service.ts";
-import { FileOutput, ObservableOutput, type StructuredLogger } from "../logger/structured_logger.ts";
+import type { ILogOutput, ILogService } from "@exaix/core/types/i_log_service.ts";
+import { FileOutput, ObservableOutput } from "@exaix/core/logger/structured_logger.ts";
 import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
 import { join } from "@std/path";
+
+interface LoggerWithOutputs {
+  getOutputs(): ILogOutput[];
+}
 
 /**
  * Adapter that provides log querying and subscription capabilities for the TUI,
  * delegating to the core StructuredLogger service.
  */
 export class LogServiceAdapter implements ILogService {
-  constructor(private logger: StructuredLogger) {}
+  constructor(private logger: LoggerWithOutputs) {}
 
   /**
    * Get logs based on query options by reading from log files.

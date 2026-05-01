@@ -1,9 +1,9 @@
 /**
  * @module IExaPaths
- * @path src/config/paths.ts
+ * @path packages/core/src/config/paths.ts
  * @description Defines the standard directory structure and path resolution logic for the Exaix workspace and memory banks.
  * @architectural-layer Config
- * @related-files ["packages/schemas/src/config.ts", "src/constants.ts"]
+ * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts"]
  */
 
 import * as DEFAULTS from "@exaix/core";

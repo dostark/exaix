@@ -4,11 +4,11 @@
  * @description AI provider configuration schemas and validation. Defines Zod schemas for
  * validating provider settings, retry policies, timeouts, and model configurations.
  * @architectural-layer Configuration
- * @related-files [src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
+ * @related-files [packages/core/src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
 import { initializeRegistry, ProviderRegistry } from "@exaix/ai";
-import { MockStrategy, ProviderType } from "@exaix/core";
+import { MockStrategy, ProviderType } from "@exaix/core/types/enums.ts";
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
@@ -132,9 +132,10 @@ function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<str
 }
 /**
  * @module AIConfigSchema
- * @path src/config/ai_config.ts
+ * @path packages/schemas/src/ai_config.ts
  * @description Defines the Zod schema for AI provider configuration, including model selection, retry strategies, and mock provider settings.
- * @architectural-layer Config * @related-files ["packages/schemas/src/config.ts", src/ai/provider_factory.ts]
+ * @architectural-layer Config
+ * @related-files ["packages/schemas/src/config.ts", "src/ai/provider_factory.ts"]
  */
 
 /**

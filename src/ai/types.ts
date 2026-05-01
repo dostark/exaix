@@ -6,7 +6,7 @@
  * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
  */
 import type { ConfigSource, MockStrategy, ProviderType } from "@exaix/core";
-import type { EventLogger } from "../services/core/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
 
 /**
  * Options for model generation requests.

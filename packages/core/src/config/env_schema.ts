@@ -1,14 +1,13 @@
 /**
  * @module EnvSchema
- * @path src/config/env_schema.ts
+ * @path packages/core/src/config/env_schema.ts
  * @description Provides Zod validation for environment variable overrides (EXA_LLM_*), allowing runtime configuration of AI providers and test modes.
  * @architectural-layer Config
- * @related-files [src/config/service.ts]
+ * @related-files ["packages/core/src/config/service.ts"]
  */
 
 import { z } from "zod";
 import type { ProviderType } from "@exaix/core";
-import { ProviderTypeSchema } from "@exaix/schemas/ai_config.ts";
 import { AI_TIMEOUT_MS_MAX, AI_TIMEOUT_MS_MIN, KNOWN_PROVIDERS } from "@exaix/ai/constants.ts";
 
 /**
@@ -16,7 +15,7 @@ import { AI_TIMEOUT_MS_MAX, AI_TIMEOUT_MS_MIN, KNOWN_PROVIDERS } from "@exaix/ai
  * These allow runtime override of AI provider configuration
  */
 export const EnvLLMOverrideSchema = z.object({
-  EXA_LLM_PROVIDER: ProviderTypeSchema.optional(),
+  EXA_LLM_PROVIDER: z.string().min(1).optional(),
   EXA_LLM_MODEL: z.string().min(1).optional(),
   EXA_LLM_BASE_URL: z.string().url().optional(),
   EXA_LLM_TIMEOUT_MS: z.string()
@@ -50,15 +49,17 @@ export function getValidatedEnvOverrides(): EnvLLMOverride {
 
   // Validate provider
   if (raw.EXA_LLM_PROVIDER) {
-    const providerResult = ProviderTypeSchema.safeParse(raw.EXA_LLM_PROVIDER);
+    const providerResult = z.string().min(1).safeParse(raw.EXA_LLM_PROVIDER);
     if (providerResult.success) {
       // Additional validation: check against known providers
-      const _normalized = raw.EXA_LLM_PROVIDER.toLowerCase().trim();
-      if (KNOWN_PROVIDERS.includes(providerResult.data as ProviderType)) {
-        result.EXA_LLM_PROVIDER = providerResult.data as ProviderType;
+      const normalized = raw.EXA_LLM_PROVIDER.toLowerCase().trim();
+      if (KNOWN_PROVIDERS.includes(normalized as ProviderType)) {
+        result.EXA_LLM_PROVIDER = normalized as ProviderType;
       } else {
         console.warn(`Invalid EXA_LLM_PROVIDER: "${raw.EXA_LLM_PROVIDER}" is not a known provider`);
       }
+    } else {
+      console.warn(`Invalid EXA_LLM_PROVIDER: ${providerResult.error.message}`);
     }
   }
 

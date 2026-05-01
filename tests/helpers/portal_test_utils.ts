@@ -13,7 +13,7 @@ import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PortalExecutionStrategy, PortalOperation, ToolName } from "@exaix/core";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";

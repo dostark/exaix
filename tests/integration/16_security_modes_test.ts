@@ -9,7 +9,7 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { PortalOperation, SecurityMode } from "@exaix/core";
-import { EventLogger } from "../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 interface ActivityRow {

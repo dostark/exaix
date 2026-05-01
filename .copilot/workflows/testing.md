@@ -119,10 +119,10 @@ All test-related environment variables use the `EXA_TEST_*` prefix for clarity a
 
 **Helper Functions:**
 
-Use the helper functions from `src/config/env_schema.ts` instead of direct env var access:
+Use the helper functions from `@exaix/core/config/env_schema.ts` instead of direct env var access:
 
 ```typescript
-import { isCIMode, isTestMode } from "../config/env_schema.ts";
+import { isCIMode, isTestMode } from "@exaix/core/config/env_schema.ts";
 
 // Check if in test environment
 if (isTestMode()) {
@@ -147,7 +147,7 @@ if (isCIMode() && !Deno.env.get("EXA_TEST_ENABLE_PAID_LLM")) {
 ### CI (GitHub Actions) — Common Pitfalls
 
 - Treat `CI` as a truthy flag (`CI=true` on GitHub Actions), not strictly `"1"`.
-  - **Prefer** the shared helpers in `src/config/env_schema.ts` (`isCIMode()`, `isTestMode()`).
+  - **Prefer** the shared helpers in `@exaix/core/config/env_schema.ts` (`isCIMode()`, `isTestMode()`).
 - When CI guard is active, paid LLM providers are intentionally disabled unless explicitly opted in.
   - Expect mock behavior unless `EXA_TEST_ENABLE_PAID_LLM=1` is set.
   - Tests that assert provider selection should include a CI-guard branch (e.g., accept `mock-provider` or `CI-protected ...`).

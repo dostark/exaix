@@ -11,7 +11,7 @@ import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
-import { EventLogger } from "../../../src/services/core/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { SecurityMode } from "@exaix/core";
@@ -83,7 +83,7 @@ Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => 
   const permissions = new PortalPermissionsService([portalConfig]);
 
   const strategyRegistry = new StrategyRegistry();
-  const logger = new EventLogger({ db: helper.db, defaultActor: "test" });
+  const logger = new EventLogger({ db: helper.db, defaultActor: "user:test" });
 
   const executor = new AgentExecutor(
     registryState.config,

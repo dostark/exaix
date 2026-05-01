@@ -1,6 +1,6 @@
 /**
  * @module ConfigService
- * @path src/config/service.ts
+ * @path packages/core/src/config/service.ts
  * @description Central service for managing system configuration, loading from TOML files,
  * and providing validated access to settings for all components.
  * @architectural-layer Core System
@@ -12,7 +12,7 @@ import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
-import { logInfo } from "../services/logger/structured_logger.ts";
+import { logInfo } from "@exaix/core/logger/structured_logger.ts";
 import type { IPortalConfigEntry } from "@exaix/core/types";
 import { ExaPathDefaults } from "@exaix/core";
 
