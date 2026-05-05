@@ -11,7 +11,7 @@ links:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-# Exaix Developer Tools — Quick Reference
+## Exaix Developer Tools — Quick Reference
 
 > **📚 Full Guide**: See [docs/dev/Exaix_Tools.md](./docs/dev/Exaix_Tools.md) for installation instructions and detailed usage.
 
@@ -97,7 +97,7 @@ These tools are available to AI agents via the MCP protocol. They are validated,
 
 ---
 
-**Footer — Agent Knowledge Base**
+## Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)

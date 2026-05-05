@@ -293,7 +293,7 @@ The `RequestAnalyzer` performs intent extraction before routing, identifying goa
 
 ---
 
-## Request Processing Flow {#request-processing-flow}
+## Request Processing Flow
 
 <!-- AGENT_LOGIC: {
   "flow": "Request Processing Loop",

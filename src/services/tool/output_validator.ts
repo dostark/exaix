@@ -521,6 +521,3 @@ export function createPlanValidator(): OutputValidator {
     maxRepairAttempts: 3,
   });
 }
-
-// Note: Plan, PlanSchema, and PlanStepSchema must be imported directly from
-// src/schemas/plan_schema.ts according to CODE_STYLE.md.
