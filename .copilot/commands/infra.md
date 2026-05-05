@@ -3,44 +3,64 @@ agent: general
 scope: dev
 title: "Infrastructure/Config Template (#infra)"
 description: Plan and implement infrastructure or configuration changes with validation and rollback steps
-short_summary: "Template for planning and implementing infrastructure or configuration changes."
-version: "0.1"
+short_summary: "Plan and implement Exaix infra/config changes: TOML schema, Zod validation, PathResolver, CI verification."
+version: "0.2"
 topics: ["infrastructure", "configuration", "deployment", "setup"]
 ---
 
-**Purpose:** Plan and implement infrastructure or configuration changes for Exaix.
+```text
+Key points
+- Config lives in exa.config.toml; sections map to Zod schemas in @exaix/core/config/
+- Always validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
+- All new file paths MUST go through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
+- Run deno check src/main.ts after any config-schema change to catch type propagation errors early
+- Have an explicit rollback path before applying any change to shared config
 
----
+Canonical prompt (short):
+"Implement infrastructure/config change: {goal}.
+Update TOML schema + Zod validation, add PathResolver for any new paths,
+write tests, run deno check + deno task check:style, document rollback."
 
-## Instructions for Agent
+Exaix config patterns
+  # TOML section → Zod schema → typed config object
+  # exa.config.toml
+  [quality_gate]
+  mode = "hybrid"
 
-- Restate the infrastructure/config goal and scope.
-- Identify affected systems, files, and dependencies.
-- Plan changes with rollback and validation steps.
-- Add tests for config changes if possible.
-- Validate changes with linting and tests.
+  # @exaix/core/config/schemas.ts
+  export const QualityGateConfigSchema = z.object({
+    mode: z.enum(["heuristic", "llm", "hybrid"]).default("hybrid"),
+  });
 
----
+  # Never use direct Deno.env.get() for EXA_LLM_* without validation
+  # ✅ GOOD:
+  import { getValidatedEnvOverrides } from "@exaix/core/config/env_schema.ts";
+  const overrides = getValidatedEnvOverrides();
 
-## Template
+  # Supported production env vars (validated, typed):
+  # EXA_LLM_PROVIDER  EXA_LLM_MODEL  EXA_LLM_BASE_URL  EXA_LLM_TIMEOUT_MS
 
-**Infra/Config Goal:**
-{RAW_PROMPT}
+  # Test/CI env vars use EXA_TEST_* prefix; use isTestMode() / isCIMode() helpers
 
-**Scope:**
+Validation checklist
+  [ ] deno check src/main.ts              — no type errors from schema changes
+  [ ] deno lint                           — no lint issues
+  [ ] deno task check:style               — no style violations
+  [ ] deno test --allow-all <test-file>   — config tests pass
+  [ ] Rollback documented (revert TOML + schema, re-run deno check)
 
-- ...
+For submodule config changes
+  See guidelines/submodule-workflow.md for safe handling of exaix-dev-docs changes.
 
-**Affected Systems/Files:**
+Do / Don't
+- ✅ Do add a Zod schema for every new TOML section
+- ✅ Do use PathSecurity.resolveAndValidate() for any new configurable path
+- ✅ Do use getValidatedEnvOverrides() for EXA_LLM_* env vars
+- ✅ Do document the rollback steps before applying
+- ❌ Don't use Deno.env.get("EXA_LLM_*") without validation
+- ❌ Don't add raw numeric/string defaults in TOML without corresponding Zod defaults
+- ❌ Don't skip deno check after schema changes — type errors cascade silently
 
-- ...
-
-**Plan:**
-
-- ...
-
-**Validation:**
-
-- Tests pass
-- Linting clean
-- Rollback plan ready
+Related
+- CODE_STYLE.md — authoritative naming, type, import, and constants rules
+```

@@ -3,9 +3,17 @@ agent: general
 scope: dev
 title: Review-Research-Improvement Pattern
 short_summary: "Systematic approach to evaluate Exaix subsystems, identify weaknesses, and create actionable improvement plans."
-version: "1.0"
+version: "1.1"
 topics: ["architecture-review", "improvement-planning", "patterns", "refactoring", "quality"]
 ---
+
+> **Invocable workflow moved to skill** — The full autonomous Review-Research-Improvement
+> workflow (REVIEW → RESEARCH → PLAN → ARTIFACTS) is now the canonical skill
+> **[skills/review-research/SKILL.md](../skills/review-research/SKILL.md)**.
+> Use `#review-research` to invoke it.
+>
+> This guideline is retained as a **reference summary** of the pattern's rationale,
+> subsystem-specific research areas, and illustrative examples.
 
 ## Review-Research-Improvement Pattern
 

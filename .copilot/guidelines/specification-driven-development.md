@@ -5,6 +5,8 @@ title: Specification-Driven Development in Exaix
 short_summary: "Analysis of how Exaix's request-clarification-planning-execution pipeline implements Specification-Driven Development (SDD) principles for AI agent orchestration."
 version: "1.0"
 topics: ["methodology", "sdd", "quality", "request-processing", "architecture"]
+links:
+  - "CODE_STYLE.md"
 ---
 
 ## Specification-Driven Development in Exaix

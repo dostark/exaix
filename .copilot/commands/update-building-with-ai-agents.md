@@ -1,45 +1,93 @@
 ---
-agent: claude
+agent: general
 scope: docs
 title: "Update Building with AI Agents Documentation"
 description: Add new patterns or learnings to the Building_with_AI_Agents.md knowledge base
 short_summary: "Prompt template for adding new patterns and stories to Building_with_AI_Agents.md"
-version: "0.1"
+version: "0.2"
 topics: ["documentation", "meta", "patterns", "field-guide"]
 ---
+
+```text
+Key points
+- Target file: docs/Building_with_AI_Agents.md
+- Parts are numbered sequentially — always run `git log` commands below to get accurate context
+- Follow the established narrative voice: personal opening, technical body, pattern/meta-insight close
+- After writing a new Part, rebuild the .copilot/ manifest so the doc index stays current
+
+Canonical prompt (short):
+"Add a new Part to docs/Building_with_AI_Agents.md covering: {topic/theme}.
+Self-compute update context from the git log commands below, then follow content structure."
+
+Self-computing context
+  # Find the commit hash the file was last updated at
+  git log --oneline --all -- docs/Building_with_AI_Agents.md | head -1
+
+  # Find all commits since that hash
+  git log <LAST_HASH>..HEAD --oneline
+
+  # Count commits
+  git log <LAST_HASH>..HEAD --oneline | wc -l
+
+  # Find the next Part number
+  grep -c "^## Part" docs/Building_with_AI_Agents.md
+
+Content structure per Part
+  1. Part title: "Part <N>: <Thematic Name> (<Month Year>)"
+  2. Personal narrative opening — the problem, the wake-up call, the inflection point
+  3. Technical details with concrete code examples and before/after comparisons
+  4. Pattern recognition — what generalizable principle emerged
+  5. Meta-insight or philosophical win — what this means for the project direction
+
+After writing
+  [ ] Run deno run --allow-read --allow-write scripts/build_agents_index.ts
+      (to re-index docs/ in .copilot/manifest.json if summary changed)
+  [ ] Run deno fmt docs/Building_with_AI_Agents.md
+
+Do / Don't
+- ✅ Do run the git log commands above first — never guess the Part number or last hash
+- ✅ Do follow the established section structure (narrative → technical → pattern → meta)
+- ✅ Do rebuild the manifest after writing if the file's summary changed
+- ❌ Don't invent commit hashes or dates — compute them from git log
+- ❌ Don't skip the meta-insight section — it is the most valuable part for future readers
+```
 
 ## Prompt Template
 
 ```text
 Add new content to docs/Building_with_AI_Agents.md documenting recent work.
 
+First, self-compute update context:
+  git log --oneline --all -- docs/Building_with_AI_Agents.md | head -1
+  git log <LAST_HASH>..HEAD --oneline
+  grep -c "^## Part" docs/Building_with_AI_Agents.md
+
 Requirements:
 
-1. Follow proper Part numbering (next available: Part [X])
-
-1.
-1.
-1.
+1. Follow proper Part numbering (next available: compute with grep above)
+2. Personal narrative opening — the problem or wake-up call
+3. Technical details with code examples and before/after comparisons
+4. Pattern recognition + meta-insight close
 
 Content structure:
 
-- Part title with thematic name (e.g., "The Self-Documenting Agent System")
+- Part title with thematic name and month/year
 - Personal narrative opening (the problem, the wake-up call)
 - Technical details with code examples
 - Before/After comparisons
 - Pattern recognition
 - Meta-insights and philosophical wins
 
-Update context:
+Update context (compute from git log above):
 
-- Last updated: [git log --oneline --all -- docs/Building_with_AI_Agents.md | head -1]
-- Commits since then: [git log LAST_HASH..HEAD --oneline]
-- Focus areas: [agents/ enhancements / CI/CD / testing / etc.]
+- Last updated: [computed]
+- Commits since then: [computed]
+- Focus areas: {agents/ enhancements / CI/CD / testing / etc.}
 
 After writing:
 
-
-1.
+1. Run: deno run --allow-read --allow-write scripts/build_agents_index.ts
+2. Run: deno fmt docs/Building_with_AI_Agents.md
 ```
 
 ## Example Usage

@@ -5,6 +5,8 @@ title: jscpd Code Duplication Detection Guide
 short_summary: "Using jscpd to detect and track code duplication in Exaix codebase"
 version: "0.1"
 topics: ["refactoring", "quality", "tools", "jscpd"]
+links:
+  - "CODE_STYLE.md"
 ---
 
 ## jscpd Code Duplication Detection Guide

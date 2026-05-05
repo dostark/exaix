@@ -1,47 +1,24 @@
 ---
 agent: general
 scope: dev
-title: "Dependency/Version Upgrade Template (#upgrade)"
+title: "Dependency/Version Upgrade (#upgrade)"
 description: Upgrade a dependency or runtime version with compatibility checks and regression validation
-short_summary: "Template for planning and executing dependency or version upgrades with stability checks."
-version: "0.1"
+short_summary: "Invocation stub for the Upgrade skill — semver audit, regression net, apply, full CI, document."
+version: "0.2"
 topics: ["upgrade", "dependencies", "version", "maintenance"]
 ---
 
-**Purpose:** Plan and execute upgrades of dependencies or versions, ensuring stability and coverage.
+> **⚠️ REDIRECT** — This command is a thin invocation stub.
+> The canonical multi-step workflow lives in **[skills/upgrade/SKILL.md](../skills/upgrade/SKILL.md)**.
+> Use `#upgrade` to invoke the full Audit → Regression net → Apply → Full validation → Document → Commit loop.
 
----
-
-## Instructions for Agent
-
-- Restate upgrade goal and affected dependencies.
-- Plan upgrade steps, including rollback.
-- Add/maintain tests for upgraded code.
-- Validate with all tests and linting.
-- Document upgrade and any breaking changes.
-
----
-
-## Template
-
-**Upgrade Goal:**
+```text
+Upgrade the following dependency/runtime:
 {RAW_PROMPT}
 
-**Affected Dependencies:**
+Follow the #upgrade skill: read changelog, identify breaking changes,
+write regression tests on current version first, apply upgrade, run full CI,
+document migration steps, commit.
+```
 
-- ...
-
-**Upgrade Plan:**
-
-- ...
-
-**Tests:**
-
-- ...
-
-**Validation:**
-
-- All tests pass
-- Linting clean
-- Rollback plan ready
-- Breaking changes documented
+> **See also:** [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for all code changes.

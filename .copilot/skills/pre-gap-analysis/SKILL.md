@@ -75,9 +75,13 @@ Do / Don't
   verification and make integration tests fragile.
 
 Related skills:
+- #plan             — Draft a new phase planning document from scratch (precedes this skill)
+- #next-steps       — Execute the plan step-by-step after analysis is clean (follows this skill)
 - #post-gap-analysis — Deep post-implementation review (code already written)
-- #plan             — Draft a new phase planning document from scratch
 - #commit           — Create a structured commit after gap fixes
+
+Workflow chain (typical):
+  #plan → **#pre-gap-analysis** → #next-steps → #post-gap-analysis → #commit
 ```
 
 ---
@@ -232,12 +236,39 @@ Build a gap summary table before detailed entries.
 
 ### Phase 5 — Write Gaps Into the Document
 
-Append at the end of the planning document:
+Append at the end of the planning document using the exact format below.
 
-1. Pre-Gap Analysis header with ISO date and verdict.
-1. Detailed gap entries (one per gap).
-1. Gap summary table.
-1. Pre-Implementation Actions list (ordered by severity).
+#### Required markdown format
+
+```markdown
+---
+
+## Pre-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ READY TO IMPLEMENT
+
+### Gap Summary
+
+| # | Step | Severity | Description |
+|---|------|----------|-------------|
+| 1 | Step N | 🔴 Critical | <one-line description> |
+| 2 | Step N | 🔒 Security | <one-line description> |
+| 3 | Step N | 🟡 Feasibility | <one-line description> |
+
+### Gap Detail
+
+#### GAP-1 — 🔴 Critical — Step N: <title>
+
+**Finding:** <detailed explanation>
+**Impact:** <what breaks if not fixed>
+**Resolution:** <what needs to be added to the plan>
+
+---
+
+### Pre-Implementation Actions (ordered by severity)
+
+1. 🔴 [GAP-1] <action>
+2. 🔒 [GAP-2] <action>
+3. 🟡 [GAP-3] <action>
+```
 
 ---
 

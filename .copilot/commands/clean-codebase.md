@@ -1,5 +1,5 @@
 ---
-agent: agent
+agent: general
 tools:
   - git_status
   - search_files
@@ -9,7 +9,7 @@ scope: dev
 title: "Clean Codebase Template (#clean-codebase)"
 description: Remove all lint errors, style violations, and warnings from the repository until CI is fully green
 short_summary: "Template for removing all errors, warnings, and style violations from the repository."
-version: "0.1"
+version: "0.2"
 topics: ["cleanup", "validation", "linting", "style", "qa"]
 ---
 
@@ -34,6 +34,9 @@ Do / Don't
 - ❌ Don't leave any warnings or violations in the final state
 - ❌ Don't change behavior unless necessary for cleanup
 - ❌ Don't skip root-level validation commands
+
+Related
+- CODE_STYLE.md — authoritative naming, type, import, and constants rules
 ```
 
 ## Purpose

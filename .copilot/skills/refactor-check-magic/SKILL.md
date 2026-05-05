@@ -103,3 +103,22 @@ Stop when further changes are mostly noise or would require policy-level checker
 - Keep imports top-level and type-safe.
 - Avoid introducing magic numbers/strings in new code.
 - Maintain strict TypeScript compatibility and existing architecture patterns.
+- After renaming symbols or moving constants, re-run `deno task check:arch` — renaming
+  can break module JSDoc grounding and produce UNGROUNDED files.
+
+## Related Skills
+
+- `#commit`  — Create a structured commit after a successful refactor batch.
+- `#plan`    — If this analysis reveals a systemic issue requiring architectural
+              changes, start a new phase document with `#plan`.
+- `#next-steps` — If this refactor is part of an active phase, continue via `#next-steps`.
+- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+
+## Output Format
+
+1. **Violation delta** — total count before vs. after each batch.
+1. **Findings addressed** — literal → strategy → files changed.
+1. **Residual high-score literals** — reason not addressed (e.g., protocol constraint,
+   legitimate schema literal, requires policy-level checker change).
+1. **Next 3 candidates** — best remaining targets for a follow-up session.
+1. **CI gate results** — `check:magic`, `lint`, `check:arch`, `deno check` status.

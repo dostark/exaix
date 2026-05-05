@@ -35,8 +35,9 @@ Validation policy
        - a planning document explicitly requires repository-wide validation and the step is broad enough to justify it
 
 RED phase
-  1. Read the step's "Architecture notes", "Success criteria", and "Planned tests"
-     from the .copilot/planning/ doc.
+  1. Restate the step context: read the step's "Architecture notes", "Success criteria",
+     and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
+     built (e.g. "Implementing Step 3.2: Add user authentication validation").
   2. Create the test file at the mirrored path under tests/.
   3. Add a module-header JSDoc block (required by check:arch):
        /** @module XxxTest @path tests/... @description ... */
@@ -57,8 +58,10 @@ REFACTOR + CI gates
  11. deno task check:style   → fix any errors (interface naming I*, no magic unions)
  12. deno task check:arch    → all files must be GROUNDED, 0 UNGROUNDED
  13. deno fmt <src-file> <test-file>  (run before commit, not after)
- 14. (optional) deno task check:complexity  if implementation is non-trivial
- 15. (exception only) run a full-suite command only when the validation policy above says it is warranted
+ 14. deno task check:magic   → if new string/number literals were added, reduce violations
+     (use #refactor-check-magic if the count is non-trivial)
+ 15. (optional) deno task check:complexity  if implementation is non-trivial
+ 16. (exception only) run a full-suite command only when the validation policy above says it is warranted
 
 Planning doc update
  16. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
@@ -69,19 +72,18 @@ Planning doc update
 
 Commit
  19. Stage: src file, test file, planning doc.
- 20. Commit message format:
+ 20. Use #commit for the full structured commit body. At minimum the subject line must
+     follow conventional commits and the body must include what:, rationale:, tests:,
+     who:, and impact: fields. A concise per-step shorthand is acceptable:
        feat(<scope>): implement <What> (Step N)
 
-       <Short rationale paragraph>
+       what: <implementation summary>
+       rationale: <why>
+       tests: <test file>, N/N passing
+       who: <your agent identity>
+       impact: <ARCHITECTURE.md component>: <detail>
 
-       <src/path> (NEW):
-       - <key exported symbol and purpose>
-       - <notable design decisions>
-
-       <test/path> (NEW):
-       - N tests, all passing
-
-       CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED
+       CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, magic OK
 
        refs: <planning-doc-slug> step N
 
@@ -93,6 +95,7 @@ Do / Don't
 - ✅ Do use IFoo interface naming (not Foo) — enforced by check:style
 - ✅ Do use ICodeConvention["confidence"] instead of "low"|"medium"|"high" literal union
 - ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
+- ✅ Do document any edge cases handled and any deviations from the plan in the commit body
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
 - ❌ Don't proceed to the next step if any CI gate fails
@@ -101,10 +104,21 @@ Do / Don't
 - ❌ Don't usually run `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a narrow step
 
 Related skills
-- #plan   — Create or extend a .copilot/planning/ document
-- #commit — Create a structured commit message
-- #fix    — Fix a bug discovered during implementation
+- #plan              — Create or extend a .copilot/planning/ document (precedes this skill)
+- #pre-gap-analysis  — Validate the plan before starting (precedes this skill)
+- #post-gap-analysis — Deep review when all steps are complete (follows this skill)
+- #commit            — Create a structured commit message (used at end of each step)
+- #tdd-workflow      — Full TDD red-green-refactor reference for individual components (used within each step)
+- #refactor-check-magic — Run when check:magic violations are non-trivial
+- #fix               — Fix a bug discovered during implementation (branches off this skill)
+
+Workflow chain (typical):
+  #plan → #pre-gap-analysis → **#next-steps** → #post-gap-analysis → #commit
 ```
+
+## Related
+
+- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format
 

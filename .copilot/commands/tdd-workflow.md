@@ -1,32 +1,23 @@
 ---
 agent: general
 scope: dev
-title: "TDD Workflow Prompt Example (#tdd)"
+title: "TDD Workflow (#tdd-workflow)"
 description: Start a TDD workflow — write failing tests first, then implement minimal passing code
-short_summary: "Example prompt for test-driven development following Exaix patterns."
-version: "0.1"
-topics: ["tdd", "testing", "prompts", "examples"]
+short_summary: "Invocation stub for the TDD Workflow skill — write failing tests first, implement minimally, refactor, verify coverage."
+version: "0.2"
+topics: ["tdd", "testing", "red-green-refactor"]
 ---
 
+> **⚠️ REDIRECT** — This command is a thin invocation stub.
+> The canonical multi-step workflow lives in **[skills/tdd-workflow/SKILL.md](../skills/tdd-workflow/SKILL.md)**.
+> Use `#tdd-workflow` to invoke the full CONTEXT → RED → GREEN → REFACTOR → CI gates → coverage check loop.
+
 ```text
-Key points
-- Always write failing tests first, then implement minimal code to pass
-- Use initTestDbService() for database tests, include cleanup in try/finally
-- Follow patterns from agents/tests/testing.md and test helpers
-- Verify coverage maintained after refactoring
+Apply TDD to the following:
+{RAW_PROMPT}
 
-Canonical prompt (short):
-"I need to [add feature / fix bug / refactor code] for [component]. Follow TDD: write failing test first, implement minimal code, refactor, verify coverage. Use inject_agent_context for 'TDD testing [component]'."
-
-Examples
-- Example prompt: "I need to add input validation for Portal configuration files. Follow TDD workflow."
-- Example prompt: "Fix the PathResolver symlink bug. Write regression test first."
-
-Do / Don't
-- ✅ Do write failing test before implementation
-- ✅ Do use test helpers and cleanup patterns
-- ✅ Do verify coverage doesn't drop
-- ✅ Do update Implementation Plan step when complete
-- ❌ Don't implement without tests first
-- ❌ Don't skip context injection for complex components
+Follow the #tdd-workflow skill: select test helpers, write failing test first,
+implement minimally, refactor, run CI gates, verify coverage thresholds.
 ```
+
+> **See also:** [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules for all code changes.

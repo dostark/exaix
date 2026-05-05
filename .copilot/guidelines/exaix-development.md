@@ -512,3 +512,84 @@ async function process() {
 - [ ] **Working tree is clean before any rebase/pull** (pre-rebase hook enforces this)
 
 ---
+
+## Plan-Driven Development Patterns
+
+When working from a `.copilot/planning/` document or `docs/Exaix_Implementation_Plan.md`,
+use the following structured workflow to locate, implement, and mark complete each step.
+For autonomous multi-step execution see `#next-steps`; this section documents the prompt
+pattern for single-step invocations.
+
+### Prompt Template
+
+```text
+I want to work on [feature/fix].
+
+1. READ PLAN:
+   - Open the relevant .copilot/planning/phase-XX-*.md or docs/Exaix_Implementation_Plan.md
+   - Find the relevant Phase and Step
+   - If no step exists, create one following the existing format
+
+2. UNDERSTAND REQUIREMENTS:
+   - Read the step's "Action" section
+   - Review "Success Criteria"
+   - Check any referenced docs or examples
+
+3. IMPLEMENT:
+   - Follow TDD if code changes (see #tdd-workflow)
+   - Update docs if needed
+   - Follow patterns from .copilot/guidelines/
+
+4. VERIFY:
+   - Check all success criteria met [x]
+   - Run tests
+   - Update step status
+
+5. MARK COMPLETE:
+   - Update planning doc step checkboxes to [x]
+   - Note any deviations or learnings
+
+Phase: [number]
+Step: [number]
+Feature: [description]
+```
+
+### Example — Working from an Existing Step
+
+```text
+I want to work on Flow parameter validation (Phase 8, Step 8.3).
+
+1. READ PLAN:    Find Phase 8, Step 8.3 in docs/Exaix_Implementation_Plan.md
+2. UNDERSTAND:   Action: Add Zod schema for Flow parameter validation
+                 Success Criteria: schema validates required/optional params, types,
+                 invalid cases, user-friendly errors
+3. IMPLEMENT:    Write failing tests first; create Zod schema in src/schemas/flow.ts;
+                 implement validation in Flow executor; verify tests pass
+4. VERIFY:       Run: deno test tests/flows/flow_validation_test.ts, coverage maintained
+5. MARK DONE:    Update [x] on all criteria; note: Schema follows pattern from src/schemas/
+
+Phase: 8 | Step: 8.3 | Feature: Flow parameter validation
+```
+
+### Example — Creating a New Step
+
+When no matching step exists, create one following this format before implementing:
+
+```markdown
+#### Step N.M: <Title>
+
+**Action:** <one-sentence description of what to build>
+
+**Files:**
+- `src/<path>` — <role>
+- `tests/<path>` — <what is tested>
+
+**Success Criteria:**
+- [ ] <criterion 1>
+- [ ] <criterion 2>
+
+**Planned tests:**
+- `<test description>`
+```
+
+After creating the step, proceed with the standard workflow above.

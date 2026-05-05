@@ -1,5 +1,5 @@
 ---
-agent: agent
+agent: general
 tools:
   - git_status
   - git_commit
@@ -64,8 +64,9 @@ model: <YOUR actual model name and version>
 
 ⚠️ CRITICAL: Identity Accuracy
 - DO NOT hallucinate your model name or agent name.
-- Identify yourself as "Antigravity".
-- Use the actual underlying model name (e.g., "Gemini") for the model field.
+- Use your actual agent identity (e.g., Claude, Copilot).
+- Use your actual underlying model name (e.g., "Claude Sonnet 4.6", "GPT-4o") for the model
+  field — do NOT write "Gemini" unless you are genuinely a Google Gemini model.
 
 ⚠️ CRITICAL: Impact Field Traps (common validator failures)
 - The **component word(s) before `:` in `impact:`** must appear **verbatim (case-insensitive)** in `what:`. The validator enforces this. Strategy: draft `what:` first using real ARCHITECTURE.md component names; then mirror that exact word in `impact:`. Do NOT choose a generic category label (e.g., `Documentation`, `Planning`, `Schemas`) unless that exact word already appeared in your `what:` text.
@@ -74,7 +75,7 @@ model: <YOUR actual model name and version>
 Canonical prompt (short):
 "You've completed [work]. Create a MANDATORY structured commit message.
 Review all staged and unstaged changes first, split them into logical commit batches unless the prompt says otherwise, commit the full current scope in those batches, run the required pre-commit checks, then follow the schema: subject line, then what:, rationale:, tests:, who:, and impact: (grounded in ARCHITECTURE.md).
-Ensure you identify your actual model correctly (e.g., Gemini) to prevent hallucinations."
+Identify yourself accurately — do not write 'Antigravity' or 'Gemini' unless that is your actual identity."
 
 Examples:
 - "feat(scripts): add commit validator (Step 1)
@@ -82,9 +83,9 @@ Examples:
   what: Implemented validator script...
   rationale: To enforce rules...
   tests: 10/10 tests passed...
-  who: Antigravity
+  who: Claude
   impact: scripts: added validation logic
-  model: Gemini"
+  model: Claude Sonnet 4.6"
 
 Do / Don't:
 - ✅ Do use a blank line after the subject line.
@@ -102,7 +103,16 @@ Do / Don't:
 - ❌ Don't present an actual commit as ready if required checks are failing or were skipped without being called out.
 - ❌ Don't skip mandatory fields like rationale or tests.
 - ❌ Don't use --no-verify.
-- ❌ Don't hallucinate model versions.
+- ❌ Don't hallucinate model versions or agent names (do not write "Antigravity" or "Gemini"
+  unless you are genuinely those agents — use your real provider/model identity).
+
+Related skills:
+- #next-steps       — TDD step execution that ends with a commit
+- #post-gap-analysis — Post-implementation review that ends with remediation commits
+- #refactor-check-magic — Magic-value refactor that ends with a commit
+
+Workflow chain (typical):
+  #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → **#commit**
 
 Expected Response Pattern:
 1. Review and summarize both staged and unstaged changes, then decide whether one commit or multiple logical batches are required.

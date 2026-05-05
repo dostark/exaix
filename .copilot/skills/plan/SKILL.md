@@ -39,6 +39,9 @@ Do / Don't
 Prototypes & Validation:
 - Use #pre-gap-analysis to validate this plan against the codebase before starting.
 - Use #post-gap-analysis to verify the final implementation against the plan's promises.
+
+Workflow chain (typical):
+  #plan → #pre-gap-analysis → #next-steps → #post-gap-analysis → #commit
 ```
 
 ---

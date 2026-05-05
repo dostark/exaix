@@ -3,47 +3,53 @@ agent: general
 scope: docs
 title: "Documentation Template (#doc)"
 description: Create or update documentation ensuring accuracy, code examples, and usage coverage
-short_summary: "Template for creating or updating documentation with clarity and completeness."
-version: "0.1"
+short_summary: "Create or update Exaix docs with the correct target file, structure, and sync commands."
+version: "0.2"
 topics: ["documentation", "writing", "clarity"]
 ---
 
-**Purpose:** Create or update documentation for Exaix codebase, ensuring clarity and completeness.
+```text
+Key points
+- Write for the intended audience: user-facing docs in docs/, agent guidance in .copilot/
+- After modifying MCP tool handlers in src/mcp/handlers/, always run
+  deno task docs-sync-schemas to keep TOOLS.md in sync
+- exaix-dev-docs is a git submodule — follow guidelines/submodule-workflow.md
+  for any changes that span the parent repo and the submodule
+- Consult guidelines/documentation.md for full structure and publishing protocol
 
----
+Canonical prompt (short):
+"Create/update documentation for {component/feature}.
+Target file: {see map below}. Include: purpose, usage, code examples, edge cases."
 
-## Instructions for Agent
+Doc target map
+  User-facing feature docs     →  docs/Exaix_User_Guide.md
+  Architecture / design        →  ARCHITECTURE.md  (update AGENT_LOGIC YAML block)
+  Agent patterns + field guide →  docs/Building_with_AI_Agents.md
+  Developer setup              →  docs/dev/Exaix_Developer_Setup.md
+  Tool quick-reference         →  TOOLS.md  (MCP section auto-managed by docs-sync-schemas)
+  API / implementation plan    →  docs/Exaix_Implementation_Plan.md
+  Agent guidance               →  .copilot/guidelines/<topic>.md
+  Submodule docs               →  exaix-dev-docs/ (see submodule-workflow)
 
-- Restate documentation goal and scope.
-- Ensure all relevant code, interfaces, and usage are covered.
-- Add code examples and usage scenarios.
-- Validate documentation for accuracy and completeness.
-- Run linting/formatting on docs if applicable.
+Special sync commands
+  # After changing MCP handler schemas in src/mcp/handlers/
+  deno task docs-sync-schemas
 
----
+  # After adding/changing .copilot/ files
+  deno run --allow-read --allow-write scripts/build_agents_index.ts
 
-## Template
+Doc quality checklist
+  [ ] Purpose is clearly stated in the first paragraph
+  [ ] Each feature has at least one code example
+  [ ] Edge cases and error behavior are covered
+  [ ] Links to related docs/commands are included
+  [ ] Runs deno fmt --check (for .md files with embedded code blocks where applicable)
+  [ ] No dead links
 
-**Documentation Goal:**
-{RAW_PROMPT}
-
-**Scope:**
-
-- ...
-
-**Code Examples:**
-
-- ...
-
-**Usage Scenarios:**
-
-- ...
-
-**Validation:**
-
-- Documentation is accurate and complete
-- Linting/formatting clean
-
-**Notes:**
-
-- Reference related modules/files.
+Do / Don't
+- ✅ Do run deno task docs-sync-schemas after MCP handler changes
+- ✅ Do follow submodule-workflow.md for exaix-dev-docs changes
+- ✅ Do link back to the implementation plan step the doc covers
+- ❌ Don't edit TOOLS.md MCP section manually — it is auto-generated
+- ❌ Don't create new docs/ files without matching entries in the implementation plan
+```

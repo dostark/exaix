@@ -78,7 +78,11 @@ Do / Don't
 Related skills:
 - #pre-gap-analysis — Pre-implementation gap analysis (no code to check yet)
 - #plan         — Draft a new phase planning document from scratch
+- #next-steps   — Re-enter the TDD loop to remediate gaps found here
 - #commit       — Create a structured commit after remediation
+
+Workflow chain (typical):
+  #plan → #pre-gap-analysis → #next-steps → **#post-gap-analysis** → #commit
 ```
 
 ---
@@ -162,14 +166,48 @@ Build a gap summary table before detailed entries.
 
 ### Phase 5 — Write Gaps and Remediation Steps Into the Document
 
-Append at end of planning document:
+Append at end of planning document using the exact format below.
 
-1. Deep Review header with ISO date and verdict.
-1. Detailed gap entries (one per gap).
-1. Gap summary table.
-1. Gap Remediation Plan header.
-1. One TDD-First remediation step per gap (§F format).
-1. Final §3D Documentation Update step when applicable.
+#### Required markdown format
+
+```markdown
+---
+
+## Post-Gap Analysis — <ISO date> — Verdict: ⚠️ GAPS FOUND / ✅ IMPLEMENTATION COMPLETE
+
+### Gap Summary
+
+| # | Step | Severity | Description |
+|---|------|----------|-------------|
+| 1 | Step N | 🔴 Critical | <one-line description> |
+| 2 | Step N | 🔒 Security | <one-line description> |
+
+### Gap Detail
+
+#### GAP-1 — 🔴 Critical — Step N: <title>
+
+**Finding:** <detailed explanation>
+**Expected (plan says):** <quoted plan text>
+**Actual (code shows):** <what is actually in the code>
+**Impact:** <consequence if not fixed>
+
+---
+
+## Gap Remediation Plan
+
+### Step <N+1>: Remediate GAP-1 — <title>
+
+**Actions:**
+- <file>: <specific change>
+
+**Architecture Notes:** <DI / pattern rationale>
+
+**Planned Tests:**
+- `<test name>` — <what it verifies>
+
+**Success Criteria:**
+- [ ] <measurable criterion>
+```
 
 ---
 
