@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentServiceContractTest
  * @path tests/unit/services/plan_amendment_service_contract_test.ts
@@ -9,27 +8,30 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
+function makeAmendmentConfig() {
+  const config = createMockConfig("/tmp/test");
+  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  return config;
 }
 
-function makeResult(content: string): IGenerateResult {
-  return {
-    content,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    model: "m",
-    provider: "p",
-    cost_usd: 0,
-  };
+function makeEnabledAmendmentService(): PlanAmendmentService {
+  const mockLlm = castTo<IModelProvider>({});
+  return new PlanAmendmentService(makeAmendmentConfig(), mockLlm);
+}
+
+function makeOneRemainingStep(): IPlanStep[] {
+  return [{ number: 2, title: "Step 2", content: "Content 2" }];
+}
+
+function makeToolErrorTrigger(): IPlanAmendmentTrigger {
+  return { source: "tool_error", reason: "Tool error", stepId: "1" };
 }
 
 Deno.test("PlanAmendmentService implements IPlanAmendmentService interface", () => {
@@ -60,10 +62,7 @@ Deno.test("shouldAmend returns false when amendment is disabled in config", asyn
 });
 
 Deno.test("shouldAmend returns true for tool_error source when enabled", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = makeEnabledAmendmentService();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "tool_error",
@@ -76,10 +75,7 @@ Deno.test("shouldAmend returns true for tool_error source when enabled", async (
 });
 
 Deno.test("shouldAmend returns true for manual_request source when enabled", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = makeEnabledAmendmentService();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "manual_request",
@@ -92,10 +88,7 @@ Deno.test("shouldAmend returns true for manual_request source when enabled", asy
 });
 
 Deno.test("shouldAmend returns true when confidence score is below threshold", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = makeEnabledAmendmentService();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "low_confidence",
@@ -109,10 +102,7 @@ Deno.test("shouldAmend returns true when confidence score is below threshold", a
 });
 
 Deno.test("shouldAmend returns false when confidence score is above threshold", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = makeEnabledAmendmentService();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "low_confidence",
@@ -126,10 +116,7 @@ Deno.test("shouldAmend returns false when confidence score is above threshold", 
 });
 
 Deno.test("shouldAmend returns false for context_mismatch without confidence score", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = makeEnabledAmendmentService();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "context_mismatch",
@@ -142,8 +129,7 @@ Deno.test("shouldAmend returns false for context_mismatch without confidence sco
 });
 
 Deno.test("proposeAmendment generates valid patch from LLM response", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  const config = makeAmendmentConfig();
 
   const mockLlm = castTo<IModelProvider>({
     generate: () =>
@@ -188,8 +174,7 @@ Deno.test("proposeAmendment generates valid patch from LLM response", async () =
 });
 
 Deno.test("proposeAmendment handles markdown-wrapped JSON from LLM", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  const config = makeAmendmentConfig();
 
   const mockLlm = castTo<IModelProvider>({
     generate: () =>
@@ -210,9 +195,7 @@ Deno.test("proposeAmendment handles markdown-wrapped JSON from LLM", async () =>
 
   const service = new PlanAmendmentService(config, mockLlm);
 
-  const remainingSteps: IPlanStep[] = [
-    { number: 2, title: "Step 2", content: "Content 2" },
-  ];
+  const remainingSteps = makeOneRemainingStep();
 
   const trigger: IPlanAmendmentTrigger = {
     source: "low_confidence",
@@ -232,8 +215,7 @@ Deno.test("proposeAmendment handles markdown-wrapped JSON from LLM", async () =>
 });
 
 Deno.test("proposeAmendment sanitizes summary field", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  const config = makeAmendmentConfig();
 
   // Create a long summary that should be capped
   const longSummary = "A".repeat(600);
@@ -255,15 +237,9 @@ Deno.test("proposeAmendment sanitizes summary field", async () => {
 
   const service = new PlanAmendmentService(config, mockLlm);
 
-  const remainingSteps: IPlanStep[] = [
-    { number: 2, title: "Step 2", content: "Content 2" },
-  ];
+  const remainingSteps = makeOneRemainingStep();
 
-  const trigger: IPlanAmendmentTrigger = {
-    source: "tool_error",
-    reason: "Tool error",
-    stepId: "1",
-  };
+  const trigger = makeToolErrorTrigger();
 
   const patch = await service.proposeAmendment({
     planId: "test-plan",
@@ -276,8 +252,7 @@ Deno.test("proposeAmendment sanitizes summary field", async () => {
 });
 
 Deno.test("proposeAmendment rejects invalid LLM JSON", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  const config = makeAmendmentConfig();
 
   const mockLlm = castTo<IModelProvider>({
     generate: () => Promise.resolve(makeResult("invalid json response")),
@@ -285,15 +260,9 @@ Deno.test("proposeAmendment rejects invalid LLM JSON", async () => {
 
   const service = new PlanAmendmentService(config, mockLlm);
 
-  const remainingSteps: IPlanStep[] = [
-    { number: 2, title: "Step 2", content: "Content 2" },
-  ];
+  const remainingSteps = makeOneRemainingStep();
 
-  const trigger: IPlanAmendmentTrigger = {
-    source: "tool_error",
-    reason: "Tool error",
-    stepId: "1",
-  };
+  const trigger = makeToolErrorTrigger();
 
   await assertRejects(
     async () => {

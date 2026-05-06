@@ -36,6 +36,26 @@ function makeMockProvider(response: string): IModelProvider {
   };
 }
 
+function makeCaptureProvider(response: string): { provider: IModelProvider; getCapturedPrompt: () => string } {
+  let capturedPrompt = "";
+  return {
+    provider: {
+      id: "mock",
+      generate: (prompt: string): Promise<IGenerateResult> => {
+        capturedPrompt = prompt;
+        return Promise.resolve({
+          content: response,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          model: "mock-model",
+          provider: "mock",
+          cost_usd: 0,
+        });
+      },
+    },
+    getCapturedPrompt: () => capturedPrompt,
+  };
+}
+
 /** Minimal IArchitectureValidator for tests. */
 class MockOutputValidator implements IArchitectureValidator {
   private readonly _success: boolean;
@@ -102,20 +122,7 @@ Deno.test("[ArchitectureInferrer] generates architecture overview from mock LLM 
 });
 
 Deno.test("[ArchitectureInferrer] passes directory tree in prompt", async () => {
-  let capturedPrompt = "";
-  const provider: IModelProvider = {
-    id: "mock",
-    generate: (prompt: string): Promise<IGenerateResult> => {
-      capturedPrompt = prompt;
-      return Promise.resolve({
-        content: MOCK_OVERVIEW,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
+  const { provider, getCapturedPrompt } = makeCaptureProvider(MOCK_OVERVIEW);
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
   await inferrer.infer({
     portalPath: "/portal",
@@ -125,24 +132,11 @@ Deno.test("[ArchitectureInferrer] passes directory tree in prompt", async () => 
     configSummary: "",
     dependencySummary: "",
   });
-  assertStringIncludes(capturedPrompt, "src/main.ts");
+  assertStringIncludes(getCapturedPrompt(), "src/main.ts");
 });
 
 Deno.test("[ArchitectureInferrer] passes key files and patterns in prompt", async () => {
-  let capturedPrompt = "";
-  const provider: IModelProvider = {
-    id: "mock",
-    generate: (prompt: string): Promise<IGenerateResult> => {
-      capturedPrompt = prompt;
-      return Promise.resolve({
-        content: MOCK_OVERVIEW,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
+  const { provider, getCapturedPrompt } = makeCaptureProvider(MOCK_OVERVIEW);
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
   await inferrer.infer({
     portalPath: "/portal",
@@ -152,9 +146,9 @@ Deno.test("[ArchitectureInferrer] passes key files and patterns in prompt", asyn
     configSummary: "deno.json found",
     dependencySummary: "std@0.203",
   });
-  assertStringIncludes(capturedPrompt, "auth_service.ts");
-  assertStringIncludes(capturedPrompt, "Service naming pattern");
-  assertStringIncludes(capturedPrompt, "deno.json found");
+  assertStringIncludes(getCapturedPrompt(), "auth_service.ts");
+  assertStringIncludes(getCapturedPrompt(), "Service naming pattern");
+  assertStringIncludes(getCapturedPrompt(), "deno.json found");
 });
 
 Deno.test("[ArchitectureInferrer] handles LLM failure gracefully", async () => {
@@ -204,20 +198,7 @@ Deno.test("[ArchitectureInferrer] uses OutputValidator for response parsing", as
   assertEquals(validator.validateCallCount > 0, true);
 });
 Deno.test("[ArchitectureInferrer] truncates long files to ARCHITECTURE_INFERRER_MAX_FILE_TOKENS lines", async () => {
-  let capturedPrompt = "";
-  const provider: IModelProvider = {
-    id: "mock",
-    generate: (prompt: string): Promise<IGenerateResult> => {
-      capturedPrompt = prompt;
-      return Promise.resolve({
-        content: MOCK_OVERVIEW,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
+  const { provider, getCapturedPrompt } = makeCaptureProvider(MOCK_OVERVIEW);
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
 
   // Build file content that is 2× the line limit
@@ -239,29 +220,16 @@ Deno.test("[ArchitectureInferrer] truncates long files to ARCHITECTURE_INFERRER_
   // Prompt must NOT contain a line beyond the limit
   const limitLine = `line_${ARCHITECTURE_INFERRER_MAX_FILE_TOKENS}`;
   assertEquals(
-    capturedPrompt.includes(limitLine),
+    getCapturedPrompt().includes(limitLine),
     false,
     `Prompt should not include content beyond line ${ARCHITECTURE_INFERRER_MAX_FILE_TOKENS}`,
   );
   // But should include content up to the limit
-  assertStringIncludes(capturedPrompt, "line_0");
+  assertStringIncludes(getCapturedPrompt(), "line_0");
 });
 
 Deno.test("[ArchitectureInferrer] stays within ARCHITECTURE_INFERRER_TOKEN_BUDGET on large input sets", async () => {
-  let capturedPrompt = "";
-  const provider: IModelProvider = {
-    id: "mock",
-    generate: (prompt: string): Promise<IGenerateResult> => {
-      capturedPrompt = prompt;
-      return Promise.resolve({
-        content: MOCK_OVERVIEW,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
+  const { provider, getCapturedPrompt } = makeCaptureProvider(MOCK_OVERVIEW);
   const inferrer = new ArchitectureInferrer(provider, new MockOutputValidator(true));
 
   // Many files whose combined content far exceeds the budget
@@ -283,9 +251,9 @@ Deno.test("[ArchitectureInferrer] stays within ARCHITECTURE_INFERRER_TOKEN_BUDGE
     fileContents: manyFiles,
   });
 
-  assertExists(capturedPrompt);
+  assertExists(getCapturedPrompt());
   // Rough token estimate: 1 token ≈ 4 chars
-  const estimatedTokens = capturedPrompt.length / 4;
+  const estimatedTokens = getCapturedPrompt().length / 4;
   assertEquals(
     estimatedTokens <= ARCHITECTURE_INFERRER_TOKEN_BUDGET * 1.2,
     true,

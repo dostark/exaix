@@ -9,11 +9,12 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { DatabaseService } from "../../../src/services/core/db.ts";
-import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
+import { makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 
 interface ISubjectPropagationEnv {
   tempDir: string;
@@ -98,16 +99,6 @@ Follow instructions
     await db.close();
     await Deno.remove(tempDir, { recursive: true });
   }
-}
-
-function makeResult(content: string): IGenerateResult {
-  return {
-    content,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    model: "m",
-    provider: "p",
-    cost_usd: 0,
-  };
 }
 
 Deno.test("RequestProcessor - Subject Propagation - Agent Upgrades Subject", async () => {

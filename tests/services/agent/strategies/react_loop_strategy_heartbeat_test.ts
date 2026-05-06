@@ -21,6 +21,7 @@ import {
   STREAMING_EVENT_HEARTBEAT,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types/json.ts";
+import { makeGenerateResult as makeResult } from "../../../helpers/test_helpers.ts";
 
 // ============================================================================
 // Helpers
@@ -28,16 +29,6 @@ import type { JSONValue } from "@exaix/core/types/json.ts";
 
 type TestToolParams = Record<string, JSONValue>;
 type ReActExecutor = ConstructorParameters<typeof ReActLoopStrategy>[0];
-
-function makeResult(content: string): IGenerateResult {
-  return {
-    content,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    model: "m",
-    provider: "p",
-    cost_usd: 0,
-  };
-}
 
 const testBlueprint: IAgentFileBlueprint = {
   name: "heartbeat-agent",

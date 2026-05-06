@@ -36,6 +36,64 @@ import {
 } from "./request_test_helpers.ts";
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+type AnalysisEnv = Awaited<ReturnType<typeof makeRequestProcessorEnv>>;
+
+function makeTestFrontmatter(): IRequestFrontmatter {
+  return {
+    trace_id: "t1",
+    created: new Date().toISOString(),
+    status: RequestStatus.PENDING,
+    priority: "normal",
+    source: RequestSource.CLI,
+    created_by: "user",
+  };
+}
+
+function makeAnalysisProcessor(
+  env: AnalysisEnv,
+  analyzer: IRequestAnalyzerService,
+): { processor: RequestProcessor; mockProvider: ReturnType<typeof createMockProvider> } {
+  const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
+  const context: IApplicationContext = {
+    config: createStubConfig(env.config),
+    db: env.db,
+    provider: mockProvider,
+    git: createStubGit(),
+    display: createStubDisplay(env.db),
+  };
+  const processor = new RequestProcessor({
+    ...env.processorConfig,
+    context,
+    testProvider: mockProvider,
+    testAnalyzer: analyzer,
+  });
+  return { processor, mockProvider };
+}
+
+function makeStubAnalysisProcessor(
+  env: AnalysisEnv,
+  analyzer: IRequestAnalyzerService,
+  configOverride?: Parameters<typeof createStubConfig>[0],
+): { processor: RequestProcessor } {
+  const context: IApplicationContext = {
+    config: createStubConfig(configOverride ?? env.config),
+    db: env.db,
+    provider: createStubProvider(),
+    git: createStubGit(),
+    display: createStubDisplay(env.db),
+  };
+  const processor = new RequestProcessor({
+    ...env.processorConfig,
+    context,
+    testAnalyzer: analyzer,
+  });
+  return { processor };
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 
@@ -44,14 +102,7 @@ import {
 // ============================================================================
 
 Deno.test("[RequestProcessor] populates IParsedRequest.taskType from analysis", () => {
-  const frontmatter: IRequestFrontmatter = {
-    trace_id: "t1",
-    created: new Date().toISOString(),
-    status: RequestStatus.PENDING,
-    priority: "normal",
-    source: RequestSource.CLI,
-    created_by: "user",
-  };
+  const frontmatter = makeTestFrontmatter();
   const request = buildParsedRequest("Do bugfix work", frontmatter, "req-1", "trace-1");
   const analysis = makeAnalysis({ taskType: RequestTaskType.BUGFIX });
 
@@ -61,14 +112,7 @@ Deno.test("[RequestProcessor] populates IParsedRequest.taskType from analysis", 
 });
 
 Deno.test("[RequestProcessor] populates IParsedRequest.tags from analysis", () => {
-  const frontmatter: IRequestFrontmatter = {
-    trace_id: "t1",
-    created: new Date().toISOString(),
-    status: RequestStatus.PENDING,
-    priority: "normal",
-    source: RequestSource.CLI,
-    created_by: "user",
-  };
+  const frontmatter = makeTestFrontmatter();
   const request = buildParsedRequest("Fix auth bug", frontmatter, "req-2", "trace-2");
   const analysis = makeAnalysis({ tags: ["auth", "security", "login"] });
 
@@ -78,14 +122,7 @@ Deno.test("[RequestProcessor] populates IParsedRequest.tags from analysis", () =
 });
 
 Deno.test("[RequestProcessor] populates IParsedRequest.filePaths from analysis", () => {
-  const frontmatter: IRequestFrontmatter = {
-    trace_id: "t1",
-    created: new Date().toISOString(),
-    status: RequestStatus.PENDING,
-    priority: "normal",
-    source: RequestSource.CLI,
-    created_by: "user",
-  };
+  const frontmatter = makeTestFrontmatter();
   const request = buildParsedRequest("Update src/auth.ts", frontmatter, "req-3", "trace-3");
   const analysis = makeAnalysis({ referencedFiles: ["src/auth.ts", "tests/auth_test.ts"] });
 
@@ -95,14 +132,7 @@ Deno.test("[RequestProcessor] populates IParsedRequest.filePaths from analysis",
 });
 
 Deno.test("[RequestProcessor] populates request.context.analysis for downstream usage", () => {
-  const frontmatter: IRequestFrontmatter = {
-    trace_id: "t1",
-    created: new Date().toISOString(),
-    status: RequestStatus.PENDING,
-    priority: "normal",
-    source: RequestSource.CLI,
-    created_by: "user",
-  };
+  const frontmatter = makeTestFrontmatter();
   const request = buildParsedRequest("Test analysis propagation", frontmatter, "req-4", "trace-4");
   const analysis = makeAnalysis({ taskType: RequestTaskType.FEATURE });
 
@@ -123,22 +153,7 @@ Deno.test("[RequestProcessor] runs analysis before agent execution", async () =>
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir);
-    const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
-
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      portalKnowledge: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testAnalyzer: fakeAnalyzer,
-    });
+    const { processor } = makeAnalysisProcessor(env, fakeAnalyzer);
 
     // Processing will fail (no blueprint), but analysis should run first
     await processor.process(filePath);
@@ -163,22 +178,7 @@ Deno.test("[RequestProcessor] persists analysis as _analysis.json", async () => 
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir);
-    const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
-
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      portalKnowledge: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testAnalyzer: fakeAnalyzer,
-    });
+    const { processor } = makeAnalysisProcessor(env, fakeAnalyzer);
 
     await processor.process(filePath);
 
@@ -199,22 +199,7 @@ Deno.test("[RequestProcessor] handles analyzer failure gracefully (continues wit
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir);
-    const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
-
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      portalKnowledge: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testAnalyzer: throwingAnalyzer,
-    });
+    const { processor } = makeAnalysisProcessor(env, throwingAnalyzer);
 
     // Should not throw even though analyzer explodes
     const result = await processor.process(filePath);
@@ -237,22 +222,7 @@ Deno.test("[RequestProcessor] passes analysis to flow processing path", async ()
 
   try {
     const filePath = makeFlowRequestFile(env.requestsDir);
-    const mockProvider = createMockProvider(["<thought>ok</thought><content>{}</content>"]);
-
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      portalKnowledge: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testAnalyzer: fakeAnalyzer,
-    });
+    const { processor } = makeAnalysisProcessor(env, fakeAnalyzer);
 
     await processor.process(filePath);
 
@@ -336,19 +306,7 @@ Deno.test("[RequestProcessor] skips analysis if request status is already PLANNE
     const updated = content.replace(`status: "${RequestStatus.PENDING}"`, `status: "${RequestStatus.PLANNED}"`);
     Deno.writeTextFileSync(filePath, updated);
 
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: createStubProvider(),
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      portalKnowledge: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testAnalyzer: countingAnalyzer,
-    });
+    const { processor } = makeStubAnalysisProcessor(env, countingAnalyzer);
 
     await processor.process(filePath);
 
@@ -384,19 +342,7 @@ Deno.test("[RequestProcessor] skips analysis when request_analysis.enabled is fa
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "enabled-false" });
-
-    const context: IApplicationContext = {
-      config: createStubConfig(disabledConfig),
-      db: env.db,
-      provider: createStubProvider(),
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testAnalyzer: countingAnalyzer,
-    });
+    const { processor } = makeStubAnalysisProcessor(env, countingAnalyzer, disabledConfig);
 
     await processor.process(filePath);
 
@@ -426,19 +372,7 @@ Deno.test("[RequestProcessor] skips persisting analysis when persist_analysis is
 
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "no-persist" });
-
-    const context: IApplicationContext = {
-      config: createStubConfig(noPersistConfig),
-      db: env.db,
-      provider: createStubProvider(),
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testAnalyzer: fakeAnalyzer,
-    });
+    const { processor } = makeStubAnalysisProcessor(env, fakeAnalyzer, noPersistConfig);
 
     await processor.process(filePath);
 
@@ -476,19 +410,7 @@ Deno.test("[RequestProcessor] uses DEFAULT_ANALYZER_MODE (hybrid) not HEURISTIC 
   };
   try {
     const filePath = makeAgentRequestFile(env.requestsDir, { requestId: "default-mode" });
-
-    const context: IApplicationContext = {
-      config: createStubConfig(hybridConfig),
-      db: env.db,
-      provider: createStubProvider(),
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testAnalyzer: capturingAnalyzer,
-    });
+    const { processor } = makeStubAnalysisProcessor(env, capturingAnalyzer, hybridConfig);
 
     await processor.process(filePath);
 

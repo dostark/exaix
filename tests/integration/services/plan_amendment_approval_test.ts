@@ -12,13 +12,14 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
@@ -26,23 +27,6 @@ import {
   PLAN_AMENDMENT_EVENT_PROPOSED,
   PLAN_AMENDMENT_EVENT_REJECTED,
 } from "@exaix/core";
-
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
-}
-
-function makeResult(content: string): IGenerateResult {
-  return {
-    content,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    model: "m",
-    provider: "p",
-    cost_usd: 0,
-  };
-}
 
 /**
  * Creates a mock event logger that captures all logged events

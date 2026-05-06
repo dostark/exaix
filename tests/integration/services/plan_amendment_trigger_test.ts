@@ -13,13 +13,7 @@ import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
-
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
-}
+import { castAny as castTo } from "../../helpers/test_helpers.ts";
 
 Deno.test("PlanExecutor triggers amendment on low confidence result", async () => {
   const root = await Deno.makeTempDir();

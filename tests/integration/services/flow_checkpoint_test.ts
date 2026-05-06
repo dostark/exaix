@@ -10,15 +10,8 @@ import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import {
-  FlowExecutionError,
-  FlowRunner,
-  type IAgentExecutor,
-  type IFlowEventLogger,
-  type IFlowStepRequest,
-} from "../../../src/flows/flow_runner.ts";
+import { FlowExecutionError, FlowRunner } from "../../../src/flows/flow_runner.ts";
 import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
-import type { IAgentExecutionResult } from "../../../src/services/agent/agent_runner.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,
@@ -28,51 +21,9 @@ import {
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
 } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
-
-class SequencedAgentExecutor implements IAgentExecutor {
-  private readonly sequences = new Map<string, Array<IAgentExecutionResult | Error>>();
-  calls: string[] = [];
-
-  constructor(sequences: Record<string, Array<IAgentExecutionResult | Error | string>>) {
-    for (const [identityId, entries] of Object.entries(sequences)) {
-      this.sequences.set(
-        identityId,
-        entries.map((entry) => {
-          if (typeof entry === "string") {
-            return { thought: "mock-thought", content: entry, raw: entry };
-          }
-          return entry;
-        }),
-      );
-    }
-  }
-
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    this.calls.push(identityId);
-    const queue = this.sequences.get(identityId);
-    if (!queue || queue.length === 0) {
-      throw new Error(`No sequenced result configured for ${identityId}`);
-    }
-
-    const next = queue.shift()!;
-    if (next instanceof Error) {
-      throw next;
-    }
-
-    return await Promise.resolve(next);
-  }
-}
-
-class RecordingFlowLogger implements IFlowEventLogger {
-  events: Array<{ event: string; payload: Record<string, JSONValue | undefined> }> = [];
-
-  log(event: string, payload: Record<string, JSONValue | undefined>): void {
-    this.events.push({ event, payload });
-  }
-}
+import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
 
 Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after successful completion", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
@@ -108,7 +59,7 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
       settings: { maxParallelism: 3, failFast: true },
     };
 
-    const firstRunExecutor = new SequencedAgentExecutor({
+    const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: [new Error("step2 exploded")],
     });
@@ -139,7 +90,7 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     assertEquals(typeof savedEvent.payload.completedSteps, "number");
     assert((savedEvent.payload.completedSteps as number) >= 1);
 
-    const resumedExecutor = new SequencedAgentExecutor({
+    const resumedExecutor = new ScriptedAgentExecutor({
       agent1: [new Error("step1 should not re-run")],
       agent2: ["step2-result"],
     });
@@ -216,7 +167,7 @@ Deno.test("[Step63.13] FlowRunner invalidates stale-hash checkpoints and reruns 
       settings: { maxParallelism: 3, failFast: true },
     };
 
-    const firstRunExecutor = new SequencedAgentExecutor({
+    const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: [new Error("step2 exploded")],
     });
@@ -239,7 +190,7 @@ Deno.test("[Step63.13] FlowRunner invalidates stale-hash checkpoints and reruns 
       description: "Modified flow definition that should invalidate the old checkpoint",
     };
 
-    const resumedExecutor = new SequencedAgentExecutor({
+    const resumedExecutor = new ScriptedAgentExecutor({
       agent1: [new Error("step1 re-executed after stale checkpoint invalidation")],
       agent2: ["unused"],
     });
@@ -299,7 +250,7 @@ Deno.test("[Step63.10] FlowRunner invalidates checkpoint when schemaVersion is s
       settings: { maxParallelism: 3, failFast: true },
     };
 
-    const firstRunExecutor = new SequencedAgentExecutor({
+    const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["stale-step1-result"],
       agent2: [new Error("step2 exploded")],
     });
@@ -322,7 +273,7 @@ Deno.test("[Step63.10] FlowRunner invalidates checkpoint when schemaVersion is s
     };
     await Deno.writeTextFile(checkpointPath, JSON.stringify(staleCheckpoint, null, 2));
 
-    const resumedExecutor = new SequencedAgentExecutor({
+    const resumedExecutor = new ScriptedAgentExecutor({
       agent1: ["fresh-step1-result"],
       agent2: ["fresh-step2-result"],
     });

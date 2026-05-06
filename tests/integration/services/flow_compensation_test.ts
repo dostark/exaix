@@ -9,61 +9,16 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import {
-  FlowExecutionError,
-  FlowRunner,
-  type IAgentExecutor,
-  type IFlowEventLogger,
-  type IFlowStepRequest,
-} from "../../../src/flows/flow_runner.ts";
+import { FlowExecutionError, FlowRunner } from "../../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import type { IAgentExecutionResult } from "../../../src/services/agent/agent_runner.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
+import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
 import { ToolHandler } from "../../../src/mcp/tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-
-class SequencedAgentExecutor implements IAgentExecutor {
-  private readonly sequences = new Map<string, Array<IAgentExecutionResult | Error>>();
-
-  constructor(sequences: Record<string, Array<IAgentExecutionResult | Error | string>>) {
-    for (const [identityId, entries] of Object.entries(sequences)) {
-      this.sequences.set(
-        identityId,
-        entries.map((entry) => {
-          if (typeof entry === "string") {
-            return { thought: "mock-thought", content: entry, raw: entry };
-          }
-          return entry;
-        }),
-      );
-    }
-  }
-
-  async run(identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {
-    const queue = this.sequences.get(identityId);
-    if (!queue || queue.length === 0) {
-      throw new Error(`No sequenced result configured for ${identityId}`);
-    }
-
-    const next = queue.shift()!;
-    if (next instanceof Error) {
-      throw next;
-    }
-
-    return await Promise.resolve(next);
-  }
-}
-
-class RecordingFlowLogger implements IFlowEventLogger {
-  events: Array<{ event: string; payload: Record<string, JSONValue | undefined> }> = [];
-
-  log(event: string, payload: Record<string, JSONValue | undefined>): void {
-    this.events.push({ event, payload });
-  }
-}
+import type { Config } from "@exaix/schemas/config.ts";
 
 class RecordingDeleteFileTool extends ToolHandler {
   static calls: Array<Record<string, JSONValue>> = [];
@@ -93,6 +48,22 @@ class RecordingDeleteFileTool extends ToolHandler {
       },
     };
   }
+}
+
+function makeCompensationRunner(
+  config: Config,
+  executor: ScriptedAgentExecutor,
+): { runner: FlowRunner; logger: RecordingFlowLogger } {
+  const logger = new RecordingFlowLogger();
+  const compensationContext = createStubContext({ config: createStubConfig(config) });
+  const deleteFileTool = new RecordingDeleteFileTool(compensationContext);
+  const runner = new FlowRunner({
+    agentExecutor: executor,
+    eventLogger: logger,
+    config,
+    mcpHandlers: [deleteFileTool],
+  });
+  return { runner, logger };
 }
 
 Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and continues after compensation failure", async () => {
@@ -165,22 +136,13 @@ Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and contin
       settings: { maxParallelism: 3, failFast: true },
     };
 
-    const executor = new SequencedAgentExecutor({
+    const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: ["step2-result"],
       agent3: [new Error("step3 exploded")],
     });
 
-    const logger = new RecordingFlowLogger();
-    const compensationContext = createStubContext({ config: createStubConfig(config) });
-    const deleteFileTool = new RecordingDeleteFileTool(compensationContext);
-
-    const runner = new FlowRunner({
-      agentExecutor: executor,
-      eventLogger: logger,
-      config,
-      mcpHandlers: [deleteFileTool],
-    });
+    const { runner, logger } = makeCompensationRunner(config, executor);
 
     await assertRejects(
       () => runner.execute(flow as IFlow, { userPrompt: "trigger compensation", traceId, requestId, portal }),
@@ -275,22 +237,13 @@ Deno.test("[Step63.11] FlowRunner compensates same-wave steps in reverse declara
       settings: { maxParallelism: 2, failFast: true },
     };
 
-    const executor = new SequencedAgentExecutor({
+    const executor = new ScriptedAgentExecutor({
       agentA: ["stepA-result"],
       agentB: ["stepB-result"],
       agentFail: [new Error("stepFail exploded")],
     });
 
-    const logger = new RecordingFlowLogger();
-    const compensationContext = createStubContext({ config: createStubConfig(config) });
-    const deleteFileTool = new RecordingDeleteFileTool(compensationContext);
-
-    const runner = new FlowRunner({
-      agentExecutor: executor,
-      eventLogger: logger,
-      config,
-      mcpHandlers: [deleteFileTool],
-    });
+    const { runner, logger } = makeCompensationRunner(config, executor);
 
     globalThis.Date = FixedDate as DateConstructor;
 
@@ -368,22 +321,13 @@ Deno.test("[Step63.12] FlowRunner marks compensated steps with recovery metadata
       settings: { maxParallelism: 3, failFast: false },
     };
 
-    const executor = new SequencedAgentExecutor({
+    const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: ["step2-result"],
       agent3: [new Error("step3 exploded")],
     });
 
-    const logger = new RecordingFlowLogger();
-    const compensationContext = createStubContext({ config: createStubConfig(config) });
-    const deleteFileTool = new RecordingDeleteFileTool(compensationContext);
-
-    const runner = new FlowRunner({
-      agentExecutor: executor,
-      eventLogger: logger,
-      config,
-      mcpHandlers: [deleteFileTool],
-    });
+    const { runner, logger: _logger } = makeCompensationRunner(config, executor);
 
     const result = await runner.execute(flow as IFlow, { userPrompt: "trigger compensation metadata" });
 

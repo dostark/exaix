@@ -15,7 +15,7 @@ import {
 const REQUIRED_FILES = [
   ".copilot/guidelines/self-improvement.md",
   ".copilot/cross-reference.md",
-  ".copilot/commands/README.md",
+  ".copilot/prompts/README.md",
   ".copilot/providers/claude.md",
   ".copilot/providers/openai.md",
   ".copilot/providers/google.md",
@@ -72,10 +72,10 @@ Deno.test("Self-improvement loop: verify discovery docs mention the process", as
     "cross-reference should link to guidelines/self-improvement.md",
   );
 
-  const commandsReadme = await Deno.readTextFile(".copilot/commands/README.md");
+  const commandsReadme = await Deno.readTextFile(".copilot/prompts/README.md");
   assert(
     commandsReadme.includes("#commit") || commandsReadme.includes("commit"),
-    "commands README should reference the commit workflow",
+    "prompts README should reference the commit workflow",
   );
 });
 

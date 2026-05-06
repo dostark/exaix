@@ -244,3 +244,11 @@ export function createStubContext(overrides: Partial<ICliApplicationContext> = {
 
   return context;
 }
+
+/**
+ * Bypass strict TypeScript casting in tests — avoids double `as` casts.
+ * Usage: castAny<IModelProvider>({ generate: ... })
+ */
+export function castAny<T>(val: Partial<T>): T {
+  return val as T;
+}

@@ -12,28 +12,12 @@ import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubDb } from "../../helpers/test_helpers.ts";
-import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
-
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
-}
-
-function makeResult(content: string): IGenerateResult {
-  return {
-    content,
-    usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    model: "m",
-    provider: "p",
-    cost_usd: 0,
-  };
-}
+import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 
 Deno.test("PlanExecutor pauses execution when amendment is proposed", async () => {
   const root = await Deno.makeTempDir();

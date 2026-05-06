@@ -123,6 +123,32 @@ function makeEnrichingGate(enrichedBody: string): IRequestQualityGateService {
   };
 }
 
+type MakeEnvResult = Awaited<ReturnType<typeof makeEnv>>;
+
+function makeTestProcessor(
+  env: MakeEnvResult,
+  opts: {
+    gate?: IRequestQualityGateService;
+    config?: Parameters<typeof createStubConfig>[0];
+  } = {},
+): { processor: RequestProcessor; mockProvider: ReturnType<typeof createMockProvider> } {
+  const mockProvider = createMockProvider(["<content>{}</content>"]);
+  const context: IApplicationContext = {
+    config: createStubConfig(opts.config ?? env.config),
+    db: env.db,
+    provider: mockProvider,
+    git: createStubGit(),
+    display: createStubDisplay(env.db),
+  };
+  const processor = new RequestProcessor({
+    ...env.processorConfig,
+    context,
+    testProvider: mockProvider,
+    ...(opts.gate !== undefined ? { testQualityGate: opts.gate } : {}),
+  });
+  return { processor, mockProvider };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -143,21 +169,7 @@ Deno.test("[RequestProcessor] quality gate runs before agent execution", async (
     };
 
     const filePath = makeRequestFile(env.requestsDir, "Implement login feature in src/auth.ts");
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: trackingGate,
-    });
+    const { processor } = makeTestProcessor(env, { gate: trackingGate });
 
     await processor.process(filePath);
     assertEquals(assessCalled, true);
@@ -171,22 +183,7 @@ Deno.test("[RequestProcessor] proceeds for high-quality requests", async () => {
   try {
     const gate = makeStubGate(RequestQualityRecommendation.PROCEED);
     const filePath = makeRequestFile(env.requestsDir, "Implement JWT validation in src/auth.ts");
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: gate,
-    });
+    const { processor } = makeTestProcessor(env, { gate });
 
     // Should not early-return due to gate
     const result = await processor.process(filePath);
@@ -203,22 +200,7 @@ Deno.test("[RequestProcessor] enriches underspecified requests", async () => {
     const enrichedBody = "Enriched: Create a database configuration file";
     const gate = makeEnrichingGate(enrichedBody);
     const filePath = makeRequestFile(env.requestsDir, "Create config file", { requestId: "req-enrich-001" });
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: gate,
-    });
+    const { processor } = makeTestProcessor(env, { gate });
 
     await processor.process(filePath);
     // Processing continues; no early return (enrichment path)
@@ -233,22 +215,7 @@ Deno.test("[RequestProcessor] enters Q&A loop for poor requests", async () => {
   try {
     const gate = makeStubGate(RequestQualityRecommendation.NEEDS_CLARIFICATION);
     const filePath = makeRequestFile(env.requestsDir, "fix it", { requestId: "req-clarify-001" });
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: gate,
-    });
+    const { processor } = makeTestProcessor(env, { gate });
 
     const result = await processor.process(filePath);
 
@@ -272,22 +239,7 @@ Deno.test("[RequestProcessor] preserves original body when enriching", async () 
     const trackingGate = makeEnrichingGate(enrichedBody);
 
     const filePath = makeRequestFile(env.requestsDir, originalBody, { requestId: "req-preserve-001" });
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: trackingGate,
-    });
+    const { processor } = makeTestProcessor(env, { gate: trackingGate });
 
     await processor.process(filePath);
     // If we get here without error, enrichment path ran
@@ -302,20 +254,7 @@ Deno.test("[RequestProcessor] handles disabled quality gate", async () => {
   try {
     // No gate injected — quality gate should be disabled/skipped
     const filePath = makeRequestFile(env.requestsDir, "Implement login feature", { requestId: "req-disabled-001" });
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-    });
+    const { processor } = makeTestProcessor(env);
 
     // Should complete without error (gate not wired, no crash)
     const result = await processor.process(filePath);
@@ -341,22 +280,7 @@ Deno.test("[RequestProcessor] gate failure does not block processing", async () 
       "Implement login feature",
       { requestId: "req-fail-gate-001" },
     );
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: failingGate,
-    });
+    const { processor } = makeTestProcessor(env, { gate: failingGate });
 
     // Should not throw — gate failure should be caught gracefully
     const result = await processor.process(filePath);
@@ -396,22 +320,7 @@ Deno.test("[RequestProcessor] passes IRequestSpecification to buildParsedRequest
 
     // Gate always proceeds (the spec comes from the persisted session, not the gate)
     const gate = makeStubGate(RequestQualityRecommendation.PROCEED);
-
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(env.config),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-      gateEvaluator: undefined,
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-      testQualityGate: gate,
-    });
+    const { processor } = makeTestProcessor(env, { gate });
 
     // process() will return null (blueprint missing), but specification is stored
     // before the blueprint lookup — we verify via the clarification session existing
@@ -453,19 +362,7 @@ Deno.test("[RequestProcessor] builds quality gate from TOML config when none inj
       },
     };
 
-    const mockProvider = createMockProvider(["<content>{}</content>"]);
-    const context: IApplicationContext = {
-      config: createStubConfig(cfgPatch),
-      db: env.db,
-      provider: mockProvider,
-      git: createStubGit(),
-      display: createStubDisplay(env.db),
-    };
-    const processor = new RequestProcessor({
-      ...env.processorConfig,
-      context,
-      testProvider: mockProvider,
-    });
+    const { processor } = makeTestProcessor(env, { config: cfgPatch });
 
     await processor.process(filePath);
 

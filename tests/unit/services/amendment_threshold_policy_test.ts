@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module AmendmentThresholdPolicyTest
  * @path tests/unit/services/amendment_threshold_policy_test.ts
@@ -13,13 +12,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
-
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
-}
+import { castAny as castTo } from "../../helpers/test_helpers.ts";
 
 Deno.test("DEFAULT_AMENDMENT_THRESHOLD is 60", () => {
   assertEquals(DEFAULT_AMENDMENT_THRESHOLD, 60);

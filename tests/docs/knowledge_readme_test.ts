@@ -7,16 +7,18 @@
 
 import { assert, assertStringIncludes } from "@std/assert";
 import { MemoryBankSource, MemoryScope } from "@exaix/core";
-import { join } from "@std/path";
+import { dirname, fromFileUrl, join } from "@std/path";
+
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
 async function readMemoryBanksDoc(): Promise<string> {
-  const docPath = join(Deno.cwd(), "docs", "Memory_Banks.md");
+  const docPath = join(REPO_ROOT, "docs", "Memory_Banks.md");
   return await Deno.readTextFile(docPath);
 }
 
 async function docExists(filename: string): Promise<boolean> {
   try {
-    const docPath = join(Deno.cwd(), "docs", filename);
+    const docPath = join(REPO_ROOT, "docs", filename);
     const stat = await Deno.stat(docPath);
     return stat.isFile;
   } catch {

@@ -60,6 +60,63 @@ describe("FlowReporter", () => {
   });
 
   describe("generate", () => {
+    function makeMinimalFlowInput(
+      id: string,
+      name: string,
+      description: string,
+      stepName: string = "Step 1",
+      maxParallelism: number = 1,
+    ): IFlowInput {
+      return {
+        id,
+        name,
+        description,
+        version: DEFAULT_FLOW_VERSION,
+        steps: [{
+          id: "step1",
+          name: stepName,
+          identity: "test-agent",
+          dependsOn: [],
+          input: {
+            source: FlowInputSource.REQUEST,
+            transform: "passthrough",
+          },
+          retry: {
+            maxAttempts: 1,
+            backoffMs: 1000,
+          },
+        }],
+        output: {
+          from: "step1",
+          format: FlowOutputFormat.MARKDOWN,
+        },
+        settings: {
+          maxParallelism,
+          failFast: true,
+        },
+      };
+    }
+
+    function makeSuccessStepResult(content: string, raw: string): Map<string, IStepResult> {
+      return new Map<string, IStepResult>([
+        [
+          "step1",
+          {
+            stepId: "step1",
+            success: true,
+            duration: 100,
+            startedAt: new Date("2025-01-01T10:00:00Z"),
+            completedAt: new Date("2025-01-01T10:00:00.100Z"),
+            result: {
+              thought: "Completed",
+              content,
+              raw,
+            },
+          },
+        ],
+      ]);
+    }
+
     it("should generate report for successful flow execution", async () => {
       // Create mock flow data
       const flow: IFlowInput = {
@@ -191,36 +248,13 @@ describe("FlowReporter", () => {
 
     it("should generate report for failed flow execution", async () => {
       // Create mock flow data with failure
-      const flow: IFlowInput = {
-        id: "failed-flow",
-        name: "Failed Flow",
-        description: "A flow that fails",
-        version: DEFAULT_FLOW_VERSION,
-        steps: [
-          {
-            id: "step1",
-            name: "Failing Step",
-            identity: "test-agent",
-            dependsOn: [],
-            input: {
-              source: FlowInputSource.REQUEST,
-              transform: "passthrough",
-            },
-            retry: {
-              maxAttempts: 1,
-              backoffMs: 1000,
-            },
-          },
-        ],
-        output: {
-          from: "step1",
-          format: FlowOutputFormat.MARKDOWN,
-        },
-        settings: {
-          maxParallelism: 3,
-          failFast: true,
-        },
-      };
+      const flow = makeMinimalFlowInput(
+        "failed-flow",
+        "Failed Flow",
+        "A flow that fails",
+        "Failing Step",
+        3,
+      );
 
       const stepResults = new Map<string, IStepResult>([
         [
@@ -258,52 +292,16 @@ describe("FlowReporter", () => {
     });
 
     it("should include namespace artifact metadata when present", async () => {
-      const flow: IFlowInput = {
-        id: "namespace-flow",
-        name: "Namespace Flow",
-        description: "A flow with shared namespace output",
-        version: DEFAULT_FLOW_VERSION,
-        steps: [{
-          id: "step1",
-          name: "Step 1",
-          identity: "test-agent",
-          dependsOn: [],
-          input: {
-            source: FlowInputSource.REQUEST,
-            transform: "passthrough",
-          },
-          retry: {
-            maxAttempts: 1,
-            backoffMs: 1000,
-          },
-        }],
-        output: {
-          from: "step1",
-          format: FlowOutputFormat.MARKDOWN,
-        },
-        settings: {
-          maxParallelism: 1,
-          failFast: true,
-        },
-      };
+      const flow = makeMinimalFlowInput(
+        "namespace-flow",
+        "Namespace Flow",
+        "A flow with shared namespace output",
+      );
 
-      const stepResults = new Map<string, IStepResult>([
-        [
-          "step1",
-          {
-            stepId: "step1",
-            success: true,
-            duration: 100,
-            startedAt: new Date("2025-01-01T10:00:00Z"),
-            completedAt: new Date("2025-01-01T10:00:00.100Z"),
-            result: {
-              thought: "Completed",
-              content: "Namespace-enabled output",
-              raw: "raw namespace output",
-            },
-          },
-        ],
-      ]);
+      const stepResults = makeSuccessStepResult(
+        "Namespace-enabled output",
+        "raw namespace output",
+      );
 
       const namespaceArtifactPath = join(
         tempDir,
@@ -332,52 +330,16 @@ describe("FlowReporter", () => {
     });
 
     it("should omit shared namespace section when namespace artifact is absent", async () => {
-      const flow: IFlowInput = {
-        id: "no-namespace-flow",
-        name: "No Namespace Flow",
-        description: "A flow without shared namespace output",
-        version: DEFAULT_FLOW_VERSION,
-        steps: [{
-          id: "step1",
-          name: "Step 1",
-          identity: "test-agent",
-          dependsOn: [],
-          input: {
-            source: FlowInputSource.REQUEST,
-            transform: "passthrough",
-          },
-          retry: {
-            maxAttempts: 1,
-            backoffMs: 1000,
-          },
-        }],
-        output: {
-          from: "step1",
-          format: FlowOutputFormat.MARKDOWN,
-        },
-        settings: {
-          maxParallelism: 1,
-          failFast: true,
-        },
-      };
+      const flow = makeMinimalFlowInput(
+        "no-namespace-flow",
+        "No Namespace Flow",
+        "A flow without shared namespace output",
+      );
 
-      const stepResults = new Map<string, IStepResult>([
-        [
-          "step1",
-          {
-            stepId: "step1",
-            success: true,
-            duration: 100,
-            startedAt: new Date("2025-01-01T10:00:00Z"),
-            completedAt: new Date("2025-01-01T10:00:00.100Z"),
-            result: {
-              thought: "Completed",
-              content: "Output without namespace",
-              raw: "raw output",
-            },
-          },
-        ],
-      ]);
+      const stepResults = makeSuccessStepResult(
+        "Output without namespace",
+        "raw output",
+      );
 
       const flowResult: IFlowResult = {
         flowRunId: "run-no-namespace-123",
@@ -397,34 +359,13 @@ describe("FlowReporter", () => {
 
     it("should generate correct filename format", async () => {
       // Create minimal mock data
-      const flow: IFlowInput = {
-        id: "filename-test",
-        name: "Filename Test",
-        description: "Test filename generation",
-        version: DEFAULT_FLOW_VERSION,
-        steps: [{
-          id: "step1",
-          name: "Step 1",
-          identity: "test-agent",
-          dependsOn: [],
-          input: {
-            source: FlowInputSource.REQUEST,
-            transform: "passthrough",
-          },
-          retry: {
-            maxAttempts: 1,
-            backoffMs: 1000,
-          },
-        }],
-        output: {
-          from: "step1",
-          format: FlowOutputFormat.MARKDOWN,
-        },
-        settings: {
-          maxParallelism: 3,
-          failFast: true,
-        },
-      };
+      const flow = makeMinimalFlowInput(
+        "filename-test",
+        "Filename Test",
+        "Test filename generation",
+        "Step 1",
+        3,
+      );
 
       const stepResults = new Map<string, IStepResult>([
         [

@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentResumeTest
  * @path tests/integration/services/plan_amendment_resume_test.ts
@@ -14,13 +13,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
-
-/**
- * Helper to bypass strict casting rules in tests without using double casting.
- */
-function castTo<T>(val: any): T {
-  return val as T;
-}
+import { castAny as castTo } from "../../helpers/test_helpers.ts";
 
 Deno.test("applyApprovedAmendment preserves original plan structure", async () => {
   const { tempDir, cleanup } = await initTestDbService();

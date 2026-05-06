@@ -10,126 +10,22 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
 import { SkillsService } from "../../../src/services/skills/skills.ts";
-import type { IMemoryBankService } from "@exaix/core/types";
-import type {
-  IActivitySummary,
-  IDecision,
-  IExecutionMemory,
-  IGlobalMemory,
-  ILearning,
-  IMemorySearchResult,
-  IPattern,
-  IProjectMemory,
-} from "@exaix/schemas/memory_bank.ts";
+import type { IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION, MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
+import { NullEmbeddingStub, NullMemoryBankStub } from "../../helpers/memory_test_helper.ts";
 
-class BudgetMemoryBankMock implements IMemoryBankService {
-  constructor(
-    private readonly searchResults: IMemorySearchResult[],
-  ) {}
+class BudgetMemoryBankMock extends NullMemoryBankStub {
+  constructor(private readonly searchResults: IMemorySearchResult[]) {
+    super();
+  }
 
-  getProjectMemory(_portal: string): Promise<IProjectMemory | null> {
-    return Promise.resolve(null);
-  }
-  createProjectMemory(_projectMem: IProjectMemory): Promise<void> {
-    return Promise.resolve();
-  }
-  updateProjectMemory(_portal: string, _updates: Partial<Omit<IProjectMemory, "portal">>): Promise<void> {
-    return Promise.resolve();
-  }
-  addPattern(_portal: string, _pattern: IPattern): Promise<void> {
-    return Promise.resolve();
-  }
-  addDecision(_portal: string, _decision: IDecision): Promise<void> {
-    return Promise.resolve();
-  }
-  createExecutionRecord(_execution: IExecutionMemory): Promise<void> {
-    return Promise.resolve();
-  }
-  getExecutionByTraceId(_traceId: string): Promise<IExecutionMemory | null> {
-    return Promise.resolve(null);
-  }
-  getExecutionHistory(_portal?: string, _limit?: number): Promise<IExecutionMemory[]> {
-    return Promise.resolve([]);
-  }
-  getGlobalMemory(): Promise<IGlobalMemory | null> {
-    return Promise.resolve(null);
-  }
-  initGlobalMemory(): Promise<void> {
-    return Promise.resolve();
-  }
-  addGlobalLearning(_learning: ILearning): Promise<void> {
-    return Promise.resolve();
-  }
-  promoteLearning(
-    _portal: string,
-    _promotion: {
-      type: MemoryType.PATTERN | MemoryType.DECISION;
-      name: string;
-      title: string;
-      description: string;
-      category: ILearning["category"];
-      tags: string[];
-      confidence: ILearning["confidence"];
-    },
-  ): Promise<string> {
-    return Promise.resolve("");
-  }
-  demoteLearning(_learningId: string, _targetPortal: string): Promise<void> {
-    return Promise.resolve();
-  }
-  searchMemory(_query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
-    return Promise.resolve(this.searchResults);
-  }
-  searchByTags(_tags: string[], _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
-    return Promise.resolve([]);
-  }
-  searchByKeyword(_keyword: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {
-    return Promise.resolve([]);
-  }
-  searchMemoryAdvanced(
-    _options: { tags?: string[]; keyword?: string; portal?: string; limit?: number },
-  ): Promise<IMemorySearchResult[]> {
-    return Promise.resolve([]);
-  }
-  getRecentActivity(_limit?: number): Promise<IActivitySummary[]> {
-    return Promise.resolve([]);
-  }
-  rebuildIndices(): Promise<void> {
-    return Promise.resolve();
-  }
-  rebuildIndicesWithEmbeddings(_embeddingService: IMemoryEmbeddingService): Promise<void> {
-    return Promise.resolve();
-  }
-  getProjects(): Promise<string[]> {
-    return Promise.resolve([]);
-  }
-}
-
-class BudgetEmbeddingMock implements IMemoryEmbeddingService {
-  initializeManifest(): Promise<void> {
-    return Promise.resolve();
-  }
-  embedLearning(_learning: ILearning): Promise<void> {
-    return Promise.resolve();
-  }
-  searchByEmbedding(
+  override searchMemory(
     _query: string,
-    _options?: { limit?: number; threshold?: number },
-  ): Promise<IEmbeddingSearchResult[]> {
-    return Promise.resolve([]);
-  }
-  getEmbedding(_id: string): Promise<number[] | null> {
-    return Promise.resolve(null);
-  }
-  deleteEmbedding(_id: string): Promise<void> {
-    return Promise.resolve();
-  }
-  getStats(): Promise<{ total: number; generated_at: string }> {
-    return Promise.resolve({ total: 0, generated_at: "" });
+    _options?: { portal?: string; limit?: number },
+  ): Promise<IMemorySearchResult[]> {
+    return Promise.resolve(this.searchResults);
   }
 }
 
@@ -152,7 +48,7 @@ Deno.test("[Step62.3] SessionMemoryService.lookupMemories accepts token cap", as
       tags: ["decisions"],
     },
   ]);
-  const embeddingService = new BudgetEmbeddingMock();
+  const embeddingService = new NullEmbeddingStub();
   const service = new SessionMemoryService(memoryBank, embeddingService, {
     includeLearnings: false,
     topK: 5,
