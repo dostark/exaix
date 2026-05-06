@@ -14,7 +14,10 @@ Key points
 - NEVER fix before writing a failing regression test. RED must come first.
 - Fix only the root cause — not the symptom. Diff the fix to confirm scope.
 - Run file-scoped tests by default; full suite only when blast radius is wide.
+- If more than one test file fails initially, identify the single root cause before writing the regression test — avoid separate regression tests for a single underlying fault.
 - All CI gates must pass before committing.
+- If GREEN cannot be reached after 2 implementation attempts, revert the change and use `#review-research` to re-analyse the root cause before retrying.
+- When tracing a bug across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
 
 Canonical prompt (short):
 "Fix <bug/failing test>. Reproduce it in a regression test first, then implement
@@ -93,9 +96,15 @@ You are performing a **systematic bug fix** following the TDD root-cause loop.
 
 1. Read the full failure output (stack trace, test failure, type error).
 2. Locate the source file and test file.
-3. Run `deno test --allow-all <test-file>` or `deno check <src-file>` to confirm
+3. If more than one test file is failing, run a broader scope first to find the common root:
+   ```
+   deno test --allow-all <affected-test-dir>
+   ```
+   Identify the single root cause. Avoid writing separate regression tests for what is
+   a single underlying fault.
+4. Run `deno test --allow-all <test-file>` or `deno check <src-file>` to confirm
    the failure is reproducible.
-4. Read the source to identify root cause — not just the surface symptom.
+5. Read the source to identify root cause — not just the surface symptom.
 
 ### Phase 2 — Regression Test (RED)
 

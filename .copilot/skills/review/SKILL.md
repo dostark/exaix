@@ -18,6 +18,7 @@ Key points
 - Architecture grounding: every new src/ file must have a module-header
   JSDoc and pass deno task check:arch.
 - Report findings as categorised, actionable items — not vague suggestions.
+- When reviewing more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
 
 Canonical prompt (short):
 "Review <files or diff> for correctness, security, test coverage, and
@@ -36,6 +37,7 @@ Do / Don't
 - ✅ Do check that module-header JSDoc is present in every new src/ file.
 - ✅ Do verify constructor DI matches the established Exaix service pattern.
 - ✅ Do categorise every finding: 🔴 Critical / 🔒 Security / 🟡 Major / 🟠 Testing / 🔵 Minor.
+- ✅ When reviewing your own output, prioritize edge cases and error paths you may have under-specified — not just correctness of what you wrote.
 - ❌ Don't report style nitpicks as Critical.
 - ❌ Don't approve a change that has no tests for new logic.
 - ❌ Don't skip security checks — even for "small" changes.
@@ -157,6 +159,10 @@ Severity scale:
 | 🔵 Minor | Style, naming, or low-risk omission — fix in follow-up |
 
 ---
+
+## Related
+
+- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output Format
 

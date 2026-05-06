@@ -16,6 +16,9 @@ Key points
 - Use TestEnvironment.create() for full integration scaffolding
 - Verify coverage doesn't drop after implementation
 - TDD is non-negotiable — no implementation without a prior failing test
+- When modifying existing source code, add tests to the existing test file — write the failing test first, then modify the source
+- When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
+- If GREEN cannot be reached after 2 implementation attempts, revert to the pre-RED state and use `#review-research` or `#plan` to re-analyse the design before retrying.
 
 Canonical prompt (short):
 "Apply TDD to [feature/bug/refactor] for [component]. Write failing test first,
@@ -36,13 +39,14 @@ CONTEXT phase
 
 RED phase
   4. Write the failing test(s) that define the desired behavior:
-     - Import from the not-yet-existing or not-yet-modified source file.
+     - New source file: import from the not-yet-existing module; RED = TS2307 (module not found).
+     - Existing source modification: add tests to the existing test file; RED = assertion failure.
      - Use descriptive test names: what behavior is expected under what conditions.
      - Cover: happy path, edge cases, error cases.
-     - Add a module-header JSDoc block (required by check:arch):
+     - For new test files, add a module-header JSDoc block (required by check:arch):
          /** @module XxxTest @path tests/... @description ... */
-  5. Confirm RED: run `deno test --allow-all <test-file>` and verify it fails with
-     TS2307 (module not found) or assertion failures — never skip this step.
+  5. Confirm RED: run `deno test --allow-all <test-file>` and verify it fails —
+     never skip this step.
 
 GREEN phase
   6. Create or modify the source file at src/... with the minimum implementation
@@ -69,11 +73,15 @@ CI gates
  17. (when relevant) deno task check:complexity — refactor if threshold exceeded
 
 Coverage check
- 18. Run scripts/measure_coverage.ts or `deno task coverage` — confirm:
+ 18. Run `deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts` — confirm:
      - Line coverage ≥ 70%
      - Branch coverage ≥ 60%
      If coverage dropped, add targeted tests for uncovered branches
      (see #coverage for the full coverage improvement workflow).
+
+COMMIT
+ 19. Use #commit for the structured commit. Suggested type: `feat` or `fix`.
+     Mandatory fields: what:, rationale:, tests:, who:, impact:.
 
 Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED first, always)
@@ -97,6 +105,7 @@ Related skills
 - #fix                — When a bug is found, this skill mandates regression tests first
 - #refactor-check-magic — Run when check:magic violations are non-trivial
 - #plan               — Create the feature plan before starting (precedes this skill)
+- #commit             — Create a structured commit message after CI gates pass
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → **#tdd-workflow** (per step, via #next-steps) → #post-gap-analysis
@@ -114,3 +123,10 @@ Workflow chain (typical):
 1. REFACTOR summary: changes made (constants extracted, interfaces applied, etc.).
 1. CI gate results: lint, type-check, style, arch, fmt, magic.
 1. Coverage delta: before vs. after line/branch percentages.
+1. Commit payload (use #commit).
+
+## Examples
+
+- `#tdd-workflow Add unit tests for PlanService.createPlan() then implement`
+- `#tdd-workflow Cover validatePath() with edge cases (missing dir, symlink, escape)`
+- `#tdd-workflow Implement EventLogger structured output — red-green-refactor cycle`

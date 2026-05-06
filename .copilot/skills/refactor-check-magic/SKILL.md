@@ -4,7 +4,7 @@ scope: dev
 title: "Refactor-Check-Magic Skill (#refactor-check-magic)"
 description: Refactor magic-value violations from deno task check:magic
 short_summary: "Execution prompt for reducing magic value violations using principled refactoring, shared constants/enums, and behavior-preserving changes."
-version: "0.2"
+version: "1.0"
 topics: ["refactoring", "magic-values", "constants", "enums", "code-quality", "tdd"]
 qwen_skill: refactor-check-magic
 ---
@@ -41,12 +41,13 @@ Process:
    - Refactorable domain literals (best target)
    - Structural/tooling literals (may require narrow heuristic suppression)
    - Legitimate protocol/CLI/schema literals (document and defer if needed)
-1. Refactor highest-impact literals by:
+1. Per batch: pick 1–3 high-impact literals with a clear refactor path. Implement
+   targeted changes, re-run `deno task check:magic`, and report delta.
+1. Refactor by:
    - Reusing existing constants/enums from `src/shared/constants.ts` and `src/shared/enums.ts`
    - Introducing new shared constants/enums only when justified by multi-file reuse
    - Replacing hardcoded fallbacks (e.g., status/actor/scope labels) with canonical symbols
-1. Re-run `deno task check:magic` after each batch and report delta.
-1. Continue until top offenders are meaningfully reduced.
+1. Stop when further changes are mostly noise or would require policy-level checker changes.
 
 Output requirements:
 
@@ -75,20 +76,12 @@ Output requirements:
 ```bash
 deno task check:magic
 deno lint
+deno task check:arch
 deno test --allow-all
 ```
 
 If scope is large, run focused tests first, then full suite.
-
-## Suggested Execution Loop
-
-1. Capture top offenders.
-1. Pick 1-3 high-impact literals with clear refactor path.
-1. Implement targeted changes.
-1. Validate diagnostics and run `check:magic`.
-1. Repeat.
-
-Stop when further changes are mostly noise or would require policy-level checker changes.
+If any test fails after a refactor batch, revert the batch and narrow scope before retrying.
 
 ## Deliverable Format
 
@@ -105,6 +98,7 @@ Stop when further changes are mostly noise or would require policy-level checker
 - Maintain strict TypeScript compatibility and existing architecture patterns.
 - After renaming symbols or moving constants, re-run `deno task check:arch` — renaming
   can break module JSDoc grounding and produce UNGROUNDED files.
+- When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
 
 ## Related Skills
 
@@ -122,3 +116,10 @@ Stop when further changes are mostly noise or would require policy-level checker
    legitimate schema literal, requires policy-level checker change).
 1. **Next 3 candidates** — best remaining targets for a follow-up session.
 1. **CI gate results** — `check:magic`, `lint`, `check:arch`, `deno check` status.
+1. **Commit payload** — use `#commit` to generate the final structured message.
+
+## Examples
+
+- `#refactor-check-magic` — address all current check:magic violations
+- `#refactor-check-magic src/services/plan_service.ts` — fix magic values in one file
+- `#refactor-check-magic — top 10 highest-score literals only`

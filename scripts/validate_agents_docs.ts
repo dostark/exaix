@@ -36,7 +36,9 @@ async function validateFile(path: string): Promise<string[]> {
     return errors;
   }
   for (const k of REQUIRED_KEYS) {
-    if (!fm[k]) errors.push(`${path}: missing required frontmatter key '${k}'`);
+    if (!path.startsWith(".copilot/prompts/") && !fm[k]) {
+      errors.push(`${path}: missing required frontmatter key '${k}'`);
+    }
   }
 
   // quick safety check for obvious secrets

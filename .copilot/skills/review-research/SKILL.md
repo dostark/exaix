@@ -16,6 +16,7 @@ Key points
 - Limit the improvement plan to 6–8 sub-phases; any broader and it needs splitting
 - Every improvement plan MUST include a Documentation Update phase (always last)
 - Commit all artifacts (planning doc + templates + README updates) together
+- When reading more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 
 Canonical prompt (short):
 "Perform a Review-Research-Improvement analysis on [subsystem]:
@@ -128,6 +129,7 @@ Do / Don't
 - ✅ Do keep the plan realistic: 6–8 sub-phases max
 - ✅ Do always make Documentation Update the final sub-phase
 - ✅ Do commit planning doc + templates + README updates atomically
+- ✅ If no prior planning docs exist for the subsystem, use source files and tests as ground truth for Phase 1 — treat absent docs themselves as a weakness to list.
 - ❌ Don't speculate about weaknesses without code evidence
 - ❌ Don't create a plan with > 8 sub-phases (split into two phases instead)
 - ❌ Don't skip the Documentation Update phase
@@ -154,3 +156,9 @@ Workflow chain (typical):
 1. Sub-phase table (goal, effort, dependencies).
 1. Phase 4 — Artifacts created (template paths, README sections updated).
 1. Commit payload.
+
+## Examples
+
+- `#review-research Evaluate the LLM provider layer for extensibility weaknesses`
+- `#review-research Assess EventLogger against structured logging best practices`
+- `#review-research Review MCP tool handlers for security and input validation gaps`

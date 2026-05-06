@@ -4,7 +4,7 @@ scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits
 short_summary: "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits."
-version: "0.2"
+version: "1.0"
 topics: ["tdd", "red-green-refactor", "planning", "steps", "ci", "commits"]
 qwen_skill: next-steps
 ---
@@ -15,7 +15,9 @@ Key points
 - Each step follows strict RED → GREEN → REFACTOR cycle
 - After each step: mark success criteria ✅, run fast CI gates, commit
 - Never skip ahead — complete and commit each step before starting the next
+- If interrupted mid-step, re-read the RED/GREEN evidence in the chat to determine which phase you are in before proceeding
 - Use focused, file-scoped test commands by default; reserve full-suite commands for massive changes or explicit user requests
+- When reading plan references across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
@@ -61,18 +63,19 @@ REFACTOR + CI gates
  14. deno task check:magic   → if new string/number literals were added, reduce violations
      (use #refactor-check-magic if the count is non-trivial)
  15. (optional) deno task check:complexity  if implementation is non-trivial
+     (complexity threshold: 15 — refactor any function breaching it)
  16. (exception only) run a full-suite command only when the validation policy above says it is warranted
 
 Planning doc update
- 16. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
+ 17. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
      criterion now met.
- 17. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
- 18. Add a line immediately after the test list:
+ 18. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
+ 19. Add a line immediately after the test list:
        **✅ IMPLEMENTED** — `<src/path>`, N/N tests passing
 
 Commit
- 19. Stage: src file, test file, planning doc.
- 20. Use #commit for the full structured commit body. At minimum the subject line must
+ 20. Stage: src file, test file, planning doc.
+ 21. Use #commit for the full structured commit body. At minimum the subject line must
      follow conventional commits and the body must include what:, rationale:, tests:,
      who:, and impact: fields. A concise per-step shorthand is acceptable:
        feat(<scope>): implement <What> (Step N)
@@ -127,3 +130,9 @@ Workflow chain (typical):
 1. GREEN evidence (passing test summary).
 1. REFACTOR/CI gate results.
 1. Planning document updates and commit payload.
+
+## Examples
+
+- `#next-steps .copilot/planning/phase-14-caching.md` — execute the next unstarted step
+- `#next-steps Step 3: Add ICache interface and inject into LLMProvider`
+- `#next-steps Continue phase-76 — pick up from last completed step`

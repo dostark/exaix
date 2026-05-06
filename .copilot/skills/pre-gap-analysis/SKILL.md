@@ -21,13 +21,14 @@ Key points
   itself (appended after the last existing section), not just reported in chat.
 - Amendments to the plan text (e.g., adding missing schema fields, clarifying
   an interface signature) must also be written directly into the document.
-- A security feasibility check (Phase 3b) is mandatory for every step that
+- A security feasibility check (Phase 5) is mandatory for every step that
   touches input handling, auth, path resolution, secrets, or external data.
   Security gaps use the 🔒 severity symbol and are always prioritised above
   🟡 Feasibility.
-- A traceability & configurability check (Phase 3c) is required for every step
+- A traceability & configurability check (Phase 6) is required for every step
   that introduces new EventLogger events, thresholds, timeouts, or opt-in
   features. Untyped events and hardcoded values are gaps.
+- When verifying more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
 - Bump the document version (e.g., 1.0 → 1.1) after writing all gaps in.
 
 Canonical prompt (short):
@@ -51,18 +52,18 @@ Do / Don't
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
 - ✅ Do include a numbered gap summary table before the detailed gap entries.
-- ✅ Do run Phase 3b security checks on every step touching input handling,
+- ✅ Do run Phase 5 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do use any additionally supplied documents as context.
-- ✅ Do run Phase 3c traceability & configurability checks on every step that
+- ✅ Do run Phase 6 traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
-- ✅ Do run Phase 3d scenario framework coverage checks on every step that
+- ✅ Do run Phase 4 scenario framework coverage checks on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ❌ Don't mark a step gap-free unless its data sources, types, and tests are
   fully specified.
-- ❌ Don't skip Phase 3b for steps that handle external data or file paths —
+- ❌ Don't skip Phase 5 for steps that handle external data or file paths —
   even if the plan did not mention security.
 - ❌ Don't report gaps only in chat — they MUST be written into the document.
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
@@ -189,7 +190,7 @@ document provided. Your output has two parts:
 
 ---
 
-### Phase 3d — Scenario Framework Coverage Check
+### Phase 4 — Scenario Framework Coverage Check
 
 For **every step** that affects the **request → plan → execution → review → memory → update**
 flow (or any sub-path of it), assess whether the scenario framework at
@@ -197,7 +198,7 @@ flow (or any sub-path of it), assess whether the scenario framework at
 
 ---
 
-### Phase 3b — Security Feasibility Check
+### Phase 5 — Security Feasibility Check
 
 For **every step** that touches input parsing, file-system access, auth, secrets,
 network calls, process execution, or shared mutable state — apply the security
@@ -208,7 +209,7 @@ A finding is classified 🔒 Security — always triaged above 🟡 Feasibility.
 
 ---
 
-### Phase 3c — Traceability & Configurability Check
+### Phase 6 — Traceability & Configurability Check
 
 For **every step** that introduces new behaviour, check:
 
@@ -218,7 +219,7 @@ For **every step** that introduces new behaviour, check:
 
 ---
 
-### Phase 4 — Gap Classification
+### Phase 7 — Gap Classification
 
 Classify every gap:
 
@@ -234,7 +235,7 @@ Build a gap summary table before detailed entries.
 
 ---
 
-### Phase 5 — Write Gaps Into the Document
+### Phase 8 — Write Gaps Into the Document
 
 Append at the end of the planning document using the exact format below.
 
@@ -272,7 +273,7 @@ Append at the end of the planning document using the exact format below.
 
 ---
 
-### Phase 6 — Finalize
+### Phase 9 — Finalize
 
 1. Bump the document version in frontmatter.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
@@ -282,5 +283,7 @@ Append at the end of the planning document using the exact format below.
 ## Output format
 
 1. Brief chat summary: total gaps by severity and whether the plan is safe to implement.
-1. Confirmation that the planning document was updated with the gap sections.
+1. Gap summary table — one row per gap (step, severity, description).
+1. Confirmation that the planning document was updated with the gap sections and Pre-Implementation Actions list.
+1. Version bump confirmation — the document version was bumped in frontmatter.
 1. Any blocking issue that must be resolved before implementation can begin.

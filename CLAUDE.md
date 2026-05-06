@@ -59,7 +59,7 @@ Before proposing or implementing changes:
 | Commit skill         | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
 | Plan skill           | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
 | Next-steps skill     | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
-| Slash commands       | [.copilot/commands/](.copilot/commands/)                                             |
+| Slash commands       | [.copilot/prompts/](.copilot/prompts/)                                               |
 | Planning documents   | [.copilot/planning/](.copilot/planning/)                                             |
 | All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                                     |
 
@@ -226,7 +226,7 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 .copilot/
 ├── manifest.json       # Index of all agent docs (auto-generated)
 ├── cross-reference.md  # Task → Document quick reference
-├── commands/           # Slash commands (description: field, injected as user message)
+├── prompts/            # Chat routing wrappers — one .prompt.md per skill
 ├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
 ├── guidelines/         # Reference guidelines and process documents
 ├── providers/          # Provider-specific guidance (Claude, OpenAI, Google)
@@ -244,7 +244,7 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 | Documentation         | `.copilot/guidelines/documentation.md`                    |
 | Commit message        | `.copilot/skills/commit/SKILL.md`                         |
 | Planning/roadmap      | `.copilot/skills/plan/SKILL.md`, `.copilot/planning/*.md` |
-| Slash commands        | `.copilot/commands/`                                      |
+| Slash commands        | `.copilot/prompts/`                                       |
 | Finding the right doc | `.copilot/cross-reference.md`                             |
 
 ## Key Patterns & Constraints

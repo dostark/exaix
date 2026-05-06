@@ -1,273 +1,172 @@
 {
-  "generated_at": "2026-05-05T18:53:35.513Z",
+  "generated_at": "2026-05-06T18:22:18.882Z",
   "docs": [
     {
-      "path": ".copilot/commands/lint.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Linting/Formatting (#lint)",
-      "short_summary": "Fix lint, formatting, and style violations in touched files using exact Exaix check commands.",
-      "version": "0.2",
-      "topics": [
-        "linting",
-        "formatting",
-        "code-quality",
-        "style"
-      ],
+      "path": ".copilot/prompts/infra.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/lint.md.chunk0.txt",
-        ".copilot/chunks/lint.md.chunk1.txt",
-        ".copilot/chunks/lint.md.chunk2.txt"
+        ".copilot/chunks/infra.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/upgrade.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Dependency/Version Upgrade (#upgrade)",
-      "short_summary": "Invocation stub for the Upgrade skill — semver audit, regression net, apply, full CI, document.",
-      "version": "0.2",
-      "topics": [
-        "upgrade",
-        "dependencies",
-        "version",
-        "maintenance"
-      ],
+      "path": ".copilot/prompts/pre-gap-analysis.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/upgrade.md.chunk0.txt"
+        ".copilot/chunks/pre-gap-analysis.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/README.md",
+      "path": ".copilot/prompts/next-steps.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/next-steps.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/doc.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/doc.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/fix.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/fix.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/duplication.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/duplication.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/commit.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/commit.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/README.md",
       "agent": "general",
       "scope": "dev",
-      "title": "Exaix Agent Prompt Templates Library",
-      "short_summary": "Comprehensive library of prompt templates for systematic coding agent workflows in Exaix.",
-      "version": "0.1",
+      "title": ".copilot/prompts/ — Chat Routing Wrappers",
+      "short_summary": "Thin .prompt.md wrappers that route chat invocations to canonical .copilot/skills/ sources. One file per skill.",
+      "version": "1.0",
       "topics": [
         "prompts",
-        "templates",
-        "agents",
-        "workflows",
-        "best-practices"
+        "routing",
+        "skills",
+        "copilot",
+        "wrappers"
       ],
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
         ".copilot/chunks/README.md.chunk1.txt",
         ".copilot/chunks/README.md.chunk2.txt",
-        ".copilot/chunks/README.md.chunk3.txt",
-        ".copilot/chunks/README.md.chunk4.txt",
-        ".copilot/chunks/README.md.chunk5.txt",
-        ".copilot/chunks/README.md.chunk6.txt",
-        ".copilot/chunks/README.md.chunk7.txt"
+        ".copilot/chunks/README.md.chunk3.txt"
       ]
     },
     {
-      "path": ".copilot/commands/tdd-workflow.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "TDD Workflow (#tdd-workflow)",
-      "short_summary": "Invocation stub for the TDD Workflow skill — write failing tests first, implement minimally, refactor, verify coverage.",
-      "version": "0.2",
-      "topics": [
-        "tdd",
-        "testing",
-        "red-green-refactor"
-      ],
+      "path": ".copilot/prompts/refactor.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/tdd-workflow.md.chunk0.txt"
+        ".copilot/chunks/refactor.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/security.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Security Patch Template (#security)",
-      "short_summary": "Template for planning and implementing security fixes with validation and documentation.",
-      "version": "0.2",
-      "topics": [
-        "security",
-        "vulnerability",
-        "patch",
-        "validation"
-      ],
+      "path": ".copilot/prompts/review.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/security.md.chunk0.txt"
+        ".copilot/chunks/review.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/infra.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Infrastructure/Config Template (#infra)",
-      "short_summary": "Plan and implement Exaix infra/config changes: TOML schema, Zod validation, PathResolver, CI verification.",
-      "version": "0.2",
-      "topics": [
-        "infrastructure",
-        "configuration",
-        "deployment",
-        "setup"
-      ],
+      "path": ".copilot/prompts/post-gap-analysis.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/infra.md.chunk0.txt",
-        ".copilot/chunks/infra.md.chunk1.txt",
-        ".copilot/chunks/infra.md.chunk2.txt",
-        ".copilot/chunks/infra.md.chunk3.txt"
+        ".copilot/chunks/post-gap-analysis.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/fix.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Bug/Test Fix Template (#fix)",
-      "short_summary": "Template for systematically fixing bugs or failing tests with regression coverage.",
-      "version": "0.2",
-      "topics": [
-        "bug-fix",
-        "testing",
-        "regression",
-        "validation"
-      ],
+      "path": ".copilot/prompts/tdd-workflow.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/fix.md.chunk0.txt"
+        ".copilot/chunks/tdd-workflow.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/clean-codebase.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Clean Codebase Template (#clean-codebase)",
-      "short_summary": "Template for removing all errors, warnings, and style violations from the repository.",
-      "version": "0.2",
-      "topics": [
-        "cleanup",
-        "validation",
-        "linting",
-        "style",
-        "qa"
-      ],
+      "path": ".copilot/prompts/clean-codebase.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/clean-codebase.md.chunk0.txt",
-        ".copilot/chunks/clean-codebase.md.chunk1.txt",
-        ".copilot/chunks/clean-codebase.md.chunk2.txt",
-        ".copilot/chunks/clean-codebase.md.chunk3.txt"
+        ".copilot/chunks/clean-codebase.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/review.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Code Review Template (#review)",
-      "short_summary": "Template for systematic code review checking correctness, style, and completeness.",
-      "version": "0.2",
-      "topics": [
-        "code-review",
-        "quality-assurance",
-        "best-practices"
-      ],
+      "path": ".copilot/prompts/review-research.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/review.md.chunk0.txt"
+        ".copilot/chunks/review-research.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/explore.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Codebase Exploration (#explore)",
-      "short_summary": "Explore the Exaix codebase using the manifest, ARCHITECTURE.md AGENT_LOGIC block, and layer-aware search.",
-      "version": "0.2",
-      "topics": [
-        "exploration",
-        "architecture",
-        "discovery",
-        "navigation"
-      ],
+      "path": ".copilot/prompts/plan.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/explore.md.chunk0.txt",
-        ".copilot/chunks/explore.md.chunk1.txt",
-        ".copilot/chunks/explore.md.chunk2.txt",
-        ".copilot/chunks/explore.md.chunk3.txt"
+        ".copilot/chunks/plan.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/refactor.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Refactoring Template (#refactor)",
-      "short_summary": "Refactor Exaix code using IFoo interfaces, constructor DI, constants extraction, and zero behavior change.",
-      "version": "0.2",
-      "topics": [
-        "refactoring",
-        "code-quality",
-        "maintenance"
-      ],
+      "path": ".copilot/prompts/submodule-workflow.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/refactor.md.chunk0.txt",
-        ".copilot/chunks/refactor.md.chunk1.txt",
-        ".copilot/chunks/refactor.md.chunk2.txt",
-        ".copilot/chunks/refactor.md.chunk3.txt"
+        ".copilot/chunks/submodule-workflow.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/duplication.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Reduce Code Duplication (#duplication)",
-      "short_summary": "Reduce structural code duplication below 2% using the measure_duplication script and targeted refactoring.",
-      "version": "0.2",
-      "topics": [
-        "duplication",
-        "jscpd",
-        "refactoring",
-        "code-quality"
-      ],
+      "path": ".copilot/prompts/security.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/duplication.md.chunk0.txt",
-        ".copilot/chunks/duplication.md.chunk1.txt",
-        ".copilot/chunks/duplication.md.chunk2.txt",
-        ".copilot/chunks/duplication.md.chunk3.txt"
+        ".copilot/chunks/security.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/doc.md",
-      "agent": "general",
-      "scope": "docs",
-      "title": "Documentation Template (#doc)",
-      "short_summary": "Create or update Exaix docs with the correct target file, structure, and sync commands.",
-      "version": "0.2",
-      "topics": [
-        "documentation",
-        "writing",
-        "clarity"
-      ],
+      "path": ".copilot/prompts/explore.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/doc.md.chunk0.txt",
-        ".copilot/chunks/doc.md.chunk1.txt",
-        ".copilot/chunks/doc.md.chunk2.txt"
+        ".copilot/chunks/explore.prompt.md.chunk0.txt"
       ]
     },
     {
-      "path": ".copilot/commands/update-building-with-ai-agents.md",
-      "agent": "general",
-      "scope": "docs",
-      "title": "Update Building with AI Agents Documentation",
-      "short_summary": "Prompt template for adding new patterns and stories to Building_with_AI_Agents.md",
-      "version": "0.2",
-      "topics": [
-        "documentation",
-        "meta",
-        "patterns",
-        "field-guide"
-      ],
+      "path": ".copilot/prompts/lint.prompt.md",
+      "short_summary": "",
       "chunks": [
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk0.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk1.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk2.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk3.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk4.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk5.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk6.txt",
-        ".copilot/chunks/update-building-with-ai-agents.md.chunk7.txt"
+        ".copilot/chunks/lint.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/coverage.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/coverage.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/upgrade.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/upgrade.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/prompts/refactor-check-magic.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/refactor-check-magic.prompt.md.chunk0.txt"
       ]
     },
     {
@@ -275,7 +174,7 @@
       "agent": "general",
       "scope": "dev",
       "title": ".copilot/ — AI Agent Knowledge Base",
-      "short_summary": "Overview of the .copilot/ directory: commands, skills, guidelines, and providers for multi-agent Exaix development.",
+      "short_summary": "Overview of the .copilot/ directory: prompts, skills, guidelines, and providers for multi-agent Exaix development.",
       "version": "2.0",
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
@@ -382,27 +281,6 @@
         ".copilot/chunks/self-improvement.md.chunk5.txt",
         ".copilot/chunks/self-improvement.md.chunk6.txt",
         ".copilot/chunks/self-improvement.md.chunk7.txt"
-      ]
-    },
-    {
-      "path": ".copilot/guidelines/submodule-workflow.md",
-      "agent": "copilot",
-      "scope": "dev",
-      "title": "Submodule Workflow & Pointer Policy",
-      "short_summary": "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes.",
-      "version": "0.1",
-      "topics": [
-        "git",
-        "submodule",
-        "docs",
-        "workflow"
-      ],
-      "chunks": [
-        ".copilot/chunks/submodule-workflow.md.chunk0.txt",
-        ".copilot/chunks/submodule-workflow.md.chunk1.txt",
-        ".copilot/chunks/submodule-workflow.md.chunk2.txt",
-        ".copilot/chunks/submodule-workflow.md.chunk3.txt",
-        ".copilot/chunks/submodule-workflow.md.chunk4.txt"
       ]
     },
     {
@@ -566,6 +444,26 @@
       ]
     },
     {
+      "path": ".copilot/skills/doc/SKILL.md",
+      "agent": "general",
+      "scope": "docs",
+      "title": "Documentation Skill (#doc)",
+      "short_summary": "Create or update Exaix docs with the correct target file, structure, and sync commands.",
+      "version": "1.0",
+      "topics": [
+        "documentation",
+        "writing",
+        "clarity"
+      ],
+      "qwen_skill": "doc",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt"
+      ]
+    },
+    {
       "path": ".copilot/skills/coverage/SKILL.md",
       "agent": "senior-coder",
       "scope": "dev",
@@ -589,6 +487,71 @@
         ".copilot/chunks/SKILL.md.chunk5.txt",
         ".copilot/chunks/SKILL.md.chunk6.txt",
         ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/submodule-workflow/SKILL.md",
+      "agent": "copilot",
+      "scope": "dev",
+      "title": "Submodule Workflow Skill (#submodule-workflow)",
+      "short_summary": "Correct handling of simultaneous parent repo and exaix-dev-docs submodule changes.",
+      "version": "1.0",
+      "topics": [
+        "git",
+        "submodule",
+        "docs",
+        "workflow"
+      ],
+      "qwen_skill": "submodule-workflow",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/duplication/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Reduce Code Duplication (#duplication)",
+      "short_summary": "Reduce structural code duplication below 2% using the measure_duplication script and targeted refactoring.",
+      "version": "1.0",
+      "topics": [
+        "duplication",
+        "jscpd",
+        "refactoring",
+        "code-quality"
+      ],
+      "qwen_skill": "duplication",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/infra/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Infrastructure/Config Skill (#infra)",
+      "short_summary": "Plan and implement Exaix infra/config changes: TOML schema, Zod validation, PathResolver, CI verification.",
+      "version": "1.0",
+      "topics": [
+        "infrastructure",
+        "configuration",
+        "deployment",
+        "setup"
+      ],
+      "qwen_skill": "infra",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt"
       ]
     },
     {
@@ -616,6 +579,48 @@
         ".copilot/chunks/SKILL.md.chunk5.txt",
         ".copilot/chunks/SKILL.md.chunk6.txt",
         ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/refactor/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Refactoring Skill (#refactor)",
+      "short_summary": "Refactor Exaix code using IFoo interfaces, constructor DI, constants extraction, and zero behavior change.",
+      "version": "1.0",
+      "topics": [
+        "refactoring",
+        "code-quality",
+        "maintenance"
+      ],
+      "qwen_skill": "refactor",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt",
+        ".copilot/chunks/SKILL.md.chunk4.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/lint/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Linting/Formatting Skill (#lint)",
+      "short_summary": "Fix lint, formatting, and style violations in touched files using exact Exaix check commands.",
+      "version": "1.0",
+      "topics": [
+        "linting",
+        "formatting",
+        "code-quality",
+        "style"
+      ],
+      "qwen_skill": "lint",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt"
       ]
     },
     {
@@ -707,7 +712,7 @@
       "scope": "dev",
       "title": "Refactor-Check-Magic Skill (#refactor-check-magic)",
       "short_summary": "Execution prompt for reducing magic value violations using principled refactoring, shared constants/enums, and behavior-preserving changes.",
-      "version": "0.2",
+      "version": "1.0",
       "topics": [
         "refactoring",
         "magic-values",
@@ -734,7 +739,7 @@
       "scope": "dev",
       "title": "Commit Skill (#commit)",
       "short_summary": "Enforces structured, informative commit messages for agents and human developers.",
-      "version": "0.4",
+      "version": "1.0",
       "topics": [
         "git",
         "commit",
@@ -781,6 +786,27 @@
         ".copilot/chunks/SKILL.md.chunk5.txt",
         ".copilot/chunks/SKILL.md.chunk6.txt",
         ".copilot/chunks/SKILL.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": ".copilot/skills/explore/SKILL.md",
+      "agent": "general",
+      "scope": "dev",
+      "title": "Codebase Exploration (#explore)",
+      "short_summary": "Explore the Exaix codebase using the manifest, ARCHITECTURE.md AGENT_LOGIC block, and layer-aware search.",
+      "version": "1.0",
+      "topics": [
+        "exploration",
+        "architecture",
+        "discovery",
+        "navigation"
+      ],
+      "qwen_skill": "explore",
+      "chunks": [
+        ".copilot/chunks/SKILL.md.chunk0.txt",
+        ".copilot/chunks/SKILL.md.chunk1.txt",
+        ".copilot/chunks/SKILL.md.chunk2.txt",
+        ".copilot/chunks/SKILL.md.chunk3.txt"
       ]
     },
     {
@@ -895,7 +921,7 @@
       "scope": "dev",
       "title": "Next-Steps Skill (#next-steps)",
       "short_summary": "Prompt for iterating through .copilot/planning/ steps one-by-one using TDD red-green-refactor with CI gates and commits.",
-      "version": "0.2",
+      "version": "1.0",
       "topics": [
         "tdd",
         "red-green-refactor",

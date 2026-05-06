@@ -2,7 +2,7 @@
 agent: general
 scope: dev
 title: .copilot/ — AI Agent Knowledge Base
-short_summary: "Overview of the .copilot/ directory: commands, skills, guidelines, and providers for multi-agent Exaix development."
+short_summary: "Overview of the .copilot/ directory: prompts, skills, guidelines, and providers for multi-agent Exaix development."
 version: "2.0"
 ---
 
@@ -10,7 +10,7 @@ version: "2.0"
 
 This directory is the **AI agent knowledge base** for the Exaix project. It is consumed by all AI agents (Claude Code, Qwen, GitHub Copilot, etc.) via a symlink chain:
 
-```
+```text
 .claude/  →  .copilot/  ←  .agents/  ←  .cursor/
 ```
 
@@ -18,9 +18,9 @@ Content is organized by **role**, not by provider.
 
 ## Directory Structure
 
-```
+```text
 .copilot/
-├── commands/       # Slash commands — injected as user message on invocation
+├── prompts/        # Chat routing wrappers — one .prompt.md per skill (symlinked from .github/prompts/)
 ├── skills/         # Multi-step autonomous workflows (one SKILL.md per skill)
 ├── guidelines/     # Reference guidelines and process documents
 ├── providers/      # Provider-specific adaptation notes
@@ -32,18 +32,18 @@ Content is organized by **role**, not by provider.
 
 ## Role Distinction
 
-| Directory     | Role             | Format                        | When to use                                           |
-| ------------- | ---------------- | ----------------------------- | ----------------------------------------------------- |
-| `commands/`   | Slash command    | `description:` field required | Short invocation prompts — invoked as `/command-name` |
-| `skills/`     | Autonomous skill | `SKILL.md` per skill          | Multi-step workflows that run autonomously            |
-| `guidelines/` | Reference doc    | Markdown                      | Consult for patterns, standards, processes            |
-| `providers/`  | Adaptation notes | Markdown                      | Provider-specific tips for Claude/OpenAI/Gemini       |
+| Directory     | Role             | Format                        | When to use                                                      |
+| ------------- | ---------------- | ----------------------------- | ---------------------------------------------------------------- |
+| `prompts/`    | Routing wrapper  | `.prompt.md`, `name:` + `description:` | Thin wrappers that route to canonical skill source  |
+| `skills/`     | Autonomous skill | `SKILL.md` per skill          | Multi-step workflows that run autonomously                       |
+| `guidelines/` | Reference doc    | Markdown                      | Consult for patterns, standards, processes                       |
+| `providers/`  | Adaptation notes | Markdown                      | Provider-specific tips for Claude/OpenAI/Gemini                  |
 
 ## Quick Navigation
 
 - **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
-- **Skills**: [skills/](skills/) — commit, plan, next-steps, pre-gap-analysis, post-gap-analysis, refactor-check-magic
-- **Commands**: [commands/](commands/) — fix, review, test, refactor, doc, security, lint, etc.
+- **Skills**: [skills/](skills/) — 21 skills covering commit, plan, fix, review, security, coverage, and more
+- **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Guidelines**: [guidelines/](guidelines/) — exaix-development, testing, documentation, security-review, self-improvement, etc.
 - **Providers**: [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md), [providers/google.md](providers/google.md)
 
@@ -62,8 +62,9 @@ Content is organized by **role**, not by provider.
 
 ## GitHub Copilot Integration
 
-`.github/prompts/` contains GitHub Copilot slash-command definitions (different schema from `.copilot/`).
-Do not move files between `.copilot/commands/` and `.github/prompts/` — they use different frontmatter schemas.
+`.github/prompts/` is a symlink to `.copilot/prompts/`. All `.prompt.md` files in `.copilot/prompts/` are automatically visible to GitHub Copilot Chat.
+
+Each prompt is a thin routing wrapper pointing to the canonical `.copilot/skills/<name>/SKILL.md`. There is a 1-to-1 correspondence between prompts and skills.
 
 ## Maintenance
 
@@ -81,7 +82,8 @@ deno run --allow-read scripts/validate_agents_docs.ts
 
 ### 1. Create File in Appropriate Subfolder
 
-- Use `providers/` for model-specific notes, `guidelines/` for reference docs, `prompts/` for reusable prompt templates, `commands/` for slash commands, and `skills/` for autonomous workflows.
+- Use `providers/` for model-specific notes, `guidelines/` for reference docs, and `skills/` for autonomous workflows.
+- To add a new skill, also run `scripts/generate_prompt.ts --skill <name>` to create the corresponding `.copilot/prompts/<name>.prompt.md` wrapper.
 
 ### 2. Add YAML Frontmatter
 
@@ -142,4 +144,4 @@ topics: ["keyword1", "keyword2"]
 ---
 ```
 
-The `description:` field is mandatory for files in `commands/` — it powers slash command menu display.
+The `description:` field is mandatory for files in `prompts/` — it powers slash command menu display.

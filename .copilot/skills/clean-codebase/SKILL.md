@@ -16,6 +16,7 @@ Key points
 - Validate with exact project commands after every fix batch
 - Never mark complete until ALL checks report zero errors/warnings/violations
 - Prefer running check scripts with file-scope flags to get faster feedback loops
+- When the scope involves more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 
 Canonical prompt (short):
 "Drive the repository to fully green CI. Fix all type errors, lint issues,
@@ -78,17 +79,25 @@ Phase 8 — Duplication (if threshold breached)
      when the duplication is identical behavior, not just similar-looking code.
  18. Re-run `measure_duplication.ts` — below 2% threshold.
 
-Phase 9 — Final full-suite validation
- 19. Run the complete CI pipeline to confirm all gates green:
+Phase 9 — Agent docs validation
+ 19. Validate all `.copilot/` documentation meets schema requirements:
+       deno run -A scripts/validate_agents_docs.ts
+     This checks every `.copilot/` Markdown file for required frontmatter keys,
+     'Canonical prompt', and 'Examples' sections. Fix any reported violations
+     before proceeding.
+
+Phase 10 — Final full-suite validation
+ 20. Run the complete CI pipeline to confirm all gates green:
        deno run -A scripts/ci.ts all
      Or manually:
        deno check src/main.ts && deno lint && deno fmt --check &&
        deno task check:style && deno task check:arch && deno task check:magic &&
        deno task test && deno run -A scripts/measure_coverage.ts
- 20. All checks must report zero errors/warnings/violations before committing.
+     Coverage thresholds: Line ≥ 70%, Branch ≥ 60%.
+ 21. All checks must report zero errors/warnings/violations before committing.
 
 Commit
- 21. Use #commit for the structured commit body. Subject example:
+ 22. Use #commit for the structured commit body. Subject example:
        chore: drive codebase to fully green CI (N violations fixed)
 
        what: fixed N type errors, N lint, N style, N UNGROUNDED files, magic reduced
@@ -132,3 +141,9 @@ Workflow chain (typical):
 1. Intermediate check results after each phase (0 errors confirmed).
 1. Final `scripts/ci.ts all` output: all gates green.
 1. Commit payload.
+
+## Examples
+
+- `#clean-codebase` — drive the full repo to CI-green from scratch
+- `#clean-codebase src/services/` — scope cleanup to the services layer only
+- `#clean-codebase after merge — fix type errors and lint introduced by the merge`

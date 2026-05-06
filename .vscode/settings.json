@@ -7,11 +7,15 @@
   "deno.enable": true,
   "deno.lint": true,
   "deno.suggest.imports.autoDiscover": true,
-  "deno.importMap": "./deno.json",
   "deno.suggest.imports.hosts": {
     "https://deno.land": true,
     "https://raw.githubusercontent.com": true
   },
+  "deno.documentPreloadLimit": 3000,
+  "deno.enablePaths": [
+    "exaix",
+    "packages"
+  ],
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
@@ -21,7 +25,6 @@
       "url": "./schemas/deno-config.schema.json"
     }
   ],
-  // Exclude build artifacts and caches from file watcher
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/node_modules/**": true,

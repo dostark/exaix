@@ -18,6 +18,7 @@ Key points
 - Findings require remediation steps in TDD-First format — tests before fixes.
 - Use PathResolver for all file paths; never raw string concatenation.
 - Never log, print, or store secrets; never include secrets in error messages.
+- When auditing more than ~20 files, work in batches of 5–10: audit a batch, record findings, then continue.
 
 Canonical prompt (short):
 "Run a Phase 3b security audit on <files or feature>. Apply the nine-item
@@ -178,6 +179,22 @@ For each finding, write a TDD-First remediation step:
 
 ---
 
+### Phase 7 — CI Gates and Commit
+
+For any remediation code written as part of this audit (test stubs, quick fixes):
+
+```bash
+deno lint <src-file> <test-file>
+deno check <src-file>
+deno task check:arch
+deno fmt <src-file> <test-file>
+```
+
+Then use `#commit` for the structured commit. Type: `fix` or `security`.
+Mandatory fields: `what:`, `rationale:`, `tests:`, `who:`, `impact:`.
+
+---
+
 ## Related
 
 - [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
@@ -189,3 +206,4 @@ For each finding, write a TDD-First remediation step:
 3. **Detail section** — one block per finding with attack scenario and required fix.
 4. **Remediation steps** — TDD-First steps ready for `#next-steps` or direct implementation.
 5. **Next action** — use `#fix` per finding, then `#commit` when all resolved.
+6. **Commit payload** — structured commit message generated via `#commit` once all findings are remediated.

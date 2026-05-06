@@ -16,6 +16,7 @@ Key points
 - Keep the upgrade atomic: one dependency per commit where possible
 - Always have a verified rollback path before merging
 - Run the full test suite (deno task test) after any version bump — blast radius is unknown
+- When auditing call sites across more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue
 
 Canonical prompt (short):
 "Upgrade [dependency/runtime] from [current version] to [target version].
@@ -75,7 +76,7 @@ Commit
 
        CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, full suite OK
 
-Rollback (if upgrade blocked)
+Phase 6 — Rollback (if blocked)
  22. Revert deno.json change, re-run `deno cache --reload`, confirm GREEN baseline.
  23. Document the blocker in the planning doc with a concrete next-action.
 
@@ -115,3 +116,9 @@ Workflow chain (typical):
 1. Coverage delta (before vs. after).
 1. Migration doc changes (if any).
 1. Commit payload.
+
+## Examples
+
+- `#upgrade Deno runtime from 1.44 to 2.x`
+- `#upgrade @std/path to latest — check for breaking API changes`
+- `#upgrade openai SDK — write regression tests on current version first`

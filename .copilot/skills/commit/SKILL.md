@@ -9,7 +9,7 @@ scope: dev
 title: "Commit Skill (#commit)"
 description: Create a structured commit message for current changes following Exaix conventions
 short_summary: "Enforces structured, informative commit messages for agents and human developers."
-version: "0.4"
+version: "1.0"
 topics: ["git", "commit", "documentation", "best-practices", "structured-logging"]
 qwen_skill: commit
 ---
@@ -92,6 +92,7 @@ Do / Don't:
 - ✅ Do treat both staged and unstaged task changes as in scope by default.
 - ✅ Do split unrelated or weakly related changes into separate structured commits.
 - ✅ Do run the required linting, tests, and other pre-commit checks before proposing the final commit command.
+- ✅ If the pre-commit hook fails (e.g., `fmt:check` or `lint`), fix the issue, re-stage the affected files, and retry `git commit` — never bypass with `--no-verify`.
 - ✅ Do reference specific components from ARCHITECTURE.md in the impact field.
 - ✅ Do list actual tool usage in tool_audit.
 - ✅ Do include your real identity.
@@ -121,3 +122,7 @@ Expected Response Pattern:
 1. Show the corresponding structured `git commit` command for each batch using heredoc or multiple `-m` flags to ensure the full structured body is included.
 1. Verify all mandatory headers are present and correctly filled for every proposed commit, and list any blocking validation issue.
 ```
+
+## Related
+
+- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules

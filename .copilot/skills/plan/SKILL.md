@@ -19,6 +19,10 @@ Key points
   3. Configurability: Avoid magic numbers; use exa.config.toml or named constants.
   4. Security: Proactively perform 'Phase 3b' checks (traversal, injection, auth).
 - Documentation (§3D): Every interface/schema change REQUIRES a matching doc update step.
+- Name the planning document `.copilot/planning/phase-NN-<kebab-slug>.md` (NN = next sequential phase number).
+- Keep each phase to 8–10 implementation steps maximum — split larger features into two sequential phases.
+- Assess `tests/scenario_framework/` coverage (§3E) whenever the feature touches the request → plan → execution → review → memory → update flow.
+- When reading existing source files to understand context, work in batches of 5–10 files: read a batch, record findings, then continue.
 
 Canonical prompt (short):
 "Draft a new Phase Planning Document for <FEATURE>. Follow .copilot/planning/README.md structure. Include §3B Security and §3C Traceability/Configurability checks in the design. Ensure a §3D Documentation Update step is included."
@@ -32,6 +36,9 @@ Do / Don't
 - ✅ Do include MERMAID diagrams for complex logic flows.
 - ✅ Do include a Section 12 for Safety Gates / Mid-execution replanning if applicable.
 - ✅ Do use symbols like 🔴 🔒 🟡 🟠 🔵 for risk and gap classification.
+- ✅ Do name the planning document `phase-NN-<kebab-slug>.md` for consistent slugs.
+- ✅ Do keep phases to 8–10 steps maximum — split larger features into two sequential phases.
+- ✅ Do assess scenario framework coverage (§3E) for any change to the end-to-end flow.
 - ❌ Don't use 'any' or vague types; use Zod schemas and TypeScript interfaces.
 - ❌ Don't skip the 'Planned Tests' section for any implementation step.
 - ❌ Don't defer documentation updates; implement them as the last step of the phase.
@@ -118,4 +125,12 @@ coverage:
 
 1. Brief chat summary of the architectural approach and key identified risks.
 1. The path to the new or updated planning document file.
+1. Markdown lint result: `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
 1. Recommendation to run `#pre-gap-analysis` on the new plan to verify its completeness against the codebase.
+1. Commit payload — use `#commit` to stage and commit the new planning document.
+
+## Examples
+
+- `#plan Phase 14: Add caching layer for LLM provider responses`
+- `#plan Refactor EventLogger to support structured JSON output`
+- `#plan Migrate CLI from Cliffy to a lighter argument parser`

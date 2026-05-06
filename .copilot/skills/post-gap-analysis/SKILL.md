@@ -29,10 +29,11 @@ Key points
   gaps are remediated.
 - Bump the document version (e.g., 1.2 → 1.3) and update the Status line
   to "🚧 Gap Remediation In Progress" after writing gaps into it.
-- Run a security gap check (Phase 3b) on every step that touches input
+- Run a security gap check (Phase 5) on every step that touches input
   handling, auth, path resolution, secrets, or external data.
-- Run a traceability & configurability check (Phase 3c) on every step that
+- Run a traceability & configurability check (Phase 6) on every step that
   introduces new EventLogger events, thresholds, timeouts, or opt-in features.
+- When reviewing more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
 
 Canonical prompt (short):
 "Deep-review .copilot/planning/phase-NN-*.md against the actual codebase.
@@ -51,7 +52,7 @@ Do / Don't
   requirements (Actions / Architecture Notes / Planned Tests / Success Criteria).
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
-- ✅ Do run Phase 3b security checks on every step touching input handling,
+- ✅ Do run Phase 5 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do include a numbered gap summary table before the detailed gap entries.
 - ✅ Do write new remediation steps using the full §F TDD-First template.
@@ -59,12 +60,12 @@ Do / Don't
   schemas change.
 - ✅ Do bump the document version and update the Status field in the frontmatter.
 - ✅ Do use any additionally supplied documents as context.
-- ✅ Do run Phase 3c traceability & configurability checks on every step that
+- ✅ Do run Phase 6 traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
-- ✅ Do run Phase 3d scenario framework coverage verification on every step that
+- ✅ Do run Phase 4 scenario framework coverage verification on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ❌ Don't mark a plan step as gap-free unless you verified its test files.
-- ❌ Don't skip Phase 3b for steps that handle external data or file paths.
+- ❌ Don't skip Phase 5 for steps that handle external data or file paths.
 - ❌ Don't invent remediation steps for code that already exists and passes.
 - ❌ Don't report gaps only in chat — they MUST be written into the document.
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
@@ -125,7 +126,7 @@ Planned Tests / Success Criteria). Check §3D documentation update compliance.
 
 ---
 
-### Phase 3d — Scenario Framework Coverage Verification
+### Phase 4 — Scenario Framework Coverage Verification
 
 For every step affecting the request → plan → execution → review → memory → update
 flow: verify existing scenarios exercise the behaviour, check scenario assertions,
@@ -133,7 +134,7 @@ determine if new scenarios are needed.
 
 ---
 
-### Phase 3b — Security Gap Analysis
+### Phase 5 — Security Gap Analysis
 
 For every step touching input parsing, file-system access, auth, secrets,
 network calls, process execution, or shared mutable state — verify the nine
@@ -141,7 +142,7 @@ security checklist items. Each failure is a 🔒 Security gap.
 
 ---
 
-### Phase 3c — Traceability & Configurability Check
+### Phase 6 — Traceability & Configurability Check
 
 For every step introducing new behaviour: verify event naming, payload typing,
 audit chain completeness, event assertions in tests; verify config-driven vs.
@@ -150,7 +151,7 @@ config validation tests.
 
 ---
 
-### Phase 4 — Gap Classification
+### Phase 7 — Gap Classification
 
 | Symbol         | Meaning                                                            |
 | -------------- | ------------------------------------------------------------------ |
@@ -164,7 +165,7 @@ Build a gap summary table before detailed entries.
 
 ---
 
-### Phase 5 — Write Gaps and Remediation Steps Into the Document
+### Phase 8 — Write Gaps and Remediation Steps Into the Document
 
 Append at end of planning document using the exact format below.
 
@@ -211,7 +212,7 @@ Append at end of planning document using the exact format below.
 
 ---
 
-### Phase 6 — Finalize
+### Phase 9 — Finalize
 
 1. Bump document version in frontmatter.
 1. Update Status line to `🚧 Gap Remediation In Progress`.
@@ -222,5 +223,7 @@ Append at end of planning document using the exact format below.
 ## Output format
 
 1. Brief chat summary: total gaps by severity and overall plan health.
-1. Confirmation that the planning document was updated with the review sections and remediation steps.
+1. Gap summary table — one row per gap (step, severity, description).
+1. Confirmation that the planning document was updated with remediation steps in §F TDD-First format.
 1. Any blocking critical or security gap requiring immediate attention.
+1. Commit payload — use `#commit` after all remediation steps are written into the document.
