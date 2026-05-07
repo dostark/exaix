@@ -130,10 +130,13 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
       executor.setExecutionContext(context);
 
       const retrieved = executor.getExecutionContext();
-      assertExists(retrieved);
-      assertEquals(retrieved.workingDirectory, portalDir);
-      assertEquals(retrieved.gitRepository, join(portalDir, ".git"));
-      assertEquals(retrieved.portal, "test-portal");
+      if (!retrieved) {
+        throw new Error("Expected execution context to be set");
+      }
+      const executionContext = retrieved;
+      assertEquals(executionContext.workingDirectory, portalDir);
+      assertEquals(executionContext.gitRepository, join(portalDir, ".git"));
+      assertEquals(executionContext.portal, "test-portal");
     });
   });
 
@@ -246,9 +249,12 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
       executor.setExecutionContext(context);
 
       const allowedPaths = executor.getAllowedPaths();
-      assertExists(allowedPaths);
-      assertEquals(allowedPaths.length, 1);
-      assertEquals(allowedPaths[0], portalDir);
+      if (!allowedPaths) {
+        throw new Error("Expected allowed paths to be set");
+      }
+      const executionAllowedPaths = allowedPaths;
+      assertEquals(executionAllowedPaths.length, 1);
+      assertEquals(executionAllowedPaths[0], portalDir);
     });
 
     it("returns workspace allowed paths when workspace context set", () => {
@@ -256,9 +262,12 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
       executor.setExecutionContext(context);
 
       const allowedPaths = executor.getAllowedPaths();
-      assertExists(allowedPaths);
-      assertEquals(allowedPaths.length, 1);
-      assertEquals(allowedPaths[0], workspaceDir);
+      if (!allowedPaths) {
+        throw new Error("Expected allowed paths to be set");
+      }
+      const executionAllowedPaths = allowedPaths;
+      assertEquals(executionAllowedPaths.length, 1);
+      assertEquals(executionAllowedPaths[0], workspaceDir);
     });
 
     it("returns undefined when no context set", () => {

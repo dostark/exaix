@@ -8,14 +8,11 @@
   "deno.lint": true,
   "deno.suggest.imports.autoDiscover": true,
   "deno.suggest.imports.hosts": {
-    "https://deno.land": true,
-    "https://raw.githubusercontent.com": true
+    "https://deno.land": true
   },
-  "deno.documentPreloadLimit": 3000,
-  "deno.enablePaths": [
-    "exaix",
-    "packages"
-  ],
+  "deno.documentPreloadLimit": 0,
+  // "js/ts.validate.enabled": false,
+  // "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {

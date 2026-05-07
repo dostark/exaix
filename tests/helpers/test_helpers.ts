@@ -236,9 +236,9 @@ export function createStubContext(overrides: Partial<ICliApplicationContext> = {
     git: createStubGit(),
     display: createStubDisplay(),
   };
-  const context = Object.assign(base, overrides);
+  const context: ICliApplicationContext = { ...base, ...overrides };
 
-  if (!overrides.display) {
+  if (!("display" in overrides) || overrides.display === undefined) {
     context.display = createStubDisplay(context.db);
   }
 
