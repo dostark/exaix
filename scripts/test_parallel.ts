@@ -38,6 +38,7 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/24_portal_e2e_workflow_test.ts",
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",
   "tests/services/deploy/deploy_workspace_test.ts",
+  "tests/services/agent/agent_executor_test.ts",
   "tests/cli/review_commands_test.ts",
   "tests/cli/exactl_all_test.ts",
   "packages/ai/tests/providers/free_providers_test.ts",
@@ -62,6 +63,10 @@ type TestRowData = Pick<TestStats, "passed" | "failed" | "ignored" | "durationSe
 
 const DOT_REPORTER_SYMBOLS_PATTERN = /^[.,!]+$/;
 const DEFAULT_DOT_WRAP_WIDTH = 80;
+const SUMMARY_LINE_MS_PATTERN =
+  /(?:^|\n)(?:ok|FAILED)\s*\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\(\d+\s+steps?\))?(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)ms\)/;
+const SUMMARY_LINE_SEC_PATTERN =
+  /(?:^|\n)(?:ok|FAILED)\s*\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\(\d+\s+steps?\))?(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)(?:m(\d+))?s\)/;
 
 export function resolveReporter(args: string[]): TestReporter {
   for (let index = 0; index < args.length; index++) {
@@ -209,35 +214,52 @@ function getTerminalWidth(_dest: typeof Deno.stdout): number {
  *   ok |    8 passed              | 0 failed            (3s)
  *   ok |   50 passed              | 0 failed | 1 ignored (696ms)
  */
-function parseSummaryLine(output: string): TestCounts {
+export function parseSummaryLine(output: string): TestCounts {
   const clean = stripAnsi(output);
-  // Try milliseconds-first (sub-second runs like "696ms")
-  const msMatch = clean.match(
-    /\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)ms\)/,
-  );
+  const msMatch = clean.match(SUMMARY_LINE_MS_PATTERN);
   if (msMatch) {
-    const [, mp, mf, mIgn] = msMatch;
+    const [, passed, failed, ignored] = msMatch;
     return {
-      passed: parseInt(mp),
-      failed: parseInt(mf),
-      ignored: mIgn !== undefined ? parseInt(mIgn) : 0,
+      passed: parseInt(passed),
+      failed: parseInt(failed),
+      ignored: ignored !== undefined ? parseInt(ignored) : 0,
       durationSec: 0, // sub-second, rounds to 0
     };
   }
-  // Try seconds/minutes format like "1m23s" or "59s"
-  const m = clean.match(
-    /\|\s*(\d+)\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*(\d+)\s+failed(?:\s*\|\s*(\d+)\s+ignored)?\s*\((\d+)(?:m(\d+))?s\)/,
-  );
-  if (!m) return { passed: 0, failed: 0, ignored: 0, durationSec: 0 };
-  const [, p, f, ign, t1, t2] = m;
-  const minutes = t2 !== undefined ? parseInt(t1) : 0;
-  const secs = t2 !== undefined ? parseInt(t2) : parseInt(t1);
+
+  const secMatch = clean.match(SUMMARY_LINE_SEC_PATTERN);
+  if (!secMatch) return { passed: 0, failed: 0, ignored: 0, durationSec: 0 };
+
+  const [, passed, failed, ignored, secOrMin, trailingSec] = secMatch;
+
+  const minutes = trailingSec !== undefined ? parseInt(secOrMin ?? "0") : 0;
+  const secs = trailingSec !== undefined ? parseInt(trailingSec) : parseInt(secOrMin ?? "0");
   return {
-    passed: parseInt(p),
-    failed: parseInt(f),
-    ignored: ign !== undefined ? parseInt(ign) : 0,
+    passed: parseInt(passed),
+    failed: parseInt(failed),
+    ignored: ignored !== undefined ? parseInt(ignored) : 0,
     durationSec: minutes * 60 + secs,
   };
+}
+
+function parseDotReporterCounts(output: string, durationSec: number): TestCounts {
+  const clean = stripAnsi(output);
+  let passed = 0;
+  let failed = 0;
+  let ignored = 0;
+
+  for (const line of clean.split(/\r?\n/)) {
+    if (!DOT_REPORTER_SYMBOLS_PATTERN.test(line)) {
+      continue;
+    }
+    for (const symbol of line) {
+      if (symbol === ".") passed++;
+      else if (symbol === "!") failed++;
+      else if (symbol === ",") ignored++;
+    }
+  }
+
+  return { passed, failed, ignored, durationSec };
 }
 
 /**
@@ -258,6 +280,8 @@ async function runAndCapture(
   if (header.length > 0) {
     console.log(header);
   }
+
+  const startedAt = Date.now();
 
   const command = new Deno.Command(Deno.execPath(), {
     args: buildDenoTestArgs(extraArgs, reporter),
@@ -327,7 +351,13 @@ async function runAndCapture(
     new Uint8Array([...outChunks, ...errChunks].flatMap((c) => [...c])),
   );
 
-  return { label, exitCode: status.code, ...parseSummaryLine(allText) };
+  const parsedSummary = parseSummaryLine(allText);
+  const durationSec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const counts = reporter === "dot" && parsedSummary.passed === 0 && parsedSummary.failed === 0
+    ? parseDotReporterCounts(allText, durationSec)
+    : parsedSummary;
+
+  return { label, exitCode: status.code, ...counts };
 }
 
 // ---------------------------------------------------------------------------
@@ -336,8 +366,8 @@ async function runAndCapture(
 const LABEL_W = 50; // visible chars for the label text
 const NUM_W = 6; // width of each numeric column
 const TIME_W = 7; // width of the time column
-// Total row width: 2(indent) + 2(icon) + 1(sp) + LABEL_W + 3*(NUM_W+2) + TIME_W+1
-const WIDTH = 2 + 2 + 1 + LABEL_W + 3 * (NUM_W + 2) + TIME_W + 1;
+// Total row width: 2(indent) + 2(icon) + 1(sp) + LABEL_W + 3*(NUM_W+2) + TIME_W+2
+const WIDTH = 2 + 2 + 1 + LABEL_W + 3 * (NUM_W + 2) + TIME_W + 2;
 const HR = "─".repeat(WIDTH);
 const DHR = "═".repeat(WIDTH);
 
@@ -423,7 +453,7 @@ export async function main(args: string[]): Promise<number> {
   console.log(`\n${DHR}`);
   console.log(" TEST RUN SUMMARY");
   console.log(DHR);
-  console.log(`   ${HEADER_LABEL}  ${HEADER_NUMS}`);
+  console.log(`   ${HEADER_LABEL}    ${HEADER_NUMS}`);
   console.log(HR);
 
   // Batch 1 row

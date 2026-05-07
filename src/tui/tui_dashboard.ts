@@ -195,8 +195,8 @@ export interface ITuiDashboard {
 const handleKeyModulePromise = import("./tui_helpers/handle_key.ts");
 // style-exclude:PLUGINS - runtime TUI helper loaded on demand
 const prodHandleKeyModulePromise = import("./tui_helpers/prod_handle_key.ts");
-// style-exclude:RUNTIME_REGISTRY - dynamic std/io import used in non-tty fallback
-const stdIoModulePromise = import("@std/io");
+// style-exclude:RUNTIME_REGISTRY - dynamic std/streams import used in non-tty fallback
+const stdStreamsModulePromise = import("@std/streams");
 
 export const DASHBOARD_ICONS = {
   views: {
@@ -1064,8 +1064,13 @@ async function runProductionInteractiveLoop(context: {
       }
     } else {
       // Non-raw fallback: read lines from stdin (Enter-terminated commands)
-      const ioMod: { readLines: typeof import("@std/io").readLines } = await stdIoModulePromise;
-      for await (const line of ioMod.readLines(Deno.stdin)) {
+      const streamsMod: { TextLineStream: typeof import("@std/streams").TextLineStream } =
+        await stdStreamsModulePromise;
+      for await (
+        const line of Deno.stdin.readable.pipeThrough(new TextDecoderStream()).pipeThrough(
+          new streamsMod.TextLineStream(),
+        )
+      ) {
         const cmd = line.trim().toLowerCase();
         if (!cmd) continue;
 

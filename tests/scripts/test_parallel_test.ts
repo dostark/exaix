@@ -4,7 +4,7 @@
  * @description Verifies reporter parsing for the custom parallel test runner.
  */
 
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertMatch, assertThrows } from "@std/assert";
 
 import {
   buildDenoTestArgs,
@@ -13,6 +13,7 @@ import {
   DOT_REPORTER_LEGEND,
   flushDotReporterState,
   formatRunHeader,
+  parseSummaryLine,
   resolveReporter,
   stripReporterArgs,
 } from "../../scripts/test_parallel.ts";
@@ -101,4 +102,23 @@ Deno.test("compactDotReporterChunk flushes once it reaches terminal width", () =
 
   assertEquals(compactDotReporterChunk(".\n,\n.\n", state), ".,.\n");
   assertEquals(flushDotReporterState(state), "");
+});
+
+Deno.test("parseSummaryLine handles failed batch summaries with step counts", () => {
+  const summaryLine = "FAILED | 4420 passed (966 steps) | 1 failed (1 step) | 12 ignored (1m21s)";
+
+  assertMatch(
+    summaryLine,
+    /^(?:ok|FAILED)\s*\|\s*\d+\s+passed(?:\s*\(\d+\s+steps?\))?\s*\|\s*\d+\s+failed(?:\s*\(\d+\s+steps?\))?(?:\s*\|\s*\d+\s+ignored)?\s*\((?:\d+ms|\d+s|\d+m\d+s)\)$/,
+  );
+
+  assertEquals(
+    parseSummaryLine(summaryLine),
+    {
+      passed: 4420,
+      failed: 1,
+      ignored: 12,
+      durationSec: 81,
+    },
+  );
 });

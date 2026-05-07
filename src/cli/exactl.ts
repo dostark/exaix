@@ -2055,7 +2055,7 @@ const watchCommand = new Command()
 
 __test_command.command("watch", watchCommand);
 
-if (!isTestMode()) {
+if (import.meta.main && !isTestMode()) {
   await __test_command.parse(Deno.args);
   if (services.db && services.db.close) {
     await services.db.close();

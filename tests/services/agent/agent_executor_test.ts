@@ -57,9 +57,11 @@ let portalDir: string;
 let runtimeDir: string;
 let testConfig: Config;
 let dbService: Awaited<ReturnType<typeof initTestDbService>>;
+const ORIGINAL_CWD = Deno.cwd();
 
 // Setup before all tests
 async function setup() {
+  Deno.chdir(ORIGINAL_CWD);
   // Use centralized test DB + tempdir
   dbService = await initTestDbService();
   testDir = dbService.tempDir;
@@ -139,6 +141,7 @@ async function setup() {
 // Cleanup after all tests
 async function cleanup() {
   try {
+    Deno.chdir(ORIGINAL_CWD);
     await dbService.cleanup();
   } catch {
     // Ignore cleanup errors

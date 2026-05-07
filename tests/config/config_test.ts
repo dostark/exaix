@@ -431,17 +431,16 @@ Deno.test("ConfigService handles edge cases", async (t) => {
     const tempDir = await Deno.makeTempDir({ prefix: "config-empty-test-" });
     const configPath = `${tempDir}/test-empty-config.toml`;
 
-    // Empty TOML file will throw a parse error
+    // Empty TOML currently parses to an empty object, then fails schema validation.
     Deno.writeTextFileSync(configPath, "");
 
     try {
-      // Empty file causes TOML parse error, not validation error
       assertThrows(
         () => {
           new ConfigService(configPath);
         },
         Error,
-        "Parse error",
+        "Invalid configuration",
       );
     } finally {
       try {

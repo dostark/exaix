@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
+import { beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
@@ -26,7 +26,6 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
   let workspaceDir: string;
   let originalCwd: string;
   let executor: AgentExecutor;
-  let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
     originalCwd = Deno.cwd();
@@ -34,7 +33,6 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
     // Use test helpers for proper setup
     const dbService = await initTestDbService();
     tempDir = dbService.tempDir;
-    cleanup = dbService.cleanup;
 
     const dirs = await setupPortalWorkspaceTestDirs(tempDir);
     portalDir = dirs.portalDir;
@@ -57,11 +55,6 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
       pathResolver,
       permissions,
     );
-  });
-
-  afterEach(async () => {
-    await cleanup();
-    Deno.chdir(originalCwd);
   });
 
   function makeTestPortal(): IPortalPermissions {
