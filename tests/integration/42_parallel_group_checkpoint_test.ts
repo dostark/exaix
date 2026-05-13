@@ -9,12 +9,10 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_CHECKPOINT_LOADED } from "@exaix/core";
+import { FLOW_EVENT_CHECKPOINT_LOADED } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
-import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
+import { createParallelGroupFlow, createScriptedFlowRunner } from "../helpers/parallel_group_flow_test_helper.ts";
 
 Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group members and resumes without re-running", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
@@ -24,64 +22,23 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
     const requestId = "req-parallel-group-checkpoint";
     const checkpointPath = join(tempDir, "Memory", "Execution", traceId, "checkpoint.json");
 
-    const flow: IFlowInput = {
-      id: "parallel-group-checkpoint-flow",
-      name: "Parallel Group Checkpoint Flow",
+    const flow: IFlowInput = createParallelGroupFlow({
+      flowId: "parallel-group-checkpoint-flow",
+      flowName: "Parallel Group Checkpoint Flow",
       description: "Verify checkpoint captures individual group members and resume skips completed",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "start",
-          name: "Start",
-          identity: "starter",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "review-a",
-          name: "Review A",
-          identity: "reviewerA",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "reviewers" },
-        },
-        {
-          id: "review-b",
-          name: "Review B",
-          identity: "reviewerB",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "reviewers" },
-        },
-        {
-          id: "merge",
-          name: "Merge",
-          identity: "merger",
-          dependsOn: ["review-a", "review-b"],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          mergeFromGroups: ["reviewers"],
-        },
+      groupId: "reviewers",
+      memberSteps: [
+        { stepId: "review-a", stepName: "Review A", identityId: "reviewerA" },
+        { stepId: "review-b", stepName: "Review B", identityId: "reviewerB" },
       ],
-      output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 4, failFast: false },
-    };
+    });
 
     // First run: reviewerA succeeds, reviewerB fails, merge fails (not all members succeeded)
-    const firstRunExecutor = new ScriptedAgentExecutor({
+    const { runner: firstRunRunner } = createScriptedFlowRunner(config, {
       starter: ["start result"],
       reviewerA: ["review A output"],
       reviewerB: [new Error("reviewer B failed")],
       merger: ["merge result"],
-    });
-    const firstRunLogger = new RecordingFlowLogger();
-    const firstRunRunner = new FlowRunner({
-      agentExecutor: firstRunExecutor,
-      eventLogger: firstRunLogger,
-      config,
     });
 
     const firstResult = await firstRunRunner.execute(flow as IFlow, {
@@ -105,18 +62,15 @@ Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group m
     assertEquals(typeof checkpoint.completedSteps["review-b"], "undefined");
 
     // Resume: reviewerB should NOT re-run (already failed and captured), reviewerA also should not re-run
-    const resumedExecutor = new ScriptedAgentExecutor({
-      starter: [new Error("starter should not re-run")],
-      reviewerA: [new Error("reviewer A should not re-run")],
-      reviewerB: [new Error("reviewer B should not re-run")],
-      merger: ["merged on resume"],
-    });
-    const resumedLogger = new RecordingFlowLogger();
-    const resumedRunner = new FlowRunner({
-      agentExecutor: resumedExecutor,
-      eventLogger: resumedLogger,
+    const { executor: resumedExecutor, logger: resumedLogger, runner: resumedRunner } = createScriptedFlowRunner(
       config,
-    });
+      {
+        starter: [new Error("starter should not re-run")],
+        reviewerA: [new Error("reviewer A should not re-run")],
+        reviewerB: [new Error("reviewer B should not re-run")],
+        merger: ["merged on resume"],
+      },
+    );
 
     // The flow will fail again because reviewerB is still in failed state
     const resumedResult = await resumedRunner.execute(flow as IFlow, {

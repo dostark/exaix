@@ -75,46 +75,61 @@ function makeRequestFile(requestsDir: string, requestId: string): string {
   return filePath;
 }
 
+interface IClarifyTestSetupOptions {
+  requestId: string;
+  session?: IClarificationSession;
+}
+
+interface IClarifyTestSetup {
+  commands: RequestCommands;
+  cleanup: () => Promise<void>;
+  filePath: string;
+}
+
+async function setupClarifyTest(options: IClarifyTestSetupOptions): Promise<IClarifyTestSetup> {
+  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
+  await Deno.mkdir(requestsDir, { recursive: true });
+
+  const filePath = makeRequestFile(requestsDir, options.requestId);
+  if (options.session) {
+    await saveClarification(filePath, options.session);
+  }
+
+  return {
+    commands: new RequestCommands(context),
+    cleanup,
+    filePath,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 Deno.test("[request clarify] displays pending questions", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-001";
+  const setup = await setupClarifyTest({
+    requestId,
+    session: makeSession(),
+  });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-001";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession();
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-    const result = await commands.clarify(requestId);
+    const result = await setup.commands.clarify(requestId);
 
     assertEquals(result.status, ClarifyResultStatus.QUESTIONS);
     assertExists(result.questions);
     assertEquals(result.questions!.length, 2);
     assertEquals(result.questions![0].id, "r1q1");
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] answer flag submits specific answers", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-002";
+  const session = makeSession({ requestId });
+  const setup = await setupClarifyTest({ requestId, session });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-002";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({ requestId });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-
     // Stub engine that returns a session with a second round
     const nextSession: IClarificationSession = {
       ...session,
@@ -143,7 +158,7 @@ Deno.test("[request clarify] answer flag submits specific answers", async () => 
       }),
     };
 
-    const result = await commands.clarify(requestId, {
+    const result = await setup.commands.clarify(requestId, {
       answers: { r1q1: "The auth module", r1q2: "Should not throw" },
       engine: stubEngine,
     });
@@ -152,98 +167,75 @@ Deno.test("[request clarify] answer flag submits specific answers", async () => 
     assertExists(result.questions);
     assertEquals(result.round, 2);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] proceed finalizes session", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-003";
+  const setup = await setupClarifyTest({
+    requestId,
+    session: makeSession({ requestId }),
+  });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-003";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({ requestId });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-    const result = await commands.clarify(requestId, { proceed: true });
+    const result = await setup.commands.clarify(requestId, { proceed: true });
 
     assertEquals(result.status, ClarifyResultStatus.COMPLETE);
 
     // Request file status should now be PENDING
-    const content = await Deno.readTextFile(filePath);
+    const content = await Deno.readTextFile(setup.filePath);
     assertEquals(content.includes(RequestStatus.PENDING), true);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] cancel reverts session", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-004";
+  const setup = await setupClarifyTest({
+    requestId,
+    session: makeSession({ requestId }),
+  });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-004";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({ requestId });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-    const result = await commands.clarify(requestId, { cancel: true });
+    const result = await setup.commands.clarify(requestId, { cancel: true });
 
     assertEquals(result.status, ClarifyResultStatus.CANCELLED);
 
     // Request file status should now be PENDING (re-queued)
-    const content = await Deno.readTextFile(filePath);
+    const content = await Deno.readTextFile(setup.filePath);
     assertEquals(content.includes(RequestStatus.PENDING), true);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] shows quality score progression", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
-  try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-005";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({
+  const requestId = "req-clarify-005";
+  const setup = await setupClarifyTest({
+    requestId,
+    session: makeSession({
       requestId,
       qualityHistory: [
         { round: 0, score: 30, level: "poor" },
         { round: 1, score: 55, level: "acceptable" },
       ],
-    });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-    const result = await commands.clarify(requestId);
+    }),
+  });
+  try {
+    const result = await setup.commands.clarify(requestId);
 
     // score should reflect the latest entry in qualityHistory
     assertEquals(result.score, 55);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] interactive mode prompts for answers", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-interactive-001";
+  const session = makeSession({ requestId });
+  const setup = await setupClarifyTest({ requestId, session });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-interactive-001";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({ requestId });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-
     // Track which question IDs were prompted
     const promptedIds: string[] = [];
     const mockPromptFn = (
@@ -276,7 +268,7 @@ Deno.test("[request clarify] interactive mode prompts for answers", async () => 
       }),
     };
 
-    const result = await commands.clarify(requestId, {
+    const result = await setup.commands.clarify(requestId, {
       interactive: true,
       promptFn: mockPromptFn,
       engine: stubEngine,
@@ -295,23 +287,15 @@ Deno.test("[request clarify] interactive mode prompts for answers", async () => 
     assertEquals(result.status, ClarifyResultStatus.COMPLETE);
     assertEquals(result.score, 80);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] interactive mode skips null/empty answers", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-interactive-002";
+  const session = makeSession({ requestId });
+  const setup = await setupClarifyTest({ requestId, session });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-interactive-002";
-    const filePath = makeRequestFile(requestsDir, requestId);
-    const session = makeSession({ requestId });
-    await saveClarification(filePath, session);
-
-    const commands = new RequestCommands(context);
-
     // promptFn returns null for r1q2 (user skipped)
     const mockPromptFn = (
       _questionText: string,
@@ -349,7 +333,7 @@ Deno.test("[request clarify] interactive mode skips null/empty answers", async (
       }),
     };
 
-    await commands.clarify(requestId, {
+    await setup.commands.clarify(requestId, {
       interactive: true,
       promptFn: mockPromptFn,
       engine: stubEngine,
@@ -360,24 +344,18 @@ Deno.test("[request clarify] interactive mode skips null/empty answers", async (
     assertEquals(capturedAnswers["r1q1"], "the auth module");
     assertEquals("r1q2" in capturedAnswers, false);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });
 
 Deno.test("[request clarify] no session returns no_session status", async () => {
-  const { tempDir, config, context, cleanup } = await createCliTestContext();
+  const requestId = "req-clarify-no-session";
+  const setup = await setupClarifyTest({ requestId });
   try {
-    const requestsDir = join(tempDir, config.paths.workspace, config.paths.requests);
-    await Deno.mkdir(requestsDir, { recursive: true });
-
-    const requestId = "req-clarify-no-session";
-    makeRequestFile(requestsDir, requestId);
-
-    const commands = new RequestCommands(context);
-    const result = await commands.clarify(requestId);
+    const result = await setup.commands.clarify(requestId);
 
     assertEquals(result.status, ClarifyResultStatus.NO_SESSION);
   } finally {
-    await cleanup();
+    await setup.cleanup();
   }
 });

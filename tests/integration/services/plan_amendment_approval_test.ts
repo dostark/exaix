@@ -5,23 +5,22 @@
  * @related-files [src/services/plan/plan_amendment_service.ts, packages/core/src/logger/event_logger.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
-import { createMockConfig } from "../../helpers/config.ts";
+import { assertEquals } from "@std/assert";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import type { JSONObject } from "@exaix/core/types/json.ts";
-import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 import {
   attachPlanAgentExecutor,
   createPlanAmendmentExecutor,
+  createPlanAmendmentServiceForTest,
   createPlanExecutionContext,
-  getPlanAmendmentsDir,
+  executeUntilPlanAmendmentPending,
+  readStoredPlanAmendmentArtifact,
 } from "./plan_amendment_test_helper.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,
@@ -56,10 +55,6 @@ Deno.test("PlanAmendmentService propose emits no side effects without approval a
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({
       generate: () =>
         Promise.resolve(
@@ -75,7 +70,7 @@ Deno.test("PlanAmendmentService propose emits no side effects without approval a
         ),
     });
 
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const patch = await service.proposeAmendment({
       planId: "test-plan-id",
@@ -179,17 +174,9 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
 
     attachPlanAgentExecutor(executor, agentExecutor);
 
-    // Should throw PlanAmendmentPendingError when trigger fires
-    await assertRejects(
-      async () => {
-        await executor.execute("plan.md", context);
-      },
-      PlanAmendmentPendingError,
-    );
+    await executeUntilPlanAmendmentPending(executor, context);
 
-    // Verify amendment artifact was created
-    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
+    const { entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
     assertEquals(entries.length, 1);
     assertEquals(entries[0].name.endsWith(".json"), true);
   } finally {
@@ -201,12 +188,8 @@ Deno.test("applyApprovedAmendment correctly applies patch to plan content", asyn
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({});
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const planContent = readFixtureTextSync(
       import.meta.url,

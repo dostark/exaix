@@ -4,8 +4,7 @@
  * @description Integration tests for verifying plan amendment triggers and artifact persistence.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
-import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
+import { assertEquals } from "@std/assert";
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
@@ -14,7 +13,8 @@ import {
   attachPlanAgentExecutor,
   createPlanAmendmentExecutor,
   createPlanExecutionContext,
-  getPlanAmendmentsDir,
+  executeUntilPlanAmendmentPending,
+  readStoredPlanAmendmentArtifact,
 } from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor triggers amendment on low confidence result", async () => {
@@ -67,15 +67,9 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
 
     attachPlanAgentExecutor(executor, agentExecutor);
 
-    // Should throw PlanAmendmentPendingError
-    await assertRejects(
-      () => executor.execute("plan.md", context),
-      PlanAmendmentPendingError,
-    );
+    await executeUntilPlanAmendmentPending(executor, context);
 
-    // Check if amendment artifact was created
-    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
+    const { entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
     assertEquals(entries.length, 1);
   } finally {
     await Deno.remove(root, { recursive: true });
@@ -130,20 +124,11 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
 
     attachPlanAgentExecutor(executor, agentExecutor);
 
-    // Should throw PlanAmendmentPendingError (amendment proposed, execution paused)
-    await assertRejects(
-      () => executor.execute("plan.md", context),
-      PlanAmendmentPendingError,
-    );
+    await executeUntilPlanAmendmentPending(executor, context);
 
-    // Verify amendment artifact was still created before re-throwing
-    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
+    const { amendmentContent, entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
     assertEquals(entries.length, 1, "Amendment artifact should be created for tool errors");
 
-    // Verify artifact content
-    const amendmentFile = entries[0];
-    const amendmentContent = await Deno.readTextFile(`${amendmentsDir}/${amendmentFile.name}`);
     const amendment = JSON.parse(amendmentContent);
     assertEquals(amendment.planId, requestId);
     assertEquals(amendment.summary.includes("Tool failed"), true);

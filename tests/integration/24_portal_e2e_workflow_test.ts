@@ -70,6 +70,14 @@ interface IPortalWriteWorkflowOptions {
   writeContent: string;
 }
 
+interface IReleaseBranchPortalWorkflowResult {
+  createdPortalBranch: string;
+  result: { success: boolean; traceId: string | undefined; error?: string };
+  targetBranch: string;
+  targetHeadBeforeExecution: string;
+  traceId: string;
+}
+
 const HELLO_FILE_PATH = "src/hello.ts";
 const HELLO_FILE_CONTENT = `export function hello(): string {\n  return "Hello from portal";\n}\n`;
 const RELEASE_TARGET_BRANCH = "release_1.2";
@@ -110,6 +118,34 @@ async function seedReleaseBranch(portalTargetPath: string, targetBranch: string)
   const targetHeadBeforeExecution = await gitStdout(portalTargetPath, ["rev-parse", "HEAD"]);
   await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
   return targetHeadBeforeExecution;
+}
+
+async function runReleaseBranchPortalWorkflow(
+  context: IPortalWorkflowTestContext,
+  options?: { targetBranch?: string },
+): Promise<IReleaseBranchPortalWorkflowResult> {
+  const targetBranch = options?.targetBranch ?? RELEASE_TARGET_BRANCH;
+  const targetHeadBeforeExecution = await seedReleaseBranch(context.portalTargetPath, targetBranch);
+  const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(
+    context.env,
+    context.config,
+    context.portalTargetPath,
+    {
+      portalAlias: context.portalConfig.alias,
+      targetBranch,
+      description: "Add a release-only file in the portal repo",
+      writePath: RELEASE_ONLY_FILE_PATH,
+      writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
+    },
+  );
+
+  return {
+    createdPortalBranch,
+    result,
+    targetBranch,
+    targetHeadBeforeExecution,
+    traceId,
+  };
 }
 
 async function assertPortalFileExistsInBranch(
@@ -175,6 +211,16 @@ async function enablePortalDiscovery(tempDir: string, portalAlias: string, porta
   } catch {
     // Continue.
   }
+}
+
+async function preparePortalCliApproval(
+  tempDir: string,
+  portalAlias: string,
+  portalTargetPath: string,
+  targetBranch: string,
+): Promise<void> {
+  await enablePortalDiscovery(tempDir, portalAlias, portalTargetPath);
+  await gitStdout(portalTargetPath, ["checkout", targetBranch]);
 }
 
 parallelSafeTest("[e2e] Portal request → plan → execution → artifact review (read-only)", async () => {
@@ -358,16 +404,13 @@ parallelSafeTest("[e2e] Portal target_branch review approve merges into that bra
     portalTargetPath,
     config,
   }) => {
-    const targetBranch = RELEASE_TARGET_BRANCH;
-    const targetHeadBeforeExecution = await seedReleaseBranch(portalTargetPath, targetBranch);
-
-    const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
-      portalAlias: portalConfig.alias,
+    const {
+      createdPortalBranch,
+      result,
       targetBranch,
-      description: "Add a release-only file in the portal repo",
-      writePath: RELEASE_ONLY_FILE_PATH,
-      writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
-    });
+      targetHeadBeforeExecution,
+      traceId,
+    } = await runReleaseBranchPortalWorkflow({ env, portalConfig, portalTargetPath, config });
 
     assertEquals(result.success, true);
     assertEquals(result.traceId, traceId);
@@ -388,11 +431,7 @@ parallelSafeTest("[e2e] Portal target_branch review approve merges into that bra
     assertExists(stored);
     assertEquals(stored.base_branch, targetBranch);
 
-    // Enable CLI portal discovery.
-    await enablePortalDiscovery(env.tempDir, portalConfig.alias, portalTargetPath);
-
-    // Precondition: checkout target branch before approval.
-    await gitStdout(portalTargetPath, ["checkout", targetBranch]);
+    await preparePortalCliApproval(env.tempDir, portalConfig.alias, portalTargetPath, targetBranch);
 
     const approve = await runExactl(["review", "approve", createdPortalBranch], env.tempDir);
     assertEquals(approve.code, 0, approve.stderr);
@@ -410,20 +449,15 @@ parallelSafeTest("[e2e][negative] Portal CLI review approve fails if not on revi
     portalTargetPath,
     config,
   }) => {
-    const targetBranch = RELEASE_TARGET_BRANCH;
-    await gitStdout(portalTargetPath, ["branch", targetBranch, TEST_DEFAULT_BRANCH]);
-
-    const { result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
-      portalAlias: portalConfig.alias,
-      targetBranch,
-      description: "Add a release-only file in the portal repo",
-      writePath: RELEASE_ONLY_FILE_PATH,
-      writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
+    const { createdPortalBranch, result, targetBranch } = await runReleaseBranchPortalWorkflow({
+      env,
+      portalConfig,
+      portalTargetPath,
+      config,
     });
 
     assertEquals(result.success, true);
 
-    // Enable CLI portal discovery.
     await enablePortalDiscovery(env.tempDir, portalConfig.alias, portalTargetPath);
 
     // Stay on main (wrong base) and ensure the guard triggers.
@@ -468,20 +502,17 @@ parallelSafeTest(
       targetDirName: "portal-write-target",
       executionStrategy: PortalExecutionStrategy.WORKTREE,
     }, async ({ env, portalConfig, portalTargetPath, config }) => {
-      const targetBranch = RELEASE_TARGET_BRANCH;
-      const targetHeadBeforeExecution = await seedReleaseBranch(portalTargetPath, targetBranch);
-
       // Simulate user checkout staying on main.
       await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
       assertEquals(await gitStdout(portalTargetPath, ["branch", "--show-current"]), TEST_DEFAULT_BRANCH);
 
-      const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
-        portalAlias: portalConfig.alias,
+      const {
+        createdPortalBranch,
+        result,
         targetBranch,
-        description: "Add a release-only file in the portal repo",
-        writePath: RELEASE_ONLY_FILE_PATH,
-        writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
-      });
+        targetHeadBeforeExecution,
+        traceId,
+      } = await runReleaseBranchPortalWorkflow({ env, portalConfig, portalTargetPath, config });
 
       assertEquals(result.success, true);
       assertEquals(result.traceId, traceId);
@@ -507,11 +538,7 @@ parallelSafeTest(
       assertEquals(await pathExists(canonicalWorktreePath), true);
       await assertPointerPointsTo(env.tempDir, traceId, canonicalWorktreePath);
 
-      // Enable CLI portal discovery.
-      await enablePortalDiscovery(env.tempDir, portalConfig.alias, portalTargetPath);
-
-      // Precondition: checkout target branch before approval.
-      await gitStdout(portalTargetPath, ["checkout", targetBranch]);
+      await preparePortalCliApproval(env.tempDir, portalConfig.alias, portalTargetPath, targetBranch);
 
       const approve = await runExactl(["review", "approve", createdPortalBranch], env.tempDir);
       assertEquals(approve.code, 0, approve.stderr);

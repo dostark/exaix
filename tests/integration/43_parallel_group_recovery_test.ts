@@ -7,12 +7,10 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_PARALLEL_GROUP_COMPLETED } from "@exaix/core";
+import { FLOW_EVENT_PARALLEL_GROUP_COMPLETED } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
-import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
+import { createParallelGroupFlow, createScriptedFlowRunner } from "../helpers/parallel_group_flow_test_helper.ts";
 
 Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results when a group member fails", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -21,74 +19,25 @@ Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results w
     const traceId = "trace-parallel-group-recovery";
     const requestId = "req-parallel-group-recovery";
 
-    const flow: IFlowInput = {
-      id: "parallel-group-recovery-flow",
-      name: "Parallel Group Recovery Flow",
+    const flow: IFlowInput = createParallelGroupFlow({
+      flowId: "parallel-group-recovery-flow",
+      flowName: "Parallel Group Recovery Flow",
       description: "Recovery should preserve successful sibling results",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "start",
-          name: "Start",
-          identity: "starter",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "task-a",
-          name: "Task A",
-          identity: "workerA",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "workers" },
-        },
-        {
-          id: "task-b",
-          name: "Task B",
-          identity: "workerB",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "workers" },
-        },
-        {
-          id: "task-c",
-          name: "Task C",
-          identity: "workerC",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "workers" },
-        },
-        {
-          id: "merge",
-          name: "Merge",
-          identity: "merger",
-          dependsOn: ["task-a", "task-b", "task-c"],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          mergeFromGroups: ["workers"],
-        },
+      groupId: "workers",
+      memberSteps: [
+        { stepId: "task-a", stepName: "Task A", identityId: "workerA" },
+        { stepId: "task-b", stepName: "Task B", identityId: "workerB" },
+        { stepId: "task-c", stepName: "Task C", identityId: "workerC" },
       ],
-      output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 4, failFast: false },
-    };
+    });
 
     // First run: taskA and taskC succeed, taskB fails
-    const firstRunExecutor = new ScriptedAgentExecutor({
+    const { logger: firstRunLogger, runner: firstRunRunner } = createScriptedFlowRunner(config, {
       starter: ["start result"],
       workerA: ["task A output"],
       workerB: [new Error("task B failed")],
       workerC: ["task C output"],
       merger: ["merge result"],
-    });
-    const firstRunLogger = new RecordingFlowLogger();
-    const firstRunRunner = new FlowRunner({
-      agentExecutor: firstRunExecutor,
-      eventLogger: firstRunLogger,
-      config,
     });
 
     const firstResult = await firstRunRunner.execute(flow as IFlow, {
@@ -113,18 +62,12 @@ Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results w
 
     // Resume: starter, workerA, and workerC should NOT re-run (they were checkpointed)
     // workerB SHOULD re-run because it failed and was not checkpointed
-    const resumedExecutor = new ScriptedAgentExecutor({
+    const { executor: resumedExecutor, runner: resumedRunner } = createScriptedFlowRunner(config, {
       starter: [new Error("starter should not re-run")],
       workerA: [new Error("worker A should not re-run")],
       workerB: ["worker B recovered output"],
       workerC: [new Error("worker C should not re-run")],
       merger: ["merged on resume"],
-    });
-    const resumedLogger = new RecordingFlowLogger();
-    const resumedRunner = new FlowRunner({
-      agentExecutor: resumedExecutor,
-      eventLogger: resumedLogger,
-      config,
     });
 
     const resumedResult = await resumedRunner.execute(flow as IFlow, {

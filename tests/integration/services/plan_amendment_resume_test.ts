@@ -6,25 +6,20 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
-import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo } from "../../helpers/test_helpers.ts";
+import { createPlanAmendmentServiceForTest } from "./plan_amendment_test_helper.ts";
 
 Deno.test("applyApprovedAmendment preserves original plan structure", async () => {
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({});
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const planContent = readFixtureTextSync(
       import.meta.url,
@@ -76,12 +71,8 @@ Deno.test("applyApprovedAmendment handles step removal correctly", async () => {
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({});
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const planContent = readFixtureTextSync(
       import.meta.url,
@@ -119,12 +110,8 @@ Deno.test("applyApprovedAmendment handles step addition correctly", async () => 
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({});
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const planContent = readFixtureTextSync(
       import.meta.url,

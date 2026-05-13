@@ -5,21 +5,21 @@
  * @related-files [src/services/plan/plan_executor.ts, src/services/plan/errors.ts]
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
-import { createMockConfig } from "../../helpers/config.ts";
+import { assertEquals } from "@std/assert";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
-import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 import {
   attachPlanAgentExecutor,
   createPlanAmendmentExecutor,
+  createPlanAmendmentServiceForTest,
   createPlanExecutionContext,
-  getPlanAmendmentsDir,
+  executeUntilPlanAmendmentPending,
+  readDirEntries,
+  readStoredPlanAmendmentArtifact,
 } from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor pauses execution when amendment is proposed", async () => {
@@ -68,23 +68,11 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
 
     attachPlanAgentExecutor(executor, agentExecutor);
 
-    // Execution should throw PlanAmendmentPendingError when trigger fires
-    await assertRejects(
-      async () => {
-        await executor.execute("plan.md", context);
-      },
-      PlanAmendmentPendingError,
-    );
+    await executeUntilPlanAmendmentPending(executor, context);
 
-    // Verify amendment artifact was persisted
-    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
+    const { amendmentContent, entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
     assertEquals(entries.length, 1, "Expected exactly one amendment artifact");
 
-    // Read and verify the amendment artifact
-    const amendmentFile = entries[0];
-    const amendmentPath = `${amendmentsDir}/${amendmentFile.name}`;
-    const amendmentContent = await Deno.readTextFile(amendmentPath);
     const amendment = JSON.parse(amendmentContent);
 
     assertEquals(amendment.planId, requestId);
@@ -140,12 +128,7 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
 
     attachPlanAgentExecutor(executor, agentExecutor);
 
-    await assertRejects(
-      async () => {
-        await executor.execute("plan.md", context);
-      },
-      PlanAmendmentPendingError,
-    );
+    await executeUntilPlanAmendmentPending(executor, context);
 
     // Verify directory structure: Memory/Execution/{traceId}/amendments/
     const memoryPath = `${root}/${config.paths.memory}`;
@@ -167,7 +150,7 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
     assertEquals(amendmentsStat.isDirectory, true);
 
     // Verify amendment file exists
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsPath));
+    const entries = await readDirEntries(amendmentsPath);
     const amendmentFiles = entries.filter((e) => e.name.endsWith(".json"));
     assertEquals(amendmentFiles.length, 1, "Expected one amendment JSON file");
   } finally {
@@ -179,12 +162,8 @@ Deno.test("applyApprovedAmendment updates plan status to approved", async () => 
   const { tempDir, cleanup } = await initTestDbService();
 
   try {
-    const config = createMockConfig(tempDir, {
-      amendment: { enabled: true, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLlm = castTo<IModelProvider>({});
-    const service = new PlanAmendmentService(config, mockLlm);
+    const { service } = createPlanAmendmentServiceForTest({ root: tempDir, llm: mockLlm });
 
     const planContent = readFixtureTextSync(
       import.meta.url,

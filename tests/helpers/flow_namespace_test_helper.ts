@@ -10,7 +10,7 @@ import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../s
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 
-type ScriptedExecutorResponse =
+export type ScriptedExecutorResponse =
   | IAgentExecutionResult
   | Error
   | string
