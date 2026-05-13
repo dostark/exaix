@@ -22,6 +22,49 @@ import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
 import type { ActivityRecord } from "../../src/services/core/db.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
+interface IPlanFrontmatter {
+  trace_id?: string;
+  request_id?: string;
+  agent?: string;
+  identity?: string;
+  status?: string;
+  created_at?: string;
+  security_mode?: string;
+  portal?: string;
+  [key: string]: JSONValue | undefined;
+}
+
+interface IRegisteredReviewInput {
+  trace_id: string;
+  repository: string;
+  portal: string;
+  branch: string;
+  commit_sha: string;
+  files_changed: number;
+  description: string;
+  created_by: string;
+}
+
+interface IHappyPathPlanOptions {
+  traceId: string;
+  requestId: string;
+  securityMode?: SecurityMode;
+  summary: string;
+  acceptanceCriteria: string[];
+}
+
+interface IReviewLifecycleExpectation {
+  status: string;
+  actorField: "approved_by" | "rejected_by";
+  actorValue: string;
+  timestampField: "approved_at" | "rejected_at";
+  reasonField?: "rejection_reason";
+  reasonValue?: string;
+}
+
+const TEST_PORTAL_NAME = "TestPortal";
+const TEST_REPOSITORY_PATH = "/test/repo";
+
 // Test helper to cleanup
 async function cleanup(tempDir: string) {
   try {
@@ -88,6 +131,105 @@ async function createTestPortal(basePath: string) {
   return portalPath;
 }
 
+function createReviewRegistry(dbService: Awaited<ReturnType<typeof initTestDbService>>["db"]) {
+  const eventLogger = new EventLogger({ db: dbService });
+  return new ReviewRegistry(dbService, eventLogger);
+}
+
+async function writePlanFile(activePath: string, fileName: string, planContent: string): Promise<string> {
+  const planPath = join(activePath, fileName);
+  await Deno.writeTextFile(planPath, planContent);
+  return planPath;
+}
+
+async function parsePlanFrontmatter(planPath: string): Promise<IPlanFrontmatter> {
+  const planFile = await Deno.readTextFile(planPath);
+  const yamlMatch = planFile.match(/^---\n([\s\S]*?)\n---/);
+  assertExists(yamlMatch, "Plan should have YAML frontmatter");
+  return parseYaml(yamlMatch[1]) as IPlanFrontmatter;
+}
+
+async function registerReview(
+  reviewRegistry: ReviewRegistry,
+  input: IRegisteredReviewInput,
+): Promise<string> {
+  const reviewId = await reviewRegistry.register(input);
+  assertExists(reviewId);
+  return reviewId;
+}
+
+async function getEventsByActionType(
+  dbService: Awaited<ReturnType<typeof initTestDbService>>["db"],
+  actionType: string,
+) {
+  await dbService.waitForFlush();
+  return dbService.instance.prepare("SELECT * FROM activity WHERE action_type = ?").all(actionType);
+}
+
+function createHappyPathPlanContent(options: IHappyPathPlanOptions): string {
+  const securityModeLine = options.securityMode ? `security_mode: ${options.securityMode}\n` : "";
+  const acceptanceCriteria = options.acceptanceCriteria.map((criterion) => `- ${criterion}`).join("\n");
+  return `---
+trace_id: ${options.traceId}
+request_id: ${options.requestId}
+status: approved
+identity: mock-agent
+portal: ${TEST_PORTAL_NAME}
+${securityModeLine}created: ${new Date().toISOString()}
+---
+
+# Implementation Plan
+
+## Step 1: ${options.summary}
+
+${options.summary}
+
+**Acceptance Criteria:**
+${acceptanceCriteria}
+`;
+}
+
+async function createHappyPathPlan(
+  activePath: string,
+  options: IHappyPathPlanOptions,
+): Promise<string> {
+  return await writePlanFile(activePath, `${options.requestId}_plan.md`, createHappyPathPlanContent(options));
+}
+
+function createStandardReviewInput(
+  traceId: string,
+  branch: string,
+  commitSha: string,
+  filesChanged: number,
+  description: string,
+  createdBy: string,
+): IRegisteredReviewInput {
+  return {
+    trace_id: traceId,
+    repository: TEST_REPOSITORY_PATH,
+    portal: TEST_PORTAL_NAME,
+    branch,
+    commit_sha: commitSha,
+    files_changed: filesChanged,
+    description,
+    created_by: createdBy,
+  };
+}
+
+async function assertReviewLifecycleState(
+  reviewRegistry: ReviewRegistry,
+  reviewId: string,
+  expectation: IReviewLifecycleExpectation,
+): Promise<void> {
+  const review = await reviewRegistry.get(reviewId);
+  assertEquals(review?.status, expectation.status);
+  assertEquals(review?.[expectation.actorField], expectation.actorValue);
+  assertExists(review?.[expectation.timestampField]);
+  if (expectation.reasonField) {
+    assertEquals(review?.[expectation.reasonField], expectation.reasonValue);
+  }
+}
+
 Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
   const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
   const testDir = await Deno.makeTempDir({ prefix: "exaix_test_" });
@@ -101,82 +243,55 @@ Deno.test("Integration Test 15.1: Happy Path - Sandboxed Mode", async () => {
     const requestId = `request-${traceId.slice(0, 8)}`;
 
     // Step 1: Create approved plan in Workspace/Active/
-    const planContent = `---
-trace_id: ${traceId}
-request_id: ${requestId}
-status: approved
-identity: mock-agent
-portal: TestPortal
-created: ${new Date().toISOString()}
----
-
-# Implementation Plan
-
-## Step 1: Add hello world function
-
-Create a simple hello world function in src/utils.ts
-
-**Acceptance Criteria:**
-- Function named helloWorld()
-- Returns "Hello, World!" string
-- Exported from module
-`;
-
-    const planPath = join(activePath, `${requestId}_plan.md`);
-    await Deno.writeTextFile(planPath, planContent);
+    const planPath = await createHappyPathPlan(activePath, {
+      traceId,
+      requestId,
+      summary: "Add hello world function",
+      acceptanceCriteria: [
+        "Function named helloWorld()",
+        'Returns "Hello, World!" string',
+        "Exported from module",
+      ],
+    });
 
     // Step 2: Verify plan detection and parsing
     const planFile = await Deno.readTextFile(planPath);
     assert(planFile.includes(traceId), "Plan should contain trace_id");
 
-    // Parse frontmatter
-    const yamlMatch = planFile.match(/^---\n([\s\S]*?)\n---/);
-    assertExists(yamlMatch, "Plan should have YAML frontmatter");
-
-    const frontmatter = parseYaml(yamlMatch[1]) as {
-      trace_id?: string;
-      request_id?: string;
-      agent?: string;
-      status?: string;
-      created_at?: string;
-      [key: string]: any;
-    };
+    const frontmatter = await parsePlanFrontmatter(planPath);
     assertEquals(frontmatter.trace_id, traceId);
     assertEquals(frontmatter.status, ReviewStatus.APPROVED);
     assertEquals(frontmatter.identity, "mock-agent");
-    assertEquals(frontmatter.portal, "TestPortal");
+    assertEquals(frontmatter.portal, TEST_PORTAL_NAME);
 
     // Step 3: Verify review can be registered
     // (In real execution, AgentExecutor would create branch and commit)
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
-    const reviewId = await reviewRegistry.register({
-      trace_id: traceId,
-      repository: "/test/repo",
-      portal: "TestPortal",
-      branch: `feat/hello-world-${traceId.slice(0, 8)}`,
-      commit_sha: "abc123def456",
-      files_changed: 1,
-      description: "Add hello world function",
-      created_by: "mock-agent",
-    });
-
-    assertExists(reviewId, "Review should be created");
+    const reviewId = await registerReview(
+      reviewRegistry,
+      createStandardReviewInput(
+        traceId,
+        `feat/hello-world-${traceId.slice(0, 8)}`,
+        "abc123def456",
+        1,
+        "Add hello world function",
+        "mock-agent",
+      ),
+    );
 
     // Step 4: Verify review was registered correctly
     const review = await reviewRegistry.get(reviewId);
     assertExists(review, "Review should exist");
     assert(review !== null, "Review should not be null");
     assertEquals(review!.trace_id, traceId);
-    assertEquals(review!.portal, "TestPortal");
+    assertEquals(review!.portal, TEST_PORTAL_NAME);
     assertEquals(review!.status, ReviewStatus.PENDING);
     assertEquals(review!.created_by, "mock-agent");
     assertEquals(review!.files_changed, 1);
 
     // Step 5: Verify IActivity Journal events
-    await dbService.waitForFlush(); // Flush batched log entries
-
+    await dbService.waitForFlush();
     const events = dbService.getActivitiesByTrace(traceId);
 
     assert(events.length > 0, "Should have IActivity Journal events");
@@ -204,44 +319,19 @@ Deno.test("Integration Test 15.2: Happy Path - Hybrid Mode", async () => {
     const requestId = `request-${traceId.slice(0, 8)}`;
 
     // Create plan with hybrid security mode indicator
-    const planContent = `---
-trace_id: ${traceId}
-request_id: ${requestId}
-status: approved
-identity: mock-agent
-portal: TestPortal
-security_mode: hybrid
-created: ${new Date().toISOString()}
----
-
-# Implementation Plan
-
-## Step 1: Update existing file
-
-Modify README.md with additional content
-
-**Acceptance Criteria:**
-- Add new section to README
-- Preserve existing content
-`;
-
-    const planPath = join(activePath, `${requestId}_plan.md`);
-    await Deno.writeTextFile(planPath, planContent);
+    const planPath = await createHappyPathPlan(activePath, {
+      traceId,
+      requestId,
+      securityMode: SecurityMode.HYBRID,
+      summary: "Update existing file",
+      acceptanceCriteria: [
+        "Add new section to README",
+        "Preserve existing content",
+      ],
+    });
 
     // Verify plan has hybrid mode
-    const planFile = await Deno.readTextFile(planPath);
-    const yamlMatch = planFile.match(/^---\n([\s\S]*?)\n---/);
-    assertExists(yamlMatch);
-
-    const frontmatter = parseYaml(yamlMatch[1]) as {
-      trace_id?: string;
-      request_id?: string;
-      agent?: string;
-      status?: string;
-      created_at?: string;
-      security_mode?: string;
-      [key: string]: any;
-    };
+    const frontmatter = await parsePlanFrontmatter(planPath);
     assertEquals(frontmatter.security_mode, SecurityMode.HYBRID);
 
     // In hybrid mode, agent would have read access to portal
@@ -251,21 +341,19 @@ Modify README.md with additional content
     assert(readmeContent.includes("# Test Portal"), "Portal files should be readable");
 
     // Register review as if execution completed
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
-    const reviewId = await reviewRegistry.register({
-      trace_id: traceId,
-      repository: "/test/repo",
-      portal: "TestPortal",
-      branch: `feat/update-readme-${traceId.slice(0, 8)}`,
-      commit_sha: "def456ghi789",
-      files_changed: 1,
-      description: "Update README with new section",
-      created_by: "mock-agent",
-    });
-
-    assertExists(reviewId);
+    const reviewId = await registerReview(
+      reviewRegistry,
+      createStandardReviewInput(
+        traceId,
+        `feat/update-readme-${traceId.slice(0, 8)}`,
+        "def456ghi789",
+        1,
+        "Update README with new section",
+        "mock-agent",
+      ),
+    );
 
     const review = await reviewRegistry.get(reviewId);
     assertEquals(review?.status, ReviewStatus.PENDING);
@@ -295,8 +383,7 @@ this is not valid yaml: [unclosed bracket
 # Plan content
 `;
 
-    const planPath = join(activePath, "invalid_plan.md");
-    await Deno.writeTextFile(planPath, invalidPlanContent);
+    const planPath = await writePlanFile(activePath, "invalid_plan.md", invalidPlanContent);
 
     // Attempt to parse
     const planFile = await Deno.readTextFile(planPath);
@@ -338,25 +425,18 @@ Deno.test("Integration Test 15.4: Review Lifecycle - Approval", async () => {
   const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
     const traceId = crypto.randomUUID();
 
     // Create review
-    const reviewId = await reviewRegistry.register({
-      trace_id: traceId,
-      repository: "/test/repo",
-      portal: "TestPortal",
-      branch: "feat/test-feature",
-      commit_sha: "abc123",
-      files_changed: 2,
-      description: "Test feature",
-      created_by: "test-agent",
-    });
+    const reviewId = await registerReview(
+      reviewRegistry,
+      createStandardReviewInput(traceId, "feat/test-feature", "abc123", 2, "Test feature", "test-agent"),
+    );
 
     // Verify initial status
-    let review = await reviewRegistry.get(reviewId);
+    const review = await reviewRegistry.get(reviewId);
     assertEquals(review?.status, ReviewStatus.PENDING);
     assertEquals(review?.approved_at, null);
 
@@ -368,17 +448,15 @@ Deno.test("Integration Test 15.4: Review Lifecycle - Approval", async () => {
     );
 
     // Verify updated status
-    review = await reviewRegistry.get(reviewId);
-    assertEquals(review?.status, ReviewStatus.APPROVED);
-    assertEquals(review?.approved_by, "admin@example.com");
-    assertExists(review?.approved_at);
+    await assertReviewLifecycleState(reviewRegistry, reviewId, {
+      status: ReviewStatus.APPROVED,
+      actorField: "approved_by",
+      actorValue: "admin@example.com",
+      timestampField: "approved_at",
+    });
 
     // Verify IActivity Journal logged approval
-    await dbService.waitForFlush(); // Flush batched log entries
-
-    const events = dbService.instance
-      .prepare("SELECT * FROM activity WHERE action_type = ?")
-      .all("review.approved");
+    const events = await getEventsByActionType(dbService, "review.approved");
 
     assert(events.length > 0, "Should log approval event");
 
@@ -392,22 +470,15 @@ Deno.test("Integration Test 15.5: Review Lifecycle - Rejection", async () => {
   const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
     const traceId = crypto.randomUUID();
 
     // Create review
-    const reviewId = await reviewRegistry.register({
-      trace_id: traceId,
-      repository: "/test/repo",
-      portal: "TestPortal",
-      branch: "feat/bad-feature",
-      commit_sha: "def456",
-      files_changed: 1,
-      description: "Feature with issues",
-      created_by: "test-agent",
-    });
+    const reviewId = await registerReview(
+      reviewRegistry,
+      createStandardReviewInput(traceId, "feat/bad-feature", "def456", 1, "Feature with issues", "test-agent"),
+    );
 
     // Reject review
     await reviewRegistry.updateStatus(
@@ -418,18 +489,17 @@ Deno.test("Integration Test 15.5: Review Lifecycle - Rejection", async () => {
     );
 
     // Verify rejection
-    const review = await reviewRegistry.get(reviewId);
-    assertEquals(review?.status, ReviewStatus.REJECTED);
-    assertEquals(review?.rejected_by, "reviewer@example.com");
-    assertEquals(review?.rejection_reason, "Does not meet coding standards");
-    assertExists(review?.rejected_at);
+    await assertReviewLifecycleState(reviewRegistry, reviewId, {
+      status: ReviewStatus.REJECTED,
+      actorField: "rejected_by",
+      actorValue: "reviewer@example.com",
+      timestampField: "rejected_at",
+      reasonField: "rejection_reason",
+      reasonValue: "Does not meet coding standards",
+    });
 
     // Verify IActivity Journal logged rejection
-    await dbService.waitForFlush(); // Flush batched log entries
-
-    const events = dbService.instance
-      .prepare("SELECT * FROM activity WHERE action_type = ?")
-      .all("review.rejected");
+    const events = await getEventsByActionType(dbService, "review.rejected");
 
     assert(events.length > 0, "Should log rejection event");
 
@@ -443,8 +513,7 @@ Deno.test("Integration Test 15.6: Review Filtering", async () => {
   const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
     const traceId1 = crypto.randomUUID();
     const traceId2 = crypto.randomUUID();
@@ -686,14 +755,13 @@ Deno.test("Integration Test 15.10: Review Query Methods", async () => {
   const { db: dbService, cleanup: dbCleanup } = await initTestDbService();
 
   try {
-    const eventLogger = new EventLogger({ db: dbService });
-    const reviewRegistry = new ReviewRegistry(dbService, eventLogger);
+    const reviewRegistry = createReviewRegistry(dbService);
 
     const trace1 = crypto.randomUUID();
     const trace2 = crypto.randomUUID();
 
     // Create multiple reviews
-    const _cs1 = await reviewRegistry.register({
+    const _cs1 = await registerReview(reviewRegistry, {
       trace_id: trace1,
       repository: "/test/repo",
       portal: "PortalA",
@@ -704,9 +772,9 @@ Deno.test("Integration Test 15.10: Review Query Methods", async () => {
       created_by: "agent-alpha",
     });
 
-    const cs2 = await reviewRegistry.register({
+    const cs2 = await registerReview(reviewRegistry, {
       trace_id: trace1,
-      repository: "/test/repo",
+      repository: TEST_REPOSITORY_PATH,
       portal: "PortalA",
       branch: "feat/feature-a-v2",
       commit_sha: "def456",
@@ -715,9 +783,9 @@ Deno.test("Integration Test 15.10: Review Query Methods", async () => {
       created_by: "agent-alpha",
     });
 
-    const _cs3 = await reviewRegistry.register({
+    const _cs3 = await registerReview(reviewRegistry, {
       trace_id: trace2,
-      repository: "/test/repo",
+      repository: TEST_REPOSITORY_PATH,
       portal: "PortalB",
       branch: "feat/feature-b",
       commit_sha: "ghi789",
@@ -863,7 +931,7 @@ Deno.test("Integration Test 15.12: Performance & Concurrent Execution", async ()
     const traceId = crypto.randomUUID();
     const reviewId = await reviewRegistry.register({
       trace_id: traceId,
-      repository: "/test/repo",
+      repository: TEST_REPOSITORY_PATH,
       portal: "TestPortal",
       branch: "feat/perf-test",
       commit_sha: "abc123",

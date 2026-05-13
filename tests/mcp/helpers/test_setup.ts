@@ -8,17 +8,24 @@
 
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { setupGitRepo } from "../../helpers/git_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
 import { MCPServer } from "../../../src/mcp/server.ts";
+import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import {
+  createStubConfig,
+  createStubContext,
+  createStubDisplay,
+  createStubGit,
+  createStubProvider,
+} from "../../helpers/test_helpers.ts";
 
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
@@ -217,6 +224,56 @@ export async function initToolPermissionTest(
     permissions,
     cleanup: env.cleanup,
   };
+}
+
+export async function withToolPermissionTest(
+  options: IToolPermissionOptions,
+  run: (env: IToolPermissionTestContext) => Promise<void>,
+): Promise<void> {
+  const env = await initToolPermissionTest(options);
+
+  try {
+    await run(env);
+  } finally {
+    await env.cleanup();
+  }
+}
+
+export function createToolContext(
+  env: IToolPermissionTestContext,
+  overrides: Partial<ICliApplicationContext> = {},
+): ICliApplicationContext {
+  return createStubContext({
+    config: createStubConfig(env.config),
+    ...overrides,
+  });
+}
+
+export function createBaseToolContext(
+  overrides: Partial<ICliApplicationContext> = {},
+): ICliApplicationContext {
+  return createStubContext(overrides);
+}
+
+export function createPermissionsService(env: IToolPermissionTestContext): PortalPermissionsService {
+  return new PortalPermissionsService([env.permissions]);
+}
+
+export function assertToolDefinitionFields<TRequired>(
+  def: { name: string; inputSchema: { required?: TRequired } },
+  expectedName: string,
+  requiredFields: string[],
+): void {
+  const required = Array.isArray(def.inputSchema.required)
+    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
+    : [];
+
+  assertEquals(def.name, expectedName);
+  assertEquals(Array.isArray(def.inputSchema.required), true);
+
+  for (const field of requiredFields) {
+    assertStringIncludes(required.join(), field);
+  }
 }
 
 /**

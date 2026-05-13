@@ -25,6 +25,51 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
 
+function createCheckpointFlow(
+  id: string,
+  name: string,
+  description: string,
+): IFlowInput {
+  return {
+    id,
+    name,
+    description,
+    version: DEFAULT_FLOW_VERSION,
+    steps: [
+      {
+        id: "step1",
+        name: "Step 1",
+        identity: "agent1",
+        dependsOn: [],
+        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      },
+      {
+        id: "step2",
+        name: "Step 2",
+        identity: "agent2",
+        dependsOn: ["step1"],
+        input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
+        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      },
+    ],
+    output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism: 3, failFast: true },
+  };
+}
+
+function createFlowRunner(
+  config: Awaited<ReturnType<typeof initTestDbService>>["config"],
+  agentExecutor: ScriptedAgentExecutor,
+  eventLogger: RecordingFlowLogger,
+): FlowRunner {
+  return new FlowRunner({
+    agentExecutor,
+    eventLogger,
+    config,
+  });
+}
+
 Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after successful completion", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();
 
@@ -32,43 +77,18 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
     const traceId = "trace-flow-checkpoint-001";
     const requestId = "req-flow-checkpoint-001";
 
-    const flow: IFlowInput = {
-      id: "checkpoint-flow",
-      name: "Checkpoint Flow",
-      description: "Flow checkpoint integration coverage",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "step1",
-          name: "Step 1",
-          identity: "agent1",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "step2",
-          name: "Step 2",
-          identity: "agent2",
-          dependsOn: ["step1"],
-          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-      ],
-      output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: true },
-    };
+    const flow = createCheckpointFlow(
+      "checkpoint-flow",
+      "Checkpoint Flow",
+      "Flow checkpoint integration coverage",
+    );
 
     const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: [new Error("step2 exploded")],
     });
     const firstRunLogger = new RecordingFlowLogger();
-    const firstRunRunner = new FlowRunner({
-      agentExecutor: firstRunExecutor,
-      eventLogger: firstRunLogger,
-      config,
-    });
+    const firstRunRunner = createFlowRunner(config, firstRunExecutor, firstRunLogger);
 
     await assertRejects(
       () => firstRunRunner.execute(flow as IFlow, { userPrompt: "checkpoint me", traceId, requestId }),
@@ -95,11 +115,7 @@ Deno.test("[Step63.3] FlowRunner checkpoints, resumes, and clears state after su
       agent2: ["step2-result"],
     });
     const resumedLogger = new RecordingFlowLogger();
-    const resumedRunner = new FlowRunner({
-      agentExecutor: resumedExecutor,
-      eventLogger: resumedLogger,
-      config,
-    });
+    const resumedRunner = createFlowRunner(config, resumedExecutor, resumedLogger);
 
     const resumedStartedAt = performance.now();
     const resumedResult = await resumedRunner.execute(
@@ -140,42 +156,17 @@ Deno.test("[Step63.13] FlowRunner invalidates stale-hash checkpoints and reruns 
     const traceId = "trace-flow-checkpoint-stale-hash";
     const requestId = "req-flow-checkpoint-stale-hash";
 
-    const originalFlow: IFlowInput = {
-      id: "checkpoint-flow-stale-hash",
-      name: "Checkpoint Flow Stale Hash",
-      description: "Original flow definition for stale hash coverage",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "step1",
-          name: "Step 1",
-          identity: "agent1",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "step2",
-          name: "Step 2",
-          identity: "agent2",
-          dependsOn: ["step1"],
-          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-      ],
-      output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: true },
-    };
+    const originalFlow = createCheckpointFlow(
+      "checkpoint-flow-stale-hash",
+      "Checkpoint Flow Stale Hash",
+      "Original flow definition for stale hash coverage",
+    );
 
     const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
       agent2: [new Error("step2 exploded")],
     });
-    const firstRunRunner = new FlowRunner({
-      agentExecutor: firstRunExecutor,
-      eventLogger: new RecordingFlowLogger(),
-      config,
-    });
+    const firstRunRunner = createFlowRunner(config, firstRunExecutor, new RecordingFlowLogger());
 
     await assertRejects(
       () => firstRunRunner.execute(originalFlow as IFlow, { userPrompt: "checkpoint me", traceId, requestId }),
@@ -195,11 +186,7 @@ Deno.test("[Step63.13] FlowRunner invalidates stale-hash checkpoints and reruns 
       agent2: ["unused"],
     });
     const resumedLogger = new RecordingFlowLogger();
-    const resumedRunner = new FlowRunner({
-      agentExecutor: resumedExecutor,
-      eventLogger: resumedLogger,
-      config,
-    });
+    const resumedRunner = createFlowRunner(config, resumedExecutor, resumedLogger);
 
     await assertRejects(
       () => resumedRunner.execute(changedFlow as IFlow, { userPrompt: "checkpoint me", traceId, requestId }),
@@ -223,43 +210,18 @@ Deno.test("[Step63.10] FlowRunner invalidates checkpoint when schemaVersion is s
     const traceId = "trace-flow-checkpoint-stale-version";
     const requestId = "req-flow-checkpoint-stale-version";
 
-    const flow: IFlowInput = {
-      id: "checkpoint-flow-stale-version",
-      name: "Checkpoint Flow Stale Version",
-      description: "Flow checkpoint invalidation when schemaVersion is stale",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "step1",
-          name: "Step 1",
-          identity: "agent1",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "step2",
-          name: "Step 2",
-          identity: "agent2",
-          dependsOn: ["step1"],
-          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-      ],
-      output: { from: "step2", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: true },
-    };
+    const flow = createCheckpointFlow(
+      "checkpoint-flow-stale-version",
+      "Checkpoint Flow Stale Version",
+      "Flow checkpoint invalidation when schemaVersion is stale",
+    );
 
     const firstRunExecutor = new ScriptedAgentExecutor({
       agent1: ["stale-step1-result"],
       agent2: [new Error("step2 exploded")],
     });
     const firstRunLogger = new RecordingFlowLogger();
-    const firstRunRunner = new FlowRunner({
-      agentExecutor: firstRunExecutor,
-      eventLogger: firstRunLogger,
-      config,
-    });
+    const firstRunRunner = createFlowRunner(config, firstRunExecutor, firstRunLogger);
 
     await assertRejects(
       () => firstRunRunner.execute(flow as IFlow, { userPrompt: "checkpoint me", traceId, requestId }),
@@ -278,11 +240,7 @@ Deno.test("[Step63.10] FlowRunner invalidates checkpoint when schemaVersion is s
       agent2: ["fresh-step2-result"],
     });
     const resumedLogger = new RecordingFlowLogger();
-    const resumedRunner = new FlowRunner({
-      agentExecutor: resumedExecutor,
-      eventLogger: resumedLogger,
-      config,
-    });
+    const resumedRunner = createFlowRunner(config, resumedExecutor, resumedLogger);
 
     const resumedResult = await resumedRunner.execute(
       flow as IFlow,

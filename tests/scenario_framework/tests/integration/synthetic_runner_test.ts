@@ -16,25 +16,11 @@ import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { selectScenariosForExecution } from "../../runner/modes.ts";
 import { loadScenarioCatalog } from "../../runner/scenario_catalog.ts";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
-
-interface ISyntheticTestEnv {
-  frameworkHome: string;
-  workspaceRoot: string;
-  outputDir: string;
-}
-
-async function withSyntheticTestEnv(
-  fn: (env: ISyntheticTestEnv) => Promise<void>,
-): Promise<void> {
-  const frameworkHome = await Deno.makeTempDir({ prefix: "scenario-framework-" });
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-workspace-" });
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-output-" });
-  try {
-    await fn({ frameworkHome, workspaceRoot, outputDir });
-  } finally {
-    await cleanupTempPaths([frameworkHome, workspaceRoot, outputDir]);
-  }
-}
+import {
+  type ISyntheticScenarioStepDefinition,
+  withSyntheticTestEnv,
+  writeSyntheticScenario,
+} from "./synthetic_test_helpers.ts";
 
 Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic scenario completes successfully without a deployed workspace", async () => {
   await withSyntheticTestEnv(async ({ frameworkHome, workspaceRoot, outputDir }) => {
@@ -42,6 +28,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic scenario completes succe
       frameworkHome,
       scenarioId: "synthetic-success",
       tags: ["smoke", "synthetic"],
+      schemaVersion: SCHEMA_VERSION,
       steps: [
         {
           id: "write-result",
@@ -85,6 +72,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic failing scenario emits t
       frameworkHome,
       scenarioId: "synthetic-failure",
       tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
       steps: [
         {
           id: "write-bad-result",
@@ -126,6 +114,7 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic checkpoint scenario paus
       frameworkHome,
       scenarioId: "synthetic-checkpoint",
       tags: ["synthetic"],
+      schemaVersion: SCHEMA_VERSION,
       steps: [
         {
           id: "step-one",
@@ -196,12 +185,14 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic CI scenario selection ho
       frameworkHome,
       scenarioId: "synthetic-smoke",
       tags: ["smoke", "synthetic"],
+      schemaVersion: SCHEMA_VERSION,
       steps: [createNoopStep("smoke-step")],
     });
     await writeSyntheticScenario({
       frameworkHome,
       scenarioId: "synthetic-manual",
       tags: ["manual-only"],
+      schemaVersion: SCHEMA_VERSION,
       steps: [createNoopStep("manual-step")],
     });
 
@@ -221,63 +212,6 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic CI scenario selection ho
   });
 });
 
-interface ISyntheticScenarioStepDefinition {
-  id: string;
-  type: ScenarioStepType;
-  command: string;
-  args: string[];
-  checkpoint?: string;
-  outputCriteriaLines: string[];
-}
-
-interface IWriteSyntheticScenarioOptions {
-  frameworkHome: string;
-  scenarioId: string;
-  tags: string[];
-  steps: ISyntheticScenarioStepDefinition[];
-}
-
-async function writeSyntheticScenario(
-  options: IWriteSyntheticScenarioOptions,
-): Promise<string> {
-  const fixturePath = "fixtures/requests/shared/synthetic_request.md";
-  const scenarioPath = `scenarios/synthetic/${options.scenarioId}.yaml`;
-
-  await Deno.mkdir(join(options.frameworkHome, "fixtures/requests/shared"), { recursive: true });
-  await Deno.mkdir(join(options.frameworkHome, "scenarios/synthetic"), { recursive: true });
-  await Deno.writeTextFile(
-    join(options.frameworkHome, fixturePath),
-    "# Synthetic request\n\nRun the local synthetic scenario.\n",
-  );
-  await Deno.writeTextFile(
-    join(options.frameworkHome, scenarioPath),
-    [
-      `schema_version: "${SCHEMA_VERSION}"`,
-      `id: "${options.scenarioId}"`,
-      `title: "${options.scenarioId}"`,
-      'pack: "synthetic"',
-      `tags: [${options.tags.map((tag) => `"${tag}"`).join(", ")}]`,
-      `request_fixture: "${fixturePath}"`,
-      'mode_support: ["auto", "manual-checkpoint"]',
-      "portals: []",
-      "steps:",
-      ...options.steps.flatMap((step) => [
-        `  - id: "${step.id}"`,
-        `    type: "${step.type}"`,
-        `    command: "${escapeYaml(step.command)}"`,
-        `    args: [${step.args.map((arg) => `"${escapeYaml(arg)}"`).join(", ")}]`,
-        ...(step.checkpoint ? [`    checkpoint: "${step.checkpoint}"`] : []),
-        "    input_criteria: []",
-        "    output_criteria:",
-        ...step.outputCriteriaLines,
-      ]),
-      "",
-    ].join("\n"),
-  );
-
-  return scenarioPath;
-}
-
 function createNoopStep(id: string): ISyntheticScenarioStepDefinition {
   return {
     id,
@@ -290,14 +224,4 @@ function createNoopStep(id: string): ISyntheticScenarioStepDefinition {
       "      equals: 0",
     ],
   };
-}
-
-function escapeYaml(value: string): string {
-  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-}
-
-async function cleanupTempPaths(paths: string[]): Promise<void> {
-  for (const path of paths) {
-    await Deno.remove(path, { recursive: true });
-  }
 }

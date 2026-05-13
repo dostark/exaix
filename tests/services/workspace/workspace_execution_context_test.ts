@@ -13,6 +13,50 @@ import type { IPortalConfig } from "@exaix/schemas/config.ts";
 import { ensureDir } from "@std/fs";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
+function createPortalConfig(alias: string, targetPath: string): IPortalConfig {
+  return {
+    alias,
+    target_path: targetPath,
+    default_branch: TEST_DEFAULT_BRANCH,
+    identities_allowed: ["*"],
+    operations: [],
+  };
+}
+
+function assertPortalContext(
+  context: ReturnType<typeof WorkspaceExecutionContextBuilder.forPortal>,
+  portalPath: string,
+  alias: string,
+): void {
+  assertEquals(context.workingDirectory, portalPath);
+  assertEquals(context.gitRepository, join(portalPath, ".git"));
+  assertEquals(context.allowedPaths, [portalPath]);
+  assertEquals(context.reviewRepo, join(portalPath, ".git"));
+  assertEquals(context.portal, alias);
+  assertEquals(context.portalTarget, portalPath);
+}
+
+function assertWorkspaceContext(
+  context: ReturnType<typeof WorkspaceExecutionContextBuilder.forWorkspace>,
+  workspacePath: string,
+): void {
+  assertEquals(context.workingDirectory, workspacePath);
+  assertEquals(context.gitRepository, join(workspacePath, ".git"));
+  assertEquals(context.allowedPaths, [workspacePath]);
+  assertEquals(context.reviewRepo, join(workspacePath, ".git"));
+  assertEquals(context.portal, undefined);
+  assertEquals(context.portalTarget, undefined);
+}
+
+function assertThrowsWithMessage(action: () => void, expectedMessage: string): void {
+  try {
+    action();
+    throw new Error("Should have thrown");
+  } catch (error) {
+    assertEquals((error as Error).message.includes(expectedMessage), true);
+  }
+}
+
 describe("WorkspaceExecutionContextBuilder", () => {
   let tempDir: string;
   let portalDir: string;
@@ -38,92 +82,51 @@ describe("WorkspaceExecutionContextBuilder", () => {
 
   describe("forPortal", () => {
     it("creates correct portal context", () => {
-      const portal: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("test-portal", portalDir);
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 
-      assertEquals(context.workingDirectory, portalDir);
-      assertEquals(context.gitRepository, join(portalDir, ".git"));
-      assertEquals(context.allowedPaths, [portalDir]);
-      assertEquals(context.reviewRepo, join(portalDir, ".git"));
-      assertEquals(context.portal, "test-portal");
-      assertEquals(context.portalTarget, portalDir);
+      assertPortalContext(context, portalDir, "test-portal");
     });
 
     it("normalizes portal target path", () => {
-      const portalWithTrailingSlash: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir + "/",
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portalWithTrailingSlash = createPortalConfig("test-portal", portalDir + "/");
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portalWithTrailingSlash);
 
-      assertEquals(context.workingDirectory, portalDir);
-      assertEquals(context.gitRepository, join(portalDir, ".git"));
+      assertPortalContext(context, portalDir, "test-portal");
     });
 
     it("validates portal target exists", () => {
-      const nonExistentPortal: IPortalConfig = {
-        alias: "missing-portal",
-        target_path: join(tempDir, "nonexistent"),
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const nonExistentPortal = createPortalConfig("missing-portal", join(tempDir, "nonexistent"));
 
-      try {
-        WorkspaceExecutionContextBuilder.validatePortalExists(nonExistentPortal);
-        throw new Error("Should have thrown");
-      } catch (error) {
-        assertEquals((error as Error).message.includes("Portal target path does not exist"), true);
-      }
+      assertThrowsWithMessage(
+        () => WorkspaceExecutionContextBuilder.validatePortalExists(nonExistentPortal),
+        "Portal target path does not exist",
+      );
     });
 
     it("validates git repository exists in portal", () => {
-      const portalWithoutGit: IPortalConfig = {
-        alias: "no-git-portal",
-        target_path: tempDir, // temp dir exists but has no .git
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portalWithoutGit = createPortalConfig("no-git-portal", tempDir);
 
-      try {
-        WorkspaceExecutionContextBuilder.validatePortalGitRepo(portalWithoutGit);
-        throw new Error("Should have thrown");
-      } catch (error) {
-        assertEquals((error as Error).message.includes("Portal does not contain a git repository"), true);
-      }
+      assertThrowsWithMessage(
+        () => WorkspaceExecutionContextBuilder.validatePortalGitRepo(portalWithoutGit),
+        "Portal does not contain a git repository",
+      );
     });
 
     it("resolves symlinks correctly", async () => {
       const symlinkPath = join(tempDir, "portal-symlink");
       await Deno.symlink(portalDir, symlinkPath);
 
-      const portal: IPortalConfig = {
-        alias: "symlink-portal",
-        target_path: symlinkPath,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("symlink-portal", symlinkPath);
 
       const resolved = await WorkspaceExecutionContextBuilder.resolvePortalSymlink(portal);
       const context = WorkspaceExecutionContextBuilder.forPortal(resolved);
 
       // Should resolve to actual directory
       const realPortalPath = await Deno.realPath(portalDir);
-      assertEquals(context.workingDirectory, realPortalPath);
-      assertEquals(context.gitRepository, join(realPortalPath, ".git"));
+      assertPortalContext(context, realPortalPath, "symlink-portal");
     });
   });
 
@@ -131,12 +134,7 @@ describe("WorkspaceExecutionContextBuilder", () => {
     it("creates correct workspace context", () => {
       const context = WorkspaceExecutionContextBuilder.forWorkspace(workspaceDir);
 
-      assertEquals(context.workingDirectory, workspaceDir);
-      assertEquals(context.gitRepository, join(workspaceDir, ".git"));
-      assertEquals(context.allowedPaths, [workspaceDir]);
-      assertEquals(context.reviewRepo, join(workspaceDir, ".git"));
-      assertEquals(context.portal, undefined);
-      assertEquals(context.portalTarget, undefined);
+      assertWorkspaceContext(context, workspaceDir);
     });
 
     it("normalizes workspace path", () => {
@@ -150,21 +148,17 @@ describe("WorkspaceExecutionContextBuilder", () => {
     it("validates workspace directory exists", () => {
       const nonExistentWorkspace = join(tempDir, "nonexistent");
 
-      try {
-        WorkspaceExecutionContextBuilder.validateWorkspaceExists(nonExistentWorkspace);
-        throw new Error("Should have thrown");
-      } catch (error) {
-        assertEquals((error as Error).message.includes("Workspace directory does not exist"), true);
-      }
+      assertThrowsWithMessage(
+        () => WorkspaceExecutionContextBuilder.validateWorkspaceExists(nonExistentWorkspace),
+        "Workspace directory does not exist",
+      );
     });
 
     it("validates git repository exists in workspace", () => {
-      try {
-        WorkspaceExecutionContextBuilder.validateWorkspaceGitRepo(tempDir);
-        throw new Error("Should have thrown");
-      } catch (error) {
-        assertEquals((error as Error).message.includes("Workspace does not contain a git repository"), true);
-      }
+      assertThrowsWithMessage(
+        () => WorkspaceExecutionContextBuilder.validateWorkspaceGitRepo(tempDir),
+        "Workspace does not contain a git repository",
+      );
     });
   });
 
@@ -173,21 +167,8 @@ describe("WorkspaceExecutionContextBuilder", () => {
       const portal1Dir = join(tempDir, "portal1");
       const portal2Dir = join(tempDir, "portal2");
 
-      const portal1: IPortalConfig = {
-        alias: "portal-1",
-        target_path: portal1Dir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
-
-      const portal2: IPortalConfig = {
-        alias: "portal-2",
-        target_path: portal2Dir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal1 = createPortalConfig("portal-1", portal1Dir);
+      const portal2 = createPortalConfig("portal-2", portal2Dir);
 
       const context1 = WorkspaceExecutionContextBuilder.forPortal(portal1);
       const context2 = WorkspaceExecutionContextBuilder.forPortal(portal2);
@@ -200,13 +181,7 @@ describe("WorkspaceExecutionContextBuilder", () => {
     });
 
     it("portal context isolated from workspace context", () => {
-      const portal: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("test-portal", portalDir);
 
       const portalContext = WorkspaceExecutionContextBuilder.forPortal(portal);
       const workspaceContext = WorkspaceExecutionContextBuilder.forWorkspace(workspaceDir);
@@ -223,13 +198,7 @@ describe("WorkspaceExecutionContextBuilder", () => {
 
   describe("path validation", () => {
     it("includes only portal directory in allowed paths", () => {
-      const portal: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("test-portal", portalDir);
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 
@@ -247,13 +216,7 @@ describe("WorkspaceExecutionContextBuilder", () => {
 
   describe("git repository configuration", () => {
     it("points to portal git repository", () => {
-      const portal: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("test-portal", portalDir);
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 
@@ -269,13 +232,7 @@ describe("WorkspaceExecutionContextBuilder", () => {
     });
 
     it("git repository and review repo are the same", () => {
-      const portal: IPortalConfig = {
-        alias: "test-portal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [],
-      };
+      const portal = createPortalConfig("test-portal", portalDir);
 
       const context = WorkspaceExecutionContextBuilder.forPortal(portal);
 

@@ -6,25 +6,27 @@
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { GitCreateBranchTool } from "../../../src/mcp/handlers/git_create_branch_tool.ts";
-import { initToolPermissionTest } from "../helpers/test_setup.ts";
+import {
+  assertToolDefinitionFields,
+  createBaseToolContext,
+  createPermissionsService,
+  createToolContext,
+  withToolPermissionTest,
+} from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
-import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { join } from "@std/path";
 import { SafeSubprocess } from "../../../src/helpers/subprocess.ts";
 
+function createHandler(env: Parameters<typeof createToolContext>[0]): GitCreateBranchTool {
+  return new GitCreateBranchTool(createToolContext(env), createPermissionsService(env));
+}
+
 Deno.test("GitCreateBranchTool: creates branch successfully", async () => {
-  const env = await initToolPermissionTest({
+  await withToolPermissionTest({
     operations: [PortalOperation.GIT],
     initGit: true,
-  });
-
-  try {
-    const context = createStubContext({
-      config: createStubConfig(env.config),
-    });
-
-    const handler = new GitCreateBranchTool(context, new PortalPermissionsService([env.permissions]));
+  }, async (env) => {
+    const handler = createHandler(env);
     const result = await handler.execute({
       portal: "TestPortal",
       branch: "feat/new-test-branch",
@@ -34,23 +36,15 @@ Deno.test("GitCreateBranchTool: creates branch successfully", async () => {
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
     assertStringIncludes(res.content[0].text, "created and checked out successfully");
-  } finally {
-    await env.cleanup();
-  }
+  });
 });
 
 Deno.test("GitCreateBranchTool: returns error when branch already exists", async () => {
-  const env = await initToolPermissionTest({
+  await withToolPermissionTest({
     operations: [PortalOperation.GIT],
     initGit: true,
-  });
-
-  try {
-    const context = createStubContext({
-      config: createStubConfig(env.config),
-    });
-
-    const handler = new GitCreateBranchTool(context, new PortalPermissionsService([env.permissions]));
+  }, async (env) => {
+    const handler = createHandler(env);
 
     // Make an initial commit so branches have an actual commit to point to
     await Deno.writeTextFile(join(env.portalPath, "test.txt"), "hello");
@@ -75,23 +69,15 @@ Deno.test("GitCreateBranchTool: returns error when branch already exists", async
       Error,
       "Failed to create branch: ",
     );
-  } finally {
-    await env.cleanup();
-  }
+  });
 });
 
 Deno.test("GitCreateBranchTool: returns error when access is denied", async () => {
-  const env = await initToolPermissionTest({
+  await withToolPermissionTest({
     operations: [PortalOperation.READ], // No GIT permission
     initGit: true,
-  });
-
-  try {
-    const context = createStubContext({
-      config: createStubConfig(env.config),
-    });
-
-    const handler = new GitCreateBranchTool(context, new PortalPermissionsService([env.permissions]));
+  }, async (env) => {
+    const handler = createHandler(env);
     await assertRejects(
       () =>
         handler.execute({
@@ -102,21 +88,10 @@ Deno.test("GitCreateBranchTool: returns error when access is denied", async () =
       Error,
       "Operation 'git' is not permitted",
     );
-  } finally {
-    await env.cleanup();
-  }
+  });
 });
 
 Deno.test("GitCreateBranchTool: getToolDefinition returns correct definition", () => {
-  const context = createStubContext();
-  const handler = new GitCreateBranchTool(context);
-  const def = handler.getToolDefinition();
-  const required = Array.isArray(def.inputSchema.required)
-    ? def.inputSchema.required.filter((value): value is string => typeof value === "string")
-    : [];
-
-  assertEquals(def.name, "git_create_branch");
-  assertEquals(Array.isArray(def.inputSchema.required), true);
-  assertStringIncludes(required.join(), "portal");
-  assertStringIncludes(required.join(), "branch");
+  const handler = new GitCreateBranchTool(createBaseToolContext());
+  assertToolDefinitionFields(handler.getToolDefinition(), "git_create_branch", ["portal", "branch"]);
 });

@@ -5,8 +5,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { RoutingPolicyService } from "../../../src/services/routing/routing_policy_service.ts";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
+import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";
 
 async function computeBucket(traceId: string, salt: string): Promise<number> {
   const data = new TextEncoder().encode(traceId + salt);
@@ -36,46 +36,21 @@ Deno.test("RoutingPolicyService: uses deterministic experiment buckets for split
       },
     ],
   };
-  const policyLoader = {
-    loadPolicy: () =>
-      Promise.resolve({
-        success: true,
-        path: "unused",
-        policy,
-      }),
-  };
-
   const candidates = [
-    {
+    createRoutingCandidate({
       identityId: "alpha",
       version: "1.0.0",
       capabilities: ["code_review"],
       score: 0.5,
-      scoreBreakdown: { capabilityScore: 0.5, policyScore: 0, journalScore: 0, experimentScore: 0 },
-    },
-    {
+    }),
+    createRoutingCandidate({
       identityId: "beta",
       version: "2.0.0",
       capabilities: ["code_review"],
       score: 0.5,
-      scoreBreakdown: { capabilityScore: 0.5, policyScore: 0, journalScore: 0, experimentScore: 0 },
-    },
+    }),
   ];
-
-  const candidateDiscovery = {
-    listCandidates: () => Promise.resolve(candidates),
-  };
-
-  const performanceRepository = {
-    getPerformanceByCapability: () => Promise.resolve([]),
-  };
-
-  const service = new RoutingPolicyService({
-    policyLoader,
-    candidateDiscovery,
-    performanceRepository,
-    experimentSalt: "test-salt",
-  });
+  const service = createRoutingPolicyService(policy, candidates);
 
   const traceId = "trace-experiment-split-1";
   const bucket = await computeBucket(traceId, "test-salt");

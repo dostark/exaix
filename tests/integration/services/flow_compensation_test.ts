@@ -66,6 +66,62 @@ function makeCompensationRunner(
   return { runner, logger };
 }
 
+function createRetryConfig() {
+  return { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS };
+}
+
+function createCompensationStep(
+  id: string,
+  name: string,
+  identity: string,
+  dependsOn: string[],
+  compensationPaths: string[],
+) {
+  return {
+    id,
+    name,
+    identity,
+    dependsOn,
+    input: {
+      source: dependsOn.length === 0 ? FlowInputSource.REQUEST : FlowInputSource.STEP,
+      ...(dependsOn.length === 0 ? {} : { stepId: dependsOn[0] }),
+      transform: "passthrough",
+    },
+    retry: createRetryConfig(),
+    onError: {
+      action: FlowStepOnErrorAction.COMPENSATE,
+      backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS,
+      maxRetries: 0,
+      ...(compensationPaths.length === 0 ? {} : {
+        compensate: compensationPaths.map((path) => ({
+          tool: McpToolName.DELETE_FILE,
+          args: { path },
+        })),
+      }),
+    },
+  };
+}
+
+function createCompensationFlow(
+  id: string,
+  name: string,
+  description: string,
+  steps: IFlowInput["steps"],
+  outputFrom: string,
+  maxParallelism: number,
+  failFast: boolean,
+): IFlowInput {
+  return {
+    id,
+    name,
+    description,
+    version: DEFAULT_FLOW_VERSION,
+    steps,
+    output: { from: outputFrom, format: FlowOutputFormat.MARKDOWN },
+    settings: { maxParallelism, failFast },
+  };
+}
+
 Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and continues after compensation failure", async () => {
   const { config, cleanup } = await initTestDbService();
 
@@ -76,65 +132,22 @@ Deno.test("[Step63.4] FlowRunner executes compensations in LIFO order and contin
     const requestId = "req-flow-compensation-001";
     const portal = "TestPortal";
 
-    const flow: IFlowInput = {
-      id: "compensation-flow",
-      name: "Compensation Flow",
-      description: "Flow compensation integration coverage",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "step1",
-          name: "Step 1",
-          identity: "agent1",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [
-              {
-                tool: McpToolName.DELETE_FILE,
-                args: { path: "rollback/step1-success" },
-              },
-            ],
-          },
-        },
-        {
-          id: "step2",
-          name: "Step 2",
-          identity: "agent2",
-          dependsOn: ["step1"],
-          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [
-              {
-                tool: McpToolName.DELETE_FILE,
-                args: { path: "rollback/step2-fail" },
-              },
-              {
-                tool: McpToolName.DELETE_FILE,
-                args: { path: "rollback/step2-success" },
-              },
-            ],
-          },
-        },
-        {
-          id: "step3",
-          name: "Step 3",
-          identity: "agent3",
-          dependsOn: ["step2"],
-          input: { source: FlowInputSource.STEP, stepId: "step2", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-          },
-        },
+    const flow = createCompensationFlow(
+      "compensation-flow",
+      "Compensation Flow",
+      "Flow compensation integration coverage",
+      [
+        createCompensationStep("step1", "Step 1", "agent1", [], ["rollback/step1-success"]),
+        createCompensationStep("step2", "Step 2", "agent2", ["step1"], [
+          "rollback/step2-fail",
+          "rollback/step2-success",
+        ]),
+        createCompensationStep("step3", "Step 3", "agent3", ["step2"], []),
       ],
-      output: { from: "step3", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: true },
-    };
+      "step3",
+      3,
+      true,
+    );
 
     const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],
@@ -193,49 +206,19 @@ Deno.test("[Step63.11] FlowRunner compensates same-wave steps in reverse declara
       }
     }
 
-    const flow: IFlowInput = {
-      id: "same-wave-compensation-flow",
-      name: "Same Wave Compensation Flow",
-      description: "Ensures tied same-wave completions compensate in reverse declaration order",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "stepA",
-          name: "Step A",
-          identity: "agentA",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/stepA" } }],
-          },
-        },
-        {
-          id: "stepB",
-          name: "Step B",
-          identity: "agentB",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/stepB" } }],
-          },
-        },
-        {
-          id: "stepFail",
-          name: "Failing Step",
-          identity: "agentFail",
-          dependsOn: ["stepA", "stepB"],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: { action: FlowStepOnErrorAction.COMPENSATE },
-        },
+    const flow = createCompensationFlow(
+      "same-wave-compensation-flow",
+      "Same Wave Compensation Flow",
+      "Ensures tied same-wave completions compensate in reverse declaration order",
+      [
+        createCompensationStep("stepA", "Step A", "agentA", [], ["rollback/stepA"]),
+        createCompensationStep("stepB", "Step B", "agentB", [], ["rollback/stepB"]),
+        createCompensationStep("stepFail", "Failing Step", "agentFail", ["stepA", "stepB"], []),
       ],
-      output: { from: "stepFail", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 2, failFast: true },
-    };
+      "stepFail",
+      2,
+      true,
+    );
 
     const executor = new ScriptedAgentExecutor({
       agentA: ["stepA-result"],
@@ -277,49 +260,19 @@ Deno.test("[Step63.12] FlowRunner marks compensated steps with recovery metadata
   try {
     RecordingDeleteFileTool.calls = [];
 
-    const flow: IFlowInput = {
-      id: "compensation-metadata-flow",
-      name: "Compensation Metadata Flow",
-      description: "Tracks runtime compensation metadata on successful steps",
-      version: DEFAULT_FLOW_VERSION,
-      steps: [
-        {
-          id: "step1",
-          name: "Step 1",
-          identity: "agent1",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/step1" } }],
-          },
-        },
-        {
-          id: "step2",
-          name: "Step 2",
-          identity: "agent2",
-          dependsOn: ["step1"],
-          input: { source: FlowInputSource.STEP, stepId: "step1", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: {
-            action: FlowStepOnErrorAction.COMPENSATE,
-            compensate: [{ tool: McpToolName.DELETE_FILE, args: { path: "rollback/step2" } }],
-          },
-        },
-        {
-          id: "step3",
-          name: "Step 3",
-          identity: "agent3",
-          dependsOn: ["step2"],
-          input: { source: FlowInputSource.STEP, stepId: "step2", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          onError: { action: FlowStepOnErrorAction.COMPENSATE },
-        },
+    const flow = createCompensationFlow(
+      "compensation-metadata-flow",
+      "Compensation Metadata Flow",
+      "Tracks runtime compensation metadata on successful steps",
+      [
+        createCompensationStep("step1", "Step 1", "agent1", [], ["rollback/step1"]),
+        createCompensationStep("step2", "Step 2", "agent2", ["step1"], ["rollback/step2"]),
+        createCompensationStep("step3", "Step 3", "agent3", ["step2"], []),
       ],
-      output: { from: "step3", format: FlowOutputFormat.MARKDOWN },
-      settings: { maxParallelism: 3, failFast: false },
-    };
+      "step3",
+      3,
+      false,
+    );
 
     const executor = new ScriptedAgentExecutor({
       agent1: ["step1-result"],

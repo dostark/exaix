@@ -62,6 +62,80 @@ interface IPortalWorkflowTestOptions {
   executionStrategy?: PortalExecutionStrategy;
 }
 
+interface IPortalWriteWorkflowOptions {
+  portalAlias: string;
+  targetBranch?: string;
+  description: string;
+  writePath: string;
+  writeContent: string;
+}
+
+const HELLO_FILE_PATH = "src/hello.ts";
+const HELLO_FILE_CONTENT = `export function hello(): string {\n  return "Hello from portal";\n}\n`;
+const RELEASE_TARGET_BRANCH = "release_1.2";
+const RELEASE_ONLY_FILE_PATH = "src/release_only.ts";
+
+async function runPortalWriteWorkflow(
+  env: TestEnvironment,
+  config: TestEnvironment["config"],
+  portalTargetPath: string,
+  options: IPortalWriteWorkflowOptions,
+) {
+  const { traceId, requestId, result, reviewRegistry } = await createAndRunReviewWorkflow(
+    env,
+    config,
+    {
+      portalAlias: options.portalAlias,
+      ...(options.targetBranch ? { targetBranch: options.targetBranch } : {}),
+      description: options.description,
+      writePath: options.writePath,
+      writeContent: options.writeContent,
+    },
+  );
+
+  const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
+
+  return { traceId, requestId, result, reviewRegistry, createdPortalBranch };
+}
+
+async function seedReleaseBranch(portalTargetPath: string, targetBranch: string): Promise<string> {
+  await gitStdout(portalTargetPath, ["branch", targetBranch, TEST_DEFAULT_BRANCH]);
+  await gitStdout(portalTargetPath, ["checkout", targetBranch]);
+  await Deno.writeTextFile(
+    join(portalTargetPath, "src", "release_base.ts"),
+    `export const base = ${JSON.stringify(targetBranch)};\n`,
+  );
+  await gitStdout(portalTargetPath, ["add", "."]);
+  await gitStdout(portalTargetPath, ["commit", "-m", "Release base commit"]);
+  const targetHeadBeforeExecution = await gitStdout(portalTargetPath, ["rev-parse", "HEAD"]);
+  await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
+  return targetHeadBeforeExecution;
+}
+
+async function assertPortalFileExistsInBranch(
+  portalTargetPath: string,
+  branch: string,
+  path: string,
+  expectedContent: string,
+): Promise<void> {
+  const fileContent = await gitStdout(portalTargetPath, ["show", `${branch}:${path}`]);
+  assertStringIncludes(fileContent, expectedContent);
+}
+
+async function assertPortalFileMissingInBranch(
+  portalTargetPath: string,
+  branch: string,
+  path: string,
+): Promise<void> {
+  const fileOutput = await new Deno.Command(PortalOperation.GIT, {
+    args: ["show", `${branch}:${path}`],
+    cwd: portalTargetPath,
+    stdout: "piped",
+    stderr: "piped",
+  }).output();
+  assertEquals(fileOutput.success, false);
+}
+
 async function withPortalWorkflowContext(
   options: IPortalWorkflowTestOptions,
   run: (context: IPortalWorkflowTestContext) => Promise<void>,
@@ -230,22 +304,20 @@ parallelSafeTest("[e2e] Portal request → execution → git review in portal re
     const _portalBranchesBefore = await listBranches(portalTargetPath);
     const workspaceBranchesBefore = await env.getGitBranches();
 
-    const { traceId, requestId, result, reviewRegistry } = await createAndRunReviewWorkflow(
+    const { traceId, result, reviewRegistry, createdPortalBranch } = await runPortalWriteWorkflow(
       env,
       config,
+      portalTargetPath,
       {
         portalAlias: portalConfig.alias,
         description: "Add a hello file in the portal repo",
-        writePath: "src/hello.ts",
-        writeContent: `export function hello(): string {\n  return "Hello from portal";\n}\n`,
+        writePath: HELLO_FILE_PATH,
+        writeContent: HELLO_FILE_CONTENT,
       },
     );
 
     assertEquals(result.success, true);
     assertEquals(result.traceId, traceId);
-
-    // Branch should be created in portal repo (not in workspace root).
-    const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
 
     const workspaceBranchesAfter = await env.getGitBranches();
     assertEquals(
@@ -275,7 +347,7 @@ parallelSafeTest("[e2e] Portal request → execution → git review in portal re
     await assertReviewStatus(env.db, traceId, ReviewStatus.APPROVED);
 
     // Verify file was created in the feature branch
-    await assertFileInBranch(portalTargetPath, createdPortalBranch, "src/hello.ts", "Hello from portal");
+    await assertFileInBranch(portalTargetPath, createdPortalBranch, HELLO_FILE_PATH, "Hello from portal");
   });
 });
 
@@ -286,44 +358,19 @@ parallelSafeTest("[e2e] Portal target_branch review approve merges into that bra
     portalTargetPath,
     config,
   }) => {
-    const targetBranch = "release_1.2";
+    const targetBranch = RELEASE_TARGET_BRANCH;
+    const targetHeadBeforeExecution = await seedReleaseBranch(portalTargetPath, targetBranch);
 
-    // Create a long-lived release branch from main.
-    await new Deno.Command(PortalOperation.GIT, {
-      args: ["branch", targetBranch, TEST_DEFAULT_BRANCH],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-
-    // Make the target branch diverge from main so we can validate
-    // that execution creates the feature branch from the target branch.
-    await gitStdout(portalTargetPath, ["checkout", targetBranch]);
-    await Deno.writeTextFile(
-      join(portalTargetPath, "src", "release_base.ts"),
-      `export const base = ${JSON.stringify(targetBranch)};\n`,
-    );
-    await gitStdout(portalTargetPath, ["add", "."]);
-    await gitStdout(portalTargetPath, ["commit", "-m", "Release base commit"]);
-    const targetHeadBeforeExecution = await gitStdout(portalTargetPath, ["rev-parse", "HEAD"]);
-    await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
-
-    const { traceId, requestId, result, reviewRegistry: _reviewRegistry } = await createAndRunReviewWorkflow(
-      env,
-      config,
-      {
-        portalAlias: portalConfig.alias,
-        targetBranch,
-        description: "Add a release-only file in the portal repo",
-        writePath: "src/release_only.ts",
-        writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
-      },
-    );
+    const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
+      portalAlias: portalConfig.alias,
+      targetBranch,
+      description: "Add a release-only file in the portal repo",
+      writePath: RELEASE_ONLY_FILE_PATH,
+      writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
+    });
 
     assertEquals(result.success, true);
     assertEquals(result.traceId, traceId);
-
-    const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
 
     // Step 37.5 regression: feature branch should be created from targetBranch.
     const mergeBase = await gitStdout(portalTargetPath, ["merge-base", createdPortalBranch, targetBranch]);
@@ -345,33 +392,14 @@ parallelSafeTest("[e2e] Portal target_branch review approve merges into that bra
     await enablePortalDiscovery(env.tempDir, portalConfig.alias, portalTargetPath);
 
     // Precondition: checkout target branch before approval.
-    await new Deno.Command(PortalOperation.GIT, {
-      args: ["checkout", targetBranch],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
+    await gitStdout(portalTargetPath, ["checkout", targetBranch]);
 
     const approve = await runExactl(["review", "approve", createdPortalBranch], env.tempDir);
     assertEquals(approve.code, 0, approve.stderr);
 
     // After merge: file should exist on the target branch but not on main.
-    const fileOnTarget = await new Deno.Command(PortalOperation.GIT, {
-      args: ["show", `${targetBranch}:src/release_only.ts`],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    assertEquals(fileOnTarget.success, true);
-    assertStringIncludes(new TextDecoder().decode(fileOnTarget.stdout), targetBranch);
-
-    const fileOnMain = await new Deno.Command(PortalOperation.GIT, {
-      args: ["show", "main:src/release_only.ts"],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-    assertEquals(fileOnMain.success, false);
+    await assertPortalFileExistsInBranch(portalTargetPath, targetBranch, RELEASE_ONLY_FILE_PATH, targetBranch);
+    await assertPortalFileMissingInBranch(portalTargetPath, "main", RELEASE_ONLY_FILE_PATH);
   });
 });
 
@@ -382,41 +410,24 @@ parallelSafeTest("[e2e][negative] Portal CLI review approve fails if not on revi
     portalTargetPath,
     config,
   }) => {
-    const targetBranch = "release_1.2";
+    const targetBranch = RELEASE_TARGET_BRANCH;
+    await gitStdout(portalTargetPath, ["branch", targetBranch, TEST_DEFAULT_BRANCH]);
 
-    await new Deno.Command(PortalOperation.GIT, {
-      args: ["branch", targetBranch, TEST_DEFAULT_BRANCH],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
-
-    const { traceId: _traceId, requestId, result, reviewRegistry: _reviewRegistry } = await createAndRunReviewWorkflow(
-      env,
-      config,
-      {
-        portalAlias: portalConfig.alias,
-        targetBranch,
-        description: "Add a release-only file in the portal repo",
-        writePath: "src/release_only.ts",
-        writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
-      },
-    );
+    const { result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
+      portalAlias: portalConfig.alias,
+      targetBranch,
+      description: "Add a release-only file in the portal repo",
+      writePath: RELEASE_ONLY_FILE_PATH,
+      writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
+    });
 
     assertEquals(result.success, true);
-
-    const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
 
     // Enable CLI portal discovery.
     await enablePortalDiscovery(env.tempDir, portalConfig.alias, portalTargetPath);
 
     // Stay on main (wrong base) and ensure the guard triggers.
-    await new Deno.Command(PortalOperation.GIT, {
-      args: ["checkout", TEST_DEFAULT_BRANCH],
-      cwd: portalTargetPath,
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
+    await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
 
     const cliApprove = await runExactl(["review", "approve", createdPortalBranch], env.tempDir);
     assert(cliApprove.code !== 0, "Expected review approve to fail off the review base_branch");
@@ -432,21 +443,15 @@ parallelSafeTest("[e2e][negative] Portal CLI review show fails without portal sy
     portalTargetPath,
     config,
   }) => {
-    const { traceId, requestId, result, reviewRegistry: _reviewRegistry } = await createAndRunReviewWorkflow(
-      env,
-      config,
-      {
-        portalAlias: portalConfig.alias,
-        description: "Add a hello file in the portal repo",
-        writePath: "src/hello.ts",
-        writeContent: `export function hello(): string {\n  return "Hello from portal";\n}\n`,
-      },
-    );
+    const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
+      portalAlias: portalConfig.alias,
+      description: "Add a hello file in the portal repo",
+      writePath: HELLO_FILE_PATH,
+      writeContent: HELLO_FILE_CONTENT,
+    });
 
     assertEquals(result.success, true);
     assertEquals(result.traceId, traceId);
-
-    const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
 
     // NOTE: no `Portals/<alias>` symlink created on purpose.
     const cliShow = await runExactl(["review", "show", createdPortalBranch, "--diff"], env.tempDir);
@@ -463,42 +468,26 @@ parallelSafeTest(
       targetDirName: "portal-write-target",
       executionStrategy: PortalExecutionStrategy.WORKTREE,
     }, async ({ env, portalConfig, portalTargetPath, config }) => {
-      const targetBranch = "release_1.2";
-
-      // Create target branch and make it diverge from main.
-      await gitStdout(portalTargetPath, ["branch", targetBranch, TEST_DEFAULT_BRANCH]);
-      await gitStdout(portalTargetPath, ["checkout", targetBranch]);
-      await Deno.writeTextFile(
-        join(portalTargetPath, "src", "release_base.ts"),
-        `export const base = ${JSON.stringify(targetBranch)};\n`,
-      );
-      await gitStdout(portalTargetPath, ["add", "."]);
-      await gitStdout(portalTargetPath, ["commit", "-m", "Release base commit"]);
-      const targetHeadBeforeExecution = await gitStdout(portalTargetPath, ["rev-parse", "HEAD"]);
+      const targetBranch = RELEASE_TARGET_BRANCH;
+      const targetHeadBeforeExecution = await seedReleaseBranch(portalTargetPath, targetBranch);
 
       // Simulate user checkout staying on main.
       await gitStdout(portalTargetPath, ["checkout", TEST_DEFAULT_BRANCH]);
       assertEquals(await gitStdout(portalTargetPath, ["branch", "--show-current"]), TEST_DEFAULT_BRANCH);
 
-      const { traceId, requestId, result, reviewRegistry: _reviewRegistry } = await createAndRunReviewWorkflow(
-        env,
-        config,
-        {
-          portalAlias: portalConfig.alias,
-          targetBranch,
-          description: "Add a release-only file in the portal repo",
-          writePath: "src/release_only.ts",
-          writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
-        },
-      );
+      const { traceId, result, createdPortalBranch } = await runPortalWriteWorkflow(env, config, portalTargetPath, {
+        portalAlias: portalConfig.alias,
+        targetBranch,
+        description: "Add a release-only file in the portal repo",
+        writePath: RELEASE_ONLY_FILE_PATH,
+        writeContent: `export const releaseOnly = ${JSON.stringify(targetBranch)};\n`,
+      });
 
       assertEquals(result.success, true);
       assertEquals(result.traceId, traceId);
 
       // Portal checkout should remain untouched.
       assertEquals(await gitStdout(portalTargetPath, ["branch", "--show-current"]), TEST_DEFAULT_BRANCH);
-
-      const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
       assertMatch(createdPortalBranch, /^feat\/request-[0-9a-f]{8}-/);
 
       // Feature branch should be based on targetBranch HEAD.
@@ -536,16 +525,8 @@ parallelSafeTest(
       assertEquals(branchesNow.includes(createdPortalBranch), false);
 
       // Merge should land on the target branch only.
-      const fileOnTarget = await gitStdout(portalTargetPath, ["show", `${targetBranch}:src/release_only.ts`]);
-      assertStringIncludes(fileOnTarget, targetBranch);
-
-      const fileOnMain = await new Deno.Command(PortalOperation.GIT, {
-        args: ["show", "main:src/release_only.ts"],
-        cwd: portalTargetPath,
-        stdout: "piped",
-        stderr: "piped",
-      }).output();
-      assertEquals(fileOnMain.success, false);
+      await assertPortalFileExistsInBranch(portalTargetPath, targetBranch, RELEASE_ONLY_FILE_PATH, targetBranch);
+      await assertPortalFileMissingInBranch(portalTargetPath, "main", RELEASE_ONLY_FILE_PATH);
     });
   },
 );
@@ -557,20 +538,19 @@ parallelSafeTest("[e2e] Portal review stores base_branch for CLI validation", as
     portalTargetPath,
     config,
   }) => {
-    const { traceId, requestId, result, reviewRegistry } = await createAndRunReviewWorkflow(
+    const { traceId, result, reviewRegistry, createdPortalBranch } = await runPortalWriteWorkflow(
       env,
       config,
+      portalTargetPath,
       {
         portalAlias: portalConfig.alias,
         description: "Add a hello file in the portal repo",
-        writePath: "src/hello.ts",
-        writeContent: `export function hello(): string {\n  return "Hello from portal";\n}\n`,
+        writePath: HELLO_FILE_PATH,
+        writeContent: HELLO_FILE_CONTENT,
       },
     );
 
     assertEquals(result.success, true);
-
-    const createdPortalBranch = await assertPortalBranchExists(portalTargetPath, `feat/${requestId}-`);
 
     // Verify review was registered with correct base_branch
     await assertReviewBaseBranch(env.db, traceId, TEST_DEFAULT_BRANCH);

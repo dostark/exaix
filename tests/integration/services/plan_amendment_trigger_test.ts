@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentTriggerTest
  * @path tests/integration/services/plan_amendment_trigger_test.ts
@@ -6,14 +5,17 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
-import { createMockConfig } from "../../helpers/config.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IDatabaseService } from "@exaix/core/types";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { castAny as castTo } from "../../helpers/test_helpers.ts";
+import {
+  attachPlanAgentExecutor,
+  createPlanAmendmentExecutor,
+  createPlanExecutionContext,
+  getPlanAmendmentsDir,
+} from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor triggers amendment on low confidence result", async () => {
   const root = await Deno.makeTempDir();
@@ -21,10 +23,6 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
   const requestId = "550e8400-e29b-41d4-a716-446655440001";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: true, threshold: 80, expiryMs: 1000 },
-    });
-
     // Mock LLM provider
     const mockLLM = {
       id: "mock-llm",
@@ -49,34 +47,25 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
       assessQuick: () => ({ score: 40, reasoning: "Too short" }),
     };
 
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      castTo<IDatabaseService>({}),
+    const { config, executor } = createPlanAmendmentExecutor({
       root,
-      {
-        confidenceScorer: castTo<ConfidenceScorer>(mockScorer),
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      threshold: 80,
+      expiryMs: 1000,
+      scorer: castTo<ConfidenceScorer>(mockScorer),
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "Do something" },
-        { number: 2, title: "Step 2", content: "Do more" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "Do something" },
+      { number: 2, title: "Step 2", content: "Do more" },
+    ]);
 
     const agentExecutor = {
       executeStep: () => Promise.resolve({ description: "Result" }),
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     // Should throw PlanAmendmentPendingError
     await assertRejects(
@@ -85,8 +74,7 @@ Deno.test("PlanExecutor triggers amendment on low confidence result", async () =
     );
 
     // Check if amendment artifact was created
-    const executionRoot = config.paths.memoryExecution;
-    const amendmentsDir = `${root}/${config.paths.memory}/${executionRoot}/${traceId}/amendments`;
+    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
     const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
     assertEquals(entries.length, 1);
   } finally {
@@ -100,10 +88,6 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
   const requestId = "550e8400-e29b-41d4-a716-446655440021";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: true, threshold: 80, expiryMs: 1000 },
-    });
-
     // Mock LLM provider for amendment proposal
     const mockLLM = {
       id: "mock-llm",
@@ -124,26 +108,17 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
     } as IModelProvider;
 
     // No confidence scorer needed - tool error triggers without it
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      castTo<IDatabaseService>({}),
+    const { config, executor } = createPlanAmendmentExecutor({
       root,
-      {
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      threshold: 80,
+      expiryMs: 1000,
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "Do something" },
-        { number: 2, title: "Step 2", content: "Do more" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "Do something" },
+      { number: 2, title: "Step 2", content: "Do more" },
+    ]);
 
     // Mock agent executor to throw error on first step
     const agentExecutor = {
@@ -153,7 +128,7 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     // Should throw PlanAmendmentPendingError (amendment proposed, execution paused)
     await assertRejects(
@@ -162,8 +137,7 @@ Deno.test("PlanExecutor triggers amendment on tool error result", async () => {
     );
 
     // Verify amendment artifact was still created before re-throwing
-    const executionRoot = config.paths.memoryExecution;
-    const amendmentsDir = `${root}/${config.paths.memory}/${executionRoot}/${traceId}/amendments`;
+    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
     const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
     assertEquals(entries.length, 1, "Amendment artifact should be created for tool errors");
 

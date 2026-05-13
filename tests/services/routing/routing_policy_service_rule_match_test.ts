@@ -5,8 +5,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { RoutingPolicyService } from "../../../src/services/routing/routing_policy_service.ts";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
+import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";
 
 Deno.test("RoutingPolicyService: selects preferred candidate when a routing rule matches", async () => {
   const policy: IRoutingPolicy = {
@@ -23,46 +23,22 @@ Deno.test("RoutingPolicyService: selects preferred candidate when a routing rule
     ],
   };
 
-  const policyLoader = {
-    loadPolicy: () =>
-      Promise.resolve({
-        success: true,
-        path: "unused",
-        policy,
-      }),
-  };
-
   const candidates = [
-    {
+    createRoutingCandidate({
       identityId: "alpha",
       version: "1.0.0",
       capabilities: ["code_review"],
       score: 0.8,
-      scoreBreakdown: { capabilityScore: 0.8, policyScore: 0, journalScore: 0, experimentScore: 0 },
-    },
-    {
+    }),
+    createRoutingCandidate({
       identityId: "beta",
       version: "2.0.0",
       capabilities: ["code_review"],
       score: 0.6,
-      scoreBreakdown: { capabilityScore: 0.6, policyScore: 0, journalScore: 0, experimentScore: 0 },
-    },
+    }),
   ];
 
-  const candidateDiscovery = {
-    listCandidates: () => Promise.resolve(candidates),
-  };
-
-  const performanceRepository = {
-    getPerformanceByCapability: () => Promise.resolve([]),
-  };
-
-  const service = new RoutingPolicyService({
-    policyLoader,
-    candidateDiscovery,
-    performanceRepository,
-    experimentSalt: "test-salt",
-  });
+  const service = createRoutingPolicyService(policy, candidates);
 
   const decision = await service.selectIdentity({
     matchCriteria: { capability: "code_review", tags: [] },

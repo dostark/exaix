@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentPauseResumeTest
  * @path tests/integration/services/66_plan_amendment_pause_resume_test.ts
@@ -7,17 +6,21 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { createStubDb } from "../../helpers/test_helpers.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
+import {
+  attachPlanAgentExecutor,
+  createPlanAmendmentExecutor,
+  createPlanExecutionContext,
+  getPlanAmendmentsDir,
+} from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor pauses execution when amendment is proposed", async () => {
   const root = await Deno.makeTempDir();
@@ -25,10 +28,6 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
   const requestId = "550e8400-e29b-41d4-a716-446655440011";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: true, threshold: 80, expiryMs: 5000 },
-    });
-
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
         Promise.resolve(
@@ -48,37 +47,26 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
       assessQuick: () => ({ score: 30, reasoning: "Very low confidence after tool failure" }),
     });
 
-    const mockDb = createStubDb();
-
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      mockDb,
+    const { config, executor } = createPlanAmendmentExecutor({
       root,
-      {
-        confidenceScorer: mockScorer,
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      threshold: 80,
+      expiryMs: 5000,
+      scorer: mockScorer,
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "First step executed" },
-        { number: 2, title: "Step 2", content: "Second step" },
-        { number: 3, title: "Step 3", content: "Third step" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "First step executed" },
+      { number: 2, title: "Step 2", content: "Second step" },
+      { number: 3, title: "Step 3", content: "Third step" },
+    ]);
 
     const agentExecutor = {
       executeStep: () => Promise.resolve({ description: "Step result" }),
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     // Execution should throw PlanAmendmentPendingError when trigger fires
     await assertRejects(
@@ -89,8 +77,7 @@ Deno.test("PlanExecutor pauses execution when amendment is proposed", async () =
     );
 
     // Verify amendment artifact was persisted
-    const executionRoot = config.paths.memoryExecution;
-    const amendmentsDir = `${root}/${config.paths.memory}/${executionRoot}/${traceId}/amendments`;
+    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
     const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
     assertEquals(entries.length, 1, "Expected exactly one amendment artifact");
 
@@ -114,10 +101,6 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
   const requestId = "550e8400-e29b-41d4-a716-446655440013";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: true, threshold: 90, expiryMs: 10000 },
-    });
-
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
         Promise.resolve(
@@ -137,36 +120,25 @@ Deno.test("Amendment artifact is stored in correct directory structure", async (
       assessQuick: () => ({ score: 50, reasoning: "Below threshold" }),
     });
 
-    const mockDb = createStubDb();
-
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      mockDb,
+    const { config, executor } = createPlanAmendmentExecutor({
       root,
-      {
-        confidenceScorer: mockScorer,
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      threshold: 90,
+      expiryMs: 10000,
+      scorer: mockScorer,
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "Done" },
-        { number: 2, title: "Step 2", content: "Pending" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "Done" },
+      { number: 2, title: "Step 2", content: "Pending" },
+    ]);
 
     const agentExecutor = {
       executeStep: () => Promise.resolve({ description: "Result" }),
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     await assertRejects(
       async () => {
@@ -248,10 +220,6 @@ Deno.test("PlanExecutor does not trigger amendment when disabled", async () => {
   const requestId = "550e8400-e29b-41d4-a716-446655440015";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: false, threshold: 60, expiryMs: 86_400_000 },
-    });
-
     const mockLLM = castTo<IModelProvider>({
       generate: () => Promise.resolve(makeResult("Step completed")),
     });
@@ -260,29 +228,19 @@ Deno.test("PlanExecutor does not trigger amendment when disabled", async () => {
       assessQuick: () => ({ score: 20, reasoning: "Very low - should trigger but disabled" }),
     });
 
-    const mockDb = createStubDb();
-
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      mockDb,
+    const { executor } = createPlanAmendmentExecutor({
       root,
-      {
-        confidenceScorer: mockScorer,
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      enabled: false,
+      threshold: 60,
+      expiryMs: 86_400_000,
+      scorer: mockScorer,
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "Step 1" },
-        { number: 2, title: "Step 2", content: "Step 2" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "Step 1" },
+      { number: 2, title: "Step 2", content: "Step 2" },
+    ]);
 
     let stepCount = 0;
     const agentExecutor = {
@@ -293,7 +251,7 @@ Deno.test("PlanExecutor does not trigger amendment when disabled", async () => {
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     // Should NOT throw PlanAmendmentPendingError since amendment is disabled
     const result = await executor.execute("plan.md", context);

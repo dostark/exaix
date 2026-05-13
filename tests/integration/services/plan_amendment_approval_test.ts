@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanAmendmentApprovalTest
  * @path tests/integration/services/plan_amendment_approval_test.ts
@@ -7,11 +6,9 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { createStubDb } from "../../helpers/test_helpers.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
@@ -20,6 +17,12 @@ import type { JSONObject } from "@exaix/core/types/json.ts";
 import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
+import {
+  attachPlanAgentExecutor,
+  createPlanAmendmentExecutor,
+  createPlanExecutionContext,
+  getPlanAmendmentsDir,
+} from "./plan_amendment_test_helper.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
@@ -137,10 +140,6 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
   const requestId = "550e8400-e29b-41d4-a716-446655440003";
 
   try {
-    const config = createMockConfig(root, {
-      amendment: { enabled: true, threshold: 80, expiryMs: 5000 },
-    });
-
     const mockLLM = castTo<IModelProvider>({
       generate: () =>
         Promise.resolve(
@@ -160,36 +159,25 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
       assessQuick: () => ({ score: 40, reasoning: "Low confidence" }),
     });
 
-    const mockDb = createStubDb();
-
-    const executor = new PlanExecutor(
-      config,
-      mockLLM,
-      mockDb,
+    const { config, executor } = createPlanAmendmentExecutor({
       root,
-      {
-        confidenceScorer: mockScorer,
-        enableGit: false,
-      },
-    );
+      llm: mockLLM,
+      threshold: 80,
+      expiryMs: 5000,
+      scorer: mockScorer,
+    });
 
-    const context = {
-      trace_id: traceId,
-      request_id: requestId,
-      identity: "user-1",
-      frontmatter: { portal: "workspace" },
-      steps: [
-        { number: 1, title: "Step 1", content: "Do something" },
-        { number: 2, title: "Step 2", content: "Do more" },
-      ],
-    };
+    const context = createPlanExecutionContext(traceId, requestId, [
+      { number: 1, title: "Step 1", content: "Do something" },
+      { number: 2, title: "Step 2", content: "Do more" },
+    ]);
 
     const agentExecutor = {
       executeStep: () => Promise.resolve({ description: "Result" }),
       dispose: () => {},
     };
 
-    castTo<{ createAgentExecutor: any }>(executor).createAgentExecutor = () => agentExecutor;
+    attachPlanAgentExecutor(executor, agentExecutor);
 
     // Should throw PlanAmendmentPendingError when trigger fires
     await assertRejects(
@@ -200,8 +188,7 @@ Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError 
     );
 
     // Verify amendment artifact was created
-    const executionRoot = config.paths.memoryExecution;
-    const amendmentsDir = `${root}/${config.paths.memory}/${executionRoot}/${traceId}/amendments`;
+    const amendmentsDir = getPlanAmendmentsDir(root, config, traceId);
     const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
     assertEquals(entries.length, 1);
     assertEquals(entries[0].name.endsWith(".json"), true);

@@ -10,13 +10,13 @@ import { dirname, join } from "@std/path";
 import { ScenarioExecutionMode, ScenarioStepType } from "../../schema/step_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
 import { runSyntheticScenario } from "../../runner/synthetic_runner.ts";
+import { withSyntheticTestEnv, writeSyntheticScenario } from "./synthetic_test_helpers.ts";
 
 const SCENARIO_ID = "dynamic-identity-routing";
 const SCRIPT_TEMPLATE_NAME = "dynamic_identity_routing.ts.template";
 const GENERATED_SCRIPT_NAME = "dynamic_identity_routing.ts";
 const BLUEPRINTS_SUBDIR = "Blueprints/Identities";
 const ROUTING_POLICY_FILE_NAME = ".exa/routing.policy.yaml";
-const REQUEST_FIXTURE_PATH = "fixtures/requests/shared/synthetic_request.md";
 const RESULT_FILE_PATH = "artifacts/result.json";
 const SELECTED_IDENTITY = "senior-coder";
 const DEFAULT_AGENT_ID = "default-agent";
@@ -28,26 +28,6 @@ const REPO_ROOT_FILE_URL = new URL("../../../../", import.meta.url).href;
 const DENO_CONFIG_FILE = new URL("../../../../deno.json", import.meta.url).pathname;
 const REPO_ROOT_PLACEHOLDER = "{{REPO_ROOT}}";
 
-interface ISyntheticTestEnv {
-  frameworkHome: string;
-  workspaceRoot: string;
-  outputDir: string;
-}
-
-async function withSyntheticTestEnv(
-  fn: (env: ISyntheticTestEnv) => Promise<void>,
-): Promise<void> {
-  const frameworkHome = await Deno.makeTempDir({ prefix: "scenario-framework-" });
-  const workspaceRoot = await Deno.makeTempDir({ prefix: "scenario-workspace-" });
-  const outputDir = await Deno.makeTempDir({ prefix: "scenario-output-" });
-
-  try {
-    await fn({ frameworkHome, workspaceRoot, outputDir });
-  } finally {
-    await cleanupTempPaths([frameworkHome, workspaceRoot, outputDir]);
-  }
-}
-
 Deno.test(
   "[ScenarioFrameworkSyntheticRunner] dynamic identity routing scenario executes successfully",
   async () => {
@@ -57,6 +37,7 @@ Deno.test(
         frameworkHome,
         scenarioId: SCENARIO_ID,
         tags: Array.from(SCENARIO_TAGS),
+        schemaVersion: SCHEMA_VERSION,
         steps: [
           {
             id: DYNAMIC_ROUTING_STEP_ID,
@@ -122,68 +103,4 @@ async function copyFixture(sourcePath: string, destinationPath: string): Promise
   const contents = await Deno.readTextFile(sourcePath);
   await Deno.mkdir(dirname(destinationPath), { recursive: true });
   await Deno.writeTextFile(destinationPath, contents);
-}
-
-interface ISyntheticScenarioStepDefinition {
-  id: string;
-  type: ScenarioStepType;
-  command: string;
-  args: string[];
-  outputCriteriaLines: string[];
-}
-
-interface IWriteSyntheticScenarioOptions {
-  frameworkHome: string;
-  scenarioId: string;
-  tags: string[];
-  steps: ISyntheticScenarioStepDefinition[];
-}
-
-async function writeSyntheticScenario(options: IWriteSyntheticScenarioOptions): Promise<string> {
-  const scenarioPath = `scenarios/synthetic/${options.scenarioId}.yaml`;
-
-  await Deno.mkdir(join(options.frameworkHome, dirname(REQUEST_FIXTURE_PATH)), {
-    recursive: true,
-  });
-  await Deno.mkdir(join(options.frameworkHome, "scenarios/synthetic"), { recursive: true });
-  await Deno.writeTextFile(
-    join(options.frameworkHome, REQUEST_FIXTURE_PATH),
-    "# Synthetic request\n\nRun the local synthetic scenario.\n",
-  );
-  await Deno.writeTextFile(
-    join(options.frameworkHome, scenarioPath),
-    [
-      `schema_version: "${SCHEMA_VERSION}"`,
-      `id: "${options.scenarioId}"`,
-      `title: "${options.scenarioId}"`,
-      'pack: "synthetic"',
-      `tags: [${options.tags.map((tag) => `"${tag}"`).join(", ")}]`,
-      `request_fixture: "${REQUEST_FIXTURE_PATH}"`,
-      'mode_support: ["auto", "manual-checkpoint"]',
-      "portals: []",
-      "steps:",
-      ...options.steps.flatMap((step) => [
-        `  - id: "${step.id}"`,
-        `    type: "${step.type}"`,
-        `    command: "${escapeYaml(step.command)}"`,
-        `    args: [${step.args.map((arg) => `"${escapeYaml(arg)}"`).join(", ")}]`,
-        "    input_criteria: []",
-        "    output_criteria:",
-        ...step.outputCriteriaLines,
-      ]),
-      "",
-    ].join("\n"),
-  );
-
-  return scenarioPath;
-}
-
-function escapeYaml(value: string): string {
-  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-}
-
-async function cleanupTempPaths(paths: string[]): Promise<void> {
-  for (const path of paths) {
-    await Deno.remove(path, { recursive: true }).catch(() => {});
-  }
 }
