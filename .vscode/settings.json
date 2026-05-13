@@ -49,6 +49,7 @@
     "timeout": true,
     "git checkout": true,
     "true": true,
-    "tee": true
+    "tee": true,
+    "npx jscpd": true
   }
 }
