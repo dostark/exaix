@@ -15,7 +15,8 @@ import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
-import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+
+const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Identities/code-analyst.md", import.meta.url);
 
 Deno.test("RequestProcessor: Portal context includes file list for grounding", async () => {
   const { tempDir, db, config, cleanup } = await initTestDbService();
@@ -40,14 +41,10 @@ Deno.test("RequestProcessor: Portal context includes file list for grounding", a
     // 2. Setup agent blueprint
     const blueprintsDir = join(tempDir, "Blueprints", "Identities");
     await Deno.mkdir(blueprintsDir, { recursive: true });
-    const fixture_1 = readFixtureTextSync(
-      import.meta.url,
-      "services",
-      "portal",
-      "portal_context_grounding_test",
-      "fixture_1.md",
+    await Deno.writeTextFile(
+      join(blueprintsDir, "code-analyst.md"),
+      await Deno.readTextFile(CODE_ANALYST_BLUEPRINT_PATH),
     );
-    await Deno.writeTextFile(join(blueprintsDir, "portal-agent.md"), fixture_1);
 
     // 3. Setup Mock LLM to capture prompt
     const mockProvider = new MockLLMProvider(MockStrategy.SCRIPTED, {

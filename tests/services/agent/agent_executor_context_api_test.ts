@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { beforeEach, describe, it } from "@std/testing/bdd";
+import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
@@ -55,6 +55,11 @@ describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
       pathResolver,
       permissions,
     );
+  });
+
+  afterEach(() => {
+    executor.dispose();
+    Deno.chdir(originalCwd);
   });
 
   function makeTestPortal(): IPortalPermissions {

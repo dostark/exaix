@@ -32,12 +32,12 @@ Content is organized by **role**, not by provider.
 
 ## Role Distinction
 
-| Directory     | Role             | Format                        | When to use                                                      |
-| ------------- | ---------------- | ----------------------------- | ---------------------------------------------------------------- |
-| `prompts/`    | Routing wrapper  | `.prompt.md`, `name:` + `description:` | Thin wrappers that route to canonical skill source  |
-| `skills/`     | Autonomous skill | `SKILL.md` per skill          | Multi-step workflows that run autonomously                       |
-| `guidelines/` | Reference doc    | Markdown                      | Consult for patterns, standards, processes                       |
-| `providers/`  | Adaptation notes | Markdown                      | Provider-specific tips for Claude/OpenAI/Gemini                  |
+| Directory     | Role             | Format                                 | When to use                                        |
+| ------------- | ---------------- | -------------------------------------- | -------------------------------------------------- |
+| `prompts/`    | Routing wrapper  | `.prompt.md`, `name:` + `description:` | Thin wrappers that route to canonical skill source |
+| `skills/`     | Autonomous skill | `SKILL.md` per skill                   | Multi-step workflows that run autonomously         |
+| `guidelines/` | Reference doc    | Markdown                               | Consult for patterns, standards, processes         |
+| `providers/`  | Adaptation notes | Markdown                               | Provider-specific tips for Claude/OpenAI/Gemini    |
 
 ## Quick Navigation
 

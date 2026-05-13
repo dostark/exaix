@@ -12,6 +12,7 @@ import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType 
 import { McpToolName } from "@exaix/mcp";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
+import { validateFlowForCli } from "../../src/cli/flow_validation.ts";
 
 /**
  * Helper to create minimal valid step
@@ -46,10 +47,30 @@ function createFlow(overrides: Partial<IFlow> = {}): IFlow {
   } as IFlow;
 }
 
-/**
- * Import the validation function - this will fail until implemented
- */
-import { validateFlowForCli } from "../../src/cli/flow_validation.ts";
+function validateSingleDynamicStep(overrides: Partial<IFlowStep> = {}) {
+  return validateFlowForCli(createFlow({
+    steps: [
+      createStep({
+        id: "explore",
+        execution_mode: FlowStepExecutionMode.DYNAMIC,
+        ...overrides,
+      }),
+    ],
+  }));
+}
+
+function assertValidationCounts(
+  result: ReturnType<typeof validateFlowForCli>,
+  valid: boolean,
+  errorCount: number,
+  warningCount?: number,
+): void {
+  assertEquals(result.valid, valid);
+  assertEquals(result.errors.length, errorCount);
+  if (warningCount !== undefined) {
+    assertEquals(result.warnings.length, warningCount);
+  }
+}
 
 Deno.test("validateFlowForCli: returns valid result for flow with no dynamic steps", () => {
   const flow = createFlow({
@@ -67,160 +88,83 @@ Deno.test("validateFlowForCli: returns valid result for flow with no dynamic ste
 });
 
 Deno.test("validateFlowForCli: returns error for dynamic step with write_file in permitted_tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [McpToolName.WRITE_FILE],
-      }),
-    ],
-  });
+  const result = validateSingleDynamicStep({ permitted_tools: [McpToolName.WRITE_FILE] });
 
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, false);
-  assertEquals(result.errors.length, 1);
+  assertValidationCounts(result, false, 1);
   assertStringIncludes(result.errors[0], '"write_file" is a write tool');
   assertStringIncludes(result.errors[0], "Dynamic steps may only use read-only tools");
 });
 
-Deno.test("validateFlowForCli: returns error for dynamic step with run_command in permitted_tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [McpToolName.READ_FILE, McpToolName.RUN_COMMAND],
-      }),
-    ],
+for (
+  const testCase of [
+    {
+      name: "validateFlowForCli: returns error for dynamic step with run_command in permitted_tools",
+      permittedTools: [McpToolName.READ_FILE, McpToolName.RUN_COMMAND],
+      expectedMessage: '"run_command" is a write tool',
+    },
+    {
+      name: "validateFlowForCli: returns error for dynamic step with create_directory in permitted_tools",
+      permittedTools: [McpToolName.CREATE_DIRECTORY],
+      expectedMessage: '"create_directory" is a write tool',
+    },
+  ]
+) {
+  Deno.test(testCase.name, () => {
+    const result = validateSingleDynamicStep({ permitted_tools: testCase.permittedTools });
+
+    assertValidationCounts(result, false, 1);
+    assertStringIncludes(result.errors[0], testCase.expectedMessage);
   });
-
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, false);
-  assertEquals(result.errors.length, 1);
-  assertStringIncludes(result.errors[0], '"run_command" is a write tool');
-});
-
-Deno.test("validateFlowForCli: returns error for dynamic step with create_directory in permitted_tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [McpToolName.CREATE_DIRECTORY],
-      }),
-    ],
-  });
-
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, false);
-  assertEquals(result.errors.length, 1);
-  assertStringIncludes(result.errors[0], '"create_directory" is a write tool');
-});
+}
 
 Deno.test("validateFlowForCli: accepts dynamic step with only read-only tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [
-          McpToolName.READ_FILE,
-          McpToolName.LIST_DIRECTORY,
-          McpToolName.SEARCH_FILES,
-        ],
-      }),
+  const result = validateSingleDynamicStep({
+    permitted_tools: [
+      McpToolName.READ_FILE,
+      McpToolName.LIST_DIRECTORY,
+      McpToolName.SEARCH_FILES,
     ],
   });
 
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
+  assertValidationCounts(result, true, 0);
 });
 
-Deno.test("validateFlowForCli: returns warning for dynamic step with no permitted_tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: undefined,
-        timeout: 60000, // Set timeout to isolate permitted_tools warning
-      }),
-    ],
+for (
+  const testCase of [
+    {
+      name: "validateFlowForCli: returns warning for dynamic step with no permitted_tools",
+      overrides: { permitted_tools: undefined, timeout: 60000 },
+      expectedMessages: ["no permitted_tools specified", "identity"],
+    },
+    {
+      name: "validateFlowForCli: returns warning for dynamic step with empty permitted_tools",
+      overrides: { permitted_tools: [], timeout: 60000 },
+      expectedMessages: ["no permitted_tools specified"],
+    },
+    {
+      name: "validateFlowForCli: returns warning for dynamic step with no timeout",
+      overrides: { permitted_tools: [McpToolName.READ_FILE], timeout: undefined },
+      expectedMessages: ["no timeout set for dynamic step", "max_iterations"],
+    },
+  ]
+) {
+  Deno.test(testCase.name, () => {
+    const result = validateSingleDynamicStep(testCase.overrides);
+
+    assertValidationCounts(result, true, 0, 1);
+    for (const message of testCase.expectedMessages) {
+      assertStringIncludes(result.warnings[0], message);
+    }
   });
-
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
-  assertEquals(result.warnings.length, 1);
-  assertStringIncludes(result.warnings[0], "no permitted_tools specified");
-  assertStringIncludes(result.warnings[0], "identity");
-});
-
-Deno.test("validateFlowForCli: returns warning for dynamic step with empty permitted_tools", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [],
-        timeout: 60000, // Set timeout to isolate permitted_tools warning
-      }),
-    ],
-  });
-
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
-  assertEquals(result.warnings.length, 1);
-  assertStringIncludes(result.warnings[0], "no permitted_tools specified");
-});
-
-Deno.test("validateFlowForCli: returns warning for dynamic step with no timeout", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [McpToolName.READ_FILE],
-        timeout: undefined,
-      }),
-    ],
-  });
-
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
-  assertEquals(result.warnings.length, 1);
-  assertStringIncludes(result.warnings[0], "no timeout set for dynamic step");
-  assertStringIncludes(result.warnings[0], "max_iterations");
-});
+}
 
 Deno.test("validateFlowForCli: no warning for dynamic step with timeout set", () => {
-  const flow = createFlow({
-    steps: [
-      createStep({
-        id: "explore",
-        execution_mode: FlowStepExecutionMode.DYNAMIC,
-        permitted_tools: [McpToolName.READ_FILE],
-        timeout: 60000,
-      }),
-    ],
+  const result = validateSingleDynamicStep({
+    permitted_tools: [McpToolName.READ_FILE],
+    timeout: 60000,
   });
 
-  const result = validateFlowForCli(flow);
-
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
-  assertEquals(result.warnings.length, 0);
+  assertValidationCounts(result, true, 0, 0);
 });
 
 Deno.test("validateFlowForCli: multiple errors and warnings for complex flow", () => {
@@ -249,10 +193,8 @@ Deno.test("validateFlowForCli: multiple errors and warnings for complex flow", (
 
   const result = validateFlowForCli(flow);
 
-  assertEquals(result.valid, false);
-  assertEquals(result.errors.length, 1);
+  assertValidationCounts(result, false, 1, 2);
   assertStringIncludes(result.errors[0], "bad-step");
-  assertEquals(result.warnings.length, 2);
 });
 
 Deno.test("validateFlowForCli: handles mixed declared and dynamic steps", () => {
@@ -274,7 +216,5 @@ Deno.test("validateFlowForCli: handles mixed declared and dynamic steps", () => 
 
   const result = validateFlowForCli(flow);
 
-  assertEquals(result.valid, true);
-  assertEquals(result.errors.length, 0);
-  assertEquals(result.warnings.length, 0);
+  assertValidationCounts(result, true, 0, 0);
 });

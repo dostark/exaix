@@ -1,4 +1,5 @@
 ---
+name: clean-codebase
 agent: general
 scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
@@ -132,7 +133,7 @@ Workflow chain (typical):
 
 ## Related
 
-- [CODE_STYLE.md](../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
+- [CODE_STYLE.md](../../../CODE_STYLE.md) — authoritative naming, type, import, and constants rules
 
 ## Output format
 

@@ -90,11 +90,22 @@ class MockAgentService implements IAgentService {
   }
 }
 
+function createTestView(service: IAgentService = new MockAgentService()): AgentStatusView {
+  return new AgentStatusView(service);
+}
+
+async function createInitializedSession(
+  service: IAgentService = new MockAgentService(),
+): Promise<ReturnType<AgentStatusView["createTuiSession"]>> {
+  const session = createTestView(service).createTuiSession(false);
+  await session.initialize();
+  return session;
+}
+
 // ===== Existing Tests (Updated) =====
 
 Deno.test("AgentStatusView: renders agent list", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
+  const view = createTestView();
   const output = await view.renderAgentList();
   if (!output.includes("Agent 1") || !output.includes("Agent 2")) {
     throw new Error("Agent names not rendered");
@@ -102,8 +113,7 @@ Deno.test("AgentStatusView: renders agent list", async () => {
 });
 
 Deno.test("AgentStatusView: fetches agent health", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
+  const view = createTestView();
   const health = await view.getAgentHealth("agent1");
   if (health.status !== "healthy" || health.uptime !== 12345) {
     throw new Error("Agent health not fetched correctly");
@@ -111,8 +121,7 @@ Deno.test("AgentStatusView: fetches agent health", async () => {
 });
 
 Deno.test("AgentStatusView: fetches agent logs", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
+  const view = createTestView();
   const logs = await view.getAgentLogs("agent1");
   if (!logs.length || logs[0].message !== "Test log entry") {
     throw new Error("Agent logs not fetched correctly");
@@ -120,8 +129,7 @@ Deno.test("AgentStatusView: fetches agent logs", async () => {
 });
 
 Deno.test("AgentStatusView: selects agent", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
+  const view = createTestView();
   view.selectAgent("agent1");
   if (view.getSelectedAgent() !== "agent1") {
     throw new Error("Agent selection failed");
@@ -129,8 +137,7 @@ Deno.test("AgentStatusView: selects agent", () => {
 });
 
 Deno.test("AgentStatusView: formatUptime", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
+  const view = createTestView();
 
   // Test hours + minutes
   const result1 = view.formatUptime(3660);
@@ -245,11 +252,7 @@ Deno.test("AGENT_KEY_BINDINGS: each has key, action, description, category", () 
 // ===== Phase 13.7: TUI Session Tests =====
 
 Deno.test("AgentStatusTuiSession: initializes correctly", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-
-  await session.initialize();
+  const session = await createInitializedSession();
 
   if (session.getAgents().length !== 3) {
     throw new Error("Should have 3 agents after initialization");
@@ -257,10 +260,7 @@ Deno.test("AgentStatusTuiSession: initializes correctly", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: navigation up/down", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   const initialId = session.getSelectedAgentId();
   session.navigateDown();
@@ -277,10 +277,7 @@ Deno.test("AgentStatusTuiSession: navigation up/down", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: navigation home/end", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   session.navigateToLast();
   session.navigateToFirst();
@@ -291,10 +288,7 @@ Deno.test("AgentStatusTuiSession: navigation home/end", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: grouping modes", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   // Default is "none"
   if (session.getGroupBy() !== TuiGroupBy.NONE) {
@@ -321,10 +315,7 @@ Deno.test("AgentStatusTuiSession: grouping modes", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: setGroupBy", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   session.setGroupBy(TuiGroupBy.STATUS);
   if (session.getGroupBy() !== TuiGroupBy.STATUS) {
@@ -338,10 +329,7 @@ Deno.test("AgentStatusTuiSession: setGroupBy", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: help screen toggle", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   if (session.isHelpVisible()) {
     throw new Error("Help should be hidden initially");
@@ -359,9 +347,7 @@ Deno.test("AgentStatusTuiSession: help screen toggle", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: getHelpSections returns sections", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
+  const session = createTestView().createTuiSession(false);
 
   const sections = session.getHelpSections();
   if (sections.length < 3) {
@@ -376,10 +362,7 @@ Deno.test("AgentStatusTuiSession: getHelpSections returns sections", () => {
 });
 
 Deno.test("AgentStatusTuiSession: renderAgentTree returns lines", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   const lines = session.renderAgentTree();
   if (!Array.isArray(lines)) {
@@ -391,10 +374,7 @@ Deno.test("AgentStatusTuiSession: renderAgentTree returns lines", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: renderAgentTree with no agents", async () => {
-  const service = new MinimalAgentServiceMock([]);
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession(new MinimalAgentServiceMock([]));
 
   const lines = session.renderAgentTree();
   if (!lines.some((line) => line.includes("No agents available"))) {
@@ -403,10 +383,7 @@ Deno.test("AgentStatusTuiSession: renderAgentTree with no agents", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: renderDetail returns lines", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   await session.showAgentDetail();
   const lines = session.renderDetail();
@@ -419,10 +396,7 @@ Deno.test("AgentStatusTuiSession: renderDetail returns lines", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: renderLogs returns lines", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   await session.showAgentLogs();
   const lines = session.renderLogs();
@@ -435,9 +409,7 @@ Deno.test("AgentStatusTuiSession: renderLogs returns lines", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: renderHelp returns lines", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
+  const session = createTestView().createTuiSession(false);
 
   const lines = session.renderHelp();
   if (!Array.isArray(lines)) {
@@ -449,10 +421,7 @@ Deno.test("AgentStatusTuiSession: renderHelp returns lines", () => {
 });
 
 Deno.test("AgentStatusTuiSession: search dialog", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   session.showSearchDialog();
   if (!session.hasActiveDialog()) {
@@ -466,10 +435,7 @@ Deno.test("AgentStatusTuiSession: search dialog", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: search filtering", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   // Apply search
   session.applySearch(TEST_MODEL_OPENAI);
@@ -485,10 +451,7 @@ Deno.test("AgentStatusTuiSession: search filtering", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: detail view show/hide", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   if (session.isDetailVisible()) {
     throw new Error("Detail should be hidden initially");
@@ -506,10 +469,7 @@ Deno.test("AgentStatusTuiSession: detail view show/hide", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: logs view show/hide", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   if (session.isLogsVisible()) {
     throw new Error("Logs should be hidden initially");
@@ -527,10 +487,7 @@ Deno.test("AgentStatusTuiSession: logs view show/hide", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: auto-refresh toggle", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   if (session.isAutoRefreshEnabled()) {
     throw new Error("Auto-refresh should be disabled initially");
@@ -550,10 +507,7 @@ Deno.test("AgentStatusTuiSession: auto-refresh toggle", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: getFocusableElements", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   const elements = session.getFocusableElements();
   if (!Array.isArray(elements)) {
@@ -565,10 +519,7 @@ Deno.test("AgentStatusTuiSession: getFocusableElements", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: setAgents", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   const newAgents: IAgentStatusItem[] = [
     {
@@ -589,10 +540,7 @@ Deno.test("AgentStatusTuiSession: setAgents", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: getSelectedIndexInAgents", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   const index = session.getSelectedIndexInAgents();
   if (typeof index !== "number" || index < 0) {
@@ -601,10 +549,7 @@ Deno.test("AgentStatusTuiSession: getSelectedIndexInAgents", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: setSelectedByIndex", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   session.setSelectedByIndex(1);
   const index = session.getSelectedIndexInAgents();
@@ -614,10 +559,7 @@ Deno.test("AgentStatusTuiSession: setSelectedByIndex", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: collapse/expand operations", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   // Switch to status grouping first
   session.setGroupBy(TuiGroupBy.STATUS);
@@ -633,10 +575,7 @@ Deno.test("AgentStatusTuiSession: collapse/expand operations", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: handleKey navigation", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   // Test basic navigation keys
   await session.handleKey(KEYS.DOWN);
@@ -648,10 +587,7 @@ Deno.test("AgentStatusTuiSession: handleKey navigation", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: handleKey actions", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   // Test action keys
   await session.handleKey(KEYS.QUESTION); // help
@@ -671,10 +607,7 @@ Deno.test("AgentStatusTuiSession: handleKey actions", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: handleKey detail view", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   await session.handleKey(KEYS.ENTER);
   if (!session.isDetailVisible()) {
@@ -688,10 +621,7 @@ Deno.test("AgentStatusTuiSession: handleKey detail view", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: handleKey logs view", async () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
-  await session.initialize();
+  const session = await createInitializedSession();
 
   await session.handleKey(KEYS.L);
   if (!session.isLogsVisible()) {
@@ -705,9 +635,7 @@ Deno.test("AgentStatusTuiSession: handleKey logs view", async () => {
 });
 
 Deno.test("AgentStatusTuiSession: getViewName", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
+  const session = createTestView().createTuiSession(false);
 
   if (session.getViewName() !== "Identities") {
     throw new Error(`Expected "Identities" but got "${session.getViewName()}"`);
@@ -715,9 +643,7 @@ Deno.test("AgentStatusTuiSession: getViewName", () => {
 });
 
 Deno.test("AgentStatusTuiSession: getKeyBindings", () => {
-  const service = new MockAgentService();
-  const view = new AgentStatusView(service);
-  const session = view.createTuiSession(false);
+  const session = createTestView().createTuiSession(false);
 
   const bindings = session.getKeyBindings();
   if (bindings.length !== AGENT_KEY_BINDINGS.length) {

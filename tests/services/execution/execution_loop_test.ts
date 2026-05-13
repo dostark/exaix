@@ -51,13 +51,59 @@ function getTestPaths(root: string) {
   };
 }
 
-Deno.test("ExecutionLoop: processes approved plan from Workspace/Active", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-process-" });
-  const { db, cleanup } = await initTestDbService();
-  const traceId = crypto.randomUUID();
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
+interface IExecutionLoopTestContext {
+  tempDir: string;
+  db: Awaited<ReturnType<typeof initTestDbService>>["db"];
+  config: ReturnType<typeof createMockConfig>;
+  paths: ReturnType<typeof getTestPaths>;
+  loop: ExecutionLoop;
+}
 
+interface IExecutionLoopTestOptions {
+  configOverrides?: Parameters<typeof createMockConfig>[1];
+  identityId?: string;
+  llmProvider?: IModelProvider;
+  ensureActiveDir?: boolean;
+}
+
+async function withExecutionLoopTestContext(
+  prefix: string,
+  run: (context: IExecutionLoopTestContext) => Promise<void>,
+  options: IExecutionLoopTestOptions = {},
+): Promise<void> {
+  const tempDir = await Deno.makeTempDir({ prefix });
+  const { db, cleanup } = await initTestDbService();
+
+  try {
+    const config = createMockConfig(tempDir, options.configOverrides);
+    const paths = getTestPaths(tempDir);
+
+    if (options.ensureActiveDir !== false) {
+      await ensureDir(paths.activeDir);
+    }
+
+    const loop = new ExecutionLoop({
+      config,
+      db,
+      identityId: options.identityId ?? "test-identity",
+      llmProvider: options.llmProvider,
+    });
+
+    await run({ tempDir, db, config, paths, loop });
+  } finally {
+    await cleanup();
+    await Deno.remove(tempDir, { recursive: true });
+  }
+}
+
+function assertLoopFailure(result: { success: boolean; error?: string | null }): void {
+  assertEquals(result.success, false);
+  assertExists(result.error);
+}
+
+Deno.test("ExecutionLoop: processes approved plan from Workspace/Active", async () => {
+  const traceId = crypto.randomUUID();
+  await withExecutionLoopTestContext("exec-test-process-", async ({ db, paths, loop }) => {
     // Create a simple plan file
     const planContent = `---
 trace_id: "${traceId}"
@@ -72,12 +118,8 @@ identity_id: test-identity
 1. Read a test file
 `;
 
-    const planPath = join(getWorkspaceActiveDir(tempDir), "test-request.md");
+    const planPath = join(paths.activeDir, "test-request.md");
     await Deno.writeTextFile(planPath, planContent);
-    const config = createMockConfig(tempDir);
-    const paths = getTestPaths(tempDir);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
 
     // Process the plan
     const result = await loop.processTask(planPath);
@@ -95,21 +137,11 @@ identity_id: test-identity
     const activities = db.getActivitiesByTrace(traceId);
     const startedLog = activities.find((a: ActivityRecord) => a.action_type === "execution.started");
     assertExists(startedLog, "execution.started should be logged");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: acquires lease to prevent concurrent execution", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-lease-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    const config = createMockConfig(tempDir);
-    const paths = getTestPaths(tempDir);
-    await Deno.mkdir(paths.activeDir, { recursive: true });
-
+  await withExecutionLoopTestContext("exec-test-lease-", async ({ config, db, paths }) => {
     const planContent = readFixtureTextSync(
       import.meta.url,
       "services",
@@ -146,21 +178,11 @@ Deno.test("ExecutionLoop: acquires lease to prevent concurrent execution", async
 
     // Wait for first execution to complete
     await exec1Promise;
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: creates git branch and commits with trace_id", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-git-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const paths = getTestPaths(tempDir);
-
+  await withExecutionLoopTestContext("exec-test-git-", async ({ paths, loop }) => {
     const planContent = readFixtureTextSync(
       import.meta.url,
       "services",
@@ -170,28 +192,16 @@ Deno.test("ExecutionLoop: creates git branch and commits with trace_id", async (
     );
     const planPath = join(paths.activeDir, "git-commit-test.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
     // Verify execution completed (git branch creation is tested in integration tests)
     assertEquals(result.success, true, `Execution failed: ${result.error}`);
     assertEquals(result.traceId, "test-trace-git");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: handles tool execution failure gracefully", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-failure-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    const config = createMockConfig(tempDir);
-    const activeDir = getWorkspaceActiveDir(tempDir);
-    await Deno.mkdir(activeDir, { recursive: true });
-
+  await withExecutionLoopTestContext("exec-test-failure-", async ({ tempDir, db, loop, paths }) => {
     // Plan that will fail (path traversal attempt)
     const planContent = readFixtureTextSync(
       import.meta.url,
@@ -200,14 +210,11 @@ Deno.test("ExecutionLoop: handles tool execution failure gracefully", async () =
       "execution_loop_test",
       "planContent_2.md",
     );
-    const planPath = join(activeDir, "fail-test.md");
+    const planPath = join(paths.activeDir, "fail-test.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
-    assertEquals(result.success, false);
-    assertExists(result.error);
+    assertLoopFailure(result);
 
     // Plan should be moved to Workspace/Rejected with _failed.md suffix and error status
     const rejectedDir = getWorkspaceRejectedDir(tempDir);
@@ -226,10 +233,7 @@ Deno.test("ExecutionLoop: handles tool execution failure gracefully", async () =
     const activities = db.getActivitiesByTrace("test-trace-fail");
     const failedLog = activities.find((a: ActivityRecord) => a.action_type === "execution.failed");
     assertExists(failedLog, "execution.failed should be logged");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 /**
@@ -335,15 +339,9 @@ path = "analysis-target.txt"
 });
 
 Deno.test("ExecutionLoop: generates mission report on success", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-report-" });
-  const { db, cleanup } = await initTestDbService();
   const traceId = crypto.randomUUID();
 
-  try {
-    const config = createMockConfig(tempDir);
-    const activeDir = getWorkspaceActiveDir(tempDir);
-    await Deno.mkdir(activeDir, { recursive: true });
-
+  await withExecutionLoopTestContext("exec-test-report-", async ({ tempDir, loop, paths }) => {
     const planContent = `---
 trace_id: "${traceId}"
 request_id: report-test
@@ -357,10 +355,8 @@ identity_id: test-identity
 1. Create a test file
 `;
 
-    const planPath = join(activeDir, "report-test.md");
+    const planPath = join(paths.activeDir, "report-test.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
     assertEquals(result.success, true);
@@ -374,10 +370,7 @@ identity_id: test-identity
     // Report should contain trace_id
     const reportContent = await Deno.readTextFile(reportPath);
     assert(reportContent.includes(traceId), "Report should include trace_id");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: releases lease even on failure", async () => {
@@ -424,14 +417,7 @@ Deno.test("ExecutionLoop: releases lease even on failure", async () => {
 });
 
 Deno.test("ExecutionLoop: logs all execution steps to IActivity Journal", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-logging-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
-
+  await withExecutionLoopTestContext("exec-test-logging-", async ({ db, loop, paths }) => {
     const planContent = readFixtureTextSync(
       import.meta.url,
       "services",
@@ -439,10 +425,8 @@ Deno.test("ExecutionLoop: logs all execution steps to IActivity Journal", async 
       "execution_loop_test",
       "planContent_4.md",
     );
-    const planPath = join(systemActiveDir, "toml-actions.md");
+    const planPath = join(paths.activeDir, "toml-actions.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
     assertEquals(result.success, true);
@@ -453,23 +437,14 @@ Deno.test("ExecutionLoop: logs all execution steps to IActivity Journal", async 
 
     const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 2, "Should log 2 action starts");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: parses multiple TOML action blocks from plan", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-multi-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
+  await withExecutionLoopTestContext("exec-test-multi-", async ({ tempDir, db, loop, paths }) => {
     // Initialize git repository
     await setupGitRepo(tempDir, { initialCommit: true });
 
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
     const planContent = readFixtureTextSync(
       import.meta.url,
       "services",
@@ -477,10 +452,8 @@ Deno.test("ExecutionLoop: parses multiple TOML action blocks from plan", async (
       "execution_loop_test",
       "planContent_8.md",
     );
-    const planPath = join(systemActiveDir, "malformed-blocks.md");
+    const planPath = join(paths.activeDir, "malformed-blocks.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
     assertEquals(result.success, true, "Should succeed despite malformed blocks");
@@ -490,23 +463,13 @@ Deno.test("ExecutionLoop: parses multiple TOML action blocks from plan", async (
 
     const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 1, "Should only parse 1 valid action");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: ignores code blocks without tool field", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-notool-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
+  await withExecutionLoopTestContext("exec-test-notool-", async ({ tempDir, db, loop, paths }) => {
     // Initialize git repository
     await setupGitRepo(tempDir, { initialCommit: true });
-
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
 
     const planContent = readFixtureTextSync(
       import.meta.url,
@@ -515,10 +478,8 @@ Deno.test("ExecutionLoop: ignores code blocks without tool field", async () => {
       "execution_loop_test",
       "planContent_11.md",
     );
-    const planPath = join(systemActiveDir, "no-tool-field.md");
+    const planPath = join(paths.activeDir, "no-tool-field.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
     assertEquals(result.success, true);
@@ -528,10 +489,7 @@ Deno.test("ExecutionLoop: ignores code blocks without tool field", async () => {
 
     const actionStarted = activities.filter((a: ActivityRecord) => a.action_type === "execution.action_started");
     assertEquals(actionStarted.length, 1, "Should only parse blocks with 'tool' field");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () => {
@@ -625,14 +583,7 @@ Deno.test("ExecutionLoop: handles commit with no changes gracefully", async () =
 });
 
 Deno.test("ExecutionLoop: lease mechanism prevents duplicate processing", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-lease-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
-
+  await withExecutionLoopTestContext("exec-test-lease-mechanism-", async ({ db, loop, paths }) => {
     const planContent = readFixtureTextSync(
       import.meta.url,
       "services",
@@ -640,10 +591,8 @@ Deno.test("ExecutionLoop: lease mechanism prevents duplicate processing", async 
       "execution_loop_test",
       "planContent_13.md",
     );
-    const planPath = join(systemActiveDir, "lease-test.md");
+    const planPath = join(paths.activeDir, "lease-test.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
 
     // Process task successfully - lease should be acquired and released
     const result1 = await loop.processTask(planPath);
@@ -660,21 +609,11 @@ Deno.test("ExecutionLoop: lease mechanism prevents duplicate processing", async 
     // Parse payload to verify holder
     const payload = JSON.parse(leaseAcquired.payload);
     assertEquals(payload.holder, "test-identity");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: handles plan without required frontmatter fields", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-badfront-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
-
+  await withExecutionLoopTestContext("exec-test-badfront-", async ({ loop, paths }) => {
     // Plan invalid status
     const planContent = readFixtureTextSync(
       import.meta.url,
@@ -683,30 +622,17 @@ Deno.test("ExecutionLoop: handles plan without required frontmatter fields", asy
       "execution_loop_test",
       "planContent_14.md",
     );
-    const planPath = join(systemActiveDir, "bad-plan.md");
+    const planPath = join(paths.activeDir, "bad-plan.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
-    assertEquals(result.success, false);
-    assertExists(result.error);
+    assertLoopFailure(result);
     assertEquals(result.error?.includes("status"), true);
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });
 
 Deno.test("ExecutionLoop: handles plan with malformed frontmatter", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-malformed-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
-
+  await withExecutionLoopTestContext("exec-test-malformed-", async ({ loop, paths }) => {
     // Plan with invalid YAML
     const planContent = `---
 this is not: valid: yaml: format
@@ -715,31 +641,18 @@ this is not: valid: yaml: format
 # Malformed Plan
 `;
 
-    const planPath = join(systemActiveDir, "malformed-plan.md");
+    const planPath = join(paths.activeDir, "malformed-plan.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
-    assertEquals(result.success, false);
-    assertExists(result.error);
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+    assertLoopFailure(result);
+  });
 });
 
 Deno.test("ExecutionLoop: handles unknown tool gracefully", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "exec-test-unknown-" });
-  const { db, cleanup } = await initTestDbService();
-
-  try {
+  await withExecutionLoopTestContext("exec-test-unknown-", async ({ tempDir, loop, paths }) => {
     // Initialize git repository
     await setupGitRepo(tempDir, { initialCommit: true });
-
-    await ensureDir(getWorkspaceActiveDir(tempDir));
-    const config = createMockConfig(tempDir);
-    const systemActiveDir = getWorkspaceActiveDir(tempDir);
 
     // Plan with action using unknown tool
     const planContent = readFixtureTextSync(
@@ -749,17 +662,11 @@ Deno.test("ExecutionLoop: handles unknown tool gracefully", async () => {
       "execution_loop_test",
       "planContent_15.md",
     );
-    const planPath = join(systemActiveDir, "unknown-tool-plan.md");
+    const planPath = join(paths.activeDir, "unknown-tool-plan.md");
     await Deno.writeTextFile(planPath, planContent);
-
-    const loop = new ExecutionLoop({ config, db, identityId: "test-identity" });
     const result = await loop.processTask(planPath);
 
-    assertEquals(result.success, false);
-    assertExists(result.error);
+    assertLoopFailure(result);
     assertStringIncludes(String(result.error), "Tool 'non_existent_tool' not found");
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  });
 });

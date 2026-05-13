@@ -58,19 +58,49 @@ class CapturingLogger implements IFlowEventLogger {
   }
 }
 
-Deno.test("[Step65.3] FlowRunner injects ordered parallelGroupResults into downstream requests", async () => {
-  const executor = new CapturingExecutor({
-    starter: "start",
-    writerA: "alpha output",
-    writerB: "beta output",
-    merger: "merged",
-  });
-  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new SilentLogger() });
+type MergeMode = "ordered" | "concat" | "manual" | "all";
 
+interface IParallelStepDefinition {
+  id: string;
+  name: string;
+  identity: string;
+}
+
+interface IParallelFlowDefinition {
+  flowId: string;
+  flowName: string;
+  description: string;
+  responses: Record<string, string | Error>;
+  parallelSteps: IParallelStepDefinition[];
+  mergeMode: MergeMode;
+  mergeDependsOn?: string[];
+  parallelOrder?: string[];
+  failFast?: boolean;
+  eventLogger?: IFlowEventLogger;
+}
+
+function createParallelStep(step: IParallelStepDefinition, parallelOrder?: string[]) {
+  return {
+    id: step.id,
+    name: step.name,
+    identity: step.identity,
+    dependsOn: ["start"],
+    input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+    retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    parallel: parallelOrder ? { group: "writers", order: parallelOrder } : { group: "writers" },
+  };
+}
+
+function createParallelFlowHarness(definition: IParallelFlowDefinition) {
+  const executor = new CapturingExecutor(definition.responses);
+  const runner = new FlowRunner({
+    agentExecutor: executor,
+    eventLogger: definition.eventLogger ?? new SilentLogger(),
+  });
   const flow: IFlowInput = {
-    id: "ordered-parallel-group-flow",
-    name: "Ordered Parallel Group Flow",
-    description: "Ensures ordered fan-in summaries are injected into the downstream request",
+    id: definition.flowId,
+    name: definition.flowName,
+    description: definition.description,
     version: DEFAULT_FLOW_VERSION,
     steps: [
       {
@@ -81,243 +111,136 @@ Deno.test("[Step65.3] FlowRunner injects ordered parallelGroupResults into downs
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
       },
-      {
-        id: "draft-a",
-        name: "Draft A",
-        identity: "writerA",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers", order: ["draft-b", "draft-a"] },
-      },
-      {
-        id: "draft-b",
-        name: "Draft B",
-        identity: "writerB",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers", order: ["draft-b", "draft-a"] },
-      },
+      ...definition.parallelSteps.map((step) => createParallelStep(step, definition.parallelOrder)),
       {
         id: "merge",
         name: "Merge",
         identity: "merger",
-        dependsOn: ["draft-a", "draft-b"],
+        dependsOn: definition.mergeDependsOn ?? definition.parallelSteps.map((step) => step.id),
         input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
         retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
         mergeFromGroups: ["writers"],
-        mergeMode: "ordered",
+        mergeMode: definition.mergeMode,
       },
     ],
     output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 4, failFast: true },
+    settings: { maxParallelism: 4, failFast: definition.failFast ?? true },
   };
+
+  return { executor, runner, flow };
+}
+
+function getWritersGroupResult(executor: CapturingExecutor) {
+  const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
+  assertExists(mergeRequest);
+  assertExists(mergeRequest.request.parallelGroupResults);
+  return mergeRequest.request.parallelGroupResults.writers;
+}
+
+Deno.test("[Step65.3] FlowRunner injects ordered parallelGroupResults into downstream requests", async () => {
+  const { executor, runner, flow } = createParallelFlowHarness({
+    flowId: "ordered-parallel-group-flow",
+    flowName: "Ordered Parallel Group Flow",
+    description: "Ensures ordered fan-in summaries are injected into the downstream request",
+    responses: {
+      starter: "start",
+      writerA: "alpha output",
+      writerB: "beta output",
+      merger: "merged",
+    },
+    parallelSteps: [
+      { id: "draft-a", name: "Draft A", identity: "writerA" },
+      { id: "draft-b", name: "Draft B", identity: "writerB" },
+    ],
+    mergeMode: "ordered",
+    parallelOrder: ["draft-b", "draft-a"],
+  });
 
   const result = await runner.execute(flow as IFlow, { userPrompt: "fan-in request" });
 
   assertEquals(result.success, true);
-  const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
-  assertExists(mergeRequest);
-  assertExists(mergeRequest.request.parallelGroupResults);
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.groupId, "writers");
+  const writersResult = getWritersGroupResult(executor);
+  assertEquals(writersResult.groupId, "writers");
   assertEquals(
-    mergeRequest.request.parallelGroupResults.writers.mergedOutput,
+    writersResult.mergedOutput,
     "## Step 1\nbeta output\n\n## Step 2\nalpha output",
   );
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.memberCount, 2);
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.successCount, 2);
-  assertEquals(Number.isNaN(Date.parse(mergeRequest.request.parallelGroupResults.writers.completedAt)), false);
+  assertEquals(writersResult.memberCount, 2);
+  assertEquals(writersResult.successCount, 2);
+  assertEquals(Number.isNaN(Date.parse(writersResult.completedAt)), false);
 });
 
 Deno.test("[Step65.3] FlowRunner concat merge uses lexicographic fallback order", async () => {
-  const executor = new CapturingExecutor({
-    starter: "start",
-    zebraAgent: "zebra output",
-    alphaAgent: "alpha output",
-    merger: "merged",
-  });
-  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new SilentLogger() });
-
-  const flow: IFlowInput = {
-    id: "concat-parallel-group-flow",
-    name: "Concat Parallel Group Flow",
+  const { executor, runner, flow } = createParallelFlowHarness({
+    flowId: "concat-parallel-group-flow",
+    flowName: "Concat Parallel Group Flow",
     description: "Uses lexicographic order when no explicit group order is set",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "start",
-        name: "Start",
-        identity: "starter",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-      {
-        id: "zeta",
-        name: "Zeta",
-        identity: "zebraAgent",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "alpha",
-        name: "Alpha",
-        identity: "alphaAgent",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "merge",
-        name: "Merge",
-        identity: "merger",
-        dependsOn: ["zeta", "alpha"],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        mergeFromGroups: ["writers"],
-        mergeMode: "concat",
-      },
+    responses: {
+      starter: "start",
+      zebraAgent: "zebra output",
+      alphaAgent: "alpha output",
+      merger: "merged",
+    },
+    parallelSteps: [
+      { id: "zeta", name: "Zeta", identity: "zebraAgent" },
+      { id: "alpha", name: "Alpha", identity: "alphaAgent" },
     ],
-    output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 4, failFast: true },
-  };
+    mergeMode: "concat",
+  });
 
   const result = await runner.execute(flow as IFlow, { userPrompt: "concat request" });
 
   assertEquals(result.success, true);
-  const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
-  assertExists(mergeRequest);
-  assertExists(mergeRequest.request.parallelGroupResults);
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.mergedOutput, "alpha output\n\nzebra output");
+  assertEquals(getWritersGroupResult(executor).mergedOutput, "alpha output\n\nzebra output");
 });
 
 Deno.test("[Step65.3] FlowRunner manual merge leaves mergedOutput empty", async () => {
-  const executor = new CapturingExecutor({
-    starter: "start",
-    writerA: "alpha output",
-    writerB: "beta output",
-    merger: "merged",
-  });
-  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: new SilentLogger() });
-
-  const flow: IFlowInput = {
-    id: "manual-parallel-group-flow",
-    name: "Manual Parallel Group Flow",
+  const { executor, runner, flow } = createParallelFlowHarness({
+    flowId: "manual-parallel-group-flow",
+    flowName: "Manual Parallel Group Flow",
     description: "Manual fan-in should not auto-aggregate merged output",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "start",
-        name: "Start",
-        identity: "starter",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-      {
-        id: "draft-a",
-        name: "Draft A",
-        identity: "writerA",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "draft-b",
-        name: "Draft B",
-        identity: "writerB",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "merge",
-        name: "Merge",
-        identity: "merger",
-        dependsOn: ["draft-a", "draft-b"],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        mergeFromGroups: ["writers"],
-        mergeMode: "manual",
-      },
+    responses: {
+      starter: "start",
+      writerA: "alpha output",
+      writerB: "beta output",
+      merger: "merged",
+    },
+    parallelSteps: [
+      { id: "draft-a", name: "Draft A", identity: "writerA" },
+      { id: "draft-b", name: "Draft B", identity: "writerB" },
     ],
-    output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 4, failFast: true },
-  };
+    mergeMode: "manual",
+  });
 
   const result = await runner.execute(flow as IFlow, { userPrompt: "manual request" });
 
   assertEquals(result.success, true);
-  const mergeRequest = executor.capturedRequests.find((entry) => entry.identityId === "merger");
-  assertExists(mergeRequest);
-  assertExists(mergeRequest.request.parallelGroupResults);
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.mergedOutput, "");
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.memberCount, 2);
-  assertEquals(mergeRequest.request.parallelGroupResults.writers.successCount, 2);
+  const writersResult = getWritersGroupResult(executor);
+  assertEquals(writersResult.mergedOutput, "");
+  assertEquals(writersResult.memberCount, 2);
+  assertEquals(writersResult.successCount, 2);
 });
 
 Deno.test("[Step65.3] FlowRunner journals merge failures for automatic fan-in modes", async () => {
-  const executor = new CapturingExecutor({
-    starter: "start",
-    writerA: "alpha output",
-    writerB: new Error("writer failed"),
-    merger: "merged",
-  });
   const logger = new CapturingLogger();
-  const runner = new FlowRunner({ agentExecutor: executor, eventLogger: logger });
-
-  const flow: IFlowInput = {
-    id: "merge-failure-parallel-group-flow",
-    name: "Merge Failure Parallel Group Flow",
+  const { runner, flow } = createParallelFlowHarness({
+    flowId: "merge-failure-parallel-group-flow",
+    flowName: "Merge Failure Parallel Group Flow",
     description: "Automatic fan-in should journal failures when a group member has no successful output",
-    version: DEFAULT_FLOW_VERSION,
-    steps: [
-      {
-        id: "start",
-        name: "Start",
-        identity: "starter",
-        dependsOn: [],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-      },
-      {
-        id: "draft-a",
-        name: "Draft A",
-        identity: "writerA",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "draft-b",
-        name: "Draft B",
-        identity: "writerB",
-        dependsOn: ["start"],
-        input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        parallel: { group: "writers" },
-      },
-      {
-        id: "merge",
-        name: "Merge",
-        identity: "merger",
-        dependsOn: ["draft-a", "draft-b"],
-        input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-        retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        mergeFromGroups: ["writers"],
-        mergeMode: "all",
-      },
+    responses: {
+      starter: "start",
+      writerA: "alpha output",
+      writerB: new Error("writer failed"),
+      merger: "merged",
+    },
+    parallelSteps: [
+      { id: "draft-a", name: "Draft A", identity: "writerA" },
+      { id: "draft-b", name: "Draft B", identity: "writerB" },
     ],
-    output: { from: "merge", format: FlowOutputFormat.MARKDOWN },
-    settings: { maxParallelism: 4, failFast: false },
-  };
+    mergeMode: "all",
+    failFast: false,
+    eventLogger: logger,
+  });
 
   const result = await runner.execute(flow as IFlow, { userPrompt: "merge failure request" });
 

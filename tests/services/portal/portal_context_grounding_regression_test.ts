@@ -11,6 +11,8 @@ import { join } from "@std/path";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 
+const SENIOR_CODER_BLUEPRINT_PATH = new URL("../../../Blueprints/Identities/senior-coder.md", import.meta.url);
+
 Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt", async () => {
   const env = await TestEnvironment.create({ initGit: false });
 
@@ -30,6 +32,11 @@ Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt"
       identities_allowed: ["*"],
       operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
     }];
+
+    await env.createBlueprint(
+      "senior-coder",
+      await Deno.readTextFile(SENIOR_CODER_BLUEPRINT_PATH),
+    );
 
     // 3. Setup MockLLMProvider to capture prompts
     // Use MockStrategy.RECORDED to trigger default pattern fallbacks in MockLLMProvider

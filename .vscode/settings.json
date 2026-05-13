@@ -4,15 +4,23 @@
   "editor.formatOnSave": true,
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
+  "js/ts.validate.enabled": false,
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
   "deno.enable": true,
+  "deno.enablePaths": [
+    "./src",
+    "./tests",
+    "./scripts",
+    "./packages"
+  ],
   "deno.lint": true,
   "deno.suggest.imports.autoDiscover": true,
+  "deno.config": "./deno.json",
   "deno.suggest.imports.hosts": {
-    "https://deno.land": true
+    "https://deno.land": true,
+    "https://raw.githubusercontent.com": true
   },
   "deno.documentPreloadLimit": 0,
-  // "js/ts.validate.enabled": false,
-  // "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
