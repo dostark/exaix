@@ -143,20 +143,20 @@ Flag missing doc updates as 🟡 Major.
 
 Build a findings table:
 
-| # | File | Line/Symbol | Severity | Finding |
-|---|------|-------------|----------|---------|
+| # | File      | Line/Symbol    | Severity    | Finding       |
+| - | --------- | -------------- | ----------- | ------------- |
 | 1 | `src/...` | `functionName` | 🔴 Critical | <description> |
-| 2 | `src/...` | `fieldName` | 🔒 Security | <description> |
+| 2 | `src/...` | `fieldName`    | 🔒 Security | <description> |
 
 Severity scale:
 
-| Symbol | Meaning |
-|--------|---------|
+| Symbol      | Meaning                                                           |
+| ----------- | ----------------------------------------------------------------- |
 | 🔴 Critical | Blocks correctness or breaks an invariant — must fix before merge |
-| 🔒 Security | Security control missing or bypassed (OWASP Top 10) |
-| 🟡 Major | Significant quality or coverage gap — should fix before merge |
-| 🟠 Testing | Missing or inadequate test — may ship without coverage |
-| 🔵 Minor | Style, naming, or low-risk omission — fix in follow-up |
+| 🔒 Security | Security control missing or bypassed (OWASP Top 10)               |
+| 🟡 Major    | Significant quality or coverage gap — should fix before merge     |
+| 🟠 Testing  | Missing or inadequate test — may ship without coverage            |
+| 🔵 Minor    | Style, naming, or low-risk omission — fix in follow-up            |
 
 ---
 

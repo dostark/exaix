@@ -178,8 +178,8 @@ Append at end of planning document using the exact format below.
 
 ### Gap Summary
 
-| # | Step | Severity | Description |
-|---|------|----------|-------------|
+| # | Step   | Severity    | Description            |
+| - | ------ | ----------- | ---------------------- |
 | 1 | Step N | 🔴 Critical | <one-line description> |
 | 2 | Step N | 🔒 Security | <one-line description> |
 
@@ -199,15 +199,18 @@ Append at end of planning document using the exact format below.
 ### Step <N+1>: Remediate GAP-1 — <title>
 
 **Actions:**
+
 - <file>: <specific change>
 
 **Architecture Notes:** <DI / pattern rationale>
 
 **Planned Tests:**
+
 - `<test name>` — <what it verifies>
 
 **Success Criteria:**
-- [ ] <measurable criterion>
+
+- <measurable criterion>
 ```
 
 ---

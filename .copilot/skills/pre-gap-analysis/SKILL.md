@@ -248,10 +248,10 @@ Append at the end of the planning document using the exact format below.
 
 ### Gap Summary
 
-| # | Step | Severity | Description |
-|---|------|----------|-------------|
-| 1 | Step N | 🔴 Critical | <one-line description> |
-| 2 | Step N | 🔒 Security | <one-line description> |
+| # | Step   | Severity       | Description            |
+| - | ------ | -------------- | ---------------------- |
+| 1 | Step N | 🔴 Critical    | <one-line description> |
+| 2 | Step N | 🔒 Security    | <one-line description> |
 | 3 | Step N | 🟡 Feasibility | <one-line description> |
 
 ### Gap Detail

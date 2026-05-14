@@ -146,7 +146,7 @@ in the `tests:` field.
 
 ## Workflow Chain
 
-  #next-steps (bug discovered) → **#fix** → #commit
+#next-steps (bug discovered) → **#fix** → #commit
 
 ## Related
 

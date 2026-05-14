@@ -10,6 +10,7 @@ qwen_skill: submodule-workflow
 ---
 
 Key points
+
 - exaix-dev-docs is a real Git submodule, not a normal nested folder
 - The parent repository only stores a pointer to the submodule commit
 - A broken workflow can leave the parent repo pointing at a detached or uncommitted submodule state
@@ -20,50 +21,55 @@ Canonical prompt (short):
 then update the parent repo pointer and commit with the submodule SHA reference."
 
 Core policy
-  1. Make the documentation or planning change inside exaix-dev-docs/
-  2. Commit and push that change in the submodule repository
-  3. In the parent repo, run git add exaix-dev-docs after the submodule commit exists
-  4. Commit the pointer update in the parent repo with a clear message referencing the submodule SHA
-  5. Keep matching or related branch names across repos (feat/<feature> + feat/<feature>-docs)
+
+1. Make the documentation or planning change inside exaix-dev-docs/
+2. Commit and push that change in the submodule repository
+3. In the parent repo, run git add exaix-dev-docs after the submodule commit exists
+4. Commit the pointer update in the parent repo with a clear message referencing the submodule SHA
+5. Keep matching or related branch names across repos (feat/<feature> + feat/<feature>-docs)
 
 Recommended local workflow
 
-  ```bash
-  # Ensure submodules are initialized
-  git submodule update --init --recursive
+```bash
+# Ensure submodules are initialized
+git submodule update --init --recursive
 
-  # Make and commit docs changes inside the submodule
-  cd exaix-dev-docs
-  git checkout -b feat/<feature>-docs
-  git add .
-  git commit -m "docs: update submodule docs for <feature>"
-  git push -u origin HEAD
+# Make and commit docs changes inside the submodule
+cd exaix-dev-docs
+git checkout -b feat/<feature>-docs
+git add .
+git commit -m "docs: update submodule docs for <feature>"
+git push -u origin HEAD
 
-  # Return to parent repo and update the pointer
-  cd ..
-  git checkout -b feat/<feature>
-  git add exaix-dev-docs
-  git status --submodule=summary
-  git commit -m "chore(exaix): update exaix-dev-docs pointer to <sha> for <feature>"
-  git push -u origin HEAD
-  ```
+# Return to parent repo and update the pointer
+cd ..
+git checkout -b feat/<feature>
+git add exaix-dev-docs
+git status --submodule=summary
+git commit -m "chore(exaix): update exaix-dev-docs pointer to <sha> for <feature>"
+git push -u origin HEAD
+```
 
 Verification commands
-  ```bash
-  git status --submodule=summary     # confirm pointer state
-  git diff --submodule=log           # show submodule commit log diff
-  ```
+
+```bash
+git status --submodule=summary     # confirm pointer state
+git diff --submodule=log           # show submodule commit log diff
+```
 
 PR and review guidance
-  - Document the submodule SHA in the parent PR description
-  - If the submodule change is already merged, cite the merged PR/commit
-  - If shipping parent + submodule together, include both branch names and pointer SHA
+
+- Document the submodule SHA in the parent PR description
+- If the submodule change is already merged, cite the merged PR/commit
+- If shipping parent + submodule together, include both branch names and pointer SHA
 
 Validation
-  - Parent repo CI: scripts/build_agents_index.ts and scripts/validate_agents_docs.ts
-  - If submodule content is missing in CI, fail fast rather than accept an incomplete pointer update
+
+- Parent repo CI: scripts/build_agents_index.ts and scripts/validate_agents_docs.ts
+- If submodule content is missing in CI, fail fast rather than accept an incomplete pointer update
 
 Do / Don't
+
 - ✅ Do always commit submodule changes first before updating the parent pointer
 - ✅ Do use git status --submodule=summary to verify pointer state
 - ✅ Do document the submodule SHA in the parent PR description

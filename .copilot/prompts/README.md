@@ -27,29 +27,29 @@ Each wrapper contains only `name` and `description` frontmatter, plus a routing 
 
 Every file in this directory must have a corresponding `.copilot/skills/<name>/SKILL.md`. There are currently 21 prompts, one per skill:
 
-| Prompt | Canonical skill |
-| --- | --- |
-| `clean-codebase.prompt.md` | `.copilot/skills/clean-codebase/` |
-| `commit.prompt.md` | `.copilot/skills/commit/` |
-| `coverage.prompt.md` | `.copilot/skills/coverage/` |
-| `doc.prompt.md` | `.copilot/skills/doc/` |
-| `duplication.prompt.md` | `.copilot/skills/duplication/` |
-| `explore.prompt.md` | `.copilot/skills/explore/` |
-| `fix.prompt.md` | `.copilot/skills/fix/` |
-| `infra.prompt.md` | `.copilot/skills/infra/` |
-| `lint.prompt.md` | `.copilot/skills/lint/` |
-| `next-steps.prompt.md` | `.copilot/skills/next-steps/` |
-| `plan.prompt.md` | `.copilot/skills/plan/` |
-| `post-gap-analysis.prompt.md` | `.copilot/skills/post-gap-analysis/` |
-| `pre-gap-analysis.prompt.md` | `.copilot/skills/pre-gap-analysis/` |
-| `refactor.prompt.md` | `.copilot/skills/refactor/` |
+| Prompt                           | Canonical skill                         |
+| -------------------------------- | --------------------------------------- |
+| `clean-codebase.prompt.md`       | `.copilot/skills/clean-codebase/`       |
+| `commit.prompt.md`               | `.copilot/skills/commit/`               |
+| `coverage.prompt.md`             | `.copilot/skills/coverage/`             |
+| `doc.prompt.md`                  | `.copilot/skills/doc/`                  |
+| `duplication.prompt.md`          | `.copilot/skills/duplication/`          |
+| `explore.prompt.md`              | `.copilot/skills/explore/`              |
+| `fix.prompt.md`                  | `.copilot/skills/fix/`                  |
+| `infra.prompt.md`                | `.copilot/skills/infra/`                |
+| `lint.prompt.md`                 | `.copilot/skills/lint/`                 |
+| `next-steps.prompt.md`           | `.copilot/skills/next-steps/`           |
+| `plan.prompt.md`                 | `.copilot/skills/plan/`                 |
+| `post-gap-analysis.prompt.md`    | `.copilot/skills/post-gap-analysis/`    |
+| `pre-gap-analysis.prompt.md`     | `.copilot/skills/pre-gap-analysis/`     |
+| `refactor.prompt.md`             | `.copilot/skills/refactor/`             |
 | `refactor-check-magic.prompt.md` | `.copilot/skills/refactor-check-magic/` |
-| `review.prompt.md` | `.copilot/skills/review/` |
-| `review-research.prompt.md` | `.copilot/skills/review-research/` |
-| `security.prompt.md` | `.copilot/skills/security/` |
-| `submodule-workflow.prompt.md` | `.copilot/skills/submodule-workflow/` |
-| `tdd-workflow.prompt.md` | `.copilot/skills/tdd-workflow/` |
-| `upgrade.prompt.md` | `.copilot/skills/upgrade/` |
+| `review.prompt.md`               | `.copilot/skills/review/`               |
+| `review-research.prompt.md`      | `.copilot/skills/review-research/`      |
+| `security.prompt.md`             | `.copilot/skills/security/`             |
+| `submodule-workflow.prompt.md`   | `.copilot/skills/submodule-workflow/`   |
+| `tdd-workflow.prompt.md`         | `.copilot/skills/tdd-workflow/`         |
+| `upgrade.prompt.md`              | `.copilot/skills/upgrade/`              |
 
 ## Adding a new skill
 

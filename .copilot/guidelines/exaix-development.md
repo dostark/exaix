@@ -581,14 +581,17 @@ When no matching step exists, create one following this format before implementi
 **Action:** <one-sentence description of what to build>
 
 **Files:**
+
 - `src/<path>` — <role>
 - `tests/<path>` — <what is tested>
 
 **Success Criteria:**
+
 - [ ] <criterion 1>
 - [ ] <criterion 2>
 
 **Planned tests:**
+
 - `<test description>`
 ```
 

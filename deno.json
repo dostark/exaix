@@ -79,7 +79,6 @@
     "@std/testing": "jsr:@std/testing@^1.0.18",
     "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
-    "deno-tui": "https://deno.land/x/deno_tui@v1.1.1/mod.ts",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "typescript": "npm:typescript@6.0.3",
     "@babel/parser": "npm:@babel/parser@7.29.3",

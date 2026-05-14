@@ -128,11 +128,12 @@ sub-processes, or touches shared mutable state.
 
 ### Phase 4 — Classify Findings
 
-| Symbol | Meaning |
-|--------|---------|
+| Symbol      | Meaning                                                            |
+| ----------- | ------------------------------------------------------------------ |
 | 🔒 Security | Security control missing, incomplete, or bypassable (OWASP Top 10) |
 
 Every finding must include:
+
 - **OWASP category** (A01–A10)
 - **Affected code** (file + symbol)
 - **Attack scenario** (how it could be exploited)
@@ -155,15 +156,18 @@ For each finding, write a TDD-First remediation step:
 **Attack scenario:** <how it could be exploited>
 
 **Actions:**
+
 - `<file>`: <specific change required>
 
 **Architecture Notes:** <why this fix is correct in the Exaix security model>
 
 **Planned Tests:**
+
 - `"security: <control> rejects <attack vector>"` — verifies the control fires
 - `"security: <control> allows <legitimate input>"` — verifies no false positives
 
 **Success Criteria:**
+
 - [ ] PathResolver / Zod / parameterised query / etc. is used
 - [ ] Security test passes
 - [ ] No secrets in logs or error messages
