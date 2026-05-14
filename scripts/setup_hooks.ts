@@ -159,22 +159,62 @@ echo "
 
 # 1. Manifest Auto-Sync
 #    Regenerate the documentation manifest before pushing code.
+MANIFEST_BACKUP=$(mktemp)
+cp .copilot/manifest.json "$MANIFEST_BACKUP" 2>/dev/null || true
+
 echo "🔄 Regenerating .copilot/manifest.json before push..."
 deno run --allow-read --allow-write scripts/build_agents_index.ts
 if [ $? -ne 0 ]; then
   echo "❌ Error: Failed to regenerate .copilot/manifest.json."
+  rm -f "$MANIFEST_BACKUP"
   exit 1
 fi
-git add .copilot/manifest.json
 
-if ! git diff --cached --quiet -- .copilot/manifest.json; then
+MANIFEST_SUBSTANTIVE_CHANGED=$(deno eval '
+const [beforePath, afterPath] = Deno.args;
+
+function normalize(obj) {
+  const copy = JSON.parse(JSON.stringify(obj));
+  delete copy.generated_at;
+  if (Array.isArray(copy.docs)) {
+    copy.docs.sort((a, b) => String(a.path).localeCompare(String(b.path)));
+    for (const doc of copy.docs) {
+      if (Array.isArray(doc.chunks)) doc.chunks.sort();
+    }
+  }
+  return copy;
+}
+
+let before = {};
+try {
+  before = JSON.parse(Deno.readTextFileSync(beforePath));
+} catch {
+  before = {};
+}
+
+const after = JSON.parse(Deno.readTextFileSync(afterPath));
+const isSame = JSON.stringify(normalize(before)) === JSON.stringify(normalize(after));
+console.log(isSame ? "0" : "1");
+' "$MANIFEST_BACKUP" .copilot/manifest.json)
+
+if [ "$MANIFEST_SUBSTANTIVE_CHANGED" = "0" ]; then
+  if [ -f "$MANIFEST_BACKUP" ]; then
+    mv "$MANIFEST_BACKUP" .copilot/manifest.json
+  fi
+  git restore --staged .copilot/manifest.json 2>/dev/null || true
+  echo "ℹ️ Only .copilot/manifest.json generated_at changed; skipping amend."
+else
+  git add .copilot/manifest.json
   echo "🔁 .copilot/manifest.json changed; amending current commit to include the updated manifest..."
   git commit --amend --no-edit
   if [ $? -ne 0 ]; then
     echo "❌ Error: Failed to amend the current commit with .copilot/manifest.json."
+    rm -f "$MANIFEST_BACKUP"
     exit 1
   fi
 fi
+
+rm -f "$MANIFEST_BACKUP"
 
 # 2. Submodule Safety Check
 #    If the parent repo includes a changed exaix-dev-docs pointer, ensure

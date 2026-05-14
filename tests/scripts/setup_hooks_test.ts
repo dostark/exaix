@@ -54,5 +54,9 @@ describe("scripts/setup_hooks.ts", () => {
       !hookInstaller.includes("deno test --allow-all $TEST_FILES"),
       "pre-push hook should not run focused tests for changed files",
     );
+    assert(
+      hookInstaller.includes("Only .copilot/manifest.json generated_at changed; skipping amend."),
+      "pre-push hook should ignore timestamp-only manifest drift",
+    );
   });
 });
