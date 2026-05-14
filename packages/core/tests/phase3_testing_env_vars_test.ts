@@ -1,8 +1,8 @@
 /**
  * @module TestModeEnvVarsTest
- * @path tests/config/phase3_testing_env_vars_test.ts
- * @description Verifies the logic for 'test mode' detection, ensuring that
- * 'EXA_TEST_MODE' is correctly parsed across varied boolean string representations.
+ * @path packages/core/tests/phase3_testing_env_vars_test.ts
+ * @description Verifies the logic for test-mode detection helpers exposed by
+ * @exaix/core/config/env_schema.ts.
  */
 
 import { assertEquals } from "@std/assert";
@@ -133,7 +133,6 @@ Deno.test({
 Deno.test({
   name: "Phase 3: isCIMode() prefers EXA_CI_MODE over CI",
   fn() {
-    // If both set, EXA_CI_MODE takes precedence
     withEnv({ CI: "0", EXA_CI_MODE: "1" }, () => {
       assertEquals(isCIMode(), true);
     });

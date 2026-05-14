@@ -94,3 +94,61 @@ Deno.test("findCandidateSrcModules identifies src modules that import @exaix/cor
   assertEquals(report?.transitiveSrcModules, ["src/shared/types/json_shim.ts"]);
   assertEquals(report?.allSrcModules, ["src/shared/types/json.ts", "src/shared/types/json_shim.ts"]);
 });
+
+Deno.test("buildPackageGraph prefers canonical package aliases when import aliases are available", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/main.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/src/main.ts`).href,
+        dependencies: [
+          {
+            specifier: "@exaix/core",
+          },
+        ],
+      },
+      {
+        specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
+      },
+    ],
+  };
+
+  const graph = buildPackageGraph(info, ["src", "packages/core"], {
+    importAliases: {
+      "@exaix/core": "packages/core/mod.ts",
+    },
+  });
+
+  assertEquals(graph.packages.map((pkg) => pkg.name).sort(), ["@exaix", "@exaix/core"]);
+  assertEquals(graph.edges, [{ from: "@exaix", to: "@exaix/core" }]);
+});
+
+Deno.test("findCandidateSrcModules accepts canonical package alias names", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/main.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
+      },
+      {
+        specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href,
+        dependencies: [
+          {
+            specifier: "@exaix/core",
+          },
+        ],
+      },
+    ],
+  };
+
+  const report = findCandidateSrcModules(info, ["src", "packages/core"], "@exaix/core", {
+    importAliases: { "@exaix/core": "packages/core/mod.ts" },
+  });
+
+  assertEquals(report?.targetRoot, "packages/core");
+  assertEquals(report?.directSrcModules, ["src/shared/types/json.ts"]);
+});

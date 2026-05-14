@@ -1,6 +1,6 @@
 /**
  * @module MemoryStatusParsingTest
- * @path tests/memory/memory_status_test.ts
+ * @path packages/core/tests/memory_status_test.ts
  * @description Verifies memory status enums, ensuring correct validation and
  * resilient coercion of dynamic learning states.
  */

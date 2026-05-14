@@ -321,6 +321,7 @@ async function getBestCanonicalImportSourceForSymbol(
   imports: ImportMap,
   symbol: string,
   cache: Map<string, Set<string>>,
+  options: { editMode: boolean },
 ): Promise<string | null> {
   const packageName = getPackageName(importSource);
   if (!packageName) {
@@ -349,7 +350,9 @@ async function getBestCanonicalImportSourceForSymbol(
 
   const containingDir = dirname(resolvedFsPath);
   const barrelPath = join(containingDir, "mod.ts");
-  await ensureBarrelExportsSymbol(barrelPath, resolvedFsPath);
+  if (options.editMode) {
+    await ensureBarrelExportsSymbol(barrelPath, resolvedFsPath);
+  }
   const barrelSource = filePathToImportSource(barrelPath, moduleDir, imports);
   return barrelSource;
 }
@@ -365,11 +368,12 @@ async function main() {
   for await (const entry of walk(join(REPO_ROOT, "packages"), { includeDirs: false })) {
     if (![".ts", ".tsx"].includes(extname(entry.path))) continue;
     if (entry.path.includes("/deno_cache/")) continue;
+    fileCount += 1;
 
     const text = await Deno.readTextFile(entry.path);
     const importKeyword = "import";
     const importPattern = new RegExp(
-      `^([ \\t]*)(?:${importKeyword}(?:\\s+type)?)(\\s+\\{[\\s\\S]*?\\})\\s+from\\s+[\"']([^\"']+)[\"'];?\\s*$`,
+      `^([ \\t]*)(${importKeyword}(?:\\s+type)?)(\\s+\\{[\\s\\S]*?\\})\\s+from\\s+[\"']([^\"']+)[\"'];?\\s*$`,
       "gm",
     );
     let cursor = 0;
@@ -418,6 +422,7 @@ async function main() {
           imports,
           specifier.importedName,
           exportCache,
+          { editMode: EDIT_MODE },
         );
 
         if (bestSource && bestSource !== importSource) {
@@ -488,8 +493,6 @@ async function main() {
       await Deno.writeTextFile(entry.path, output);
       console.log(`  Edited file.`);
     }
-
-    fileCount += 1;
   }
 
   console.log(`\nProcessed ${fileCount} package files, changed ${changedCount} import statement(s).`);

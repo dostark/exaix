@@ -42,7 +42,7 @@ Content is organized by **role**, not by provider.
 ## Quick Navigation
 
 - **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
-- **Skills**: [skills/](skills/) — 21 skills covering commit, plan, fix, review, security, coverage, and more
+- **Skills**: [skills/](skills/) — 22 skills covering commit, plan, package extraction, fix, review, security, coverage, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Guidelines**: [guidelines/](guidelines/) — exaix-development, testing, documentation, security-review, self-improvement, etc.
 - **Providers**: [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md), [providers/google.md](providers/google.md)
@@ -54,6 +54,7 @@ Content is organized by **role**, not by provider.
 | Qwen Skill                           | Canonical Source                                |
 | ------------------------------------ | ----------------------------------------------- |
 | `.qwen/skills/commit/`               | `.copilot/skills/commit/SKILL.md`               |
+| `.qwen/skills/package-extraction/`   | `.copilot/skills/package-extraction/SKILL.md`   |
 | `.qwen/skills/plan/`                 | `.copilot/skills/plan/SKILL.md`                 |
 | `.qwen/skills/next-steps/`           | `.copilot/skills/next-steps/SKILL.md`           |
 | `.qwen/skills/pre-gap-analysis/`     | `.copilot/skills/pre-gap-analysis/SKILL.md`     |
@@ -83,7 +84,7 @@ deno run --allow-read scripts/validate_agents_docs.ts
 ### 1. Create File in Appropriate Subfolder
 
 - Use `providers/` for model-specific notes, `guidelines/` for reference docs, and `skills/` for autonomous workflows.
-- To add a new skill, also run `scripts/generate_prompt.ts --skill <name>` to create the corresponding `.copilot/prompts/<name>.prompt.md` wrapper.
+- To add a new skill, also run `scripts/generate_prompt.ts --skill <name>` to create the corresponding `.copilot/prompts/<name>.prompt.md` wrapper, add the matching `.qwen/skills/<name>/` routing wrapper, and register it in `.qwen/settings.json`.
 
 ### 2. Add YAML Frontmatter
 

@@ -164,11 +164,18 @@ function isDirectoryIndexFile(path: string): boolean {
 function findAliasImportForFsPath(fsPath: string, imports: ImportMap): string | null {
   const normalizedFsPath = normalizePathForImport(fsPath);
   const aliasCandidates = Object.entries(imports)
-    .filter(([key]) => key.endsWith("/"))
     .map(([key, value]) => ({ key, value: normalizePathForImport(toFsPath(value)) }))
     .sort((a, b) => b.value.length - a.value.length);
 
   for (const { key, value } of aliasCandidates) {
+    if (normalizedFsPath === value) {
+      return stripIndexOrModImport(key);
+    }
+
+    if (!key.endsWith("/")) {
+      continue;
+    }
+
     const normalizedValue = value.endsWith("/") ? value : `${value}/`;
     if (normalizedFsPath.startsWith(normalizedValue)) {
       const relativePath = normalizePathForImport(normalizedFsPath.slice(normalizedValue.length));
@@ -356,13 +363,22 @@ export async function getNewImportSource(
 
   const relativeSubpath = normalizePathForImport(relative(oldRoot, importFsPath));
   if (!relativeSubpath.startsWith("..") && relativeSubpath !== "") {
-    const candidateFsPath = await tryResolveFile(join(newRoot, relativeSubpath));
+    const candidateFsPath = await resolveMappedDestinationFile(newRoot, relativeSubpath);
     if (candidateFsPath) {
       return filePathToImportSource(candidateFsPath, moduleDir, imports);
     }
   }
 
   return null;
+}
+
+async function resolveMappedDestinationFile(newRoot: string, relativeSubpath: string): Promise<string | null> {
+  const directCandidate = await tryResolveFile(join(newRoot, relativeSubpath));
+  if (directCandidate) {
+    return directCandidate;
+  }
+
+  return await tryResolveFile(join(newRoot, "src", relativeSubpath));
 }
 
 export async function getBestImportSourceForSymbol(

@@ -67,6 +67,37 @@ Deno.test("package_import_migration prefers barrel package import when symbol is
   assertEquals(actual, "@exaix/core/types");
 });
 
+Deno.test("package_import_migration prefers exact package alias for root barrel exports", async () => {
+  const tempRoot = await Deno.makeTempDir();
+  const moduleDir = join(tempRoot, "src/services/request");
+  const oldRoot = join(tempRoot, "src/shared/testing");
+  const newRoot = join(tempRoot, "packages/testing");
+  await Deno.mkdir(moduleDir, { recursive: true });
+  await Deno.mkdir(oldRoot, { recursive: true });
+  await Deno.mkdir(join(newRoot, "src"), { recursive: true });
+
+  await Deno.writeTextFile(join(oldRoot, "db.ts"), "export function createLoggingTestDb() {}\n");
+  await Deno.writeTextFile(join(newRoot, "src/db.ts"), "export function createLoggingTestDb() {}\n");
+  await Deno.writeTextFile(join(newRoot, "mod.ts"), 'export * from "./src/db.ts";\n');
+
+  const imports = {
+    "@exaix/testing": join(tempRoot, "packages/testing/mod.ts"),
+    "@exaix/testing/": join(tempRoot, "packages/testing/src"),
+  };
+
+  const actual = await getBestImportSourceForSymbol({
+    importSource: "../../shared/testing/db.ts",
+    moduleDir,
+    imports,
+    oldPackage: oldRoot,
+    newPackage: newRoot,
+    symbol: "createLoggingTestDb",
+    cache: new Map(),
+  });
+
+  assertEquals(actual, "@exaix/testing");
+});
+
 function normalizeImportPath(path: string): string {
   return path.replace(/\\/g, "/");
 }

@@ -5,8 +5,8 @@
  * @description Builds a package-level dependency graph from `deno info --json`.
  *
  * Usage:
- *   deno run -A scripts/package_dependency_graph.ts
- *   deno run -A scripts/package_dependency_graph.ts --entrypoint src/main.ts --format dot
+ *   deno run --allow-run --allow-read scripts/package_dependency_graph.ts
+ *   deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --format dot
  */
 
 import { parse } from "@std/flags";
@@ -193,11 +193,12 @@ export function buildPackageGraph(
 ): PackageGraph {
   const localModuleToPackage = new Map<string, string>();
   const packageInfo = new Map<string, PackageInfo>();
+  const packageNames = getPackageNamesByRoot(packageRoots, options.importAliases);
 
   for (const root of packageRoots) {
     packageInfo.set(root, {
       root,
-      name: root === "src" ? "@exaix" : root,
+      name: packageNames.get(root) ?? root,
       modules: [],
       outgoing: [],
       incoming: [],
@@ -277,7 +278,7 @@ export function findCandidateSrcModules(
   targetPackage: string,
   options: PackageGraphOptions = {},
 ): CandidateReport | undefined {
-  const targetRoot = targetPackage === "@exaix" ? "src" : packageRoots.find((root) => root === targetPackage);
+  const targetRoot = resolveTargetPackageRoot(targetPackage, packageRoots, options.importAliases);
   if (!targetRoot) {
     return undefined;
   }
@@ -363,6 +364,61 @@ export function findCandidateSrcModules(
     transitiveSrcModules: transitiveList,
     allSrcModules,
   };
+}
+
+function resolveTargetPackageRoot(
+  targetPackage: string,
+  packageRoots: string[],
+  aliasMap: Record<string, string> = {},
+): string | undefined {
+  if (targetPackage === "@exaix") {
+    return "src";
+  }
+
+  if (packageRoots.includes(targetPackage)) {
+    return targetPackage;
+  }
+
+  const aliasPath = resolveAliasPath(targetPackage, aliasMap);
+  if (!aliasPath) {
+    return undefined;
+  }
+
+  return selectPackageRoot(aliasPath, packageRoots);
+}
+
+function getPackageNamesByRoot(packageRoots: string[], aliasMap: Record<string, string> = {}): Map<string, string> {
+  const packageNames = new Map<string, string>();
+
+  for (const root of packageRoots) {
+    if (root === "src") {
+      packageNames.set(root, "@exaix");
+      continue;
+    }
+
+    packageNames.set(root, findCanonicalPackageAlias(root, aliasMap) ?? root);
+  }
+
+  return packageNames;
+}
+
+function findCanonicalPackageAlias(root: string, aliasMap: Record<string, string>): string | undefined {
+  for (const [alias, mappedPath] of Object.entries(aliasMap)) {
+    if (alias.endsWith("/")) {
+      continue;
+    }
+
+    const normalizedMappedPath = normalize(mappedPath);
+    if (
+      normalizedMappedPath === root ||
+      normalizedMappedPath === join(root, "mod.ts") ||
+      normalizedMappedPath === join(root, "index.ts")
+    ) {
+      return alias;
+    }
+  }
+
+  return undefined;
 }
 
 export function toRepoPath(specifier: string, baseModulePath?: string): string | undefined {
