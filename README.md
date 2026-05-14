@@ -89,6 +89,7 @@ exaix/
 ├── Blueprints/     # Agent personas/templates
 ├── Memory/         # Persistent memory banks
 ├── docs/           # User guides & specs
+├── packages/       # Deno workspace packages for extracted shared modules
 ├── src/            # Core runtime
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
@@ -96,6 +97,9 @@ exaix/
 ```
 
 Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state).
+
+The current workspace package set includes `@exaix/schemas`, `@exaix/parsing`, `@exaix/core`, `@exaix/ai`,
+`@exaix/tui`, `@exaix/mcp`, `@exaix/git`, `@exaix/cli`, `@exaix/testing`, and `@exaix/memory`.
 
 ## LLM Configuration
 
@@ -151,6 +155,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regressi
 - **Quick Tools**: [TOOLS.md](./TOOLS.md)
 - **User Guide**: [docs/Exaix_User_Guide.md](./docs/Exaix_User_Guide.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **Package Migration**: [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md)
 - **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md)
 
 ## License

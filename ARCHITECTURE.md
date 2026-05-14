@@ -27,9 +27,19 @@ Key facts for agents reading this file under token constraints:
 - **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
 - **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
 - **AI providers**: selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory` (Ollama, Claude, OpenAI, Gemini, Mock)
-- **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in the [Request Processing Flow](#request-processing-flow) section before modifying any core flow
+- **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in the `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`src/tui/`) and CLI (`src/cli/commands/`) must not import directly from `src/services/` — use interfaces in `src/shared/interfaces/`
 - **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `src/mcp/handlers/`
+
+## Package Workspace Status
+
+Exaix is currently in a mixed-layout migration state:
+
+- Runtime orchestration, daemon flows, and many feature implementations still live under `src/`.
+- Extracted shared modules and package-local tests now also live under `packages/`.
+- The active workspace packages are `@exaix/schemas`, `@exaix/parsing`, `@exaix/core`, `@exaix/ai`, `@exaix/tui`, `@exaix/mcp`, `@exaix/git`, `@exaix/cli`, `@exaix/testing`, and `@exaix/memory`.
+- When this document references `src/` paths, treat them as the current runtime ownership map, not as the only canonical package structure.
+- For migration status and intended package boundaries, use [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md) and the linked phase tracker in `exaix-dev-docs/`.
 
 ---
 

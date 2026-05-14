@@ -1,6 +1,6 @@
 /**
  * @module ModelDefaultsRegressionTest
- * @path tests/config/model_defaults_regression_test.ts
+ * @path packages/ai/tests/model_defaults_regression_test.ts
  * @description Regression tests for LLM provider defaults, ensuring that latest
  * production models (GPT, Claude, Gemini) are correctly mapped as system defaults.
  */
@@ -13,7 +13,6 @@ import * as DEFAULTS from "@exaix/ai";
 
 Deno.test("[regression] verify default openai model is gpt-5-mini", () => {
   const provider = new OpenAIProvider({ apiKey: "test-key" });
-  // access private 'model' property via 'any' casting or looking at the id if it contains the model
   const id = provider.id;
   assertEquals(id, `openai-${DEFAULTS.DEFAULT_OPENAI_MODEL}`);
   assertEquals(DEFAULTS.DEFAULT_OPENAI_MODEL, DEFAULTS.DEFAULT_OPENAI_MODEL);

@@ -1,6 +1,6 @@
 /**
  * @module AutoApproveConfigTest
- * @path tests/config/auto_approve_config_test.ts
+ * @path packages/schemas/tests/auto_approve_config_test.ts
  * @description Tests for the [memory.auto_approve] configuration schema and parsing logic.
  */
 
@@ -41,7 +41,6 @@ Deno.test("Step 71.1: Config schema includes auto_approve block with correct def
   }
   const parsed = result.data;
 
-  // Verify defaults
   assertEquals(parsed.memory?.auto_approve?.enabled, false);
   assertEquals(parsed.memory?.auto_approve?.confidence_threshold, "high");
   assertEquals(parsed.memory?.auto_approve?.delay_hours, 24);

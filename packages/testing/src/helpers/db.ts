@@ -35,7 +35,12 @@ export interface TestDatabaseService {
   ): void;
 }
 
-export function createLoggingTestDb() {
+export interface ILoggingTestDb {
+  activities: ILoggedActivity[];
+  db: TestDatabaseService;
+}
+
+export function createLoggingTestDb(): ILoggingTestDb {
   const activities: ILoggedActivity[] = [];
 
   const db: TestDatabaseService = {

@@ -12,7 +12,7 @@ import { isCi } from "@exaix/testing";
 import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai";
 
 function isCiGuardActive(): boolean {
-  return isCi() && Deno.env.get("EXA_TEST_ENABLE_PAID_LLM") !== "1";
+  return isCi() && Deno.env.get("EXA_ENABLE_PAID_LLM") !== "1";
 }
 
 Deno.test("OpenAIShim retries on 429 and returns content", async () => {

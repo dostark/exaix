@@ -1,6 +1,6 @@
 /**
  * @module SkillsConfigDefaultsTest
- * @path tests/config/skills_config_defaults_test.ts
+ * @path packages/schemas/tests/skills_config_defaults_test.ts
  * @description Tests for skills-related configuration defaults.
  */
 import { assertEquals } from "@std/assert";
@@ -37,6 +37,6 @@ describe("Skills Config Defaults", () => {
 
     assertEquals(result.skills.max_per_request, 10);
     assertEquals(result.skills.match_threshold, 0.5);
-    assertEquals(result.skills.inject_in_prompt, true); // Still default
+    assertEquals(result.skills.inject_in_prompt, true);
   });
 });

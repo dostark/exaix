@@ -1,11 +1,12 @@
 /**
  * @module SkillsContextSchemaTest
- * @path tests/shared/types/skills_context_schema_test.ts
+ * @path packages/core/tests/skills_context_schema_test.ts
  * @description Tests for skills context Zod schemas.
  */
 import { assertEquals, assertThrows } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
 import { ZSkillsContext } from "@exaix/core/types";
+
 describe("ZSkillsContext", () => {
   it("should validate a valid skills context", () => {
     const validContext = {
@@ -47,7 +48,7 @@ describe("ZSkillsContext", () => {
           title: "Test Skill",
           description: "A test skill",
           content: "Test instructions",
-          matchScore: 1.5, // Invalid > 1
+          matchScore: 1.5,
         },
       ],
       totalAvailable: 1,

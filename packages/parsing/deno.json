@@ -1,8 +1,29 @@
 {
   "name": "@exaix/parsing",
   "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/yaml": "jsr:@std/yaml@^1.1.0",
+    "@exaix/parsing": "./mod.ts",
+    "@exaix/parsing/": "./src/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/testing": "../testing/mod.ts",
+    "@exaix/testing/": "../testing/src/"
+  },
   "exports": {
     ".": "./mod.ts",
     "./frontmatter": "./src/markdown.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
   }
 }

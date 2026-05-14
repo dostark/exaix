@@ -187,7 +187,7 @@ async function verifyCoverage(): Promise<boolean> {
   console.log(`\n⏳ Starting: Coverage Verification...${isDryRun ? " (DRY RUN)" : ""}`);
 
   const COVERAGE_DIR = "coverage";
-  const COVERAGE_INCLUDE_PATTERN = "^file://.*Exaix/src/";
+  const COVERAGE_INCLUDE_PATTERN = "^file://.*/(src|packages)/";
   const COVERAGE_EXCLUDE_PATTERN = "(^file:///tmp/|test\\.(ts|js)$)";
   const COVERAGE_WARNING_PATTERNS: RegExp[] = [
     /Failed to fetch "file:\/\/\/tmp\//,
@@ -252,7 +252,7 @@ async function verifyCoverage(): Promise<boolean> {
 
     const testStart = Date.now();
     const testCmd = new Deno.Command("deno", {
-      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, "tests/"],
+      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, "tests/", "packages/"],
       stdout: "inherit",
       stderr: "piped",
     });

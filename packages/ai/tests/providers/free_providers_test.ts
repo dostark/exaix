@@ -17,7 +17,7 @@ import type { JSONObject } from "@exaix/core/types/json.ts";
 function isCiGuardActive(): boolean {
   // In CI, the code intentionally prevents accidental paid calls unless
   // explicitly opted-in.
-  return isCi() && Deno.env.get("EXA_TEST_ENABLE_PAID_LLM") !== "1";
+  return isCi() && Deno.env.get("EXA_ENABLE_PAID_LLM") !== "1";
 }
 
 Deno.test("ModelFactory creates OpenAIProvider for default test model", async () => {

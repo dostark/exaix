@@ -1,6 +1,6 @@
 /**
  * @module RequestStatusTest
- * @path tests/shared/status/request_status_test.ts
+ * @path packages/core/tests/request_status_test.ts
  * @description Tests for the RequestStatus enum and utilities, covering the
  * Phase 47 new clarification lifecycle values (NEEDS_CLARIFICATION, REFINING,
  * ENRICHING) in addition to the existing statuses.
@@ -11,10 +11,6 @@
 import { assertEquals, assertStrictEquals } from "@std/assert";
 import { coerceRequestStatus, isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "@exaix/core";
 
-// ---------------------------------------------------------------------------
-// Existing statuses (regression)
-// ---------------------------------------------------------------------------
-
 Deno.test("[RequestStatus] includes all original values", () => {
   assertStrictEquals(RequestStatus.PENDING, "pending");
   assertStrictEquals(RequestStatus.PLANNED, "planned");
@@ -23,10 +19,6 @@ Deno.test("[RequestStatus] includes all original values", () => {
   assertStrictEquals(RequestStatus.FAILED, "failed");
   assertStrictEquals(RequestStatus.CANCELLED, "cancelled");
 });
-
-// ---------------------------------------------------------------------------
-// New Phase 47 statuses
-// ---------------------------------------------------------------------------
 
 Deno.test("[RequestStatus] includes NEEDS_CLARIFICATION", () => {
   assertStrictEquals(RequestStatus.NEEDS_CLARIFICATION, "needs_clarification");
@@ -40,19 +32,11 @@ Deno.test("[RequestStatus] includes ENRICHING", () => {
   assertStrictEquals(RequestStatus.ENRICHING, "enriching");
 });
 
-// ---------------------------------------------------------------------------
-// REQUEST_STATUS_VALUES array
-// ---------------------------------------------------------------------------
-
 Deno.test("[REQUEST_STATUS_VALUES] includes all new status values", () => {
   assertEquals(REQUEST_STATUS_VALUES.includes("needs_clarification" as never), true);
   assertEquals(REQUEST_STATUS_VALUES.includes("refining" as never), true);
   assertEquals(REQUEST_STATUS_VALUES.includes("enriching" as never), true);
 });
-
-// ---------------------------------------------------------------------------
-// isRequestStatus
-// ---------------------------------------------------------------------------
 
 Deno.test("[isRequestStatus] recognises new status values", () => {
   assertEquals(isRequestStatus("needs_clarification"), true);
@@ -65,10 +49,6 @@ Deno.test("[isRequestStatus] rejects unknown values", () => {
   assertEquals(isRequestStatus(""), false);
   assertEquals(isRequestStatus(null), false);
 });
-
-// ---------------------------------------------------------------------------
-// coerceRequestStatus
-// ---------------------------------------------------------------------------
 
 Deno.test("[coerceRequestStatus] handles new status values", () => {
   assertEquals(coerceRequestStatus("needs_clarification"), "needs_clarification");

@@ -1,7 +1,26 @@
 {
   "name": "@exaix/testing",
   "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@exaix/testing": "./mod.ts",
+    "@exaix/testing/": "./src/",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/": "../ai/src/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/git": "../git/mod.ts",
+    "@exaix/git/": "../git/src/"
+  },
   "exports": {
     ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
   }
 }
