@@ -19,13 +19,64 @@ function extractFrontmatter(md: string): string | null {
   return match ? match[1] : null;
 }
 
-function scoreDoc(md: string, query: string) {
-  const q = query.toLowerCase();
-  const text = md.toLowerCase();
+function scoreField(text: string, query: string, exactMatchWeight: number, tokenWeight: number): number {
+  if (!text) return 0;
+
+  const normalizedText = text.toLowerCase();
+  const normalizedQuery = query.toLowerCase();
   let score = 0;
-  if (text.includes(q)) score += 10;
-  const tokens = q.split(/\s+/);
-  for (const t of tokens) if (text.includes(t)) score += 1;
+
+  if (normalizedText.includes(normalizedQuery)) score += exactMatchWeight;
+
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  for (const token of tokens) {
+    if (normalizedText.includes(token)) score += tokenWeight;
+  }
+
+  return score;
+}
+
+function getMatchedTokenCount(text: string, query: string): number {
+  if (!text) return 0;
+
+  const normalizedText = text.toLowerCase();
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  let count = 0;
+
+  for (const token of tokens) {
+    if (normalizedText.includes(token)) count += 1;
+  }
+
+  return count;
+}
+
+function extractHeadings(md: string): string {
+  return Array.from(md.matchAll(/^#{1,6}\s+(.+)$/gm)).map((match) => match[1]).join("\n");
+}
+
+function scoreDoc(path: string, md: string, fm: JSONObject, query: string) {
+  const q = query.toLowerCase();
+  let score = 0;
+  const headings = extractHeadings(md);
+  const focusText = [
+    path,
+    String(fm.title || ""),
+    String(fm.short_summary || ""),
+    String(fm.description || ""),
+    Array.isArray(fm.topics) ? fm.topics.join(" ") : "",
+    headings,
+  ].join("\n");
+  const matchedFocusTokens = getMatchedTokenCount(focusText, q);
+
+  score += scoreField(String(fm.title || ""), q, 20, 4);
+  score += scoreField(String(fm.short_summary || ""), q, 18, 3);
+  score += scoreField(String(fm.description || ""), q, 12, 2);
+  score += scoreField(Array.isArray(fm.topics) ? fm.topics.join(" ") : "", q, 8, 2);
+  score += scoreField(path, q, 15, 3);
+  score += scoreField(headings, q, 24, 5);
+  score += matchedFocusTokens * matchedFocusTokens * 6;
+  score += scoreField(md, q, 10, 1);
+
   return score;
 }
 
@@ -45,10 +96,10 @@ async function findBest(agent: string, query: string) {
     const md = await Deno.readTextFile(entry.path);
     const fmRaw = extractFrontmatter(md) || "";
     const fm = fmRaw ? (parse(fmRaw) as JSONObject) : {};
-    // Support both 'identity' (current) and 'agent' (legacy) field names
-    const docAgent = String(fm.identity || fm.agent || "");
-    if (docAgent !== agent) continue;
-    const s = scoreDoc(md, query);
+    // A document is eligible when either frontmatter field matches the requested agent.
+    const docAgents = [fm.agent, fm.identity].filter((value): value is string => typeof value === "string");
+    if (!docAgents.includes(agent)) continue;
+    const s = scoreDoc(entry.path, md, fm, query);
     if (s > best.score) best = { path: entry.path, fm, score: s, md };
   }
   return best;

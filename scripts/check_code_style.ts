@@ -608,7 +608,9 @@ async function checkFile(path: string) {
             const isOwnPackageTestImport = relativePath.startsWith(owningPackageTestsRoot);
             if (!isOwnPackageTestImport) {
               console.log(
-                `ERROR [package-testing-import] ${relativePath}:${idx + 1} – Import package-specific test support from '${testingImportInfo.alias}' instead of deep-importing '${importPath}' from '${owningPackageTestsRoot}'.`,
+                `ERROR [package-testing-import] ${relativePath}:${
+                  idx + 1
+                } – Import package-specific test support from '${testingImportInfo.alias}' instead of deep-importing '${importPath}' from '${owningPackageTestsRoot}'.`,
               );
               errorCount++;
             }
@@ -825,7 +827,9 @@ async function checkFile(path: string) {
     }
 
     console.log(
-      `ERROR [package-testing-import] ${repoPath}:${idx + 1} – Import ${offendingSymbols.join(", ")} from '${shimInfo.alias}' instead of routing package-owned test support through '${importPath}'.`,
+      `ERROR [package-testing-import] ${repoPath}:${idx + 1} – Import ${
+        offendingSymbols.join(", ")
+      } from '${shimInfo.alias}' instead of routing package-owned test support through '${importPath}'.`,
     );
     errorCount++;
   }

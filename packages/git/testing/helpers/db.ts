@@ -26,8 +26,41 @@ const ACTIVITY_TABLE_SQL = `
   );
 `;
 
+const REVIEWS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS reviews (
+    id TEXT PRIMARY KEY,
+    trace_id TEXT NOT NULL,
+    portal TEXT,
+    branch TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    base_branch TEXT,
+    worktree_path TEXT,
+    status TEXT NOT NULL,
+    description TEXT NOT NULL,
+    commit_sha TEXT,
+    files_changed INTEGER DEFAULT 0,
+    created TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    approved_at TEXT,
+    approved_by TEXT,
+    rejected_at TEXT,
+    rejected_by TEXT,
+    rejection_reason TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_reviews_trace_id ON reviews(trace_id);
+  CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
+  CREATE INDEX IF NOT EXISTS idx_reviews_portal ON reviews(portal);
+  CREATE INDEX IF NOT EXISTS idx_reviews_created_by ON reviews(created_by);
+  CREATE INDEX IF NOT EXISTS idx_reviews_branch ON reviews(branch);
+  CREATE INDEX IF NOT EXISTS idx_reviews_repository ON reviews(repository);
+`;
+
 function initActivityTableSchema(db: DatabaseService): void {
   db.instance.exec(ACTIVITY_TABLE_SQL);
+}
+
+function initReviewsTableSchema(db: DatabaseService): void {
+  db.instance.exec(REVIEWS_TABLE_SQL);
 }
 
 export async function initTestDbService(): Promise<{
@@ -40,6 +73,7 @@ export async function initTestDbService(): Promise<{
   const config = createMockConfig(tempDir);
   const db = new DatabaseService(config);
   initActivityTableSchema(db);
+  initReviewsTableSchema(db);
 
   return {
     db,
