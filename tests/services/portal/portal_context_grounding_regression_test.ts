@@ -9,7 +9,7 @@ import { assert, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "../../integration/helpers/test_environment.ts";
 import { join } from "@std/path";
 import { MockStrategy, PortalOperation } from "@exaix/core";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 const SENIOR_CODER_BLUEPRINT_PATH = new URL("../../../Blueprints/Identities/senior-coder.md", import.meta.url);
 

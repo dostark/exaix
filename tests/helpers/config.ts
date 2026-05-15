@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config/paths.ts";
 import { SqliteJournalMode } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
-import { TEST_DEFAULT_BRANCH } from "./constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 /**
  * Creates a mock configuration for testing.

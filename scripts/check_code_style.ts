@@ -28,6 +28,11 @@ interface Rule {
   pathFilter?: (path: string) => boolean;
 }
 
+interface ITestingShimExportInfo {
+  alias: string;
+  exportedNames: Set<string>;
+}
+
 function isPackageEntrypoint(path: string): boolean {
   return path.endsWith("/mod.ts") || path.endsWith("/index.ts");
 }
@@ -36,6 +41,101 @@ function isSamePackageReExport(line: string): boolean {
   const match = line.match(/from\s+["']([^"']+)["']/);
   return !!match && match[1].startsWith("./");
 }
+
+function isTestingCompatibilityShim(path: string): boolean {
+  return path.startsWith("tests/helpers/") || /^packages\/[^/]+\/tests\/helpers\//.test(path);
+}
+
+function parseNamedSymbols(clause: string): string[] {
+  return clause.split(",")
+    .map((symbol) => symbol.trim())
+    .filter(Boolean)
+    .map((symbol) => symbol.replace(/^type\s+/, ""))
+    .map((symbol) => symbol.split(/\s+as\s+/)[0]?.trim() ?? "")
+    .filter(Boolean);
+}
+
+function discoverPackageTestingAliases(): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const packagesDir = join(REPO_ROOT, "packages");
+
+  try {
+    for (const entry of Deno.readDirSync(packagesDir)) {
+      if (!entry.isDirectory) continue;
+      const testingDir = join(packagesDir, entry.name, "testing");
+      try {
+        const stat = Deno.statSync(testingDir);
+        if (stat.isDirectory) {
+          aliases.set(entry.name, `@exaix/${entry.name}/testing`);
+        }
+      } catch {
+        // No public testing surface for this package.
+      }
+    }
+  } catch {
+    // Repository layout unavailable; keep alias map empty.
+  }
+
+  return aliases;
+}
+
+function discoverRootTestingShimExports(): Map<string, ITestingShimExportInfo> {
+  const shimExports = new Map<string, ITestingShimExportInfo>();
+  const helpersDir = join(REPO_ROOT, "tests", "helpers");
+  const exportRegex = /export(?:\s+type)?\s*{([\s\S]*?)}\s*from\s*["'](@exaix\/[^"']+\/testing)["']/g;
+
+  try {
+    for (const entry of Deno.readDirSync(helpersDir)) {
+      if (!entry.isFile || !entry.name.endsWith(".ts")) continue;
+
+      const absolutePath = join(helpersDir, entry.name);
+      const repoPath = `tests/helpers/${entry.name}`;
+      const source = Deno.readTextFileSync(absolutePath);
+
+      for (const match of source.matchAll(exportRegex)) {
+        const alias = match[2];
+        const exportedNames = parseNamedSymbols(match[1]);
+        const existing = shimExports.get(repoPath) ?? { alias, exportedNames: new Set<string>() };
+        existing.alias = alias;
+        exportedNames.forEach((name) => existing.exportedNames.add(name));
+        shimExports.set(repoPath, existing);
+      }
+    }
+  } catch {
+    // Root helper directory unavailable; keep shim map empty.
+  }
+
+  return shimExports;
+}
+
+function resolveRepoImportPath(importerRepoPath: string, importPath: string): string | null {
+  if (importPath.startsWith(".")) {
+    return normalize(join(dirname(importerRepoPath), importPath));
+  }
+  if (importPath.startsWith("packages/") || importPath.startsWith("tests/")) {
+    return normalize(importPath);
+  }
+
+  return null;
+}
+
+function getPackageTestingAliasForTestImport(normalizedImport: string): { packageName: string; alias: string } | null {
+  const match = normalizedImport.match(/^packages\/([^/]+)\/tests\//);
+  if (!match) {
+    return null;
+  }
+
+  const packageName = match[1];
+  const alias = packageTestingAliases.get(packageName);
+  if (!alias) {
+    return null;
+  }
+
+  return { packageName, alias };
+}
+
+const packageTestingAliases = discoverPackageTestingAliases();
+const rootTestingShimExports = discoverRootTestingShimExports();
 
 const args = new Set(Deno.args);
 const strictImports = args.has("--strict-imports");
@@ -204,7 +304,8 @@ const rules: Rule[] = [
     message:
       "Re-exporting entities from other modules (e.g., 'export { ... } from ...' or 'export * from ...') is prohibited. Each module must only export entities it defines.",
     severity: "error" as const,
-    pathFilter: (path: string) => !path.endsWith("/mod.ts") && !path.endsWith("/index.ts"),
+    pathFilter: (path: string) =>
+      !path.endsWith("/mod.ts") && !path.endsWith("/index.ts") && !isTestingCompatibilityShim(path),
   },
   {
     name: "package-entrypoint-root-src-reexport",
@@ -496,6 +597,25 @@ async function checkFile(path: string) {
         }
       }
 
+      const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
+      const importPath = importMatch?.[1];
+      if (importPath) {
+        const normalizedImport = resolveRepoImportPath(relativePath, importPath);
+        if (normalizedImport) {
+          const testingImportInfo = getPackageTestingAliasForTestImport(normalizedImport);
+          if (testingImportInfo) {
+            const owningPackageTestsRoot = `packages/${testingImportInfo.packageName}/tests/`;
+            const isOwnPackageTestImport = relativePath.startsWith(owningPackageTestsRoot);
+            if (!isOwnPackageTestImport) {
+              console.log(
+                `ERROR [package-testing-import] ${relativePath}:${idx + 1} – Import package-specific test support from '${testingImportInfo.alias}' instead of deep-importing '${importPath}' from '${owningPackageTestsRoot}'.`,
+              );
+              errorCount++;
+            }
+          }
+        }
+      }
+
       if (relativePath.startsWith("packages/") && relativePath.includes("/src/")) {
         const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
         const importPath = importMatch?.[1];
@@ -673,6 +793,41 @@ async function checkFile(path: string) {
     if (functionalCodeLineNum === -1 && protectedBraceCount === 0) {
       functionalCodeLineNum = idx + 1;
     }
+  }
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    if (templateLiteralLines.has(idx + 1)) {
+      continue;
+    }
+
+    const line = lines[idx];
+    const namedImportMatch = line.match(/^\s*import(?:\s+type)?\s*{([^}]*)}\s*from\s+["']([^"']+)["'];?/);
+    if (!namedImportMatch) {
+      continue;
+    }
+
+    const importClause = namedImportMatch[1];
+    const importPath = namedImportMatch[2];
+    const normalizedImport = resolveRepoImportPath(repoPath, importPath);
+    if (!normalizedImport) {
+      continue;
+    }
+
+    const shimInfo = rootTestingShimExports.get(normalizedImport);
+    if (!shimInfo) {
+      continue;
+    }
+
+    const importedSymbols = parseNamedSymbols(importClause);
+    const offendingSymbols = importedSymbols.filter((symbol) => shimInfo.exportedNames.has(symbol));
+    if (offendingSymbols.length === 0) {
+      continue;
+    }
+
+    console.log(
+      `ERROR [package-testing-import] ${repoPath}:${idx + 1} – Import ${offendingSymbols.join(", ")} from '${shimInfo.alias}' instead of routing package-owned test support through '${importPath}'.`,
+    );
+    errorCount++;
   }
 
   // Check: Header placement

@@ -30,7 +30,7 @@ import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from 
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { initTestDbService } from "../helpers/db.ts";
 
 interface IErrorCapture {

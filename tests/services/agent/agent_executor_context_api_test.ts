@@ -18,7 +18,7 @@ import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 describe("AgentExecutor API with IWorkspaceExecutionContext", () => {
   let tempDir: string;

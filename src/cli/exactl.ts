@@ -39,7 +39,7 @@ import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
 import type { ICliApplicationContext } from "./cli_context.ts";
-import { GitService } from "../services/core/git_service.ts";
+import { GitService } from "@exaix/git";
 import type { OutputFormat } from "./memory_types.ts";
 import {
   BINARY_VERSION,

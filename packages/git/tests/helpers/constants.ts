@@ -1,7 +1,7 @@
 /**
  * @module GitTestConstants
  * @path packages/git/tests/helpers/constants.ts
- * @description Shared constants for Git package tests.
+ * @description Compatibility shim for git test constants.
  */
 
-export const TEST_DEFAULT_BRANCH = "main";
+export { TEST_DEFAULT_BRANCH } from "../../testing/helpers/constants.ts";

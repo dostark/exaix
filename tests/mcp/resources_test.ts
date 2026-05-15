@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import {
   buildPortalURI,
   discoverAllResources,

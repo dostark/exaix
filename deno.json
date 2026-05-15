@@ -93,6 +93,8 @@
     "@exaix/cli/": "./packages/cli/src/",
     "@exaix/git": "./packages/git/mod.ts",
     "@exaix/git/": "./packages/git/src/",
+    "@exaix/git/testing": "./packages/git/testing/mod.ts",
+    "@exaix/git/testing/": "./packages/git/testing/",
     "@exaix/core/reviews/": "./src/reviews/",
     "@exaix/schemas": "./packages/schemas/mod.ts",
     "@exaix/schemas/": "./packages/schemas/src/",

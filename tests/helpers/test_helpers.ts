@@ -17,7 +17,7 @@ import type { PortalExecutionStrategy } from "@exaix/core";
 import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
 import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
-import { TEST_DEFAULT_BRANCH } from "./constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 /**
  * Create a fully-typed stub implementation of the DatabaseService used in tests.

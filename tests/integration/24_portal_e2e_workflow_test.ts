@@ -26,8 +26,8 @@ import {
   pathExists,
   runExactl,
 } from "../helpers/portal_test_utils.ts";
-import type { setupGitRepo as _setupGitRepo } from "../helpers/git_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import type { setupGitRepo as _setupGitRepo } from "@exaix/git/testing";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";

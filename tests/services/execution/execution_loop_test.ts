@@ -12,7 +12,7 @@ import { getDefaultPaths } from "@exaix/core/config/paths.ts";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import {
   getMemoryExecutionDir,
   getWorkspaceActiveDir,
@@ -24,7 +24,6 @@ import { ensureDir } from "@std/fs/ensure-dir";
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**

@@ -21,7 +21,7 @@ import {
   makeMockKnowledgeService,
   makeRequestProcessorEnv as makeEnvBase,
 } from "./request_test_helpers.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 
 // ============================================================================

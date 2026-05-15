@@ -3,11 +3,12 @@ title: "Code Style & Standards"
 description: Coding standards and stylistic requirements for Exaix
 agent_priority: mandatory
 copilot_knowledge_base: true
-version: 1.1
+version: 1.2
 capabilities: [linting_rules, naming_conventions, testing_patterns]
 links:
   - "packages/core/src/constants.ts"
   - "scripts/check_code_style.ts"
+  - "scripts/check_code_style.md"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
@@ -241,12 +242,28 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 
 - **No cross-package test imports:** `packages/<package>/tests/` files must not import from root-level `tests/`, from other packages' test directories, or from any module outside their own package.
 - **Fixtures belong inside the package:** Store package-specific test fixtures under `packages/<package>/tests/fixtures/` or package-local helper code under `packages/<package>/tests/helpers/`.
+- **Use package testing subpaths when they exist:** If a package exposes a public testing surface such as `@exaix/<package>/testing`, any tests outside that package must import package-specific helpers, config builders, fixtures, or test-only data structures through that public subpath.
+- **No deep imports into another package's test internals:** Once a package-specific testing subpath exists, outside consumers must not import from `packages/<package>/tests/...` or equivalent relative deep paths.
+- **No root shim indirection for package-owned test support:** When `@exaix/<package>/testing` exists, do not keep routing package-specific test helpers through root `tests/helpers/*` shims except as temporary compatibility layers being actively drained.
 - **Avoid inline multiline structured text in tests:** It is highly recommended to avoid embedding YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test instead to keep test files readable.
 - **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
 - **Package source must not import repository source directly:** Files under `packages/<package>/src/` must not import from repository `src/*` paths directly. Use package public APIs instead.
 - **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
 
-These rules are enforced by `scripts/check_code_style.ts` via the `[package-test-boundary]` and `[package-src-boundary]` error tags.
+**Prohibited when a testing subpath exists:**
+
+```ts
+import { TEST_DEFAULT_BRANCH } from "../../packages/git/tests/helpers/constants.ts";
+import { setupGitRepo } from "../helpers/git_test_helper.ts";
+```
+
+**Required:**
+
+```ts
+import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+```
+
+These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
 
 - Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 
@@ -442,6 +459,7 @@ This file is the single authoritative source for code style. The following docum
 
 - [`CLAUDE.md`](CLAUDE.md) — delegates to this file for all style rules
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — links to this file for coding standards
+- [`scripts/check_code_style.md`](scripts/check_code_style.md) — companion reference for the code-style checker and boundary-oriented import rules
 - [`.copilot/workflows/exaix-development.md`](.copilot/workflows/exaix-development.md)
 - [`.copilot/README.md`](.copilot/README.md)
 

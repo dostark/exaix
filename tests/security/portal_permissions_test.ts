@@ -9,7 +9,7 @@ import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test("PathResolver: resolves user-defined portal", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "portal-test-" });

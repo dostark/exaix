@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
 import type { IPortalConfig } from "@exaix/schemas/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 describe("AgentExecutor with IWorkspaceExecutionContext", () => {
   let tempDir: string;

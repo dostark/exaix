@@ -13,7 +13,7 @@ import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 interface IReviewCommandsInternals {
   normalizeTypeFilter(value?: string): string;

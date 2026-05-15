@@ -15,7 +15,7 @@ import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/cor
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { initTestDbService } from "../../helpers/db.ts";
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {

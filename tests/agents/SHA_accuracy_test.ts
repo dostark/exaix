@@ -22,7 +22,7 @@ import { ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test({
   name: "SHA accuracy: executeStep overwrites GIT_EMPTY_SHA with real HEAD SHA",

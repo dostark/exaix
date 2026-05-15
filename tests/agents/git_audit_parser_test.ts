@@ -22,7 +22,7 @@ import { PortalPermissionsService } from "../../src/services/portal/portal_permi
 import { PortalOperation } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 /** Minimal no-op mock logger to avoid undefined errors in stub code-paths */
 const NOOP_LOGGER = {

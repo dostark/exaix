@@ -35,7 +35,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import type { ILogOutput } from "@exaix/core/types/mod.ts";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
-import { GitService } from "./services/core/git_service.ts";
+import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 

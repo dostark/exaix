@@ -1,10 +1,11 @@
 ---
+name: package-extraction
 agent: senior-coder
 scope: dev
 title: "Package Extraction Skill (#package-extraction)"
 description: Extract the next package-owned slice from src/ into packages/ while preserving root behavior, tests, and compatibility shims
 short_summary: "Guided workflow for selecting and extracting the next package-owned slice from src/ into packages/ using Exaix package-boundary rules and migration-plan sequencing."
-version: "1.3"
+version: "1.4"
 topics: ["packages", "migration", "refactor", "tdd", "architecture", "workspace"]
 qwen_skill: package-extraction
 ---
@@ -20,6 +21,9 @@ Key points
 - Use scripts/package_import_migration.ts to rewrite imports from old ownership paths to the new package-owned source of truth
 - Use scripts/package_import_canonize.ts after extraction to normalize direct package file imports to canonical package or subfolder barrel imports
 - Every extraction must include the relevant test migration into packages/<package>/tests/
+- When package-specific test helpers, configs, or test-only data structures must be used both by
+   tests inside the package and tests outside it, create a public package-owned testing subpath such
+   as `@exaix/<package>/testing` instead of deep-importing from `packages/<package>/tests/`
 - Update the migrated module frontmatter or file-level metadata so ownership, path, module purpose, and package intent remain accurate after the move
 - Preserve a clear architectural layout inside the target package by placing migrated modules into correspondent subfolders that communicate intent and functionality
 - When practical, keep the old `src/` folder tree shape as the starting layout inside `packages/<package>/src/`, but only if that tree still reflects a clean package-internal architecture
@@ -48,6 +52,8 @@ Workflow
    - Identify the source of truth path under packages/
    - Identify the compatibility shim path that must remain in src/
    - Identify which tests move into packages/<package>/tests/
+   - Identify whether the slice also needs a public package-owned testing surface such as
+     `packages/<package>/testing/` for helpers, configs, or fixtures that external tests must import
    - Identify root validations needed after the move
    - Identify how the migrated module frontmatter or file header must change so module metadata remains correct in its new package location
    - Identify the target package subfolder that best communicates the module's intent; prefer a deliberate architectural folder over a flat dump into `src/`
@@ -57,6 +63,9 @@ Workflow
 
 4. Enforce TDD and compatibility
    - Migrate or add package-local tests first when the extraction changes ownership in a testable slice
+   - If tests outside the package need package-specific support code, create a narrow exported
+     testing surface for that package instead of telling external tests to import from
+     `packages/<package>/tests/`
    - Move the module into a package-local folder that preserves clear architectural intent, for example `types/`, `status/`, `config/`, `handlers/`, `registry/`, or another functionally coherent subfolder
    - Preserve or improve the old `src/` tree shape when it already provides a clear intent-based structure; do not copy confusing root runtime structure into a package mechanically
    - If the legacy module mixes concerns, split it into smaller files with clear intent during extraction and preserve compatibility with a shim or barrel where needed
@@ -82,6 +91,15 @@ Preferred invocation order
    - 3. If test imports now point at direct package file paths, normalize them:
       `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`
    - 4. Run focused tests for the moved package tests
+- Package-owned testing subpath extraction
+   - Use when helpers, config builders, or test-only data structures belong to one package but must
+     be imported by tests outside that package
+   - 1. Keep package-local tests under `packages/<package>/tests/`
+   - 2. Create `packages/<package>/testing/` as the public test-support surface
+   - 3. Export that surface via package config and import-map aliases such as `@exaix/<package>/testing`
+   - 4. Migrate outside consumers to the new testing alias instead of deep imports or root helper duplication
+   - 5. Leave temporary compatibility shims only where needed to drain old imports safely
+   - 6. Run focused tests and checks for both the package tests and the external consumers that were rewired
 - Source extraction from `src/` into an existing package
    - Use when the package already exists and the slice has a clear destination under `packages/<package>/src/`
    - 1. Identify candidate src modules and direct importers:
@@ -147,6 +165,8 @@ Decision rules
   - package-aligned tests already importing package APIs
   - shared contracts, statuses, constants, enums, config helpers
   - reusable parsing/schema/helper logic
+   - package-specific test helpers/configs/fixtures that are needed by tests both inside and outside
+      the owning package
 - Good package-internal layout choices:
    - folders whose names expose intent and responsibility, such as `types`, `status`, `config`, `registry`, `handlers`, `repositories`, or similarly clear domain groupings
    - preserving an old `src/` subtree when it already reflects a coherent architectural slice rather than root-runtime accident
@@ -157,6 +177,8 @@ Decision rules
   - HTTP/SSE server transport wiring
   - root executable/bootstrap code
 - If a root file is already a thin wrapper over a package, treat it as a compatibility shim rather than as unresolved ownership
+- If tests outside a package need package-specific support code, prefer a public package testing
+   subpath over deep imports into `packages/<package>/tests/` or new root helper duplication
 - If a moved file keeps stale `@path`, `@module`, ownership comments, or other frontmatter/header metadata, the extraction is incomplete even if imports compile
 - If a proposed package folder structure only copies historical root layout without clarifying package intent, refactor the destination layout before considering the extraction done
 - If a migrated file still mixes unrelated responsibilities that should now live in separate package sub-modules, the extraction is incomplete even if the file compiles in its new location
@@ -164,6 +186,8 @@ Decision rules
 Do / Don't
 - ✅ Do preserve root behavior and quality gates during the extraction
 - ✅ Do move package-owned tests into packages/<package>/tests/
+- ✅ Do create a package-owned testing subpath when package-specific test support must be shared with
+   tests outside the package
 - ✅ Do leave a compatibility shim behind when imports are not yet fully rewired
 - ✅ Do align the extraction with the current strategic phase rather than the original idealized sequence
 - ✅ Do treat current workspace package names as authoritative for current-state work
@@ -171,6 +195,8 @@ Do / Don't
 - ❌ Don't start with orchestration hubs or executable surfaces unless the live plan says they are ready
 - ❌ Don't move concrete adapters into @exaix/core just because they currently live under src/services/core/
 - ❌ Don't widen package scope only to make a migration feel more complete
+- ❌ Don't tell outside consumers to import from `packages/<package>/tests/...`
+- ❌ Don't move package-specific test helpers into `@exaix/testing` when the support is clearly owned by one package
 
 Related skills
 - #explore            — map candidate ownership and dependencies before extraction
@@ -202,7 +228,8 @@ When invoked, the agent should:
 8. Update migrated module frontmatter or file-level metadata as part of the extraction, not as optional cleanup.
 9. Keep the target package layout intentionally organized into correspondent folders that communicate responsibility; optionally follow the old `src/` tree where that structure is still clean and meaningful.
 10. Split legacy mixed-responsibility modules into coherent sub-modules when that is needed to achieve a clean package architecture instead of preserving old accidental structure.
-11. Update only the migration docs whose purpose actually changed.
+11. When a package-specific test helper/config/fixture must be shared with tests outside the package, prefer creating `packages/<package>/testing/` and exporting `@exaix/<package>/testing` over deep-importing package test internals.
+12. Update only the migration docs whose purpose actually changed.
 
 ## Output format
 
@@ -217,3 +244,4 @@ When invoked, the agent should:
 - `#package-extraction Extract the next shared contract/config slice from src/ into its package while leaving compatibility shims.`
 - `#package-extraction Evaluate a src/ module cluster and migrate only the portion that is actually package-ready.`
 - `#package-extraction Use the dependency graph to identify the next MCP-owned slice, move it into @exaix/mcp, leave compatibility shims, and normalize imports afterward.`
+- `#package-extraction Create a package-owned testing subpath for helpers and fixtures that need to be shared outside the package without deep-importing package tests.`

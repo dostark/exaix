@@ -9,7 +9,7 @@ import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
 import { MockStrategy, PortalOperation } from "@exaix/core";

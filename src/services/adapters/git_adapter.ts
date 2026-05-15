@@ -6,7 +6,7 @@
  * @related-files [src/services/core/git_service.ts, src/cli/commands/review_commands.ts]
  */
 
-import { GitService } from "../core/git_service.ts";
+import { GitService } from "@exaix/git";
 import type { IDatabaseService, IGitService } from "@exaix/core/types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 

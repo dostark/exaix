@@ -45,8 +45,7 @@ import {
   getWorkspaceRejectedDir,
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 
 export interface ITestEnvironmentOptions {

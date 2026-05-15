@@ -9,8 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { setupGitRepo } from "../../helpers/git_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";

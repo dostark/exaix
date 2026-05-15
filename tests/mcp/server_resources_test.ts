@@ -15,7 +15,7 @@ import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { MCPServer } from "../../src/mcp/server.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 
 /**

@@ -11,7 +11,6 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { GitService } from "../core/git_service.ts";
 import { SafeSubprocess } from "../../helpers/subprocess.ts";
 import { EventLogger } from "@exaix/core/logger/event_logger.ts";
 import { AgentExecutor } from "../agent/agent_executor.ts";
@@ -30,7 +29,12 @@ import {
   REPORT_GENERATION_MAX_TOKENS,
   REPORT_GENERATION_TEMPERATURE,
 } from "@exaix/core";
-import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE, GIT_ERROR_NOTHING_TO_COMMIT } from "@exaix/git";
+import {
+  DEFAULT_GIT_REV_PARSE_TIMEOUT_MS,
+  GIT_CMD_REV_PARSE,
+  GIT_ERROR_NOTHING_TO_COMMIT,
+  GitService,
+} from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";

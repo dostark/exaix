@@ -25,7 +25,7 @@ import type { JSONValue } from "@exaix/core/types/json.ts";
 import { DeleteFileTool } from "../../src/mcp/handlers/delete_file_tool.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
-import { GitTestHelper, setupGitRepo } from "../helpers/git_test_helper.ts";
+import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { initToolPermissionTest } from "../mcp/helpers/test_setup.ts";
 
 type AgentStepHandler = () => Promise<IAgentExecutionResult>;

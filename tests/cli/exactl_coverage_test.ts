@@ -25,7 +25,7 @@ import { MemoryStatus } from "@exaix/core";
 import { PlanStatus } from "@exaix/core";
 import { RequestStatus } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status/review_status.ts";
-import { GitService } from "../../src/services/core/git_service.ts";
+import { GitService } from "@exaix/git";
 import type { OutputFormat } from "../../src/cli/memory_types.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types/mod.ts";

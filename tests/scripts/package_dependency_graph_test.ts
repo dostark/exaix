@@ -8,8 +8,10 @@ import { assertEquals } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import {
   buildPackageGraph,
+  discoverPackageRoots,
   findCandidateSrcModules,
   resolveAliasPath,
+  runDenoInfo,
   selectPackageRoot,
 } from "../../scripts/package_dependency_graph.ts";
 import type { DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
@@ -230,4 +232,16 @@ Deno.test("buildPackageGraph ignores type-only cross-package dependencies", () =
   });
 
   assertEquals(graph.edges, []);
+});
+
+Deno.test("package dependency graph reports @exaix/git runtime dependency only on @exaix/core", async () => {
+  const info = await runDenoInfo("packages/git/mod.ts");
+  const discovery = await discoverPackageRoots();
+  const graph = buildPackageGraph(info, discovery.roots, {
+    importAliases: discovery.importAliases,
+  });
+  const gitEdges = graph.edges.filter((edge) => edge.from === "@exaix/git");
+
+  assertEquals(graph.packages.some((pkg) => pkg.name === "@exaix/git"), true);
+  assertEquals(gitEdges, [{ from: "@exaix/git", to: "@exaix/core" }]);
 });

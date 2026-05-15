@@ -20,8 +20,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { GitService } from "../core/git_service.ts";
-import type { IGitService } from "@exaix/git";
+import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
@@ -48,7 +47,6 @@ import {
   EXECUTION_REPORT_FILENAME,
   PLAN_AMENDMENT_EVENT_EXPIRED,
 } from "@exaix/core";
-import { GIT_CMD_WORKTREE } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 
 /** Represents raw YAML frontmatter before validation */

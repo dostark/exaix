@@ -16,8 +16,7 @@ import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { createGitTestContext, GitTestHelper } from "../../helpers/git_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "../../helpers/constants.ts";
+import { createGitTestContext, GitTestHelper, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 const BASIC_TEST_BLUEPRINT =

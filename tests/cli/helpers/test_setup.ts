@@ -17,7 +17,7 @@ import { PortalAdapter } from "../../../src/services/adapters/portal_adapter.ts"
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { getMemoryProjectsDir } from "../../helpers/paths_helper.ts";
-import { GitTestHelper, setupGitRepo } from "../../helpers/git_test_helper.ts";
+import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../helpers/portal_test_helper.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";

@@ -18,7 +18,7 @@ import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { TEST_DEFAULT_BRANCH } from "../helpers/constants.ts";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 describe("ReviewCommands", () => {
   let tempDir: string;
