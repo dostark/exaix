@@ -341,3 +341,21 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     parallel_safe: false,
   },
 ];
+
+/**
+ * Canonical set of tool names safe for dynamic (ReAct-style) execution.
+ * Derived from TOOL_MANIFEST where dynamic_mode_allowed === true AND
+ * requires_human_approval === false.
+ *
+ * This is the single authoritative source for DynamicStepExecutor's
+ * permitted-tool boundary. Do NOT use READ_ONLY_TOOLS for this purpose —
+ * READ_ONLY_TOOLS is a separate constant that can drift from the manifest.
+ *
+ * Per Decision D1: mutating domain tools (create_request, approve_plan)
+ * are excluded here; Phase 79 will upgrade this to a confirmation interceptor.
+ */
+export const DYNAMIC_MODE_TOOLS: ReadonlySet<string> = new Set(
+  TOOL_MANIFEST
+    .filter((e) => e.dynamic_mode_allowed && !e.requires_human_approval)
+    .map((e) => e.name),
+);

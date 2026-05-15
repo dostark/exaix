@@ -13,16 +13,26 @@ import type { IApplicationContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 export class McpClient implements IMcpClient {
-  private readonly tools = new Map<string, ToolHandler>();
+  private readonly tools: Map<string, ToolHandler>;
 
   constructor(
     private readonly context: IApplicationContext,
-    handlers: ToolHandler[],
+    handlers: ToolHandler[] | Map<string, ToolHandler>,
   ) {
-    for (const handler of handlers) {
-      const def = handler.getToolDefinition();
-      this.tools.set(def.name, handler);
+    if (handlers instanceof Map) {
+      this.tools = new Map(handlers as Map<string, ToolHandler>);
+    } else {
+      this.tools = new Map<string, ToolHandler>();
+      for (const handler of handlers) {
+        const def = handler.getToolDefinition();
+        this.tools.set(def.name, handler);
+      }
     }
+  }
+
+  /** Returns the names of all tool handlers registered in this client. */
+  getAvailableToolNames(): McpToolName[] {
+    return [...this.tools.keys()] as McpToolName[];
   }
 
   async callTool(tool: McpToolName, args: ToolArgs): Promise<string> {

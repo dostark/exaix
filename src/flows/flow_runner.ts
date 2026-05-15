@@ -34,6 +34,7 @@ import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "../mcp/mcp_client.ts";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ToolHandler } from "../mcp/tool_handler.ts";
+import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
 import { RetryPolicy } from "@exaix/core/request/retry_policy.ts";
@@ -125,6 +126,13 @@ export interface IFlowRunnerConfig {
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;
   config?: Config;
+  /**
+   * Canonical dynamic handler map from buildDynamicHandlers(context, permissions).
+   * Takes precedence over mcpHandlers. Using this ensures only manifest-approved
+   * dynamic tools are available to DynamicStepExecutor.
+   */
+  dynamicHandlers?: Map<McpToolName, ToolHandler>;
+  /** @deprecated Use dynamicHandlers with buildDynamicHandlers() output instead. */
   mcpHandlers?: ToolHandler[];
 }
 
@@ -587,9 +595,11 @@ export class FlowRunner implements IFlowRunner {
 
     const config = this.config;
     const db = this.db;
+    const dynamicHandlers = options.dynamicHandlers;
     const mcpHandlers = options.mcpHandlers;
+    const hasDynamicTools = dynamicHandlers !== undefined || mcpHandlers !== undefined;
 
-    if (config && mcpHandlers && this.eventLogger) {
+    if (config && hasDynamicTools && this.eventLogger) {
       const activityJournal = new ActivityJournal(this.eventLogger);
 
       // Use existing context if available, otherwise build a minimal one for McpClient
@@ -617,7 +627,10 @@ export class FlowRunner implements IFlowRunner {
         git: createGitServiceStub(),
       } as IApplicationContext;
 
-      const mcpClient = new McpClient(context, mcpHandlers);
+      // Prefer the canonical Map from buildDynamicHandlers(); fall back to legacy array.
+      const mcpClient = dynamicHandlers
+        ? new McpClient(context, dynamicHandlers)
+        : new McpClient(context, mcpHandlers!);
       this.mcpClient = mcpClient;
       const llmClient = new LlmClient(config);
       this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
