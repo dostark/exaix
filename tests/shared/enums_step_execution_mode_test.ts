@@ -68,3 +68,17 @@ Deno.test("All MCP tools are classified", () => {
     );
   }
 });
+
+Deno.test("Dead enum entries removed: FETCH_URL is not a McpToolName value", () => {
+  assertFalse(
+    (Object.values(McpToolName) as string[]).includes("FETCH_URL"),
+    'McpToolName must not contain dead entry "FETCH_URL" — internal-only tools belong in ToolName',
+  );
+});
+
+Deno.test("Dead enum entries removed: raw GIT is not a McpToolName value", () => {
+  assertFalse(
+    (Object.values(McpToolName) as string[]).includes("git"),
+    'McpToolName must not contain dead entry "git" — git_* tools use specific suffixed names',
+  );
+});

@@ -75,11 +75,7 @@ Deno.test("MCP Server: handles tools/list request", async () => {
     assertExists(result.tools);
     assertEquals(Array.isArray(result.tools), true);
 
-    // Registry excludes reserved/unimplemented enum entries.
-    const expectedRegistered = Object.values(McpToolName).filter(
-      (tool) => tool !== McpToolName.GIT && tool !== McpToolName.FETCH_URL,
-    ).length;
-    assertEquals(result.tools.length, expectedRegistered);
+    assertEquals(result.tools.length, Object.values(McpToolName).length);
     const toolNames = result.tools.map((t: { name: string }) => t.name);
     assert(toolNames.includes(McpToolName.READ_FILE));
     assert(toolNames.includes(McpToolName.WRITE_FILE));

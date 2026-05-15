@@ -291,7 +291,6 @@ export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.GIT_STATUS,
   McpToolName.LIST_PLANS,
   McpToolName.QUERY_JOURNAL,
-  McpToolName.FETCH_URL,
 ]);
 
 export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
@@ -305,7 +304,6 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.RUN_COMMAND,
   McpToolName.CREATE_REQUEST,
   McpToolName.APPROVE_PLAN,
-  McpToolName.GIT,
 ]);
 
 export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;

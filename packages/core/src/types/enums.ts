@@ -446,8 +446,6 @@ export enum McpToolName {
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
-  FETCH_URL = "FETCH_URL",
-  GIT = "git",
 }
 /**
  * Types of artifacts produced by agents.
