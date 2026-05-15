@@ -5,3 +5,6 @@
  */
 
 export * from "./constants.ts";
+export * from "./enums.ts";
+export { TOOL_MANIFEST } from "./manifest.ts";
+export type { IToolManifestEntry } from "./manifest.ts";

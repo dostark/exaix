@@ -1120,3 +1120,39 @@ export enum JsonRpcErrorCode {
   INVALID_PARAMS = -32602,
   INTERNAL_ERROR = -32603,
 }
+
+/**
+ * Classification of a tool by its exposure kind.
+ * mcp_handler: live MCP tool backed by a ToolHandler class (portal/file/git tools).
+ * mcp_domain: live MCP tool backed by domain logic (exaix_* tools).
+ * internal_only: tool available only to ToolRegistry / agent strategies, not exposed via MCP.
+ */
+export enum ToolKind {
+  MCP_HANDLER = "mcp_handler",
+  MCP_DOMAIN = "mcp_domain",
+  INTERNAL_ONLY = "internal_only",
+}
+
+/**
+ * Functional category of a tool for classification and routing.
+ */
+export enum ToolCategory {
+  READ = "read",
+  WRITE = "write",
+  GIT = "git",
+  DOMAIN = "domain",
+  NETWORK = "network",
+  META = "meta",
+}
+
+/**
+ * Scope of side effects a tool may produce.
+ * Used by dynamic executors and agent strategies for safe-execution decisions.
+ */
+export enum ToolSideEffectScope {
+  NONE = "none",
+  PORTAL = "portal",
+  GIT = "git",
+  NETWORK = "network",
+  SYSTEM = "system",
+}
