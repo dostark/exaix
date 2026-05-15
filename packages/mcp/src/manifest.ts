@@ -8,7 +8,7 @@
  * @related-files [src/mcp/tools.ts, src/mcp/server.ts, packages/mcp/src/enums.ts]
  */
 
-import { McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
+import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
 
 /**
  * Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
@@ -75,6 +75,11 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     description:
       "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
+    output_schema: {
+      type: "string",
+      description: "Raw text content of the file.",
+    },
+    error_types: ["PERMISSION_DENIED", "NOT_FOUND", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
@@ -87,7 +92,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file.",
+      "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
+    output_schema: {
+      type: "string",
+      description: "Success confirmation message.",
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -100,7 +110,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file.",
+      "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
+    output_schema: {
+      type: "string",
+      description: "Success confirmation message including the patched path.",
+    },
+    error_types: ["PERMISSION_DENIED", "NOT_FOUND", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -113,7 +128,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Permanently delete a file inside a portal. Irreversible unless the portal is under git version control. Verify the path before calling.",
+      "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
+    output_schema: {
+      type: "string",
+      description: "Success confirmation message.",
+    },
+    error_types: ["PERMISSION_DENIED", "NOT_FOUND", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -126,7 +146,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Move or rename a file within a portal. The source path is removed after the move. Use for reorganization or renaming.",
+      "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
+    output_schema: {
+      type: "string",
+      description: "Success confirmation message.",
+    },
+    error_types: ["PERMISSION_DENIED", "NOT_FOUND", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -139,7 +164,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Create a directory (and any missing parent directories) inside a portal. Safe to call if the directory already exists.",
+      "Create a directory (and any missing parent directories) inside a portal. Use before writing files into a directory that may not exist yet. Safe to call if the directory already exists. Returns a success confirmation message.",
+    output_schema: {
+      type: "string",
+      description: "Success confirmation message.",
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -153,6 +183,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     description:
       "List the files and subdirectories at a path inside a portal. Use to check whether a file exists, explore directory structure, or enumerate files before processing. Returns an array of entry names.",
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Array of file and directory names at the specified path.",
+      items: { type: "string" },
+    },
+    error_types: ["PERMISSION_DENIED", "NOT_FOUND", "PATH_TRAVERSAL", "INVALID_ARGS"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
@@ -165,7 +201,13 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search.",
+      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search. Returns an array of matching relative file paths.",
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Array of relative file paths matching the search pattern.",
+      items: { type: "string" },
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
@@ -180,7 +222,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name.",
+      "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name on success.",
+    output_schema: {
+      type: "string",
+      description: "Newly created branch name.",
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.GIT,
     parallel_safe: false,
@@ -193,7 +240,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change.",
+      "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change. Returns the commit hash of the newly created commit.",
+    output_schema: {
+      type: "string",
+      description: "Git commit hash of the created commit.",
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.GIT,
     parallel_safe: false,
@@ -206,7 +258,12 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing.",
+      "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing. Returns the git status output as a formatted string.",
+    output_schema: {
+      type: "string",
+      description: "Git working tree status output showing modified, staged, and untracked files.",
+    },
+    error_types: ["PERMISSION_DENIED", "PATH_TRAVERSAL", "EXECUTION_FAILED"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
@@ -220,6 +277,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     description:
       "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
+    output_schema: {
+      type: "object",
+      description: "Command execution result with stdout, stderr, and exitCode.",
+      properties: {
+        stdout: { type: "string", description: "Standard output of the command." },
+        stderr: { type: "string", description: "Standard error output of the command." },
+        exitCode: { type: "number", description: "Process exit code (0 = success)." },
+      },
+    },
+    error_types: ["PERMISSION_DENIED", "COMMAND_BLOCKED", "EXECUTION_FAILED", "INVALID_ARGS"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.SYSTEM,
     parallel_safe: false,
@@ -234,7 +301,17 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: true,
     docs_visible: true,
     description:
-      "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79.",
+      "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79. Returns the created request record with its assigned ID.",
+    output_schema: {
+      type: "object",
+      description: "Created request record with id, title, and status fields.",
+      properties: {
+        id: { type: "string", description: "Unique request identifier." },
+        title: { type: "string", description: "Request title." },
+        status: { type: "string", description: "Initial request status." },
+      },
+    },
+    error_types: ["INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -247,7 +324,20 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "List all execution plans (active, draft, or completed) tracked in the Exaix workspace. Read-only; safe for dynamic execution. Use to check plan status or find a plan ID.",
+      "List all execution plans (active, draft, or completed) tracked in the Exaix workspace. Read-only; safe for dynamic execution. Use to check plan status or find a plan ID before approving or querying. Returns an array of plan summary objects.",
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Array of plan summary objects with id, title, and status.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          status: { type: "string" },
+        },
+      },
+    },
+    error_types: ["EXECUTION_FAILED"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
@@ -260,7 +350,16 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: true,
     docs_visible: true,
     description:
-      "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Mutating — requires human confirmation in Phase 79.",
+      "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation in Phase 79. Returns the updated plan record.",
+    output_schema: {
+      type: "object",
+      description: "Updated plan record with new approval status.",
+      properties: {
+        id: { type: "string" },
+        status: { type: "string" },
+      },
+    },
+    error_types: ["NOT_FOUND", "INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
@@ -273,7 +372,20 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     requires_human_approval: false,
     docs_visible: true,
     description:
-      "Query the Exaix activity journal for execution history, tool calls, or agent events. Read-only; safe for dynamic execution. Use to audit what happened or look up recent activity.",
+      "Query the Exaix activity journal for execution history, tool calls, or agent events. Read-only; safe for dynamic execution. Use to audit what happened or look up recent activity in a flow. Returns an array of matching journal entry records.",
+    output_schema: {
+      type: JsonSchemaType.ARRAY,
+      description: "Array of journal entry records matching the query.",
+      items: {
+        type: "object",
+        properties: {
+          timestamp: { type: "string" },
+          event: { type: "string" },
+          payload: { type: "object" },
+        },
+      },
+    },
+    error_types: ["INVALID_ARGS", "EXECUTION_FAILED"],
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
