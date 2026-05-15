@@ -16,7 +16,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
-import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 import {
   COMPLEXITY_BODY_LENGTH_LOW,
   COMPLEXITY_BULLET_THRESHOLD_HIGH,

@@ -7,8 +7,6 @@ version: "1.0"
 topics: ["prompts", "routing", "skills", "copilot", "wrappers"]
 ---
 
-# .copilot/prompts/
-
 Thin routing wrappers for all Exaix skills — one `.prompt.md` per skill.
 
 ## Purpose

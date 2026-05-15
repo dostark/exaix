@@ -100,7 +100,7 @@ const testCommand = new Command()
     // Let's run security explicitly to be safe + standard suite.
 
     const success = await runParallel([
-      { cmd: ["deno", "task", "test"], desc: "Unit & Integration Tests" },
+      { cmd: ["deno", "task", "test_parallel"], desc: "Unit & Integration Tests" },
       { cmd: ["deno", "task", "test:security"], desc: "Security Regression Tests" },
     ]);
     if (!success) Deno.exit(1);

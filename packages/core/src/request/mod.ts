@@ -5,3 +5,4 @@
  */
 
 export * from "./request.ts";
+export * from "./request_frontmatter.ts";

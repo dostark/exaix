@@ -27,8 +27,7 @@ import {
   type IRetryPolicy,
   type IRetryPolicyConfig,
   type IRetryResult,
-} from "../../../packages/core/src/request/retry_policy.ts";
-
+} from "@exaix/core/request/retry_policy.ts";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
 import { extractKeywords } from "../../helpers/text.ts";
 import { renderSkillsSection } from "./prompt_formatter.ts";

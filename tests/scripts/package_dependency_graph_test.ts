@@ -9,6 +9,7 @@ import { toFileUrl } from "@std/path";
 import {
   buildPackageGraph,
   findCandidateSrcModules,
+  resolveAliasPath,
   selectPackageRoot,
 } from "../../scripts/package_dependency_graph.ts";
 import type { DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
@@ -31,9 +32,11 @@ Deno.test("buildPackageGraph assembles package edges from deno info output", () 
         dependencies: [
           {
             specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href },
           },
           {
             specifier: "https://deno.land/std@0.221.0/fs/mod.ts",
+            code: { specifier: "https://deno.land/std@0.221.0/fs/mod.ts" },
           },
         ],
       },
@@ -42,6 +45,7 @@ Deno.test("buildPackageGraph assembles package edges from deno info output", () 
         dependencies: [
           {
             specifier: toFileUrl(`${repo}/packages/core/src/constants.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/packages/core/src/constants.ts`).href },
           },
         ],
       },
@@ -72,6 +76,7 @@ Deno.test("findCandidateSrcModules identifies src modules that import @exaix/cor
         dependencies: [
           {
             specifier: "@exaix/core",
+            code: { specifier: "@exaix/core" },
           },
         ],
       },
@@ -80,6 +85,7 @@ Deno.test("findCandidateSrcModules identifies src modules that import @exaix/cor
         dependencies: [
           {
             specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href },
           },
         ],
       },
@@ -106,6 +112,7 @@ Deno.test("buildPackageGraph prefers canonical package aliases when import alias
         dependencies: [
           {
             specifier: "@exaix/core",
+            code: { specifier: "@exaix/core" },
           },
         ],
       },
@@ -139,6 +146,7 @@ Deno.test("findCandidateSrcModules accepts canonical package alias names", () =>
         dependencies: [
           {
             specifier: "@exaix/core",
+            code: { specifier: "@exaix/core" },
           },
         ],
       },
@@ -151,4 +159,75 @@ Deno.test("findCandidateSrcModules accepts canonical package alias names", () =>
 
   assertEquals(report?.targetRoot, "packages/core");
   assertEquals(report?.directSrcModules, ["src/shared/types/json.ts"]);
+});
+
+Deno.test("resolveAliasPath preserves exact file aliases", () => {
+  assertEquals(
+    resolveAliasPath("@exaix/core", {
+      "@exaix/core": "packages/core/mod.ts",
+    }),
+    "packages/core/mod.ts",
+  );
+});
+
+Deno.test("buildPackageGraph ignores repo-local modules outside declared package roots", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/packages/schemas/mod.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/packages/schemas/src/portal_permissions.ts`).href,
+        dependencies: [
+          {
+            specifier: toFileUrl(`${repo}/tests/helpers/constants.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/tests/helpers/constants.ts`).href },
+          },
+        ],
+      },
+      {
+        specifier: toFileUrl(`${repo}/tests/helpers/constants.ts`).href,
+      },
+    ],
+  };
+
+  const graph = buildPackageGraph(info, ["src", "packages/schemas"], {
+    importAliases: {
+      "@exaix/schemas": "packages/schemas/mod.ts",
+    },
+  });
+
+  assertEquals(graph.packages.map((pkg) => pkg.name).sort(), ["@exaix", "@exaix/schemas"]);
+  assertEquals(graph.edges, []);
+});
+
+Deno.test("buildPackageGraph ignores type-only cross-package dependencies", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/packages/core/mod.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/packages/core/src/types/i_config_service.ts`).href,
+        dependencies: [
+          {
+            specifier: "@exaix/schemas/config.ts",
+          },
+        ],
+      },
+      {
+        specifier: toFileUrl(`${repo}/packages/schemas/src/config.ts`).href,
+      },
+    ],
+  };
+
+  const graph = buildPackageGraph(info, ["src", "packages/core", "packages/schemas"], {
+    importAliases: {
+      "@exaix/core": "packages/core/mod.ts",
+      "@exaix/schemas": "packages/schemas/mod.ts",
+      "@exaix/schemas/": "packages/schemas/src/",
+    },
+  });
+
+  assertEquals(graph.edges, []);
 });

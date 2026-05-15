@@ -15,10 +15,9 @@ import { ActivityActor, BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCom
 import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import type { IServiceContext } from "../common/types.ts";
+import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IApplicationContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 
 export interface IToolRegistryConfig {

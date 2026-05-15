@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join, relative } from "@std/path";
+import { dirname, join, relative } from "@std/path";
 import {
   getBestImportSourceForSymbol,
   getNewImportSource,
@@ -37,6 +37,31 @@ Deno.test("package_import_migration maps src subtree imports into packages subtr
   assertEquals(actual, expectedImport);
 });
 
+Deno.test("package_import_migration maps exact file-path moves to the new file path", async () => {
+  const tempRoot = await Deno.makeTempDir();
+  const moduleDir = join(tempRoot, "src/services/request");
+  const oldFile = join(tempRoot, "src/services/common/types.ts");
+  const newFile = join(tempRoot, "packages/core/src/types/service_context.ts");
+  await Deno.mkdir(dirname(oldFile), { recursive: true });
+  await Deno.mkdir(dirname(newFile), { recursive: true });
+  await Deno.mkdir(moduleDir, { recursive: true });
+
+  await Deno.writeTextFile(oldFile, "export interface IServiceContext {}\n");
+  await Deno.writeTextFile(newFile, "export interface IServiceContext {}\n");
+
+  const actual = await getNewImportSource(
+    "../common/types.ts",
+    moduleDir,
+    {},
+    oldFile,
+    newFile,
+  );
+
+  const expected = normalizeImportPath(relative(moduleDir, newFile));
+  const expectedImport = expected.startsWith(".") ? expected : `./${expected}`;
+  assertEquals(actual, expectedImport);
+});
+
 Deno.test("package_import_migration prefers barrel package import when symbol is exported through the barrel", async () => {
   const tempRoot = await Deno.makeTempDir();
   const moduleDir = join(tempRoot, "src/services/request");
@@ -51,6 +76,7 @@ Deno.test("package_import_migration prefers barrel package import when symbol is
   await Deno.writeTextFile(join(newRoot, "mod.ts"), "export * from './i_database_service.ts';\n");
 
   const imports = {
+    "@exaix/core/types": join(tempRoot, "packages/core/src/types/mod.ts"),
     "@exaix/core/": join(tempRoot, "packages/core/src"),
   };
 
@@ -96,6 +122,39 @@ Deno.test("package_import_migration prefers exact package alias for root barrel 
   });
 
   assertEquals(actual, "@exaix/testing");
+});
+
+Deno.test("package_import_migration keeps mod.ts import when only a prefix alias exists", async () => {
+  const tempRoot = await Deno.makeTempDir();
+  const moduleDir = join(tempRoot, "src/services/request");
+  const oldRoot = join(tempRoot, "src/services/request_processing/types.ts");
+  const newRoot = join(tempRoot, "packages/core/src/request/request_frontmatter.ts");
+  await Deno.mkdir(moduleDir, { recursive: true });
+  await Deno.mkdir(dirname(oldRoot), { recursive: true });
+  await Deno.mkdir(dirname(newRoot), { recursive: true });
+
+  await Deno.writeTextFile(oldRoot, "export interface IRequestFrontmatter {}\n");
+  await Deno.writeTextFile(newRoot, "export interface IRequestFrontmatter {}\n");
+  await Deno.writeTextFile(
+    join(tempRoot, "packages/core/src/request/mod.ts"),
+    'export * from "./request_frontmatter.ts";\n',
+  );
+
+  const imports = {
+    "@exaix/core/": join(tempRoot, "packages/core/src"),
+  };
+
+  const actual = await getBestImportSourceForSymbol({
+    importSource: "../request_processing/types.ts",
+    moduleDir,
+    imports,
+    oldPackage: oldRoot,
+    newPackage: newRoot,
+    symbol: "IRequestFrontmatter",
+    cache: new Map(),
+  });
+
+  assertEquals(actual, "@exaix/core/request/mod.ts");
 });
 
 function normalizeImportPath(path: string): string {

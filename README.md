@@ -164,7 +164,7 @@ Proprietary © Exaix Development Team. See [LICENSE](./LICENSE).
 
 ---
 
-# Footer — Agent Knowledge Base
+## Footer — Agent Knowledge Base
 
 - **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
 - **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)

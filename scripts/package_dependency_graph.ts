@@ -10,7 +10,7 @@
  */
 
 import { parse } from "@std/flags";
-import { dirname, fromFileUrl, join, normalize, relative } from "@std/path";
+import { dirname, extname, fromFileUrl, join, normalize, relative } from "@std/path";
 
 type PackageDependencyFormat = "text" | "json" | "dot";
 
@@ -175,7 +175,7 @@ export async function discoverPackageRoots(): Promise<IPackageDiscovery> {
   if (config.imports && typeof config.imports === "object") {
     for (const [key, value] of Object.entries(config.imports)) {
       if (typeof value !== "string") continue;
-      const normalizedValue = normalize(value.replace(/\/+$/, ""));
+      const normalizedValue = isRepoRelativeSpecifier(value) ? normalize(value.replace(/\/+$/, "")) : value;
       importAliases[key] = normalizedValue;
     }
   }
@@ -211,6 +211,9 @@ export function buildPackageGraph(
 
   for (const { path } of localModules) {
     const pkg = selectPackageRoot(path, packageRoots);
+    if (!pkg) {
+      continue;
+    }
     localModuleToPackage.set(path, pkg);
     const info = packageInfo.get(pkg)!;
     info.modules.push(path);
@@ -221,8 +224,14 @@ export function buildPackageGraph(
 
   for (const { module, path } of localModules) {
     const sourcePackage = localModuleToPackage.get(path)!;
+    if (!sourcePackage) {
+      continue;
+    }
     for (const dep of module.dependencies ?? []) {
-      const depSpecifier = dep.code?.specifier || dep.specifier;
+      const depSpecifier = getRuntimeDependencySpecifier(dep);
+      if (!depSpecifier) {
+        continue;
+      }
       let depPath = toRepoPath(depSpecifier, path);
       if (!depPath && options.importAliases) {
         depPath = resolveAliasPath(depSpecifier, options.importAliases);
@@ -237,6 +246,9 @@ export function buildPackageGraph(
       }
 
       const targetPackage = localModuleToPackage.get(depPath) ?? selectPackageRoot(depPath, packageRoots);
+      if (!targetPackage) {
+        continue;
+      }
       if (targetPackage === sourcePackage) continue;
 
       const sourceInfo = packageInfo.get(sourcePackage)!;
@@ -260,11 +272,11 @@ export function buildPackageGraph(
   };
 }
 
-export function selectPackageRoot(path: string, packageRoots: string[]): string {
-  let match = "src";
+export function selectPackageRoot(path: string, packageRoots: string[]): string | undefined {
+  let match: string | undefined;
   for (const root of packageRoots) {
     if (path === root || path.startsWith(`${root}/`)) {
-      if (root.length > match.length) {
+      if (!match || root.length > match.length) {
         match = root;
       }
     }
@@ -293,13 +305,19 @@ export function findCandidateSrcModules(
 
   for (const { module, path } of localModules) {
     const pkg = selectPackageRoot(path, packageRoots);
+    if (!pkg) {
+      continue;
+    }
     pathToPackage.set(path, pkg);
     pathToModule.set(path, module);
   }
 
   for (const { module, path } of localModules) {
     for (const dep of module.dependencies ?? []) {
-      const depSpecifier = dep.code?.specifier || dep.specifier;
+      const depSpecifier = getRuntimeDependencySpecifier(dep);
+      if (!depSpecifier) {
+        continue;
+      }
       let depPath = toRepoPath(depSpecifier, path);
       if (!depPath && options.importAliases) {
         depPath = resolveAliasPath(depSpecifier, options.importAliases);
@@ -322,7 +340,10 @@ export function findCandidateSrcModules(
     if (!path.startsWith(`${srcRoot}/`)) continue;
 
     for (const dep of module.dependencies ?? []) {
-      const depSpecifier = dep.code?.specifier || dep.specifier;
+      const depSpecifier = getRuntimeDependencySpecifier(dep);
+      if (!depSpecifier) {
+        continue;
+      }
       let depPath = toRepoPath(depSpecifier, path);
       if (!depPath && options.importAliases) {
         depPath = resolveAliasPath(depSpecifier, options.importAliases);
@@ -333,6 +354,9 @@ export function findCandidateSrcModules(
       if (!depPath) continue;
 
       const depPackage = pathToPackage.get(depPath) ?? selectPackageRoot(depPath, packageRoots);
+      if (!depPackage) {
+        continue;
+      }
       if (depPackage === targetRoot) {
         directSrcModules.add(path);
         break;
@@ -408,6 +432,10 @@ function findCanonicalPackageAlias(root: string, aliasMap: Record<string, string
       continue;
     }
 
+    if (!isRepoRelativeSpecifier(mappedPath)) {
+      continue;
+    }
+
     const normalizedMappedPath = normalize(mappedPath);
     if (
       normalizedMappedPath === root ||
@@ -450,14 +478,32 @@ export function resolveAliasPath(specifier: string, aliasMap: Record<string, str
   for (const alias of sortedAliases) {
     const mappedPath = aliasMap[alias];
     if (specifier === alias) {
-      return normalize(join(mappedPath, "mod.ts"));
+      if (!isRepoRelativeSpecifier(mappedPath)) {
+        return undefined;
+      }
+      return isModuleFileTarget(mappedPath) ? normalize(mappedPath) : normalize(join(mappedPath, "mod.ts"));
     }
     if (specifier.startsWith(`${alias}/`)) {
+      if (!isRepoRelativeSpecifier(mappedPath)) {
+        return undefined;
+      }
       const remainder = specifier.slice(alias.length + 1);
       return normalize(join(mappedPath, remainder));
     }
   }
   return undefined;
+}
+
+function getRuntimeDependencySpecifier(dep: IDenoInfoDependency): string | undefined {
+  return dep.code?.specifier;
+}
+
+function isRepoRelativeSpecifier(specifier: string): boolean {
+  return !/^[a-z]+:/i.test(specifier) && !specifier.startsWith("//");
+}
+
+function isModuleFileTarget(path: string): boolean {
+  return extname(path) !== "";
 }
 
 export function renderTextReport(entrypoint: string, graph: PackageGraph): string {

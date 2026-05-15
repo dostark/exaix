@@ -5,8 +5,7 @@
  * @architectural-layer Services
  * @related-files [src/services/common/types.ts]
  */
-import type { IServiceContext } from "../common/types.ts";
-
+import type { IServiceContext } from "@exaix/core/types";
 /**
  * Middleware function type
  */

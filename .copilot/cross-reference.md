@@ -10,47 +10,47 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 ## Task → Agent Doc Quick Reference
 
-| Task Type                                            | Primary Doc                                                                                      | Secondary Docs |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------- |
-| .copilot/prompts/ — Chat Routing Wrappers            | [prompts/README.md](prompts/README.md)                                                           |                |
-| .copilot/ — AI Agent Knowledge Base                  | [README.md](README.md)                                                                           |                |
-| Agent Thought Section Standardization                | [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)       |                |
-| Exaix Test Development Guidelines                    | [guidelines/testing.md](guidelines/testing.md)                                                   |                |
-| Specification-Driven Development in Exaix            | [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md) |                |
-| Self-improvement loop for agent instructions         | [guidelines/self-improvement.md](guidelines/self-improvement.md)                                 |                |
-| Exaix Development Guidelines                         | [guidelines/README.md](guidelines/README.md)                                                     |                |
-| Agent Content Schema Reference                       | [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)                         |                |
-| Exaix Documentation Development Guidelines           | [guidelines/documentation.md](guidelines/documentation.md)                                       |                |
-| Project Governance & Methodology                     | [guidelines/process-README.md](guidelines/process-README.md)                                     |                |
-| Exaix Source Development Guidelines                  | [guidelines/exaix-development.md](guidelines/exaix-development.md)                               |                |
-| jscpd Code Duplication Detection Guide               | [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md)                                           |                |
-| Review-Research-Improvement Pattern                  | [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md)           |                |
-| Documentation Skill (#doc)                           | [skills/doc/SKILL.md](skills/doc/SKILL.md)                                                       |                |
-| Coverage Skill (#coverage)                           | [skills/coverage/SKILL.md](skills/coverage/SKILL.md)                                             |                |
-| Package Extraction Skill (#package-extraction)       | [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)                         |                |
-| Submodule Workflow Skill (#submodule-workflow)       | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)                         |                |
-| Reduce Code Duplication (#duplication)               | [skills/duplication/SKILL.md](skills/duplication/SKILL.md)                                       |                |
-| Infrastructure/Config Skill (#infra)                 | [skills/infra/SKILL.md](skills/infra/SKILL.md)                                                   |                |
-| Plan Skill (#plan)                                   | [skills/plan/SKILL.md](skills/plan/SKILL.md)                                                     |                |
-| Refactoring Skill (#refactor)                        | [skills/refactor/SKILL.md](skills/refactor/SKILL.md)                                             |                |
-| Linting/Formatting Skill (#lint)                     | [skills/lint/SKILL.md](skills/lint/SKILL.md)                                                     |                |
-| Fix Skill (#fix)                                     | [skills/fix/SKILL.md](skills/fix/SKILL.md)                                                       |                |
-| Clean Codebase Skill (#clean-codebase)               | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)                                 |                |
-| Post-Gap Analysis Skill (#post-gap-analysis)         | [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md)                           |                |
-| Refactor-Check-Magic Skill (#refactor-check-magic)   | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)                     |                |
-| Commit Skill (#commit)                               | [skills/commit/SKILL.md](skills/commit/SKILL.md)                                                 |                |
-| Security Skill (#security)                           | [skills/security/SKILL.md](skills/security/SKILL.md)                                             |                |
-| Codebase Exploration (#explore)                      | [skills/explore/SKILL.md](skills/explore/SKILL.md)                                               |                |
-| Upgrade Skill (#upgrade)                             | [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)                                               |                |
-| TDD Workflow Skill (#tdd-workflow)                   | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)                                     |                |
-| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md)                               |                |
-| Review Skill (#review)                               | [skills/review/SKILL.md](skills/review/SKILL.md)                                                 |                |
-| Next-Steps Skill (#next-steps)                       | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)                                         |                |
-| Pre-Gap Analysis Skill (#pre-gap-analysis)           | [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)                             |                |
-| Claude provider adaptation notes                     | [providers/claude.md](providers/claude.md)                                                       |                |
-| Google Gemini Provider Adaptation Guide              | [providers/google.md](providers/google.md)                                                       |                |
-| Gemini Long-Context Reasoning Guide                  | [providers/google-long-context.md](providers/google-long-context.md)                             |                |
-| OpenAI adaptation notes                              | [providers/openai.md](providers/openai.md)                                                       |                |
+| Task Type | Primary Doc | Secondary Docs |
+| --- | --- | --- |
+| .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) | |
+| .copilot/ — AI Agent Knowledge Base | [README.md](README.md) | |
+| Agent Thought Section Standardization | [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md) | |
+| Exaix Test Development Guidelines | [guidelines/testing.md](guidelines/testing.md) | |
+| Specification-Driven Development in Exaix | [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md) | |
+| Self-improvement loop for agent instructions | [guidelines/self-improvement.md](guidelines/self-improvement.md) | |
+| Exaix Development Guidelines | [guidelines/README.md](guidelines/README.md) | |
+| Agent Content Schema Reference | [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md) | |
+| Exaix Documentation Development Guidelines | [guidelines/documentation.md](guidelines/documentation.md) | |
+| Project Governance & Methodology | [guidelines/process-README.md](guidelines/process-README.md) | |
+| Exaix Source Development Guidelines | [guidelines/exaix-development.md](guidelines/exaix-development.md) | |
+| jscpd Code Duplication Detection Guide | [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md) | |
+| Review-Research-Improvement Pattern | [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md) | |
+| Documentation Skill (#doc) | [skills/doc/SKILL.md](skills/doc/SKILL.md) | |
+| Coverage Skill (#coverage) | [skills/coverage/SKILL.md](skills/coverage/SKILL.md) | |
+| Package Extraction Skill (#package-extraction) | [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md) | |
+| Submodule Workflow Skill (#submodule-workflow) | [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md) | |
+| Reduce Code Duplication (#duplication) | [skills/duplication/SKILL.md](skills/duplication/SKILL.md) | |
+| Infrastructure/Config Skill (#infra) | [skills/infra/SKILL.md](skills/infra/SKILL.md) | |
+| Plan Skill (#plan) | [skills/plan/SKILL.md](skills/plan/SKILL.md) | |
+| Refactoring Skill (#refactor) | [skills/refactor/SKILL.md](skills/refactor/SKILL.md) | |
+| Linting/Formatting Skill (#lint) | [skills/lint/SKILL.md](skills/lint/SKILL.md) | |
+| Fix Skill (#fix) | [skills/fix/SKILL.md](skills/fix/SKILL.md) | |
+| Clean Codebase Skill (#clean-codebase) | [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md) | |
+| Post-Gap Analysis Skill (#post-gap-analysis) | [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md) | |
+| Refactor-Check-Magic Skill (#refactor-check-magic) | [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md) | |
+| Commit Skill (#commit) | [skills/commit/SKILL.md](skills/commit/SKILL.md) | |
+| Security Skill (#security) | [skills/security/SKILL.md](skills/security/SKILL.md) | |
+| Codebase Exploration (#explore) | [skills/explore/SKILL.md](skills/explore/SKILL.md) | |
+| Upgrade Skill (#upgrade) | [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md) | |
+| TDD Workflow Skill (#tdd-workflow) | [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md) | |
+| Review-Research-Improvement Skill (#review-research) | [skills/review-research/SKILL.md](skills/review-research/SKILL.md) | |
+| Review Skill (#review) | [skills/review/SKILL.md](skills/review/SKILL.md) | |
+| Next-Steps Skill (#next-steps) | [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md) | |
+| Pre-Gap Analysis Skill (#pre-gap-analysis) | [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md) | |
+| Claude provider adaptation notes | [providers/claude.md](providers/claude.md) | |
+| Google Gemini Provider Adaptation Guide | [providers/google.md](providers/google.md) | |
+| Gemini Long-Context Reasoning Guide | [providers/google-long-context.md](providers/google-long-context.md) | |
+| OpenAI adaptation notes | [providers/openai.md](providers/openai.md) | |
 
 ## Search by Topic
 

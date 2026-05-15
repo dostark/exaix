@@ -7,8 +7,7 @@
  */
 
 import { z } from "zod";
-import { PermissionAction, PortalOperation, SecurityMode } from "@exaix/core";
-import { TEST_DEFAULT_BRANCH } from "../../../tests/helpers/constants.ts";
+import { DEFAULT_PORTAL_DEFAULT_BRANCH, PermissionAction, PortalOperation, SecurityMode } from "@exaix/core";
 
 // ============================================================================
 // Permission Check Interfaces
@@ -127,7 +126,7 @@ export const PortalPermissionsSchema = z.object({
   alias: z.string(),
   target_path: z.string(),
   description: z.string().optional(),
-  default_branch: z.string().default(TEST_DEFAULT_BRANCH),
+  default_branch: z.string().default(DEFAULT_PORTAL_DEFAULT_BRANCH),
   created: z.string().optional(),
 
   // Legacy permission controls (for backward compatibility)

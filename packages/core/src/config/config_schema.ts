@@ -1,14 +1,10 @@
 /**
  * @module ConfigSchema
- * @path src/shared/schemas/config.ts
- * @description Defines the master Zod schema for Exaix's configuration file (exa.config.toml), orchestrating system, path, AI, and portal settings.
- * @architectural-layer Config
- * @related-files [src/config/service.ts, "packages/core/src/types/constants.ts"]
+ * @path packages/core/src/config/config_schema.ts
+ * @description Core-owned configuration schema used by ConfigService.
  */
 
 import { z } from "zod";
-import { AiConfigSchema } from "./ai_config.ts";
-import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
 import {
   AI_RETRY_BACKOFF_BASE_MS_MAX,
@@ -19,6 +15,8 @@ import {
   AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN,
   AI_TIMEOUT_MS_MAX,
   AI_TIMEOUT_MS_MIN,
+  ConfidenceAssessmentLevel,
+  DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
@@ -28,11 +26,23 @@ import {
   DEFAULT_ANTHROPIC_API_VERSION,
   DEFAULT_ANTHROPIC_MAX_TOKENS,
   DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_FAST_MODEL_NAME,
   DEFAULT_GOOGLE_MODEL,
   DEFAULT_GOOGLE_TIMEOUT_MS,
+  DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_MODEL_NAME,
+  DEFAULT_MCP_ENABLED,
+  DEFAULT_MCP_IDENTITY_ID,
+  DEFAULT_MCP_SERVER_NAME,
+  DEFAULT_MCP_TRANSPORT,
+  DEFAULT_MCP_VERSION,
+  DEFAULT_MOCK_STRATEGY,
   DEFAULT_OLLAMA_TIMEOUT_MS,
+  DEFAULT_PORTAL_DEFAULT_BRANCH,
+  LogLevel,
+  McpTransportType,
+  MemoryBankSource,
   MOCK_DELAY_MS,
   MOCK_DELAY_MS_MAX,
   MOCK_DELAY_MS_MIN,
@@ -42,34 +52,23 @@ import {
   MOCK_OUTPUT_TOKENS,
   MOCK_OUTPUT_TOKENS_MAX,
   MOCK_OUTPUT_TOKENS_MIN,
+  MockStrategy,
+  PermissionAction,
+  PortalAnalysisMode,
+  PortalOperation,
   PROVIDER_ANTHROPIC,
   PROVIDER_GOOGLE,
   PROVIDER_MOCK,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
-} from "@exaix/core";
-import {
-  DEFAULT_MCP_ENABLED,
-  DEFAULT_MCP_IDENTITY_ID,
-  DEFAULT_MCP_SERVER_NAME,
-  DEFAULT_MCP_TRANSPORT,
-  DEFAULT_MCP_VERSION,
-} from "@exaix/core";
-import { ProviderTypeSchema } from "./ai_config.ts";
-import {
-  ConfidenceAssessmentLevel,
-  LogLevel,
-  MemoryBankSource,
-  PortalAnalysisMode,
   ProviderCostTier,
+  ProviderType,
   QualityGateMode,
+  SecurityMode,
   SqliteJournalMode,
 } from "@exaix/core";
-import type { PortalOperation } from "@exaix/core";
 import { AnalysisMode } from "@exaix/core/request/mod.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
-import { PortalPermissionsSchema } from "./portal_permissions.ts";
-import { ZBudgetPolicy } from "./prompt_budget.ts";
 
 export interface IPortalConfig {
   alias: string;
@@ -81,14 +80,98 @@ export interface IPortalConfig {
   created?: string;
 }
 
-export type Config = z.infer<typeof ConfigSchema>;
+export const ProviderTypeSchema = z.string().min(1).refine(
+  (_val) => true,
+  { message: "Provider type must be a non-empty string" },
+);
 
-// Helper to get current working directory safely
+export const MockStrategySchema = z.nativeEnum(MockStrategy);
+
+export const MockConfigSchema = z.object({
+  strategy: MockStrategySchema.default(DEFAULT_MOCK_STRATEGY),
+  fixtures_dir: z.string().optional(),
+  error_message: z.string().optional(),
+  delay_ms: z.number().positive().optional(),
+}).default({
+  strategy: DEFAULT_MOCK_STRATEGY,
+});
+
+export const AiConfigSchema = z.object({
+  provider: ProviderTypeSchema.default(ProviderType.GOOGLE),
+  model: z.string().default(DEFAULT_AI_MODEL),
+  base_url: z.string().refine(
+    (val) => val === "" || z.string().url().safeParse(val).success,
+    { message: "Invalid url" },
+  ).optional(),
+  timeout_ms: z.number().positive().default(DEFAULT_AI_TIMEOUT_MS),
+  max_tokens: z.number().positive().optional(),
+  temperature: z.number().min(DEFAULT_AI_TEMPERATURE_MIN).max(DEFAULT_AI_TEMPERATURE_MAX).optional(),
+  mock: MockConfigSchema.optional(),
+}).default({
+  provider: ProviderType.GOOGLE,
+  timeout_ms: DEFAULT_AI_TIMEOUT_MS,
+});
+
+export const MCPConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  transport: z.nativeEnum(McpTransportType).default(McpTransportType.STDIO),
+  server_name: z.string().default("exaix"),
+  version: z.string().default(DEFAULT_MCP_VERSION),
+});
+
+export const SecurityModeSchema = z.nativeEnum(SecurityMode);
+export const PortalOperationSchema = z.nativeEnum(PortalOperation);
+export const PermissionActionSchema = z.nativeEnum(PermissionAction);
+
+export const PermissionConditionsSchema = z.object({
+  timeWindow: z.object({
+    start: z.string(),
+    end: z.string(),
+  }).optional(),
+  ipWhitelist: z.array(z.string()).optional(),
+  maxOperations: z.number().positive().optional(),
+}).optional();
+
+export const PermissionSchema = z.object({
+  resource: z.string(),
+  action: z.union([
+    PermissionActionSchema,
+    z.array(PermissionActionSchema),
+  ]),
+  conditions: PermissionConditionsSchema,
+});
+
+export const PortalSecurityConfigSchema = z.object({
+  mode: SecurityModeSchema.default(SecurityMode.SANDBOXED),
+  audit_enabled: z.boolean().default(true),
+  log_all_actions: z.boolean().default(true),
+});
+
+export const PortalPermissionsSchema = z.object({
+  alias: z.string(),
+  target_path: z.string(),
+  description: z.string().optional(),
+  default_branch: z.string().default(DEFAULT_PORTAL_DEFAULT_BRANCH),
+  created: z.string().optional(),
+  identities_allowed: z.array(z.string()).default(["*"]),
+  operations: z.array(PortalOperationSchema).default([
+    PortalOperation.READ,
+    PortalOperation.WRITE,
+    PortalOperation.GIT,
+  ]),
+  permissions: z.array(PermissionSchema).optional(),
+  security: PortalSecurityConfigSchema.optional(),
+});
+
+export const ZBudgetPolicy = z.object({
+  cloud: z.boolean().default(DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED),
+  local: z.boolean().default(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED),
+});
+
 function getCwdSafe(): string {
   try {
     return Deno.cwd();
   } catch {
-    // Fallback to /tmp if cwd doesn't exist (can happen in tests)
     return "/tmp";
   }
 }
@@ -129,7 +212,6 @@ const RoutingConfigSchema = z.object({
 }).optional().default({});
 
 export const ToolsConfigSchema = z.object({
-  // Network capability control
   fetch_url: z.object({
     enabled: z.boolean().default(false),
     allowed_domains: z.array(z.string()).default([
@@ -140,10 +222,8 @@ export const ToolsConfigSchema = z.object({
       "stackoverflow.com",
     ]),
     timeout_ms: z.number().default(5000),
-    max_response_size_kb: z.number().default(50), // Prevent context flooding
+    max_response_size_kb: z.number().default(50),
   }).default({}),
-
-  // Search limits
   grep_search: z.object({
     max_results: z.number().default(50),
     exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),
@@ -180,22 +260,17 @@ export const ConfigSchema = z.object({
     memoryGlobal: z.string().default(DEFAULTS.DEFAULT_GLOBAL_MEMORY_PATH),
   }),
   database: z.object({
-    batch_flush_ms: z.number()
-      .min(DEFAULTS.DATABASE_BATCH_FLUSH_MS_MIN)
-      .max(DEFAULTS.DATABASE_BATCH_FLUSH_MS_MAX)
+    batch_flush_ms: z.number().min(DEFAULTS.DATABASE_BATCH_FLUSH_MS_MIN).max(DEFAULTS.DATABASE_BATCH_FLUSH_MS_MAX)
       .default(DEFAULTS.DEFAULT_DATABASE_BATCH_FLUSH_MS),
-    batch_max_size: z.number()
-      .min(DEFAULTS.DATABASE_BATCH_MAX_SIZE_MIN)
-      .max(DEFAULTS.DATABASE_BATCH_MAX_SIZE_MAX)
+    batch_max_size: z.number().min(DEFAULTS.DATABASE_BATCH_MAX_SIZE_MIN).max(DEFAULTS.DATABASE_BATCH_MAX_SIZE_MAX)
       .default(DEFAULTS.DEFAULT_DATABASE_BATCH_MAX_SIZE),
     path: z.string().optional(),
     sqlite: z.object({
-      journal_mode: z.nativeEnum(SqliteJournalMode)
-        .default(DEFAULTS.DEFAULT_DATABASE_JOURNAL_MODE as SqliteJournalMode),
+      journal_mode: z.nativeEnum(SqliteJournalMode).default(
+        DEFAULTS.DEFAULT_DATABASE_JOURNAL_MODE as SqliteJournalMode,
+      ),
       foreign_keys: z.boolean().default(DEFAULTS.DEFAULT_DATABASE_FOREIGN_KEYS),
-      busy_timeout_ms: z.number()
-        .min(DEFAULTS.DATABASE_BUSY_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.DATABASE_BUSY_TIMEOUT_MS_MAX)
+      busy_timeout_ms: z.number().min(DEFAULTS.DATABASE_BUSY_TIMEOUT_MS_MIN).max(DEFAULTS.DATABASE_BUSY_TIMEOUT_MS_MAX)
         .default(DEFAULTS.DEFAULT_DATABASE_BUSY_TIMEOUT_MS),
     }).default({
       journal_mode: DEFAULTS.DEFAULT_DATABASE_JOURNAL_MODE as SqliteJournalMode.WAL,
@@ -218,10 +293,9 @@ export const ConfigSchema = z.object({
     half_open_success_threshold: DEFAULTS.DEFAULT_DATABASE_HALF_OPEN_SUCCESS_THRESHOLD,
   }),
   watcher: z.object({
-    debounce_ms: z.number()
-      .min(DEFAULTS.WATCHER_DEBOUNCE_MS_MIN)
-      .max(DEFAULTS.WATCHER_DEBOUNCE_MS_MAX)
-      .default(DEFAULTS.DEFAULT_WATCHER_DEBOUNCE_MS),
+    debounce_ms: z.number().min(DEFAULTS.WATCHER_DEBOUNCE_MS_MIN).max(DEFAULTS.WATCHER_DEBOUNCE_MS_MAX).default(
+      DEFAULTS.DEFAULT_WATCHER_DEBOUNCE_MS,
+    ),
     stability_check: z.boolean().default(DEFAULTS.DEFAULT_WATCHER_STABILITY_CHECK),
   }).default({
     debounce_ms: DEFAULTS.DEFAULT_WATCHER_DEBOUNCE_MS,
@@ -229,35 +303,32 @@ export const ConfigSchema = z.object({
   }),
   agents: z.object({
     default_model: z.string().default(DEFAULTS.DEFAULT_AGENT_MODEL),
-    timeout_sec: z.number()
-      .min(DEFAULTS.AGENT_TIMEOUT_SEC_MIN)
-      .max(DEFAULTS.AGENT_TIMEOUT_SEC_MAX)
-      .default(DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC),
-    max_iterations: z.number()
-      .min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN)
-      .max(DEFAULTS.AGENT_MAX_ITERATIONS_MAX)
-      .default(DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS),
+    timeout_sec: z.number().min(DEFAULTS.AGENT_TIMEOUT_SEC_MIN).max(DEFAULTS.AGENT_TIMEOUT_SEC_MAX).default(
+      DEFAULTS.DEFAULT_AGENT_TIMEOUT_SEC,
+    ),
+    max_iterations: z.number().min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN).max(DEFAULTS.AGENT_MAX_ITERATIONS_MAX).default(
+      DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS,
+    ),
     convergence: z.object({
-      quality_exit_threshold: z.number()
-        .min(0)
-        .max(100)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD),
-      min_improvement_delta: z.number()
-        .min(0)
-        .max(20)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA),
-      oscillation_window: z.number().int().min(2).max(4)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW),
-      base_max_iterations: z.number().int()
-        .min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN)
-        .max(DEFAULTS.AGENT_MAX_ITERATIONS_MAX)
-        .default(DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS),
-      complexity_scale_factor: z.number().min(0).max(3)
-        .default(1.0),
-      absolute_max_iterations: z.number().int().min(1).max(20)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS),
-      score_every_n_iterations: z.number().int().min(1).max(5)
-        .default(DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS),
+      quality_exit_threshold: z.number().min(0).max(100).default(
+        DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_QUALITY_EXIT_THRESHOLD,
+      ),
+      min_improvement_delta: z.number().min(0).max(20).default(
+        DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
+      ),
+      oscillation_window: z.number().int().min(2).max(4).default(
+        DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
+      ),
+      base_max_iterations: z.number().int().min(DEFAULTS.AGENT_MAX_ITERATIONS_MIN).max(
+        DEFAULTS.AGENT_MAX_ITERATIONS_MAX,
+      ).default(DEFAULTS.DEFAULT_AGENT_MAX_ITERATIONS),
+      complexity_scale_factor: z.number().min(0).max(3).default(1.0),
+      absolute_max_iterations: z.number().int().min(1).max(20).default(
+        DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
+      ),
+      score_every_n_iterations: z.number().int().min(1).max(5).default(
+        DEFAULTS.DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
+      ),
     }).optional().default({}),
   }).default({
     default_model: DEFAULTS.DEFAULT_AGENT_MODEL,
@@ -268,8 +339,7 @@ export const ConfigSchema = z.object({
   memory: z.object({
     auto_approve: z.object({
       enabled: z.boolean().default(false),
-      confidence_threshold: z.nativeEnum(ConfidenceAssessmentLevel)
-        .default(ConfidenceAssessmentLevel.HIGH),
+      confidence_threshold: z.nativeEnum(ConfidenceAssessmentLevel).default(ConfidenceAssessmentLevel.HIGH),
       delay_hours: z.number().int().min(1).max(720).default(24),
       sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
       max_batch_size: z.number().int().min(1).max(100).default(20),
@@ -289,18 +359,13 @@ export const ConfigSchema = z.object({
     context_budget_chars: DEFAULTS.DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
   }),
   portals: z.array(PortalPermissionsSchema).default([]),
-  /** AI/LLM provider configuration (legacy/single) */
   ai: AiConfigSchema.optional(),
-  /** Named model configurations (default, fast, local, etc.) */
   models: z.record(z.object({
-    provider: ProviderTypeSchema, // Use ProviderTypeSchema directly instead of AiConfigSchema.shape.provider
+    provider: ProviderTypeSchema,
     model: z.string(),
     timeout_ms: z.number().positive().optional(),
     max_tokens: z.number().positive().optional(),
-    temperature: z.number()
-      .min(DEFAULT_AI_TEMPERATURE_MIN)
-      .max(DEFAULT_AI_TEMPERATURE_MAX)
-      .optional(),
+    temperature: z.number().min(DEFAULT_AI_TEMPERATURE_MIN).max(DEFAULT_AI_TEMPERATURE_MAX).optional(),
     base_url: z.string().optional(),
   })).default({
     [DEFAULTS.DEFAULT_AGENT_MODEL]: {
@@ -308,42 +373,24 @@ export const ConfigSchema = z.object({
       model: DEFAULT_GOOGLE_MODEL,
       timeout_ms: DEFAULT_GOOGLE_TIMEOUT_MS,
     },
-    fast: {
-      provider: PROVIDER_GOOGLE,
-      model: DEFAULT_FAST_MODEL_NAME,
-      timeout_ms: DEFAULT_GOOGLE_TIMEOUT_MS,
-    },
-    local: {
-      provider: PROVIDER_OLLAMA,
-      model: DEFAULT_LOCAL_MODEL_NAME,
-      timeout_ms: DEFAULT_OLLAMA_TIMEOUT_MS,
-    },
+    fast: { provider: PROVIDER_GOOGLE, model: DEFAULT_FAST_MODEL_NAME, timeout_ms: DEFAULT_GOOGLE_TIMEOUT_MS },
+    local: { provider: PROVIDER_OLLAMA, model: DEFAULT_LOCAL_MODEL_NAME, timeout_ms: DEFAULT_OLLAMA_TIMEOUT_MS },
   }),
-  /** AI provider endpoints configuration */
   ai_endpoints: z.record(z.string(), z.string()).optional().default({}),
-  /** AI retry configuration */
   ai_retry: z.object({
-    max_attempts: z.number()
-      .min(AI_RETRY_MAX_ATTEMPTS_MIN)
-      .max(AI_RETRY_MAX_ATTEMPTS_MAX)
-      .default(DEFAULT_AI_RETRY_MAX_ATTEMPTS),
-    backoff_base_ms: z.number()
-      .min(AI_RETRY_BACKOFF_BASE_MS_MIN)
-      .max(AI_RETRY_BACKOFF_BASE_MS_MAX)
-      .default(DEFAULT_AI_RETRY_BACKOFF_BASE_MS),
-    timeout_per_request_ms: z.number()
-      .min(AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN)
-      .max(AI_RETRY_TIMEOUT_PER_REQUEST_MS_MAX)
+    max_attempts: z.number().min(AI_RETRY_MAX_ATTEMPTS_MIN).max(AI_RETRY_MAX_ATTEMPTS_MAX).default(
+      DEFAULT_AI_RETRY_MAX_ATTEMPTS,
+    ),
+    backoff_base_ms: z.number().min(AI_RETRY_BACKOFF_BASE_MS_MIN).max(AI_RETRY_BACKOFF_BASE_MS_MAX).default(
+      DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
+    ),
+    timeout_per_request_ms: z.number().min(AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN).max(AI_RETRY_TIMEOUT_PER_REQUEST_MS_MAX)
       .default(DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS),
     providers: z.record(
       z.string(),
       z.object({
-        max_attempts: z.number()
-          .min(AI_RETRY_MAX_ATTEMPTS_MIN)
-          .max(AI_RETRY_MAX_ATTEMPTS_MAX),
-        backoff_base_ms: z.number()
-          .min(AI_RETRY_BACKOFF_BASE_MS_MIN)
-          .max(AI_RETRY_BACKOFF_BASE_MS_MAX),
+        max_attempts: z.number().min(AI_RETRY_MAX_ATTEMPTS_MIN).max(AI_RETRY_MAX_ATTEMPTS_MAX),
+        backoff_base_ms: z.number().min(AI_RETRY_BACKOFF_BASE_MS_MIN).max(AI_RETRY_BACKOFF_BASE_MS_MAX),
       }),
     ).optional(),
   }).optional().default({
@@ -351,22 +398,10 @@ export const ConfigSchema = z.object({
     backoff_base_ms: DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
     timeout_per_request_ms: DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
   }),
-  /** AI timeout configuration */
   ai_timeout: z.object({
-    default_ms: z.number()
-      .min(AI_TIMEOUT_MS_MIN)
-      .max(AI_TIMEOUT_MS_MAX)
-      .default(DEFAULT_AI_TIMEOUT_MS),
-    providers: z.record(
-      z.string(),
-      z.number()
-        .min(AI_TIMEOUT_MS_MIN)
-        .max(AI_TIMEOUT_MS_MAX),
-    ).optional(),
-  }).optional().default({
-    default_ms: DEFAULT_AI_TIMEOUT_MS,
-  }),
-  /** Anthropic-specific configuration */
+    default_ms: z.number().min(AI_TIMEOUT_MS_MIN).max(AI_TIMEOUT_MS_MAX).default(DEFAULT_AI_TIMEOUT_MS),
+    providers: z.record(z.string(), z.number().min(AI_TIMEOUT_MS_MIN).max(AI_TIMEOUT_MS_MAX)).optional(),
+  }).optional().default({ default_ms: DEFAULT_AI_TIMEOUT_MS }),
   ai_anthropic: z.object({
     api_version: z.string().default(DEFAULT_ANTHROPIC_API_VERSION),
     default_model: z.string().default(DEFAULT_ANTHROPIC_MODEL),
@@ -376,38 +411,23 @@ export const ConfigSchema = z.object({
     default_model: DEFAULT_ANTHROPIC_MODEL,
     max_tokens_default: DEFAULT_ANTHROPIC_MAX_TOKENS,
   }),
-  /** MCP (Model Context Protocol) server configuration */
   mcp: MCPConfigSchema.optional().default({
     enabled: DEFAULT_MCP_ENABLED,
     transport: DEFAULT_MCP_TRANSPORT,
     server_name: DEFAULT_MCP_SERVER_NAME,
     version: DEFAULT_MCP_VERSION,
   }),
-  /** MCP defaults */
   mcp_defaults: z.object({
     identity_id: z.string().default(DEFAULT_MCP_IDENTITY_ID),
   }).optional().default({
     identity_id: DEFAULT_MCP_IDENTITY_ID,
   }),
-  /** Request quality gate configuration (Phase 47) */
   quality_gate: z.object({
-    /** Whether the quality gate runs at all. */
     enabled: z.boolean().default(true),
-
-    /** Gate strategy: heuristic, llm, or hybrid. */
     mode: z.nativeEnum(QualityGateMode).default(QualityGateMode.HYBRID),
-
-    /** Whether to automatically enrich requests that score between enrichment and proceed thresholds. */
     auto_enrich: z.boolean().default(true),
-
-    /** Whether to hard-block requests deemed unactionable instead of letting them proceed. */
     block_unactionable: z.boolean().default(false),
-
-    /** Maximum number of clarification rounds before auto-proceeding. */
-    max_clarification_rounds: z.number().int().min(1).max(20)
-      .default(DEFAULTS.DEFAULT_MAX_CLARIFICATION_ROUNDS),
-
-    /** Score thresholds (0-100) controlling gate behaviour. */
+    max_clarification_rounds: z.number().int().min(1).max(20).default(DEFAULTS.DEFAULT_MAX_CLARIFICATION_ROUNDS),
     thresholds: z.object({
       minimum: z.number().int().min(0).max(100).default(DEFAULTS.DEFAULT_QG_MINIMUM_THRESHOLD),
       enrichment: z.number().int().min(0).max(100).default(DEFAULTS.DEFAULT_QG_ENRICHMENT_THRESHOLD),
@@ -429,7 +449,6 @@ export const ConfigSchema = z.object({
       proceed: DEFAULTS.DEFAULT_QG_PROCEED_THRESHOLD,
     },
   }),
-  /** Plan amendment configuration (Phase 66) */
   amendment: z.object({
     enabled: z.boolean().default(false),
     threshold: z.number().min(0).max(100).default(DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD),
@@ -439,34 +458,13 @@ export const ConfigSchema = z.object({
     threshold: DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD,
     expiryMs: DEFAULTS.DEFAULT_AMENDMENT_EXPIRY_MS,
   }),
-  /** Prompt budget enforcement policy overrides (Phase 62) */
   budget_enforcement: ZBudgetPolicy.optional(),
-  /** Flow retry cost budget guard (Phase 63). Omit or set to 0 to disable. */
   max_flow_retry_cost_usd: z.number().min(0).optional(),
-  /** Request intent analysis configuration (Phase 45) */
   request_analysis: z.object({
-    /**
-     * Whether request analysis runs at all.
-     * Set to false to skip analysis entirely (for performance or testing).
-     */
     enabled: z.boolean().default(true),
-
-    /**
-     * Analysis strategy: heuristic, llm, or hybrid.
-     * Default depends on environment (usually hybrid in production).
-     */
     mode: z.nativeEnum(AnalysisMode).default(AnalysisMode.HYBRID),
-
-    /** Score (0-100) below which hybrid mode escalates to LLM. */
     actionability_threshold: z.number().int().min(0).max(100).default(60),
-
-    /** Whether to infer acceptance criteria from imperatives. */
     infer_acceptance_criteria: z.boolean().default(true),
-
-    /**
-     * Whether to write the analysis result to a sibling `_analysis.json` file.
-     * Disable to run analysis in-memory only (useful in read-only environments).
-     */
     persist_analysis: z.boolean().default(true),
   }).optional().default({
     enabled: true,
@@ -475,24 +473,23 @@ export const ConfigSchema = z.object({
     infer_acceptance_criteria: true,
     persist_analysis: true,
   }),
-  /** Rate limiting configuration for cost exhaustion attack prevention */
   rate_limiting: z.object({
     enabled: z.boolean().default(DEFAULTS.DEFAULT_RATE_LIMIT_ENABLED),
-    max_calls_per_minute: z.number()
-      .min(DEFAULTS.RATE_LIMIT_MAX_CALLS_PER_MINUTE_MIN)
-      .max(DEFAULTS.RATE_LIMIT_MAX_CALLS_PER_MINUTE_MAX)
+    max_calls_per_minute: z.number().min(DEFAULTS.RATE_LIMIT_MAX_CALLS_PER_MINUTE_MIN).max(
+      DEFAULTS.RATE_LIMIT_MAX_CALLS_PER_MINUTE_MAX,
+    )
       .default(DEFAULTS.DEFAULT_RATE_LIMIT_MAX_CALLS_PER_MINUTE),
-    max_tokens_per_hour: z.number()
-      .min(DEFAULTS.RATE_LIMIT_MAX_TOKENS_PER_HOUR_MIN)
-      .max(DEFAULTS.RATE_LIMIT_MAX_TOKENS_PER_HOUR_MAX)
+    max_tokens_per_hour: z.number().min(DEFAULTS.RATE_LIMIT_MAX_TOKENS_PER_HOUR_MIN).max(
+      DEFAULTS.RATE_LIMIT_MAX_TOKENS_PER_HOUR_MAX,
+    )
       .default(DEFAULTS.DEFAULT_RATE_LIMIT_MAX_TOKENS_PER_HOUR),
-    max_cost_per_day: z.number()
-      .min(DEFAULTS.RATE_LIMIT_MAX_COST_PER_DAY_MIN)
-      .max(DEFAULTS.RATE_LIMIT_MAX_COST_PER_DAY_MAX)
+    max_cost_per_day: z.number().min(DEFAULTS.RATE_LIMIT_MAX_COST_PER_DAY_MIN).max(
+      DEFAULTS.RATE_LIMIT_MAX_COST_PER_DAY_MAX,
+    )
       .default(DEFAULTS.DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY),
-    cost_per_1k_tokens: z.number()
-      .min(DEFAULTS.RATE_LIMIT_COST_PER_1K_TOKENS_MIN)
-      .max(DEFAULTS.RATE_LIMIT_COST_PER_1K_TOKENS_MAX)
+    cost_per_1k_tokens: z.number().min(DEFAULTS.RATE_LIMIT_COST_PER_1K_TOKENS_MIN).max(
+      DEFAULTS.RATE_LIMIT_COST_PER_1K_TOKENS_MAX,
+    )
       .default(DEFAULTS.DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS),
   }).optional().default({
     enabled: DEFAULTS.DEFAULT_RATE_LIMIT_ENABLED,
@@ -501,77 +498,62 @@ export const ConfigSchema = z.object({
     max_cost_per_day: DEFAULTS.DEFAULT_RATE_LIMIT_MAX_COST_PER_DAY,
     cost_per_1k_tokens: DEFAULTS.DEFAULT_RATE_LIMIT_COST_PER_1K_TOKENS,
   }),
-  /** Git operations configuration */
   git: z.object({
     branch_prefix_pattern: z.string().default(DEFAULTS.DEFAULT_GIT_BRANCH_PREFIX_PATTERN),
     allowed_prefixes: z.array(z.string()).default(DEFAULTS.DEFAULT_GIT_ALLOWED_PREFIXES),
     operations: z.object({
-      status_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_STATUS_TIMEOUT_MS),
-      ls_files_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_LS_FILES_TIMEOUT_MS),
-      checkout_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_CHECKOUT_TIMEOUT_MS),
-      clean_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_CLEAN_TIMEOUT_MS),
-      log_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_LOG_TIMEOUT_MS),
-      diff_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_DIFF_TIMEOUT_MS),
-      command_timeout_ms: z.number()
-        .min(DEFAULTS.GIT_TIMEOUT_MS_MIN)
-        .max(DEFAULTS.GIT_TIMEOUT_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_COMMAND_TIMEOUT_MS),
-      max_retries: z.number()
-        .min(DEFAULTS.GIT_MAX_RETRIES_MIN)
-        .max(DEFAULTS.GIT_MAX_RETRIES_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_MAX_RETRIES),
-      retry_backoff_base_ms: z.number()
-        .min(DEFAULTS.GIT_RETRY_BACKOFF_BASE_MS_MIN)
-        .max(DEFAULTS.GIT_RETRY_BACKOFF_BASE_MS_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_RETRY_BACKOFF_BASE_MS),
-      branch_name_collision_max_retries: z.number()
-        .min(DEFAULTS.GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN)
-        .max(DEFAULTS.GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX)
+      status_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_STATUS_TIMEOUT_MS,
+      ),
+      ls_files_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_LS_FILES_TIMEOUT_MS,
+      ),
+      checkout_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_CHECKOUT_TIMEOUT_MS,
+      ),
+      clean_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_CLEAN_TIMEOUT_MS,
+      ),
+      log_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_LOG_TIMEOUT_MS,
+      ),
+      diff_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_DIFF_TIMEOUT_MS,
+      ),
+      command_timeout_ms: z.number().min(DEFAULTS.GIT_TIMEOUT_MS_MIN).max(DEFAULTS.GIT_TIMEOUT_MS_MAX).default(
+        DEFAULTS.DEFAULT_GIT_COMMAND_TIMEOUT_MS,
+      ),
+      max_retries: z.number().min(DEFAULTS.GIT_MAX_RETRIES_MIN).max(DEFAULTS.GIT_MAX_RETRIES_MAX).default(
+        DEFAULTS.DEFAULT_GIT_MAX_RETRIES,
+      ),
+      retry_backoff_base_ms: z.number().min(DEFAULTS.GIT_RETRY_BACKOFF_BASE_MS_MIN).max(
+        DEFAULTS.GIT_RETRY_BACKOFF_BASE_MS_MAX,
+      ).default(DEFAULTS.DEFAULT_GIT_RETRY_BACKOFF_BASE_MS),
+      branch_name_collision_max_retries: z.number().min(DEFAULTS.GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN).max(
+        DEFAULTS.GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX,
+      )
         .default(DEFAULTS.DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES),
-      trace_id_short_length: z.number()
-        .min(DEFAULTS.GIT_TRACE_ID_SHORT_LENGTH_MIN)
-        .max(DEFAULTS.GIT_TRACE_ID_SHORT_LENGTH_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_TRACE_ID_SHORT_LENGTH),
-      branch_suffix_length: z.number()
-        .min(DEFAULTS.GIT_BRANCH_SUFFIX_LENGTH_MIN)
-        .max(DEFAULTS.GIT_BRANCH_SUFFIX_LENGTH_MAX)
-        .default(DEFAULTS.DEFAULT_GIT_BRANCH_SUFFIX_LENGTH),
+      trace_id_short_length: z.number().min(DEFAULTS.GIT_TRACE_ID_SHORT_LENGTH_MIN).max(
+        DEFAULTS.GIT_TRACE_ID_SHORT_LENGTH_MAX,
+      ).default(DEFAULTS.DEFAULT_GIT_TRACE_ID_SHORT_LENGTH),
+      branch_suffix_length: z.number().min(DEFAULTS.GIT_BRANCH_SUFFIX_LENGTH_MIN).max(
+        DEFAULTS.GIT_BRANCH_SUFFIX_LENGTH_MAX,
+      ).default(DEFAULTS.DEFAULT_GIT_BRANCH_SUFFIX_LENGTH),
     }).optional().default(DEFAULT_GIT_OPERATIONS),
   }).optional().default({
     branch_prefix_pattern: DEFAULTS.DEFAULT_GIT_BRANCH_PREFIX_PATTERN,
     allowed_prefixes: DEFAULTS.DEFAULT_GIT_ALLOWED_PREFIXES,
     operations: DEFAULT_GIT_OPERATIONS,
   }),
-  /** Provider strategy configuration for intelligent provider selection */
   provider_strategy: z.object({
     prefer_free: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_PREFER_FREE),
     allow_local: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL),
-    max_daily_cost_usd: z.number()
-      .min(DEFAULTS.PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MIN)
-      .max(DEFAULTS.PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX)
-      .default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD),
+    max_daily_cost_usd: z.number().min(DEFAULTS.PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MIN).max(
+      DEFAULTS.PROVIDER_STRATEGY_MAX_DAILY_COST_USD_MAX,
+    ).default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD),
     health_check_enabled: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED),
     fallback_enabled: z.boolean().default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED),
-    fallback_chains: z.record(z.array(z.string()))
-      .default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS),
+    fallback_chains: z.record(z.array(z.string())).default(DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS),
     budgets: z.record(z.number().min(DEFAULTS.PROVIDER_STRATEGY_BUDGETS_MIN)).optional(),
     task_routing: z.record(z.array(z.string())).optional(),
   }).optional().default({
@@ -582,121 +564,75 @@ export const ConfigSchema = z.object({
     fallback_enabled: DEFAULTS.DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED,
   }),
   routing: RoutingConfigSchema,
-  /** Provider-specific configuration overrides */
   providers: z.record(z.object({
     cost_tier: z.nativeEnum(ProviderCostTier).optional(),
-    free_quota_requests_per_day: z.number()
-      .min(DEFAULTS.PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN)
-      .optional(),
+    free_quota_requests_per_day: z.number().min(DEFAULTS.PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN).optional(),
     base_url: z.string().optional(),
-    timeout_ms: z.number()
-      .min(DEFAULTS.PROVIDER_TIMEOUT_MS_MIN)
-      .max(DEFAULTS.PROVIDER_TIMEOUT_MS_MAX)
-      .optional(),
-    rate_limit_rpm: z.number()
-      .min(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MIN)
-      .max(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MAX)
+    timeout_ms: z.number().min(DEFAULTS.PROVIDER_TIMEOUT_MS_MIN).max(DEFAULTS.PROVIDER_TIMEOUT_MS_MAX).optional(),
+    rate_limit_rpm: z.number().min(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MIN).max(DEFAULTS.PROVIDER_RATE_LIMIT_RPM_MAX)
       .optional(),
   })).optional().default({}),
-  /** Mock provider configuration */
   mock: z.object({
-    delay_ms: z.number()
-      .min(MOCK_DELAY_MS_MIN)
-      .max(MOCK_DELAY_MS_MAX)
-      .default(MOCK_DELAY_MS),
-    input_tokens: z.number()
-      .min(MOCK_INPUT_TOKENS_MIN)
-      .max(MOCK_INPUT_TOKENS_MAX)
-      .default(MOCK_INPUT_TOKENS),
-    output_tokens: z.number()
-      .min(MOCK_OUTPUT_TOKENS_MIN)
-      .max(MOCK_OUTPUT_TOKENS_MAX)
-      .default(MOCK_OUTPUT_TOKENS),
+    delay_ms: z.number().min(MOCK_DELAY_MS_MIN).max(MOCK_DELAY_MS_MAX).default(MOCK_DELAY_MS),
+    input_tokens: z.number().min(MOCK_INPUT_TOKENS_MIN).max(MOCK_INPUT_TOKENS_MAX).default(MOCK_INPUT_TOKENS),
+    output_tokens: z.number().min(MOCK_OUTPUT_TOKENS_MIN).max(MOCK_OUTPUT_TOKENS_MAX).default(MOCK_OUTPUT_TOKENS),
   }).optional().default({
     delay_ms: MOCK_DELAY_MS,
     input_tokens: MOCK_INPUT_TOKENS,
     output_tokens: MOCK_OUTPUT_TOKENS,
   }),
-  /** UI/Preview configuration */
   ui: z.object({
-    prompt_preview_length: z.number()
-      .min(DEFAULTS.PROMPT_PREVIEW_LENGTH_MIN)
-      .max(DEFAULTS.PROMPT_PREVIEW_LENGTH_MAX)
+    prompt_preview_length: z.number().min(DEFAULTS.PROMPT_PREVIEW_LENGTH_MIN).max(DEFAULTS.PROMPT_PREVIEW_LENGTH_MAX)
       .default(DEFAULTS.PROMPT_PREVIEW_LENGTH),
-    prompt_preview_extended: z.number()
-      .min(DEFAULTS.PROMPT_PREVIEW_EXTENDED_MIN)
-      .max(DEFAULTS.PROMPT_PREVIEW_EXTENDED_MAX)
-      .default(DEFAULTS.PROMPT_PREVIEW_EXTENDED),
+    prompt_preview_extended: z.number().min(DEFAULTS.PROMPT_PREVIEW_EXTENDED_MIN).max(
+      DEFAULTS.PROMPT_PREVIEW_EXTENDED_MAX,
+    ).default(DEFAULTS.PROMPT_PREVIEW_EXTENDED),
   }).optional().default({
     prompt_preview_length: DEFAULTS.PROMPT_PREVIEW_LENGTH,
     prompt_preview_extended: DEFAULTS.PROMPT_PREVIEW_EXTENDED,
   }),
-  /** Cost tracking configuration */
   cost_tracking: z.object({
-    batch_delay_ms: z.number()
-      .min(DEFAULTS.COST_TRACKING_BATCH_DELAY_MS_MIN)
-      .max(DEFAULTS.COST_TRACKING_BATCH_DELAY_MS_MAX)
-      .default(DEFAULTS.DEFAULT_COST_TRACKING_BATCH_DELAY_MS),
-    max_batch_size: z.number()
-      .min(DEFAULTS.COST_TRACKING_MAX_BATCH_SIZE_MIN)
-      .max(DEFAULTS.COST_TRACKING_MAX_BATCH_SIZE_MAX)
-      .default(DEFAULTS.DEFAULT_COST_TRACKING_MAX_BATCH_SIZE),
-    rates: z.record(
-      z.string(),
-      z.number()
-        .min(DEFAULTS.COST_TRACKING_RATES_MIN)
-        .max(DEFAULTS.COST_TRACKING_RATES_MAX),
-    ).optional().default(DEFAULT_COST_TRACKING_RATES),
+    batch_delay_ms: z.number().min(DEFAULTS.COST_TRACKING_BATCH_DELAY_MS_MIN).max(
+      DEFAULTS.COST_TRACKING_BATCH_DELAY_MS_MAX,
+    ).default(DEFAULTS.DEFAULT_COST_TRACKING_BATCH_DELAY_MS),
+    max_batch_size: z.number().min(DEFAULTS.COST_TRACKING_MAX_BATCH_SIZE_MIN).max(
+      DEFAULTS.COST_TRACKING_MAX_BATCH_SIZE_MAX,
+    ).default(DEFAULTS.DEFAULT_COST_TRACKING_MAX_BATCH_SIZE),
+    rates: z.record(z.string(), z.number().min(DEFAULTS.COST_TRACKING_RATES_MIN).max(DEFAULTS.COST_TRACKING_RATES_MAX))
+      .optional().default(DEFAULT_COST_TRACKING_RATES),
   }).optional().default({
     batch_delay_ms: DEFAULTS.DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
     max_batch_size: DEFAULTS.DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
     rates: DEFAULT_COST_TRACKING_RATES,
   }),
-  /** Health check configuration */
   health: z.object({
-    check_timeout_ms: z.number()
-      .min(DEFAULTS.HEALTH_CHECK_TIMEOUT_MS_MIN)
-      .max(DEFAULTS.HEALTH_CHECK_TIMEOUT_MS_MAX)
+    check_timeout_ms: z.number().min(DEFAULTS.HEALTH_CHECK_TIMEOUT_MS_MIN).max(DEFAULTS.HEALTH_CHECK_TIMEOUT_MS_MAX)
       .default(DEFAULTS.DEFAULT_HEALTH_CHECK_TIMEOUT_MS),
-    cache_ttl_ms: z.number()
-      .min(DEFAULTS.HEALTH_CACHE_TTL_MS_MIN)
-      .max(DEFAULTS.HEALTH_CACHE_TTL_MS_MAX)
-      .default(DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS),
-    memory_warn_percent: z.number()
-      .min(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MIN)
-      .max(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MAX)
-      .default(DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT),
-    memory_critical_percent: z.number()
-      .min(DEFAULTS.HEALTH_MEMORY_CRITICAL_PERCENT_MIN)
-      .max(DEFAULTS.HEALTH_MEMORY_CRITICAL_PERCENT_MAX)
-      .default(DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT),
+    cache_ttl_ms: z.number().min(DEFAULTS.HEALTH_CACHE_TTL_MS_MIN).max(DEFAULTS.HEALTH_CACHE_TTL_MS_MAX).default(
+      DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS,
+    ),
+    memory_warn_percent: z.number().min(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MIN).max(
+      DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MAX,
+    ).default(DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT),
+    memory_critical_percent: z.number().min(DEFAULTS.HEALTH_MEMORY_CRITICAL_PERCENT_MIN).max(
+      DEFAULTS.HEALTH_MEMORY_CRITICAL_PERCENT_MAX,
+    ).default(DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT),
   }).optional().default({
     check_timeout_ms: DEFAULTS.DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
     cache_ttl_ms: DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS,
     memory_warn_percent: DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT,
     memory_critical_percent: DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT,
   }),
-  /** Portal codebase knowledge gathering configuration (Phase 46) */
   portal_knowledge: z.object({
-    /** Automatically trigger knowledge analysis after portal mount. */
     auto_analyze_on_mount: z.boolean().default(true),
-    /** Default analysis depth when not overridden per-call. */
-    default_mode: z.nativeEnum(PortalAnalysisMode)
-      .default(DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode),
-    /** Maximum files to stat/list in quick scan mode. */
-    quick_scan_limit: z.number().int().min(1)
-      .default(DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT),
-    /** Maximum files to read content from during analysis. */
-    max_files_to_read: z.number().int().min(1)
-      .default(DEFAULTS.DEFAULT_MAX_FILES_TO_READ),
-    /** Hours before cached knowledge is considered stale. */
-    staleness_hours: z.number().positive()
-      .default(DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS),
-    /** Whether to use an LLM call for architecture inference. */
+    default_mode: z.nativeEnum(PortalAnalysisMode).default(
+      DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
+    ),
+    quick_scan_limit: z.number().int().min(1).default(DEFAULTS.DEFAULT_QUICK_SCAN_LIMIT),
+    max_files_to_read: z.number().int().min(1).default(DEFAULTS.DEFAULT_MAX_FILES_TO_READ),
+    staleness_hours: z.number().positive().default(DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS),
     use_llm_inference: z.boolean().default(true),
-    /** Directory/file patterns to skip during analysis. */
-    ignore_patterns: z.array(z.string())
-      .default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
+    ignore_patterns: z.array(z.string()).default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
   }).optional().default({
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
@@ -707,19 +643,10 @@ export const ConfigSchema = z.object({
     ignore_patterns: DEFAULTS.DEFAULT_IGNORE_PATTERNS,
   }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
-  // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;
-
-  // Validate that default_model exists in models keys or is a fallback chain
   const modelKeys = Object.keys(configData.models || {});
   const fallbackChainKeys = Object.keys(configData.provider_strategy?.fallback_chains || {});
-  const providerTypes = [
-    PROVIDER_OLLAMA,
-    PROVIDER_ANTHROPIC,
-    PROVIDER_OPENAI,
-    PROVIDER_GOOGLE,
-    PROVIDER_MOCK,
-  ];
+  const providerTypes = [PROVIDER_OLLAMA, PROVIDER_ANTHROPIC, PROVIDER_OPENAI, PROVIDER_GOOGLE, PROVIDER_MOCK];
   const allAvailable = [...modelKeys, ...fallbackChainKeys, ...providerTypes, DEFAULTS.DEFAULT_AGENT_MODEL];
 
   if (data.agents?.default_model && !allAvailable.includes(data.agents.default_model)) {
@@ -731,13 +658,11 @@ export const ConfigSchema = z.object({
     });
   }
 
-  // Validate fallback chains point to valid models or fallback chains
   if (data.provider_strategy?.fallback_chains) {
     for (
       const [chainName, chain] of Object.entries(data.provider_strategy.fallback_chains as Record<string, string[]>)
     ) {
       chain.forEach((target: string, index: number) => {
-        // A target in a fallback chain can be another model or a global provider name (though models are preferred)
         if (!allAvailable.includes(target)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -749,3 +674,5 @@ export const ConfigSchema = z.object({
     }
   }
 });
+
+export type Config = z.infer<typeof ConfigSchema>;

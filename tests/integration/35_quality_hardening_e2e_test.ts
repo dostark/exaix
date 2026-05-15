@@ -24,7 +24,7 @@ import type { EnhancedRequest } from "../../src/services/memory/session_memory.t
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 import {
   ANALYSIS_COMPLEX_BULLET_THRESHOLD,
   ANALYSIS_COMPLEX_CHAR_THRESHOLD,

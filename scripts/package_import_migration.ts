@@ -230,7 +230,8 @@ async function getBestExportFileForSymbol(
 function filePathToImportSource(fsPath: string, moduleDir: string, imports: ImportMap): string {
   const aliasImport = findAliasImportForFsPath(fsPath, imports);
   if (aliasImport) {
-    return stripIndexOrModImport(aliasImport);
+    const strippedAliasImport = stripIndexOrModImport(aliasImport);
+    return strippedAliasImport !== aliasImport && imports[strippedAliasImport] ? strippedAliasImport : aliasImport;
   }
 
   let relativePath = normalizePathForImport(relative(moduleDir, fsPath));
@@ -320,6 +321,14 @@ async function resolvePackageRoot(packageName: string, imports: ImportMap): Prom
   return null;
 }
 
+async function resolveMigrationTarget(pathOrImport: string, imports: ImportMap): Promise<string | null> {
+  if (isFilesystemRoot(pathOrImport)) {
+    return await tryResolveFile(toFsPath(pathOrImport));
+  }
+
+  return await resolveModuleFile(pathOrImport, imports);
+}
+
 export async function resolveImportFile(
   importSource: string,
   moduleDir: string,
@@ -345,12 +354,6 @@ export async function getNewImportSource(
     return importSource === oldPackage ? newPackage : `${newPackage}${importSource.slice(oldPackage.length)}`;
   }
 
-  const oldRoot = await resolvePackageRoot(oldPackage, imports);
-  const newRoot = await resolvePackageRoot(newPackage, imports);
-  if (!oldRoot || !newRoot) {
-    return null;
-  }
-
   let importFsPath = await resolveImportFile(importSource, moduleDir, imports);
   if (
     !importFsPath && (importSource.startsWith("./") || importSource.startsWith("../") || importSource.startsWith("/"))
@@ -358,6 +361,24 @@ export async function getNewImportSource(
     importFsPath = normalizePathForImport(join(moduleDir, importSource));
   }
   if (!importFsPath) {
+    return null;
+  }
+
+  const oldTarget = await resolveMigrationTarget(oldPackage, imports);
+  const newTarget = await resolveMigrationTarget(newPackage, imports);
+  if (oldTarget && newTarget) {
+    const oldStat = await Deno.lstat(oldTarget);
+    const newStat = await Deno.lstat(newTarget);
+    if (
+      oldStat.isFile && newStat.isFile && normalizePathForImport(importFsPath) === normalizePathForImport(oldTarget)
+    ) {
+      return filePathToImportSource(newTarget, moduleDir, imports);
+    }
+  }
+
+  const oldRoot = await resolvePackageRoot(oldPackage, imports);
+  const newRoot = await resolvePackageRoot(newPackage, imports);
+  if (!oldRoot || !newRoot) {
     return null;
   }
 

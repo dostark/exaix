@@ -11,8 +11,7 @@ import { RequestKind } from "@exaix/core";
 import { RoutingError } from "../../../src/services/request/request_router.ts";
 import { createRouterTestContext, sampleRouterRequest } from "../helpers.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import type { IRequestFrontmatter } from "../../../src/services/request_processing/types.ts";
-
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 type RoutingContext = {
   explicitIdentityId?: string;
   explicitVersion?: string;

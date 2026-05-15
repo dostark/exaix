@@ -6,7 +6,15 @@
  * @related-files ["packages/core/src/types/enums.ts", "packages/schemas/src/config.ts"]
  */
 
-import { LogLevel, RequestPriority, TaskType } from "./enums.ts";
+import {
+  LogLevel,
+  McpToolName,
+  McpTransportType,
+  MockStrategy,
+  ProviderType,
+  RequestPriority,
+  TaskType,
+} from "./enums.ts";
 
 // ============================================================================
 // HTTP Status Codes
@@ -23,6 +31,7 @@ export const DEFAULT_WORKSPACE_PATH = "Workspace";
 export const DEFAULT_RUNTIME_PATH = ".exa";
 export const DEFAULT_MEMORY_PATH = "Memory";
 export const DEFAULT_PORTALS_PATH = "Portals";
+export const DEFAULT_PORTAL_DEFAULT_BRANCH = "main";
 export const DEFAULT_BLUEPRINTS_PATH = "Blueprints";
 export const DEFAULT_ACTIVE_PATH = "Active";
 export const DEFAULT_ARCHIVE_PATH = "Archive";
@@ -187,7 +196,67 @@ export const ENV_AGENT_MODE = "EXA_AGENT_MODE";
 export const ENV_TRACE_ID = "EXA_TRACE_ID";
 export const ENV_PORTAL_ALIAS = "EXA_PORTAL";
 
-// AI and MCP defaults have moved to @exaix/ai and @exaix/mcp respectively.
+// ============================================================================
+// AI Provider Defaults and Limits
+// ============================================================================
+export const DEFAULT_AI_TIMEOUT_MS = 30000;
+export const DEFAULT_AI_RETRY_MAX_ATTEMPTS = 3;
+export const DEFAULT_AI_RETRY_BACKOFF_BASE_MS = 1000;
+export const DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS = 30000;
+export const DEFAULT_AI_MODEL = "gemini-flash-latest";
+export const DEFAULT_AI_TEMPERATURE_MIN = 0;
+export const DEFAULT_AI_TEMPERATURE_MAX = 2;
+export const AI_RETRY_MAX_ATTEMPTS_MIN = 1;
+export const AI_RETRY_MAX_ATTEMPTS_MAX = 10;
+export const AI_RETRY_BACKOFF_BASE_MS_MIN = 100;
+export const AI_RETRY_BACKOFF_BASE_MS_MAX = 10000;
+export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN = 1000;
+export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MAX = 300000;
+export const AI_TIMEOUT_MS_MIN = 1000;
+export const AI_TIMEOUT_MS_MAX = 300000;
+export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = 3;
+export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS = 5;
+export const DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS = 2000;
+export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS = 3;
+export const DEFAULT_OPENAI_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = 3;
+export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS = 1000;
+export const DEFAULT_OPENAI_TIMEOUT_MS = 30000;
+export const DEFAULT_GOOGLE_TIMEOUT_MS = 30000;
+export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
+export const DEFAULT_OLLAMA_MODEL = "llama3.2";
+export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
+export const DEFAULT_GOOGLE_MODEL = "gemini-flash-latest";
+export const DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
+export const DEFAULT_ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
+export const DEFAULT_OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
+export const DEFAULT_GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+export const MOCK_DELAY_MS_MIN = 0;
+export const MOCK_DELAY_MS_MAX = 5000;
+export const MOCK_INPUT_TOKENS_MIN = 1;
+export const MOCK_INPUT_TOKENS_MAX = 10000;
+export const MOCK_OUTPUT_TOKENS_MIN = 1;
+export const MOCK_OUTPUT_TOKENS_MAX = 10000;
+export const MOCK_DELAY_MS = 100;
+export const MOCK_INPUT_TOKENS = 100;
+export const MOCK_OUTPUT_TOKENS = 200;
+export const DEFAULT_MOCK_MODEL = "mock-model";
+export const DEFAULT_MOCK_STRATEGY = MockStrategy.RECORDED;
+export const DEFAULT_FAST_MODEL_NAME = "gemini-flash-latest";
+export const DEFAULT_LOCAL_MODEL_NAME = "llama3.2";
+export const PROVIDER_MOCK = ProviderType.MOCK;
+export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
+export const PROVIDER_OPENAI = ProviderType.OPENAI;
+export const PROVIDER_ANTHROPIC = ProviderType.ANTHROPIC;
+export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
+export const KNOWN_PROVIDERS = [
+  ProviderType.MOCK,
+  ProviderType.OLLAMA,
+  ProviderType.ANTHROPIC,
+  ProviderType.OPENAI,
+  ProviderType.GOOGLE,
+] as const;
 
 // ============================================================================
 // UI/Preview Validation Limits
@@ -208,9 +277,68 @@ export const DEFAULT_ANTHROPIC_MAX_TOKENS = 4096;
 // ============================================================================
 // MCP Defaults
 // ============================================================================
-// MCP defaults now live in @exaix/mcp and are no longer exported from @exaix/core.
+export const DEFAULT_MCP_ENABLED = true;
+export const DEFAULT_MCP_TRANSPORT = McpTransportType.STDIO;
+export const DEFAULT_MCP_SERVER_NAME = "exaix";
+export const DEFAULT_MCP_VERSION = "1.0.0";
+export const DEFAULT_MCP_IDENTITY_ID = "system";
+export const DEFAULT_MCP_HTTP_PORT = 3000;
 
-// Git constants now live in @exaix/git.
+export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
+  McpToolName.READ_FILE,
+  McpToolName.LIST_DIRECTORY,
+  McpToolName.SEARCH_FILES,
+  McpToolName.GIT_STATUS,
+  McpToolName.LIST_PLANS,
+  McpToolName.QUERY_JOURNAL,
+  McpToolName.FETCH_URL,
+]);
+
+export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
+  McpToolName.WRITE_FILE,
+  McpToolName.PATCH_FILE,
+  McpToolName.DELETE_FILE,
+  McpToolName.MOVE_FILE,
+  McpToolName.CREATE_DIRECTORY,
+  McpToolName.GIT_CREATE_BRANCH,
+  McpToolName.GIT_COMMIT,
+  McpToolName.RUN_COMMAND,
+  McpToolName.CREATE_REQUEST,
+  McpToolName.APPROVE_PLAN,
+  McpToolName.GIT,
+]);
+
+export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
+
+// ============================================================================
+// Git Defaults
+// ============================================================================
+export const GIT_TIMEOUT_MS_MIN = 1000;
+export const GIT_TIMEOUT_MS_MAX = 60000;
+export const GIT_MAX_RETRIES_MIN = 1;
+export const GIT_MAX_RETRIES_MAX = 10;
+export const GIT_RETRY_BACKOFF_BASE_MS_MIN = 100;
+export const GIT_RETRY_BACKOFF_BASE_MS_MAX = 10000;
+export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MIN = 1;
+export const GIT_BRANCH_NAME_COLLISION_MAX_RETRIES_MAX = 10;
+export const GIT_TRACE_ID_SHORT_LENGTH_MIN = 4;
+export const GIT_TRACE_ID_SHORT_LENGTH_MAX = 16;
+export const GIT_BRANCH_SUFFIX_LENGTH_MIN = 4;
+export const GIT_BRANCH_SUFFIX_LENGTH_MAX = 16;
+export const DEFAULT_GIT_BRANCH_PREFIX_PATTERN = "^(feature|bugfix|hotfix|chore)/";
+export const DEFAULT_GIT_ALLOWED_PREFIXES = ["feature/", "bugfix/", "hotfix/", "chore/"];
+export const DEFAULT_GIT_STATUS_TIMEOUT_MS = 10000;
+export const DEFAULT_GIT_LS_FILES_TIMEOUT_MS = 15000;
+export const DEFAULT_GIT_CHECKOUT_TIMEOUT_MS = 30000;
+export const DEFAULT_GIT_CLEAN_TIMEOUT_MS = 20000;
+export const DEFAULT_GIT_LOG_TIMEOUT_MS = 20000;
+export const DEFAULT_GIT_DIFF_TIMEOUT_MS = 30000;
+export const DEFAULT_GIT_COMMAND_TIMEOUT_MS = 60000;
+export const DEFAULT_GIT_MAX_RETRIES = 3;
+export const DEFAULT_GIT_RETRY_BACKOFF_BASE_MS = 1000;
+export const DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES = 5;
+export const DEFAULT_GIT_TRACE_ID_SHORT_LENGTH = 8;
+export const DEFAULT_GIT_BRANCH_SUFFIX_LENGTH = 8;
 
 // ============================================================================
 // Rate Limiting Validation Limits
@@ -383,11 +511,6 @@ export const PROVIDER_RATE_LIMIT_RPM_MAX = 1000;
 // ============================================================================
 // API Endpoint Defaults
 // ============================================================================
-export const DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
-export const DEFAULT_ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
-export const DEFAULT_OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-export const DEFAULT_GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
-
 export const DEFAULT_SUBPROCESS_TIMEOUT_MS = 30000;
 
 // ============================================================================

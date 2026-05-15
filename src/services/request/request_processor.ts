@@ -58,11 +58,11 @@ import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breake
 import { LogMethod } from "../decorators/logging.ts";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
-import type { IRequestFrontmatter, ParsedRequestFile } from "../request_processing/types.ts";
+import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request/mod.ts";
 import { OutputValidator } from "../tool/output_validator.ts";
 import type { LogMetadata } from "@exaix/core/types/json.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import type { IServiceContext } from "../common/types.ts";
+import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";

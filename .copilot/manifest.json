@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-14T17:59:11.948Z",
+  "generated_at": "2026-05-15T09:51:33.826Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -74,8 +74,7 @@
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
         ".copilot/chunks/README.md.chunk1.txt",
-        ".copilot/chunks/README.md.chunk2.txt",
-        ".copilot/chunks/README.md.chunk3.txt"
+        ".copilot/chunks/README.md.chunk2.txt"
       ]
     },
     {

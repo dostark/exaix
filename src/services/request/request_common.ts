@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
-import type { IRequestFrontmatter } from "../request_processing/types.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 /** Load an agent blueprint file from a blueprints directory. */

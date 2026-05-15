@@ -12,8 +12,7 @@ import {
   createRetryPolicy,
   type IRetryContext,
   RetryPolicy,
-} from "../../../packages/core/src/request/retry_policy.ts";
-
+} from "@exaix/core/request/retry_policy.ts";
 // ============================================================================
 // RetryPolicy.execute() Tests
 // ============================================================================

@@ -22,7 +22,7 @@ import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IRequestFrontmatter } from "../request_processing/types.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";

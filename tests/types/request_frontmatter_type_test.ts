@@ -8,7 +8,7 @@
  * If the legacy `agent` field exists, `deno check` will pass when it should fail.
  */
 
-import type { IRequestFrontmatter } from "../../src/services/request_processing/types.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
 import type { RequestStatusType } from "@exaix/core";
 
 // ============================================================================

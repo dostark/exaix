@@ -8,8 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
-import { ActivityActor, TaskType } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { ActivityActor, McpToolName, TaskType } from "@exaix/core";
 
 // ============================================================================
 // Blueprint Interfaces

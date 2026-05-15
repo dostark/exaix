@@ -8,6 +8,15 @@
 import { PricingTier, PriorityLevel, type ProviderCostTier } from "@exaix/core";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 
+type ProviderRegistryGlobal = typeof globalThis & {
+  __exaixRegisteredProviderTypes?: string[];
+};
+
+function syncRegisteredProviderTypes(providerTypes: Iterable<string>): void {
+  const globalRegistry = globalThis as ProviderRegistryGlobal;
+  globalRegistry.__exaixRegisteredProviderTypes = Array.from(providerTypes);
+}
+
 /**
  * Metadata describing a provider's capabilities and characteristics.
  * Used for intelligent provider selection and cost optimization.
@@ -56,6 +65,7 @@ export class ProviderRegistry {
    */
   static register(providerType: string, factory: IProviderFactory): void {
     this.factories.set(providerType, factory);
+    syncRegisteredProviderTypes(this.factories.keys());
   }
 
   /**
@@ -71,6 +81,7 @@ export class ProviderRegistry {
   ): void {
     this.factories.set(providerType, factory);
     this.metadata.set(providerType, metadata);
+    syncRegisteredProviderTypes(this.factories.keys());
   }
 
   /**
@@ -162,5 +173,6 @@ export class ProviderRegistry {
   static clear(): void {
     this.factories.clear();
     this.metadata.clear();
+    syncRegisteredProviderTypes([]);
   }
 }

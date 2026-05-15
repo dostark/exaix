@@ -18,7 +18,7 @@ import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import { PlanAdapter, PlanValidationError } from "./plan_adapter.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import type { IServiceContext } from "../common/types.ts";
+import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 

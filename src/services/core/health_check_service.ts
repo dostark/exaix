@@ -22,7 +22,7 @@ import { LogMethod } from "../decorators/logging.ts";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
-import type { IServiceContext } from "../common/types.ts";
+import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /**

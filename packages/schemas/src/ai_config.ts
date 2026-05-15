@@ -7,7 +7,6 @@
  * @related-files [packages/core/src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
-import { initializeRegistry, ProviderRegistry } from "@exaix/ai";
 import { MockStrategy, ProviderType } from "@exaix/core/types/enums.ts";
 import {
   DEFAULT_AI_MODEL,
@@ -35,7 +34,7 @@ import {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-} from "@exaix/ai/constants.ts";
+} from "@exaix/core";
 
 /**
  * Dynamic provider type schema - validates against registered providers
@@ -120,12 +119,21 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
   timeout_ms: DEFAULT_AI_TIMEOUT_MS,
 };
 
+type ProviderRegistryGlobal = typeof globalThis & {
+  __exaixRegisteredProviderTypes?: string[];
+};
+
+function getSupportedProviderTypes(): string[] {
+  const builtInProviderTypes = Object.values(ProviderType);
+  const globalRegistry = globalThis as ProviderRegistryGlobal;
+  const registeredProviderTypes = globalRegistry.__exaixRegisteredProviderTypes ?? [];
+
+  return [...new Set([...builtInProviderTypes, ...registeredProviderTypes])];
+}
+
 function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<string, T> {
-  if (ProviderRegistry.getSupportedProviders().length === 0) {
-    initializeRegistry();
-  }
   const result: Record<string, T> = {};
-  for (const providerType of ProviderRegistry.getSupportedProviders()) {
+  for (const providerType of getSupportedProviderTypes()) {
     result[providerType] = mapper(providerType);
   }
   return result;
