@@ -145,6 +145,19 @@ export enum ToolName {
 }
 
 /**
+ * Structured error codes for MCP tool-logic failures.
+ * Both MCP handlers and ToolRegistry share this taxonomy without creating an import cycle.
+ */
+export enum ToolErrorCode {
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  NOT_FOUND = "NOT_FOUND",
+  PATH_TRAVERSAL = "PATH_TRAVERSAL",
+  INVALID_ARGS = "INVALID_ARGS",
+  COMMAND_BLOCKED = "COMMAND_BLOCKED",
+  EXECUTION_FAILED = "EXECUTION_FAILED",
+}
+
+/**
  * Supported runtime and system commands for tool execution.
  */
 export enum SystemCommand {

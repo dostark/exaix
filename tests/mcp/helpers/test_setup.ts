@@ -31,6 +31,7 @@ import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
 interface IMCPErrorShape {
   code: number;
@@ -439,4 +440,16 @@ export async function createGitPortal(
   await ensureDir(portalPath);
   await setupGitRepo(portalPath);
   return portalPath;
+}
+
+/**
+ * Extracts the text string from the first text-type content block in an MCPToolResponse.
+ * Throws if the first content item is not a text block — use this where text content is expected.
+ */
+export function getFirstTextContent(response: MCPToolResponse): string {
+  const item = response.content[0];
+  if (item.type !== "text") {
+    throw new Error(`Expected text content block at index 0, got type: ${item.type}`);
+  }
+  return item.text;
 }

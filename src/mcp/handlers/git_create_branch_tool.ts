@@ -58,7 +58,7 @@ export class GitCreateBranchTool extends ToolHandler {
         "git_create_branch",
         portal,
         identity_id,
-        `Branch '${branch}' created and checked out successfully in portal '${portal}'`,
+        [{ type: "text", text: `Branch '${branch}' created and checked out successfully in portal '${portal}'` }],
         { branch, identity_id },
       );
     } catch (error) {

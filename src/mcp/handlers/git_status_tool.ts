@@ -60,7 +60,7 @@ export class GitStatusTool extends ToolHandler {
         "git_status",
         portal,
         identity_id,
-        statusText,
+        [{ type: "text", text: statusText }],
         { identity_id, has_changes: output.trim().length > 0 },
       );
     } catch (error) {

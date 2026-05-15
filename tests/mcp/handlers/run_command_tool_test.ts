@@ -3,7 +3,7 @@
  * @path tests/mcp/handlers/run_command_tool_test.ts
  * @description Unit tests for the RunCommandTool MCP tool.
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { RunCommandTool } from "../../../src/mcp/handlers/run_command_tool.ts";
 import {
   assertToolDefinitionFields,
@@ -49,31 +49,34 @@ function createHandler(
   );
 }
 
-Deno.test("RunCommandTool: executes a command successfully", async () => {
+Deno.test("RunCommandTool: actual command output appears in MCP response content", async () => {
   await withToolPermissionTest({
-    operations: [PortalOperation.GIT], // RunCommand requires GIT or WRITE
+    operations: [PortalOperation.GIT],
   }, async (env) => {
     const mockRegistry = new MockToolRegistry();
-    mockRegistry.setResult({ success: true, data: "file1\nfile2" });
+    mockRegistry.setResult({ success: true, data: { output: "file1\nfile2\n", exitCode: 0 } });
 
     const handler = createHandler(env, mockRegistry);
     const result = await handler.execute({
       portal: "TestPortal",
       command: "ls",
-      args: ["-la"],
+      args: ["-1"],
       identity_id: "test-agent",
     });
 
-    assertEquals(result.content[0].type, "text");
-    assertStringIncludes(result.content[0].text, "Command executed successfully");
+    assertEquals(result.content[0].type, "exaix_structured_data");
+    const block = result.content[0] as { type: "exaix_structured_data"; data: { output: string; exitCode: number } };
+    assertEquals(block.data.output.includes("file1"), true);
+    assertEquals(block.data.output.includes("file2"), true);
+    assertEquals(block.data.exitCode, 0);
 
     const lastArgs = mockRegistry.getLastArgs();
     assertEquals(lastArgs.command, "ls");
-    assertEquals(Array.isArray(lastArgs.args) && lastArgs.args[0], "-la");
+    assertEquals(Array.isArray(lastArgs.args) && lastArgs.args[0], "-1");
   });
 });
 
-Deno.test("RunCommandTool: throws error if command execution fails in ToolRegistry", async () => {
+Deno.test("RunCommandTool: execution failure returns isError:true response, not thrown exception", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.GIT],
   }, async (env) => {
@@ -81,34 +84,35 @@ Deno.test("RunCommandTool: throws error if command execution fails in ToolRegist
     mockRegistry.setResult({ success: false, error: "Execution timeout" });
 
     const handler = createHandler(env, mockRegistry);
-    try {
-      await handler.execute({
-        portal: "TestPortal",
-        command: "ls",
-        identity_id: "test-agent",
-      });
-      assertEquals(true, false, "Should have thrown");
-    } catch (error) {
-      assertStringIncludes((error as Error).message, "Execution timeout");
-    }
+    const result = await handler.execute({
+      portal: "TestPortal",
+      command: "ls",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(result.isError, true);
+    assertEquals(result.content[0].type, "text");
+    assertEquals((result.content[0] as { type: "text"; text: string }).text, "Execution timeout");
   });
 });
 
-Deno.test("RunCommandTool: throws error if ToolRegistry is missing from context", async () => {
+Deno.test("RunCommandTool: missing ToolRegistry returns isError:true response", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.GIT],
   }, async (env) => {
     const handler = createHandler(env);
-    try {
-      await handler.execute({
-        portal: "TestPortal",
-        command: "ls",
-        identity_id: "test-agent",
-      });
-      assertEquals(true, false, "Should have thrown");
-    } catch (error) {
-      assertStringIncludes((error as Error).message, "ToolRegistry not available");
-    }
+    const result = await handler.execute({
+      portal: "TestPortal",
+      command: "ls",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(result.isError, true);
+    assertEquals(result.content[0].type, "text");
+    assertEquals(
+      (result.content[0] as { type: "text"; text: string }).text.includes("ToolRegistry"),
+      true,
+    );
   });
 });
 

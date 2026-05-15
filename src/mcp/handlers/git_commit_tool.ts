@@ -77,7 +77,7 @@ export class GitCommitTool extends ToolHandler {
         "git_commit",
         portal,
         identity_id,
-        `Changes committed successfully in portal '${portal}': ${message}`,
+        [{ type: "text", text: `Changes committed successfully in portal '${portal}': ${message}` }],
         { message, files: files?.length || "all", identity_id },
       );
     } catch (error) {
