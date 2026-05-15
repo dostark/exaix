@@ -15,7 +15,7 @@ import type { McpToolName } from "@exaix/mcp";
 import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
-import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
+import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
 import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
 import { DeleteFileTool } from "./handlers/delete_file_tool.ts";
@@ -39,7 +39,7 @@ import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } f
  */
 export function buildHandlers(
   context: ICliApplicationContext,
-  _permissions: PortalPermissionsService,
+  permissions: IPortalPermissionsChecker,
 ): Map<McpToolName, ToolHandler> {
   const handlers: Map<McpToolName, ToolHandler> = new Map();
 
@@ -48,22 +48,22 @@ export function buildHandlers(
     handlers.set(def.name as McpToolName, handler);
   };
 
-  add(new ReadFileTool(context));
-  add(new WriteFileTool(context));
-  add(new PatchFileTool(context));
-  add(new DeleteFileTool(context));
-  add(new MoveFileTool(context));
-  add(new CreateDirectoryTool(context));
-  add(new ListDirectoryTool(context));
-  add(new GitCreateBranchTool(context));
-  add(new GitCommitTool(context));
-  add(new GitStatusTool(context));
-  add(new RunCommandTool(context));
-  add(new SearchFilesTool(context));
-  add(new CreateRequestTool(context));
-  add(new ListPlansTool(context));
-  add(new ApprovePlanTool(context));
-  add(new QueryJournalTool(context));
+  add(new ReadFileTool(context, permissions));
+  add(new WriteFileTool(context, permissions));
+  add(new PatchFileTool(context, permissions));
+  add(new DeleteFileTool(context, permissions));
+  add(new MoveFileTool(context, permissions));
+  add(new CreateDirectoryTool(context, permissions));
+  add(new ListDirectoryTool(context, permissions));
+  add(new GitCreateBranchTool(context, permissions));
+  add(new GitCommitTool(context, permissions));
+  add(new GitStatusTool(context, permissions));
+  add(new RunCommandTool(context, permissions));
+  add(new SearchFilesTool(context, permissions));
+  add(new CreateRequestTool(context, permissions));
+  add(new ListPlansTool(context, permissions));
+  add(new ApprovePlanTool(context, permissions));
+  add(new QueryJournalTool(context, permissions));
 
   return handlers;
 }
@@ -76,7 +76,7 @@ export function buildHandlers(
  */
 export function buildDynamicHandlers(
   context: ICliApplicationContext,
-  permissions: PortalPermissionsService,
+  permissions: IPortalPermissionsChecker,
 ): Map<McpToolName, ToolHandler> {
   const all = buildHandlers(context, permissions);
   const dynamicNames = new Set(

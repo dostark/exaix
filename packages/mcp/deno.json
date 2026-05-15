@@ -1,7 +1,25 @@
 {
   "name": "@exaix/mcp",
   "version": "0.1.0",
+  "imports": {
+    "@exaix/mcp": "./mod.ts",
+    "@exaix/mcp/": "./src/",
+    "@exaix/mcp/testing": "./testing/mod.ts",
+    "@exaix/mcp/testing/": "./testing/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/"
+  },
   "exports": {
-    ".": "./mod.ts"
+    ".": "./mod.ts",
+    "./testing": "./testing/mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
   }
 }

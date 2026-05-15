@@ -10,7 +10,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
+import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalOperation } from "@exaix/core";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
@@ -23,9 +23,9 @@ export abstract class ToolHandler {
   protected context: ICliApplicationContext;
   protected config: Config;
   protected db: IDatabaseService;
-  protected permissions: PortalPermissionsService | null;
+  protected permissions: IPortalPermissionsChecker | null;
 
-  constructor(context: ICliApplicationContext, permissions?: PortalPermissionsService) {
+  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker) {
     this.context = context;
     this.config = context.config.getAll();
     this.db = context.db;
@@ -54,8 +54,7 @@ export abstract class ToolHandler {
     operation: PortalOperation,
   ): void {
     if (!this.permissions) {
-      // No permissions service configured, allow all operations
-      return;
+      throw new Error("Permission denied: permissions service not configured");
     }
 
     const result = this.permissions.checkOperationAllowed(portalName, identityId, operation);

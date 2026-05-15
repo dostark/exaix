@@ -7,6 +7,7 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { McpTransportType } from "@exaix/mcp";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 import { MCPServer } from "../../src/mcp/server.ts";
 import { initTestDbService } from "../helpers/db.ts";
@@ -55,6 +56,7 @@ async function withMCPServerSecurity(
     const server = new MCPServer({
       context,
       transport: options.transport || McpTransportType.STDIO,
+      permissions: new AllowAllPermissionsService(),
     });
 
     // Helper to get headers if available

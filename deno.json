@@ -89,6 +89,8 @@
     "@exaix/ai/": "./packages/ai/src/",
     "@exaix/mcp": "./packages/mcp/mod.ts",
     "@exaix/mcp/": "./packages/mcp/src/",
+    "@exaix/mcp/testing": "./packages/mcp/testing/mod.ts",
+    "@exaix/mcp/testing/": "./packages/mcp/testing/",
     "@exaix/cli": "./packages/cli/mod.ts",
     "@exaix/cli/": "./packages/cli/src/",
     "@exaix/git": "./packages/git/mod.ts",

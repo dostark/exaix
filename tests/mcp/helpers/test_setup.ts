@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
@@ -164,7 +165,11 @@ export async function initMCPTest(
 ): Promise<IMCPTestContext> {
   const env = await initTestEnv(options);
   const context = createTestContext(env.config, env.db);
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   const cleanup = async () => {
@@ -286,7 +291,11 @@ export async function initMCPTestWithoutPortal(): Promise<
 
   const config = createMockConfig(tempDir);
   const context = createTestContext(config, db);
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   const cleanup = async () => {
