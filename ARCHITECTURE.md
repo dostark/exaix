@@ -774,6 +774,70 @@ The MCP server lives under `src/mcp/` and supports both **stdio** (JSON-RPC 2.0)
 - `src/mcp/resources.ts`
   - Implements `portal://<PortalAlias>/<path>` resource discovery and reading.
 
+### Tool Execution Paths and Ownership Map
+
+Exaix has two distinct tool execution paths. Both paths share the same canonical metadata after Phase 77.
+
+#### Path 1 — MCP Transport (agent-facing)
+
+Live tools exposed via `tools/list` and `tools/call` JSON-RPC endpoints. All 16 live tools are defined in `packages/mcp/src/manifest.ts` (`TOOL_MANIFEST`). The server assembles them via `buildHandlers()` in `src/mcp/tools.ts`.
+
+| Tool                   | Category | Dynamic mode | Approval required |
+| ---------------------- | -------- | :----------: | :---------------: |
+| `read_file`            | read     |      ✓       |         —         |
+| `write_file`           | write    |      ✓       |         —         |
+| `patch_file`           | write    |      ✓       |         —         |
+| `delete_file`          | write    |      ✓       |         —         |
+| `move_file`            | write    |      ✓       |         —         |
+| `create_directory`     | write    |      ✓       |         —         |
+| `list_directory`       | read     |      ✓       |         —         |
+| `search_files`         | read     |      ✓       |         —         |
+| `grep_search`          | read     |      ✓       |         —         |
+| `git_create_branch`    | git      |      ✓       |         —         |
+| `git_commit`           | git      |      ✓       |         —         |
+| `git_status`           | read     |      ✓       |         —         |
+| `run_command`          | git      |      ✓       |         —         |
+| `exaix_list_plans`     | domain   |      ✓       |         —         |
+| `exaix_query_journal`  | domain   |      ✓       |         —         |
+| `exaix_create_request` | domain   |      —       |    ⚠ Phase 79     |
+| `exaix_approve_plan`   | domain   |      —       |    ⚠ Phase 79     |
+
+#### Path 2 — ToolRegistry (internal agent strategies)
+
+`src/services/tool/tool_registry.ts:ToolRegistry` is used by agent strategies that run in-process. It registers these **internal-only** tools that are intentionally not exposed via MCP:
+
+| Internal tool | Purpose                                                 |
+| ------------- | ------------------------------------------------------- |
+| `fetch_url`   | Retrieve web content from a whitelisted-domain URL      |
+| `grep_search` | Line-level regex search across a directory tree         |
+| `copy_file`   | Duplicate a file without removing the original          |
+| `git_info`    | Inspect repo status, branch, or diff via git subprocess |
+| `deno_task`   | Run `deno test/lint/fmt/check` within an agent strategy |
+
+`grep_search`, `read_file`, `write_file`, `list_directory`, `search_files`, `create_directory`, `move_file`, `delete_file`, `patch_file`, and `run_command` also appear in `ToolRegistry` for use by in-process strategies.
+
+#### Phase 77 Ownership Layout (post-consolidation)
+
+| Artifact                                                       | Current location                                                                 | Owner                    | Status                                                                     |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------- |
+| Canonical tool manifest (`TOOL_MANIFEST`)                      | `packages/mcp/src/manifest.ts`                                                   | `@exaix/mcp`             | ✅ Package-owned                                                           |
+| Tool enums (`McpToolName`, `ToolName`)                         | `packages/core/src/types/enums.ts`                                               | `@exaix/core`            | ✅ Package-owned                                                           |
+| Tool classifications (`READ_ONLY_TOOLS`, `DYNAMIC_MODE_TOOLS`) | `packages/mcp/src/constants.ts`                                                  | `@exaix/mcp`             | ✅ Package-owned                                                           |
+| Error taxonomy (`ToolErrorCode`)                               | `packages/core/src/types/enums.ts`                                               | `@exaix/core`            | ✅ Package-owned                                                           |
+| Handler assembly (`buildHandlers`, `buildDynamicHandlers`)     | `src/mcp/tools.ts`                                                               | root (temporary adapter) | 🔄 Moves with server extraction                                            |
+| Concrete handlers                                              | `src/mcp/handlers/*.ts`                                                          | root                     | 🔄 Moves to `packages/portal` (Phase 76 Stage B)                           |
+| Domain tool handlers                                           | `src/mcp/domain_tools.ts`                                                        | root                     | 🔄 Moves with domain service extraction                                    |
+| MCP server transport                                           | `src/mcp/server.ts`                                                              | root                     | 🔄 Moves to app/server package (Phase 76 Stage D)                          |
+| ToolRegistry (internal)                                        | `src/services/tool/tool_registry.ts`                                             | root                     | 🔄 Moves to `packages/execution` (Phase 76 Stage C)                        |
+| Parity and manifest tests                                      | `tests/mcp/tool_manifest_*`, `tests/mcp/tool_docs_*`, `tests/mcp/tool_dynamic_*` | root tests               | 🔄 Relocate to `packages/mcp/tests/` when manifest is fully self-contained |
+| Handler-level tests                                            | `tests/mcp/handlers/`                                                            | root tests               | 🔄 Relocate to `packages/portal/tests/` (Stage B)                          |
+| ToolRegistry tests                                             | `tests/services/tool/`                                                           | root tests               | 🔄 Relocate to `packages/execution/tests/` (Stage C)                       |
+| Integration / backward-compat tests                            | `tests/integration/mcp/`, `tests/flows/`, `tests/security/`                      | root tests               | ✅ Stay in root (cross-package integration)                                |
+
+#### Test Relocation Rule
+
+When concrete tool implementation moves from `src/` into a package, its tool-specific unit and parity tests **must move with it** into `packages/<package>/tests/`. Only end-to-end behavior crossing package boundaries, server wiring, and backward-compatibility regression coverage should remain in root `tests/`.
+
 ### Plan File Structure
 
 ```mermaid
