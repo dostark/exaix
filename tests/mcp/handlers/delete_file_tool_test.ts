@@ -3,13 +3,14 @@
  * @path tests/mcp/handlers/delete_file_tool_test.ts
  * @description Unit tests for the DeleteFileTool MCP tool.
  */
-import { assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { DeleteFileTool } from "../../../src/mcp/handlers/delete_file_tool.ts";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,
   createPermissionsService,
   createToolContext,
+  getFirstTextContent,
   withToolPermissionTest,
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
@@ -36,40 +37,34 @@ Deno.test("DeleteFileTool: deletes an existing file", async () => {
   });
 });
 
-Deno.test("DeleteFileTool: throws when file not found", async () => {
+Deno.test("DeleteFileTool: returns isError when file not found", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     const targetPath = "src/ghost.ts";
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          path: targetPath,
-          identity_id: "test-agent",
-        }),
-      Error,
-      "File not found",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      path: targetPath,
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "not found");
   });
 });
 
-Deno.test("DeleteFileTool: refuses to delete a directory", async () => {
+Deno.test("DeleteFileTool: returns isError when target is a directory", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     const targetPath = "src/somedir";
     await Deno.mkdir(join(env.portalPath, targetPath), { recursive: true });
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          path: targetPath,
-          identity_id: "test-agent",
-        }),
-      Error,
-      "is a directory",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      path: targetPath,
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "directory");
   });
 });
 

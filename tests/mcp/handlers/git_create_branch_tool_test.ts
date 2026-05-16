@@ -3,7 +3,7 @@
  * @path tests/mcp/handlers/git_create_branch_tool_test.ts
  * @description Unit tests for the GitCreateBranchTool MCP tool.
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { GitCreateBranchTool } from "../../../src/mcp/handlers/git_create_branch_tool.ts";
 import {
@@ -40,7 +40,7 @@ Deno.test("GitCreateBranchTool: creates branch successfully", async () => {
   });
 });
 
-Deno.test("GitCreateBranchTool: returns error when branch already exists", async () => {
+Deno.test("GitCreateBranchTool: returns isError when branch already exists", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.GIT],
     initGit: true,
@@ -59,36 +59,29 @@ Deno.test("GitCreateBranchTool: returns error when branch already exists", async
       identity_id: "test-agent",
     });
 
-    // Try to create it again
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          branch: "feat/existing-branch",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "Failed to create branch: ",
-    );
+    // Try to create it again — should return isError:true
+    const result = await handler.execute({
+      portal: "TestPortal",
+      branch: "feat/existing-branch",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
   });
 });
 
-Deno.test("GitCreateBranchTool: returns error when access is denied", async () => {
+Deno.test("GitCreateBranchTool: returns isError when access is denied", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.READ], // No GIT permission
     initGit: true,
   }, async (env) => {
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          branch: "feat/new-test-branch",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "Operation 'git' is not permitted",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      branch: "feat/new-test-branch",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "not permitted");
   });
 });
 

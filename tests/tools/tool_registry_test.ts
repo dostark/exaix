@@ -80,7 +80,7 @@ Deno.test("ToolRegistry: registers tools with JSON schemas", () => {
   // Check read_file tool schema
   const readFile = tools.find((t: { name: string }) => t.name === ToolName.READ_FILE);
   assertExists(readFile, "read_file tool should be registered");
-  assertEquals(readFile.description.includes("Read"), true);
+  assertEquals(readFile.description.includes("Return"), true);
   assertExists(readFile.parameters);
   assertExists(readFile.parameters.properties);
   assertExists(readFile.parameters.properties.path);
