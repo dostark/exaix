@@ -8,7 +8,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
 /**
@@ -64,7 +64,14 @@ export class GitStatusTool extends ToolHandler {
         { identity_id, has_changes: output.trim().length > 0 },
       );
     } catch (error) {
-      this.formatError("git_status", portal, identity_id, error, { identity_id });
+      return this.formatToolError(
+        "git_status",
+        portal,
+        identity_id,
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { identity_id },
+      );
     }
   }
 

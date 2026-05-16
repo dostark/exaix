@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCreateBranchToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
@@ -62,7 +62,14 @@ export class GitCreateBranchTool extends ToolHandler {
         { branch, identity_id },
       );
     } catch (error) {
-      this.formatError("git_create_branch", portal, identity_id, error, { branch, identity_id });
+      return this.formatToolError(
+        "git_create_branch",
+        portal,
+        identity_id,
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { branch, identity_id },
+      );
     }
   }
 

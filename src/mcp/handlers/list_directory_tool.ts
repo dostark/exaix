@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -76,15 +76,11 @@ export class ListDirectoryTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      // Log failed execution
-      this.logToolExecution(McpToolName.LIST_DIRECTORY, portal, identity_id, {
+      const message = error instanceof Error ? error.message : String(error);
+      return this.formatToolError(McpToolName.LIST_DIRECTORY, portal, identity_id, ToolErrorCode.NOT_FOUND, message, {
         path: path || "/",
         identity_id: identity_id ?? null,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
       });
-
-      throw error;
     }
   }
 

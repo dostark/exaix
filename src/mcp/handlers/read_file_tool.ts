@@ -9,7 +9,7 @@ import { ToolHandler } from "../tool_handler.ts";
 import type { JSONValue } from "@exaix/core";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { ReadFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
 /**
@@ -65,15 +65,12 @@ export class ReadFileTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      // Log failed execution
-      this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
+      const message = error instanceof Error ? error.message : String(error);
+      const code = message.startsWith("File not found") ? ToolErrorCode.NOT_FOUND : ToolErrorCode.EXECUTION_FAILED;
+      return this.formatToolError(McpToolName.READ_FILE, portal, identity_id, code, message, {
         path,
         identity_id: identity_id ?? null,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
       });
-
-      throw error;
     }
   }
 

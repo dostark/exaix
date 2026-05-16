@@ -8,7 +8,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, PatchFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -33,57 +33,65 @@ export class PatchFileTool extends ToolHandler {
     };
     const { portal, path, search, replace, identity_id } = validatedArgs;
 
-    this.validatePermission(portal, identity_id, PortalOperation.WRITE);
-
-    const portalPath = this.validatePortalExists(portal);
-    const absolutePath = this.resolvePortalPath(portalPath, path);
-
-    // Read existing content
-    let content: string;
     try {
-      content = await Deno.readTextFile(absolutePath);
-    } catch {
-      throw new Error(`File not found: ${path}`);
+      this.validatePermission(portal, identity_id, PortalOperation.WRITE);
+
+      const portalPath = this.validatePortalExists(portal);
+      const absolutePath = this.resolvePortalPath(portalPath, path);
+
+      // Read existing content
+      let content: string;
+      try {
+        content = await Deno.readTextFile(absolutePath);
+      } catch {
+        throw new Error(`File not found: ${path}`);
+      }
+
+      // Count occurrences — must be exactly one
+      const occurrences = content.split(search).length - 1;
+
+      if (occurrences === 0) {
+        throw new Error(
+          `patch_file: search string not found in "${path}". ` +
+            `Verify the exact text exists in the file (whitespace and indentation must match).`,
+        );
+      }
+
+      if (occurrences > 1) {
+        throw new Error(
+          `patch_file: search string found ${occurrences} times in "${path}". ` +
+            `Make the search string more specific to match exactly one location.`,
+        );
+      }
+
+      // Apply replacement
+      const patched = content.replace(search, replace);
+      await Deno.writeTextFile(absolutePath, patched);
+
+      this.logToolExecution(McpToolName.PATCH_FILE, portal, identity_id, {
+        path,
+        search_length: search.length,
+        replace_length: replace.length,
+        bytes_before: content.length,
+        bytes_after: patched.length,
+        success: true,
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `patch_file success on ${path}. Changed from ${content.length} to ${patched.length} bytes.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      let code = ToolErrorCode.EXECUTION_FAILED;
+      if (message.startsWith("File not found")) code = ToolErrorCode.NOT_FOUND;
+      if (message.includes("not found in") || message.includes("times in")) code = ToolErrorCode.INVALID_ARGS;
+      return this.formatToolError(McpToolName.PATCH_FILE, portal, identity_id, code, message, { path });
     }
-
-    // Count occurrences — must be exactly one
-    const occurrences = content.split(search).length - 1;
-
-    if (occurrences === 0) {
-      throw new Error(
-        `patch_file: search string not found in "${path}". ` +
-          `Verify the exact text exists in the file (whitespace and indentation must match).`,
-      );
-    }
-
-    if (occurrences > 1) {
-      throw new Error(
-        `patch_file: search string found ${occurrences} times in "${path}". ` +
-          `Make the search string more specific to match exactly one location.`,
-      );
-    }
-
-    // Apply replacement
-    const patched = content.replace(search, replace);
-    await Deno.writeTextFile(absolutePath, patched);
-
-    this.logToolExecution(McpToolName.PATCH_FILE, portal, identity_id, {
-      path,
-      search_length: search.length,
-      replace_length: replace.length,
-      bytes_before: content.length,
-      bytes_after: patched.length,
-      success: true,
-    });
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `patch_file success on ${path}. Changed from ${content.length} to ${patched.length} bytes.`,
-        },
-      ],
-    };
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
