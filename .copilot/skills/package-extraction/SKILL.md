@@ -1,6 +1,16 @@
 ---
 name: package-extraction
 agent: senior-coder
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - move_file
+  - create_directory
+  - run_command
+  - git_status
+  - git_commit
 scope: dev
 title: "Package Extraction Skill (#package-extraction)"
 description: Extract the next package-owned slice from src/ into packages/ while preserving root behavior, tests, and compatibility shims

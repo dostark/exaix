@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - run_command
 scope: docs
 title: "Documentation Skill (#doc)"
 description: Create or update documentation ensuring accuracy, code examples, and usage coverage

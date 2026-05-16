@@ -1,5 +1,11 @@
 ---
 agent: senior-coder
+tools:
+  - run_command
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
 scope: dev
 title: "Coverage Skill (#coverage)"
 description: Identify uncovered code paths, write targeted tests to meet thresholds, and verify with measure_coverage.ts

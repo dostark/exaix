@@ -1,5 +1,12 @@
 ---
 agent: copilot
+tools:
+  - git_status
+  - git_commit
+  - git_create_branch
+  - run_command
+  - read_file
+  - patch_file
 scope: dev
 title: "Submodule Workflow Skill (#submodule-workflow)"
 description: Manage simultaneous parent repo and exaix-dev-docs submodule changes safely with correct pointer policy

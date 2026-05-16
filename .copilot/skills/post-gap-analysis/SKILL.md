@@ -1,5 +1,10 @@
 ---
 agent: senior-coder
+tools:
+  - read_file
+  - patch_file
+  - search_files
+  - run_command
 scope: dev
 title: "Post-Gap Analysis Skill (#post-gap-analysis)"
 description: Deep post-implementation review of a phase planning document — verifies what was built against the plan, finds gaps, and writes remediation steps back into the document

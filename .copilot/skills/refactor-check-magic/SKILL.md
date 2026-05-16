@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - run_command
+  - read_file
+  - patch_file
+  - write_file
+  - search_files
 scope: dev
 title: "Refactor-Check-Magic Skill (#refactor-check-magic)"
 description: Refactor magic-value violations from deno task check:magic

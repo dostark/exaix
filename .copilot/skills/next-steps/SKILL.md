@@ -1,5 +1,13 @@
 ---
 agent: general
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - run_command
+  - git_status
+  - git_commit
 scope: dev
 title: "Next-Steps Skill (#next-steps)"
 description: Run plan-driven TDD step-by-step workflow with CI gates and per-step commits

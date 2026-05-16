@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - run_command
 scope: dev
 title: "Refactoring Skill (#refactor)"
 description: Systematically refactor code for clarity, performance, or maintainability without changing behavior

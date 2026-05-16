@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - run_command
+  - read_file
+  - patch_file
+  - write_file
+  - search_files
 scope: dev
 title: "Reduce Code Duplication (#duplication)"
 description: Find and eliminate structural code duplication to bring jscpd score below the 2% threshold

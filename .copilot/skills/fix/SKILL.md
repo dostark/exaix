@@ -1,5 +1,13 @@
 ---
 agent: general
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - run_command
+  - git_status
+  - git_commit
 scope: dev
 title: "Fix Skill (#fix)"
 description: Fix a bug or failing test using TDD root-cause loop — regression test first, minimal fix, CI gates, structured commit
