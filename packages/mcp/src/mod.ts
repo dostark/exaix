@@ -5,3 +5,6 @@
  */
 
 export * from "./constants.ts";
+export * from "./enums.ts";
+export { DYNAMIC_MODE_TOOLS, TOOL_MANIFEST } from "./manifest.ts";
+export type { IToolManifestEntry } from "./manifest.ts";

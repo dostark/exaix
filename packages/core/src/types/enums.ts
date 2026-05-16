@@ -145,6 +145,19 @@ export enum ToolName {
 }
 
 /**
+ * Structured error codes for MCP tool-logic failures.
+ * Both MCP handlers and ToolRegistry share this taxonomy without creating an import cycle.
+ */
+export enum ToolErrorCode {
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  NOT_FOUND = "NOT_FOUND",
+  PATH_TRAVERSAL = "PATH_TRAVERSAL",
+  INVALID_ARGS = "INVALID_ARGS",
+  COMMAND_BLOCKED = "COMMAND_BLOCKED",
+  EXECUTION_FAILED = "EXECUTION_FAILED",
+}
+
+/**
  * Supported runtime and system commands for tool execution.
  */
 export enum SystemCommand {
@@ -446,8 +459,6 @@ export enum McpToolName {
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
-  FETCH_URL = "FETCH_URL",
-  GIT = "git",
 }
 /**
  * Types of artifacts produced by agents.
@@ -1119,4 +1130,40 @@ export enum JsonRpcErrorCode {
   METHOD_NOT_FOUND = -32601,
   INVALID_PARAMS = -32602,
   INTERNAL_ERROR = -32603,
+}
+
+/**
+ * Classification of a tool by its exposure kind.
+ * mcp_handler: live MCP tool backed by a ToolHandler class (portal/file/git tools).
+ * mcp_domain: live MCP tool backed by domain logic (exaix_* tools).
+ * internal_only: tool available only to ToolRegistry / agent strategies, not exposed via MCP.
+ */
+export enum ToolKind {
+  MCP_HANDLER = "mcp_handler",
+  MCP_DOMAIN = "mcp_domain",
+  INTERNAL_ONLY = "internal_only",
+}
+
+/**
+ * Functional category of a tool for classification and routing.
+ */
+export enum ToolCategory {
+  READ = "read",
+  WRITE = "write",
+  GIT = "git",
+  DOMAIN = "domain",
+  NETWORK = "network",
+  META = "meta",
+}
+
+/**
+ * Scope of side effects a tool may produce.
+ * Used by dynamic executors and agent strategies for safe-execution decisions.
+ */
+export enum ToolSideEffectScope {
+  NONE = "none",
+  PORTAL = "portal",
+  GIT = "git",
+  NETWORK = "network",
+  SYSTEM = "system",
 }

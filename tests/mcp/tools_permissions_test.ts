@@ -236,3 +236,27 @@ Deno.test("MCP Tools: allows wildcard agent access", async () => {
     },
   );
 });
+
+Deno.test("MCP Tools: permission-protected handlers fail closed without permissions service", async () => {
+  await withToolPermission(
+    {
+      operations: [PortalOperation.READ],
+      fileContent: { "test.txt": "content" },
+    },
+    async ({ context }) => {
+      const tool = new ReadFileTool(context);
+
+      await assertRejects(
+        async () => {
+          await tool.execute({
+            portal: "TestPortal",
+            path: "test.txt",
+            identity_id: "test-agent",
+          });
+        },
+        Error,
+        "Permission denied",
+      );
+    },
+  );
+});

@@ -1,5 +1,10 @@
 ---
 agent: senior-coder
+tools:
+  - read_file
+  - search_files
+  - run_command
+  - patch_file
 scope: dev
 title: "Security Skill (#security)"
 description: Systematic security audit using Phase 3b checklist — OWASP Top 10, path traversal, injection, auth boundary, secret handling

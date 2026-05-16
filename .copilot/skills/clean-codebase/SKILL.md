@@ -1,6 +1,12 @@
 ---
 name: clean-codebase
 agent: general
+tools:
+  - run_command
+  - read_file
+  - patch_file
+  - write_file
+  - search_files
 scope: dev
 title: "Clean Codebase Skill (#clean-codebase)"
 description: Drive the entire codebase to a fully green CI state — type errors, lint, fmt, style, arch, magic, duplication — with zero violations

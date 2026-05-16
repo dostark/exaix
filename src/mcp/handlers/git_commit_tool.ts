@@ -77,7 +77,7 @@ export class GitCommitTool extends ToolHandler {
         "git_commit",
         portal,
         identity_id,
-        `Changes committed successfully in portal '${portal}': ${message}`,
+        [{ type: "text", text: `Changes committed successfully in portal '${portal}': ${message}` }],
         { message, files: files?.length || "all", identity_id },
       );
     } catch (error) {
@@ -92,7 +92,8 @@ export class GitCommitTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_commit",
-      description: "Commit changes in a portal git repository",
+      description:
+        "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change. Returns the commit hash of the newly created commit.",
       inputSchema: {
         type: "object",
         properties: {

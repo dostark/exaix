@@ -11,6 +11,7 @@ import {
   createBaseToolContext,
   createPermissionsService,
   createToolContext,
+  getFirstTextContent,
   withToolPermissionTest,
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
@@ -38,7 +39,7 @@ Deno.test("GitCommitTool: commits changes successfully", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(res.content[0].text, "Test commit message");
+    assertStringIncludes(getFirstTextContent(res), "Test commit message");
   });
 });
 
@@ -64,7 +65,7 @@ Deno.test("GitCommitTool: commits specific files successfully", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(res.content[0].text, "Test commit message");
+    assertStringIncludes(getFirstTextContent(res), "Test commit message");
   });
 });
 

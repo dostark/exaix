@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCreateBranchToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
@@ -58,18 +58,26 @@ export class GitCreateBranchTool extends ToolHandler {
         "git_create_branch",
         portal,
         identity_id,
-        `Branch '${branch}' created and checked out successfully in portal '${portal}'`,
+        [{ type: "text", text: `Branch '${branch}' created and checked out successfully in portal '${portal}'` }],
         { branch, identity_id },
       );
     } catch (error) {
-      this.formatError("git_create_branch", portal, identity_id, error, { branch, identity_id });
+      return this.formatToolError(
+        "git_create_branch",
+        portal,
+        identity_id,
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { branch, identity_id },
+      );
     }
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_create_branch",
-      description: "Create a new git branch in a portal repository",
+      description:
+        "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name on success.",
       inputSchema: {
         type: "object",
         properties: {

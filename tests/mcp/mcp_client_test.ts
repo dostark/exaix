@@ -1,9 +1,9 @@
 /**
  * @module McpClientTest
  * @path tests/mcp/mcp_client_test.ts
- * @description Unit tests for McpClient tool routing.
+ * @description Unit tests for McpClient tool routing and canonical Map-based construction.
  */
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { McpClient } from "../../src/mcp/mcp_client.ts";
 import { McpToolName } from "@exaix/mcp";
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
@@ -89,5 +89,45 @@ Deno.test("McpClient - tool execution errors are propagated", async () => {
     () => client.callTool(McpToolName.WRITE_FILE, {}),
     Error,
     "execution error",
+  );
+});
+
+Deno.test("McpClient - accepts Map<McpToolName, ToolHandler> as canonical input", async () => {
+  const handlerMap = new Map<McpToolName, ToolHandler>([
+    [McpToolName.READ_FILE, new PassingTool()],
+  ]);
+  const client = new McpClient(mockContext, handlerMap);
+
+  const result = await client.callTool(McpToolName.READ_FILE, {});
+  assertEquals(result, "success_result");
+});
+
+Deno.test("McpClient - getAvailableToolNames returns all registered tool names", () => {
+  const handlerMap = new Map<McpToolName, ToolHandler>([
+    [McpToolName.READ_FILE, new PassingTool()],
+    [McpToolName.WRITE_FILE, new FailingTool()],
+  ]);
+  const client = new McpClient(mockContext, handlerMap);
+
+  const names = client.getAvailableToolNames();
+  assertExists(names);
+  assertEquals(names.sort(), [McpToolName.READ_FILE, McpToolName.WRITE_FILE].sort());
+});
+
+Deno.test("McpClient - getAvailableToolNames returns empty for empty client", () => {
+  const client = new McpClient(mockContext, []);
+  assertEquals(client.getAvailableToolNames(), []);
+});
+
+Deno.test("McpClient - Map construction: tool not in map returns not found error", async () => {
+  const handlerMap = new Map<McpToolName, ToolHandler>([
+    [McpToolName.READ_FILE, new PassingTool()],
+  ]);
+  const client = new McpClient(mockContext, handlerMap);
+
+  await assertRejects(
+    () => client.callTool(McpToolName.LIST_DIRECTORY, {}),
+    Error,
+    "not found",
   );
 });

@@ -291,7 +291,6 @@ export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.GIT_STATUS,
   McpToolName.LIST_PLANS,
   McpToolName.QUERY_JOURNAL,
-  McpToolName.FETCH_URL,
 ]);
 
 export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
@@ -305,7 +304,6 @@ export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
   McpToolName.RUN_COMMAND,
   McpToolName.CREATE_REQUEST,
   McpToolName.APPROVE_PLAN,
-  McpToolName.GIT,
 ]);
 
 export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
@@ -1294,3 +1292,13 @@ export const PORTAL_PREFIX_PATTERN = /@[a-zA-Z0-9_-]+\//g;
 /** Programming language identifiers */
 export const LANG_TYPESCRIPT = "typescript";
 export const LANG_JAVASCRIPT = "javascript";
+
+/** JSON Schema draft-07 primitive type name constants. Used in tool manifest output_schema fields. */
+export const JsonSchemaType = {
+  STRING: "string",
+  NUMBER: "number",
+  BOOLEAN: "boolean",
+  OBJECT: "object",
+  ARRAY: "array",
+  NULL: "null",
+} as const;

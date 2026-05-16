@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
@@ -30,6 +31,7 @@ import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { JSONValue } from "@exaix/core/types/json.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
+import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
 interface IMCPErrorShape {
   code: number;
@@ -164,7 +166,11 @@ export async function initMCPTest(
 ): Promise<IMCPTestContext> {
   const env = await initTestEnv(options);
   const context = createTestContext(env.config, env.db);
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   const cleanup = async () => {
@@ -286,7 +292,11 @@ export async function initMCPTestWithoutPortal(): Promise<
 
   const config = createMockConfig(tempDir);
   const context = createTestContext(config, db);
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   const cleanup = async () => {
@@ -430,4 +440,16 @@ export async function createGitPortal(
   await ensureDir(portalPath);
   await setupGitRepo(portalPath);
   return portalPath;
+}
+
+/**
+ * Extracts the text string from the first text-type content block in an MCPToolResponse.
+ * Throws if the first content item is not a text block — use this where text content is expected.
+ */
+export function getFirstTextContent(response: MCPToolResponse): string {
+  const item = response.content[0];
+  if (item.type !== "text") {
+    throw new Error(`Expected text content block at index 0, got type: ${item.type}`);
+  }
+  return item.text;
 }

@@ -2,78 +2,104 @@
 /**
  * @module SyncToolSchemas
  * @path scripts/sync_tool_schemas.ts
- * @description Extracts MCP tool definitions from source and updates TOOLS.md.
+ * @description Generates the AGENT_TOOLS section in TOOLS.md from the canonical tool manifest
+ * in @exaix/mcp. All docs-visible MCP handler and domain tools are included automatically —
+ * no filesystem scanning required. Run via `deno task docs-sync-schemas`.
  *
- * Usage:
- *   deno run -A scripts/sync_tool_schemas.ts
+ * Usage: deno task docs-sync-schemas
+ *
+ * Canonical source: packages/mcp/src/manifest.ts:TOOL_MANIFEST
+ * Output target:    TOOLS.md (<!-- AGENT_TOOLS_START --> ... <!-- AGENT_TOOLS_END -->)
+ *
+ * Migration note (Phase 76/77): The manifest lives in packages/mcp/ (package-owned). This
+ * script imports it from @exaix/mcp, so it remains correct as tool handlers migrate from
+ * src/mcp/ to packages/. The "Source" column reflects the current file layout and should
+ * be updated when concrete handlers move to packages/.
  */
 
-import { walk } from "@std/fs";
-import { basename, join } from "@std/path";
+import { join } from "@std/path";
+import { TOOL_MANIFEST } from "@exaix/mcp";
+import { ToolCategory, ToolKind } from "@exaix/core";
 
-const HANDLERS_DIR = "src/mcp/handlers";
 const TOOLS_MD = "TOOLS.md";
+const SYNC_START = "<!-- AGENT_TOOLS_START -->";
+const SYNC_END = "<!-- AGENT_TOOLS_END -->";
+
+/** Return the source-file path for a docs-visible tool based on its kind and name. */
+function toolSourcePath(name: string, kind: ToolKind): string {
+  if (kind === ToolKind.MCP_DOMAIN) {
+    return "src/mcp/domain_tools.ts";
+  }
+  // mcp_handler: convention is src/mcp/handlers/{name}_tool.ts
+  return `src/mcp/handlers/${name}_tool.ts`;
+}
+
+/** Format category label for display. */
+function categoryLabel(cat: ToolCategory): string {
+  const labels: Record<string, string> = {
+    [ToolCategory.READ]: "read",
+    [ToolCategory.WRITE]: "write",
+    [ToolCategory.GIT]: "git",
+    [ToolCategory.DOMAIN]: "domain",
+    [ToolCategory.NETWORK]: "network",
+    [ToolCategory.META]: "meta",
+  };
+  return labels[cat] ?? cat;
+}
 
 async function main() {
   const cwd = Deno.cwd();
-  const handlersPath = join(cwd, HANDLERS_DIR);
   const toolsMdPath = join(cwd, TOOLS_MD);
 
-  interface IToolInfo {
-    name: string;
-    description: string;
-    handler: string;
-  }
-  const tools: IToolInfo[] = [];
+  // Collect all docs-visible MCP tools from the manifest (source of truth)
+  const docsVisibleTools = TOOL_MANIFEST.filter(
+    (e) => e.docs_visible && (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
-  console.log(`Syncing tool schemas from ${HANDLERS_DIR} to ${TOOLS_MD}...`);
+  console.log(
+    `Syncing ${docsVisibleTools.length} tools from canonical manifest to ${TOOLS_MD}...`,
+  );
+  console.log(
+    `  Handlers: ${docsVisibleTools.filter((e) => e.kind === ToolKind.MCP_HANDLER).length}`,
+  );
+  console.log(
+    `  Domain:   ${docsVisibleTools.filter((e) => e.kind === ToolKind.MCP_DOMAIN).length}`,
+  );
 
-  for await (const entry of walk(handlersPath, { includeDirs: false, exts: [".ts"] })) {
-    const content = await Deno.readTextFile(entry.path);
-
-    let name: string | null = null;
-    const nameMatch = content.match(/name:\s*(?:"([^"]+)"|McpToolName\.([A-Z_]+))/);
-    if (nameMatch) {
-      name = nameMatch[1] || nameMatch[2].toLowerCase();
-    }
-
-    const descMatch = content.match(/description:\s*"([^"]+)"/);
-
-    if (name && descMatch) {
-      tools.push({
-        name,
-        description: descMatch[1],
-        handler: join(HANDLERS_DIR, basename(entry.path)),
-      });
-    }
+  // Build table rows
+  let tableRows = "";
+  for (const tool of docsVisibleTools) {
+    const sourcePath = toolSourcePath(tool.name, tool.kind);
+    const cat = categoryLabel(tool.category);
+    const dynamicMark = tool.dynamic_mode_allowed && !tool.requires_human_approval ? "✓" : "—";
+    const approvalMark = tool.requires_human_approval ? "⚠ Phase 79" : "";
+    tableRows +=
+      `| \`${tool.name}\` | ${tool.description} | \`${cat}\` | ${dynamicMark} | ${approvalMark} | [\`${sourcePath}\`](${sourcePath}) |\n`;
   }
 
-  // Sort tools by name
-  tools.sort((a, b) => a.name.localeCompare(b.name));
+  const agentSection = `## 🤖 Agent Tool Index (MCP) {#agent-tools}
+
+These tools are available to AI agents via the MCP protocol. They are validated, permission-checked,
+and logged. The table is generated from the canonical tool manifest in \`packages/mcp/src/manifest.ts\`.
+Run \`deno task docs-sync-schemas\` to regenerate after manifest changes.
+
+> **Migration note**: Handlers in \`src/mcp/handlers/\` and \`src/mcp/domain_tools.ts\` will move to
+> package-owned directories as Phase 76 extraction progresses. The manifest and this generated catalog
+> remain correct regardless of file layout. Tests for specific handlers migrate with their owning
+> package; root \`tests/\` retains integration and server-wiring coverage.
+
+| Tool | Description | Category | Dynamic | Approval | Source |
+|------|-------------|----------|---------|----------|--------|
+${tableRows}`;
+
+  const newSection = `${SYNC_START}\n${agentSection}${SYNC_END}`;
 
   let toolsMdContent = await Deno.readTextFile(toolsMdPath);
 
-  const syncStart = "<!-- AGENT_TOOLS_START -->";
-  const syncEnd = "<!-- AGENT_TOOLS_END -->";
-
-  let agentSection = `## 🤖 Agent Tool Index (MCP) {#agent-tools}
-
-These tools are available to AI agents via the MCP protocol. They are validated, permission-checked, and logged.
-
-| Tool | Description | Handler |
-|------|-------------|---------|
-`;
-
-  for (const tool of tools) {
-    agentSection += `| \`${tool.name}\` | ${tool.description} | [\`${tool.handler}\`](${tool.handler}) |\n`;
-  }
-
-  const newSection = `${syncStart}\n${agentSection}${syncEnd}`;
-
-  if (toolsMdContent.includes(syncStart)) {
-    const parts = toolsMdContent.split(syncStart);
+  if (toolsMdContent.includes(SYNC_START)) {
+    const parts = toolsMdContent.split(SYNC_START);
     const before = parts[0];
-    const after = parts[1].split(syncEnd)[1] || "";
+    const after = parts[1].split(SYNC_END)[1] ?? "";
     toolsMdContent = before.trimEnd() + "\n\n" + newSection + "\n\n" + after.trimStart();
   } else {
     const footerMarker = "**Footer — Agent Knowledge Base**";
@@ -85,11 +111,12 @@ These tools are available to AI agents via the MCP protocol. They are validated,
     }
   }
 
-  // Clean up any double "---" that might have been created by previous messy runs
+  // Remove any double horizontal rules left from previous runs
   toolsMdContent = toolsMdContent.replace(/---\n---/g, "---");
 
   await Deno.writeTextFile(toolsMdPath, toolsMdContent);
-  console.log(`Successfully synced ${tools.length} tools to ${TOOLS_MD}.`);
+  console.log(`✅ Successfully synced ${docsVisibleTools.length} tools to ${TOOLS_MD}.`);
+  console.log(`   Tools: ${docsVisibleTools.map((t) => t.name).join(", ")}`);
 }
 
 if (import.meta.main) {

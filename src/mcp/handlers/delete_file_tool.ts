@@ -8,7 +8,8 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { DeleteFileToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
 /**
@@ -44,19 +45,30 @@ export class DeleteFileTool extends ToolHandler {
     try {
       stat = await Deno.stat(absolutePath);
     } catch {
-      throw new Error(`File not found: ${path}`);
+      return this.formatToolError(
+        McpToolName.DELETE_FILE,
+        portal,
+        identity_id,
+        ToolErrorCode.NOT_FOUND,
+        `File not found: ${path}`,
+        { path },
+      );
     }
 
     if (!stat.isFile) {
-      throw new Error(
-        `"${path}" is a directory, not a file. ` +
-          `Use delete_directory to remove directories (when available).`,
+      return this.formatToolError(
+        McpToolName.DELETE_FILE,
+        portal,
+        identity_id,
+        ToolErrorCode.INVALID_ARGS,
+        `"${path}" is a directory, not a file. Use delete_directory to remove directories (when available).`,
+        { path },
       );
     }
 
     await Deno.remove(absolutePath);
 
-    this.logToolExecution("delete_file", portal, identity_id, {
+    this.logToolExecution(McpToolName.DELETE_FILE, portal, identity_id, {
       path,
       bytes_deleted: stat.size,
       success: true,
@@ -66,7 +78,7 @@ export class DeleteFileTool extends ToolHandler {
       content: [
         {
           type: "text",
-          text: `delete_file success on ${path}. Deleted ${stat.size} bytes.`,
+          text: `${McpToolName.DELETE_FILE} success on ${path}. Deleted ${stat.size} bytes.`,
         },
       ],
     };
@@ -74,11 +86,9 @@ export class DeleteFileTool extends ToolHandler {
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
-      name: "delete_file",
-      description: "Delete a single file from a portal. " +
-        "Irreversible at the filesystem level, but recoverable from git history " +
-        "if the portal is a git repository. " +
-        "Does not accept directory paths — only regular files.",
+      name: McpToolName.DELETE_FILE,
+      description:
+        "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

@@ -6,8 +6,9 @@
  * @related-files [src/mcp/tool_handler.ts, "src/services/tool/tool_registry.ts"]
  */
 import { ToolHandler } from "../tool_handler.ts";
+import { toolResultToMcpResponse } from "../tool_result_converter.ts";
 import { type MCPToolResponse, RunCommandToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -41,27 +42,41 @@ export class RunCommandTool extends ToolHandler {
       });
 
       if (!result.success) {
-        throw new Error(result.error || "Command execution failed");
+        return this.formatToolError(
+          McpToolName.RUN_COMMAND,
+          portal,
+          identity_id,
+          ToolErrorCode.EXECUTION_FAILED,
+          result.error || "Command execution failed",
+          { command, args: cmdArgs },
+        );
       }
 
-      const output = result.data as string;
-
-      return this.formatSuccess(
+      const data = result.data as { output: string; exitCode: number };
+      this.logToolExecution(McpToolName.RUN_COMMAND, portal, identity_id, {
+        command,
+        args: cmdArgs,
+        exitCode: data.exitCode,
+        success: true,
+      });
+      return toolResultToMcpResponse(result);
+    } catch (error) {
+      return this.formatToolError(
         McpToolName.RUN_COMMAND,
         portal,
         identity_id,
-        "Command executed successfully",
-        { command, args: cmdArgs, output },
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { command },
       );
-    } catch (error) {
-      this.formatError(McpToolName.RUN_COMMAND, portal, identity_id, error, { command });
     }
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.RUN_COMMAND,
-      description: "Execute a whitelisted shell command in the context of a portal",
+      description:
+        "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
       inputSchema: {
         type: "object",
         properties: {

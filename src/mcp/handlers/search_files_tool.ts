@@ -6,8 +6,9 @@
  * @related-files [src/mcp/tool_handler.ts, "src/services/tool/tool_registry.ts"]
  */
 import { ToolHandler } from "../tool_handler.ts";
+import { toolResultToMcpResponse } from "../tool_result_converter.ts";
 import { type MCPToolResponse, SearchFilesToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import { join } from "@std/path";
@@ -41,22 +42,34 @@ export class SearchFilesTool extends ToolHandler {
       });
 
       if (!result.success) {
-        throw new Error(result.error || "Search failed");
+        return this.formatToolError(
+          McpToolName.SEARCH_FILES,
+          portal,
+          identity_id,
+          ToolErrorCode.EXECUTION_FAILED,
+          result.error || "Search failed",
+          { pattern, path },
+        );
       }
 
       const files = result.data as { files: string[] };
-      // Map absolute paths back to portal-relative paths for the client
       const relativeFiles = files.files.map((f) => f.replace(portalPath, "").replace(/^\//, ""));
-
-      return this.formatSuccess(
+      this.logToolExecution(McpToolName.SEARCH_FILES, portal, identity_id, {
+        pattern,
+        path,
+        count: relativeFiles.length,
+        success: true,
+      });
+      return toolResultToMcpResponse({ success: true, data: { files: relativeFiles } });
+    } catch (error) {
+      return this.formatToolError(
         McpToolName.SEARCH_FILES,
         portal,
         identity_id,
-        `Found ${relativeFiles.length} files matching '${pattern}'`,
-        { pattern, path, count: relativeFiles.length, files: relativeFiles },
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { pattern, path },
       );
-    } catch (error) {
-      this.formatError(McpToolName.SEARCH_FILES, portal, identity_id, error, { pattern, path });
     }
   }
 
@@ -67,7 +80,8 @@ export class SearchFilesTool extends ToolHandler {
   } {
     return {
       name: McpToolName.SEARCH_FILES,
-      description: "Search for files matching a glob pattern (e.g., '**/*.ts')",
+      description:
+        "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search. Returns an array of matching relative file paths.",
       inputSchema: {
         type: "object",
         properties: {

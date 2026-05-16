@@ -13,6 +13,7 @@ import {
   DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_VERSION,
   DEFAULT_QUERY_LIMIT,
+  JSONValueSchema,
   McpTransportType,
 } from "@exaix/core";
 
@@ -167,13 +168,24 @@ export type MCPToolArgs =
 // MCP Response Schemas
 // ============================================================================
 
-export const MCPContentSchema = z.object({
+const MCPTextContentSchema = z.object({
   type: z.literal("text"),
   text: z.string(),
 });
 
+const MCPStructuredDataContentSchema = z.object({
+  type: z.literal("exaix_structured_data"),
+  data: JSONValueSchema,
+});
+
+export const MCPContentSchema = z.discriminatedUnion("type", [
+  MCPTextContentSchema,
+  MCPStructuredDataContentSchema,
+]);
+
 export const MCPToolResponseSchema = z.object({
   content: z.array(MCPContentSchema),
+  isError: z.boolean().optional(),
 });
 
 export const MCPErrorSchema = z.object({
@@ -182,6 +194,7 @@ export const MCPErrorSchema = z.object({
   data: z.unknown().optional(),
 });
 
+export type MCPContent = z.infer<typeof MCPContentSchema>;
 export type MCPToolResponse = z.infer<typeof MCPToolResponseSchema>;
 export type MCPError = z.infer<typeof MCPErrorSchema>;
 

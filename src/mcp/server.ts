@@ -15,22 +15,12 @@ import { McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import { EventBusService } from "@exaix/core/observability/mod.ts";
 import { SseHandler } from "../api/sse_handler.ts";
-import { GitCommitTool } from "./handlers/git_commit_tool.ts";
-import { GitCreateBranchTool } from "./handlers/git_create_branch_tool.ts";
-import { GitStatusTool } from "./handlers/git_status_tool.ts";
-import { ListDirectoryTool } from "./handlers/list_directory_tool.ts";
-import { ReadFileTool } from "./handlers/read_file_tool.ts";
-import { WriteFileTool } from "./handlers/write_file_tool.ts";
-import { PatchFileTool } from "./handlers/patch_file_tool.ts";
-import { DeleteFileTool } from "./handlers/delete_file_tool.ts";
-import { MoveFileTool } from "./handlers/move_file_tool.ts";
-import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
-import { RunCommandTool } from "./handlers/run_command_tool.ts";
-import { SearchFilesTool } from "./handlers/search_files_tool.ts";
-import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
+import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
 import { logInfo } from "@exaix/core/logger/structured_logger.ts";
+import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
+import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
 type JsonRpcResult = JSONValue | object;
 type JsonRpcErrorData = JSONValue | object;
@@ -68,6 +58,7 @@ type MCPHttpResponse = Response;
 interface MCPServerOptions {
   context: ICliApplicationContext;
   transport: McpTransportType;
+  permissions?: IPortalPermissionsChecker;
 }
 
 interface JSONRPCRequest {
@@ -128,6 +119,7 @@ export class MCPServer {
   private serverVersion: string;
   private tools: Map<string, ToolHandler> = new Map();
   private sseHandler?: SseHandler;
+  private permissions: IPortalPermissionsChecker;
 
   constructor(options: MCPServerOptions) {
     this.context = options.context;
@@ -145,24 +137,11 @@ export class MCPServer {
     const mcpConfig = MCPConfigSchema.parse(this.config.mcp);
     this.serverName = mcpConfig.server_name;
     this.serverVersion = mcpConfig.version;
+    this.permissions = options.permissions ?? new PortalPermissionsService(this.config.portals);
 
-    // Register tools
-    this.registerTool(new ReadFileTool(this.context));
-    this.registerTool(new WriteFileTool(this.context));
-    this.registerTool(new PatchFileTool(this.context));
-    this.registerTool(new DeleteFileTool(this.context));
-    this.registerTool(new MoveFileTool(this.context));
-    this.registerTool(new CreateDirectoryTool(this.context));
-    this.registerTool(new ListDirectoryTool(this.context));
-    this.registerTool(new GitCreateBranchTool(this.context));
-    this.registerTool(new GitCommitTool(this.context));
-    this.registerTool(new GitStatusTool(this.context));
-    this.registerTool(new CreateRequestTool(this.context));
-    this.registerTool(new ListPlansTool(this.context));
-    this.registerTool(new ApprovePlanTool(this.context));
-    this.registerTool(new QueryJournalTool(this.context));
-    this.registerTool(new RunCommandTool(this.context));
-    this.registerTool(new SearchFilesTool(this.context));
+    for (const handler of buildHandlers(this.context, this.permissions).values()) {
+      this.registerTool(handler);
+    }
   }
 
   /**
@@ -423,6 +402,24 @@ export class MCPServer {
       // Classify and sanitize errors for JSON-RPC
       const classification = this.classifyError(error as ErrorPayload);
 
+      if (classification.type === "permission_error") {
+        try {
+          this.db.logActivity(
+            "mcp.server",
+            "mcp.permission.denied",
+            params.name,
+            {
+              tool_name: params.name,
+              portal: typeof params.arguments.portal === "string" ? params.arguments.portal : null,
+              identity_id: typeof params.arguments.identity_id === "string" ? params.arguments.identity_id : null,
+              error_message: classification.message,
+            },
+          );
+        } catch {
+          // Swallow logging errors to avoid cascading failures
+        }
+      }
+
       // Log error with context (do not include sensitive details)
       try {
         this.db.logActivity(
@@ -488,24 +485,25 @@ export class MCPServer {
     // If it's an Error instance, inspect the message for classification
     if (error instanceof Error) {
       const msg = getErrorMessage(error);
+      const lowerMsg = msg.toLowerCase();
       const rules: Array<{ type: string; code: number; message: string; needles: string[] }> = [
         {
           type: "security_error",
           code: JsonRpcErrorCode.INVALID_PARAMS,
           message: "Access denied: Invalid path",
-          needles: ["Path traversal", "outside allowed roots"],
+          needles: ["path traversal", "outside allowed roots"],
         },
         {
           type: "not_found_error",
           code: JsonRpcErrorCode.INVALID_PARAMS,
           message: "Resource not found",
-          needles: ["not found", "ENOENT", "Portal"],
+          needles: ["not found", "enoent"],
         },
         {
           type: "permission_error",
           code: JsonRpcErrorCode.INTERNAL_ERROR,
           message: "Permission denied",
-          needles: ["permission", "EACCES", "Permission denied"],
+          needles: ["permission", "eacces", "permission denied", "not permitted", "not allowed"],
         },
         {
           type: "timeout_error",
@@ -515,7 +513,7 @@ export class MCPServer {
         },
       ];
 
-      const rule = rules.find((r) => r.needles.some((needle) => msg.includes(needle)));
+      const rule = rules.find((r) => r.needles.some((needle) => lowerMsg.includes(needle)));
       if (rule) return { type: rule.type, code: rule.code, message: rule.message };
     }
 

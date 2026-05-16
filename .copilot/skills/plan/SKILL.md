@@ -1,5 +1,10 @@
 ---
 agent: senior-coder
+tools:
+  - read_file
+  - write_file
+  - search_files
+  - run_command
 scope: dev
 title: "Plan Skill (#plan)"
 description: Draft a new Phase Planning Document for a feature, refactor, or architectural change — follows Exaix standards for TDD, security, and traceability

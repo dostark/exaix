@@ -1,5 +1,9 @@
 ---
 agent: senior-coder
+tools:
+  - read_file
+  - search_files
+  - run_command
 scope: dev
 title: "Review Skill (#review)"
 description: Systematic code review — correctness, security, test coverage, architecture, and Exaix conventions

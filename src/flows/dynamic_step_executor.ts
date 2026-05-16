@@ -11,7 +11,7 @@
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { FlowStepExecutionMode } from "@exaix/core";
-import { type McpToolName, READ_ONLY_TOOLS } from "@exaix/mcp";
+import { DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
 
@@ -76,7 +76,8 @@ export interface IActivityJournal {
  * The model iteratively selects tools from step.permitted_tools,
  * observes results, and continues until the objective is met.
  *
- * Invariant: only tools in READ_ONLY_TOOLS may appear in permitted_tools.
+ * Invariant: only tools in DYNAMIC_MODE_TOOLS (derived from the canonical manifest)
+ * may appear in the effective permitted_tools.
  * This is enforced at load time by FlowLoader and validated here defensively.
  */
 export class DynamicStepExecutor {
@@ -211,11 +212,11 @@ export class DynamicStepExecutor {
     const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...identityTools];
 
     return stepTools.filter((tool) => {
-      const isAllowed = READ_ONLY_TOOLS.has(tool) && identityTools.has(tool);
+      const isAllowed = DYNAMIC_MODE_TOOLS.has(tool) && identityTools.has(tool);
       if (!isAllowed) {
         console.warn(
           `Dynamic step "${step.id}": tool "${tool}" filtered out at runtime ` +
-            `(must be read-only and in identity permitted_tools)`,
+            `(must be dynamic-mode allowed per manifest and in identity permitted_tools)`,
         );
       }
       return isAllowed;

@@ -16,6 +16,7 @@ import { createStubConfig, createStubDisplay, createStubGit, createStubProvider 
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { initActivityTableSchema } from "../helpers/db.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { getFirstTextContent } from "./helpers/test_setup.ts";
 
 // Mock Config
 const createMockConfig = (rootDir: string): Config => ({
@@ -67,7 +68,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     });
 
     assertExists(result.content);
-    const text = result.content[0].text;
+    const text = getFirstTextContent(result);
     assertExists(text);
 
     // Check if file exists
@@ -99,7 +100,7 @@ Deno.test("MCP Domain Tools", async (t) => {
       identity_id: "user-1",
     });
 
-    const plans = JSON.parse(result.content[0].text);
+    const plans = JSON.parse(getFirstTextContent(result));
     assertEquals(Array.isArray(plans), true);
     assertEquals(plans.length, 1);
     assertEquals(plans[0].id, planId);
@@ -122,7 +123,7 @@ Deno.test("MCP Domain Tools", async (t) => {
     });
 
     assertExists(result.content);
-    assertEquals(result.content[0].text.includes("approved successfully"), true);
+    assertEquals(getFirstTextContent(result).includes("approved successfully"), true);
 
     // Verify moved to active
     const activeDir = join(tempDir, config.paths.workspace, config.paths.active);
@@ -144,7 +145,7 @@ Deno.test("MCP Domain Tools", async (t) => {
       identity_id: "user-1",
     });
 
-    const activities = JSON.parse(result.content[0].text);
+    const activities = JSON.parse(getFirstTextContent(result));
     assertEquals(Array.isArray(activities), true);
     // Might contain logs from previous steps too
     assertEquals(activities.length > 0, true);
@@ -159,7 +160,7 @@ Deno.test("MCP Domain Tools", async (t) => {
 
     // Check internal log or result
     // Should be successful
-    const plans = JSON.parse(result.content[0].text);
+    const plans = JSON.parse(getFirstTextContent(result));
     assertEquals(Array.isArray(plans), true);
   });
 
@@ -177,7 +178,7 @@ Deno.test("MCP Domain Tools", async (t) => {
       trace_id: traceId, // This filters by trace_id
     });
 
-    const activities = JSON.parse(result.content[0].text);
+    const activities = JSON.parse(getFirstTextContent(result));
     assertEquals(Array.isArray(activities), true);
     // Should find the one we just logged
     const found = activities.find((activity: { trace_id?: string }) => activity.trace_id === traceId);

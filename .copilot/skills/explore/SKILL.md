@@ -1,5 +1,9 @@
 ---
 agent: general
+tools:
+  - read_file
+  - search_files
+  - list_directory
 scope: dev
 title: "Codebase Exploration (#explore)"
 description: Systematically explore a module or flow to answer architectural questions or map dependencies

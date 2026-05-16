@@ -334,7 +334,8 @@ export class ToolRegistry implements IToolRegistry {
   private registerCoreTools(): void {
     this.tools.set("read_file", {
       name: "read_file",
-      description: "Read the contents of a file",
+      description:
+        "Return the full text content of a file at the given path. Use when you need to read or analyze file contents; for searching within files use grep_search; for finding files by pattern use search_files. Returns file text as a string in data.content.",
       parameters: {
         type: "object",
         properties: {
@@ -349,7 +350,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.WRITE_FILE, {
       name: ToolName.WRITE_FILE,
-      description: "Write or overwrite a file with content",
+      description:
+        "Write or overwrite a file with the given content. Use when you need to create or replace a file in full; for targeted in-place edits use patch_file. Returns data.path (resolved absolute path) on success. Fails if path is outside allowed roots.",
       parameters: {
         type: "object",
         properties: {
@@ -368,7 +370,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.LIST_DIRECTORY, {
       name: ToolName.LIST_DIRECTORY,
-      description: "List files and directories in a path",
+      description:
+        "List files and directories at the given path. Use when you need to explore a directory or verify a file exists; for pattern-matching files use search_files. Returns data.entries as an array of { name, isDirectory } objects.",
       parameters: {
         type: "object",
         properties: {
@@ -383,7 +386,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.SEARCH_FILES, {
       name: ToolName.SEARCH_FILES,
-      description: "Search for files matching a glob pattern",
+      description:
+        "Find files matching a glob pattern (e.g. '**/*.ts') under a directory. Use when you need to locate files by name pattern; for searching file contents use grep_search; for listing all items use list_directory. Returns data.files as an array of absolute file paths.",
       parameters: {
         type: "object",
         properties: {
@@ -402,7 +406,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.CREATE_DIRECTORY, {
       name: ToolName.CREATE_DIRECTORY,
-      description: "Create a directory (recursively)",
+      description:
+        "Create a directory and all required parent directories. Use when you need to ensure a path exists before writing or moving files into it. Returns data.path (resolved absolute path) on success. Fails if path is outside allowed roots.",
       parameters: {
         type: "object",
         properties: {
@@ -417,7 +422,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.RUN_COMMAND, {
       name: ToolName.RUN_COMMAND,
-      description: "Execute a whitelisted shell command",
+      description:
+        "Execute a whitelisted shell command (git, deno, npm, grep, ls, etc.) with argument validation. Use when you need to run a CLI tool or build script; for git repo inspection use git_info instead. Returns data.output (stdout string) and data.exitCode. Blocked or failed commands return a descriptive error.",
       parameters: {
         type: "object",
         properties: {
@@ -437,7 +443,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.FETCH_URL, {
       name: ToolName.FETCH_URL,
-      description: "Fetch content from a URL (whitelisted domains only)",
+      description:
+        "Fetch text content from a URL in the configured allowed-domains whitelist. Use when you need to retrieve web content for analysis; only whitelisted domains are accessible. Returns data.content (response text), data.url, and data.format. Fails if the domain is not whitelisted or content exceeds the size limit.",
       parameters: {
         type: "object",
         properties: {
@@ -457,7 +464,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.GREP_SEARCH, {
       name: ToolName.GREP_SEARCH,
-      description: "Search for a string pattern in files (returns line numbers)",
+      description:
+        "Search files under a directory for a string or regex pattern and return line-level matches. Use for code and text search within the workspace; prefer over read_file when scanning many files for a specific pattern. Returns an array of { file, line, content } match objects up to the configured max_results limit.",
       parameters: {
         type: "object",
         properties: {
@@ -480,7 +488,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.MOVE_FILE, {
       name: ToolName.MOVE_FILE,
-      description: "Move or rename a file",
+      description:
+        "Move or rename a file from source to destination. Use when you need to relocate or rename a file; for duplicating a file without removing the original use copy_file. Returns data.source and data.destination on success. Fails if destination exists and overwrite is false.",
       parameters: {
         type: "object",
         properties: {
@@ -494,7 +503,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.COPY_FILE, {
       name: ToolName.COPY_FILE,
-      description: "Copy a file",
+      description:
+        "Copy a file from source to destination, leaving the original in place. Use when you need to duplicate a file; for renaming or relocating without keeping the original use move_file. Returns data.source and data.destination on success. Fails if destination exists and overwrite is false.",
       parameters: {
         type: "object",
         properties: {
@@ -508,7 +518,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set("delete_file", {
       name: "delete_file",
-      description: "Delete a file",
+      description:
+        "Permanently remove a file at the given path. Use when you need to delete a file; this action is irreversible. Returns data.path on success. Fails if the file does not exist or the path is outside allowed roots.",
       parameters: {
         type: "object",
         properties: {
@@ -520,7 +531,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set("git_info", {
       name: "git_info",
-      description: "Get git repository information (status, branch, diff)",
+      description:
+        "Retrieve git repository information: working-tree status, current branch name, or diff summary. Use when you need to inspect repo state without running run_command directly; scope 'status' returns changed files, 'branch' returns the branch name, 'diff_summary' returns a diff stat. Returns parsed git output in data.",
       parameters: {
         type: "object",
         properties: {
@@ -540,7 +552,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set("deno_task", {
       name: "deno_task",
-      description: "Run standard Deno tasks (test, lint, fmt, check)",
+      description:
+        "Run a standard Deno task (test, lint, fmt, check) at the given path. Use when you need to validate code quality or run tests within an agent strategy; returns output even when the task finds issues. Returns data.output (stdout), data.errorOutput, and data.exitCode.",
       parameters: {
         type: "object",
         properties: {
@@ -565,7 +578,8 @@ export class ToolRegistry implements IToolRegistry {
 
     this.tools.set(ToolName.PATCH_FILE, {
       name: ToolName.PATCH_FILE,
-      description: "Patch a file by replacing strings (sequential search-and-replace)",
+      description:
+        "Apply sequential search-and-replace patches to an existing file without full replacement. Use for targeted edits to a file; for complete file replacement use write_file. Returns data.path and data.appliedCount on success. Fails if any search string is not found.",
       parameters: {
         type: "object",
         properties: {

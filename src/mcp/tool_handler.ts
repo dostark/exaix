@@ -9,9 +9,9 @@ import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../services/core/db.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
-import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import type { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
-import type { PortalOperation } from "@exaix/core";
+import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
+import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
+import type { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
 import type { JSONValue } from "@exaix/core";
 
@@ -23,9 +23,9 @@ export abstract class ToolHandler {
   protected context: ICliApplicationContext;
   protected config: Config;
   protected db: IDatabaseService;
-  protected permissions: PortalPermissionsService | null;
+  protected permissions: IPortalPermissionsChecker | null;
 
-  constructor(context: ICliApplicationContext, permissions?: PortalPermissionsService) {
+  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker) {
     this.context = context;
     this.config = context.config.getAll();
     this.db = context.db;
@@ -54,8 +54,7 @@ export abstract class ToolHandler {
     operation: PortalOperation,
   ): void {
     if (!this.permissions) {
-      // No permissions service configured, allow all operations
-      return;
+      throw new Error("Permission denied: permissions service not configured");
     }
 
     const result = this.permissions.checkOperationAllowed(portalName, identityId, operation);
@@ -116,23 +115,47 @@ export abstract class ToolHandler {
   }
 
   /**
-   * Formats a successful tool response with logging
+   * Formats a successful tool response with logging.
+   * Passes content blocks through directly to the agent.
    */
   protected formatSuccess(
     toolName: string,
     portal: string,
     identityId: string,
-    message: string,
+    content: MCPContent[],
     metadata: LogMetadata,
   ): MCPToolResponse {
     this.logToolExecution(toolName, portal, identityId, { ...metadata, success: true });
+    return { content };
+  }
+
+  /**
+   * Returns a structured tool-logic error response with isError:true (does not throw).
+   * Use for tool-logic failures (permission denied, not found, execution failed).
+   * Reserve throws for unrecoverable protocol-level server errors.
+   */
+  protected formatToolError(
+    toolName: string,
+    portal: string,
+    identityId: string,
+    _code: ToolErrorCode,
+    message: string,
+    metadata: LogMetadata,
+  ): MCPToolResponse {
+    this.logToolExecution(toolName, portal, identityId, {
+      ...metadata,
+      success: false,
+      error: message,
+    });
     return {
       content: [{ type: "text", text: message }],
+      isError: true,
     };
   }
 
   /**
-   * Formats an error response with logging and re-throws
+   * Formats a protocol-level error with logging and re-throws.
+   * Use only for unrecoverable server failures, not tool-logic errors.
    */
   protected formatError(
     toolName: string,

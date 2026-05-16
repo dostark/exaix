@@ -6,6 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { McpTransportType } from "@exaix/mcp";
 import type { PortalOperation } from "@exaix/core";
 
@@ -63,7 +64,11 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
     display: createStubDisplay(),
   };
 
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   return { server, db, tempDir, cleanup };
@@ -169,7 +174,11 @@ Deno.test("MCP Server: resources/read rejects invalid URI", async () => {
     provider: createStubProvider(),
     display: createStubDisplay(),
   };
-  const server = new MCPServer({ context, transport: McpTransportType.STDIO });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+  });
   await server.start();
 
   try {

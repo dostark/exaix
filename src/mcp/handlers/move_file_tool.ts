@@ -9,7 +9,7 @@
 import { dirname } from "@std/path";
 import { ToolHandler } from "../tool_handler.ts";
 import { type MCPToolResponse, MoveFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -38,73 +38,81 @@ export class MoveFileTool extends ToolHandler {
     };
     const { portal, from, to, identity_id } = validatedArgs;
 
-    this.validatePermission(portal, identity_id, PortalOperation.WRITE);
-
-    const portalPath = this.validatePortalExists(portal);
-
-    // Validate both paths independently
-    const absoluteFrom = this.resolvePortalPath(portalPath, from);
-    const absoluteTo = this.resolvePortalPath(portalPath, to);
-
-    // Verify source exists and is a regular file
-    let stat: Deno.FileInfo;
     try {
-      stat = await Deno.stat(absoluteFrom);
-    } catch {
-      throw new Error(`Source file not found: ${from}`);
-    }
+      this.validatePermission(portal, identity_id, PortalOperation.WRITE);
 
-    if (!stat.isFile) {
-      throw new Error(
-        `"${from}" is a directory, not a file. MoveFileTool only moves regular files.`,
-      );
-    }
+      const portalPath = this.validatePortalExists(portal);
 
-    // Check destination doesn't already exist (prevent silent overwrites)
-    try {
-      await Deno.stat(absoluteTo);
-      throw new Error(
-        `Destination already exists: "${to}". ` +
-          `Delete it first or choose a different destination path.`,
-      );
-    } catch (err) {
-      // Only re-throw if it's our "already exists" error, not the "not found" error
-      if (err instanceof Error && err.message.startsWith("Destination already exists")) {
-        throw err;
+      // Validate both paths independently
+      const absoluteFrom = this.resolvePortalPath(portalPath, from);
+      const absoluteTo = this.resolvePortalPath(portalPath, to);
+
+      // Verify source exists and is a regular file
+      let stat: Deno.FileInfo;
+      try {
+        stat = await Deno.stat(absoluteFrom);
+      } catch {
+        throw new Error(`Source file not found: ${from}`);
       }
-      // Not found — safe to proceed
+
+      if (!stat.isFile) {
+        throw new Error(
+          `"${from}" is a directory, not a file. MoveFileTool only moves regular files.`,
+        );
+      }
+
+      // Check destination doesn't already exist (prevent silent overwrites)
+      try {
+        await Deno.stat(absoluteTo);
+        throw new Error(
+          `Destination already exists: "${to}". ` +
+            `Delete it first or choose a different destination path.`,
+        );
+      } catch (err) {
+        // Only re-throw if it's our "already exists" error, not the "not found" error
+        if (err instanceof Error && err.message.startsWith("Destination already exists")) {
+          throw err;
+        }
+        // Not found — safe to proceed
+      }
+
+      // Create destination parent directories if needed
+      await Deno.mkdir(dirname(absoluteTo), { recursive: true });
+
+      // Perform the move
+      await Deno.rename(absoluteFrom, absoluteTo);
+
+      this.logToolExecution(McpToolName.MOVE_FILE, portal, identity_id, {
+        from,
+        to,
+        bytes: stat.size,
+        success: true,
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `move_file success: moved ${from} to ${to}.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      let code = ToolErrorCode.EXECUTION_FAILED;
+      if (message.startsWith("Source file not found")) code = ToolErrorCode.NOT_FOUND;
+      if (message.startsWith("Destination already exists") || message.includes("is a directory")) {
+        code = ToolErrorCode.INVALID_ARGS;
+      }
+      return this.formatToolError(McpToolName.MOVE_FILE, portal, identity_id, code, message, { from, to });
     }
-
-    // Create destination parent directories if needed
-    await Deno.mkdir(dirname(absoluteTo), { recursive: true });
-
-    // Perform the move
-    await Deno.rename(absoluteFrom, absoluteTo);
-
-    this.logToolExecution(McpToolName.MOVE_FILE, portal, identity_id, {
-      from,
-      to,
-      bytes: stat.size,
-      success: true,
-    });
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `move_file success: moved ${from} to ${to}.`,
-        },
-      ],
-    };
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.MOVE_FILE,
-      description: "Move or rename a file within a portal. " +
-        "Both source and destination must be within the portal bounds. " +
-        "Destination must not already exist. " +
-        "In git portals, follow with git_commit to register the rename in history.",
+      description:
+        "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

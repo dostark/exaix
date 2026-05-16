@@ -1,5 +1,10 @@
 ---
 agent: general
+tools:
+  - read_file
+  - search_files
+  - write_file
+  - run_command
 scope: dev
 title: "Review-Research-Improvement Skill (#review-research)"
 description: Evaluate an Exaix subsystem for weaknesses, compare to best practices, produce a phased improvement plan and concrete artifacts

@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - read_file
+  - patch_file
+  - write_file
+  - search_files
+  - run_command
 scope: dev
 title: "Upgrade Skill (#upgrade)"
 description: Safely upgrade a dependency or runtime version — semver audit, compatibility check, regression validation, breaking-change docs

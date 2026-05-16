@@ -9,7 +9,7 @@ import { ToolHandler } from "../tool_handler.ts";
 import type { JSONValue } from "@exaix/core";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { ReadFileToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 
 /**
@@ -65,22 +65,20 @@ export class ReadFileTool extends ToolHandler {
         ],
       };
     } catch (error) {
-      // Log failed execution
-      this.logToolExecution(McpToolName.READ_FILE, portal, identity_id, {
+      const message = error instanceof Error ? error.message : String(error);
+      const code = message.startsWith("File not found") ? ToolErrorCode.NOT_FOUND : ToolErrorCode.EXECUTION_FAILED;
+      return this.formatToolError(McpToolName.READ_FILE, portal, identity_id, code, message, {
         path,
         identity_id: identity_id ?? null,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
       });
-
-      throw error;
     }
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.READ_FILE,
-      description: "Read a file from a portal (scoped to allowed portals)",
+      description:
+        "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
       inputSchema: {
         type: "object",
         properties: {

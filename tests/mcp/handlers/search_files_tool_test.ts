@@ -3,7 +3,7 @@
  * @path tests/mcp/handlers/search_files_tool_test.ts
  * @description Unit tests for the SearchFilesTool MCP tool.
  */
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { SearchFilesTool } from "../../../src/mcp/handlers/search_files_tool.ts";
 import {
   assertToolDefinitionFields,
@@ -43,7 +43,7 @@ function createHandler(
   );
 }
 
-Deno.test("SearchFilesTool: searches for files using glob pattern", async () => {
+Deno.test("SearchFilesTool: searches for files and returns structured data content", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.READ],
     fileContent: {
@@ -55,7 +55,9 @@ Deno.test("SearchFilesTool: searches for files using glob pattern", async () => 
     const mockRegistry = new MockToolRegistry();
     mockRegistry.setResult({
       success: true,
-      data: { files: ["/tmp/mcp-test/TestPortal/src/main.ts", "/tmp/mcp-test/TestPortal/src/utils.ts"] },
+      data: {
+        files: ["/tmp/mcp-perm-test-abc/TestPortal/src/main.ts", "/tmp/mcp-perm-test-abc/TestPortal/src/utils.ts"],
+      },
     });
 
     const handler = createHandler(env, mockRegistry);
@@ -65,12 +67,15 @@ Deno.test("SearchFilesTool: searches for files using glob pattern", async () => 
       identity_id: "test-agent",
     });
 
-    assertEquals(result.content[0].type, "text");
-    assertStringIncludes(result.content[0].text, "Found 2 files");
+    assertEquals(result.content[0].type, "exaix_structured_data");
+    assertEquals(result.isError, undefined);
+    type ISearchBlock = { type: "exaix_structured_data"; data: { files: string[] } };
+    const block = result.content[0] as ISearchBlock;
+    assertEquals(block.data.files.length, 2);
   });
 });
 
-Deno.test("SearchFilesTool: throws error if search fails in ToolRegistry", async () => {
+Deno.test("SearchFilesTool: search failure returns isError:true response", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.READ],
   }, async (env) => {
@@ -78,34 +83,31 @@ Deno.test("SearchFilesTool: throws error if search fails in ToolRegistry", async
     mockRegistry.setResult({ success: false, error: "Disk error" });
 
     const handler = createHandler(env, mockRegistry);
-    try {
-      await handler.execute({
-        portal: "TestPortal",
-        pattern: "**/*.ts",
-        identity_id: "test-agent",
-      });
-      assertEquals(true, false, "Should have thrown");
-    } catch (error) {
-      assertStringIncludes((error as Error).message, "Disk error");
-    }
+    const result = await handler.execute({
+      portal: "TestPortal",
+      pattern: "**/*.ts",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(result.isError, true);
+    assertEquals(result.content[0].type, "text");
+    assertEquals((result.content[0] as { type: "text"; text: string }).text, "Disk error");
   });
 });
 
-Deno.test("SearchFilesTool: throws error if ToolRegistry is missing from context", async () => {
+Deno.test("SearchFilesTool: missing ToolRegistry returns isError:true response", async () => {
   await withToolPermissionTest({
     operations: [PortalOperation.READ],
   }, async (env) => {
     const handler = createHandler(env);
-    try {
-      await handler.execute({
-        portal: "TestPortal",
-        pattern: "**/*.ts",
-        identity_id: "test-agent",
-      });
-      assertEquals(true, false, "Should have thrown");
-    } catch (error) {
-      assertStringIncludes((error as Error).message, "ToolRegistry not available");
-    }
+    const result = await handler.execute({
+      portal: "TestPortal",
+      pattern: "**/*.ts",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(result.isError, true);
+    assertEquals(result.content[0].type, "text");
   });
 });
 

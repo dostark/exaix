@@ -1,5 +1,11 @@
 ---
 agent: general
+tools:
+  - read_file
+  - write_file
+  - patch_file
+  - search_files
+  - run_command
 scope: dev
 title: "Infrastructure/Config Skill (#infra)"
 description: Plan and implement infrastructure or configuration changes with validation and rollback steps

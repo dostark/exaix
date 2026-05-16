@@ -8,7 +8,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
 /**
@@ -60,18 +60,26 @@ export class GitStatusTool extends ToolHandler {
         "git_status",
         portal,
         identity_id,
-        statusText,
+        [{ type: "text", text: statusText }],
         { identity_id, has_changes: output.trim().length > 0 },
       );
     } catch (error) {
-      this.formatError("git_status", portal, identity_id, error, { identity_id });
+      return this.formatToolError(
+        "git_status",
+        portal,
+        identity_id,
+        ToolErrorCode.EXECUTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        { identity_id },
+      );
     }
   }
 
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_status",
-      description: "Query git repository status in a portal",
+      description:
+        "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing. Returns the git status output as a formatted string.",
       inputSchema: {
         type: "object",
         properties: {

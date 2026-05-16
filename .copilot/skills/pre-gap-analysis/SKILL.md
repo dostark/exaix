@@ -1,5 +1,10 @@
 ---
 agent: senior-coder
+tools:
+  - read_file
+  - patch_file
+  - search_files
+  - run_command
 scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts

@@ -11,6 +11,7 @@ import {
   createBaseToolContext,
   createPermissionsService,
   createToolContext,
+  getFirstTextContent,
   withToolPermissionTest,
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
@@ -35,7 +36,7 @@ Deno.test("GitCreateBranchTool: creates branch successfully", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(res.content[0].text, "created and checked out successfully");
+    assertStringIncludes(getFirstTextContent(res), "created and checked out successfully");
   });
 });
 

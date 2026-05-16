@@ -51,6 +51,19 @@ export interface IAgentWhitelistResult {
   identity_id: string;
 }
 
+/**
+ * Minimal interface for portal permission checkers used by MCP tool handlers.
+ * PortalPermissionsService satisfies this interface structurally; test fixtures
+ * (e.g. AllowAllPermissionsService) implement it without importing the concrete service.
+ */
+export interface IPortalPermissionsChecker {
+  checkOperationAllowed(
+    portalAlias: string,
+    identityId: string,
+    operation: PortalOperation,
+  ): IPermissionCheckResult;
+}
+
 // ============================================================================
 // Security Modes
 // ============================================================================

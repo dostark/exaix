@@ -11,6 +11,7 @@ import {
   createBaseToolContext,
   createPermissionsService,
   createToolContext,
+  getFirstTextContent,
   withToolPermissionTest,
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
@@ -37,7 +38,7 @@ Deno.test("PatchFileTool: replaces exactly one occurrence", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(res.content[0].text, "success");
+    assertStringIncludes(getFirstTextContent(res), "success");
 
     const content = await Deno.readTextFile(join(env.portalPath, targetPath));
     assertStringIncludes(content, "function bar()");

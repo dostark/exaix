@@ -1,5 +1,10 @@
 ---
 agent: general
+tools:
+  - run_command
+  - read_file
+  - patch_file
+  - write_file
 scope: dev
 title: "Linting/Formatting Skill (#lint)"
 description: Fix all lint and formatting issues in touched files and verify zero errors

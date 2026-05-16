@@ -36,6 +36,9 @@ tests/scenario_framework/output/
 # Allow agent-facing coverage snapshot (new location)
 !.copilot/coverage/
 !.copilot/coverage/coverage-summary.md
+# Allow coverage skill (directory name collides with coverage*/ rule)
+!.copilot/skills/coverage/
+!.copilot/skills/coverage/**
 
 # --------------------------------------------
 # Runtime State (.exa/)
