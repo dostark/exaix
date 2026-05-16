@@ -75,7 +75,8 @@ export class RunCommandTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.RUN_COMMAND,
-      description: "Execute a whitelisted shell command in the context of a portal",
+      description:
+        "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
       inputSchema: {
         type: "object",
         properties: {

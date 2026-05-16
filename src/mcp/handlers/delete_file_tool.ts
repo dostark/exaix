@@ -75,10 +75,8 @@ export class DeleteFileTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "delete_file",
-      description: "Delete a single file from a portal. " +
-        "Irreversible at the filesystem level, but recoverable from git history " +
-        "if the portal is a git repository. " +
-        "Does not accept directory paths — only regular files.",
+      description:
+        "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

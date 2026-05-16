@@ -71,7 +71,8 @@ export class GitStatusTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_status",
-      description: "Query git repository status in a portal",
+      description:
+        "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing. Returns the git status output as a formatted string.",
       inputSchema: {
         type: "object",
         properties: {

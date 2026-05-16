@@ -56,8 +56,8 @@ export class CreateDirectoryTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.CREATE_DIRECTORY,
-      description: "Create a directory (and all required parent directories) within a portal. " +
-        "Idempotent — succeeds silently if the directory already exists.",
+      description:
+        "Create a directory (and any missing parent directories) inside a portal. Use before writing files into a directory that may not exist yet. Safe to call if the directory already exists. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

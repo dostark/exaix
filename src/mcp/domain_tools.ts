@@ -67,7 +67,8 @@ export class CreateRequestTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_create_request",
-      description: "Create a new generic request for Exaix",
+      description:
+        "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79. Returns the created request record with its assigned ID.",
       inputSchema: {
         type: "object",
         properties: {
@@ -134,7 +135,8 @@ export class ListPlansTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_list_plans",
-      description: "List plans matching a status (default: pending)",
+      description:
+        "List all execution plans (active, draft, or completed) tracked in the Exaix workspace. Read-only; safe for dynamic execution. Use to check plan status or find a plan ID before approving or querying. Returns an array of plan summary objects.",
       inputSchema: {
         type: "object",
         properties: {
@@ -193,7 +195,8 @@ export class ApprovePlanTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_approve_plan",
-      description: "Approve a pending plan for execution",
+      description:
+        "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation in Phase 79. Returns the updated plan record.",
       inputSchema: {
         type: "object",
         properties: {
@@ -256,7 +259,8 @@ export class QueryJournalTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "exaix_query_journal",
-      description: "Query the IActivity Journal for events",
+      description:
+        "Query the Exaix activity journal for execution history, tool calls, or agent events. Read-only; safe for dynamic execution. Use to audit what happened or look up recent activity in a flow. Returns an array of matching journal entry records.",
       inputSchema: {
         type: "object",
         properties: {

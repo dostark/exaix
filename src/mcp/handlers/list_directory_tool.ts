@@ -91,7 +91,8 @@ export class ListDirectoryTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.LIST_DIRECTORY,
-      description: "List files and directories in a portal path",
+      description:
+        "List the files and subdirectories at a path inside a portal. Use to check whether a file exists, explore directory structure, or enumerate files before processing. Returns an array of entry names.",
       inputSchema: {
         type: "object",
         properties: {

@@ -80,7 +80,8 @@ export class ReadFileTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.READ_FILE,
-      description: "Read a file from a portal (scoped to allowed portals)",
+      description:
+        "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
       inputSchema: {
         type: "object",
         properties: {

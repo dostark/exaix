@@ -89,9 +89,8 @@ export class PatchFileTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.PATCH_FILE,
-      description: "Apply a targeted string replacement to a file in a portal. " +
-        "Preferred over write_file for code edits — only the changed section is specified. " +
-        "The search string must match exactly once; fails if not found or ambiguous.",
+      description:
+        "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

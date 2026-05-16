@@ -92,7 +92,8 @@ export class GitCommitTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_commit",
-      description: "Commit changes in a portal git repository",
+      description:
+        "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change. Returns the commit hash of the newly created commit.",
       inputSchema: {
         type: "object",
         properties: {

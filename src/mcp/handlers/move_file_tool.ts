@@ -101,10 +101,8 @@ export class MoveFileTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.MOVE_FILE,
-      description: "Move or rename a file within a portal. " +
-        "Both source and destination must be within the portal bounds. " +
-        "Destination must not already exist. " +
-        "In git portals, follow with git_commit to register the rename in history.",
+      description:
+        "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

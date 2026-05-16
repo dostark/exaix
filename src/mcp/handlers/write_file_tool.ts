@@ -80,7 +80,8 @@ export class WriteFileTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: McpToolName.WRITE_FILE,
-      description: "Write a file to a portal (validated and logged)",
+      description:
+        "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

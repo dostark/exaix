@@ -69,7 +69,8 @@ export class GitCreateBranchTool extends ToolHandler {
   getToolDefinition(): { name: string; description: string; inputSchema: Record<string, JSONValue> } {
     return {
       name: "git_create_branch",
-      description: "Create a new git branch in a portal repository",
+      description:
+        "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name on success.",
       inputSchema: {
         type: "object",
         properties: {

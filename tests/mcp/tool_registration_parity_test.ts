@@ -82,3 +82,40 @@ Deno.test("ToolRegistrationParity: live MCP tool count matches manifest count", 
     await ctx.cleanup();
   }
 });
+
+Deno.test("ToolRegistrationParity: every tools/list description matches the canonical manifest", async () => {
+  const ctx = await initMCPTestWithoutPortal();
+  try {
+    const request = createMCPRequest("tools/list", {});
+    const response = await ctx.server.handleRequest(request);
+
+    assertExists(response.result);
+    const result = response.result as IToolsListResult;
+
+    const liveManifestEntries = TOOL_MANIFEST.filter(
+      (e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN,
+    );
+
+    const manifestByName = new Map(liveManifestEntries.map((e) => [e.name, e.description]));
+
+    const mismatches: string[] = [];
+    for (const tool of result.tools) {
+      const expected = manifestByName.get(tool.name);
+      if (expected === undefined) continue;
+      if (tool.description !== expected) {
+        mismatches.push(
+          `'${tool.name}': served="${tool.description.slice(0, 60)}..." expected="${expected.slice(0, 60)}..."`,
+        );
+      }
+    }
+
+    assertEquals(
+      mismatches,
+      [],
+      `tools/list descriptions do not match TOOL_MANIFEST for: [${mismatches.join("; ")}]. ` +
+        `Update getToolDefinition() in each handler to match the manifest description.`,
+    );
+  } finally {
+    await ctx.cleanup();
+  }
+});
