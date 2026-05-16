@@ -398,6 +398,24 @@ export function assertMCPError(
 }
 
 /**
+ * Assert that a tools/call response contains an isError:true tool-logic error.
+ * Use this instead of assertMCPError when the handler returns a structured
+ * isError response rather than throwing a protocol exception.
+ */
+export function assertMCPToolError(
+  response: IMCPResponseShape,
+  messageContains?: string,
+): void {
+  assertExists(response.result, "Expected result in response (not a protocol error)");
+  const result = response.result as { isError?: boolean; content?: Array<{ type: string; text?: string }> };
+  assertEquals(result.isError, true, "Expected isError:true in tool result");
+  if (messageContains) {
+    const text = result.content?.[0]?.text ?? "";
+    assertStringIncludes(text, messageContains);
+  }
+}
+
+/**
  * Assert MCP success response and return result
  *
  * @throws AssertionError if response contains an error

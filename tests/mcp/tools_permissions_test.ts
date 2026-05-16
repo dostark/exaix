@@ -5,7 +5,7 @@
  * enforcement of read/write permissions at the tool level before execution.
  */
 
-import { assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { PortalOperation } from "@exaix/core";
 
 import { GitStatusTool } from "../../src/mcp/handlers/git_status_tool.ts";
@@ -78,18 +78,13 @@ Deno.test("MCP Tools: read_file rejects when read permission denied", async () =
     },
     async ({ context, permissions }) => {
       const tool = new ReadFileTool(context, permissions);
-
-      await assertRejects(
-        async () => {
-          await tool.execute({
-            portal: "TestPortal",
-            path: "test.txt",
-            identity_id: "test-agent",
-          });
-        },
-        Error,
-        "not permitted",
-      );
+      const result = await tool.execute({
+        portal: "TestPortal",
+        path: "test.txt",
+        identity_id: "test-agent",
+      });
+      assertEquals(result.isError, true);
+      assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not permitted");
     },
   );
 });
@@ -172,17 +167,12 @@ Deno.test("MCP Tools: git_status rejects when git permission denied", async () =
     },
     async ({ context, permissions }) => {
       const tool = new GitStatusTool(context, permissions);
-
-      await assertRejects(
-        async () => {
-          await tool.execute({
-            portal: "TestPortal",
-            identity_id: "test-agent",
-          });
-        },
-        Error,
-        "not permitted",
-      );
+      const result = await tool.execute({
+        portal: "TestPortal",
+        identity_id: "test-agent",
+      });
+      assertEquals(result.isError, true);
+      assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not permitted");
     },
   );
 });
@@ -200,18 +190,13 @@ Deno.test("MCP Tools: rejects non-whitelisted agent", async () => {
     },
     async ({ context, permissions }) => {
       const tool = new ReadFileTool(context, permissions);
-
-      await assertRejects(
-        async () => {
-          await tool.execute({
-            portal: "TestPortal",
-            path: "test.txt",
-            identity_id: "unauthorized-agent",
-          });
-        },
-        Error,
-        "not allowed",
-      );
+      const result = await tool.execute({
+        portal: "TestPortal",
+        path: "test.txt",
+        identity_id: "unauthorized-agent",
+      });
+      assertEquals(result.isError, true);
+      assertStringIncludes((result.content[0] as { type: string; text: string }).text, "not allowed");
     },
   );
 });
@@ -245,18 +230,13 @@ Deno.test("MCP Tools: permission-protected handlers fail closed without permissi
     },
     async ({ context }) => {
       const tool = new ReadFileTool(context);
-
-      await assertRejects(
-        async () => {
-          await tool.execute({
-            portal: "TestPortal",
-            path: "test.txt",
-            identity_id: "test-agent",
-          });
-        },
-        Error,
-        "Permission denied",
-      );
+      const result = await tool.execute({
+        portal: "TestPortal",
+        path: "test.txt",
+        identity_id: "test-agent",
+      });
+      assertEquals(result.isError, true);
+      assertStringIncludes((result.content[0] as { type: string; text: string }).text, "Permission denied");
     },
   );
 });

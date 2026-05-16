@@ -3,7 +3,7 @@
  * @path tests/mcp/handlers/patch_file_tool_test.ts
  * @description Unit tests for the PatchFileTool MCP tool.
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PatchFileTool } from "../../../src/mcp/handlers/patch_file_tool.ts";
 import {
@@ -46,47 +46,41 @@ Deno.test("PatchFileTool: replaces exactly one occurrence", async () => {
   });
 });
 
-Deno.test("PatchFileTool: throws when search string not found", async () => {
+Deno.test("PatchFileTool: returns isError when search string not found", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     const targetPath = "src/main.ts";
     await Deno.mkdir(join(env.portalPath, "src"), { recursive: true });
     await Deno.writeTextFile(join(env.portalPath, targetPath), "function foo() {}");
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          path: targetPath,
-          search: "function notHere()",
-          replace: "function bar()",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "search string not found",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      path: targetPath,
+      search: "function notHere()",
+      replace: "function bar()",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "not found");
   });
 });
 
-Deno.test("PatchFileTool: throws when search string matches multiple times", async () => {
+Deno.test("PatchFileTool: returns isError when search string matches multiple times", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     const targetPath = "src/main.ts";
     await Deno.mkdir(join(env.portalPath, "src"), { recursive: true });
     await Deno.writeTextFile(join(env.portalPath, targetPath), "foo()\nfoo()\n");
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          path: targetPath,
-          search: "foo()",
-          replace: "bar()",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "found 2 times",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      path: targetPath,
+      search: "foo()",
+      replace: "bar()",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "times");
   });
 });
 

@@ -14,6 +14,7 @@ import {
   assertMCPContentIncludes,
   assertMCPError,
   assertMCPSuccess,
+  assertMCPToolError,
   createMCPRequest,
   createToolCallRequest,
   type IMCPTestContext,
@@ -134,7 +135,7 @@ Deno.test("read_file: rejects non-existent portal", async () => {
     });
 
     const response = await server.handleRequest(request);
-    assertMCPError(response, -32602, "Resource not found");
+    assertMCPToolError(response as IMCPResponseShape, "not found");
   });
 });
 
@@ -146,7 +147,7 @@ Deno.test("read_file: rejects non-existent file", async () => {
     });
 
     const response = await server.handleRequest(request);
-    assertMCPError(response, -32602, "not found");
+    assertMCPToolError(response as IMCPResponseShape, "not found");
   });
 });
 
@@ -161,7 +162,7 @@ Deno.test("read_file: prevents path traversal attack", async () => {
     });
 
     const response = await server.handleRequest(request);
-    assertMCPError(response, -32602, "Access denied: Invalid path");
+    assertMCPToolError(response as IMCPResponseShape, "traversal");
   });
 });
 
@@ -185,7 +186,7 @@ Deno.test("read_file: read_file appears in tools/list", async () => {
     assert(toolNames.includes(McpToolName.APPROVE_PLAN));
     assert(toolNames.includes(McpToolName.QUERY_JOURNAL));
     const readTool = result.tools.find((t) => t.name === McpToolName.READ_FILE)!;
-    assertStringIncludes(readTool.description, "Read");
+    assertStringIncludes(readTool.description, "Return");
   });
 });
 
@@ -393,7 +394,7 @@ Deno.test("list_directory: rejects non-existent portal", async () => {
     });
 
     const response = await server.handleRequest(request);
-    assertMCPError(response, -32602, "Resource not found");
+    assertMCPToolError(response as IMCPResponseShape, "not found");
   });
 });
 
@@ -405,6 +406,6 @@ Deno.test("list_directory: prevents path traversal", async () => {
     });
 
     const response = await server.handleRequest(request);
-    assertMCPError(response, -32602, "Access denied: Invalid path");
+    assertMCPToolError(response as IMCPResponseShape, "traversal");
   });
 });

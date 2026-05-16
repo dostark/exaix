@@ -3,13 +3,14 @@
  * @path tests/mcp/handlers/move_file_tool_test.ts
  * @description Unit tests for the MoveFileTool MCP tool.
  */
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { MoveFileTool } from "../../../src/mcp/handlers/move_file_tool.ts";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,
   createPermissionsService,
   createToolContext,
+  getFirstTextContent,
   withToolPermissionTest,
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
@@ -38,24 +39,21 @@ Deno.test("MoveFileTool: moves a file to a new path", async () => {
   });
 });
 
-Deno.test("MoveFileTool: throws if destination already exists", async () => {
+Deno.test("MoveFileTool: returns isError if destination already exists", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     await Deno.mkdir(join(env.portalPath, "src"), { recursive: true });
     await Deno.writeTextFile(join(env.portalPath, "src/a.ts"), "a");
     await Deno.writeTextFile(join(env.portalPath, "src/b.ts"), "b");
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          from: "src/a.ts",
-          to: "src/b.ts",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "Destination already exists",
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      from: "src/a.ts",
+      to: "src/b.ts",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
+    assertStringIncludes(getFirstTextContent(result), "Destination already exists");
   });
 });
 
@@ -77,21 +75,19 @@ Deno.test("MoveFileTool: creates destination parent directories", async () => {
   });
 });
 
-Deno.test("MoveFileTool: blocks path traversal on destination", async () => {
+Deno.test("MoveFileTool: returns isError on path traversal in destination", async () => {
   await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
     await Deno.mkdir(join(env.portalPath, "src"), { recursive: true });
     await Deno.writeTextFile(join(env.portalPath, "src/a.ts"), "a");
 
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          from: "src/a.ts",
-          to: "../../outside.ts",
-          identity_id: "test-agent",
-        }),
-    );
+    const result = await handler.execute({
+      portal: "TestPortal",
+      from: "src/a.ts",
+      to: "../../outside.ts",
+      identity_id: "test-agent",
+    });
+    assertEquals(result.isError, true);
   });
 });
 
