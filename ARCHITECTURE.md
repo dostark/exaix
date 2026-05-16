@@ -785,18 +785,17 @@ Live tools exposed via `tools/list` and `tools/call` JSON-RPC endpoints. All 16 
 | Tool                   | Category | Dynamic mode | Approval required |
 | ---------------------- | -------- | :----------: | :---------------: |
 | `read_file`            | read     |      ✓       |         —         |
-| `write_file`           | write    |      ✓       |         —         |
-| `patch_file`           | write    |      ✓       |         —         |
-| `delete_file`          | write    |      ✓       |         —         |
-| `move_file`            | write    |      ✓       |         —         |
-| `create_directory`     | write    |      ✓       |         —         |
+| `write_file`           | write    |      —       |         —         |
+| `patch_file`           | write    |      —       |         —         |
+| `delete_file`          | write    |      —       |         —         |
+| `move_file`            | write    |      —       |         —         |
+| `create_directory`     | write    |      —       |         —         |
 | `list_directory`       | read     |      ✓       |         —         |
 | `search_files`         | read     |      ✓       |         —         |
-| `grep_search`          | read     |      ✓       |         —         |
-| `git_create_branch`    | git      |      ✓       |         —         |
-| `git_commit`           | git      |      ✓       |         —         |
-| `git_status`           | read     |      ✓       |         —         |
-| `run_command`          | git      |      ✓       |         —         |
+| `git_create_branch`    | git      |      —       |         —         |
+| `git_commit`           | git      |      —       |         —         |
+| `git_status`           | git      |      ✓       |         —         |
+| `run_command`          | meta     |      —       |         —         |
 | `exaix_list_plans`     | domain   |      ✓       |         —         |
 | `exaix_query_journal`  | domain   |      ✓       |         —         |
 | `exaix_create_request` | domain   |      —       |    ⚠ Phase 79     |
