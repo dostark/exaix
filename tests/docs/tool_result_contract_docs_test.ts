@@ -36,3 +36,15 @@ Deno.test("tool_result_contract_docs: checked tool count is positive", () => {
   const result = checkToolResultParity();
   assert(result.checkedTools > 0, "At least one tool must be inspected");
 });
+
+Deno.test("tool_result_contract_docs: delegates_to_registry tools with output_schema should have registry entries (warnings, not errors)", () => {
+  const result = checkToolResultParity();
+  // Warnings for Check 2 are advisory — parity check still succeeds.
+  assertEquals(
+    result.success,
+    true,
+    `Parity check must succeed even with Check 2 warnings:\n${result.errors.join("\n")}`,
+  );
+  // The warnings array may be non-empty; that is expected and acceptable.
+  assert(Array.isArray(result.warnings), "warnings must be an array");
+});

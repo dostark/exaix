@@ -7,6 +7,8 @@
  *
  * Checks:
  *   1. Every remediationPolicyRef in TOOL_MANIFEST references a known mode.
+ *   2. Every manifest entry with delegates_to_registry=true and an output_schema
+ *      has a corresponding entry in TOOL_RESULT_SCHEMA_REGISTRY.
  *
  * Exits with code 1 when any parity violation is found.
  *
@@ -15,7 +17,7 @@
  */
 
 import { TOOL_MANIFEST } from "@exaix/mcp/manifest.ts";
-import { TOOL_RESULT_REMEDIATION_MODE_VALUES } from "@exaix/schemas/tool_result.ts";
+import { TOOL_RESULT_REMEDIATION_MODE_VALUES, TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
 
 // ============================================================================
 // Exported types and functions (importable by tests)
@@ -35,11 +37,22 @@ export function checkToolResultParity(): IParityCheckResult {
   const warnings: string[] = [];
   const knownModes = new Set<string>(TOOL_RESULT_REMEDIATION_MODE_VALUES);
 
+  const registryKeys = new Set<string>(Object.keys(TOOL_RESULT_SCHEMA_REGISTRY));
+
   for (const entry of TOOL_MANIFEST) {
     if (entry.remediationPolicyRef !== undefined && !knownModes.has(entry.remediationPolicyRef)) {
       errors.push(
         `Tool '${entry.name}': remediationPolicyRef '${entry.remediationPolicyRef}' is not a known remediation mode.`,
       );
+    }
+
+    // Check 2: delegates_to_registry=true + output_schema must have a Zod registry entry.
+    if (entry.delegates_to_registry === true && entry.output_schema !== undefined) {
+      if (!registryKeys.has(entry.name)) {
+        warnings.push(
+          `Tool '${entry.name}': declares delegates_to_registry=true with output_schema but has no entry in TOOL_RESULT_SCHEMA_REGISTRY.`,
+        );
+      }
     }
   }
 

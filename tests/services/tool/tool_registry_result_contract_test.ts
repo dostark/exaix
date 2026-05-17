@@ -1,12 +1,16 @@
 /**
  * @module ToolRegistryResultContractTest
  * @path tests/services/tool/tool_registry_result_contract_test.ts
- * @description Verifies registry-backed tools produce structured IToolResult shapes consumable by toolResultToMcpResponse.
+ * @description Verifies registry-backed tools produce structured IToolResult shapes consumable by toolResultToMcpResponse,
+ * and that resultValidator is applied at the registry execution boundary (Enforcement Point 2).
  */
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { toolResultToMcpResponse } from "../../../src/mcp/tool_result_converter.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../../helpers/config.ts";
+import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
+import type { JSONValue } from "@exaix/core";
 
 Deno.test("ToolRegistry run_command: result data shape is { output: string, exitCode: number }", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "registry-contract-" });
@@ -22,6 +26,45 @@ Deno.test("ToolRegistry run_command: result data shape is { output: string, exit
     assertEquals(typeof data.output, "string");
     assertEquals(typeof data.exitCode, "number");
     assertEquals(data.exitCode, 0);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
+});
+
+// ── resultValidator wiring (Enforcement Point 2) ────────────────────────────
+
+Deno.test("ToolRegistry execute: resultValidator failure converts execution result to IToolResult failure", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "registry-validator-" });
+  try {
+    const config = createMockConfig(tempDir);
+    const alwaysFail: IToolResultValidator = {
+      validateEnvelope: (toolName: string, rawResult: JSONValue): IToolResultValidationFailure => ({
+        tool: toolName,
+        issues: [{ path: [], message: "synthetic validation failure", code: "custom" }],
+        rawResult,
+      }),
+      validateMCPResponse: () => null,
+    };
+    const registry = new ToolRegistry({ config, resultValidator: alwaysFail });
+    const result = await registry.execute("run_command", { command: "echo", args: ["hello"] });
+    assertEquals(result.success, false);
+    assertExists(result.error);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
+});
+
+Deno.test("ToolRegistry execute: valid result passes through when resultValidator returns null", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "registry-validator-pass-" });
+  try {
+    const config = createMockConfig(tempDir);
+    const alwaysPass: IToolResultValidator = {
+      validateEnvelope: () => null,
+      validateMCPResponse: () => null,
+    };
+    const registry = new ToolRegistry({ config, resultValidator: alwaysPass });
+    const result = await registry.execute("run_command", { command: "echo", args: ["hello"] });
+    assertEquals(result.success, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

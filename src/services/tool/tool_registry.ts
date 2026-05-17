@@ -253,6 +253,7 @@ export class ToolRegistry implements IToolRegistry {
   private baseDir: string;
   private pipeline: MiddlewarePipeline<IToolContext>;
   private executors: Map<string, (params: Record<string, JSONValue>) => Promise<IToolResult>> = new Map();
+  private resultValidator?: IToolResultValidator;
 
   constructor(options?: IToolRegistryConfig) {
     const ctx = options?.context;
@@ -278,6 +279,7 @@ export class ToolRegistry implements IToolRegistry {
     this.pathResolver = new PathResolver(this.config);
     this.tools = new Map();
     this.pipeline = new MiddlewarePipeline<IToolContext>();
+    this.resultValidator = options?.resultValidator;
 
     this.registerCoreTools();
     this.registerCoreExecutors();
@@ -691,6 +693,21 @@ export class ToolRegistry implements IToolRegistry {
         };
       }
     });
+
+    // Validate result envelope at the registry boundary (Enforcement Point 2).
+    // rawResult in the failure is for audit only — never forwarded to callers.
+    if (this.resultValidator && context.result) {
+      const failure = this.resultValidator.validateEnvelope(
+        toolName,
+        context.result as unknown as Record<string, JSONValue>,
+      );
+      if (failure) {
+        return {
+          success: false,
+          error: `Tool result validation failed: ${failure.issues.map((i) => i.message).join("; ")}`,
+        };
+      }
+    }
 
     return context.result!;
   }

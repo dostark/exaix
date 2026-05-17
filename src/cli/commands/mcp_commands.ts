@@ -10,6 +10,7 @@ import { BaseCommand, type ICommandContext } from "../base.ts";
 import { MCPServer } from "../../mcp/server.ts";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
+import { validateMCPToolResponse, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 
 interface JSONRPCRequest {
   jsonrpc: string;
@@ -72,6 +73,10 @@ export class McpCommands extends BaseCommand {
     const server = new MCPServer({
       context: this.context,
       transport,
+      resultValidator: {
+        validateEnvelope: validateToolResultEnvelope,
+        validateMCPResponse: validateMCPToolResponse,
+      },
     });
 
     if (transport === McpTransportType.SSE) {
