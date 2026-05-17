@@ -147,6 +147,9 @@ export const ToolsConfigSchema = z.object({
     max_results: z.number().default(50),
     exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),
   }).default({}),
+
+  // Tool confirmation interceptor timeout (Phase 79 — seconds; min 10, max 3600; fallback: DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S)
+  confirmation_timeout_s: z.number().min(10).max(3600).optional(),
 });
 
 export const ConfigSchema = z.object({

@@ -331,7 +331,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     name: McpToolName.CREATE_REQUEST,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
-    dynamic_mode_allowed: false,
+    dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
     source_ref: "src/mcp/domain_tools.ts",
@@ -384,7 +384,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     name: McpToolName.APPROVE_PLAN,
     kind: ToolKind.MCP_DOMAIN,
     category: ToolCategory.DOMAIN,
-    dynamic_mode_allowed: false,
+    dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
     source_ref: "src/mcp/domain_tools.ts",
@@ -502,19 +502,34 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
 ];
 
 /**
- * Canonical set of tool names safe for dynamic (ReAct-style) execution.
+ * Canonical set of tool names safe for dynamic (ReAct-style) execution
+ * WITHOUT requiring human approval. Used by DynamicStepExecutor when no
+ * confirmation interceptor is configured (Phase 77 fallback behavior).
  * Derived from TOOL_MANIFEST where dynamic_mode_allowed === true AND
  * requires_human_approval === false.
  *
- * This is the single authoritative source for DynamicStepExecutor's
- * permitted-tool boundary. Do NOT use READ_ONLY_TOOLS for this purpose —
- * READ_ONLY_TOOLS is a separate constant that can drift from the manifest.
+ * Do NOT use READ_ONLY_TOOLS for this purpose — it can drift from the manifest.
  *
- * Per Decision D1: mutating domain tools (create_request, approve_plan)
- * are excluded here; Phase 79 will upgrade this to a confirmation interceptor.
+ * See also: DYNAMIC_MODE_APPROVAL_TOOLS for tools that require an interceptor.
  */
 export const DYNAMIC_MODE_TOOLS: ReadonlySet<string> = new Set(
   TOOL_MANIFEST
     .filter((e) => e.dynamic_mode_allowed && !e.requires_human_approval)
+    .map((e) => e.name),
+);
+
+/**
+ * Tools that are allowed in dynamic (ReAct-style) execution but require
+ * human approval via IToolConfirmationInterceptor before being called.
+ * Derived from TOOL_MANIFEST where dynamic_mode_allowed === true AND
+ * requires_human_approval === true.
+ *
+ * Phase 79 adds these to the DynamicStepExecutor tool surface when an
+ * interceptor is injected. Without an interceptor they are excluded (same as
+ * Phase 77 behavior) because DYNAMIC_MODE_TOOLS does not include them.
+ */
+export const DYNAMIC_MODE_APPROVAL_TOOLS: ReadonlySet<string> = new Set(
+  TOOL_MANIFEST
+    .filter((e) => e.dynamic_mode_allowed && e.requires_human_approval)
     .map((e) => e.name),
 );

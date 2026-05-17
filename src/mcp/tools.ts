@@ -85,10 +85,13 @@ export function buildHandlers(
 }
 
 /**
- * Build a handler map for tools safe for dynamic (ReAct-style) execution.
- * Only includes manifest entries where dynamic_mode_allowed === true AND
- * requires_human_approval === false. Per Decision D1, mutating domain tools
- * are excluded here; Phase 79 will upgrade this to a confirmation interceptor.
+ * Build a handler map for all tools allowed in dynamic (ReAct-style) execution.
+ * Includes all manifest entries where dynamic_mode_allowed === true, regardless
+ * of requires_human_approval. Tools with requires_human_approval === true are
+ * gated at runtime by IToolConfirmationInterceptor inside DynamicStepExecutor
+ * (Phase 79). When no interceptor is configured, DynamicStepExecutor's
+ * resolvePermittedTools() defensively excludes approval-required tools using
+ * DYNAMIC_MODE_TOOLS (which contains only the safe subset).
  */
 export function buildDynamicHandlers(
   context: ICliApplicationContext,
@@ -97,7 +100,7 @@ export function buildDynamicHandlers(
   const all = buildHandlers(context, permissions);
   const dynamicNames = new Set(
     TOOL_MANIFEST
-      .filter((e) => LIVE_MCP_TOOL_KINDS.has(e.kind) && e.dynamic_mode_allowed && !e.requires_human_approval)
+      .filter((e) => LIVE_MCP_TOOL_KINDS.has(e.kind) && e.dynamic_mode_allowed)
       .map((e) => e.name),
   );
 

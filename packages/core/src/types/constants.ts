@@ -1283,3 +1283,28 @@ export const TOOL_RESULT_VALIDATION_MAX_RETRIES = 3;
 
 /** Semantic version for tool result schema descriptors returned via exaix/tools/result_schema. */
 export const TOOL_RESULT_SCHEMA_VERSION = "1.0.0";
+
+// ============================================================================
+// Tool Confirmation Interceptor (Phase 79)
+// ============================================================================
+
+/** Default timeout in seconds for human tool confirmation requests. Auto-deny on expiry. */
+export const DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S = 120;
+
+/** Polling interval in milliseconds for NotificationQueueConfirmationInterceptor. */
+export const TOOL_CONFIRMATION_POLL_INTERVAL_MS = 1000;
+
+/** Sentinel value for `decidedBy` when the confirmation interceptor auto-denies on timeout. */
+export const TOOL_CONFIRMATION_DECIDED_BY_TIMEOUT = "system:timeout";
+
+/** Activity journal event: confirmation request written to DB and notification sent. */
+export const TOOL_CONFIRMATION_EVENT_REQUESTED = "tool.confirmation.requested";
+
+/** Activity journal event: interceptor received an approved decision. */
+export const TOOL_CONFIRMATION_EVENT_APPROVED = "tool.confirmation.approved";
+
+/** Activity journal event: interceptor received a denied decision or timed out. */
+export const TOOL_CONFIRMATION_EVENT_DENIED = "tool.confirmation.denied";
+
+/** Notification type string used when surfacing a pending tool approval to the user. */
+export const TOOL_CONFIRMATION_NOTIFY_TYPE = "tool_approval_pending";
