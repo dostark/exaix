@@ -11,13 +11,13 @@ import { AnalysisMode, ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/
 import {
   ConfidenceAssessmentLevel,
   LogLevel,
+  McpTransportType,
   MemoryBankSource,
   PortalAnalysisMode,
   ProviderType,
   QualityGateMode,
   SqliteJournalMode,
 } from "@exaix/core";
-import { McpTransportType } from "@exaix/mcp";
 import type { IModelProvider } from "../../src/types.ts";
 import { ProviderFactory } from "../../src/provider_factory.ts";
 

@@ -8,8 +8,7 @@
 import type { ILlmClient, ToolArgs } from "./types.ts";
 import type { Config, IBlueprintFrontmatter } from "@exaix/schemas";
 
-import { ReActActionType } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { McpToolName, ReActActionType } from "@exaix/core";
 import { ModelFactory } from "./providers.ts";
 
 import { z } from "zod";

@@ -6,8 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { MockStrategy } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { McpToolName, MockStrategy } from "@exaix/core";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import type { IModelProvider } from "../../src/types.ts";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";

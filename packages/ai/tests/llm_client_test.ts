@@ -7,8 +7,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { LlmClient } from "../src/llm_client.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
-import { ToolName } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
+import { McpToolName, ToolName } from "@exaix/core";
 import { ModelFactory } from "../src/providers.ts";
 import type { IGenerateResult, IModelProvider } from "../src/types.ts";
 

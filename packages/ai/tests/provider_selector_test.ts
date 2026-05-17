@@ -6,8 +6,14 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
-import { EvaluationCategory, HealthCheckVerdict, PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
+import {
+  DEFAULT_MCP_VERSION,
+  EvaluationCategory,
+  HealthCheckVerdict,
+  PricingTier,
+  ProviderCostTier,
+  TaskComplexity,
+} from "@exaix/core";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { PROVIDER_OPENAI } from "@exaix/ai";
 import type { Config } from "@exaix/schemas";
