@@ -9,6 +9,7 @@
  */
 
 import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
+import { REMEDIATION_MODE_FAIL_CLOSED, REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE } from "@exaix/schemas/tool_result.ts";
 
 /**
  * Minimal JSON Schema draft-07 descriptor used in tool manifest output_schema fields.
@@ -62,6 +63,13 @@ export interface IToolManifestEntry {
   /** True if this MCP handler delegates execution to ToolRegistry (Decision D4).
    *  Only run_command and search_files. */
   delegates_to_registry?: boolean;
+  /**
+   * References the remediation policy mode applied when this tool's result payload
+   * fails schema validation. One of: fail_closed, normalize_then_validate,
+   * retry_once, retry_with_backoff, escalate_only.
+   * Read-only/idempotent tools → normalize_then_validate; mutating tools → fail_closed.
+   */
+  remediationPolicyRef?: string;
 }
 
 export const TOOL_MANIFEST: IToolManifestEntry[] = [
@@ -83,6 +91,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: McpToolName.WRITE_FILE,
@@ -101,6 +110,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.PATCH_FILE,
@@ -119,6 +129,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.DELETE_FILE,
@@ -137,6 +148,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.MOVE_FILE,
@@ -155,6 +167,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.CREATE_DIRECTORY,
@@ -173,6 +186,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.LIST_DIRECTORY,
@@ -192,6 +206,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: McpToolName.SEARCH_FILES,
@@ -212,6 +227,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
     delegates_to_registry: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   // ── Git tools (MCP handlers) ────────────────────────────────────────────
   {
@@ -231,6 +247,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.GIT,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.GIT_COMMIT,
@@ -249,6 +266,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.GIT,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.GIT_STATUS,
@@ -267,6 +285,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: McpToolName.RUN_COMMAND,
@@ -291,6 +310,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     side_effect_scope: ToolSideEffectScope.SYSTEM,
     parallel_safe: false,
     delegates_to_registry: true,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   // ── Domain tools (MCP domain) ────────────────────────────────────────────
   {
@@ -315,6 +335,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.LIST_PLANS,
@@ -341,6 +362,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: McpToolName.APPROVE_PLAN,
@@ -363,6 +385,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: McpToolName.QUERY_JOURNAL,
@@ -389,6 +412,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   // ── Internal-only tools (ToolRegistry, not exposed via MCP) ─────────────
   {
@@ -402,6 +426,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NETWORK,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: "grep_search",
@@ -415,6 +440,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: "copy_file",
@@ -427,6 +453,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.PORTAL,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
   {
     name: "git_info",
@@ -439,6 +466,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: true,
     side_effect_scope: ToolSideEffectScope.NONE,
     parallel_safe: true,
+    remediationPolicyRef: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   },
   {
     name: "deno_task",
@@ -451,6 +479,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     idempotent: false,
     side_effect_scope: ToolSideEffectScope.SYSTEM,
     parallel_safe: false,
+    remediationPolicyRef: REMEDIATION_MODE_FAIL_CLOSED,
   },
 ];
 

@@ -1302,3 +1302,13 @@ export const JsonSchemaType = {
   ARRAY: "array",
   NULL: "null",
 } as const;
+
+// ============================================================================
+// Tool Result Validation (Phase 78)
+// ============================================================================
+
+/** Maximum retries for schema validation failures — applies only to idempotent, side-effect-free tools. */
+export const TOOL_RESULT_VALIDATION_MAX_RETRIES = 3;
+
+/** Semantic version for tool result schema descriptors returned via exaix/tools/result_schema. */
+export const TOOL_RESULT_SCHEMA_VERSION = "1.0.0";
