@@ -1,14 +1,14 @@
 /**
  * @module ToolResultManifestParityTest
- * @path tests/mcp/tool_result_manifest_parity_test.ts
+ * @path packages/mcp/tests/tool_result_manifest_parity_test.ts
  * @description Verifies that every TOOL_MANIFEST entry declares a valid
  * remediationPolicyRef, and that tools with non-null output_schema have a
  * corresponding entry in the TOOL_RESULT_SCHEMA_REGISTRY.
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { TOOL_MANIFEST } from "@exaix/mcp/manifest.ts";
-import { TOOL_RESULT_REMEDIATION_MODES, TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
+import { TOOL_MANIFEST } from "@exaix/mcp";
+import { TOOL_RESULT_REMEDIATION_MODES, TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas";
 
 // ============================================================================
 // remediationPolicyRef parity checks

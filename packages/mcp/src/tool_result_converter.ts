@@ -1,12 +1,14 @@
 /**
  * @module ToolResultConverter
- * @path src/mcp/tool_result_converter.ts
+ * @path packages/mcp/src/tool_result_converter.ts
  * @description Canonical IToolResult → MCPToolResponse conversion for registry-delegating MCP handlers.
  * @architectural-layer MCP
+ * @package @exaix/mcp
  * @dependencies [@exaix/schemas/mcp.ts, @exaix/core/types]
- * @related-files [src/mcp/tool_handler.ts, src/mcp/handlers/run_command_tool.ts, src/mcp/handlers/search_files_tool.ts]
+ * @related-files [packages/mcp/src/tool_result_metadata.ts, src/mcp/tool_handler.ts, src/mcp/handlers/run_command_tool.ts, src/mcp/handlers/search_files_tool.ts]
  */
-import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
+import type { MCPToolResponse } from "@exaix/schemas";
+
 import { MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
 

@@ -1,10 +1,12 @@
 /**
  * @module ToolResultConversionTest
- * @path tests/mcp/tool_result_conversion_test.ts
+ * @path packages/mcp/tests/tool_result_conversion_test.ts
  * @description Verifies toolResultToMcpResponse maps all IToolResult variants to MCPToolResponse correctly.
+ * @architectural-layer MCP
+ * @related-files [packages/mcp/src/tool_result_converter.ts]
  */
 import { assertEquals } from "@std/assert";
-import { toolResultToMcpResponse } from "../../src/mcp/tool_result_converter.ts";
+import { toolResultToMcpResponse } from "@exaix/mcp";
 
 Deno.test("toolResultToMcpResponse: success result with string data produces text content block", () => {
   const result = toolResultToMcpResponse({ success: true, data: "command output" });

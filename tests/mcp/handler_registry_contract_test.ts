@@ -4,7 +4,7 @@
  * @description Verifies that registry-delegating MCP handlers (run_command, search_files) use the canonical toolResultToMcpResponse conversion.
  */
 import { assertEquals } from "@std/assert";
-import { toolResultToMcpResponse } from "../../src/mcp/tool_result_converter.ts";
+import { toolResultToMcpResponse } from "@exaix/mcp";
 import { RunCommandTool } from "../../src/mcp/handlers/run_command_tool.ts";
 import { SearchFilesTool } from "../../src/mcp/handlers/search_files_tool.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";

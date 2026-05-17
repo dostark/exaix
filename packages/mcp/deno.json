@@ -7,6 +7,7 @@
     "@exaix/mcp/testing": "./testing/mod.ts",
     "@exaix/mcp/testing/": "./testing/",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/"

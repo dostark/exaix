@@ -6,7 +6,7 @@
  * @related-files [src/mcp/tool_handler.ts, "src/services/tool/tool_registry.ts"]
  */
 import { ToolHandler } from "../tool_handler.ts";
-import { toolResultToMcpResponse } from "../tool_result_converter.ts";
+import { toolResultToMcpResponse } from "@exaix/mcp";
 import { type MCPToolResponse, SearchFilesToolArgsSchema } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

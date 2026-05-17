@@ -5,7 +5,7 @@
  * and that resultValidator is applied at the registry execution boundary (Enforcement Point 2).
  */
 import { assertEquals, assertExists } from "@std/assert";
-import { toolResultToMcpResponse } from "../../../src/mcp/tool_result_converter.ts";
+import { toolResultToMcpResponse } from "@exaix/mcp";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";

@@ -1,6 +1,6 @@
 /**
  * @module ToolManifestDocsVisibilityTest
- * @path tests/mcp/tool_manifest_docs_visibility_test.ts
+ * @path packages/mcp/tests/tool_manifest_docs_visibility_test.ts
  * @description Verifies that docs-visible tools in the canonical manifest are exactly the live
  * MCP tools intended for TOOLS.md, and that internal-only tools are excluded from docs generation.
  */
