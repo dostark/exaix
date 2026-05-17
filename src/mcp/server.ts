@@ -21,6 +21,8 @@ import { generatePrompt, getPrompts } from "./prompts.ts";
 import { logInfo } from "@exaix/core/logger/structured_logger.ts";
 import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
+import { buildToolResultSchemaDescriptor, type IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import { ToolResultSchemaRequestSchema } from "@exaix/schemas/tool_result.ts";
 
 type JsonRpcResult = JSONValue | object;
 type JsonRpcErrorData = JSONValue | object;
@@ -59,6 +61,7 @@ interface MCPServerOptions {
   context: ICliApplicationContext;
   transport: McpTransportType;
   permissions?: IPortalPermissionsChecker;
+  resultValidator?: IToolResultValidator;
 }
 
 interface JSONRPCRequest {
@@ -120,12 +123,14 @@ export class MCPServer {
   private tools: Map<string, ToolHandler> = new Map();
   private sseHandler?: SseHandler;
   private permissions: IPortalPermissionsChecker;
+  private resultValidator?: IToolResultValidator;
 
   constructor(options: MCPServerOptions) {
     this.context = options.context;
     this.config = options.context.config.getAll();
     this.db = options.context.db;
     this.transport = options.transport;
+    this.resultValidator = options.resultValidator;
 
     // Auto-create EventBusService for SSE transport and wire SSE handler
     if (this.transport === McpTransportType.SSE) {
@@ -262,6 +267,8 @@ export class MCPServer {
         return this.handlePromptsList(request);
       case "prompts/get":
         return this.handlePromptsGet(request);
+      case "exaix/tools/result_schema":
+        return this.handleToolResultSchema(request);
       default:
         return {
           jsonrpc: "2.0",
@@ -376,6 +383,42 @@ export class MCPServer {
     try {
       // Execute tool
       const result = await tool.execute(params.arguments as Record<string, JSONValue>);
+
+      // Validate MCP response envelope when a validator is injected (Enforcement Point 3).
+      // rawResult is captured in the failure for audit logging only — never forwarded to clients.
+      if (this.resultValidator) {
+        const validationFailure = this.resultValidator.validateMCPResponse(params.name, result);
+        if (validationFailure) {
+          try {
+            this.db.logActivity(
+              "mcp.server",
+              "mcp.tool.validation_failure",
+              params.name,
+              {
+                tool_name: params.name,
+                issue_count: validationFailure.issues.length,
+              },
+            );
+          } catch {
+            // Swallow logging errors to avoid cascading failures
+          }
+          return {
+            jsonrpc: "2.0",
+            id: request.id,
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: `Tool result validation failed for '${params.name}': ${
+                    validationFailure.issues.map((i) => i.message).join("; ")
+                  }`,
+                },
+              ],
+              isError: true,
+            },
+          };
+        }
+      }
 
       // Log successful tool execution (sanitized)
       try {
@@ -674,6 +717,40 @@ export class MCPServer {
     } catch (error) {
       return this.errorResponse(request, error as ErrorPayload);
     }
+  }
+
+  /**
+   * Handles exaix/tools/result_schema — returns the expected result schema descriptor
+   * for a named tool, derived from TOOL_MANIFEST and TOOL_RESULT_SCHEMA_REGISTRY.
+   */
+  private handleToolResultSchema(request: JSONRPCRequest): JSONRPCResponse {
+    const parsed = ToolResultSchemaRequestSchema.safeParse(request.params);
+    if (!parsed.success) {
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        error: {
+          code: JsonRpcErrorCode.INVALID_PARAMS,
+          message: `Invalid params for exaix/tools/result_schema: ${parsed.error.message}`,
+        },
+      };
+    }
+    const descriptor = buildToolResultSchemaDescriptor(parsed.data.tool);
+    if (!descriptor) {
+      return {
+        jsonrpc: "2.0",
+        id: request.id,
+        error: {
+          code: JsonRpcErrorCode.INVALID_PARAMS,
+          message: `No result schema registered for tool '${parsed.data.tool}'`,
+        },
+      };
+    }
+    return {
+      jsonrpc: "2.0",
+      id: request.id,
+      result: descriptor as JsonRpcResult,
+    };
   }
 
   /**

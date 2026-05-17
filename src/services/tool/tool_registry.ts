@@ -19,6 +19,7 @@ import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolR
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 
 export interface IToolRegistryConfig {
   config: Config;
@@ -27,6 +28,7 @@ export interface IToolRegistryConfig {
   identityId?: string;
   baseDir?: string;
   context?: IApplicationContext;
+  resultValidator?: IToolResultValidator;
 }
 
 interface IToolContext extends IServiceContext {

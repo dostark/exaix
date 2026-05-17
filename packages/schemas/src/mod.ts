@@ -29,4 +29,5 @@ export * from "./review.ts";
 export * from "./schema_describer.ts";
 export * from "./plan_amendment.ts";
 export * from "./tool_result.ts";
+export * from "./tool_result_validator.ts";
 export { PortalPermissionsSchemas };

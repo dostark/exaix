@@ -146,3 +146,25 @@ export const TOOL_RESULT_SCHEMA_REGISTRY: Record<string, z.ZodType> = {
   }),
   search_files: z.array(z.string()),
 };
+
+// ============================================================================
+// Schema Discovery — Request/Response Schemas (exaix/tools/result_schema)
+// ============================================================================
+
+/**
+ * Request schema for the exaix/tools/result_schema JSON-RPC method.
+ * The caller provides the tool name to look up.
+ */
+export const ToolResultSchemaRequestSchema = z.object({
+  tool: z.string().min(1),
+});
+
+export type IToolResultSchemaRequest = z.infer<typeof ToolResultSchemaRequestSchema>;
+
+/**
+ * Response schema for the exaix/tools/result_schema JSON-RPC method.
+ * Alias of ToolResultSchemaDescriptorSchema — same canonical type for both
+ * runtime validation and API discovery so they cannot drift independently.
+ */
+export const ToolResultSchemaResponseSchema = ToolResultSchemaDescriptorSchema;
+export type IToolResultSchemaResponse = IToolResultSchemaDescriptor;
