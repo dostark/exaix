@@ -40,6 +40,8 @@ export * from "./i_request_quality_gate_service.ts";
 export * from "./i_request_service.ts";
 export * from "./i_skills_service.ts";
 export * from "./i_tool_registry.ts";
+export * from "./tool_confirmation_interceptor.ts";
+export * from "./tool_manifest_resolver.ts";
 export * from "./json.ts";
 export * from "./logging.ts";
 export * from "./memory.ts";
