@@ -1,20 +1,24 @@
 /**
  * @module PackageDependencyGraphTest
  * @path tests/scripts/package_dependency_graph_test.ts
- * @description Verifies package dependency graph analysis and candidate source module detection used by package migration tooling.
+ * @description Verifies package dependency graph analysis, candidate source module
+ * detection, and file-level boundary analysis used by package migration tooling.
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 import { toFileUrl } from "@std/path";
 import {
+  buildBoundaryReport,
   buildPackageGraph,
   discoverPackageRoots,
+  explainBoundary,
   findCandidateSrcModules,
+  renderBoundaryReport,
   resolveAliasPath,
   runDenoInfo,
   selectPackageRoot,
 } from "../../scripts/package_dependency_graph.ts";
-import type { DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
+import type { BoundaryReport, DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
 
 Deno.test("selectPackageRoot chooses the deepest matching workspace root", () => {
   const roots = ["src", "packages/core", "packages/core/src"];
@@ -244,4 +248,247 @@ Deno.test("package dependency graph reports @exaix/git runtime dependency only o
 
   assertEquals(graph.packages.some((pkg) => pkg.name === "@exaix/git"), true);
   assertEquals(gitEdges, [{ from: "@exaix/git", to: "@exaix/core" }]);
+});
+
+// ---------------------------------------------------------------------------
+// buildBoundaryReport — unit tests with synthetic DenoInfoJson fixtures
+// ---------------------------------------------------------------------------
+
+Deno.test("buildBoundaryReport: file with only package deps is extractable", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/mcp/tool.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/src/mcp/tool.ts`).href,
+        dependencies: [
+          { specifier: "@exaix/core", code: { specifier: "@exaix/core" } },
+          { specifier: "@exaix/schemas", code: { specifier: "@exaix/schemas" } },
+        ],
+      },
+      { specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href },
+      { specifier: toFileUrl(`${repo}/packages/schemas/mod.ts`).href },
+    ],
+  };
+  const roots = ["src", "packages/core", "packages/schemas"];
+  const options = {
+    importAliases: {
+      "@exaix/core": "packages/core/mod.ts",
+      "@exaix/schemas": "packages/schemas/mod.ts",
+    },
+  };
+
+  const report = buildBoundaryReport(info, "src/mcp/tool.ts", roots, options);
+
+  assertEquals(report.extractable, true);
+  assertEquals(report.srcDepsCount, 0);
+  assertEquals(report.transitiveGroups, []);
+  assertEquals(
+    report.directGroups.map((g) => g.packageName).sort(),
+    ["@exaix/core", "@exaix/schemas"],
+  );
+});
+
+Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/mcp/handlers/run_command_tool.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/src/mcp/handlers/run_command_tool.ts`).href,
+        dependencies: [
+          { specifier: "@exaix/mcp", code: { specifier: "@exaix/mcp" } },
+          {
+            specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href },
+          },
+        ],
+      },
+      { specifier: toFileUrl(`${repo}/packages/mcp/mod.ts`).href },
+      { specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href },
+    ],
+  };
+  const roots = ["src", "packages/mcp"];
+  const options = { importAliases: { "@exaix/mcp": "packages/mcp/mod.ts" } };
+
+  const report = buildBoundaryReport(
+    info,
+    "src/mcp/handlers/run_command_tool.ts",
+    roots,
+    options,
+  );
+
+  assertEquals(report.extractable, false);
+  assertEquals(report.srcDepsCount, 1);
+  const srcGroup = report.directGroups.find((g) => g.packageName === "@exaix (src/)");
+  assertEquals(srcGroup?.modules, ["src/services/core/git_service.ts"]);
+});
+
+Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split from direct", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/mcp/handlers/search.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/src/mcp/handlers/search.ts`).href,
+        dependencies: [
+          {
+            specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href },
+          },
+        ],
+      },
+      {
+        specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href,
+        dependencies: [
+          {
+            specifier: toFileUrl(`${repo}/src/services/portal/portal_service.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/src/services/portal/portal_service.ts`).href },
+          },
+        ],
+      },
+      { specifier: toFileUrl(`${repo}/src/services/portal/portal_service.ts`).href },
+    ],
+  };
+  const roots = ["src"];
+
+  const report = buildBoundaryReport(info, "src/mcp/handlers/search.ts", roots);
+
+  assertEquals(report.extractable, false);
+  assertEquals(report.srcDepsCount, 2);
+  const directNames = report.directGroups.map((g) => g.packageName);
+  const transitiveNames = report.transitiveGroups.map((g) => g.packageName);
+  assertEquals(directNames, ["@exaix (src/)"]);
+  assertEquals(transitiveNames, ["@exaix (src/)"]);
+  assertEquals(report.directGroups[0]!.modules, ["src/mcp/handlers/base.ts"]);
+  assertEquals(report.transitiveGroups[0]!.modules, ["src/services/portal/portal_service.ts"]);
+});
+
+Deno.test("buildBoundaryReport: external specifiers appear in externalDirect", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/src/util.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/src/util.ts`).href,
+        dependencies: [
+          { specifier: "jsr:@std/assert@^1.0.0", code: { specifier: "jsr:@std/assert@^1.0.0" } },
+        ],
+      },
+    ],
+  };
+  const roots = ["src"];
+
+  const report = buildBoundaryReport(info, "src/util.ts", roots);
+
+  assertEquals(report.extractable, true);
+  assertEquals(report.externalDirect, ["jsr:@std/assert@^1.0.0"]);
+  assertEquals(report.directGroups, []);
+});
+
+Deno.test("buildBoundaryReport: file with no deps is extractable", () => {
+  const repo = Deno.cwd();
+  const info: DenoInfoJson = {
+    version: 1,
+    roots: [toFileUrl(`${repo}/packages/core/src/constants.ts`).href],
+    modules: [
+      {
+        specifier: toFileUrl(`${repo}/packages/core/src/constants.ts`).href,
+      },
+    ],
+  };
+
+  const report = buildBoundaryReport(info, "packages/core/src/constants.ts", ["src", "packages/core"]);
+
+  assertEquals(report.extractable, true);
+  assertEquals(report.srcDepsCount, 0);
+  assertEquals(report.directGroups, []);
+  assertEquals(report.transitiveGroups, []);
+  assertEquals(report.externalDirect, []);
+});
+
+// ---------------------------------------------------------------------------
+// renderBoundaryReport — output format tests
+// ---------------------------------------------------------------------------
+
+Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", () => {
+  const report: BoundaryReport = {
+    targetPath: "packages/mcp/src/tool_result_converter.ts",
+    directGroups: [{ packageName: "@exaix/core", modules: ["packages/core/mod.ts"] }],
+    transitiveGroups: [],
+    externalDirect: [],
+    extractable: true,
+    srcDepsCount: 0,
+  };
+
+  const text = renderBoundaryReport(report);
+  assertStringIncludes(text, "EXTRACTABLE");
+  assertEquals(text.includes("NOT extractable"), false);
+  assertStringIncludes(text, "packages/mcp/src/tool_result_converter.ts");
+});
+
+Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () => {
+  const report: BoundaryReport = {
+    targetPath: "src/mcp/handlers/run_command_tool.ts",
+    directGroups: [
+      { packageName: "@exaix (src/)", modules: ["src/services/core/git_service.ts"] },
+      { packageName: "@exaix/mcp", modules: ["packages/mcp/mod.ts"] },
+    ],
+    transitiveGroups: [],
+    externalDirect: [],
+    extractable: false,
+    srcDepsCount: 1,
+  };
+
+  const text = renderBoundaryReport(report);
+  assertStringIncludes(text, "NOT extractable");
+  assertStringIncludes(text, "src/services/core/git_service.ts");
+  assertEquals(text.includes("EXTRACTABLE"), false);
+});
+
+Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => {
+  const report: BoundaryReport = {
+    targetPath: "src/util.ts",
+    directGroups: [],
+    transitiveGroups: [],
+    externalDirect: ["jsr:@std/a", "jsr:@std/b", "jsr:@std/c", "jsr:@std/d", "jsr:@std/e", "jsr:@std/f"],
+    extractable: true,
+    srcDepsCount: 0,
+  };
+
+  const text = renderBoundaryReport(report);
+  assertStringIncludes(text, "and 1 more");
+});
+
+// ---------------------------------------------------------------------------
+// explainBoundary — integration test against live repo files
+// ---------------------------------------------------------------------------
+
+Deno.test("explainBoundary: src/mcp handler is not extractable due to src/ service deps", async () => {
+  const discovery = await discoverPackageRoots();
+  const report = await explainBoundary(
+    "src/mcp/handlers/run_command_tool.ts",
+    discovery.roots,
+    { importAliases: discovery.importAliases },
+  );
+
+  assertEquals(report.extractable, false);
+  assertStringIncludes(report.targetPath, "run_command_tool");
+  assertEquals(report.srcDepsCount > 0, true);
+});
+
+Deno.test("explainBoundary: packages/mcp/src/tool_result_converter.ts is extractable", async () => {
+  const discovery = await discoverPackageRoots();
+  const report = await explainBoundary(
+    "packages/mcp/src/tool_result_converter.ts",
+    discovery.roots,
+    { importAliases: discovery.importAliases },
+  );
+
+  assertEquals(report.extractable, true);
+  assertEquals(report.srcDepsCount, 0);
 });

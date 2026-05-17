@@ -2,11 +2,31 @@
 /**
  * @module PackageDependencyGraph
  * @path scripts/package_dependency_graph.ts
- * @description Builds a package-level dependency graph from `deno info --json`.
+ * @description Builds a package-level dependency graph from `deno info --json` and
+ * explains file-level package boundaries.
  *
  * Usage:
- *   deno run --allow-run --allow-read scripts/package_dependency_graph.ts
- *   deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --format dot
+ *
+ *   Default — full package dependency graph from an entrypoint:
+ *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts
+ *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
+ *       --entrypoint src/main.ts --format dot
+ *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
+ *       --candidate-package @exaix/mcp
+ *
+ *   --explain-boundary — fan-out analysis for a single file:
+ *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
+ *       --explain-boundary src/mcp/handlers/run_command_tool.ts
+ *
+ *     Runs `deno info` on the target file directly, walks its full transitive
+ *     dependency graph, and groups every dependency by owning package.
+ *     Emits a verdict: EXTRACTABLE when all deps are package-owned or external,
+ *     NOT extractable when one or more deps still live in the src/ composition
+ *     layer and would need to move first.
+ *
+ *     Use this to confirm why a file intentionally stays in src/ (its deps span
+ *     root services) or to verify that a packages/ file has no improper src/
+ *     leakage.
  */
 
 import { parse } from "@std/flags";
@@ -65,13 +85,38 @@ export interface IPackageDiscovery {
   importAliases: Record<string, string>;
 }
 
+export interface BoundaryGroup {
+  /** Display name of the owning package (e.g. "@exaix/mcp", "@exaix (src/)"). */
+  packageName: string;
+  /** Repo-relative paths of modules in this group. */
+  modules: string[];
+}
+
+export interface BoundaryReport {
+  /** Repo-relative path of the analysed file. */
+  targetPath: string;
+  /** Dependencies directly imported by the target, grouped by package. */
+  directGroups: BoundaryGroup[];
+  /** All transitive dependencies (excluding direct), grouped by package. */
+  transitiveGroups: BoundaryGroup[];
+  /** External (jsr:, npm:, https:) specifiers directly imported by the target. */
+  externalDirect: string[];
+  /**
+   * True when every dependency (direct and transitive) is either package-owned
+   * or external — no src/ composition-layer modules appear in the fan-out.
+   */
+  extractable: boolean;
+  /** Total count of src/ modules in the full transitive fan-out. */
+  srcDepsCount: number;
+}
+
 const ROOT = Deno.cwd();
 const DEFAULT_ENTRYPOINT = "src/main.ts";
 const DEFAULT_FORMAT: PackageDependencyFormat = "text";
 
 export async function main() {
   const args = parse(Deno.args, {
-    string: ["entrypoint", "format", "candidatePackage"],
+    string: ["entrypoint", "format", "candidatePackage", "explain-boundary"],
     boolean: ["help"],
     default: {
       entrypoint: DEFAULT_ENTRYPOINT,
@@ -91,9 +136,21 @@ export async function main() {
     : typeof args["candidate-package"] === "string"
     ? String(args["candidate-package"])
     : undefined;
+  const explainBoundaryPath = typeof args["explain-boundary"] === "string"
+    ? String(args["explain-boundary"])
+    : undefined;
+
+  const packageDiscovery = await discoverPackageRoots();
+
+  if (explainBoundaryPath) {
+    const report = await explainBoundary(explainBoundaryPath, packageDiscovery.roots, {
+      importAliases: packageDiscovery.importAliases,
+    });
+    console.log(renderBoundaryReport(report));
+    return;
+  }
 
   const info = await runDenoInfo(entrypoint);
-  const packageDiscovery = await discoverPackageRoots();
   const graph = buildPackageGraph(info, packageDiscovery.roots, {
     importAliases: packageDiscovery.importAliases,
   });
@@ -130,10 +187,13 @@ function printUsage() {
   console.log(`Usage: deno run -A scripts/package_dependency_graph.ts [options]
 
 Options:
-  --entrypoint <path>  Entry point to analyze (default: src/main.ts)
-  --format <text|json|dot>  Output format (default: text)
-  --candidate-package <package>  Report src modules that should move into this package
-  --help               Show this help message
+  --entrypoint <path>         Entry point to analyze (default: src/main.ts)
+  --format <text|json|dot>    Output format (default: text)
+  --candidate-package <pkg>   Report src/ modules that should move into this package
+  --explain-boundary <path>   Fan-out analysis: show why a file stays in src/ or is
+                              extractable; groups all transitive deps by owning package
+                              and emits an EXTRACTABLE / NOT extractable verdict
+  --help                      Show this help message
 `);
 }
 
@@ -390,6 +450,109 @@ export function findCandidateSrcModules(
   };
 }
 
+const SRC_ROOT = "src";
+const SRC_DISPLAY_NAME = "@exaix (src/)";
+
+export function buildBoundaryReport(
+  info: DenoInfoJson,
+  targetPath: string,
+  packageRoots: string[],
+  options: PackageGraphOptions = {},
+): BoundaryReport {
+  const packageNames = getPackageNamesByRoot(packageRoots, options.importAliases);
+  const normalizedTarget = normalize(targetPath);
+
+  const pathToModule = new Map<string, DenoInfoModule>();
+  for (const module of info.modules) {
+    const path = toRepoPath(module.specifier);
+    if (path) pathToModule.set(path, module);
+  }
+
+  function resolveDep(specifier: string, fromPath: string): string | undefined {
+    let depPath = toRepoPath(specifier, fromPath);
+    if (!depPath && options.importAliases) depPath = resolveAliasPath(specifier, options.importAliases);
+    if (!depPath) depPath = toRepoPath(specifier);
+    return depPath;
+  }
+
+  function classifyPath(path: string): string {
+    const pkgRoot = selectPackageRoot(path, packageRoots);
+    if (!pkgRoot) return SRC_DISPLAY_NAME;
+    if (pkgRoot === SRC_ROOT) return SRC_DISPLAY_NAME;
+    return packageNames.get(pkgRoot) ?? pkgRoot;
+  }
+
+  const targetModule = pathToModule.get(normalizedTarget);
+  const directDepPaths: string[] = [];
+  const externalDirect: string[] = [];
+
+  for (const dep of targetModule?.dependencies ?? []) {
+    const spec = getRuntimeDependencySpecifier(dep);
+    if (!spec) continue;
+    const depPath = resolveDep(spec, normalizedTarget);
+    if (depPath) {
+      directDepPaths.push(depPath);
+    } else {
+      externalDirect.push(spec);
+    }
+  }
+
+  const visited = new Set<string>([normalizedTarget, ...directDepPaths]);
+  const queue = [...directDepPaths];
+  const transitiveDepPaths: string[] = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const module = pathToModule.get(current);
+    if (!module) continue;
+    for (const dep of module.dependencies ?? []) {
+      const spec = getRuntimeDependencySpecifier(dep);
+      if (!spec) continue;
+      const depPath = resolveDep(spec, current);
+      if (!depPath || visited.has(depPath)) continue;
+      visited.add(depPath);
+      transitiveDepPaths.push(depPath);
+      queue.push(depPath);
+    }
+  }
+
+  function groupByPackage(paths: string[]): BoundaryGroup[] {
+    const groups = new Map<string, string[]>();
+    for (const path of paths) {
+      const name = classifyPath(path);
+      const list = groups.get(name) ?? [];
+      list.push(path);
+      groups.set(name, list);
+    }
+    return Array.from(groups.entries())
+      .map(([packageName, modules]) => ({ packageName, modules: modules.sort() }))
+      .sort((a, b) => a.packageName.localeCompare(b.packageName));
+  }
+
+  const allPaths = [...directDepPaths, ...transitiveDepPaths];
+  const srcDepsCount = allPaths.filter(
+    (p) => selectPackageRoot(p, packageRoots) === SRC_ROOT,
+  ).length;
+
+  return {
+    targetPath: normalizedTarget,
+    directGroups: groupByPackage(directDepPaths),
+    transitiveGroups: groupByPackage(transitiveDepPaths),
+    externalDirect,
+    extractable: srcDepsCount === 0,
+    srcDepsCount,
+  };
+}
+
+export async function explainBoundary(
+  targetPath: string,
+  packageRoots: string[],
+  options: PackageGraphOptions = {},
+): Promise<BoundaryReport> {
+  const info = await runDenoInfo(targetPath);
+  return buildBoundaryReport(info, targetPath, packageRoots, options);
+}
+
 function resolveTargetPackageRoot(
   targetPackage: string,
   packageRoots: string[],
@@ -568,6 +731,58 @@ export function renderDot(graph: PackageGraph): string {
     lines.push(`  "${edge.from}" -> "${edge.to}";`);
   }
   lines.push("}");
+  return lines.join("\n");
+}
+
+export function renderBoundaryReport(report: BoundaryReport): string {
+  const lines: string[] = [
+    `Boundary analysis for '${report.targetPath}':`,
+    "",
+  ];
+
+  function renderGroups(groups: BoundaryGroup[], label: string, extra?: string[]) {
+    lines.push(`${label}:`);
+    if (groups.length === 0 && (!extra || extra.length === 0)) {
+      lines.push("  (none)");
+    } else {
+      for (const group of groups) {
+        lines.push(`  ${group.packageName} (${group.modules.length})`);
+        for (const mod of group.modules) {
+          lines.push(`    - ${mod}`);
+        }
+      }
+      if (extra && extra.length > 0) {
+        const shown = extra.slice(0, 5);
+        lines.push(`  external (${extra.length})`);
+        for (const spec of shown) lines.push(`    - ${spec}`);
+        if (extra.length > 5) lines.push(`    ... and ${extra.length - 5} more`);
+      }
+    }
+    lines.push("");
+  }
+
+  renderGroups(report.directGroups, "Direct dependencies", report.externalDirect);
+  renderGroups(report.transitiveGroups, "Transitive dependencies");
+
+  if (report.extractable) {
+    lines.push("Verdict: EXTRACTABLE — all dependencies are package-owned or external.");
+    lines.push("  This file is a candidate for migration into a dedicated package.");
+  } else {
+    lines.push(
+      `Verdict: NOT extractable — ${report.srcDepsCount} src/ module(s) keep this file in the composition layer.`,
+    );
+    const srcGroups = [
+      ...report.directGroups.filter((g) => g.packageName === SRC_DISPLAY_NAME),
+      ...report.transitiveGroups.filter((g) => g.packageName === SRC_DISPLAY_NAME),
+    ];
+    if (srcGroups.length > 0) {
+      lines.push("  src/ blockers:");
+      for (const group of srcGroups) {
+        for (const mod of group.modules) lines.push(`    - ${mod}`);
+      }
+    }
+  }
+
   return lines.join("\n");
 }
 
