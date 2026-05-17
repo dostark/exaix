@@ -30,10 +30,11 @@ Key points
 - Use scripts/package_dependency_graph.ts to map package-level dependencies and identify src/ modules that are candidates for a target package
 - Use scripts/package_import_migration.ts to rewrite imports from old ownership paths to the new package-owned source of truth
 - Use scripts/package_import_canonize.ts after extraction to normalize direct package file imports to canonical package or subfolder barrel imports
-- Every extraction must include the relevant test migration into packages/<package>/tests/
+- Every extraction must include the relevant test migration into packages/<package>/tests/ — this is the only folder where test files (*_test.ts) live in a package
 - When package-specific test helpers, configs, or test-only data structures must be used both by
-   tests inside the package and tests outside it, create a public package-owned testing subpath such
-   as `@exaix/<package>/testing` instead of deep-importing from `packages/<package>/tests/`
+   tests inside the package and tests outside it, create a public package-owned testing subpath
+   (`packages/<package>/testing/`) exported as `@exaix/<package>/testing` — this is a published
+   support API surface, NOT a test folder; it must never contain test files (`*_test.ts`)
 - Update the migrated module frontmatter or file-level metadata so ownership, path, module purpose, and package intent remain accurate after the move
 - Preserve a clear architectural layout inside the target package by placing migrated modules into correspondent subfolders that communicate intent and functionality
 - When practical, keep the old `src/` folder tree shape as the starting layout inside `packages/<package>/src/`, but only if that tree still reflects a clean package-internal architecture
@@ -104,8 +105,10 @@ Preferred invocation order
 - Package-owned testing subpath extraction
    - Use when helpers, config builders, or test-only data structures belong to one package but must
      be imported by tests outside that package
+   - `testing/` is a published support API surface — it must NEVER contain test files (`*_test.ts`);
+     test files belong exclusively in `tests/`
    - 1. Keep package-local tests under `packages/<package>/tests/`
-   - 2. Create `packages/<package>/testing/` as the public test-support surface
+   - 2. Create `packages/<package>/testing/` as the public test-support surface (no test files here)
    - 3. Export that surface via package config and import-map aliases such as `@exaix/<package>/testing`
    - 4. Migrate outside consumers to the new testing alias instead of deep imports or root helper duplication
    - 5. Leave temporary compatibility shims only where needed to drain old imports safely
@@ -195,9 +198,8 @@ Decision rules
 
 Do / Don't
 - ✅ Do preserve root behavior and quality gates during the extraction
-- ✅ Do move package-owned tests into packages/<package>/tests/
-- ✅ Do create a package-owned testing subpath when package-specific test support must be shared with
-   tests outside the package
+- ✅ Do put ALL test files (`*_test.ts`) exclusively in `packages/<package>/tests/` — this is the only valid test folder in a package
+- ✅ Do create a package-owned testing subpath (`packages/<package>/testing/`) when package-specific test support must be shared with tests outside the package — this is a published support API, not a test folder
 - ✅ Do leave a compatibility shim behind when imports are not yet fully rewired
 - ✅ Do align the extraction with the current strategic phase rather than the original idealized sequence
 - ✅ Do treat current workspace package names as authoritative for current-state work
@@ -207,6 +209,7 @@ Do / Don't
 - ❌ Don't widen package scope only to make a migration feel more complete
 - ❌ Don't tell outside consumers to import from `packages/<package>/tests/...`
 - ❌ Don't move package-specific test helpers into `@exaix/testing` when the support is clearly owned by one package
+- ❌ Don't put test files (`*_test.ts`) into `testing/` — `testing/` is a published API surface, never a place for test files
 
 Related skills
 - #explore            — map candidate ownership and dependencies before extraction
@@ -238,7 +241,7 @@ When invoked, the agent should:
 8. Update migrated module frontmatter or file-level metadata as part of the extraction, not as optional cleanup.
 9. Keep the target package layout intentionally organized into correspondent folders that communicate responsibility; optionally follow the old `src/` tree where that structure is still clean and meaningful.
 10. Split legacy mixed-responsibility modules into coherent sub-modules when that is needed to achieve a clean package architecture instead of preserving old accidental structure.
-11. When a package-specific test helper/config/fixture must be shared with tests outside the package, prefer creating `packages/<package>/testing/` and exporting `@exaix/<package>/testing` over deep-importing package test internals.
+11. A package has exactly two test-related directories with distinct roles: `tests/` for test files (`*_test.ts`) only, and optionally `testing/` as a published support API surface (never containing test files). When package-specific helpers/fixtures must be shared outside the package, put them in `packages/<package>/testing/` and export as `@exaix/<package>/testing` — never put `*_test.ts` files into `testing/`.
 12. Update only the migration docs whose purpose actually changed.
 
 ## Output format
