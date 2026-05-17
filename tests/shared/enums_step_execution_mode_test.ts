@@ -1,7 +1,7 @@
 /**
  * @module FlowStepExecutionModeTest
  * @path tests/shared/enums_step_execution_mode_test.ts
- * @description Verifies the FlowStepExecutionMode enum and tool classification constants for dynamic flow steps.
+ * @description Verifies stable FlowStepExecutionMode enum behavior and backward-compatible MCP tool classification invariants.
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
@@ -11,28 +11,15 @@ import { McpToolName, READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";
 /**
  * Tests for Phase 56 Step 1.1-1.4: Schema and Enum Updates
  *
- * Success Criteria:
+ * Backward compatibility criteria:
  * - FlowStepExecutionMode enum has DECLARED and DYNAMIC values
- * - READ_ONLY_TOOLS contains read_file, list_directory, search_files
- * - WRITE_TOOLS contains write_file, run_command, create_directory
- * - Tool classification is mutually exclusive
+ * - Tool classification remains mutually exclusive
+ * - Every public McpToolName remains classified as read-only or write
  */
 
 Deno.test("FlowStepExecutionMode enum has correct values", () => {
   assertEquals(FlowStepExecutionMode.DECLARED, "declared");
   assertEquals(FlowStepExecutionMode.DYNAMIC, "dynamic");
-});
-
-Deno.test("READ_ONLY_TOOLS contains correct tools", () => {
-  assert(READ_ONLY_TOOLS.has(McpToolName.READ_FILE));
-  assert(READ_ONLY_TOOLS.has(McpToolName.LIST_DIRECTORY));
-  assert(READ_ONLY_TOOLS.has(McpToolName.SEARCH_FILES));
-});
-
-Deno.test("WRITE_TOOLS contains correct tools", () => {
-  assert(WRITE_TOOLS.has(McpToolName.WRITE_FILE));
-  assert(WRITE_TOOLS.has(McpToolName.RUN_COMMAND));
-  assert(WRITE_TOOLS.has(McpToolName.CREATE_DIRECTORY));
 });
 
 Deno.test("Tool classification is mutually exclusive", () => {

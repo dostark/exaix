@@ -6,15 +6,7 @@
  * @related-files ["packages/core/src/types/enums.ts", "packages/schemas/src/config.ts"]
  */
 
-import {
-  LogLevel,
-  McpToolName,
-  McpTransportType,
-  MockStrategy,
-  ProviderType,
-  RequestPriority,
-  TaskType,
-} from "./enums.ts";
+import { LogLevel, McpTransportType, MockStrategy, ProviderType, RequestPriority, TaskType } from "./enums.ts";
 
 // ============================================================================
 // HTTP Status Codes
@@ -196,6 +188,9 @@ export const ENV_AGENT_MODE = "EXA_AGENT_MODE";
 export const ENV_TRACE_ID = "EXA_TRACE_ID";
 export const ENV_PORTAL_ALIAS = "EXA_PORTAL";
 
+// MCP content types
+export const MCP_CONTENT_TYPE_STRUCTURED_DATA = "exaix_structured_data";
+
 // ============================================================================
 // AI Provider Defaults and Limits
 // ============================================================================
@@ -283,30 +278,6 @@ export const DEFAULT_MCP_SERVER_NAME = "exaix";
 export const DEFAULT_MCP_VERSION = "1.0.0";
 export const DEFAULT_MCP_IDENTITY_ID = "system";
 export const DEFAULT_MCP_HTTP_PORT = 3000;
-
-export const READ_ONLY_TOOLS: ReadonlySet<McpToolName> = new Set([
-  McpToolName.READ_FILE,
-  McpToolName.LIST_DIRECTORY,
-  McpToolName.SEARCH_FILES,
-  McpToolName.GIT_STATUS,
-  McpToolName.LIST_PLANS,
-  McpToolName.QUERY_JOURNAL,
-]);
-
-export const WRITE_TOOLS: ReadonlySet<McpToolName> = new Set([
-  McpToolName.WRITE_FILE,
-  McpToolName.PATCH_FILE,
-  McpToolName.DELETE_FILE,
-  McpToolName.MOVE_FILE,
-  McpToolName.CREATE_DIRECTORY,
-  McpToolName.GIT_CREATE_BRANCH,
-  McpToolName.GIT_COMMIT,
-  McpToolName.RUN_COMMAND,
-  McpToolName.CREATE_REQUEST,
-  McpToolName.APPROVE_PLAN,
-]);
-
-export const TOTAL_MCP_TOOLS = READ_ONLY_TOOLS.size + WRITE_TOOLS.size;
 
 // ============================================================================
 // Git Defaults

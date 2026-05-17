@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { buildToolResultSchemaDescriptor } from "@exaix/schemas/tool_result_validator.ts";
+import { buildToolResultSchemaDescriptor } from "@exaix/mcp";
 import { TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
 
 Deno.test("tool_result_schema_api_docs: buildToolResultSchemaDescriptor returns descriptor for each registry entry", () => {

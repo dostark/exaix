@@ -14,6 +14,7 @@ import {
   DEFAULT_MCP_VERSION,
   DEFAULT_QUERY_LIMIT,
   JSONValueSchema,
+  MCP_CONTENT_TYPE_STRUCTURED_DATA,
   McpTransportType,
 } from "@exaix/core";
 
@@ -174,7 +175,7 @@ const MCPTextContentSchema = z.object({
 });
 
 const MCPStructuredDataContentSchema = z.object({
-  type: z.literal("exaix_structured_data"),
+  type: z.literal(MCP_CONTENT_TYPE_STRUCTURED_DATA),
   data: JSONValueSchema,
 });
 

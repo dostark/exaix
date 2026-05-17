@@ -120,3 +120,34 @@ Deno.test("docs_parity: approval marks in TOOLS.md match manifest requires_human
     }]. Run 'deno task docs-sync-schemas' to regenerate.`,
   );
 });
+
+Deno.test("docs_parity: source links in TOOLS.md match explicit manifest source_ref metadata", async () => {
+  const section = await readAgentToolsSection();
+  const liveTools = TOOL_MANIFEST.filter(
+    (e) => e.docs_visible && (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN),
+  );
+
+  const mismatches: string[] = [];
+  for (const tool of liveTools) {
+    const toolRow = section.split("\n").find((line) => line.includes(`\`${tool.name}\``));
+    if (!toolRow) {
+      mismatches.push(`${tool.name}: row not found`);
+      continue;
+    }
+
+    if (!tool.source_ref) {
+      mismatches.push(`${tool.name}: missing manifest source_ref`);
+      continue;
+    }
+
+    if (!toolRow.includes(`(${tool.source_ref})`)) {
+      mismatches.push(`${tool.name}: expected source link '${tool.source_ref}' not found in row`);
+    }
+  }
+
+  assertEquals(
+    mismatches,
+    [],
+    `Source link mismatches in TOOLS.md: [${mismatches.join("; ")}]. Run 'deno task docs-sync-schemas' to regenerate.`,
+  );
+});

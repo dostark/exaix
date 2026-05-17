@@ -80,10 +80,10 @@ These tools are available to AI agents via the MCP protocol. They are validated,
 and logged. The table is generated from the canonical tool manifest in `packages/mcp/src/manifest.ts`.
 Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 
-> **Migration note**: Handlers in `src/mcp/handlers/` and `src/mcp/domain_tools.ts` will move to
-> package-owned directories as Phase 76 extraction progresses. The manifest and this generated catalog
-> remain correct regardless of file layout. Tests for specific handlers migrate with their owning
-> package; root `tests/` retains integration and server-wiring coverage.
+> **Migration note**: The Source column is generated from explicit manifest ownership metadata.
+> It is a current ownership hint, not a promise that the file path is permanent across package migration.
+> Update manifest `source_ref` values when handlers move; root `tests/` retains integration and
+> server-wiring coverage while package-owned tests migrate with their implementations.
 
 | Tool                   | Description                                                                                                                                                                                                                                                            | Category | Dynamic | Approval   | Source                                                                                     |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- | ---------- | ------------------------------------------------------------------------------------------ |

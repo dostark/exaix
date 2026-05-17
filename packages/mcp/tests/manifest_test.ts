@@ -8,7 +8,14 @@
  * @related-files [packages/mcp/src/manifest.ts, packages/mcp/src/enums.ts]
  */
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { DYNAMIC_MODE_TOOLS, TOOL_MANIFEST, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/mcp";
+import {
+  deriveMcpToolClassificationSets,
+  DYNAMIC_MODE_TOOLS,
+  TOOL_MANIFEST,
+  ToolCategory,
+  ToolKind,
+  ToolSideEffectScope,
+} from "@exaix/mcp";
 import type { IToolManifestEntry } from "@exaix/mcp";
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -89,6 +96,27 @@ Deno.test("[McpManifest] read-category tools with NONE scope are parallel_safe",
       !e.parallel_safe,
   );
   assertEquals(violations.map((e) => e.name), [], "Read-only NONE-scope tools must be parallel_safe");
+});
+
+Deno.test("[McpManifest] read/write classification sets are derived from manifest side-effect policy", () => {
+  const derived = deriveMcpToolClassificationSets();
+  const expectedReadOnly = TOOL_MANIFEST
+    .filter((e) =>
+      (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN) &&
+      e.side_effect_scope === ToolSideEffectScope.NONE
+    )
+    .map((e) => e.name)
+    .sort();
+  const expectedWrite = TOOL_MANIFEST
+    .filter((e) =>
+      (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN) &&
+      e.side_effect_scope !== ToolSideEffectScope.NONE
+    )
+    .map((e) => e.name)
+    .sort();
+
+  assertEquals([...derived.readOnlyTools].sort(), expectedReadOnly);
+  assertEquals([...derived.writeTools].sort(), expectedWrite);
 });
 
 Deno.test("[McpManifest] requires_human_approval tools are not dynamic_mode_allowed", () => {

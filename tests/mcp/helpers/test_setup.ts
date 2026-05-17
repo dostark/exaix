@@ -471,3 +471,15 @@ export function getFirstTextContent(response: MCPToolResponse): string {
   }
   return item.text;
 }
+
+/**
+ * Extracts the data payload from the first structured-data content block in an MCPToolResponse.
+ * Throws if no structured content block is present.
+ */
+export function getFirstStructuredDataContent<TData extends JSONValue>(response: MCPToolResponse): TData {
+  const item = response.content.find((contentItem) => contentItem.type === "exaix_structured_data");
+  if (!item || item.type !== "exaix_structured_data") {
+    throw new Error("Expected an exaix_structured_data content block in MCPToolResponse");
+  }
+  return item.data as TData;
+}

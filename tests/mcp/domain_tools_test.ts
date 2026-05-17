@@ -4,7 +4,7 @@
  * @description Tests for MCP domain tools including plan approval, request creation, and journal querying.
  */
 
-import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
@@ -196,16 +196,12 @@ Deno.test("MCP Domain Tools", async (t) => {
     const tool = new QueryJournalTool(context);
 
     try {
-      await assertRejects(
-        async () => {
-          await tool.execute({
-            identity_id: "user-1",
-            trace_id: "any",
-          });
-        },
-        Error,
-        "Database Failure",
-      );
+      const response = await tool.execute({
+        identity_id: "user-1",
+        trace_id: "any",
+      });
+      assertEquals(response.isError, true);
+      assertEquals(getFirstTextContent(response), "Database Failure");
     } finally {
       stubMethod.restore();
     }

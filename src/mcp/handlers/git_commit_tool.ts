@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation } from "@exaix/core";
+import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCommitToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
@@ -73,15 +73,35 @@ export class GitCommitTool extends ToolHandler {
         throw new Error(`Failed to commit: ${error}`);
       }
 
+      const hashCmd = new Deno.Command("git", {
+        args: ["rev-parse", "HEAD"],
+        cwd: portalPath,
+        stdout: "piped",
+        stderr: "piped",
+      });
+
+      const { code: hashCode, stdout: hashStdout, stderr: hashStderr } = await hashCmd.output();
+      if (hashCode !== 0) {
+        const error = new TextDecoder().decode(hashStderr);
+        throw new Error(`Failed to resolve commit hash: ${error}`);
+      }
+
+      const commitHash = new TextDecoder().decode(hashStdout).trim();
+
       return this.formatSuccess(
         "git_commit",
         portal,
         identity_id,
-        [{ type: "text", text: `Changes committed successfully in portal '${portal}': ${message}` }],
-        { message, files: files?.length || "all", identity_id },
+        [{ type: "text", text: commitHash }],
+        { message, files: files?.length || "all", identity_id, commit_sha: commitHash },
       );
     } catch (error) {
-      this.formatError("git_commit", portal, identity_id, error, {
+      const message = error instanceof Error ? error.message : String(error);
+      const code = message.includes("not permitted") || message.includes("Permission denied")
+        ? ToolErrorCode.PERMISSION_DENIED
+        : ToolErrorCode.EXECUTION_FAILED;
+
+      return this.formatToolError("git_commit", portal, identity_id, code, message, {
         message,
         files: files?.length || "all",
         identity_id,

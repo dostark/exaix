@@ -21,7 +21,8 @@ import { generatePrompt, getPrompts } from "./prompts.ts";
 import { logInfo } from "@exaix/core/logger/structured_logger.ts";
 import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
-import { buildToolResultSchemaDescriptor, type IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import { buildToolResultSchemaDescriptor } from "@exaix/mcp";
 import { ToolResultSchemaRequestSchema } from "@exaix/schemas/tool_result.ts";
 
 type JsonRpcResult = JSONValue | object;

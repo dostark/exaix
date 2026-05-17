@@ -7,13 +7,27 @@
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { McpToolName, READ_ONLY_TOOLS, TOOL_MANIFEST, ToolKind, WRITE_TOOLS } from "@exaix/mcp";
+import {
+  deriveMcpToolClassificationSets,
+  McpToolName,
+  READ_ONLY_TOOLS,
+  TOOL_MANIFEST,
+  ToolKind,
+  WRITE_TOOLS,
+} from "@exaix/mcp";
 
 const liveMcpNames = new Set(
   TOOL_MANIFEST
     .filter((e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN)
     .map((e) => e.name),
 );
+
+Deno.test("ToolClassification: exported read/write sets are projected from manifest-derived classification", () => {
+  const derived = deriveMcpToolClassificationSets();
+
+  assertEquals([...READ_ONLY_TOOLS].sort(), [...derived.readOnlyTools].sort());
+  assertEquals([...WRITE_TOOLS].sort(), [...derived.writeTools].sort());
+});
 
 Deno.test("ToolClassification: McpToolName has no dead FETCH_URL entry", () => {
   assertFalse(

@@ -7,6 +7,7 @@
  * @related-files [src/mcp/tool_handler.ts, src/mcp/handlers/run_command_tool.ts, src/mcp/handlers/search_files_tool.ts]
  */
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
+import { MCP_CONTENT_TYPE_STRUCTURED_DATA } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
 
 /**
@@ -34,5 +35,5 @@ export function toolResultToMcpResponse(result: IToolResult): MCPToolResponse {
     return { content: [{ type: "text", text: data }] };
   }
 
-  return { content: [{ type: "exaix_structured_data", data }] };
+  return { content: [{ type: MCP_CONTENT_TYPE_STRUCTURED_DATA, data }] };
 }

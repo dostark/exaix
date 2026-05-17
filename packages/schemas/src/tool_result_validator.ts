@@ -11,18 +11,8 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import { TOOL_RESULT_SCHEMA_VERSION } from "@exaix/core";
 import { MCPToolResponseSchema } from "./mcp.ts";
-import {
-  type IToolResultSchemaDescriptor,
-  type IToolResultValidationFailure,
-  REMEDIATION_MODE_FAIL_CLOSED,
-  TOOL_RESULT_SCHEMA_REGISTRY,
-  ToolResultEnvelopeSchema,
-  ToolResultRemediationPolicySchema,
-  ToolResultSchemaDescriptorSchema,
-} from "./tool_result.ts";
-import { TOOL_MANIFEST } from "@exaix/mcp/manifest.ts";
+import { type IToolResultValidationFailure, ToolResultEnvelopeSchema } from "./tool_result.ts";
 
 export type { IToolResultValidationFailure };
 
@@ -90,46 +80,4 @@ export function validateMCPToolResponse(
     })),
     rawResult: response as IToolResultValidationFailure["rawResult"],
   };
-}
-
-// ============================================================================
-// Schema descriptor builder for API discovery
-// ============================================================================
-
-/**
- * Builds a ToolResultSchemaDescriptor for the given tool name, derived from
- * the canonical TOOL_MANIFEST entry and TOOL_RESULT_SCHEMA_REGISTRY.
- * Returns null when the tool is unknown or has no manifest entry.
- */
-export function buildToolResultSchemaDescriptor(
-  toolName: string,
-): IToolResultSchemaDescriptor | null {
-  const manifestEntry = TOOL_MANIFEST.find((e) => e.name === toolName);
-  if (!manifestEntry) {
-    return null;
-  }
-
-  const remediationMode = manifestEntry.remediationPolicyRef ?? REMEDIATION_MODE_FAIL_CLOSED;
-  const remediationPolicy = ToolResultRemediationPolicySchema.parse({
-    tool: toolName,
-    mode: remediationMode,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  });
-
-  const resultDataSchema = TOOL_RESULT_SCHEMA_REGISTRY[toolName] ?? undefined;
-
-  const descriptor = ToolResultSchemaDescriptorSchema.parse({
-    tool: toolName,
-    schemaVersion: TOOL_RESULT_SCHEMA_VERSION,
-    envelopeSchema: ToolResultEnvelopeSchema,
-    resultDataSchema,
-    remediationPolicy,
-    experimental: true,
-  });
-
-  return descriptor;
 }

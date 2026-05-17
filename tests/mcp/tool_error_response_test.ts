@@ -5,7 +5,10 @@
  */
 import { assertEquals } from "@std/assert";
 import { ToolErrorCode } from "@exaix/core";
+import { QueryJournalTool } from "../../src/mcp/domain_tools.ts";
 import { RunCommandTool } from "../../src/mcp/handlers/run_command_tool.ts";
+import { createBaseToolContext } from "./helpers/test_setup.ts";
+import { createStubDb } from "../helpers/test_helpers.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";
@@ -48,6 +51,22 @@ Deno.test("RunCommandTool: execution failure returns isError:true response, not 
     assertEquals(response.content[0].type, "text");
     assertEquals((response.content[0] as { type: "text"; text: string }).text, "Execution timeout");
   });
+});
+
+Deno.test("QueryJournalTool: execution failure returns isError:true response, not thrown exception", async () => {
+  const handler = new QueryJournalTool(createBaseToolContext({
+    db: createStubDb({
+      getRecentActivity: () => Promise.reject(new Error("Journal unavailable")),
+    }),
+  }));
+
+  const response = await handler.execute({
+    identity_id: "test-agent",
+  });
+
+  assertEquals(response.isError, true);
+  assertEquals(response.content[0].type, "text");
+  assertEquals((response.content[0] as { type: "text"; text: string }).text, "Journal unavailable");
 });
 
 Deno.test("ToolErrorCode: enum values cover required error taxonomy", () => {

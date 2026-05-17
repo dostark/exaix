@@ -11,8 +11,7 @@
  * @related-files [src/mcp/server.ts, src/mcp/tool_handler.ts, packages/mcp/src/manifest.ts]
  */
 
-import type { McpToolName } from "@exaix/mcp";
-import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
+import { McpToolName, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { ICliApplicationContext } from "../cli/cli_context.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
@@ -31,6 +30,37 @@ import { SearchFilesTool } from "./handlers/search_files_tool.ts";
 import { WriteFileTool } from "./handlers/write_file_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 
+interface IMcpToolFactory {
+  (context: ICliApplicationContext, permissions: IPortalPermissionsChecker): ToolHandler;
+}
+
+const LIVE_MCP_TOOL_KINDS = new Set<ToolKind>([ToolKind.MCP_HANDLER, ToolKind.MCP_DOMAIN]);
+
+export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> = new Map([
+  [McpToolName.READ_FILE, (context, permissions) => new ReadFileTool(context, permissions)],
+  [McpToolName.WRITE_FILE, (context, permissions) => new WriteFileTool(context, permissions)],
+  [McpToolName.PATCH_FILE, (context, permissions) => new PatchFileTool(context, permissions)],
+  [McpToolName.DELETE_FILE, (context, permissions) => new DeleteFileTool(context, permissions)],
+  [McpToolName.MOVE_FILE, (context, permissions) => new MoveFileTool(context, permissions)],
+  [McpToolName.CREATE_DIRECTORY, (context, permissions) => new CreateDirectoryTool(context, permissions)],
+  [McpToolName.LIST_DIRECTORY, (context, permissions) => new ListDirectoryTool(context, permissions)],
+  [McpToolName.GIT_CREATE_BRANCH, (context, permissions) => new GitCreateBranchTool(context, permissions)],
+  [McpToolName.GIT_COMMIT, (context, permissions) => new GitCommitTool(context, permissions)],
+  [McpToolName.GIT_STATUS, (context, permissions) => new GitStatusTool(context, permissions)],
+  [McpToolName.RUN_COMMAND, (context, permissions) => new RunCommandTool(context, permissions)],
+  [McpToolName.SEARCH_FILES, (context, permissions) => new SearchFilesTool(context, permissions)],
+  [McpToolName.CREATE_REQUEST, (context, permissions) => new CreateRequestTool(context, permissions)],
+  [McpToolName.LIST_PLANS, (context, permissions) => new ListPlansTool(context, permissions)],
+  [McpToolName.APPROVE_PLAN, (context, permissions) => new ApprovePlanTool(context, permissions)],
+  [McpToolName.QUERY_JOURNAL, (context, permissions) => new QueryJournalTool(context, permissions)],
+]);
+
+function liveMcpManifestNames(): McpToolName[] {
+  return TOOL_MANIFEST
+    .filter((entry) => LIVE_MCP_TOOL_KINDS.has(entry.kind))
+    .map((entry) => entry.name as McpToolName);
+}
+
 /**
  * Build a handler map for all live MCP tools (mcp_handler + mcp_domain).
  * The permissions parameter will be wired into handlers in Step 77.3 when
@@ -43,27 +73,13 @@ export function buildHandlers(
 ): Map<McpToolName, ToolHandler> {
   const handlers: Map<McpToolName, ToolHandler> = new Map();
 
-  const add = (handler: ToolHandler) => {
-    const def = handler.getToolDefinition();
-    handlers.set(def.name as McpToolName, handler);
-  };
-
-  add(new ReadFileTool(context, permissions));
-  add(new WriteFileTool(context, permissions));
-  add(new PatchFileTool(context, permissions));
-  add(new DeleteFileTool(context, permissions));
-  add(new MoveFileTool(context, permissions));
-  add(new CreateDirectoryTool(context, permissions));
-  add(new ListDirectoryTool(context, permissions));
-  add(new GitCreateBranchTool(context, permissions));
-  add(new GitCommitTool(context, permissions));
-  add(new GitStatusTool(context, permissions));
-  add(new RunCommandTool(context, permissions));
-  add(new SearchFilesTool(context, permissions));
-  add(new CreateRequestTool(context, permissions));
-  add(new ListPlansTool(context, permissions));
-  add(new ApprovePlanTool(context, permissions));
-  add(new QueryJournalTool(context, permissions));
+  for (const name of liveMcpManifestNames()) {
+    const factory = LIVE_MCP_TOOL_FACTORIES.get(name);
+    if (!factory) {
+      throw new Error(`Missing MCP tool factory for manifest entry '${name}'`);
+    }
+    handlers.set(name, factory(context, permissions));
+  }
 
   return handlers;
 }
@@ -81,11 +97,7 @@ export function buildDynamicHandlers(
   const all = buildHandlers(context, permissions);
   const dynamicNames = new Set(
     TOOL_MANIFEST
-      .filter((e) =>
-        (e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN) &&
-        e.dynamic_mode_allowed &&
-        !e.requires_human_approval
-      )
+      .filter((e) => LIVE_MCP_TOOL_KINDS.has(e.kind) && e.dynamic_mode_allowed && !e.requires_human_approval)
       .map((e) => e.name),
   );
 

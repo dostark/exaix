@@ -8,7 +8,8 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { buildToolResultSchemaDescriptor, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
+import { buildToolResultSchemaDescriptor } from "@exaix/mcp";
+import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 import { TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
 import * as ToolResultSchemas from "@exaix/schemas/tool_result.ts";
 

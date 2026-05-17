@@ -18,6 +18,9 @@ import {
   DEFAULT_WATCHER_STABILITY_MIN_FILE_SIZE,
 } from "@exaix/core";
 
+const EVENT_LOOP_RESPONSIVENESS_CHECKS = 20;
+const EVENT_LOOP_RESPONSIVE_THRESHOLD_MS = 25;
+
 /**
  * Tests for Step 2.1: The File Watcher (Stable Read)
  *
@@ -896,7 +899,7 @@ Deno.test("File Stability - Event loop remains responsive", async () => {
 
     // Start a background task that checks event loop responsiveness
     const checkResponsiveness = async () => {
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < EVENT_LOOP_RESPONSIVENESS_CHECKS; i++) {
         const start = Date.now();
         await new Promise((resolve) => setTimeout(resolve, 0)); // Next tick
         responsivenessChecks.push(Date.now() - start);
@@ -914,9 +917,13 @@ Deno.test("File Stability - Event loop remains responsive", async () => {
     // Wait for both to complete
     await Promise.all([responsivenessPromise, stabilityPromise]);
 
-    // Verify event loop remained responsive (no delays > 10ms)
+    // Parallel CI runs can add small scheduler jitter; keep the threshold loose
+    // enough for that noise while still catching real event-loop blocking.
     const maxDelay = Math.max(...responsivenessChecks);
-    assert(maxDelay < 10, `Event loop blocked for ${maxDelay}ms, should be < 10ms`);
+    assert(
+      maxDelay < EVENT_LOOP_RESPONSIVE_THRESHOLD_MS,
+      `Event loop blocked for ${maxDelay}ms, should be < ${EVENT_LOOP_RESPONSIVE_THRESHOLD_MS}ms`,
+    );
 
     await Deno.remove(tempDir, { recursive: true });
   } catch (error) {

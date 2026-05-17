@@ -12,6 +12,7 @@ import {
   assertMCPSuccess,
   assertMCPToolError,
   createToolCallRequest,
+  getFirstTextContent,
   initMCPTest,
   initMCPTestWithoutPortal,
 } from "./helpers/test_setup.ts";
@@ -120,11 +121,11 @@ Deno.test("git_commit: successfully commits changes", async () => {
     });
 
     const response = await ctx.server.handleRequest(request);
-    assertMCPSuccess(response);
-    assertMCPContentIncludes(
-      response as IMCPResponseShape<{ content: Array<{ type: string; text: string }> }>,
-      "committed",
-    );
+    const result = assertMCPSuccess(response) as { content: [{ type: "text"; text: string }] };
+    const commitHash = getFirstTextContent(result);
+    if (!/^[0-9a-f]{40}$/.test(commitHash)) {
+      throw new Error(`Expected git_commit to return a 40-char commit hash, got: ${commitHash}`);
+    }
   } finally {
     await ctx.cleanup();
   }
@@ -176,7 +177,7 @@ Deno.test("git_commit: rejects when nothing to commit", async () => {
     });
 
     const response = await ctx.server.handleRequest(request);
-    assertMCPError(response, -32603);
+    assertMCPToolError(response as IMCPResponseShape, "Failed to commit");
   } finally {
     await ctx.cleanup();
   }

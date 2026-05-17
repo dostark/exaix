@@ -8,6 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import { stub } from "@std/testing/mock";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import { ReadFileTool } from "../../src/mcp/handlers/read_file_tool.ts";
 import { DeleteFileTool } from "../../src/mcp/handlers/delete_file_tool.ts";
@@ -16,7 +17,17 @@ import { PatchFileTool } from "../../src/mcp/handlers/patch_file_tool.ts";
 import { ListDirectoryTool } from "../../src/mcp/handlers/list_directory_tool.ts";
 import { GitStatusTool } from "../../src/mcp/handlers/git_status_tool.ts";
 import { GitCreateBranchTool } from "../../src/mcp/handlers/git_create_branch_tool.ts";
-import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";
+import { GitCommitTool } from "../../src/mcp/handlers/git_commit_tool.ts";
+import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
+import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
+import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
+import {
+  createBaseToolContext,
+  createPermissionsService,
+  createToolContext,
+  withToolPermissionTest,
+} from "./helpers/test_setup.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -255,6 +266,105 @@ Deno.test("GitCreateBranchTool: non-git portal returns isError:true, not thrown 
       "Error message should mention 'git'",
     );
   });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// GitCommitTool
+
+Deno.test("GitCommitTool: commit failure returns isError:true, not thrown exception", async () => {
+  await withToolPermissionTest({ operations: [PortalOperation.GIT], initGit: true }, async (env) => {
+    const handler = new GitCommitTool(createToolContext(env), createPermissionsService(env));
+
+    const response = await handler.execute({
+      portal: "TestPortal",
+      message: "test commit",
+      identity_id: "test-agent",
+    });
+
+    assertIsErrorResponse(response);
+    assert(
+      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("commit"),
+      "Error message should mention 'commit'",
+    );
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Domain tools
+
+Deno.test("CreateRequestTool: command failure returns isError:true, not thrown exception", async () => {
+  const requestStub = stub(
+    RequestCommands.prototype,
+    "create",
+    () => Promise.reject(new Error("Request creation failed")),
+  );
+
+  try {
+    const handler = new CreateRequestTool(createBaseToolContext());
+    const response = await handler.execute({
+      description: "broken request",
+      identity_id: "test-agent",
+    });
+
+    assertIsErrorResponse(response);
+  } finally {
+    requestStub.restore();
+  }
+});
+
+Deno.test("ListPlansTool: command failure returns isError:true, not thrown exception", async () => {
+  const planListStub = stub(
+    PlanCommands.prototype,
+    "list",
+    () => Promise.reject(new Error("Plan listing failed")),
+  );
+
+  try {
+    const handler = new ListPlansTool(createBaseToolContext());
+    const response = await handler.execute({
+      identity_id: "test-agent",
+    });
+
+    assertIsErrorResponse(response);
+  } finally {
+    planListStub.restore();
+  }
+});
+
+Deno.test("ApprovePlanTool: command failure returns isError:true, not thrown exception", async () => {
+  const planApproveStub = stub(
+    PlanCommands.prototype,
+    "approve",
+    () => Promise.reject(new Error("Plan approval failed")),
+  );
+
+  try {
+    const handler = new ApprovePlanTool(createBaseToolContext());
+    const response = await handler.execute({
+      plan_id: "missing-plan",
+      identity_id: "test-agent",
+    });
+
+    assertIsErrorResponse(response);
+  } finally {
+    planApproveStub.restore();
+  }
+});
+
+Deno.test("QueryJournalTool: database failure returns isError:true, not thrown exception", async () => {
+  const handler = new QueryJournalTool(
+    createStubContext({
+      db: createStubDb({
+        getRecentActivity: () => Promise.reject(new Error("Journal unavailable")),
+      }),
+    }),
+  );
+
+  const response = await handler.execute({
+    identity_id: "test-agent",
+  });
+
+  assertIsErrorResponse(response);
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

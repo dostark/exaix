@@ -9,12 +9,12 @@
 import { assertEquals, assertExists } from "@std/assert";
 import {
   applyRemediationPolicy,
-  lookupRemediationPolicy,
   REMEDIATION_OUTCOME_ESCALATED,
   REMEDIATION_OUTCOME_FAIL_CLOSED,
   REMEDIATION_OUTCOME_NORMALIZATION_FAILED,
   REMEDIATION_OUTCOME_PASSED,
 } from "@exaix/schemas/tool_result_remediation.ts";
+import { lookupRemediationPolicy } from "@exaix/mcp";
 import {
   type IToolResultRemediationPolicy,
   REMEDIATION_MODE_ESCALATE_ONLY,

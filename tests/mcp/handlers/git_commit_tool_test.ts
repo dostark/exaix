@@ -3,7 +3,7 @@
  * @path tests/mcp/handlers/git_commit_tool_test.ts
  * @description Unit tests for the GitCommitTool MCP tool.
  */
-import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { GitCommitTool } from "../../../src/mcp/handlers/git_commit_tool.ts";
 import {
@@ -39,7 +39,7 @@ Deno.test("GitCommitTool: commits changes successfully", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(getFirstTextContent(res), "Test commit message");
+    assertMatch(getFirstTextContent(res), /^[0-9a-f]{40}$/);
   });
 });
 
@@ -65,7 +65,7 @@ Deno.test("GitCommitTool: commits specific files successfully", async () => {
 
     const res = result as MCPToolResponse & { isError?: boolean; content: { text: string }[] };
     assertEquals(res.isError, undefined);
-    assertStringIncludes(getFirstTextContent(res), "Test commit message");
+    assertMatch(getFirstTextContent(res), /^[0-9a-f]{40}$/);
   });
 });
 
@@ -75,16 +75,14 @@ Deno.test("GitCommitTool: returns error when git commit fails", async () => {
     initGit: true,
   }, async (env) => {
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          message: "Test commit message",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "Failed to commit: ",
-    );
+    const response = await handler.execute({
+      portal: "TestPortal",
+      message: "Test commit message",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(response.isError, true);
+    assertEquals(response.content[0].type, "text");
   });
 });
 
@@ -94,16 +92,14 @@ Deno.test("GitCommitTool: returns error when access is denied", async () => {
     initGit: true,
   }, async (env) => {
     const handler = createHandler(env);
-    await assertRejects(
-      () =>
-        handler.execute({
-          portal: "TestPortal",
-          message: "Test commit message",
-          identity_id: "test-agent",
-        }),
-      Error,
-      "Operation 'git' is not permitted",
-    );
+    const response = await handler.execute({
+      portal: "TestPortal",
+      message: "Test commit message",
+      identity_id: "test-agent",
+    });
+
+    assertEquals(response.isError, true);
+    assertEquals(response.content[0].type, "text");
   });
 });
 

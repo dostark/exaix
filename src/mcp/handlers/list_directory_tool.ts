@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { ListDirectoryToolArgsSchema, type MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { MCP_CONTENT_TYPE_STRUCTURED_DATA, PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -72,6 +72,10 @@ export class ListDirectoryTool extends ToolHandler {
           {
             type: "text",
             text: listing,
+          },
+          {
+            type: MCP_CONTENT_TYPE_STRUCTURED_DATA,
+            data: entries,
           },
         ],
       };

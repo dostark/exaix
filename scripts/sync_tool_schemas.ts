@@ -12,9 +12,9 @@
  * Output target:    TOOLS.md (<!-- AGENT_TOOLS_START --> ... <!-- AGENT_TOOLS_END -->)
  *
  * Migration note (Phase 76/77): The manifest lives in packages/mcp/ (package-owned). This
- * script imports it from @exaix/mcp, so it remains correct as tool handlers migrate from
- * src/mcp/ to packages/. The "Source" column reflects the current file layout and should
- * be updated when concrete handlers move to packages/.
+ * script imports explicit source ownership references from @exaix/mcp, so the catalog does
+ * not infer file paths from naming conventions. Update manifest source_ref values when
+ * concrete handlers move during package extraction.
  */
 
 import { join } from "@std/path";
@@ -24,15 +24,6 @@ import { ToolCategory, ToolKind } from "@exaix/core";
 const TOOLS_MD = "TOOLS.md";
 const SYNC_START = "<!-- AGENT_TOOLS_START -->";
 const SYNC_END = "<!-- AGENT_TOOLS_END -->";
-
-/** Return the source-file path for a docs-visible tool based on its kind and name. */
-function toolSourcePath(name: string, kind: ToolKind): string {
-  if (kind === ToolKind.MCP_DOMAIN) {
-    return "src/mcp/domain_tools.ts";
-  }
-  // mcp_handler: convention is src/mcp/handlers/{name}_tool.ts
-  return `src/mcp/handlers/${name}_tool.ts`;
-}
 
 /** Format category label for display. */
 function categoryLabel(cat: ToolCategory): string {
@@ -69,7 +60,10 @@ async function main() {
   // Build table rows
   let tableRows = "";
   for (const tool of docsVisibleTools) {
-    const sourcePath = toolSourcePath(tool.name, tool.kind);
+    const sourcePath = tool.source_ref;
+    if (!sourcePath) {
+      throw new Error(`Docs-visible tool '${tool.name}' is missing source_ref in TOOL_MANIFEST`);
+    }
     const cat = categoryLabel(tool.category);
     const dynamicMark = tool.dynamic_mode_allowed && !tool.requires_human_approval ? "✓" : "—";
     const approvalMark = tool.requires_human_approval ? "⚠ Phase 79" : "";
@@ -83,10 +77,10 @@ These tools are available to AI agents via the MCP protocol. They are validated,
 and logged. The table is generated from the canonical tool manifest in \`packages/mcp/src/manifest.ts\`.
 Run \`deno task docs-sync-schemas\` to regenerate after manifest changes.
 
-> **Migration note**: Handlers in \`src/mcp/handlers/\` and \`src/mcp/domain_tools.ts\` will move to
-> package-owned directories as Phase 76 extraction progresses. The manifest and this generated catalog
-> remain correct regardless of file layout. Tests for specific handlers migrate with their owning
-> package; root \`tests/\` retains integration and server-wiring coverage.
+> **Migration note**: The Source column is generated from explicit manifest ownership metadata.
+> It is a current ownership hint, not a promise that the file path is permanent across package migration.
+> Update manifest \`source_ref\` values when handlers move; root \`tests/\` retains integration and
+> server-wiring coverage while package-owned tests migrate with their implementations.
 
 | Tool | Description | Category | Dynamic | Approval | Source |
 |------|-------------|----------|---------|----------|--------|

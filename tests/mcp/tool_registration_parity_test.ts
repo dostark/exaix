@@ -7,11 +7,27 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
+import { LIVE_MCP_TOOL_FACTORIES } from "../../src/mcp/tools.ts";
 import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup.ts";
 
 interface IToolsListResult {
   tools: Array<{ name: string; description: string }>;
 }
+
+Deno.test("ToolRegistrationParity: manifest-owned factory registry covers every live MCP tool exactly once", () => {
+  const liveManifestNames = TOOL_MANIFEST
+    .filter((e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN)
+    .map((e) => e.name)
+    .sort();
+
+  const factoryNames = [...LIVE_MCP_TOOL_FACTORIES.keys()].sort();
+
+  assertEquals(
+    factoryNames,
+    liveManifestNames,
+    "LIVE_MCP_TOOL_FACTORIES must be the single keyed registration surface for all live MCP tools.",
+  );
+});
 
 Deno.test("ToolRegistrationParity: every live MCP manifest entry is registered by MCPServer", async () => {
   const ctx = await initMCPTestWithoutPortal();

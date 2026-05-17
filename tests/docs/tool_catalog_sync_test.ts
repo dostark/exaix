@@ -50,6 +50,18 @@ Deno.test("tool_catalog_sync: TOOLS.md AGENT_TOOLS section is not empty", async 
   assert(section.includes("|"), "AGENT_TOOLS section must contain a table (| delimited)");
 });
 
+Deno.test("tool_catalog_sync: TOOLS.md describes Source column as a current ownership hint", async () => {
+  const content = await Deno.readTextFile(TOOLS_MD_PATH);
+  assert(
+    content.includes("Source column is generated from explicit manifest ownership metadata"),
+    "TOOLS.md must describe the Source column as coming from explicit manifest ownership metadata",
+  );
+  assert(
+    !content.includes("remain correct regardless of file layout"),
+    "TOOLS.md must not claim the catalog remains correct regardless of file layout",
+  );
+});
+
 // ── Completeness tests ────────────────────────────────────────────────────────
 
 Deno.test("tool_catalog_sync: all manifest docs-visible tools appear in TOOLS.md", async () => {

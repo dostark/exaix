@@ -7,6 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
+import { ToolSideEffectScope } from "@exaix/core";
 import {
   applyRemediationPolicy,
   REMEDIATION_OUTCOME_FAIL_CLOSED,
@@ -53,6 +54,7 @@ Deno.test("tool_result_retry_policy: retry_once with successful retry returns pa
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
       retry: () => Promise.resolve({ success: true, data: ["file_a.ts", "file_b.ts"] }),
+      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_PASSED);
@@ -77,6 +79,7 @@ Deno.test("tool_result_retry_policy: retry_once with still-failing retry returns
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
       retry: () => Promise.resolve({ success: "still wrong" }),
+      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_RETRY_EXHAUSTED);
@@ -130,6 +133,7 @@ Deno.test("tool_result_retry_policy: retry_with_backoff retries up to maxRetries
         const payload = callCount >= 2 ? { success: true } : { success: "bad" };
         return Promise.resolve(payload);
       },
+      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_PASSED);
@@ -154,6 +158,7 @@ Deno.test("tool_result_retry_policy: retry_with_backoff returns retry_exhausted 
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
       retry: () => Promise.resolve({ success: "always wrong" }),
+      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_RETRY_EXHAUSTED);
@@ -183,6 +188,7 @@ Deno.test("tool_result_retry_policy: retry blocked for non-idempotent tool when 
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
       retry: () => Promise.resolve({ success: true }),
+      toolMetadata: { idempotent: false, sideEffectScope: ToolSideEffectScope.PORTAL },
     },
   );
   assertEquals(
@@ -211,6 +217,7 @@ Deno.test("tool_result_retry_policy: retry blocked for side-effecting tool when 
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
       retry: () => Promise.resolve({ success: true }),
+      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.PORTAL },
     },
   );
   assertEquals(

@@ -15,8 +15,33 @@ import {
 import { ToolHandler } from "./tool_handler.ts";
 import { RequestCommands } from "../cli/commands/request_commands.ts";
 import { PlanCommands } from "../cli/commands/plan_commands.ts";
-import { type JSONValue, PlanStatus, type PlanStatusType, RequestSource } from "@exaix/core";
+import {
+  type JSONValue,
+  MCP_CONTENT_TYPE_STRUCTURED_DATA,
+  PlanStatus,
+  type PlanStatusType,
+  RequestSource,
+  ToolErrorCode,
+} from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+
+function classifyDomainToolError(error: Error | string | JSONValue): ToolErrorCode {
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+  if (message.includes("not found") || message.includes("no such")) {
+    return ToolErrorCode.NOT_FOUND;
+  }
+
+  if (message.includes("invalid") || message.includes("required") || message.includes("must")) {
+    return ToolErrorCode.INVALID_ARGS;
+  }
+
+  return ToolErrorCode.EXECUTION_FAILED;
+}
+
+function serializeStructuredData(value: object): JSONValue {
+  return JSON.parse(JSON.stringify(value)) as JSONValue;
+}
 
 /**
  * Tool for creating new Exaix requests
@@ -47,6 +72,15 @@ export class CreateRequestTool extends ToolHandler {
         success: true,
       });
 
+      const requestRecord = {
+        id: result.filename.replace(".md", ""),
+        title: result.subject ?? description,
+        status: result.status,
+        trace_id: result.trace_id,
+        filename: result.filename,
+        path: result.path,
+      };
+
       return {
         content: [
           {
@@ -54,13 +88,26 @@ export class CreateRequestTool extends ToolHandler {
             text:
               `Request created successfully.\nID: ${result.filename}\nTrace ID: ${result.trace_id}\nPath: ${result.path}`,
           },
+          {
+            type: MCP_CONTENT_TYPE_STRUCTURED_DATA,
+            data: serializeStructuredData(requestRecord),
+          },
         ],
       };
     } catch (error) {
-      this.formatError("create_request", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
-        description,
-        identity_id: identity_id ?? null,
-      });
+      const classifiedError = error instanceof Error || typeof error === "string" ? error : String(error);
+      const message = error instanceof Error ? error.message : String(error);
+      return this.formatToolError(
+        "create_request",
+        DEFAULT_MCP_IDENTITY_ID,
+        identity_id,
+        classifyDomainToolError(classifiedError),
+        message,
+        {
+          description,
+          identity_id: identity_id ?? null,
+        },
+      );
     }
   }
 
@@ -122,13 +169,26 @@ export class ListPlansTool extends ToolHandler {
             type: "text",
             text: JSON.stringify(plans, null, 2),
           },
+          {
+            type: "exaix_structured_data",
+            data: serializeStructuredData(plans),
+          },
         ],
       };
     } catch (error) {
-      this.formatError("list_plans", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
-        status: status ?? null,
-        identity_id: identity_id ?? null,
-      });
+      const classifiedError = error instanceof Error || typeof error === "string" ? error : String(error);
+      const message = error instanceof Error ? error.message : String(error);
+      return this.formatToolError(
+        "list_plans",
+        DEFAULT_MCP_IDENTITY_ID,
+        identity_id,
+        classifyDomainToolError(classifiedError),
+        message,
+        {
+          status: status ?? null,
+          identity_id: identity_id ?? null,
+        },
+      );
     }
   }
 
@@ -176,19 +236,37 @@ export class ApprovePlanTool extends ToolHandler {
         success: true,
       });
 
+      const approvedPlan = {
+        id: plan_id,
+        status: PlanStatus.APPROVED,
+      };
+
       return {
         content: [
           {
             type: "text",
             text: `Plan ${plan_id} approved successfully. Execution will proceed.`,
           },
+          {
+            type: MCP_CONTENT_TYPE_STRUCTURED_DATA,
+            data: serializeStructuredData(approvedPlan),
+          },
         ],
       };
     } catch (error) {
-      this.formatError("approve_plan", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
-        plan_id,
-        identity_id: identity_id ?? null,
-      });
+      const classifiedError = error instanceof Error || typeof error === "string" ? error : String(error);
+      const message = error instanceof Error ? error.message : String(error);
+      return this.formatToolError(
+        "approve_plan",
+        DEFAULT_MCP_IDENTITY_ID,
+        identity_id,
+        classifyDomainToolError(classifiedError),
+        message,
+        {
+          plan_id,
+          identity_id: identity_id ?? null,
+        },
+      );
     }
   }
 
@@ -245,14 +323,27 @@ export class QueryJournalTool extends ToolHandler {
             type: "text",
             text: JSON.stringify(activities, null, 2),
           },
+          {
+            type: "exaix_structured_data",
+            data: serializeStructuredData(activities),
+          },
         ],
       };
     } catch (error) {
-      this.formatError("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, error, {
-        trace_id: trace_id ?? null,
-        limit: limit ?? null,
-        identity_id: identity_id ?? null,
-      });
+      const classifiedError = error instanceof Error || typeof error === "string" ? error : String(error);
+      const message = error instanceof Error ? error.message : String(error);
+      return this.formatToolError(
+        "query_journal",
+        DEFAULT_MCP_IDENTITY_ID,
+        identity_id,
+        classifyDomainToolError(classifiedError),
+        message,
+        {
+          trace_id: trace_id ?? null,
+          limit: limit ?? null,
+          identity_id: identity_id ?? null,
+        },
+      );
     }
   }
 

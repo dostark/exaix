@@ -837,6 +837,8 @@ Live tools exposed via `tools/list` and `tools/call` JSON-RPC endpoints. All 16 
 
 When concrete tool implementation moves from `src/` into a package, its tool-specific unit and parity tests **must move with it** into `packages/<package>/tests/`. Only end-to-end behavior crossing package boundaries, server wiring, and backward-compatibility regression coverage should remain in root `tests/`.
 
+The `TOOLS.md` Source column is generated from `TOOL_MANIFEST.source_ref` and should be treated as a current ownership hint. When a handler moves during package extraction, update the manifest metadata first, then regenerate the catalog.
+
 ### Plan File Structure
 
 ```mermaid

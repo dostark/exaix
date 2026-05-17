@@ -6,14 +6,13 @@
  * retry_with_backoff remediation modes with idempotency and side-effect guards.
  * (Phase 78 Step 78.3)
  * @architectural-layer Schemas
- * @dependencies ["packages/schemas/src/tool_result.ts", "packages/schemas/src/tool_result_validator.ts", "packages/mcp/src/manifest.ts"]
+ * @dependencies ["packages/schemas/src/tool_result.ts", "packages/schemas/src/tool_result_validator.ts"]
  * @related-files ["src/mcp/server.ts", "src/services/tool/tool_registry.ts"]
  */
 
 import type { JSONValue } from "@exaix/core";
 import { TOOL_RESULT_VALIDATION_MAX_RETRIES } from "@exaix/core";
 import { ToolSideEffectScope } from "@exaix/core";
-import { TOOL_MANIFEST } from "@exaix/mcp/manifest.ts";
 import {
   type IToolResultRemediationPolicy,
   type IToolResultValidationFailure,
@@ -22,7 +21,6 @@ import {
   REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
   REMEDIATION_MODE_RETRY_ONCE,
   REMEDIATION_MODE_RETRY_WITH_BACKOFF,
-  ToolResultRemediationPolicySchema,
 } from "./tool_result.ts";
 import type { IToolResultValidator } from "./tool_result_validator.ts";
 
@@ -52,6 +50,14 @@ export interface IRemediationContext {
   normalize?: (rawResult: JSONValue) => JSONValue;
   /** Re-executes the tool to obtain a fresh result (retry_once, retry_with_backoff modes). */
   retry?: () => Promise<JSONValue>;
+  /** Caller-supplied tool metadata needed for retry safety checks. */
+  toolMetadata?: IRemediationToolMetadata;
+}
+
+/** Minimal tool metadata needed to decide whether retry is safe. */
+export interface IRemediationToolMetadata {
+  idempotent: boolean;
+  sideEffectScope: ToolSideEffectScope;
 }
 
 // ============================================================================
@@ -77,43 +83,17 @@ export const REMEDIATION_OUTCOME_VALUES = [
   REMEDIATION_OUTCOME_NORMALIZATION_FAILED,
 ] as const;
 
-// ============================================================================
-// Policy Lookup
-// ============================================================================
-
-/**
- * Looks up the remediation policy for a named tool from TOOL_MANIFEST.
- * Returns null when no manifest entry exists for the given tool name.
- */
-export function lookupRemediationPolicy(toolName: string): IToolResultRemediationPolicy | null {
-  const manifestEntry = TOOL_MANIFEST.find((e) => e.name === toolName);
-  if (!manifestEntry) {
-    return null;
-  }
-  return ToolResultRemediationPolicySchema.parse({
-    tool: toolName,
-    mode: manifestEntry.remediationPolicyRef ?? REMEDIATION_MODE_FAIL_CLOSED,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  });
-}
-
-// ============================================================================
-// Idempotency / Side-Effect Guard
-// ============================================================================
-
-function canRetryTool(toolName: string, policy: IToolResultRemediationPolicy): boolean {
-  const manifestEntry = TOOL_MANIFEST.find((e) => e.name === toolName);
-  if (!manifestEntry) {
+function canRetryTool(
+  policy: IToolResultRemediationPolicy,
+  toolMetadata?: IRemediationToolMetadata,
+): boolean {
+  if (!toolMetadata) {
     return false;
   }
-  if (policy.requiresIdempotency && !manifestEntry.idempotent) {
+  if (policy.requiresIdempotency && !toolMetadata.idempotent) {
     return false;
   }
-  if (!policy.allowRetryAfterSideEffect && manifestEntry.side_effect_scope !== ToolSideEffectScope.NONE) {
+  if (!policy.allowRetryAfterSideEffect && toolMetadata.sideEffectScope !== ToolSideEffectScope.NONE) {
     return false;
   }
   return true;
@@ -166,7 +146,7 @@ export async function applyRemediationPolicy(
     }
 
     case REMEDIATION_MODE_RETRY_ONCE: {
-      if (!canRetryTool(toolName, policy) || !context?.retry) {
+      if (!canRetryTool(policy, context?.toolMetadata) || !context?.retry) {
         return { outcome: REMEDIATION_OUTCOME_FAIL_CLOSED, failure: validationFailure, retriesAttempted: 0 };
       }
       const retryResult = await context.retry();
@@ -178,7 +158,7 @@ export async function applyRemediationPolicy(
     }
 
     case REMEDIATION_MODE_RETRY_WITH_BACKOFF: {
-      if (!canRetryTool(toolName, policy) || !context?.retry) {
+      if (!canRetryTool(policy, context?.toolMetadata) || !context?.retry) {
         return { outcome: REMEDIATION_OUTCOME_FAIL_CLOSED, failure: validationFailure, retriesAttempted: 0 };
       }
       const maxRetries = Math.min(policy.maxRetries, TOOL_RESULT_VALIDATION_MAX_RETRIES);

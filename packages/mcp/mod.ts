@@ -7,5 +7,6 @@
 
 export * from "./src/constants.ts";
 export * from "./src/enums.ts";
+export * from "./src/tool_result_metadata.ts";
 export { DYNAMIC_MODE_TOOLS, TOOL_MANIFEST } from "./src/manifest.ts";
 export type { IJsonSchemaDescriptor, IToolManifestEntry } from "./src/manifest.ts";
