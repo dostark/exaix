@@ -7,8 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { ILogEvent } from "@exaix/core";
-import type { JSONValue } from "@exaix/core";
+import { type ILogEvent, type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
 import {
   type IValidationReportContext,
   logValidationResult,
@@ -83,6 +82,10 @@ function createMockLogger(): IEventLogger & { events: ICapturedEvent[] } {
 
 const syntheticFailure: IToolResultValidationFailure = {
   tool: "search_files",
+  stage: "registry_boundary",
+  severity: Severity.ERROR,
+  retryAllowed: true,
+  sideEffectRisk: ToolSideEffectScope.NONE,
   issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
   rawResult: { success: "bad" },
 };
@@ -117,6 +120,9 @@ Deno.test("tool_validation_logging: fail_closed outcome logs TOOL_VALIDATION_EVE
   await logValidationResult("search_files", makePolicy(REMEDIATION_MODE_FAIL_CLOSED), result, logger);
   assertEquals(logger.events.length, 1);
   assertEquals(logger.events[0].action, TOOL_VALIDATION_EVENT_FAIL_CLOSED);
+  assertEquals(logger.events[0].payload?.metricName, TOOL_VALIDATION_EVENT_FAIL_CLOSED);
+  assertEquals(logger.events[0].payload?.metricValue, 1);
+  assertEquals(logger.events[0].payload?.validationStage, "registry_boundary");
 });
 
 Deno.test("tool_validation_logging: escalated outcome logs TOOL_VALIDATION_EVENT_ESCALATED", async () => {
@@ -169,6 +175,8 @@ Deno.test("tool_validation_logging: passed with retriesAttempted=0 logs TOOL_VAL
   await logValidationResult("search_files", makePolicy(REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE), result, logger);
   assertEquals(logger.events.length, 1);
   assertEquals(logger.events[0].action, TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS);
+  assertEquals(logger.events[0].payload?.metricName, TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS);
+  assertEquals(logger.events[0].payload?.metricValue, 1);
 });
 
 // ============================================================================

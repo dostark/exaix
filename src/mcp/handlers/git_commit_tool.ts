@@ -7,7 +7,7 @@
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCommitToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
@@ -126,7 +126,7 @@ export class GitCommitTool extends ToolHandler {
             description: "Commit message",
           },
           files: {
-            type: "array",
+            type: JsonSchemaType.ARRAY,
             items: { type: "string" },
             description: "Optional: specific files to commit (defaults to all changes)",
           },

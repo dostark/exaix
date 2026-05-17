@@ -44,6 +44,18 @@ Deno.test("MCP boundary validator: structured data content block passes", () => 
   assertEquals(result, null);
 });
 
+Deno.test("MCP boundary validator: structured data block with invalid tool schema fails", () => {
+  const response = {
+    content: [
+      { type: "exaix_structured_data", data: ["a.ts", "b.ts"] },
+    ],
+  };
+  const result = validateMCPToolResponse("search_files", response);
+  assertExists(result, "Structured data that violates the tool schema must fail validation");
+  assertEquals(result.tool, "search_files");
+  assertEquals(result.stage, "mcp_boundary");
+});
+
 Deno.test("MCP boundary validator: empty content array passes", () => {
   const response = { content: [] };
   const result = validateMCPToolResponse("list_directory", response);

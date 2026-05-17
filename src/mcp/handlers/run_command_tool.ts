@@ -8,7 +8,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import { toolResultToMcpResponse } from "../tool_result_converter.ts";
 import { type MCPToolResponse, RunCommandToolArgsSchema } from "@exaix/schemas/mcp.ts";
-import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 
@@ -82,7 +82,7 @@ export class RunCommandTool extends ToolHandler {
         properties: {
           portal: { type: "string", description: "Portal name" },
           command: { type: "string", description: "Command to execute (must be whitelisted)" },
-          args: { type: "array", items: { type: "string" }, description: "Command arguments" },
+          args: { type: JsonSchemaType.ARRAY, items: { type: "string" }, description: "Command arguments" },
           identity_id: { type: "string", description: "Identity identifier for permission checks" },
         },
         required: ["portal", "command", "identity_id"],

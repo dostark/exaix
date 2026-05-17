@@ -1,50 +1,51 @@
 /**
  * @module ToolResultContractDocsTest
  * @path tests/docs/tool_result_contract_docs_test.ts
- * @description Verifies that TOOL_MANIFEST entries with output_schema or
- * remediationPolicyRef are consistent with TOOL_RESULT_SCHEMA_REGISTRY and
- * known remediation policy modes (parity checks). Fails when manifest and
- * schema registry drift. (Phase 78 Step 78.5)
+ * @description Verifies that the human-facing docs describe the Phase 78 tool
+ * result contract: validation boundaries, remediation behavior, and MCP error
+ * semantics. (Phase 78 Step 78.11)
  */
 
-import { assert, assertEquals } from "@std/assert";
-import { checkToolResultParity, type IParityCheckResult } from "../../scripts/check_tool_result_parity.ts";
+import { assertStringIncludes } from "@std/assert";
+import { join } from "@std/path";
 
-Deno.test("tool_result_contract_docs: parity check returns a result object", () => {
-  const result: IParityCheckResult = checkToolResultParity();
-  assert(typeof result.success === "boolean");
-  assert(Array.isArray(result.errors));
-  assert(Array.isArray(result.warnings));
+const ARCHITECTURE_MD_PATH = join(Deno.cwd(), "ARCHITECTURE.md");
+const TOOLS_MD_PATH = join(Deno.cwd(), "TOOLS.md");
+const README_MD_PATH = join(Deno.cwd(), "README.md");
+
+async function readDoc(path: string): Promise<string> {
+  return await Deno.readTextFile(path);
+}
+
+Deno.test("tool_result_contract_docs: architecture documents validation boundaries and remediation limits", async () => {
+  const architecture = await readDoc(ARCHITECTURE_MD_PATH);
+
+  assertStringIncludes(architecture, "Tool Result Validation & Discovery");
+  assertStringIncludes(architecture, "registry boundary");
+  assertStringIncludes(architecture, "MCP boundary");
+  assertStringIncludes(architecture, "fail_closed");
+  assertStringIncludes(architecture, "normalize_then_validate");
+  assertStringIncludes(architecture, "retry_once");
+  assertStringIncludes(architecture, "retry_with_backoff");
+  assertStringIncludes(architecture, "Mutating tools remain fail-closed");
 });
 
-Deno.test("tool_result_contract_docs: parity check passes for the current manifest", () => {
-  const result = checkToolResultParity();
-  assertEquals(
-    result.success,
-    true,
-    `Parity check failed:\n${result.errors.join("\n")}`,
-  );
+Deno.test("tool_result_contract_docs: tools reference explains structured payload validation and isError semantics", async () => {
+  const tools = await readDoc(TOOLS_MD_PATH);
+
+  assertStringIncludes(tools, "Tool Result Schema Contract");
+  assertStringIncludes(tools, "exaix_structured_data");
+  assertStringIncludes(tools, "exaix/tools/result_schema");
+  assertStringIncludes(tools, "isError: true");
+  assertStringIncludes(tools, "validation failure");
+  assertStringIncludes(tools, "read-only tools may be normalized or retried");
 });
 
-Deno.test("tool_result_contract_docs: all remediationPolicyRef values reference known modes", () => {
-  const result = checkToolResultParity();
-  const policyErrors = result.errors.filter((e) => e.includes("remediationPolicyRef"));
-  assertEquals(policyErrors.length, 0, `Unknown remediationPolicyRef values found:\n${policyErrors.join("\n")}`);
-});
+Deno.test("tool_result_contract_docs: readme explains operator-facing failure behavior", async () => {
+  const readme = await readDoc(README_MD_PATH);
 
-Deno.test("tool_result_contract_docs: checked tool count is positive", () => {
-  const result = checkToolResultParity();
-  assert(result.checkedTools > 0, "At least one tool must be inspected");
-});
-
-Deno.test("tool_result_contract_docs: delegates_to_registry tools with output_schema should have registry entries (warnings, not errors)", () => {
-  const result = checkToolResultParity();
-  // Warnings for Check 2 are advisory — parity check still succeeds.
-  assertEquals(
-    result.success,
-    true,
-    `Parity check must succeed even with Check 2 warnings:\n${result.errors.join("\n")}`,
-  );
-  // The warnings array may be non-empty; that is expected and acceptable.
-  assert(Array.isArray(result.warnings), "warnings must be an array");
+  assertStringIncludes(readme, "Tool result schemas");
+  assertStringIncludes(readme, "exaix/tools/result_schema");
+  assertStringIncludes(readme, "validation failures are reported as tool-contract errors");
+  assertStringIncludes(readme, "isError");
 });

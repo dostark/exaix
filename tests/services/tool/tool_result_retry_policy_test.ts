@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { ToolSideEffectScope } from "@exaix/core";
+import { type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
 import {
   applyRemediationPolicy,
   REMEDIATION_OUTCOME_FAIL_CLOSED,
@@ -21,9 +21,15 @@ import {
 } from "@exaix/schemas/tool_result.ts";
 import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result_validator.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { createMockConfig } from "../../helpers/config.ts";
 
 const syntheticFailure: IToolResultValidationFailure = {
   tool: "search_files",
+  stage: "registry_boundary",
+  severity: Severity.ERROR,
+  retryAllowed: true,
+  sideEffectRisk: ToolSideEffectScope.NONE,
   issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
   rawResult: { success: "yes" },
 };
@@ -53,7 +59,7 @@ Deno.test("tool_result_retry_policy: retry_once with successful retry returns pa
     syntheticFailure,
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
-      retry: () => Promise.resolve({ success: true, data: ["file_a.ts", "file_b.ts"] }),
+      retry: () => Promise.resolve({ success: true, data: { files: ["file_a.ts", "file_b.ts"] } }),
       toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
     },
   );
@@ -226,4 +232,41 @@ Deno.test("tool_result_retry_policy: retry blocked for side-effecting tool when 
     "Side-effecting tool must not be retried when allowRetryAfterSideEffect=false",
   );
   assertEquals(result.retriesAttempted, 0);
+});
+
+Deno.test("tool_result_retry_policy: registry boundary recovers read-only result via live remediation path", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "registry-remediation-readonly-" });
+  let validationCalls = 0;
+
+  try {
+    await Deno.writeTextFile(`${tempDir}/match.ts`, "export const value = 1;\n");
+
+    const config = createMockConfig(tempDir);
+    const validator = {
+      validateEnvelope: (toolName: string, rawResult: JSONValue): IToolResultValidationFailure | null => {
+        validationCalls += 1;
+        if (validationCalls === 1) {
+          return {
+            tool: toolName,
+            stage: "registry_boundary",
+            severity: Severity.ERROR,
+            retryAllowed: true,
+            sideEffectRisk: ToolSideEffectScope.NONE,
+            issues: [{ path: ["data"], message: "synthetic validation failure", code: "custom" }],
+            rawResult: rawResult as IToolResultValidationFailure["rawResult"],
+          };
+        }
+        return validateToolResultEnvelope(toolName, rawResult as Parameters<typeof validateToolResultEnvelope>[1]);
+      },
+      validateMCPResponse: () => null,
+    };
+
+    const registry = new ToolRegistry({ config, resultValidator: validator });
+    const result = await registry.execute("search_files", { pattern: "*.ts", path: tempDir });
+
+    assertEquals(result.success, true);
+    assertEquals(validationCalls, 2, "read-only remediation should revalidate after policy handling");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
 });

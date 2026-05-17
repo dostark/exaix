@@ -11,8 +11,26 @@
  */
 
 import { z } from "zod";
-import { JSONValueSchema, TOOL_RESULT_VALIDATION_MAX_RETRIES } from "@exaix/core";
-import { ToolErrorCode } from "@exaix/core";
+import {
+  JsonSchemaType,
+  JSONValueSchema,
+  Severity,
+  TOOL_RESULT_VALIDATION_MAX_RETRIES,
+  ToolErrorCode,
+  ToolSideEffectScope,
+} from "@exaix/core";
+
+export interface IToolResultJsonSchemaDescriptor {
+  type: string;
+  properties?: IToolResultJsonSchemaProperties;
+  required?: string[];
+  items?: IToolResultJsonSchemaDescriptor;
+  additionalProperties?: boolean;
+}
+
+export type IToolResultJsonSchemaProperty = IToolResultJsonSchemaDescriptor | { type: string };
+
+export type IToolResultJsonSchemaProperties = Record<string, IToolResultJsonSchemaProperty>;
 
 // ============================================================================
 // Tool Result Envelope Schema
@@ -26,10 +44,34 @@ import { ToolErrorCode } from "@exaix/core";
  * Note: tool_reflector.ts:IToolResult is a separate reflective evaluation
  * interface and is out of scope for Phase 78 payload validation.
  */
+export const ToolResultEnvelopeMetaSchema = z.object({
+  tool: z.string().min(1),
+  resultType: z.string().min(1),
+  schemaVersion: z.string().min(1),
+  retryable: z.boolean().optional(),
+});
+
 export const ToolResultEnvelopeSchema = z.object({
   success: z.boolean(),
   data: JSONValueSchema.optional(),
   error: z.string().optional(),
+  meta: ToolResultEnvelopeMetaSchema.optional(),
+}).superRefine((result, ctx) => {
+  if (result.success && result.error !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["error"],
+      message: "Successful tool results must not include an error message",
+    });
+  }
+
+  if (!result.success && result.error === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["error"],
+      message: "Failed tool results must include an error message",
+    });
+  }
 });
 
 export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
@@ -38,6 +80,15 @@ export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
 // Tool Result Validation Failure Schema
 // ============================================================================
 
+export const TOOL_RESULT_VALIDATION_STAGE_VALUES = [
+  "executor_boundary",
+  "registry_boundary",
+  "adapter_boundary",
+  "mcp_boundary",
+] as const;
+
+export type ToolResultValidationStage = typeof TOOL_RESULT_VALIDATION_STAGE_VALUES[number];
+
 /**
  * Structured representation of a tool result payload validation failure.
  * The rawResult field MUST NOT be forwarded to MCP clients — it is for
@@ -45,6 +96,10 @@ export type IToolResultEnvelope = z.infer<typeof ToolResultEnvelopeSchema>;
  */
 export const ToolResultValidationFailureSchema = z.object({
   tool: z.string().min(1),
+  stage: z.enum(TOOL_RESULT_VALIDATION_STAGE_VALUES),
+  severity: z.nativeEnum(Severity),
+  retryAllowed: z.boolean(),
+  sideEffectRisk: z.nativeEnum(ToolSideEffectScope),
   toolErrorCode: z.nativeEnum(ToolErrorCode).optional(),
   issues: z.array(
     z.object({
@@ -140,11 +195,57 @@ export type IToolResultSchemaDescriptor = z.infer<typeof ToolResultSchemaDescrip
  */
 export const TOOL_RESULT_SCHEMA_REGISTRY: Record<string, z.ZodType> = {
   run_command: z.object({
-    stdout: z.string(),
-    stderr: z.string(),
+    output: z.string(),
     exitCode: z.number().int(),
   }),
-  search_files: z.array(z.string()),
+  search_files: z.object({
+    files: z.array(z.string()),
+  }),
+};
+
+export const TOOL_RESULT_ENVELOPE_JSON_SCHEMA: IToolResultJsonSchemaDescriptor = {
+  type: "object",
+  properties: {
+    success: { type: "boolean" },
+    data: { type: "object" },
+    error: { type: "string" },
+    meta: {
+      type: "object",
+      properties: {
+        tool: { type: "string" },
+        resultType: { type: "string" },
+        schemaVersion: { type: "string" },
+        retryable: { type: "boolean" },
+      },
+      required: ["tool", "resultType", "schemaVersion"],
+      additionalProperties: false,
+    },
+  },
+  required: ["success"],
+  additionalProperties: false,
+};
+
+export const TOOL_RESULT_SCHEMA_DESCRIPTOR_REGISTRY: Record<string, IToolResultJsonSchemaDescriptor> = {
+  run_command: {
+    type: "object",
+    properties: {
+      output: { type: "string" },
+      exitCode: { type: "number" },
+    },
+    required: ["output", "exitCode"],
+    additionalProperties: false,
+  },
+  search_files: {
+    type: "object",
+    properties: {
+      files: {
+        type: JsonSchemaType.ARRAY,
+        items: { type: "string" },
+      },
+    },
+    required: ["files"],
+    additionalProperties: false,
+  },
 };
 
 // ============================================================================

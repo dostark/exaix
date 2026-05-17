@@ -22,8 +22,18 @@ import { logInfo } from "@exaix/core/logger/structured_logger.ts";
 import { PortalPermissionsService } from "../services/portal/portal_permissions.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
-import { buildToolResultSchemaDescriptor } from "@exaix/mcp";
-import { ToolResultSchemaRequestSchema } from "@exaix/schemas/tool_result.ts";
+import { buildToolResultSchemaDescriptor, lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";
+import { type IToolResultRemediationPolicy, ToolResultSchemaRequestSchema } from "@exaix/schemas/tool_result.ts";
+import {
+  applyRemediationPolicy,
+  type IRemediationResult,
+  REMEDIATION_OUTCOME_FAIL_CLOSED,
+} from "@exaix/schemas/tool_result_remediation.ts";
+import {
+  createValidationEventLogger,
+  type IValidationReportContext,
+  logValidationResult,
+} from "../services/tool/tool_validation_reporter.ts";
 
 type JsonRpcResult = JSONValue | object;
 type JsonRpcErrorData = JSONValue | object;
@@ -63,6 +73,11 @@ interface MCPServerOptions {
   transport: McpTransportType;
   permissions?: IPortalPermissionsChecker;
   resultValidator?: IToolResultValidator;
+  validationReportContext?: IValidationReportContext;
+  remediationPolicyResolver?: (
+    toolName: string,
+    policy: IToolResultRemediationPolicy,
+  ) => IToolResultRemediationPolicy;
 }
 
 interface JSONRPCRequest {
@@ -125,6 +140,11 @@ export class MCPServer {
   private sseHandler?: SseHandler;
   private permissions: IPortalPermissionsChecker;
   private resultValidator?: IToolResultValidator;
+  private validationReportContext?: IValidationReportContext;
+  private remediationPolicyResolver?: (
+    toolName: string,
+    policy: IToolResultRemediationPolicy,
+  ) => IToolResultRemediationPolicy;
 
   constructor(options: MCPServerOptions) {
     this.context = options.context;
@@ -132,6 +152,8 @@ export class MCPServer {
     this.db = options.context.db;
     this.transport = options.transport;
     this.resultValidator = options.resultValidator;
+    this.validationReportContext = options.validationReportContext;
+    this.remediationPolicyResolver = options.remediationPolicyResolver;
 
     // Auto-create EventBusService for SSE transport and wire SSE handler
     if (this.transport === McpTransportType.SSE) {
@@ -383,41 +405,75 @@ export class MCPServer {
 
     try {
       // Execute tool
-      const result = await tool.execute(params.arguments as Record<string, JSONValue>);
+      let result = await tool.execute(params.arguments as Record<string, JSONValue>);
 
       // Validate MCP response envelope when a validator is injected (Enforcement Point 3).
       // rawResult is captured in the failure for audit logging only — never forwarded to clients.
       if (this.resultValidator) {
         const validationFailure = this.resultValidator.validateMCPResponse(params.name, result);
         if (validationFailure) {
-          try {
-            this.db.logActivity(
-              "mcp.server",
-              "mcp.tool.validation_failure",
+          const remediationPolicy = this.resolveRemediationPolicy(params.name);
+          const remediationMetadata = lookupRemediationToolMetadata(params.name) ?? undefined;
+
+          if (remediationPolicy) {
+            const remediationResult = await applyRemediationPolicy(
               params.name,
+              remediationPolicy,
+              validationFailure,
+              this.resultValidator,
               {
-                tool_name: params.name,
-                issue_count: validationFailure.issues.length,
+                normalize: (rawResponse) => rawResponse,
+                retry: async () => {
+                  const retryResult = await tool.execute(params.arguments as Record<string, JSONValue>);
+                  return retryResult as JSONValue;
+                },
+                toolMetadata: remediationMetadata,
               },
             );
-          } catch {
-            // Swallow logging errors to avoid cascading failures
-          }
-          return {
-            jsonrpc: "2.0",
-            id: request.id,
-            result: {
-              content: [
-                {
-                  type: "text",
-                  text: `Tool result validation failed for '${params.name}': ${
-                    validationFailure.issues.map((i) => i.message).join("; ")
-                  }`,
+
+            await this.reportValidationOutcome(params.name, remediationPolicy, remediationResult);
+
+            if (remediationResult.outcome === "passed") {
+              result = remediationResult.remediatedResult as typeof result;
+            } else {
+              return {
+                jsonrpc: "2.0",
+                id: request.id,
+                result: {
+                  content: [
+                    {
+                      type: "text",
+                      text: `Tool result validation failed for '${params.name}': ${
+                        (remediationResult.failure ?? validationFailure).issues.map((i) => i.message).join("; ")
+                      }`,
+                    },
+                  ],
+                  isError: true,
                 },
-              ],
-              isError: true,
-            },
-          };
+              };
+            }
+          } else {
+            await this.reportValidationOutcome(params.name, this.getFallbackValidationPolicy(params.name), {
+              outcome: REMEDIATION_OUTCOME_FAIL_CLOSED,
+              failure: validationFailure,
+              retriesAttempted: 0,
+            });
+            return {
+              jsonrpc: "2.0",
+              id: request.id,
+              result: {
+                content: [
+                  {
+                    type: "text",
+                    text: `Tool result validation failed for '${params.name}': ${
+                      validationFailure.issues.map((i) => i.message).join("; ")
+                    }`,
+                  },
+                ],
+                isError: true,
+              },
+            };
+          }
         }
       }
 
@@ -491,6 +547,44 @@ export class MCPServer {
           data: classification.data,
         },
       };
+    }
+  }
+
+  private resolveRemediationPolicy(toolName: string): IToolResultRemediationPolicy | null {
+    const policy = lookupRemediationPolicy(toolName);
+    if (!policy) {
+      return null;
+    }
+    return this.remediationPolicyResolver ? this.remediationPolicyResolver(toolName, policy) : policy;
+  }
+
+  private getFallbackValidationPolicy(toolName: string): IToolResultRemediationPolicy {
+    return {
+      tool: toolName,
+      mode: "fail_closed",
+      maxRetries: 0,
+      requiresIdempotency: false,
+      allowRetryAfterSideEffect: false,
+      logValidationFailures: true,
+      triggerPlanAmendmentOnFailure: false,
+    };
+  }
+
+  private async reportValidationOutcome(
+    toolName: string,
+    policy: IToolResultRemediationPolicy,
+    result: IRemediationResult,
+  ): Promise<void> {
+    try {
+      await logValidationResult(
+        toolName,
+        policy,
+        result,
+        createValidationEventLogger(this.db, this.validationReportContext?.traceId),
+        this.validationReportContext,
+      );
+    } catch {
+      // Validation reporting must not break MCP tool execution.
     }
   }
 

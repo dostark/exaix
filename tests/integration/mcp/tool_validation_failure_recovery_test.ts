@@ -2,137 +2,165 @@
  * @module ToolValidationFailureRecoveryTest
  * @path tests/integration/mcp/tool_validation_failure_recovery_test.ts
  * @description Integration tests verifying that tool validation failure logging and
- * remediation outcome events are correctly emitted when invoked from MCP context.
- * Tests the full chain: remediation result → logValidationResult → captured events.
+ * remediation outcome events are correctly emitted from the live MCP boundary.
  * (Phase 78 Step 78.4)
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { ILogEvent } from "@exaix/core";
+import { Severity, ToolSideEffectScope } from "@exaix/core";
 import {
-  logValidationResult,
-  TOOL_VALIDATION_EVENT_ESCALATED,
   TOOL_VALIDATION_EVENT_FAIL_CLOSED,
-  TOOL_VALIDATION_EVENT_RETRY_EXHAUSTED,
+  TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS,
 } from "../../../src/services/tool/tool_validation_reporter.ts";
-import {
-  type IToolResultRemediationPolicy,
-  REMEDIATION_MODE_ESCALATE_ONLY,
-  REMEDIATION_MODE_FAIL_CLOSED,
-  REMEDIATION_MODE_RETRY_ONCE,
-} from "@exaix/schemas/tool_result.ts";
-import type { IRemediationResult } from "@exaix/schemas/tool_result_remediation.ts";
-import {
-  REMEDIATION_OUTCOME_ESCALATED,
-  REMEDIATION_OUTCOME_FAIL_CLOSED,
-  REMEDIATION_OUTCOME_RETRY_EXHAUSTED,
-} from "@exaix/schemas/tool_result_remediation.ts";
+import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import { validateMCPToolResponse } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
+import { McpTransportType } from "@exaix/mcp";
+import { AllowAllPermissionsService } from "@exaix/mcp/testing";
+import { MCPServer } from "../../../src/mcp/server.ts";
+import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { initTestDbService } from "../../helpers/db.ts";
+import { createMockConfig } from "../../helpers/config.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import { createMCPRequest } from "../../mcp/helpers/test_setup.ts";
 
-interface ICapturedEvent {
-  action: string;
-  target: string;
-}
+Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed validation writes event to journal", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "mcp-validation-fail-closed-" });
+  const portalAlias = "TestPortal";
+  const portalPath = `${tempDir}/${portalAlias}`;
 
-function createSpyLogger(): IEventLogger & { events: ICapturedEvent[] } {
-  const events: ICapturedEvent[] = [];
-  const impl: IEventLogger = {
-    log(event: ILogEvent): Promise<void> {
-      events.push({ action: event.action, target: event.target });
-      return Promise.resolve();
-    },
-    info(action: string, target: string | null): Promise<void> {
-      events.push({ action, target: target ?? "" });
-      return Promise.resolve();
-    },
-    warn(action: string, target: string | null): Promise<void> {
-      events.push({ action, target: target ?? "" });
-      return Promise.resolve();
-    },
-    error(action: string, target: string | null): Promise<void> {
-      events.push({ action, target: target ?? "" });
-      return Promise.resolve();
-    },
-    fatal(action: string, target: string | null): Promise<void> {
-      events.push({ action, target: target ?? "" });
-      return Promise.resolve();
-    },
-    debug(action: string, target: string | null): Promise<void> {
-      events.push({ action, target: target ?? "" });
-      return Promise.resolve();
-    },
-    child(_overrides: Partial<ILogEvent>): IEventLogger {
-      return impl;
-    },
-  };
-  return Object.assign(impl, { events });
-}
+  try {
+    await Deno.mkdir(portalPath, { recursive: true });
+    const { db, cleanup: dbCleanup } = await initTestDbService();
+    const config = createMockConfig(tempDir, {
+      portals: [{
+        alias: portalAlias,
+        target_path: portalPath,
+        default_branch: "main",
+        identities_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const validator: IToolResultValidator = {
+      validateEnvelope: () => null,
+      validateMCPResponse: (toolName, response) => ({
+        tool: toolName,
+        stage: "mcp_boundary",
+        severity: Severity.ERROR,
+        retryAllowed: false,
+        sideEffectRisk: ToolSideEffectScope.PORTAL,
+        issues: [{ path: ["content"], message: "synthetic validation failure", code: "custom" }],
+        rawResult: response as IToolResultValidationFailure["rawResult"],
+      }),
+    };
+    const context = {
+      config: createStubConfig(config),
+      db,
+      git: createStubGit(),
+      provider: createStubProvider(),
+      display: createStubDisplay(),
+      toolRegistry: new ToolRegistry({ config, db }),
+    };
+    const server = new MCPServer({
+      context,
+      transport: McpTransportType.STDIO,
+      permissions: new AllowAllPermissionsService(),
+      resultValidator: validator,
+    });
+    server.start();
 
-const mcpToolFailure: IToolResultValidationFailure = {
-  tool: "run_command",
-  issues: [{ path: ["success"], message: "Expected boolean, received string", code: "invalid_type" }],
-  rawResult: { success: "yes" },
-};
+    try {
+      const response = await server.handleRequest(createMCPRequest("tools/call", {
+        name: "write_file",
+        arguments: { portal: portalAlias, path: "note.txt", content: "hello", identity_id: "agent" },
+      }));
+      assertExists(response.result);
+      await db.waitForFlush();
 
-function makePolicy(
-  mode: IToolResultRemediationPolicy["mode"],
-  overrides?: Partial<IToolResultRemediationPolicy>,
-): IToolResultRemediationPolicy {
-  return {
-    tool: "run_command",
-    mode,
-    maxRetries: 1,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-    ...overrides,
-  };
-}
-
-Deno.test("tool_validation_failure_recovery_integration: fail_closed emits fail_closed event to journal", async () => {
-  const logger = createSpyLogger();
-  const result: IRemediationResult = {
-    outcome: REMEDIATION_OUTCOME_FAIL_CLOSED,
-    failure: mcpToolFailure,
-    retriesAttempted: 0,
-  };
-  await logValidationResult("run_command", makePolicy(REMEDIATION_MODE_FAIL_CLOSED), result, logger);
-  assertExists(logger.events.find((e) => e.action === TOOL_VALIDATION_EVENT_FAIL_CLOSED));
+      const activities = await db.getRecentActivity(50);
+      const event = activities.find((activity) => activity.action_type === TOOL_VALIDATION_EVENT_FAIL_CLOSED);
+      assertExists(event, "live MCP validation failure should emit fail_closed event");
+      assertEquals(event.target, "write_file");
+    } finally {
+      server.stop();
+      await dbCleanup();
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
 });
 
-Deno.test("tool_validation_failure_recovery_integration: escalated outcome emits escalated event to journal", async () => {
-  const logger = createSpyLogger();
-  const result: IRemediationResult = {
-    outcome: REMEDIATION_OUTCOME_ESCALATED,
-    failure: mcpToolFailure,
-    retriesAttempted: 0,
-  };
-  await logValidationResult("run_command", makePolicy(REMEDIATION_MODE_ESCALATE_ONLY), result, logger);
-  assertExists(logger.events.find((e) => e.action === TOOL_VALIDATION_EVENT_ESCALATED));
-});
+Deno.test("tool_validation_failure_recovery_integration: live MCP recovery writes normalization_success event to journal", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "mcp-validation-recovery-" });
+  const portalAlias = "TestPortal";
+  const portalPath = `${tempDir}/${portalAlias}`;
+  let validationCalls = 0;
 
-Deno.test("tool_validation_failure_recovery_integration: retry_exhausted emits retry_exhausted event to journal", async () => {
-  const logger = createSpyLogger();
-  const result: IRemediationResult = {
-    outcome: REMEDIATION_OUTCOME_RETRY_EXHAUSTED,
-    failure: mcpToolFailure,
-    retriesAttempted: 1,
-  };
-  await logValidationResult("run_command", makePolicy(REMEDIATION_MODE_RETRY_ONCE), result, logger);
-  assertExists(logger.events.find((e) => e.action === TOOL_VALIDATION_EVENT_RETRY_EXHAUSTED));
-});
+  try {
+    await Deno.mkdir(portalPath, { recursive: true });
+    await Deno.writeTextFile(`${portalPath}/file.txt`, "content");
+    const { db, cleanup: dbCleanup } = await initTestDbService();
+    const config = createMockConfig(tempDir, {
+      portals: [{
+        alias: portalAlias,
+        target_path: portalPath,
+        default_branch: "main",
+        identities_allowed: ["*"],
+        operations: [],
+      }],
+    });
+    const validator: IToolResultValidator = {
+      validateEnvelope: () => null,
+      validateMCPResponse: (toolName, response) => {
+        validationCalls += 1;
+        if (validationCalls === 1) {
+          return {
+            tool: toolName,
+            stage: "mcp_boundary",
+            severity: Severity.ERROR,
+            retryAllowed: true,
+            sideEffectRisk: ToolSideEffectScope.NONE,
+            issues: [{ path: ["content"], message: "synthetic validation failure", code: "custom" }],
+            rawResult: response as IToolResultValidationFailure["rawResult"],
+          };
+        }
+        return validateMCPToolResponse(toolName, response);
+      },
+    };
+    const context = {
+      config: createStubConfig(config),
+      db,
+      git: createStubGit(),
+      provider: createStubProvider(),
+      display: createStubDisplay(),
+      toolRegistry: new ToolRegistry({ config, db }),
+    };
+    const server = new MCPServer({
+      context,
+      transport: McpTransportType.STDIO,
+      permissions: new AllowAllPermissionsService(),
+      resultValidator: validator,
+    });
+    server.start();
 
-Deno.test("tool_validation_failure_recovery_integration: tool name is included in event target", async () => {
-  const logger = createSpyLogger();
-  const result: IRemediationResult = {
-    outcome: REMEDIATION_OUTCOME_FAIL_CLOSED,
-    failure: mcpToolFailure,
-    retriesAttempted: 0,
-  };
-  await logValidationResult("run_command", makePolicy(REMEDIATION_MODE_FAIL_CLOSED), result, logger);
-  const event = logger.events[0];
-  assertExists(event);
-  assertEquals(event.target, "run_command");
+    try {
+      const response = await server.handleRequest(createMCPRequest("tools/call", {
+        name: "list_directory",
+        arguments: { portal: portalAlias, path: ".", identity_id: "agent" },
+      }));
+      assertExists(response.result);
+      await db.waitForFlush();
+
+      const activities = await db.getRecentActivity(50);
+      const event = activities.find((activity) => activity.action_type === TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS);
+      assertExists(event, "live MCP recovery should emit normalization_success event");
+      const payload = JSON.parse(event.payload);
+      assertEquals(payload.metricName, TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS);
+    } finally {
+      server.stop();
+      await dbCleanup();
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
 });

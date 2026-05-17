@@ -11,7 +11,15 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
-import { ActivityActor, BYTES_PER_KB, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
+import {
+  ActivityActor,
+  BYTES_PER_KB,
+  JsonSchemaType,
+  LogLevel,
+  PORTAL_PREFIX_PATTERN,
+  SystemCommand,
+  ToolName,
+} from "@exaix/core";
 import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
@@ -19,7 +27,24 @@ import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolR
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
+import {
+  applyRemediationPolicy,
+  type IRemediationResult,
+  REMEDIATION_OUTCOME_FAIL_CLOSED,
+} from "@exaix/schemas/tool_result_remediation.ts";
+import { lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";
+import {
+  createValidationEventLogger,
+  type IValidationReportContext,
+  logValidationResult,
+} from "./tool_validation_reporter.ts";
+
+type RemediationPolicyResolver = (
+  toolName: string,
+  policy: IToolResultRemediationPolicy,
+) => IToolResultRemediationPolicy;
 
 export interface IToolRegistryConfig {
   config: Config;
@@ -29,6 +54,8 @@ export interface IToolRegistryConfig {
   baseDir?: string;
   context?: IApplicationContext;
   resultValidator?: IToolResultValidator;
+  validationReportContext?: IValidationReportContext;
+  remediationPolicyResolver?: RemediationPolicyResolver;
 }
 
 interface IToolContext extends IServiceContext {
@@ -254,6 +281,8 @@ export class ToolRegistry implements IToolRegistry {
   private pipeline: MiddlewarePipeline<IToolContext>;
   private executors: Map<string, (params: Record<string, JSONValue>) => Promise<IToolResult>> = new Map();
   private resultValidator?: IToolResultValidator;
+  private validationReportContext?: IValidationReportContext;
+  private remediationPolicyResolver?: RemediationPolicyResolver;
 
   constructor(options?: IToolRegistryConfig) {
     const ctx = options?.context;
@@ -280,6 +309,8 @@ export class ToolRegistry implements IToolRegistry {
     this.tools = new Map();
     this.pipeline = new MiddlewarePipeline<IToolContext>();
     this.resultValidator = options?.resultValidator;
+    this.validationReportContext = options?.validationReportContext;
+    this.remediationPolicyResolver = options?.remediationPolicyResolver;
 
     this.registerCoreTools();
     this.registerCoreExecutors();
@@ -436,7 +467,7 @@ export class ToolRegistry implements IToolRegistry {
             description: "Command to execute (must be whitelisted)",
           },
           args: {
-            type: "array",
+            type: JsonSchemaType.ARRAY,
             items: { type: "string" },
             description: "Command arguments",
           },
@@ -571,7 +602,7 @@ export class ToolRegistry implements IToolRegistry {
             description: "Target path (file or directory, default: workspace root)",
           },
           args: {
-            type: "array",
+            type: JsonSchemaType.ARRAY,
             items: { type: "string" },
             description: "Additional arguments or flags",
           },
@@ -592,7 +623,7 @@ export class ToolRegistry implements IToolRegistry {
             description: "Path to file to patch",
           },
           patches: {
-            type: "array",
+            type: JsonSchemaType.ARRAY,
             items: {
               type: "object",
               properties: {
@@ -702,6 +733,42 @@ export class ToolRegistry implements IToolRegistry {
         context.result as unknown as Record<string, JSONValue>,
       );
       if (failure) {
+        const remediationPolicy = this.resolveRemediationPolicy(toolName);
+        const remediationMetadata = lookupRemediationToolMetadata(toolName) ?? undefined;
+        const retryExecutor = this.executors.get(toolName);
+
+        if (remediationPolicy) {
+          const remediationResult = await applyRemediationPolicy(
+            toolName,
+            remediationPolicy,
+            failure,
+            this.resultValidator,
+            {
+              normalize: (rawResult) => rawResult,
+              retry: async () => {
+                const retryResult = retryExecutor ? await retryExecutor(params) : {
+                  success: false,
+                  error: `Tool '${toolName}' not implemented`,
+                };
+                return retryResult as unknown as JSONValue;
+              },
+              toolMetadata: remediationMetadata,
+            },
+          );
+
+          await this.reportValidationOutcome(toolName, remediationPolicy, remediationResult);
+
+          if (remediationResult.outcome === "passed") {
+            return remediationResult.remediatedResult as unknown as IToolResult;
+          }
+        } else {
+          await this.reportValidationOutcome(toolName, this.getFallbackValidationPolicy(toolName), {
+            outcome: REMEDIATION_OUTCOME_FAIL_CLOSED,
+            failure,
+            retriesAttempted: 0,
+          });
+        }
+
         return {
           success: false,
           error: `Tool result validation failed: ${failure.issues.map((i) => i.message).join("; ")}`,
@@ -710,6 +777,48 @@ export class ToolRegistry implements IToolRegistry {
     }
 
     return context.result!;
+  }
+
+  private resolveRemediationPolicy(toolName: string): IToolResultRemediationPolicy | null {
+    const policy = lookupRemediationPolicy(toolName);
+    if (!policy) {
+      return null;
+    }
+    return this.remediationPolicyResolver ? this.remediationPolicyResolver(toolName, policy) : policy;
+  }
+
+  private getFallbackValidationPolicy(toolName: string): IToolResultRemediationPolicy {
+    return {
+      tool: toolName,
+      mode: "fail_closed",
+      maxRetries: 0,
+      requiresIdempotency: false,
+      allowRetryAfterSideEffect: false,
+      logValidationFailures: true,
+      triggerPlanAmendmentOnFailure: false,
+    };
+  }
+
+  private async reportValidationOutcome(
+    toolName: string,
+    policy: IToolResultRemediationPolicy,
+    result: IRemediationResult,
+  ): Promise<void> {
+    try {
+      const traceId = this.traceId ?? this.validationReportContext?.traceId;
+      await logValidationResult(
+        toolName,
+        policy,
+        result,
+        createValidationEventLogger(this.db, traceId),
+        {
+          ...this.validationReportContext,
+          traceId,
+        },
+      );
+    } catch {
+      // Validation reporting must not break tool execution.
+    }
   }
 
   /**

@@ -10,7 +10,7 @@ import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
-import type { JSONValue } from "@exaix/core";
+import { type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
 
 Deno.test("ToolRegistry run_command: result data shape is { output: string, exitCode: number }", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "registry-contract-" });
@@ -40,6 +40,10 @@ Deno.test("ToolRegistry execute: resultValidator failure converts execution resu
     const alwaysFail: IToolResultValidator = {
       validateEnvelope: (toolName: string, rawResult: JSONValue): IToolResultValidationFailure => ({
         tool: toolName,
+        stage: "registry_boundary",
+        severity: Severity.ERROR,
+        retryAllowed: false,
+        sideEffectRisk: ToolSideEffectScope.NONE,
         issues: [{ path: [], message: "synthetic validation failure", code: "custom" }],
         rawResult,
       }),

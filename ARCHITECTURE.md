@@ -41,6 +41,27 @@ Exaix is currently in a mixed-layout migration state:
 - When this document references `src/` paths, treat them as the current runtime ownership map, not as the only canonical package structure.
 - For migration status and intended package boundaries, use [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md) and the linked phase tracker in `exaix-dev-docs/`.
 
+## Tool Result Validation & Discovery
+
+Phase 78 adds a documented contract around tool result payloads before they cross runtime boundaries.
+
+- The `registry boundary` validates structured tool envelopes returned by the in-process tool registry before orchestration continues.
+- The `MCP boundary` validates the final MCP response, including any `exaix_structured_data` block, before the server returns JSON-RPC output.
+- Validation and discovery are driven from the same canonical metadata used for runtime validation, so schema discovery and runtime enforcement describe the same contract.
+
+### Remediation Behavior
+
+- Read-only tools may use `normalize_then_validate`, `retry_once`, or `retry_with_backoff` when the manifest declares that remediation is safe.
+- `fail_closed` is the default terminal behavior when remediation is not allowed or does not succeed.
+- Mutating tools remain fail-closed even when validation fails after execution; they are not replayed unless the manifest explicitly declares a safe retry contract.
+- Terminal validation outcomes are emitted as orchestration events and may trigger plan-amendment hooks when policy requires human review.
+
+### Discovery Surface
+
+- The `exaix/tools/result_schema` JSON-RPC method returns a JSON-safe descriptor for a tool's result contract.
+- That descriptor exposes the expected envelope plus remediation metadata so clients can inspect the contract before calling a tool.
+- The discovery surface is additive and introspective: it does not execute the tool and does not change the semantics of `tools/call`.
+
 ---
 
 This document provides a comprehensive architectural overview of Exaix components using Mermaid diagrams. Exaix is available in **three editions** (Solo, Team, Enterprise) with components differentiated by availability.

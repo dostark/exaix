@@ -13,6 +13,7 @@ import {
   type IToolResultValidator,
   validateToolResultEnvelope,
 } from "@exaix/schemas/tool_result_validator.ts";
+import { Severity, ToolSideEffectScope } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "../../src/mcp/server.ts";
@@ -31,6 +32,10 @@ const SECRET_MARKER = "SUPER_SECRET_TOKEN_abc123xyz";
 Deno.test("MCP boundary validator: rawResult field is not included in client-facing error text", async () => {
   const failure: IToolResultValidationFailure = {
     tool: "run_command",
+    stage: "mcp_boundary",
+    severity: Severity.ERROR,
+    retryAllowed: false,
+    sideEffectRisk: ToolSideEffectScope.NONE,
     issues: [{ path: ["stdout"], message: "validation failed", code: "invalid_type" }],
     rawResult: { secret: SECRET_MARKER, stdout: 42, exitCode: "zero" },
   };
@@ -103,4 +108,40 @@ Deno.test("tool_validation_fail_closed: tool name is preserved in failure", () =
   const failure = validateToolResultEnvelope("run_command", null);
   assertExists(failure);
   assertEquals(failure.tool, "run_command");
+});
+
+Deno.test("tool_validation_fail_closed: mutating registry tool does not retry after validation failure", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "registry-fail-closed-" });
+  let validationCalls = 0;
+
+  try {
+    const config = createMockConfig(tempDir);
+    const validator: IToolResultValidator = {
+      validateEnvelope: (toolName, rawResult) => {
+        validationCalls += 1;
+        return {
+          tool: toolName,
+          stage: "registry_boundary",
+          severity: Severity.ERROR,
+          retryAllowed: false,
+          sideEffectRisk: ToolSideEffectScope.PORTAL,
+          issues: [{ path: ["data"], message: "synthetic validation failure", code: "custom" }],
+          rawResult: rawResult as IToolResultValidationFailure["rawResult"],
+        };
+      },
+      validateMCPResponse: () => null,
+    };
+
+    const registry = new ToolRegistry({ config, resultValidator: validator });
+    const result = await registry.execute("write_file", {
+      path: "notes.txt",
+      content: "hello",
+    });
+
+    assertEquals(result.success, false);
+    assertExists(result.error);
+    assertEquals(validationCalls, 1, "fail_closed mutating tools must not retry validation or execution");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
 });

@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { ToolErrorCode } from "@exaix/core";
+import { Severity, ToolErrorCode, ToolSideEffectScope } from "@exaix/core";
 import { ZodError } from "zod";
 import { ToolResultEnvelopeSchema, ToolResultValidationFailureSchema } from "@exaix/schemas/tool_result.ts";
 
@@ -18,15 +18,32 @@ Deno.test("ToolResultEnvelopeSchema: accepts valid success result", () => {
   const result = ToolResultEnvelopeSchema.parse({
     success: true,
     data: { count: 42, items: ["a", "b"] },
+    meta: {
+      tool: "search_files",
+      resultType: "file_list",
+      schemaVersion: "1.0.0",
+      retryable: true,
+    },
   });
   assertEquals(result.success, true);
   assertEquals(result.data, { count: 42, items: ["a", "b"] });
+  assertEquals(result.meta, {
+    tool: "search_files",
+    resultType: "file_list",
+    schemaVersion: "1.0.0",
+    retryable: true,
+  });
 });
 
 Deno.test("ToolResultEnvelopeSchema: accepts valid error result", () => {
   const result = ToolResultEnvelopeSchema.parse({
     success: false,
     error: "File not found",
+    meta: {
+      tool: "read_file",
+      resultType: "tool_error",
+      schemaVersion: "1.0.0",
+    },
   });
   assertEquals(result.success, false);
   assertEquals(result.error, "File not found");
@@ -37,6 +54,7 @@ Deno.test("ToolResultEnvelopeSchema: accepts result with no optional fields", ()
   assertEquals(result.success, true);
   assertEquals(result.data, undefined);
   assertEquals(result.error, undefined);
+  assertEquals(result.meta, undefined);
 });
 
 Deno.test("ToolResultEnvelopeSchema: rejects missing success field", () => {
@@ -59,6 +77,28 @@ Deno.test("ToolResultEnvelopeSchema: accepts null data (JSON null is valid JSONV
   assertEquals(result.data, null);
 });
 
+Deno.test("ToolResultEnvelopeSchema: rejects success result that also carries error", () => {
+  assertThrows(
+    () =>
+      ToolResultEnvelopeSchema.parse({
+        success: true,
+        error: "should not exist on success",
+      }),
+    ZodError,
+  );
+});
+
+Deno.test("ToolResultEnvelopeSchema: rejects failed result without error", () => {
+  assertThrows(
+    () =>
+      ToolResultEnvelopeSchema.parse({
+        success: false,
+        data: { count: 1 },
+      }),
+    ZodError,
+  );
+});
+
 // ============================================================================
 // ToolResultValidationFailureSchema
 // ============================================================================
@@ -66,11 +106,19 @@ Deno.test("ToolResultEnvelopeSchema: accepts null data (JSON null is valid JSONV
 Deno.test("ToolResultValidationFailureSchema: accepts valid failure with issues", () => {
   const failure = ToolResultValidationFailureSchema.parse({
     tool: "read_file",
+    stage: "registry_boundary",
+    severity: Severity.ERROR,
+    retryAllowed: false,
+    sideEffectRisk: ToolSideEffectScope.PORTAL,
     issues: [
       { path: ["data", "content"], message: "Expected string", code: "invalid_type" },
     ],
   });
   assertEquals(failure.tool, "read_file");
+  assertEquals(failure.stage, "registry_boundary");
+  assertEquals(failure.severity, Severity.ERROR);
+  assertEquals(failure.retryAllowed, false);
+  assertEquals(failure.sideEffectRisk, ToolSideEffectScope.PORTAL);
   assertEquals(failure.issues.length, 1);
   assertEquals(failure.issues[0].path, ["data", "content"]);
 });
@@ -78,6 +126,10 @@ Deno.test("ToolResultValidationFailureSchema: accepts valid failure with issues"
 Deno.test("ToolResultValidationFailureSchema: accepts optional toolErrorCode", () => {
   const failure = ToolResultValidationFailureSchema.parse({
     tool: "run_command",
+    stage: "mcp_boundary",
+    severity: Severity.WARN,
+    retryAllowed: true,
+    sideEffectRisk: ToolSideEffectScope.NONE,
     toolErrorCode: ToolErrorCode.EXECUTION_FAILED,
     issues: [{ path: [], message: "Missing exitCode", code: "invalid_type" }],
   });
@@ -87,6 +139,10 @@ Deno.test("ToolResultValidationFailureSchema: accepts optional toolErrorCode", (
 Deno.test("ToolResultValidationFailureSchema: accepts rawResult for audit logging", () => {
   const failure = ToolResultValidationFailureSchema.parse({
     tool: "run_command",
+    stage: "executor_boundary",
+    severity: Severity.ERROR,
+    retryAllowed: false,
+    sideEffectRisk: ToolSideEffectScope.SYSTEM,
     issues: [{ path: ["exitCode"], message: "Expected number", code: "invalid_type" }],
     rawResult: { stdout: "ok", exitCode: "zero" },
   });
@@ -105,7 +161,14 @@ Deno.test("ToolResultValidationFailureSchema: rejects missing tool name", () => 
 
 Deno.test("ToolResultValidationFailureSchema: rejects missing issues array", () => {
   assertThrows(
-    () => ToolResultValidationFailureSchema.parse({ tool: "read_file" }),
+    () =>
+      ToolResultValidationFailureSchema.parse({
+        tool: "read_file",
+        stage: "registry_boundary",
+        severity: Severity.ERROR,
+        retryAllowed: false,
+        sideEffectRisk: ToolSideEffectScope.NONE,
+      }),
     ZodError,
   );
 });
@@ -115,8 +178,23 @@ Deno.test("ToolResultValidationFailureSchema: rejects invalid toolErrorCode", ()
     () =>
       ToolResultValidationFailureSchema.parse({
         tool: "read_file",
+        stage: "registry_boundary",
+        severity: Severity.ERROR,
+        retryAllowed: false,
+        sideEffectRisk: ToolSideEffectScope.NONE,
         toolErrorCode: "UNKNOWN_CODE",
         issues: [],
+      }),
+    ZodError,
+  );
+});
+
+Deno.test("ToolResultValidationFailureSchema: rejects missing remediation metadata", () => {
+  assertThrows(
+    () =>
+      ToolResultValidationFailureSchema.parse({
+        tool: "read_file",
+        issues: [{ path: [], message: "err", code: "invalid_type" }],
       }),
     ZodError,
   );

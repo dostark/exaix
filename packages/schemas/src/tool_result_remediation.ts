@@ -42,6 +42,8 @@ export interface IRemediationResult {
   /** null when outcome is "passed". */
   failure: IToolResultValidationFailure | null;
   retriesAttempted: number;
+  /** Normalized or retried payload that passed validation when remediation succeeds. */
+  remediatedResult?: JSONValue;
 }
 
 /** Callbacks provided by the caller for normalize and retry modes. */
@@ -99,6 +101,17 @@ function canRetryTool(
   return true;
 }
 
+function validateForFailureStage(
+  toolName: string,
+  validationFailure: IToolResultValidationFailure,
+  validator: IToolResultValidator,
+  candidate: JSONValue,
+): IToolResultValidationFailure | null {
+  return validationFailure.stage === "mcp_boundary"
+    ? validator.validateMCPResponse(toolName, candidate)
+    : validator.validateEnvelope(toolName, candidate);
+}
+
 // ============================================================================
 // Remediation Dispatch
 // ============================================================================
@@ -138,11 +151,20 @@ export async function applyRemediationPolicy(
       }
       const rawResult = validationFailure.rawResult as JSONValue;
       const normalized = context.normalize(rawResult);
-      const revalidated = validator.validateEnvelope(toolName, normalized);
+      const revalidated = validateForFailureStage(toolName, validationFailure, validator, normalized);
       if (revalidated === null) {
-        return { outcome: REMEDIATION_OUTCOME_PASSED, failure: null, retriesAttempted: 0 };
+        return {
+          outcome: REMEDIATION_OUTCOME_PASSED,
+          failure: null,
+          retriesAttempted: 0,
+          remediatedResult: normalized,
+        };
       }
-      return { outcome: REMEDIATION_OUTCOME_NORMALIZATION_FAILED, failure: revalidated, retriesAttempted: 0 };
+      return {
+        outcome: REMEDIATION_OUTCOME_NORMALIZATION_FAILED,
+        failure: revalidated,
+        retriesAttempted: 0,
+      };
     }
 
     case REMEDIATION_MODE_RETRY_ONCE: {
@@ -150,9 +172,14 @@ export async function applyRemediationPolicy(
         return { outcome: REMEDIATION_OUTCOME_FAIL_CLOSED, failure: validationFailure, retriesAttempted: 0 };
       }
       const retryResult = await context.retry();
-      const retryFailure = validator.validateEnvelope(toolName, retryResult);
+      const retryFailure = validateForFailureStage(toolName, validationFailure, validator, retryResult);
       if (retryFailure === null) {
-        return { outcome: REMEDIATION_OUTCOME_PASSED, failure: null, retriesAttempted: 1 };
+        return {
+          outcome: REMEDIATION_OUTCOME_PASSED,
+          failure: null,
+          retriesAttempted: 1,
+          remediatedResult: retryResult,
+        };
       }
       return { outcome: REMEDIATION_OUTCOME_RETRY_EXHAUSTED, failure: retryFailure, retriesAttempted: 1 };
     }
@@ -165,9 +192,14 @@ export async function applyRemediationPolicy(
       let lastFailure = validationFailure;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const retryResult = await context.retry();
-        const retryFailure = validator.validateEnvelope(toolName, retryResult);
+        const retryFailure = validateForFailureStage(toolName, validationFailure, validator, retryResult);
         if (retryFailure === null) {
-          return { outcome: REMEDIATION_OUTCOME_PASSED, failure: null, retriesAttempted: attempt + 1 };
+          return {
+            outcome: REMEDIATION_OUTCOME_PASSED,
+            failure: null,
+            retriesAttempted: attempt + 1,
+            remediatedResult: retryResult,
+          };
         }
         lastFailure = retryFailure;
       }

@@ -13,8 +13,24 @@ import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup
 interface ISchemaDiscoveryResult {
   tool?: string;
   schemaVersion?: string;
+  envelopeSchema?: {
+    type?: string;
+    properties?: ISchemaDiscoveryProperties;
+  };
+  resultDataSchema?: {
+    type?: string;
+    properties?: ISchemaDiscoveryProperties;
+  };
   remediationPolicy?: { tool?: string; mode?: string };
   experimental?: boolean;
+}
+
+interface ISchemaDiscoveryProperty {
+  type?: string;
+}
+
+interface ISchemaDiscoveryProperties {
+  [key: string]: ISchemaDiscoveryProperty | undefined;
 }
 
 // ============================================================================
@@ -32,6 +48,10 @@ Deno.test("tool_result_schema_discovery: known tool returns schema descriptor", 
     const descriptor = response.result as ISchemaDiscoveryResult;
     assertEquals(descriptor.tool, "run_command");
     assertExists(descriptor.schemaVersion, "Descriptor must include schemaVersion");
+    assertEquals(descriptor.envelopeSchema?.type, "object");
+    assertExists(descriptor.envelopeSchema?.properties?.success);
+    assertEquals(descriptor.resultDataSchema?.type, "object");
+    assertExists(descriptor.resultDataSchema?.properties?.output);
     assertExists(descriptor.remediationPolicy, "Descriptor must include remediationPolicy");
     // Must be parseable by ToolResultSchemaDescriptorSchema
     const parsed = ToolResultSchemaDescriptorSchema.safeParse(descriptor);
@@ -67,6 +87,23 @@ Deno.test("tool_result_schema_discovery: descriptor experimental flag is true", 
     assertExists(response.result);
     const descriptor = response.result as ISchemaDiscoveryResult;
     assertEquals(descriptor.experimental, true);
+  } finally {
+    await ctx.cleanup();
+  }
+});
+
+Deno.test("tool_result_schema_discovery: descriptor remains transport-safe after JSON serialization", async () => {
+  const ctx = await initMCPTestWithoutPortal();
+  try {
+    const request = createMCPRequest("exaix/tools/result_schema", {
+      tool: "run_command",
+    });
+    const response = await ctx.server.handleRequest(request);
+    assertExists(response.result);
+    const serialized = JSON.parse(JSON.stringify(response.result)) as ISchemaDiscoveryResult;
+    assertEquals(serialized.tool, "run_command");
+    assertEquals(serialized.envelopeSchema?.type, "object");
+    assertExists(serialized.resultDataSchema?.properties?.output);
   } finally {
     await ctx.cleanup();
   }

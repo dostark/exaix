@@ -106,6 +106,33 @@ Run `deno task docs-sync-schemas` to regenerate after manifest changes.
 
 <!-- AGENT_TOOLS_END -->
 
+## Tool Result Schema Contract
+
+Phase 78 formalizes the contract for structured tool results returned through the registry and MCP transport.
+
+- Tool handlers may include an `exaix_structured_data` content block when they need to expose machine-readable output.
+- Structured payloads are validated at runtime before they leave the registry boundary and again before they leave the MCP boundary.
+- A `validation failure` means the tool executed but its declared output contract was not satisfied.
+- When validation cannot be remediated, MCP returns `isError: true` so clients can treat the response as a tool-contract error rather than a transport failure.
+- For safe remediation paths, read-only tools may be normalized or retried when the manifest declares that remediation is safe; mutating tools stay fail-closed unless safe replay is explicitly declared.
+
+## Result Schema Discovery API
+
+Use `exaix/tools/result_schema` to inspect expected tool result schemas before calling a tool.
+
+- Request: pass the `tool name` you want to inspect.
+- Response: a JSON-safe descriptor built from the same canonical metadata used for runtime validation.
+- The method does not execute the tool; it only returns discovery data.
+
+The descriptor currently includes these top-level fields:
+
+- `schemaVersion`
+- `envelopeSchema`
+- `resultSchema`
+- `remediationPolicy`
+
+This discovery surface is additive and introspective: it helps clients validate integration assumptions without changing normal `tools/call` behavior.
+
 ---
 
 ## Footer — Agent Knowledge Base

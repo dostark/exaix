@@ -30,7 +30,9 @@ export interface ITool {
 
 export interface IToolResult {
   success: boolean;
+  /** Structured payload validated at runtime against ToolResultEnvelopeSchema in @exaix/schemas. */
   data?: JSONValue;
+  /** Required when success=false by the package-owned runtime envelope contract. */
   error?: string;
 }
 

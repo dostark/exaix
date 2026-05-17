@@ -14,7 +14,7 @@ import { TOOL_RESULT_SCHEMA_REGISTRY } from "@exaix/schemas/tool_result.ts";
 import * as ToolResultSchemas from "@exaix/schemas/tool_result.ts";
 
 Deno.test("tool_result_contract_backward_compat: IToolResultValidator is optional — validateToolResultEnvelope works standalone", () => {
-  const validEnvelope = { success: true, data: ["file.ts"] };
+  const validEnvelope = { success: true, data: { files: ["file.ts"] } };
   const failure = validateToolResultEnvelope("search_files", validEnvelope);
   assertEquals(failure, null, "Valid envelope must pass without any DI container");
 });

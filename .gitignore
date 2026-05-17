@@ -39,6 +39,8 @@ tests/scenario_framework/output/
 # Allow coverage skill (directory name collides with coverage*/ rule)
 !.copilot/skills/coverage/
 !.copilot/skills/coverage/**
+# Allow duplication report artifacts
+!.duplication_report*/
 
 # --------------------------------------------
 # Runtime State (.exa/)

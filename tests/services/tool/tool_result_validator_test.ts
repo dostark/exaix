@@ -20,7 +20,7 @@ import {
 Deno.test("tool_result_validator: valid success envelope passes", () => {
   const result = validateToolResultEnvelope("run_command", {
     success: true,
-    data: { stdout: "output", stderr: "", exitCode: 0 },
+    data: { output: "output", exitCode: 0 },
   });
   assertEquals(result, null);
 });
@@ -38,6 +38,26 @@ Deno.test("tool_result_validator: success-only envelope (no data) passes", () =>
     success: true,
   });
   assertEquals(result, null);
+});
+
+Deno.test("tool_result_validator: invalid run_command data shape produces failure", () => {
+  const result = validateToolResultEnvelope("run_command", {
+    success: true,
+    data: { stdout: "output", stderr: "", exitCode: 0 },
+  });
+  assertExists(result);
+  assertEquals(result.tool, "run_command");
+  assertEquals(result.stage, "registry_boundary");
+});
+
+Deno.test("tool_result_validator: invalid search_files data shape produces failure", () => {
+  const result = validateToolResultEnvelope("search_files", {
+    success: true,
+    data: ["a.ts", "b.ts"],
+  });
+  assertExists(result);
+  assertEquals(result.tool, "search_files");
+  assertEquals(result.stage, "registry_boundary");
 });
 
 Deno.test("tool_result_validator: missing success field produces failure", () => {

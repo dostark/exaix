@@ -11,10 +11,38 @@
  */
 
 import type { JSONValue } from "@exaix/core";
+import { MCP_CONTENT_TYPE_STRUCTURED_DATA, Severity, ToolSideEffectScope } from "@exaix/core";
 import { MCPToolResponseSchema } from "./mcp.ts";
-import { type IToolResultValidationFailure, ToolResultEnvelopeSchema } from "./tool_result.ts";
+import {
+  type IToolResultValidationFailure,
+  TOOL_RESULT_SCHEMA_REGISTRY,
+  ToolResultEnvelopeSchema,
+} from "./tool_result.ts";
 
 export type { IToolResultValidationFailure };
+
+interface IValidationIssue {
+  path: string[];
+  message: string;
+  code: string;
+}
+
+function buildValidationFailure(
+  toolName: string,
+  stage: IToolResultValidationFailure["stage"],
+  issues: IValidationIssue[],
+  rawResult: IToolResultValidationFailure["rawResult"],
+): IToolResultValidationFailure {
+  return {
+    tool: toolName,
+    stage,
+    severity: Severity.ERROR,
+    retryAllowed: false,
+    sideEffectRisk: ToolSideEffectScope.NONE,
+    issues,
+    rawResult,
+  };
+}
 
 /** Pre-validation payload of indeterminate structure, accepted by all boundary validators. */
 type IUnvalidatedPayload = JSONValue;
@@ -43,18 +71,39 @@ export function validateToolResultEnvelope(
   result: IUnvalidatedPayload,
 ): IToolResultValidationFailure | null {
   const parsed = ToolResultEnvelopeSchema.safeParse(result);
-  if (parsed.success) {
+  if (!parsed.success) {
+    return buildValidationFailure(
+      toolName,
+      "registry_boundary",
+      parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+        code: issue.code,
+      })),
+      result as IToolResultValidationFailure["rawResult"],
+    );
+  }
+
+  const toolSchema = TOOL_RESULT_SCHEMA_REGISTRY[toolName];
+  if (!toolSchema || parsed.data.data === undefined) {
     return null;
   }
-  return {
-    tool: toolName,
-    issues: parsed.error.issues.map((issue) => ({
-      path: issue.path.map(String),
+
+  const dataValidation = toolSchema.safeParse(parsed.data.data);
+  if (dataValidation.success) {
+    return null;
+  }
+
+  return buildValidationFailure(
+    toolName,
+    "registry_boundary",
+    dataValidation.error.issues.map((issue) => ({
+      path: ["data", ...issue.path.map(String)],
       message: issue.message,
       code: issue.code,
     })),
-    rawResult: result as IToolResultValidationFailure["rawResult"],
-  };
+    result as IToolResultValidationFailure["rawResult"],
+  );
 }
 
 /**
@@ -68,16 +117,43 @@ export function validateMCPToolResponse(
   response: IUnvalidatedPayload,
 ): IToolResultValidationFailure | null {
   const parsed = MCPToolResponseSchema.safeParse(response);
-  if (parsed.success) {
+  if (!parsed.success) {
+    return buildValidationFailure(
+      toolName,
+      "mcp_boundary",
+      parsed.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+        code: issue.code,
+      })),
+      response as IToolResultValidationFailure["rawResult"],
+    );
+  }
+
+  const toolSchema = TOOL_RESULT_SCHEMA_REGISTRY[toolName];
+  if (!toolSchema) {
     return null;
   }
-  return {
-    tool: toolName,
-    issues: parsed.error.issues.map((issue) => ({
-      path: issue.path.map(String),
-      message: issue.message,
-      code: issue.code,
-    })),
-    rawResult: response as IToolResultValidationFailure["rawResult"],
-  };
+
+  const structuredContentBlocks = parsed.data.content.filter((block) =>
+    block.type === MCP_CONTENT_TYPE_STRUCTURED_DATA
+  );
+
+  for (const block of structuredContentBlocks) {
+    const dataValidation = toolSchema.safeParse(block.data);
+    if (!dataValidation.success) {
+      return buildValidationFailure(
+        toolName,
+        "mcp_boundary",
+        dataValidation.error.issues.map((issue) => ({
+          path: ["content", ...issue.path.map(String)],
+          message: issue.message,
+          code: issue.code,
+        })),
+        response as IToolResultValidationFailure["rawResult"],
+      );
+    }
+  }
+
+  return null;
 }

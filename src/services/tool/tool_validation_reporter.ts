@@ -9,9 +9,9 @@
  * @related-files ["src/services/tool/tool_validation_reporter.ts", "packages/schemas/src/tool_result_remediation.ts"]
  */
 
-import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger, type IEventLogger } from "@exaix/core/logger/event_logger.ts";
 import { LogLevel } from "@exaix/core";
-import type { IPlanAmendmentService } from "@exaix/core/types";
+import type { IDatabaseService, IPlanAmendmentService } from "@exaix/core/types";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IRemediationResult } from "@exaix/schemas/tool_result_remediation.ts";
 import {
@@ -96,8 +96,12 @@ export async function logValidationResult(
       level,
       traceId: context?.traceId,
       payload: {
+        metricName: action,
+        metricValue: 1,
         outcome: result.outcome,
+        policyMode: policy.mode,
         retriesAttempted: result.retriesAttempted,
+        ...(result.failure ? { validationStage: result.failure.stage } : {}),
         ...(result.failure ? { issueCount: result.failure.issues.length } : {}),
       },
     });
@@ -113,6 +117,10 @@ export async function logValidationResult(
       toolName,
     });
   }
+}
+
+export function createValidationEventLogger(db?: IDatabaseService, traceId?: string): IEventLogger {
+  return new EventLogger({ db, minLevel: LogLevel.DEBUG }, traceId ? { traceId } : {});
 }
 
 // ============================================================================

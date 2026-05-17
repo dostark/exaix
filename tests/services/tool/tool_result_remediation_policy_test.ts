@@ -7,6 +7,8 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
+import type { JSONValue } from "@exaix/core";
+import { Severity, ToolSideEffectScope } from "@exaix/core";
 import {
   applyRemediationPolicy,
   REMEDIATION_OUTCOME_ESCALATED,
@@ -29,6 +31,10 @@ const KNOWN_READONLY_TOOL = "read_file";
 
 const syntheticFailure: IToolResultValidationFailure = {
   tool: "run_command",
+  stage: "registry_boundary",
+  severity: Severity.ERROR,
+  retryAllowed: false,
+  sideEffectRisk: ToolSideEffectScope.NONE,
   issues: [{ path: ["success"], message: "Expected boolean, received string", code: "invalid_type" }],
   rawResult: { success: "yes" },
 };
@@ -151,7 +157,7 @@ Deno.test("tool_result_remediation_policy: normalize_then_validate with fix-prod
     syntheticFailure,
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
-      normalize: (_raw) => ({ success: true, data: "normalized" }),
+      normalize: (_raw: JSONValue) => ({ success: true, data: "normalized" }),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_PASSED);
@@ -175,7 +181,7 @@ Deno.test("tool_result_remediation_policy: normalize_then_validate with still-br
     syntheticFailure,
     { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
     {
-      normalize: (_raw) => ({ success: "still wrong" }),
+      normalize: (_raw: JSONValue) => ({ success: "still wrong" }),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_NORMALIZATION_FAILED);
