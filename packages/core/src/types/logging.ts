@@ -6,8 +6,7 @@
  * @related-files [@exaix/core/types/i_log_service.ts]
  */
 
-import type { LogLevel } from "@exaix/core";
-import type { LogMetadata } from "@exaix/core/types/json.ts";
+import type { LogLevel, LogMetadata } from "@exaix/core";
 
 /**
  * Metadata for a structured log entry.

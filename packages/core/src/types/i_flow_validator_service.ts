@@ -6,7 +6,7 @@
  * @related-files [src/services/adapters/flow_validator_adapter.ts, src/cli/cli_context.ts]
  */
 
-import type { IFlow } from "@exaix/schemas/flow.ts";
+import type { IFlow } from "@exaix/schemas";
 
 export interface IFlowValidationResult {
   isValid: boolean;

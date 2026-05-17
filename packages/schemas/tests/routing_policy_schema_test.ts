@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { ZRoutingPolicy, ZRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
+import { ZRoutingPolicy, ZRoutingPolicyDecision } from "@exaix/schemas";
 
 Deno.test("[RoutingPolicySchema] validates complete valid policy", () => {
   const policy = {

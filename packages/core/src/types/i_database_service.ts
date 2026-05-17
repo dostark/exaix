@@ -7,7 +7,7 @@
  */
 
 import type { JSONValue } from "@exaix/core";
-import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types/database.ts";
+import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
 export interface IDatabaseService {
   /**

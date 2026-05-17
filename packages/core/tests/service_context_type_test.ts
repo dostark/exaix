@@ -8,7 +8,7 @@
  */
 
 import { ActorType, AgentKind } from "@exaix/core";
-import type { IServiceContext } from "@exaix/core/types/service_context.ts";
+import type { IServiceContext } from "@exaix/core";
 
 const _ctx: IServiceContext = {
   actor: "user:test",

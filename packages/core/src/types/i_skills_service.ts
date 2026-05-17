@@ -7,8 +7,9 @@
  */
 
 import type { MemoryBankSource, SkillStatus } from "@exaix/core";
-import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas";
+
+import type { ISkillMatchRequest } from "@exaix/core/types";
 
 export interface ISkillsService {
   /**

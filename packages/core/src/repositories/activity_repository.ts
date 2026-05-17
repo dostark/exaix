@@ -6,9 +6,9 @@
  * @related-files ["src/services/core/db.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
-import type { IActivityRecord } from "@exaix/core/types/database.ts";
-import type { JSONValue } from "@exaix/core";
+import type { IDatabaseService, JSONValue } from "@exaix/core";
+
+import type { IActivityRecord } from "@exaix/core/types";
 
 /**
  * Domain entity representing an activity/event

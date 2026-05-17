@@ -8,7 +8,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { Severity, ToolErrorCode, ToolSideEffectScope } from "@exaix/core";
 import { ZodError } from "zod";
-import { ToolResultEnvelopeSchema, ToolResultValidationFailureSchema } from "@exaix/schemas/tool_result.ts";
+import { ToolResultEnvelopeSchema, ToolResultValidationFailureSchema } from "@exaix/schemas";
 
 // ============================================================================
 // ToolResultEnvelopeSchema

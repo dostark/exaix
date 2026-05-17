@@ -8,7 +8,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { TOOL_RESULT_VALIDATION_MAX_RETRIES } from "@exaix/core";
 import { ZodError } from "zod";
-import { ToolResultRemediationPolicySchema } from "@exaix/schemas/tool_result.ts";
+import { ToolResultRemediationPolicySchema } from "@exaix/schemas";
 
 // ============================================================================
 // Policy modes

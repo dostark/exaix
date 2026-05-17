@@ -13,7 +13,8 @@
  * @related-files ["src/services/plan/plan_executor.ts"]
  */
 
-import type { Config } from "@exaix/schemas/config.ts";
+import type { Config } from "@exaix/schemas";
+
 import {
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
   DEFAULT_GIT_BRANCH_SUFFIX_LENGTH,

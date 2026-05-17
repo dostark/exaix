@@ -6,8 +6,10 @@
  * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts, src/shared/interfaces/i_application_context.ts]
  */
 
-import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/types/evaluation_criteria.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/types";
+
+import type { IRequestAnalysis } from "@exaix/schemas";
+
 import type { FlowGateAction, FlowGateOnFail } from "@exaix/core";
 
 /**

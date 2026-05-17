@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { REQUEST_STATUS_VALUES } from "@exaix/core/status/request_status.ts";
+import { REQUEST_STATUS_VALUES } from "@exaix/core";
 
 /**
  * Schema for Exaix request frontmatter

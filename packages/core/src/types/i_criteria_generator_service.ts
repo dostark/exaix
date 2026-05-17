@@ -7,8 +7,9 @@
  * @related-files [src/services/criteria_generator.ts, src/shared/interfaces/mod.ts]
  */
 
-import type { EvaluationCriterion } from "@exaix/core/types/evaluation_criteria.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { EvaluationCriterion } from "@exaix/core/types";
+
+import type { IRequestAnalysis } from "@exaix/schemas";
 
 /**
  * Generates request-specific EvaluationCriterion objects from a structured

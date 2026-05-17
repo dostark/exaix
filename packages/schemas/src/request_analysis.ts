@@ -11,9 +11,7 @@
  */
 
 import { z } from "zod";
-import { ANALYZER_VERSION } from "@exaix/core";
-
-import { TaskComplexity, TaskType } from "@exaix/core";
+import { AnalysisMode, ANALYZER_VERSION, TaskComplexity, TaskType } from "@exaix/core";
 
 export type RequestAnalysisComplexity = TaskComplexity;
 export const RequestAnalysisComplexity = TaskComplexity;
@@ -32,8 +30,6 @@ export enum AmbiguityImpact {
   /** Ambiguity could lead to a wrong implementation entirely. */
   HIGH = "high",
 }
-
-import { AnalysisMode } from "@exaix/core/request/mod.ts";
 
 // ============================================================================
 // Sub-schemas

@@ -6,17 +6,17 @@
  * @related-files [@exaix/core/types]
  */
 
-import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
-import type { RequestSource } from "@exaix/core";
 import type {
+  AnalysisMode,
   IRequestEntry,
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "@exaix/core/types/request.ts";
+  RequestSource,
+  RequestStatusType,
+} from "@exaix/core";
 
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { AnalysisMode } from "@exaix/core/types/request.ts";
+import type { IRequestAnalysis } from "@exaix/schemas";
 
 export interface IRequestService {
   /**

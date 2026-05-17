@@ -14,7 +14,7 @@ import {
   MonorepoPackageSchema,
   PortalKnowledgeSchema,
   SymbolEntrySchema,
-} from "@exaix/schemas/portal_knowledge.ts";
+} from "@exaix/schemas";
 
 // ---------------------------------------------------------------------------
 // Fixtures

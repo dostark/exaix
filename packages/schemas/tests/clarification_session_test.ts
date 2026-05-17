@@ -8,11 +8,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import {
-  ClarificationQuestionSchema,
-  ClarificationRoundSchema,
-  ClarificationSessionSchema,
-} from "@exaix/schemas/clarification_session.ts";
+import { ClarificationQuestionSchema, ClarificationRoundSchema, ClarificationSessionSchema } from "@exaix/schemas";
 
 // ---------------------------------------------------------------------------
 // Helpers

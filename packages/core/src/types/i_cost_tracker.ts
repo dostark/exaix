@@ -6,7 +6,7 @@
  * @related-files [src/services/cost/cost_tracker.ts, src/services/core/db.ts]
  */
 
-import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types/database.ts";
+import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";
 
 export interface ICostTracker {
   /**

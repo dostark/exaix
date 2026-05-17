@@ -8,7 +8,8 @@
  */
 
 import type { IDatabaseService } from "./i_database_service.ts";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IModelProvider } from "@exaix/ai";
+
 import type { IGitService } from "./i_git_service.ts";
 import type { IDisplayService } from "./i_display_service.ts";
 import type { IConfigService } from "./i_config_service.ts";

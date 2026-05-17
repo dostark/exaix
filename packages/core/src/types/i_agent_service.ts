@@ -6,7 +6,7 @@
  * @related-files [@exaix/core/types]
  */
 
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/agent.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 
 export interface IAgentService {
   /**

@@ -5,7 +5,7 @@
  * @architectural-layer Interfaces
  * @related-files ["src/services/tool/tool_registry.ts"]
  */
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export interface IToolParameterSchema {
   type: string;

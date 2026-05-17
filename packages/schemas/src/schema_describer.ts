@@ -7,7 +7,7 @@
  */
 
 import type { ZodType, ZodTypeDef } from "zod";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core";
 
 /**
  * Generate a human-readable schema description from a Zod schema

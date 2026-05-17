@@ -4,7 +4,7 @@
  * @description Git service interface definitions for @exaix/git.
  */
 
-import type { Config } from "@exaix/schemas/config.ts";
+import type { Config } from "@exaix/schemas";
 
 export interface IBranchOptions {
   requestId: string;

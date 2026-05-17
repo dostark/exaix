@@ -12,7 +12,8 @@ import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { type Config, ConfigSchema } from "./config_schema.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
-import { logInfo } from "@exaix/core/logger/structured_logger.ts";
+import { logInfo } from "@exaix/core/logger";
+
 import type { IPortalConfigEntry } from "@exaix/core/types";
 import { ExaPathDefaults } from "@exaix/core";
 

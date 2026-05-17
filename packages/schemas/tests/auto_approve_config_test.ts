@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas";
 
 Deno.test("Step 71.1: Config schema includes auto_approve block with correct defaults", () => {
   const minimalConfig = {

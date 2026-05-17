@@ -5,7 +5,8 @@
  */
 
 import { DatabaseService } from "../../../../src/services/core/db.ts";
-import type { Config } from "@exaix/schemas/config.ts";
+import type { Config } from "@exaix/schemas";
+
 import { createMockConfig } from "./config.ts";
 
 const ACTIVITY_TABLE_SQL = `

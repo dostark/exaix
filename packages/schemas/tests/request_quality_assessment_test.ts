@@ -9,10 +9,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import {
-  RequestQualityAssessmentSchema,
-  RequestQualityIssueSchema,
-} from "@exaix/schemas/request_quality_assessment.ts";
+import { RequestQualityAssessmentSchema, RequestQualityIssueSchema } from "@exaix/schemas";
 
 // ---------------------------------------------------------------------------
 // Helpers

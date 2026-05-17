@@ -6,14 +6,14 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
+import { ExaPathDefaults, MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { AnthropicProviderFactory } from "../src/factories/anthropic_factory.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import type { IResolvedProviderOptions } from "../src/types.ts";
 import { ProviderFactory } from "../src/provider_factory.ts";
-import type { Config } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
+import type { Config } from "@exaix/schemas";
+
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 
 // ============================================================================

@@ -10,7 +10,8 @@ import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { EvaluationCategory, HealthCheckVerdict, PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { PROVIDER_OPENAI } from "@exaix/ai";
-import type { Config } from "@exaix/schemas/config.ts";
+import type { Config } from "@exaix/schemas";
+
 import { initTestDbService } from "@exaix/testing";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";

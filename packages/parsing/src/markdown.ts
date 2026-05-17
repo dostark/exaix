@@ -6,7 +6,8 @@
  * @related-files [@exaix/schemas/request.ts]
  */
 import { parse as parseYaml } from "@std/yaml";
-import { type Request, RequestSchema } from "@exaix/schemas/request.ts";
+import { type Request, RequestSchema } from "@exaix/schemas";
+
 import type { JSONValue } from "@exaix/core";
 import { FRONTMATTER_REGEX } from "./constants.ts";
 import { ActorType } from "@exaix/core";

@@ -6,8 +6,9 @@
  * @related-files [@exaix/core/types/plan.ts]
  */
 
-import type { PlanStatusType } from "@exaix/core/status/plan_status.ts";
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
+import type { PlanStatusType } from "@exaix/core";
+
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 
 export interface IPlanService {
   /**

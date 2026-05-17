@@ -5,9 +5,9 @@
  * consistent model names and base URLs for Mock/Live backend testing.
  */
 
-import { type AiConfig, AiConfigSchema } from "@exaix/schemas/ai_config.ts";
-import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
+import { type AiConfig, AiConfigSchema, type Config, ConfigSchema } from "@exaix/schemas";
+
+import { AnalysisMode, ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import {
   ConfidenceAssessmentLevel,
   LogLevel,
@@ -18,10 +18,8 @@ import {
   SqliteJournalMode,
 } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
-import { AnalysisMode } from "@exaix/core";
 import type { IModelProvider } from "../../src/types.ts";
 import { ProviderFactory } from "../../src/provider_factory.ts";
-import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 
 /**
  * Create a minimal config for testing.

@@ -9,8 +9,10 @@
 import type { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import type { IProviderFactory } from "./factories/abstract_provider_factory.ts";
 import type { ICostTracker } from "@exaix/core";
-import type { Config } from "@exaix/schemas/config.ts";
-import { getValidatedEnvOverrides, isCIMode, isTestMode } from "@exaix/core/config/env_schema.ts";
+import type { Config } from "@exaix/schemas";
+
+import { getValidatedEnvOverrides, isCIMode, isTestMode } from "@exaix/core/config";
+
 import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 
 /**

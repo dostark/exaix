@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { ZPlanAmendmentDecision, ZPlanAmendmentPatch, ZPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
+import { ZPlanAmendmentDecision, ZPlanAmendmentPatch, ZPlanAmendmentTrigger } from "@exaix/schemas";
 
 Deno.test("ZPlanAmendmentTrigger validates correct trigger data", () => {
   const data = {

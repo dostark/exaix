@@ -4,8 +4,10 @@
  * @description Minimal config helpers for git package test support.
  */
 
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { Config } from "@exaix/schemas/config.ts";
+import { ConfigSchema } from "@exaix/schemas";
+
+import type { Config } from "@exaix/schemas";
+
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";
 
 export function createMockConfig(root: string, overrides: Partial<Config> = {}): Config {

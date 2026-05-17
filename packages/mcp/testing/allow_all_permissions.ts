@@ -11,6 +11,7 @@ import type {
   IPermissionCheckResult,
   IPortalPermissionsChecker,
 } from "@exaix/schemas/portal_permissions.ts";
+
 import type { PortalOperation } from "@exaix/core";
 
 /**

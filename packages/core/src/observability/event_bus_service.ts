@@ -10,7 +10,7 @@
  */
 
 import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE } from "@exaix/core";
-import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
+import type { IStreamingEvent } from "@exaix/schemas";
 
 type ISubscriberCallback = (event: IStreamingEvent) => void;
 

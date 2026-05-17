@@ -10,8 +10,9 @@ import { describe, it } from "@std/testing/bdd";
 
 import { assertEquals, assertExists } from "@std/assert";
 import type { ZodError } from "zod";
-import type { IPlanStep, Plan } from "@exaix/schemas/plan_schema.ts";
-import { PlanSchema, PlanStepSchema } from "@exaix/schemas/plan_schema.ts";
+import type { IPlanStep, Plan } from "@exaix/schemas";
+
+import { PlanSchema, PlanStepSchema } from "@exaix/schemas";
 
 describe("PlanStepSchema", () => {
   describe("Valid Steps", () => {

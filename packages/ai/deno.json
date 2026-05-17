@@ -9,6 +9,8 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/mcp": "../mcp/mod.ts",
     "@exaix/mcp/": "../mcp/src/",
     "@exaix/schemas": "../schemas/mod.ts",

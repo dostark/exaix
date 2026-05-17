@@ -6,7 +6,7 @@
  * @related-files ["packages/core/src/types/i_plan_service.ts"]
  */
 
-import type { PlanStatusType } from "@exaix/core/status/plan_status.ts";
+import type { PlanStatusType } from "@exaix/core";
 
 /**
  * Metadata for a plan, including its current status and related request info.

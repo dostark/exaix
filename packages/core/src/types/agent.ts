@@ -6,8 +6,7 @@
  * @related-files [@exaix/core/types/i_agent_service.ts]
  */
 
-import type { AgentStatusType } from "@exaix/core/status/agent_status.ts";
-import type { AgentHealth, LogLevel } from "@exaix/core";
+import type { AgentHealth, AgentStatusType, LogLevel } from "@exaix/core";
 
 /**
  * Information about an agent's current state and configuration.

@@ -5,7 +5,8 @@
  */
 
 import type { RequestStatusType } from "../status/request_status.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas";
+
 import type { RequestPriority, RequestSource } from "@exaix/core";
 
 export enum AnalysisMode {

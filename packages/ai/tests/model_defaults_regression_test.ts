@@ -6,9 +6,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { OpenAIProvider } from "@exaix/ai/providers/openai_provider.ts";
-import { AnthropicProvider } from "@exaix/ai/providers/anthropic_provider.ts";
-import { GoogleProvider } from "@exaix/ai/providers/google_provider.ts";
+import { AnthropicProvider, GoogleProvider, OpenAIProvider } from "@exaix/ai/providers";
+
 import * as DEFAULTS from "@exaix/ai";
 
 Deno.test("[regression] verify default openai model is gpt-5-mini", () => {

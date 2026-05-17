@@ -18,7 +18,8 @@ import {
   FlowStepType,
   McpToolName,
 } from "@exaix/core";
-import { JSONValueSchema } from "@exaix/core/types/json.ts";
+import { JSONValueSchema } from "@exaix/core";
+
 import {
   DEFAULT_FLOW_MAX_RETRIES,
   DEFAULT_FLOW_STEP_BACKOFF_MS,

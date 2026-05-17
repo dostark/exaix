@@ -9,19 +9,18 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { SecurityMode } from "@exaix/core";
 import { PROVIDER_OPENAI } from "@exaix/ai";
 
-import { AgentExecutionOptionsSchema } from "@exaix/schemas/agent_executor.ts";
 import {
+  AgentExecutionOptionsSchema,
   AgentIdSchema,
   BlueprintNameSchema,
-  ExecutionContextSchema,
   InputSanitizer,
   InputValidator,
   ModelConfigSchema,
-  PlanSchema,
   PortalNameSchema,
   TraceIdSchema,
   UserRequestSchema,
-} from "@exaix/schemas/input_validation.ts";
+} from "@exaix/schemas";
+import { ExecutionContextSchema, PlanSchema } from "@exaix/schemas/input_validation.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 
 Deno.test("Input Validation - BlueprintNameSchema", async (t) => {

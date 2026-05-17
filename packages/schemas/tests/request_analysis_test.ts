@@ -14,7 +14,8 @@ import {
   RequestGoalSchema,
   RequestTaskType,
   RequirementSchema,
-} from "@exaix/schemas/request_analysis.ts";
+} from "@exaix/schemas";
+
 import { AnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------

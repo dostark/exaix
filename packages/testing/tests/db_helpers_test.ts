@@ -4,7 +4,7 @@
  * @description Verifies shared test DB helpers in @exaix/testing.
  */
 import { assertEquals } from "@std/assert";
-import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";
+import { createLoggingTestDb } from "@exaix/testing";
 
 Deno.test("createLoggingTestDb records activities", () => {
   const { activities, db } = createLoggingTestDb();

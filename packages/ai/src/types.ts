@@ -5,11 +5,11 @@
  * @architectural-layer AI
  * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
  */
-import type { ConfigSource, MockStrategy, ProviderType } from "@exaix/core";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { JSONValue } from "@exaix/core";
+import type { ConfigSource, JSONValue, MockStrategy, ProviderType } from "@exaix/core";
+import type { EventLogger } from "@exaix/core/logger";
+
 import type { McpToolName } from "@exaix/mcp";
-import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
+import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
 /**
  * Options for model generation requests.

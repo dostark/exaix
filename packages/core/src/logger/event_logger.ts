@@ -7,8 +7,8 @@
  * @related-files ["packages/core/src/logger/event_logger.ts", "packages/core/src/repositories/activity_repository.ts", "src/services/common/types.ts"]
  */
 
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
-import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
+import type { ActivityRepository, IDatabaseService, JSONValue } from "@exaix/core";
+
 import {
   ActivityActor,
   type Actor,
@@ -17,8 +17,9 @@ import {
   type ILogEvent,
   LogLevel,
 } from "@exaix/core";
-import { SHARED_DEFAULT_ICONS } from "@exaix/core";
-import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
+import { type LogMetadata, SHARED_DEFAULT_ICONS, toSafeJson } from "@exaix/core";
+import type { IStreamingEvent } from "@exaix/schemas";
+
 import {
   STREAMING_EVENT_FLOW_STATUS,
   STREAMING_EVENT_HEARTBEAT,
@@ -26,8 +27,6 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
-import type { JSONValue } from "@exaix/core";
 
 /**
  * Configuration for EventLogger

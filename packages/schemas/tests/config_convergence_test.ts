@@ -8,9 +8,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
-import { LogLevel } from "@exaix/core";
+import { ConfigSchema } from "@exaix/schemas";
+
+import { ExaPathDefaults, LogLevel } from "@exaix/core";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,

@@ -6,7 +6,7 @@
  * @related-files [src/services/adapters/journal_adapter.ts, "src/services/core/db.ts"]
  */
 
-import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 
 /**
  * Service interface for Journal (Activity Log) operations consumed by the TUI.

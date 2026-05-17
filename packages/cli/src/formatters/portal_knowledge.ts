@@ -6,7 +6,7 @@
  * @related-files ["packages/schemas/src/portal_knowledge.ts", src/cli/commands/portal_commands.ts]
  */
 
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas";
 
 /**
  * Renders an IPortalKnowledge record into an array of strings for CLI or TUI output.

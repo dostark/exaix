@@ -34,7 +34,7 @@ import {
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
   MOCK_DELAY_MS,
-} from "@exaix/ai/constants.ts";
+} from "@exaix/ai";
 
 import { type MockStrategy, ProviderType } from "@exaix/core";
 import { ConnectionError, ModelProviderError, TimeoutError } from "./providers/common.ts";

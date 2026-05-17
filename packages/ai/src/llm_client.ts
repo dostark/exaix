@@ -6,11 +6,12 @@
  * @related-files [src/flows/dynamic_step_executor.ts, src/ai/providers.ts]
  */
 import type { ILlmClient, ToolArgs } from "./types.ts";
-import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
+import type { Config, IBlueprintFrontmatter } from "@exaix/schemas";
+
 import { ReActActionType } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { ModelFactory } from "./providers.ts";
-import type { Config } from "@exaix/schemas/config.ts";
+
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
 

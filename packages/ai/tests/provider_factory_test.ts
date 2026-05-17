@@ -11,9 +11,9 @@ import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ProviderFactoryError } from "../src/errors.ts";
 import type { IGenerateResult } from "../src/types.ts";
 import { RateLimitError } from "../src/rate_limited_provider.ts";
-import { SecureCredentialStore } from "@exaix/core";
-import { DaemonStatus, MockStrategy, ProviderType } from "@exaix/core";
-import { AiConfigSchema } from "@exaix/schemas/ai_config.ts";
+import { DaemonStatus, MockStrategy, ProviderType, SecureCredentialStore } from "@exaix/core";
+import { AiConfigSchema } from "@exaix/schemas";
+
 import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";
 
 const skipInParallel = !!Deno.env.get("DENO_JOBS") && Deno.env.get("EXA_TEST_FORCE_CLI_PARALLEL") !== "1";

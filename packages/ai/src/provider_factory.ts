@@ -8,15 +8,22 @@
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";
-import type { Config } from "@exaix/schemas/config.ts";
-import { type AiConfig, getDefaultModels } from "@exaix/schemas/ai_config.ts";
+import type { Config } from "@exaix/schemas";
+
+import { type AiConfig, getDefaultModels, InputValidator, type ModelConfigSchema } from "@exaix/schemas";
+
 import { LlamaProvider } from "./providers/llama_provider.ts";
-import { InputValidator, type ModelConfigSchema } from "@exaix/schemas/input_validation.ts";
+
 import type { z } from "zod";
-import type { ICostTracker } from "@exaix/core";
-import type { IDatabaseService } from "@exaix/core";
-import type { JSONValue } from "@exaix/core";
-import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core";
+import type { ICostTracker, IDatabaseService, JSONValue } from "@exaix/core";
+import {
+  ConfigSource,
+  createAPIRetryPolicy,
+  type MockStrategy,
+  PricingTier,
+  ProviderType,
+  RetryPolicy,
+} from "@exaix/core";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";
 import { GoogleProviderFactory } from "./factories/google_factory.ts";
@@ -25,10 +32,9 @@ import { OllamaProviderFactory } from "./factories/ollama_factory.ts";
 import { OpenAIProviderFactory } from "./factories/openai_factory.ts";
 import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_factory.ts";
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
-import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
 

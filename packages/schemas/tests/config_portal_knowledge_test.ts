@@ -8,9 +8,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
-import { LogLevel, PortalAnalysisMode } from "@exaix/core";
+import { ConfigSchema } from "@exaix/schemas";
+
+import { ExaPathDefaults, LogLevel, PortalAnalysisMode } from "@exaix/core";
 import * as DEFAULTS from "@exaix/core";
 
 // ---------------------------------------------------------------------------

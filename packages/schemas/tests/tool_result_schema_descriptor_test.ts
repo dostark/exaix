@@ -8,7 +8,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { TOOL_RESULT_SCHEMA_VERSION } from "@exaix/core";
 import { ZodError } from "zod";
-import { ToolResultRemediationPolicySchema, ToolResultSchemaDescriptorSchema } from "@exaix/schemas/tool_result.ts";
+import { ToolResultRemediationPolicySchema, ToolResultSchemaDescriptorSchema } from "@exaix/schemas";
 
 // ============================================================================
 // ToolResultSchemaDescriptorSchema

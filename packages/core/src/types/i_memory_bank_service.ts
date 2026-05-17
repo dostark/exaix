@@ -16,7 +16,8 @@ import type {
   IMemorySearchResult,
   IPattern,
   IProjectMemory,
-} from "@exaix/schemas/memory_bank.ts";
+} from "@exaix/schemas";
+
 import type { IMemoryEmbeddingService } from "./i_memory_embedding_service.ts";
 
 export interface IMemoryBankService {

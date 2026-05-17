@@ -7,7 +7,7 @@
  */
 
 import type { LogMetadata } from "@exaix/core";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
+import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
 
 /**
  * Core logger interface for emitting logs.

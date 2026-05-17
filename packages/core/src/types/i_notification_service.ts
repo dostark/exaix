@@ -6,8 +6,9 @@
  * @related-files [@exaix/core/types/notification.ts]
  */
 
-import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IMemoryUpdateProposal } from "@exaix/schemas";
+
+import type { IMemoryNotification } from "@exaix/core/types";
 
 export interface INotificationService {
   /**

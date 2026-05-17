@@ -6,7 +6,7 @@
  * @related-files [src/services/adapters/memory_extractor_adapter.ts, src/cli/cli_context.ts]
  */
 
-import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
+import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas";
 
 export interface IMemoryExtractorService {
   /**

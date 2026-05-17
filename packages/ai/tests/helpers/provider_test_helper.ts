@@ -9,8 +9,9 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { type Spy, spy, type Stub, stub } from "@std/testing/mock";
 import { ModelProviderError } from "../../src/providers/common.ts";
 import type { IGenerateResult } from "../../src/providers/common.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
+import { EventLogger } from "@exaix/core/logger";
+
+import type { JSONObject, JSONValue } from "@exaix/core";
 
 /**
  * Payload body accepted by the test response stub.

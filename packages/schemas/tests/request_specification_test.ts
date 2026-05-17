@@ -9,7 +9,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { RequestSpecificationSchema } from "@exaix/schemas/request_specification.ts";
+import { RequestSpecificationSchema } from "@exaix/schemas";
 
 // ---------------------------------------------------------------------------
 // Helpers

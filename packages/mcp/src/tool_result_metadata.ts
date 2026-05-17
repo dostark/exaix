@@ -15,9 +15,10 @@ import {
   TOOL_RESULT_SCHEMA_DESCRIPTOR_REGISTRY,
   ToolResultRemediationPolicySchema,
   ToolResultSchemaDescriptorSchema,
-} from "@exaix/schemas/tool_result.ts";
+} from "@exaix/schemas";
+
 import { TOOL_MANIFEST } from "./manifest.ts";
-import type { IRemediationToolMetadata } from "@exaix/schemas/tool_result_remediation.ts";
+import type { IRemediationToolMetadata } from "@exaix/schemas";
 
 function findManifestEntry(toolName: string) {
   return TOOL_MANIFEST.find((entry) => entry.name === toolName);

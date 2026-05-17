@@ -7,7 +7,8 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { z } from "zod";
-import { describeSchema } from "@exaix/schemas/schema_describer.ts";
+import { describeSchema } from "@exaix/schemas";
+
 import {
   SchemaDescriberEnumValue,
   SchemaDescriberKey,

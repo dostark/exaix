@@ -8,7 +8,8 @@
  */
 
 import type { IGitService } from "@exaix/core/types";
-import type { IGenerateResult, IModelProvider } from "@exaix/ai/types.ts";
+import type { IGenerateResult, IModelProvider } from "@exaix/ai";
+
 import { GitBranchName } from "@exaix/git";
 
 /**

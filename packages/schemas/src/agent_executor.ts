@@ -7,8 +7,7 @@
  */
 
 import { z } from "zod";
-import { AgentExecutionErrorType, SecurityMode } from "@exaix/core";
-import { JSONValueSchema } from "@exaix/core/types/json.ts";
+import { AgentExecutionErrorType, JSONValueSchema, SecurityMode } from "@exaix/core";
 
 /**
  * Security mode for agent execution

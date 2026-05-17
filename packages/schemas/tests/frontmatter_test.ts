@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { RequestStatus } from "@exaix/core";
-import { RequestSchema } from "@exaix/schemas/request.ts";
+import { RequestSchema } from "@exaix/schemas";
 
 /**
  * Tests for Step 2.2: The Zod Frontmatter Parser

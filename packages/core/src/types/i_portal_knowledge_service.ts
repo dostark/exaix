@@ -8,7 +8,8 @@
  * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/shared/interfaces/mod.ts]
  */
 
-import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
+import type { IPortalKnowledge } from "@exaix/schemas";
+
 import type { PortalAnalysisMode } from "@exaix/core/types";
 
 /**

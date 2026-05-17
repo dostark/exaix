@@ -7,7 +7,7 @@
  */
 
 import { MessageType } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core";
 
 export const AgentStatus = {
   ACTIVE: "active",

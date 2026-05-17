@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { AiConfigSchema } from "./ai_config.ts";
+import { AiConfigSchema, ProviderTypeSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
 import {
@@ -55,7 +55,6 @@ import {
   DEFAULT_MCP_TRANSPORT,
   DEFAULT_MCP_VERSION,
 } from "@exaix/core";
-import { ProviderTypeSchema } from "./ai_config.ts";
 import {
   ConfidenceAssessmentLevel,
   LogLevel,
@@ -66,8 +65,8 @@ import {
   SqliteJournalMode,
 } from "@exaix/core";
 import type { PortalOperation } from "@exaix/core";
-import { AnalysisMode } from "@exaix/core/request/mod.ts";
-import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
+import { AnalysisMode, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";
 

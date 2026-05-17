@@ -12,7 +12,7 @@ import { OpenAIProvider } from "../../src/providers/openai_provider.ts";
 import { getTestModel, getTestModelDisplay } from "../helpers/test_model.ts";
 import { isCi } from "@exaix/testing";
 
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core";
 
 function isCiGuardActive(): boolean {
   // In CI, the code intentionally prevents accidental paid calls unless

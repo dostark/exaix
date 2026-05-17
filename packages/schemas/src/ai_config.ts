@@ -7,7 +7,8 @@
  * @related-files [packages/core/src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
-import { MockStrategy, ProviderType } from "@exaix/core/types/enums.ts";
+import { MockStrategy, ProviderType } from "@exaix/core";
+
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,

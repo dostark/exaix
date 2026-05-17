@@ -12,6 +12,8 @@
     "@exaix/core": "./mod.ts",
     "@exaix/core/": "./src/",
     "@exaix/core/types": "./src/types/mod.ts",
+    "@exaix/core/logger": "./src/logger/mod.ts",
+    "@exaix/core/config": "./src/config/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/schemas": "../schemas/mod.ts",

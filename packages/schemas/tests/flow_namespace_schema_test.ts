@@ -6,8 +6,13 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { type z, ZodError } from "zod";
-import { DEFAULT_FLOW_VERSION, DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
-import { DataFormat, FlowInputSource, FlowOutputFormat } from "@exaix/core";
+import {
+  DataFormat,
+  DEFAULT_FLOW_VERSION,
+  DEFAULT_NAMESPACE_MAX_BYTES,
+  FlowInputSource,
+  FlowOutputFormat,
+} from "@exaix/core";
 import {
   FlowSchema,
   FlowStepSchema,
@@ -21,7 +26,7 @@ import {
   ZFlowNamespaceRead,
   ZFlowNamespaceWrite,
   ZFlowStepNamespace,
-} from "@exaix/schemas/flow.ts";
+} from "@exaix/schemas";
 
 Deno.test("ZFlowNamespaceConfig: applies defaults", () => {
   const parsed = ZFlowNamespaceConfig.parse({ enabled: true });

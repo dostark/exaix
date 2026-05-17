@@ -8,9 +8,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { ExaPathDefaults } from "@exaix/core";
-import { LogLevel, QualityGateMode } from "@exaix/core";
+import { ConfigSchema } from "@exaix/schemas";
+
+import { ExaPathDefaults, LogLevel, QualityGateMode } from "@exaix/core";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
   DEFAULT_QG_ENRICHMENT_THRESHOLD,

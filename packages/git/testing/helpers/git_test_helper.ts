@@ -8,7 +8,8 @@ import { assert, assertEquals } from "@std/assert";
 import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { GIT_CMD_CONFIG, GitService } from "@exaix/git";
-import type { Config } from "@exaix/schemas/config.ts";
+import type { Config } from "@exaix/schemas";
+
 import type { DatabaseService } from "../../../../src/services/core/db.ts";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";

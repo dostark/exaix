@@ -17,7 +17,7 @@ import {
   SECTION_FLOORS,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import { PromptBudgetSection, ZBudgetPolicy, ZPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import { PromptBudgetSection, ZBudgetPolicy, ZPromptBudget } from "@exaix/schemas";
 
 Deno.test("[PromptBudgetSchema] validates a complete prompt budget", () => {
   const result = ZPromptBudget.safeParse({

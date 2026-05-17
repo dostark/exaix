@@ -7,8 +7,8 @@
  * It exists solely to verify the TypeScript contract at compile time.
  */
 
-import type { RequestStatusType } from "@exaix/core";
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter, ParsedRequestFile, RequestStatusType } from "@exaix/core";
+
 const _frontmatter: IRequestFrontmatter = {
   trace_id: crypto.randomUUID(),
   created: new Date().toISOString(),

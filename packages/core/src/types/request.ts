@@ -7,9 +7,9 @@
  */
 
 import { z } from "zod";
-import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { RequestPriority, RequestSource } from "@exaix/core";
+import type { RequestPriority, RequestSource, RequestStatusType } from "@exaix/core";
+
+import type { IRequestAnalysis } from "@exaix/schemas";
 
 /**
  * AnalysisMode enum for triggering request analysis.

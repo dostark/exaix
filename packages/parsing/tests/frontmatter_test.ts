@@ -7,7 +7,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { RequestStatus } from "@exaix/core";
 import { FrontmatterParser } from "@exaix/parsing";
-import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";
+import { createLoggingTestDb } from "@exaix/testing";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
 const loadFixture = async (name: string) => await Deno.readTextFile(join(FIXTURE_ROOT, name));

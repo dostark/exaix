@@ -12,7 +12,7 @@ import type {
   IMemorySearchResult,
   IMemoryUpdateProposal,
   IProjectMemory,
-} from "@exaix/schemas/memory_bank.ts";
+} from "@exaix/schemas";
 
 /**
  * Service interface for High-level Memory operations consumed by the TUI.

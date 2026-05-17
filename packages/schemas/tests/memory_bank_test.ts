@@ -13,7 +13,7 @@ import {
   type IExecutionMemory as IExecutionMemory,
   type IProjectMemory as IProjectMemory,
   ProjectMemorySchema,
-} from "@exaix/schemas/memory_bank.ts";
+} from "@exaix/schemas";
 
 Deno.test("ProjectMemorySchema: validates valid project memory", () => {
   const validProject: IProjectMemory = {
