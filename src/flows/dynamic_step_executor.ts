@@ -57,6 +57,8 @@ export interface IDynamicStepExecutorOptions {
   maxIterations?: number;
   /** Trace ID for Activity Journal correlation */
   traceId: string;
+  /** Config subset for runtime behaviour — if absent, defaults apply */
+  config?: { tools?: { confirmation_timeout_s?: number } };
 }
 
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -93,7 +95,7 @@ export class DynamicStepExecutor {
     private readonly mcpClient: IMcpClient & IToolManifestResolver,
     private readonly llmClient: ILlmClient,
     private readonly activityJournal: IActivityJournal,
-    private readonly confirmationInterceptor?: IToolConfirmationInterceptor,
+    readonly confirmationInterceptor?: IToolConfirmationInterceptor,
   ) {}
 
   async execute(
@@ -171,6 +173,7 @@ export class DynamicStepExecutor {
           decision.args ?? {},
           step.id,
           opts.traceId,
+          opts.config?.tools?.confirmation_timeout_s,
         );
         const approvalDecision = await this.confirmationInterceptor.requestApproval(confirmationRequest);
 
@@ -255,7 +258,7 @@ export class DynamicStepExecutor {
    * 2. Narrow to step's permitted_tools if specified
    * 3. Filter to READ_ONLY_TOOLS only (defensive runtime enforcement)
    */
-  private resolvePermittedTools(
+  protected resolvePermittedTools(
     step: IFlowStep,
     identity: IBlueprintFrontmatter,
   ): McpToolName[] {
@@ -294,10 +297,11 @@ export class DynamicStepExecutor {
     args: ToolArgs,
     stepId: string,
     traceId: string,
+    timeoutS?: number,
   ): ToolConfirmationRequest {
     const requestedAt = new Date();
     const expiresAt = new Date(
-      requestedAt.getTime() + DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S * 1000,
+      requestedAt.getTime() + (timeoutS ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000,
     );
 
     return {

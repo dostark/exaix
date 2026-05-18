@@ -23,7 +23,7 @@ const USER_DECLINED_REASON = "User declined";
 const TIMEOUT_REASON = "TIMEOUT";
 
 export class CliConfirmationInterceptor implements IToolConfirmationInterceptor {
-  private readonly timeoutMs: number;
+  readonly timeoutMs: number;
   private readonly readerFn: () => Promise<string | null>;
 
   constructor(

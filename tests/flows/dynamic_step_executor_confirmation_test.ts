@@ -17,7 +17,7 @@ import {
 import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
 import { McpToolName } from "@exaix/mcp";
 import { BlueprintFrontmatterSchema, type IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
-import { FlowStepSchema } from "@exaix/schemas/flow.ts";
+import { FlowStepSchema, type IFlowStep } from "@exaix/schemas/flow.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import {
   DynamicStepExecutor,
@@ -135,13 +135,6 @@ class RecordingConfirmationInterceptor implements IToolConfirmationInterceptor {
   }
 }
 
-type IDynamicStepExecutorWithResolvePermittedTools = DynamicStepExecutor & {
-  resolvePermittedTools: (
-    step: ReturnType<typeof createDynamicStep>,
-    identity: ReturnType<typeof createIdentity>,
-  ) => McpToolName[];
-};
-
 function createIdentity() {
   return BlueprintFrontmatterSchema.parse({
     identity_id: "senior-coder",
@@ -161,6 +154,15 @@ function createDynamicStep() {
     execution_mode: FlowStepExecutionMode.DYNAMIC,
     permitted_tools: [McpToolName.CREATE_REQUEST, McpToolName.LIST_PLANS, McpToolName.READ_FILE],
   });
+}
+
+class ApprovalForcingExecutor extends DynamicStepExecutor {
+  protected override resolvePermittedTools(
+    _step: IFlowStep,
+    _identity: IBlueprintFrontmatter,
+  ): McpToolName[] {
+    return [McpToolName.CREATE_REQUEST];
+  }
 }
 
 Deno.test("DynamicStepExecutor confirmation: approved approval-required tool executes", async () => {
@@ -256,10 +258,7 @@ Deno.test("DynamicStepExecutor confirmation: defensive throw when approval-requi
   llmClient.setDecisions([{ done: false, tool: McpToolName.CREATE_REQUEST, args: {} }]);
 
   const journal = new MockActivityJournal();
-  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal);
-
-  (executor as IDynamicStepExecutorWithResolvePermittedTools).resolvePermittedTools =
-    () => [McpToolName.CREATE_REQUEST];
+  const executor = new ApprovalForcingExecutor(mcpClient, llmClient, journal);
 
   await assertRejects(
     () => executor.execute(createDynamicStep(), createIdentity(), "input", { traceId: "trace-defensive" }),
@@ -293,4 +292,35 @@ Deno.test("DynamicStepExecutor confirmation: approval request timeout window use
   const requestedAt = new Date(request.requestedAt).getTime();
   const expiresAt = new Date(request.expiresAt).getTime();
   assertEquals(expiresAt - requestedAt, DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S * 1000);
+});
+
+Deno.test("DynamicStepExecutor confirmation: config override changes approval request timeout window", async () => {
+  const mcpClient = new MockMcpClient();
+  mcpClient.setRequiresApproval(McpToolName.CREATE_REQUEST, true);
+  mcpClient.setResponse(McpToolName.CREATE_REQUEST, "created");
+
+  const llmClient = new MockLlmClient();
+  llmClient.setDecisions([
+    { done: false, tool: McpToolName.CREATE_REQUEST, args: { title: "Config timeout test" } },
+    { done: true, output: "done" },
+  ]);
+
+  const journal = new MockActivityJournal();
+  const interceptor = new RecordingConfirmationInterceptor((request) => ({
+    id: request.id,
+    approved: true,
+    decidedAt: new Date().toISOString(),
+  }));
+
+  const executor = new DynamicStepExecutor(mcpClient, llmClient, journal, interceptor);
+
+  await executor.execute(createDynamicStep(), createIdentity(), "input", {
+    traceId: "trace-config-timeout",
+    config: { tools: { confirmation_timeout_s: 60 } },
+  });
+
+  const request = interceptor.getRequests()[0];
+  const requestedAt = new Date(request.requestedAt).getTime();
+  const expiresAt = new Date(request.expiresAt).getTime();
+  assertEquals(expiresAt - requestedAt, 60 * 1000, "expiresAt must reflect config override of 60 s");
 });
