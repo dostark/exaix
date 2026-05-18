@@ -142,6 +142,25 @@ export const NOTIFICATIONS_TABLE_SQL = `
   CREATE INDEX IF NOT EXISTS idx_notifications_proposal ON notifications(proposal_id);
 `;
 
+export const PENDING_TOOL_CONFIRMATIONS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS pending_tool_confirmations (
+    id TEXT PRIMARY KEY,
+    tool_name TEXT NOT NULL,
+    args_json TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    requested_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    approved INTEGER,
+    reason TEXT,
+    decided_at TEXT,
+    decided_by TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_trace ON pending_tool_confirmations(trace_id);
+  CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_decided ON pending_tool_confirmations(decided_at);
+  CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_requested ON pending_tool_confirmations(requested_at);
+`;
+
 /**
  * SQL for provider_costs table (from migration 004)
  */
@@ -196,6 +215,7 @@ export function initFullSchema(db: DatabaseService): void {
   db.instance.exec(ACTIVITY_JOURNAL_TABLE_SQL);
   db.instance.exec(REVIEWS_TABLE_SQL);
   db.instance.exec(NOTIFICATIONS_TABLE_SQL);
+  db.instance.exec(PENDING_TOOL_CONFIRMATIONS_TABLE_SQL);
   db.instance.exec(PROVIDER_COSTS_TABLE_SQL);
   db.instance.exec(ARTIFACTS_TABLE_SQL);
 }

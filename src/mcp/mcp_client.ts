@@ -7,12 +7,13 @@
  */
 import type { ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "../flows/dynamic_step_executor.ts";
+import { TOOL_MANIFEST } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
-import type { IApplicationContext } from "@exaix/core/types";
+import type { IApplicationContext, IToolManifestResolver } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
-export class McpClient implements IMcpClient {
+export class McpClient implements IMcpClient, IToolManifestResolver {
   private readonly tools: Map<string, ToolHandler>;
 
   constructor(
@@ -46,6 +47,10 @@ export class McpClient implements IMcpClient {
       .filter((c) => c.type === "text")
       .map((c) => (c as { type: string; text: string }).text)
       .join("\n");
+  }
+
+  requiresHumanApproval(tool: McpToolName): boolean {
+    return TOOL_MANIFEST.find((e) => e.name === tool)?.requires_human_approval ?? false;
   }
 
   getToolDefinitions(tools: McpToolName[]): Array<{

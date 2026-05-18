@@ -31,6 +31,10 @@ const mockContext: ICliApplicationContext = createStubContext({
     getActivitiesByActionType: () => [],
     getActivitiesByActionTypeSafe: () => Promise.resolve([]),
     getRecentActivity: () => Promise.resolve([]),
+    insertToolConfirmationRequest: () => Promise.resolve(),
+    writeToolConfirmationDecision: () => Promise.resolve(),
+    getToolConfirmationDecision: () => Promise.resolve(null),
+    listPendingToolConfirmations: () => Promise.resolve([]),
     close: () => Promise.resolve(),
     preparedGet: () => Promise.resolve(null),
     preparedAll: () => Promise.resolve([]),
@@ -117,6 +121,28 @@ Deno.test("McpClient - getAvailableToolNames returns all registered tool names",
 Deno.test("McpClient - getAvailableToolNames returns empty for empty client", () => {
   const client = new McpClient(mockContext, []);
   assertEquals(client.getAvailableToolNames(), []);
+});
+
+// ── IToolManifestResolver (Phase 79) ─────────────────────────────────────────
+
+Deno.test("McpClient - requiresHumanApproval returns true for exaix_create_request", () => {
+  const client = new McpClient(mockContext, []);
+  assertEquals(client.requiresHumanApproval(McpToolName.CREATE_REQUEST), true);
+});
+
+Deno.test("McpClient - requiresHumanApproval returns true for exaix_approve_plan", () => {
+  const client = new McpClient(mockContext, []);
+  assertEquals(client.requiresHumanApproval(McpToolName.APPROVE_PLAN), true);
+});
+
+Deno.test("McpClient - requiresHumanApproval returns false for read_file", () => {
+  const client = new McpClient(mockContext, []);
+  assertEquals(client.requiresHumanApproval(McpToolName.READ_FILE), false);
+});
+
+Deno.test("McpClient - requiresHumanApproval returns false for unknown tool name", () => {
+  const client = new McpClient(mockContext, []);
+  assertEquals(client.requiresHumanApproval("unknown_tool" as McpToolName), false);
 });
 
 Deno.test("McpClient - Map construction: tool not in map returns not found error", async () => {

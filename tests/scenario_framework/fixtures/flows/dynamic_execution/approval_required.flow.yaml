@@ -1,0 +1,20 @@
+# @schema-version: 1.0.0
+---
+id: "approval-required-dynamic"
+name: "Approval Required Tool in Dynamic Mode"
+description: "Test flow that allows an approval-required domain tool in dynamic mode"
+version: "1.0.0"
+output:
+  from: step
+  step: approval-attempt
+  format: markdown
+steps:
+  - id: "approval-attempt"
+    name: "Attempt approval-gated request creation in dynamic mode"
+    identity: "senior-coder"
+    execution_mode: "dynamic"
+    permitted_tools:
+      - exaix_create_request
+    input:
+      source: "request"
+    timeout: 60000

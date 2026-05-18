@@ -7,6 +7,7 @@
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
+import type { IToolManifestResolver } from "@exaix/core/types";
 import { DYNAMIC_MODE_TOOLS, McpToolName, TOOL_MANIFEST } from "@exaix/mcp";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
@@ -23,7 +24,7 @@ import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 
 // ── Minimal stubs ──────────────────────────────────────────────────────────────
 
-class CapturingMcpClient implements IMcpClient {
+class CapturingMcpClient implements IMcpClient, IToolManifestResolver {
   capturedTools: McpToolName[] = [];
 
   callTool(_tool: McpToolName, _args: ToolArgs): Promise<string> {
@@ -41,6 +42,10 @@ class CapturingMcpClient implements IMcpClient {
       description: `Description of ${t}`,
       inputSchema: { type: "object" as const, properties: {} },
     }));
+  }
+
+  requiresHumanApproval(_tool: McpToolName): boolean {
+    return false;
   }
 }
 

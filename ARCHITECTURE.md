@@ -2599,6 +2599,19 @@ graph TB
 | **Full Traceability**     | Every ReAct iteration logged with same trace ID as parent flow  |
 | **Cost Control**          | Iteration limit prevents infinite loops and excessive token use |
 
+### Tool Confirmation Interceptor Flow
+
+Phase 79 extends dynamic execution to support approval-required domain tools without widening the default dynamic boundary.
+
+- `FlowRunner` chooses the confirmation path at runtime before it constructs `DynamicStepExecutor`.
+- In daemon or notification-capable contexts, `NotificationQueueConfirmationInterceptor` persists a pending confirmation row, emits a notification, and waits for a CLI or TUI decision.
+- In interactive CLI contexts without a notification service, `CliConfirmationInterceptor` prompts inline and returns an immediate decision.
+- `DynamicStepExecutor` still uses `DYNAMIC_MODE_TOOLS` when no interceptor is configured. When an interceptor is present, it expands the available surface to `DYNAMIC_MODE_TOOLS ∪ DYNAMIC_MODE_APPROVAL_TOOLS` and checks `requiresHumanApproval(tool)` before execution.
+- On approval, the tool call proceeds normally and the approval event is recorded in the activity journal.
+- On denial or timeout, the executor appends a denial observation back into the ReAct loop instead of throwing, preserving the existing `callTool(): Promise<string>` contract while logging `ToolErrorCode.PERMISSION_DENIED` for auditability.
+
+This keeps the Phase 77 safety invariant intact: approval-required tools are only callable when a confirmation interceptor is explicitly wired, and every approval or denial is traceable through the same flow trace ID.
+
 ### Blueprint Schema Extension
 
 Blueprints can declare permitted tools for dynamic execution:
@@ -2644,7 +2657,7 @@ The scenario framework provides comprehensive end-to-end testing for Exaix featu
 
 | Pack                 | Scenarios | Focus                                                      |
 | -------------------- | --------- | ---------------------------------------------------------- |
-| `dynamic_execution`  | 4         | Dynamic tool selection, ReAct loops, permission boundaries |
+| `dynamic_execution`  | 5         | Dynamic tool selection, ReAct loops, permission boundaries |
 | `mcp_tools_extended` | 5         | New MCP tool handlers in realistic workflows               |
 | `integration_e2e`    | 3         | End-to-end flows combining all new features                |
 

@@ -139,6 +139,8 @@ if (import.meta.main) {
       db: dbService,
     });
 
+    const notificationService = new NotificationService(config, dbService);
+
     // Create central application context
     const context: IApplicationContext = {
       config: configService,
@@ -146,6 +148,7 @@ if (import.meta.main) {
       provider: llmProvider,
       git: gitService,
       display: logger,
+      notificationService,
     };
 
     // Ensure required directories exist
@@ -214,7 +217,6 @@ if (import.meta.main) {
     const memoryBank = new MemoryBankService(config, dbService);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
-    const notificationService = new NotificationService(config, dbService);
     const autoApprovalService = new MemoryAutoApprovalService(config, memoryExtractor);
 
     const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance(

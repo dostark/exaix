@@ -41,9 +41,11 @@ import { RetryPolicy } from "@exaix/core/request/retry_policy.ts";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
 import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
+import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "../services/tool/mod.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
+  DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
@@ -559,7 +561,7 @@ export function toGateConfig(evaluate: IGateEvaluate): IGateConfig {
  */
 export class FlowRunner implements IFlowRunner {
   private conditionEvaluator: ConditionEvaluator;
-  private dynamicStepExecutor?: DynamicStepExecutor;
+  protected dynamicStepExecutor?: DynamicStepExecutor;
   private mcpClient?: McpClient;
   private agentExecutor: IAgentExecutor;
   private eventLogger: IFlowEventLogger;
@@ -633,7 +635,17 @@ export class FlowRunner implements IFlowRunner {
         : new McpClient(context, mcpHandlers!);
       this.mcpClient = mcpClient;
       const llmClient = new LlmClient(config);
-      this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
+      const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) *
+        1000;
+      const confirmationInterceptor = context.notificationService
+        ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
+        : new CliConfirmationInterceptor(activityJournal, confirmationTimeoutMs);
+      this.dynamicStepExecutor = new DynamicStepExecutor(
+        mcpClient,
+        llmClient,
+        activityJournal,
+        confirmationInterceptor,
+      );
     }
   }
 

@@ -119,11 +119,15 @@ Deno.test("[McpManifest] read/write classification sets are derived from manifes
   assertEquals([...derived.writeTools].sort(), expectedWrite);
 });
 
-Deno.test("[McpManifest] requires_human_approval tools are not dynamic_mode_allowed", () => {
-  const violations = TOOL_MANIFEST.filter(
+Deno.test("[McpManifest] requires_human_approval tools are dynamic_mode_allowed only for runtime-gated paths", () => {
+  const allowed = TOOL_MANIFEST.filter(
     (e) => e.requires_human_approval && e.dynamic_mode_allowed,
   );
-  assertEquals(violations.map((e) => e.name), [], "Human-approval tools must not be dynamic_mode_allowed");
+  assertEquals(
+    allowed.map((e) => e.name).sort(),
+    ["exaix_approve_plan", "exaix_create_request"],
+    "Only the Phase 79 approval-gated domain tools should be dynamic_mode_allowed while requiring human approval",
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

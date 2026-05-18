@@ -2176,6 +2176,18 @@ class MockDatabaseService {
   getRecentActivity(_limit?: number): Promise<ActivityRecord[]> {
     return Promise.resolve([]);
   }
+  insertToolConfirmationRequest(): Promise<void> {
+    return Promise.resolve();
+  }
+  writeToolConfirmationDecision(): Promise<void> {
+    return Promise.resolve();
+  }
+  getToolConfirmationDecision() {
+    return Promise.resolve(null);
+  }
+  listPendingToolConfirmations() {
+    return Promise.resolve([]);
+  }
 }
 
 Deno.test("[regression] FlowRunner: aggregates token usage across flow execution", async () => {

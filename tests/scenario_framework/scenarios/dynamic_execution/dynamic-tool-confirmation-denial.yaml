@@ -1,0 +1,66 @@
+schema_version: "1.0.0"
+id: "dynamic-tool-confirmation-denial"
+title: "Queued tool confirmation can be listed and denied"
+pack: "dynamic_execution"
+tags: ["dynamic", "tool-confirmation", "denial", "security"]
+request_fixture: "fixtures/requests/dynamic_execution/tool_confirmation_denial.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "setup-db"
+    type: "shell"
+    name: "Initialize workspace database"
+    command: "deno"
+    args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
+    output_criteria:
+      - id: "db-ready"
+        kind: "command-exit-code"
+        equals: 0
+
+  - id: "seed-confirmation"
+    type: "shell"
+    name: "Seed pending tool confirmation"
+    command: "deno"
+    args:
+      [
+        "run",
+        "-A",
+        "--config",
+        "$FRAMEWORK_HOME/../../deno.json",
+        "$FRAMEWORK_HOME/scripts/seed_tool_confirmation.ts",
+        "123e4567-e89b-42d3-a456-426614174000",
+      ]
+    output_criteria:
+      - id: "confirmation-seeded"
+        kind: "command-output-contains"
+        contains: ["seeded", "123e4567-e89b-42d3-a456-426614174000", "exaix_create_request"]
+
+  - id: "list-pending"
+    type: "exactl"
+    name: "List pending tool confirmations"
+    command: "tool"
+    args: ["pending"]
+    output_criteria:
+      - id: "pending-entry-visible"
+        kind: "command-output-contains"
+        contains: ["123e4567-e89b-42d3-a456-426614174000", "exaix_create_request", "dynamic-create-request"]
+
+  - id: "deny-confirmation"
+    type: "exactl"
+    name: "Deny pending tool confirmation"
+    command: "tool"
+    args: ["deny", "123e4567-e89b-42d3-a456-426614174000", "--reason", "Denied by scenario framework"]
+    output_criteria:
+      - id: "denial-confirmed"
+        kind: "command-output-contains"
+        contains: ["Tool confirmation denied", "123e4567-e89b-42d3-a456-426614174000"]
+
+  - id: "verify-empty-pending"
+    type: "exactl"
+    name: "Verify there are no remaining pending tool confirmations"
+    command: "tool"
+    args: ["pending"]
+    output_criteria:
+      - id: "no-pending-left"
+        kind: "command-output-contains"
+        contains: ["No pending tool confirmations."]

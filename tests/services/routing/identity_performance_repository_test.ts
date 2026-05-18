@@ -22,6 +22,10 @@ const makeStubDb = (records: IActivityRecord[]): IDatabaseService => ({
   getActivitiesByActionType: () => [],
   getActivitiesByActionTypeSafe: () => Promise.resolve([]),
   getRecentActivity: () => Promise.resolve(records),
+  insertToolConfirmationRequest: () => Promise.resolve(),
+  writeToolConfirmationDecision: () => Promise.resolve(),
+  getToolConfirmationDecision: () => Promise.resolve(null),
+  listPendingToolConfirmations: () => Promise.resolve([]),
 });
 
 Deno.test("[IdentityPerformanceRepository] aggregates performance by identity", async () => {

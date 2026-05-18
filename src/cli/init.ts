@@ -74,6 +74,10 @@ function createDatabaseStub(): IDatabaseService {
     getActivitiesByActionType: () => [],
     getActivitiesByActionTypeSafe: () => Promise.resolve([]),
     getRecentActivity: () => Promise.resolve([]),
+    insertToolConfirmationRequest: async () => {},
+    writeToolConfirmationDecision: async () => {},
+    getToolConfirmationDecision: () => Promise.resolve(null),
+    listPendingToolConfirmations: () => Promise.resolve([]),
   };
 }
 

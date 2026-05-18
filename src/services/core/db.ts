@@ -16,6 +16,7 @@ import { DB_MAX_RETRY_DELAY_MS, DEFAULT_QUERY_LIMIT } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
 import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 export type SqliteParam = string | number | boolean | null;
 
@@ -60,6 +61,20 @@ interface DatabaseConfigExtended {
   failure_threshold?: number;
   reset_timeout_ms?: number;
   half_open_success_threshold?: number;
+}
+
+interface ToolConfirmationRow {
+  id: string;
+  tool_name: string;
+  args_json: string;
+  step_id: string;
+  trace_id: string;
+  requested_at: string;
+  expires_at: string;
+  approved: number | null;
+  reason: string | null;
+  decided_at: string | null;
+  decided_by: string | null;
 }
 
 export type { IDatabaseService };
@@ -430,6 +445,89 @@ export class DatabaseService implements IDatabaseService {
     });
   }
 
+  async insertToolConfirmationRequest(request: ToolConfirmationRequest): Promise<void> {
+    await this.preparedRun(
+      `INSERT INTO pending_tool_confirmations (
+        id, tool_name, args_json, step_id, trace_id, requested_at, expires_at, approved, reason, decided_at, decided_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)`,
+      [
+        request.id,
+        request.toolName,
+        JSON.stringify(request.args),
+        request.stepId,
+        request.traceId,
+        request.requestedAt,
+        request.expiresAt,
+      ],
+    );
+  }
+
+  async writeToolConfirmationDecision(
+    id: string,
+    decision: Omit<ToolConfirmationDecision, "id">,
+  ): Promise<void> {
+    await this.preparedRun(
+      `UPDATE pending_tool_confirmations
+       SET approved = ?, reason = ?, decided_at = ?, decided_by = ?
+       WHERE id = ?`,
+      [
+        decision.approved ? 1 : 0,
+        decision.reason ?? null,
+        decision.decidedAt,
+        decision.decidedBy ?? null,
+        id,
+      ],
+    );
+  }
+
+  async getToolConfirmationDecision(id: string): Promise<ToolConfirmationDecision | null> {
+    const row = await this.preparedGet<ToolConfirmationRow>(
+      `SELECT id, tool_name, args_json, step_id, trace_id, requested_at, expires_at, approved, reason, decided_at, decided_by
+       FROM pending_tool_confirmations
+       WHERE id = ?`,
+      [id],
+    );
+
+    if (row == null || row.decided_at === null || row.approved === null) {
+      return null;
+    }
+
+    const decision: ToolConfirmationDecision = {
+      id: row.id,
+      approved: row.approved === 1,
+      decidedAt: row.decided_at,
+    };
+
+    if (row.reason !== null) {
+      decision.reason = row.reason;
+    }
+
+    if (row.decided_by !== null) {
+      decision.decidedBy = row.decided_by;
+    }
+
+    return decision;
+  }
+
+  async listPendingToolConfirmations(): Promise<ToolConfirmationRequest[]> {
+    const rows = await this.preparedAll<ToolConfirmationRow>(
+      `SELECT id, tool_name, args_json, step_id, trace_id, requested_at, expires_at, approved, reason, decided_at, decided_by
+       FROM pending_tool_confirmations
+       WHERE decided_at IS NULL
+       ORDER BY requested_at ASC`,
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      toolName: row.tool_name,
+      args: this.parseToolConfirmationArgs(row.args_json),
+      stepId: row.step_id,
+      traceId: row.trace_id,
+      requestedAt: row.requested_at,
+      expiresAt: row.expires_at,
+    }));
+  }
+
   /**
    * Query activity journal with flexible filters
    */
@@ -558,6 +656,14 @@ export class DatabaseService implements IDatabaseService {
     }
 
     return conditions.join(" AND ");
+  }
+
+  private parseToolConfirmationArgs(argsJson: string): Record<string, JSONValue> {
+    const parsed = JSON.parse(argsJson);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("Stored tool confirmation args must be a JSON object");
+    }
+    return parsed as Record<string, JSONValue>;
   }
 }
 

@@ -8,6 +8,7 @@
 
 import type { JSONValue } from "@exaix/core";
 import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
+import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 export interface IDatabaseService {
   /**
@@ -81,4 +82,27 @@ export interface IDatabaseService {
    * Get recently recorded activities.
    */
   getRecentActivity(limit?: number): Promise<IActivityRecord[]>;
+
+  /**
+   * Persist a pending tool confirmation request.
+   */
+  insertToolConfirmationRequest(request: ToolConfirmationRequest): Promise<void>;
+
+  /**
+   * Persist a decision for a previously queued tool confirmation request.
+   */
+  writeToolConfirmationDecision(
+    id: string,
+    decision: Omit<ToolConfirmationDecision, "id">,
+  ): Promise<void>;
+
+  /**
+   * Retrieve a persisted tool confirmation decision.
+   */
+  getToolConfirmationDecision(id: string): Promise<ToolConfirmationDecision | null>;
+
+  /**
+   * List tool confirmation requests that are still awaiting a decision.
+   */
+  listPendingToolConfirmations(): Promise<ToolConfirmationRequest[]>;
 }

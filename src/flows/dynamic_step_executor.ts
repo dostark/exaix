@@ -10,10 +10,18 @@
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
-import { FlowStepExecutionMode } from "@exaix/core";
-import { DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
+import {
+  DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S,
+  FlowStepExecutionMode,
+  TOOL_CONFIRMATION_EVENT_APPROVED,
+  TOOL_CONFIRMATION_EVENT_DENIED,
+  ToolErrorCode,
+} from "@exaix/core";
+import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
+import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
+import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 /**
  * Journal entry for activity logging
@@ -49,6 +57,8 @@ export interface IDynamicStepExecutorOptions {
   maxIterations?: number;
   /** Trace ID for Activity Journal correlation */
   traceId: string;
+  /** Config subset for runtime behaviour — if absent, defaults apply */
+  config?: { tools?: { confirmation_timeout_s?: number } };
 }
 
 const DEFAULT_MAX_ITERATIONS = 10;
@@ -82,9 +92,10 @@ export interface IActivityJournal {
  */
 export class DynamicStepExecutor {
   constructor(
-    private readonly mcpClient: IMcpClient,
+    private readonly mcpClient: IMcpClient & IToolManifestResolver,
     private readonly llmClient: ILlmClient,
     private readonly activityJournal: IActivityJournal,
+    readonly confirmationInterceptor?: IToolConfirmationInterceptor,
   ) {}
 
   async execute(
@@ -150,6 +161,50 @@ export class DynamicStepExecutor {
         );
       }
 
+      if (this.mcpClient.requiresHumanApproval(decision.tool)) {
+        if (!this.confirmationInterceptor) {
+          throw new Error(
+            `Dynamic step "${step.id}": tool "${decision.tool}" requires human approval but no confirmation interceptor is configured`,
+          );
+        }
+
+        const confirmationRequest = this.createConfirmationRequest(
+          decision.tool,
+          decision.args ?? {},
+          step.id,
+          opts.traceId,
+          opts.config?.tools?.confirmation_timeout_s,
+        );
+        const approvalDecision = await this.confirmationInterceptor.requestApproval(confirmationRequest);
+
+        if (!approvalDecision.approved) {
+          const denialText = this.formatDenialObservation(decision.tool, approvalDecision.reason);
+
+          await this.activityJournal.log({
+            traceId: opts.traceId,
+            stepId: step.id,
+            event: TOOL_CONFIRMATION_EVENT_DENIED,
+            tool: decision.tool,
+            confirmationId: confirmationRequest.id,
+            toolErrorCode: ToolErrorCode.PERMISSION_DENIED,
+            ...(approvalDecision.reason !== undefined ? { reason: approvalDecision.reason } : {}),
+            ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
+          });
+
+          context = this.appendObservation(context, decision.tool, denialText);
+          continue;
+        }
+
+        await this.activityJournal.log({
+          traceId: opts.traceId,
+          stepId: step.id,
+          event: TOOL_CONFIRMATION_EVENT_APPROVED,
+          tool: decision.tool,
+          confirmationId: confirmationRequest.id,
+          ...(approvalDecision.decidedBy !== undefined ? { decidedBy: approvalDecision.decidedBy } : {}),
+        });
+      }
+
       // Execute the tool call
       const toolResult = await this.mcpClient.callTool(
         decision.tool,
@@ -203,16 +258,22 @@ export class DynamicStepExecutor {
    * 2. Narrow to step's permitted_tools if specified
    * 3. Filter to READ_ONLY_TOOLS only (defensive runtime enforcement)
    */
-  private resolvePermittedTools(
+  protected resolvePermittedTools(
     step: IFlowStep,
     identity: IBlueprintFrontmatter,
   ): McpToolName[] {
     const identityTools = new Set(identity.permitted_tools ?? []);
+    const allowedDynamicTools = this.confirmationInterceptor
+      ? new Set<McpToolName>([
+        ...([...DYNAMIC_MODE_TOOLS] as McpToolName[]),
+        ...([...DYNAMIC_MODE_APPROVAL_TOOLS] as McpToolName[]),
+      ])
+      : new Set<McpToolName>([...DYNAMIC_MODE_TOOLS] as McpToolName[]);
 
     const stepTools = step.permitted_tools?.length ? step.permitted_tools : [...identityTools];
 
-    return stepTools.filter((tool) => {
-      const isAllowed = DYNAMIC_MODE_TOOLS.has(tool) && identityTools.has(tool);
+    return stepTools.filter((tool: McpToolName) => {
+      const isAllowed = allowedDynamicTools.has(tool) && identityTools.has(tool);
       if (!isAllowed) {
         console.warn(
           `Dynamic step "${step.id}": tool "${tool}" filtered out at runtime ` +
@@ -229,5 +290,32 @@ export class DynamicStepExecutor {
     result: string,
   ): string {
     return `${context}\n\n[Tool: ${tool}]\n${result}`;
+  }
+
+  private createConfirmationRequest(
+    tool: McpToolName,
+    args: ToolArgs,
+    stepId: string,
+    traceId: string,
+    timeoutS?: number,
+  ): ToolConfirmationRequest {
+    const requestedAt = new Date();
+    const expiresAt = new Date(
+      requestedAt.getTime() + (timeoutS ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) * 1000,
+    );
+
+    return {
+      id: crypto.randomUUID(),
+      toolName: tool,
+      args,
+      stepId,
+      traceId,
+      requestedAt: requestedAt.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  private formatDenialObservation(tool: McpToolName, reason?: string): string {
+    return `Tool '${tool}' call denied: ${reason ?? "User declined"}`;
   }
 }
