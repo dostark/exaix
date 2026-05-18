@@ -119,8 +119,8 @@ Deno.test("ToolManifest: mutating domain tools require human approval", () => {
     );
     assertEquals(
       entry!.dynamic_mode_allowed,
-      false,
-      `Mutating domain tool '${toolName}' must have dynamic_mode_allowed: false`,
+      true,
+      `Mutating domain tool '${toolName}' must have dynamic_mode_allowed: true so Phase 79 can gate it at runtime`,
     );
   }
 });

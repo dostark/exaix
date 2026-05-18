@@ -96,6 +96,28 @@ CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
 CREATE INDEX IF NOT EXISTS idx_notifications_dismissed ON notifications(dismissed_at);
 CREATE INDEX IF NOT EXISTS idx_notifications_proposal ON notifications(proposal_id);
 
+-- ==========================================================================
+-- Tool Confirmation Queue
+-- ==========================================================================
+
+CREATE TABLE IF NOT EXISTS pending_tool_confirmations (
+  id TEXT PRIMARY KEY,
+  tool_name TEXT NOT NULL,
+  args_json TEXT NOT NULL,
+  step_id TEXT NOT NULL,
+  trace_id TEXT NOT NULL,
+  requested_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  approved INTEGER,
+  reason TEXT,
+  decided_at TEXT,
+  decided_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_trace ON pending_tool_confirmations(trace_id);
+CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_decided ON pending_tool_confirmations(decided_at);
+CREATE INDEX IF NOT EXISTS idx_pending_tool_confirmations_requested ON pending_tool_confirmations(requested_at);
+
 -- ============================================================================
 -- Provider Cost Tracking
 -- ============================================================================
@@ -146,6 +168,7 @@ CREATE INDEX IF NOT EXISTS idx_artifacts_created ON artifacts(created DESC);
 -- down
 DROP TABLE IF EXISTS artifacts;
 DROP TABLE IF EXISTS provider_costs;
+DROP TABLE IF EXISTS pending_tool_confirmations;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS leases;

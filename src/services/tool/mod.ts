@@ -8,4 +8,6 @@
 
 export * from "./tool_registry.ts";
 export * from "./tool_reflector.ts";
+export * from "./cli_confirmation_interceptor.ts";
+export * from "./notification_queue_confirmation_interceptor.ts";
 export type { IToolCall as OutputValidationToolCall } from "./output_validator.ts";

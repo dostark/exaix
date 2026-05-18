@@ -29,6 +29,7 @@ import type { IToolRegistry } from "./i_tool_registry.ts";
 import type { IGateEvaluator } from "./i_gate_evaluator.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "./i_portal_knowledge_service.ts";
 import type { ICostTracker } from "./i_cost_tracker.ts";
+import type { INotificationService } from "./i_notification_service.ts";
 
 /**
  * Generic application context for dependency injection
@@ -99,6 +100,9 @@ export interface IApplicationContext {
 
   /** Optional cost and token tracking service */
   cost?: ICostTracker;
+
+  /** Optional notification service for human-in-the-loop and TUI/daemon flows */
+  notificationService?: INotificationService;
 }
 
 // Re-export types for convenience
@@ -116,6 +120,7 @@ export type {
   IMemoryEmbeddingService,
   IMemoryExtractorService,
   IMemoryService,
+  INotificationService,
   IPlanAmendmentService,
   IPlanService,
   IPortalKnowledgeConfig,

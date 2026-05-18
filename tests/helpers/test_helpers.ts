@@ -8,6 +8,7 @@
 import type { IDatabaseService } from "../../src/services/core/db.ts";
 import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
+import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
@@ -62,6 +63,10 @@ export function createStubDb(overrides: Partial<IDatabaseService> = {}): IDataba
       return [];
     },
     getRecentActivity: (_limit?: number) => Promise.resolve([]),
+    insertToolConfirmationRequest: (_request: ToolConfirmationRequest) => Promise.resolve(),
+    writeToolConfirmationDecision: (_id: string, _decision: Omit<ToolConfirmationDecision, "id">) => Promise.resolve(),
+    getToolConfirmationDecision: (_id: string) => Promise.resolve(null),
+    listPendingToolConfirmations: () => Promise.resolve([]),
     close: () => Promise.resolve(),
   };
 

@@ -41,6 +41,7 @@ import { RetryPolicy } from "@exaix/core/request/retry_policy.ts";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
 import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
+import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "../services/tool/mod.ts";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
@@ -633,7 +634,15 @@ export class FlowRunner implements IFlowRunner {
         : new McpClient(context, mcpHandlers!);
       this.mcpClient = mcpClient;
       const llmClient = new LlmClient(config);
-      this.dynamicStepExecutor = new DynamicStepExecutor(mcpClient, llmClient, activityJournal);
+      const confirmationInterceptor = context.notificationService
+        ? new NotificationQueueConfirmationInterceptor(context.db, context.notificationService, activityJournal)
+        : new CliConfirmationInterceptor(activityJournal);
+      this.dynamicStepExecutor = new DynamicStepExecutor(
+        mcpClient,
+        llmClient,
+        activityJournal,
+        confirmationInterceptor,
+      );
     }
   }
 

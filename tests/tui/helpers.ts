@@ -516,6 +516,18 @@ class MockDatabaseService implements IDatabaseService, IJournalService {
   getRecentActivity(limit: number = 100): Promise<IActivityRecord[]> {
     return Promise.resolve(this._activityRecords.slice(-limit).reverse());
   }
+  insertToolConfirmationRequest(): Promise<void> {
+    return Promise.resolve();
+  }
+  writeToolConfirmationDecision(): Promise<void> {
+    return Promise.resolve();
+  }
+  getToolConfirmationDecision() {
+    return Promise.resolve(null);
+  }
+  listPendingToolConfirmations() {
+    return Promise.resolve([]);
+  }
   // Test-only method used in some tests
   addLog(log: IActivityRecord) {
     this._activityRecords.push(log);

@@ -273,6 +273,22 @@ export class MockLogService implements IDatabaseService, IJournalService {
   getRecentActivity(_limit?: number): Promise<IActivityRecord[]> {
     return Promise.resolve([]);
   }
+
+  insertToolConfirmationRequest(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  writeToolConfirmationDecision(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  getToolConfirmationDecision(): Promise<null> {
+    return Promise.resolve(null);
+  }
+
+  listPendingToolConfirmations(): Promise<[]> {
+    return Promise.resolve([]);
+  }
 }
 
 /**

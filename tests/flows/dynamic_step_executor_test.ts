@@ -8,6 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
+import type { IToolManifestResolver } from "@exaix/core/types";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
@@ -21,7 +22,7 @@ import {
 /**
  * Mock implementations for dependencies
  */
-class MockMcpClient implements IMcpClient {
+class MockMcpClient implements IMcpClient, IToolManifestResolver {
   private callHistory: Array<{ tool: McpToolName; args: ToolArgs }> = [];
   private responses: Map<string, string> = new Map();
 
@@ -44,6 +45,10 @@ class MockMcpClient implements IMcpClient {
       description: `Description of ${t}`,
       inputSchema: { type: "object" as const, properties: {} },
     }));
+  }
+
+  requiresHumanApproval(_tool: McpToolName): boolean {
+    return false;
   }
 
   reset() {

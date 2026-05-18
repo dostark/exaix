@@ -20,6 +20,7 @@ import { MemoryCommands } from "./commands/memory_commands.ts";
 import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
 import { RoutingCommands } from "./commands/routing_commands.ts";
+import { ToolCommands } from "./commands/tool_commands.ts";
 import {
   FlowInputSource,
   GeneralStatus,
@@ -111,6 +112,7 @@ const daemonCommands = new DaemonCommands(fullContext);
 const portalCommands = new PortalCommands(fullContext);
 const blueprintCommands = new BlueprintCommands(fullContext);
 const routingCommands = new RoutingCommands(fullContext);
+const toolCommands = new ToolCommands(fullContext);
 const flowCommands = new FlowCommands(fullContext);
 const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
@@ -133,6 +135,7 @@ export function __test_getContext(): {
   portalCommands: typeof portalCommands;
   blueprintCommands: typeof blueprintCommands;
   flowCommands: typeof flowCommands;
+  toolCommands: typeof toolCommands;
   dashboardCommands: typeof dashboardCommands;
   memoryCommands: typeof memoryCommands;
   watchCommand: typeof watchCommandInstance;
@@ -153,6 +156,7 @@ export function __test_getContext(): {
     portalCommands,
     blueprintCommands,
     flowCommands,
+    toolCommands,
     dashboardCommands,
     memoryCommands,
     watchCommand: watchCommandInstance,
@@ -1975,6 +1979,42 @@ const migrateCommand = new Command()
   );
 
 __test_command.command("migrate", migrateCommand);
+
+// ---------------------------------------------------------------------------
+// tool subcommand (Phase 79: Tool Confirmation CLI)
+// ---------------------------------------------------------------------------
+
+const toolCommand = new Command()
+  .description("Manage pending tool confirmations")
+  .command(
+    "pending",
+    new Command()
+      .description("List pending tool confirmations")
+      .action(async () => {
+        await toolCommands.pending();
+      }),
+  )
+  .command(
+    "confirm <id:string>",
+    new Command()
+      .description("Approve a pending tool confirmation")
+      .action(async (_options, ...args: string[]) => {
+        const id = args[0];
+        await toolCommands.confirm(id);
+      }),
+  )
+  .command(
+    "deny <id:string>",
+    new Command()
+      .description("Deny a pending tool confirmation")
+      .option(CLI_OPTION_REASON, "Reason for denial", { default: "User declined" })
+      .action(async (options: { reason: string }, ...args: string[]) => {
+        const id = args[0];
+        await toolCommands.deny(id, options.reason as string);
+      }),
+  );
+
+__test_command.command("tool", toolCommand);
 
 // ---------------------------------------------------------------------------
 // skills subcommand alias (Phase 70: Wiring Skills Service)
