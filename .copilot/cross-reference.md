@@ -172,6 +172,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - Testing guidelines: [guidelines/testing.md](guidelines/testing.md)
 - Development guidelines: [guidelines/exaix-development.md](guidelines/exaix-development.md)
 - Self-improvement process: [guidelines/self-improvement.md](guidelines/self-improvement.md)
+- Tool confirmation / human-in-loop: [exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md](../exaix-dev-docs/planning/phase-79-tool-confirmation-interceptor.md), `src/services/tool/cli_confirmation_interceptor.ts`, `src/services/tool/notification_queue_confirmation_interceptor.ts`
 
 ## Directory Structure
 

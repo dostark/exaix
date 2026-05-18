@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T12:39:09.766Z",
+  "generated_at": "2026-05-18T14:00:52.949Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1023,7 +1023,8 @@
         ".copilot/chunks/cross-reference.md.chunk2.txt",
         ".copilot/chunks/cross-reference.md.chunk3.txt",
         ".copilot/chunks/cross-reference.md.chunk4.txt",
-        ".copilot/chunks/cross-reference.md.chunk5.txt"
+        ".copilot/chunks/cross-reference.md.chunk5.txt",
+        ".copilot/chunks/cross-reference.md.chunk6.txt"
       ]
     },
     {
