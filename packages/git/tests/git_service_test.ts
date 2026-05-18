@@ -18,8 +18,8 @@ import {
   GitService,
 } from "../src/git_service.ts";
 import { DEFAULT_GIT_EXIT_CODE_FATAL } from "@exaix/git";
-import { createMockConfig } from "./helpers/config.ts";
-import { createGitTestContext, GitTestHelper } from "./helpers/git_test_helper.ts";
+import { createGitTestContext, GitTestHelper } from "@exaix/git/testing";
+import { createMockConfig } from "@exaix/git/testing";
 
 /**
  * Tests for Step 4.2: Git Integration (Identity Aware)

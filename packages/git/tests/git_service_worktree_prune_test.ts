@@ -8,11 +8,14 @@
 import { assert, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import {
+  createMockConfig,
+  GitTestHelper,
+  initTestDbService,
+  setupGitRepo,
+  TEST_DEFAULT_BRANCH,
+} from "@exaix/git/testing";
 import { GitService } from "../src/git_service.ts";
-import { createMockConfig } from "./helpers/config.ts";
-import { initTestDbService } from "./helpers/db.ts";
-import { GitTestHelper, setupGitRepo } from "./helpers/git_test_helper.ts";
-import { TEST_DEFAULT_BRANCH } from "./helpers/constants.ts";
 
 Deno.test("GitService: pruneWorktrees removes stale worktree metadata", async () => {
   const dbService = await initTestDbService();

@@ -1,6 +1,6 @@
 /**
  * @module GitService
- * @path src/services/core/git_service.ts
+ * @path packages/git/src/git_service.ts
  * @description Orchestrates Git operations with trace metadata.
  *
  * Features:
