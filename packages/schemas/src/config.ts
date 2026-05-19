@@ -65,7 +65,8 @@ import {
   SqliteJournalMode,
 } from "@exaix/core";
 import type { PortalOperation } from "@exaix/core";
-import { AnalysisMode, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 
 import { PortalPermissionsSchema } from "./portal_permissions.ts";
 import { ZBudgetPolicy } from "./prompt_budget.ts";

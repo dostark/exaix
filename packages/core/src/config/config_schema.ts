@@ -67,7 +67,8 @@ import {
   SecurityMode,
   SqliteJournalMode,
 } from "@exaix/core";
-import { AnalysisMode, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 
 export interface IPortalConfig {
   alias: string;

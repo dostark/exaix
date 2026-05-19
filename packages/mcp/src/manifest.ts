@@ -5,7 +5,7 @@
  * tools. This is the single source of truth for registration, classification, docs visibility,
  * dynamic-execution policy, and agent-quality metadata.
  * @architectural-layer MCP
- * @related-files [src/mcp/tools.ts, src/mcp/server.ts, packages/mcp/src/enums.ts]
+ * @related-files [packages/mcp/server/tools.ts, packages/mcp/server/server.ts, packages/mcp/src/enums.ts]
  */
 
 import { JsonSchemaType, McpToolName, ToolCategory, ToolKind, ToolSideEffectScope } from "@exaix/core";
@@ -83,7 +83,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/read_file_tool.ts",
+    source_ref: "packages/mcp/server/handlers/read_file_tool.ts",
     description:
       "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
     output_schema: {
@@ -103,7 +103,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/write_file_tool.ts",
+    source_ref: "packages/mcp/server/handlers/write_file_tool.ts",
     description:
       "Write or overwrite the full content of a file inside a portal. Use when you need to create a new file or completely replace an existing file. For partial edits use patch_file. Returns a success confirmation message.",
     output_schema: {
@@ -123,7 +123,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/patch_file_tool.ts",
+    source_ref: "packages/mcp/server/handlers/patch_file_tool.ts",
     description:
       "Apply a targeted patch to replace a specific substring in a file without rewriting the whole file. Use when you need to make a minimal change. For full rewrites use write_file. Returns a success confirmation message.",
     output_schema: {
@@ -143,7 +143,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/delete_file_tool.ts",
+    source_ref: "packages/mcp/server/handlers/delete_file_tool.ts",
     description:
       "Permanently delete a file inside a portal. Use only when you are certain the file is no longer needed; the operation is irreversible unless the portal is under git version control. Returns a success confirmation message.",
     output_schema: {
@@ -163,7 +163,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/move_file_tool.ts",
+    source_ref: "packages/mcp/server/handlers/move_file_tool.ts",
     description:
       "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
     output_schema: {
@@ -183,7 +183,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/create_directory_tool.ts",
+    source_ref: "packages/mcp/server/handlers/create_directory_tool.ts",
     description:
       "Create a directory (and any missing parent directories) inside a portal. Use before writing files into a directory that may not exist yet. Safe to call if the directory already exists. Returns a success confirmation message.",
     output_schema: {
@@ -203,7 +203,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/list_directory_tool.ts",
+    source_ref: "packages/mcp/server/handlers/list_directory_tool.ts",
     description:
       "List the files and subdirectories at a path inside a portal. Use to check whether a file exists, explore directory structure, or enumerate files before processing. Returns an array of entry names.",
     output_schema: {
@@ -224,7 +224,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/search_files_tool.ts",
+    source_ref: "packages/mcp/server/handlers/search_files_tool.ts",
     description:
       "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search. Returns an array of matching relative file paths.",
     output_schema: {
@@ -247,7 +247,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/git_create_branch_tool.ts",
+    source_ref: "packages/mcp/server/handlers/git_create_branch_tool.ts",
     description:
       "Create a new git branch in the portal repository. Use before making changes that should be isolated on a branch. Returns the new branch name on success.",
     output_schema: {
@@ -267,7 +267,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/git_commit_tool.ts",
+    source_ref: "packages/mcp/server/handlers/git_commit_tool.ts",
     description:
       "Stage all changes and create a git commit in the portal repository. Use after writing or modifying files to record the change. Returns the commit hash of the newly created commit.",
     output_schema: {
@@ -287,7 +287,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/git_status_tool.ts",
+    source_ref: "packages/mcp/server/handlers/git_status_tool.ts",
     description:
       "Show the working tree status (modified, staged, untracked files) of the portal git repository. Use to inspect pending changes before committing. Returns the git status output as a formatted string.",
     output_schema: {
@@ -307,7 +307,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: false,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/handlers/run_command_tool.ts",
+    source_ref: "packages/mcp/server/handlers/run_command_tool.ts",
     description:
       "Execute a shell command inside the portal working directory. Use for build tasks, test runners, or any operation not covered by dedicated tools. Returns combined stdout/stderr output and exit code.",
     output_schema: {
@@ -334,7 +334,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "src/mcp/domain_tools.ts",
+    source_ref: "packages/mcp/server/domain_tools.ts",
     description:
       "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79. Returns the created request record with its assigned ID.",
     output_schema: {
@@ -359,7 +359,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/domain_tools.ts",
+    source_ref: "packages/mcp/server/domain_tools.ts",
     description:
       "List all execution plans (active, draft, or completed) tracked in the Exaix workspace. Read-only; safe for dynamic execution. Use to check plan status or find a plan ID before approving or querying. Returns an array of plan summary objects.",
     output_schema: {
@@ -387,7 +387,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: true,
     docs_visible: true,
-    source_ref: "src/mcp/domain_tools.ts",
+    source_ref: "packages/mcp/server/domain_tools.ts",
     description:
       "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation in Phase 79. Returns the updated plan record.",
     output_schema: {
@@ -411,7 +411,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     dynamic_mode_allowed: true,
     requires_human_approval: false,
     docs_visible: true,
-    source_ref: "src/mcp/domain_tools.ts",
+    source_ref: "packages/mcp/server/domain_tools.ts",
     description:
       "Query the Exaix activity journal for execution history, tool calls, or agent events. Read-only; safe for dynamic execution. Use to audit what happened or look up recent activity in a flow. Returns an array of matching journal entry records.",
     output_schema: {

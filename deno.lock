@@ -1180,6 +1180,13 @@
           "jsr:@std/yaml@^1.1.0"
         ]
       },
+      "packages/storage-sqlite": {
+        "dependencies": [
+          "jsr:@db/sqlite@0.13",
+          "jsr:@std/fs@^1.0.23",
+          "jsr:@std/path@^1.1.4"
+        ]
+      },
       "packages/testing": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19"

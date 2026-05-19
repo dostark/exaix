@@ -1,9 +1,9 @@
 /**
  * @module Database
- * @path @exaix/core/types/database.ts
+ * @path packages/core/src/types/database.ts
  * @description Module for Database.
  * @architectural-layer Shared
- * @related-files ["src/services/core/db.ts"]
+ * @related-files ["packages/storage-sqlite/src/database_service.ts"]
  */
 
 /**

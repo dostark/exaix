@@ -16,14 +16,8 @@ import { LlamaProvider } from "./providers/llama_provider.ts";
 
 import type { z } from "zod";
 import type { ICostTracker, IDatabaseService, JSONValue } from "@exaix/core";
-import {
-  ConfigSource,
-  createAPIRetryPolicy,
-  type MockStrategy,
-  PricingTier,
-  ProviderType,
-  RetryPolicy,
-} from "@exaix/core";
+import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
+import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core/request";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";
 import { GoogleProviderFactory } from "./factories/google_factory.ts";

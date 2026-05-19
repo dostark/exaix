@@ -3,10 +3,10 @@
  * @path src/shared/interfaces/i_plan_service.ts
  * @description Module for IplanService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/plan.ts]
+ * @related-files [@exaix/core/types]
  */
 
-import type { PlanStatusType } from "@exaix/core";
+import type { PlanStatusType } from "@exaix/core/status";
 
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 

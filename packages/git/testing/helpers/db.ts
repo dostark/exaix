@@ -4,7 +4,7 @@
  * @description Minimal database helpers for git test support.
  */
 
-import { DatabaseService } from "../../../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas";
 
 import { createMockConfig } from "./config.ts";

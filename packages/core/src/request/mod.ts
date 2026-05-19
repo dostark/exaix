@@ -6,3 +6,4 @@
 
 export * from "./request.ts";
 export * from "./request_frontmatter.ts";
+export * from "./retry_policy.ts";

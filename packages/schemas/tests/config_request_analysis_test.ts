@@ -10,7 +10,8 @@
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
 
-import { AnalysisMode, ExaPathDefaults, LogLevel } from "@exaix/core";
+import { ExaPathDefaults, LogLevel } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 
 // ---------------------------------------------------------------------------
 // Minimal valid config base (only truly required fields — system + paths)

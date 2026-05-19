@@ -1,9 +1,9 @@
 /**
  * @module Logging
- * @path @exaix/core/types/logging.ts
+ * @path @exaix/core/types
  * @description Module for Logging.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/i_log_service.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { LogLevel, LogMetadata } from "@exaix/core";

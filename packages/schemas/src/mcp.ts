@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { PLAN_STATUS_VALUES } from "@exaix/core";
+import { PLAN_STATUS_VALUES } from "@exaix/core/status";
 import {
   DEFAULT_AGENT_MODEL,
   DEFAULT_MCP_IDENTITY_ID,

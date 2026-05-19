@@ -9,7 +9,8 @@
  */
 
 import { assertEquals, assertStrictEquals } from "@std/assert";
-import { coerceRequestStatus, isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "@exaix/core";
+import { coerceRequestStatus } from "@exaix/core/status";
+import { isRequestStatus, REQUEST_STATUS_VALUES, RequestStatus } from "@exaix/core/status";
 
 Deno.test("[RequestStatus] includes all original values", () => {
   assertStrictEquals(RequestStatus.PENDING, "pending");

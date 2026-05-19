@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_daemon_service.ts
  * @description Module for IdaemonService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/daemon.ts]
+ * @related-files [@exaix/core/types]
  */
 import type { DaemonStatus } from "@exaix/core";
 

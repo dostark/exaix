@@ -6,15 +6,15 @@
  * @related-files [@exaix/core/types]
  */
 
+import type { RequestSource } from "@exaix/core";
 import type {
   AnalysisMode,
   IRequestEntry,
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-  RequestSource,
-  RequestStatusType,
-} from "@exaix/core";
+} from "@exaix/core/request";
+import type { RequestStatusType } from "@exaix/core/status";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 

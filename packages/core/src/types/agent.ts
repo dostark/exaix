@@ -3,10 +3,11 @@
  * @path packages/core/src/types/agent.ts
  * @description Module for Agent.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/i_agent_service.ts]
+ * @related-files [@exaix/core/types]
  */
 
-import type { AgentHealth, AgentStatusType, LogLevel } from "@exaix/core";
+import type { AgentHealth, LogLevel } from "@exaix/core";
+import type { AgentStatusType } from "@exaix/core/status";
 
 /**
  * Information about an agent's current state and configuration.

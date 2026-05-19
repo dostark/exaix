@@ -1,6 +1,6 @@
 /**
  * @module Skill
- * @path @exaix/core/types/skill.ts
+ * @path @exaix/core/types
  * @description Module for Skill.
  * @architectural-layer Shared
  * @related-files ["packages/core/src/types/i_skills_service.ts"]

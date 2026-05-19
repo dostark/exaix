@@ -9,15 +9,10 @@ export * from "./src/types/constants.ts";
 export { ActorType } from "./src/types/actor.ts";
 export type { Actor } from "./src/types/actor.ts";
 export type { ILogEvent } from "./src/types/i_log_event.ts";
-export { EventBusService } from "./src/observability/mod.ts";
-export type { IEventBusService } from "./src/observability/mod.ts";
 export type { ICostTracker } from "./src/types/i_cost_tracker.ts";
 export type { IDatabaseService } from "./src/types/i_database_service.ts";
 export type { IServiceContext } from "./src/types/service_context.ts";
 export * from "./src/version.ts";
-export * from "./src/status/mod.ts";
-export * from "./src/request/mod.ts";
-export * from "./src/repositories/mod.ts";
 export type { IPortalDetails, IPortalInfo, IVerificationResult } from "./src/types/portal.ts";
 export { PortalAnalysisMode, PortalExecutionStrategy, PortalOperation, PortalStatus } from "./src/types/portal.ts";
 
@@ -25,9 +20,3 @@ export type { JSONArray, JSONObject, JSONValue, LogMetadata } from "./src/types/
 export { jsonExtract, JSONValueSchema, toSafeJson } from "./src/types/json.ts";
 
 export { SecureCredentialStore } from "./src/helpers/credential_security.ts";
-export {
-  createAPIRetryPolicy,
-  createLLMRetryPolicy,
-  createRetryPolicy,
-  RetryPolicy,
-} from "./src/request/retry_policy.ts";

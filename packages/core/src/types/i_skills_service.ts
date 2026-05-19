@@ -3,7 +3,7 @@
  * @path src/shared/interfaces/i_skills_service.ts
  * @description Module for IskillsService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/skill.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { MemoryBankSource, SkillStatus } from "@exaix/core";

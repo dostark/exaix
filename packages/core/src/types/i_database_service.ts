@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_database_service.ts
  * @description Module for IdatabaseService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/database.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { JSONValue } from "@exaix/core";

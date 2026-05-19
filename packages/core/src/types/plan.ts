@@ -1,12 +1,12 @@
 /**
  * @module Plan
- * @path @exaix/core/types/plan.ts
+ * @path @exaix/core/types
  * @description Module for Plan.
  * @architectural-layer Shared
  * @related-files ["packages/core/src/types/i_plan_service.ts"]
  */
 
-import type { PlanStatusType } from "@exaix/core";
+import type { PlanStatusType } from "@exaix/core/status";
 
 /**
  * Metadata for a plan, including its current status and related request info.

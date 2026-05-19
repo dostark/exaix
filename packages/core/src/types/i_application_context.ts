@@ -4,7 +4,7 @@
  * @description Defines the core application context for dependency injection across the system.
  * This is a generic interface that can be used by CLI, TUI, and core services.
  * @architectural-layer Shared/Interfaces
- * @related-files ["packages/core/src/types/i_config_service.ts", @exaix/core/types/i_database_service.ts, packages/core/src/logger/event_logger.ts]
+ * @related-files ["packages/core/src/types/i_config_service.ts", @exaix/core/types, packages/core/src/logger/event_logger.ts]
  */
 
 import type { IDatabaseService } from "./i_database_service.ts";

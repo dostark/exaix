@@ -3,7 +3,7 @@
  * @path src/shared/interfaces/i_portal_service.ts
  * @description Module for IportalService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/portal.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core/types";

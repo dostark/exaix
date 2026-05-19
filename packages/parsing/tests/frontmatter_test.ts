@@ -5,7 +5,7 @@
  */
 import { assertEquals, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { FrontmatterParser } from "@exaix/parsing";
 import { createLoggingTestDb } from "@exaix/testing";
 

@@ -6,7 +6,7 @@
  * @related-files ["src/services/request_processing/types.ts", "packages/core/src/request/mod.ts"]
  */
 
-import type { RequestStatusType } from "@exaix/core";
+import type { RequestStatusType } from "@exaix/core/status";
 
 export interface IRequestFrontmatter {
   trace_id: string;

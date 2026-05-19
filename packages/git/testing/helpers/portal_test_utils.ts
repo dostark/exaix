@@ -8,7 +8,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";
 
-import type { DatabaseService } from "../../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { setupGitRepo } from "./git_test_helper.ts";

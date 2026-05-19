@@ -7,9 +7,10 @@
  */
 
 import { z } from "zod";
-import { ArtifactSubtype as ArtifactType, REVIEW_STATUS_VALUES, ReviewStatus as ReviewStatusValue } from "@exaix/core";
+import { ArtifactSubtype as ArtifactType } from "@exaix/core";
+import { REVIEW_STATUS_VALUES, ReviewStatus as ReviewStatusValue } from "@exaix/core/status";
 
-import type { IReviewStatus } from "@exaix/core";
+import type { IReviewStatus } from "@exaix/core/status";
 
 /**
  * Artifact status values

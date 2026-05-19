@@ -13,6 +13,8 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
+    "@exaix/storage-sqlite/": "../storage-sqlite/src/",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/"
   },

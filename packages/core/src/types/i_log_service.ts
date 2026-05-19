@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_log_service.ts
  * @description Module for IlogService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/logging.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { LogMetadata } from "@exaix/core";

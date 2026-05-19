@@ -7,7 +7,8 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_QUERY_LIMIT, JSONValueSchema, McpToolName, PlanStatus } from "@exaix/core";
+import { DEFAULT_QUERY_LIMIT, JSONValueSchema, McpToolName } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
 
 import { RequestAnalysisSchema } from "./request_analysis.ts";
 

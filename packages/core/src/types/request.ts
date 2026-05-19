@@ -7,7 +7,8 @@
  */
 
 import { z } from "zod";
-import type { RequestPriority, RequestSource, RequestStatusType } from "@exaix/core";
+import type { RequestPriority, RequestSource } from "@exaix/core";
+import type { RequestStatusType } from "@exaix/core/status";
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 

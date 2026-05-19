@@ -3,7 +3,7 @@
  * @path packages/core/src/repositories/activity_repository.ts
  * @description Implements the Repository pattern for IActivity Journal data access, abstracting database operations from domain logic.
  * @architectural-layer Repositories
- * @related-files ["src/services/core/db.ts", "packages/core/src/logger/event_logger.ts"]
+ * @related-files ["packages/storage-sqlite/src/database_service.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
 import type { IDatabaseService, JSONValue } from "@exaix/core";

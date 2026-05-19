@@ -7,7 +7,8 @@
  */
 
 import { z } from "zod";
-import { DEFAULT_QUERY_LIMIT, DEFAULT_SKILL_INDEX_VERSION, MEMORY_STATUS_VALUES } from "@exaix/core";
+import { DEFAULT_QUERY_LIMIT, DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
+import { MEMORY_STATUS_VALUES } from "@exaix/core/status";
 import {
   type ActivityType,
   ConfidenceAssessmentLevel,

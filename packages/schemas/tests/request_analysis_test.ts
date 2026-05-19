@@ -16,7 +16,7 @@ import {
   RequirementSchema,
 } from "@exaix/schemas";
 
-import { AnalysisMode } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 
 // ---------------------------------------------------------------------------
 // Fixtures

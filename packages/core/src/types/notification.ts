@@ -1,6 +1,6 @@
 /**
  * @module Notification
- * @path @exaix/core/types/notification.ts
+ * @path @exaix/core/types
  * @description Module for Notification.
  * @architectural-layer Shared
  * @related-files [src/shared/interfaces/i_notification_service.ts]

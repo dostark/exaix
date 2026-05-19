@@ -10,7 +10,7 @@
 
 import type { IRequestAnalysis } from "@exaix/schemas";
 
-import type { AnalysisMode } from "@exaix/core";
+import type { AnalysisMode } from "@exaix/core/request";
 
 import type { EnhancedRequest } from "@exaix/core/types";
 

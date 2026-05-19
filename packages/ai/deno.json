@@ -10,6 +10,7 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
     "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",

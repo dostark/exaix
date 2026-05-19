@@ -1,9 +1,9 @@
 /**
  * @module ICostTracker
- * @path src/shared/interfaces/i_cost_tracker.ts
+ * @path packages/core/src/types/i_cost_tracker.ts
  * @description Interface for LLM cost tracking and budgeting.
  * @architectural-layer Shared/Interfaces
- * @related-files [src/services/cost/cost_tracker.ts, src/services/core/db.ts]
+ * @related-files [src/services/cost/cost_tracker.ts, packages/storage-sqlite/src/database_service.ts]
  */
 
 import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";

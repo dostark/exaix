@@ -7,7 +7,8 @@
 
 import { type AiConfig, AiConfigSchema, type Config, ConfigSchema } from "@exaix/schemas";
 
-import { AnalysisMode, ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { ExaPathDefaults, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 import {
   ConfidenceAssessmentLevel,
   LogLevel,

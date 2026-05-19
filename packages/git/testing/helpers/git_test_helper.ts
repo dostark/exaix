@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { GIT_CMD_CONFIG, GitService } from "@exaix/git";
 import type { Config } from "@exaix/schemas";
 
-import type { DatabaseService } from "../../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { TEST_DEFAULT_BRANCH } from "./constants.ts";

@@ -1,6 +1,6 @@
 /**
  * @module Memory
- * @path @exaix/core/types/memory.ts
+ * @path @exaix/core/types
  * @description Module for Memory.
  * @architectural-layer Shared
  * @related-files [src/shared/schemas/memory_bank.ts]

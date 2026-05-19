@@ -4,16 +4,25 @@
   "imports": {
     "@exaix/mcp": "./mod.ts",
     "@exaix/mcp/": "./src/",
+    "@exaix/mcp/server": "./server/mod.ts",
     "@exaix/mcp/testing": "./testing/mod.ts",
     "@exaix/mcp/testing/": "./testing/",
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/observability": "../core/src/observability/mod.ts",
+    "@exaix/core/errors": "../core/src/errors/mod.ts",
+    "@exaix/core/repositories": "../core/src/repositories/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/"
   },
   "exports": {
     ".": "./mod.ts",
+    "./server": "./server/mod.ts",
     "./testing": "./testing/mod.ts"
   },
   "compilerOptions": {

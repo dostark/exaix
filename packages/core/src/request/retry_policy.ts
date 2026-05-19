@@ -1,6 +1,6 @@
 /**
  * @module RetryPolicy
- * @path src/services/core/retry_policy.ts
+ * @path packages/core/src/request/retry_policy.ts
  * @description Configurable retry system with exponential backoff and jitter.
  *
  * Features:
@@ -10,7 +10,7 @@
  * - IActivity logging for retry attempts
  *
  * @architectural-layer Services
- * @related-files ["src/services/agent/agent_runner.ts", "src/services/core/db.ts"]
+ * @related-files ["src/services/agent/agent_runner.ts", "packages/storage-sqlite/src/database_service.ts"]
  */
 
 import { z } from "zod";

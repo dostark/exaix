@@ -11,7 +11,8 @@
  */
 
 import { z } from "zod";
-import { AnalysisMode, ANALYZER_VERSION, TaskComplexity, TaskType } from "@exaix/core";
+import { ANALYZER_VERSION, TaskComplexity, TaskType } from "@exaix/core";
+import { AnalysisMode } from "@exaix/core/request";
 
 export type RequestAnalysisComplexity = TaskComplexity;
 export const RequestAnalysisComplexity = TaskComplexity;

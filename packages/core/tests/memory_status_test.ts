@@ -7,7 +7,8 @@
 
 import { assertEquals } from "@std/assert";
 
-import { coerceMemoryStatus, isMemoryStatus, MEMORY_STATUS_VALUES, MemoryStatus } from "@exaix/core";
+import { coerceMemoryStatus } from "@exaix/core/status";
+import { isMemoryStatus, MEMORY_STATUS_VALUES, MemoryStatus } from "@exaix/core/status";
 
 Deno.test("isMemoryStatus: accepts known values", () => {
   for (const status of MEMORY_STATUS_VALUES) {

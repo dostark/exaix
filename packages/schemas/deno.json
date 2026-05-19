@@ -2,6 +2,10 @@
   "name": "@exaix/schemas",
   "version": "0.1.0",
   "imports": {
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
     "@exaix/schemas": "./mod.ts",
     "@exaix/schemas/": "./src/"
   },

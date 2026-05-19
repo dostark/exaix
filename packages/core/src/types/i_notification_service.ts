@@ -3,7 +3,7 @@
  * @path src/shared/interfaces/i_notification_service.ts
  * @description Module for InotificationService.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/notification.ts]
+ * @related-files [@exaix/core/types]
  */
 
 import type { IMemoryUpdateProposal } from "@exaix/schemas";

@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { RequestSchema } from "@exaix/schemas";
 
 /**

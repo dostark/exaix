@@ -1,9 +1,9 @@
 /**
  * @module Daemon
- * @path @exaix/core/types/daemon.ts
+ * @path @exaix/core/types
  * @description Module for Daemon.
  * @architectural-layer Shared
- * @related-files [@exaix/core/types/i_daemon_service.ts]
+ * @related-files [@exaix/core/types]
  */
 
 export interface IDaemonStatus {
