@@ -10,7 +10,7 @@ import { type Spy, spy } from "@std/testing/mock";
 import { RateLimitedProvider, RateLimiterError } from "../../src/rate_limited_provider.ts";
 import type { IModelProvider } from "../../src/types.ts";
 import type { IGenerateResult } from "../../src/providers/common.ts";
-import { CostTracker } from "../../../../src/services/cost/cost_tracker.ts";
+import { createStubCostTracker } from "../helpers/service_stubs.ts";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { initTestDbService } from "@exaix/testing";
 
@@ -254,9 +254,9 @@ Deno.test("RateLimitedProvider: resets daily cost counter", async () => {
 });
 
 Deno.test("RateLimitedProvider: records cost via tracker using provider name", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
-    const costTracker = new CostTracker(db);
+    const costTracker = createStubCostTracker();
     const mockProvider: IModelProvider = {
       id: "openai-gpt-4",
       generate: spy((): Promise<IGenerateResult> => Promise.resolve(makeResult("ok"))),
@@ -285,9 +285,9 @@ Deno.test("RateLimitedProvider: records cost via tracker using provider name", a
 });
 
 Deno.test("RateLimitedProvider: blocks when persistent budget exceeded", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
-    const costTracker = new CostTracker(db);
+    const costTracker = createStubCostTracker();
     await costTracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 500,
       completionTokens: 500,

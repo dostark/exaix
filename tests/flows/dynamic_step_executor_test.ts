@@ -8,6 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
+import type { IMcpClient } from "@exaix/mcp";
 import type { IToolManifestResolver } from "@exaix/core/types";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
@@ -15,7 +16,6 @@ import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import {
   DynamicStepExecutor,
   type IActivityJournal,
-  type IMcpClient,
   type JournalEntry,
 } from "../../src/flows/dynamic_step_executor.ts";
 

@@ -1,4 +1,5 @@
 ---
+name: duplication
 agent: general
 tools:
   - run_command

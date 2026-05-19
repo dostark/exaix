@@ -1,4 +1,5 @@
 ---
+name: upgrade
 agent: general
 tools:
   - read_file

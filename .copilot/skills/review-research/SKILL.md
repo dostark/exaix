@@ -1,4 +1,5 @@
 ---
+name: review-research
 agent: general
 tools:
   - read_file

@@ -1,4 +1,5 @@
 ---
+name: refactor-check-magic
 agent: general
 tools:
   - run_command

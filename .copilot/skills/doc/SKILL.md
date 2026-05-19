@@ -1,4 +1,5 @@
 ---
+name: doc
 agent: general
 tools:
   - read_file

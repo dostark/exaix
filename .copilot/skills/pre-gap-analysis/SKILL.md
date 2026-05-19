@@ -1,4 +1,5 @@
 ---
+name: pre-gap-analysis
 agent: senior-coder
 tools:
   - read_file

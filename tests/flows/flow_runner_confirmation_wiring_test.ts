@@ -16,6 +16,7 @@ import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "../../src/services/tool/mod.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
+import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;
 
@@ -48,39 +49,7 @@ class NoopEventLogger implements IFlowEventLogger {
   log<TEvent extends string>(_event: TEvent, _payload: Record<string, JSONValue>): void {}
 }
 
-class MockNotificationService implements INotificationService {
-  notifyMemoryUpdate(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  notify(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  notifyApproval(): void {}
-
-  notifyRejection(): void {}
-
-  getNotifications() {
-    return Promise.resolve([]);
-  }
-
-  getPendingCount(): Promise<number> {
-    return Promise.resolve(0);
-  }
-
-  notifyPendingDigestIfNeeded(): Promise<boolean> {
-    return Promise.resolve(false);
-  }
-
-  clearNotification(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  clearAllNotifications(): Promise<void> {
-    return Promise.resolve();
-  }
-}
+class MockNotificationService extends StubNotificationServiceBase {}
 
 function createAgentExecutor() {
   return {

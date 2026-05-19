@@ -1,4 +1,5 @@
 ---
+name: tdd-workflow
 agent: general
 tools:
   - read_file

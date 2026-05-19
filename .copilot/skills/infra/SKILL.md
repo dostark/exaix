@@ -1,4 +1,5 @@
 ---
+name: infra
 agent: general
 tools:
   - read_file

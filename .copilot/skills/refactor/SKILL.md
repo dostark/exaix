@@ -1,4 +1,5 @@
 ---
+name: refactor
 agent: general
 tools:
   - read_file

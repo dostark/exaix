@@ -1,4 +1,5 @@
 ---
+name: lint
 agent: general
 tools:
   - run_command

@@ -1,4 +1,5 @@
 ---
+name: review
 agent: senior-coder
 tools:
   - read_file

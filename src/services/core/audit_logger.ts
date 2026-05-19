@@ -8,43 +8,18 @@
 
 import type { DatabaseService } from "../core/db.ts";
 import { dirname, join } from "@std/path";
-import type { SecurityEventResult, SecurityEventType, SecuritySeverity } from "@exaix/core";
+
 import type { JSONValue } from "@exaix/core";
+import type { IAuditLogger, ISecurityEvent } from "@exaix/core/types";
 
 // ============================================================================
 // Types and Interfaces
 // ============================================================================
 
 /**
- * Structured security audit event
- */
-export interface ISecurityEvent {
-  /** Type of security event */
-  type: SecurityEventType;
-
-  /** Specific action performed */
-  action: string;
-
-  /** Actor performing the action (user, agent, system) */
-  actor: string;
-
-  /** Resource being accessed/modified */
-  resource: string;
-
-  /** Result of the operation */
-  result: SecurityEventResult;
-
-  /** Additional context data */
-  metadata?: Record<string, JSONValue>;
-
-  /** Severity level for alerting */
-  severity: SecuritySeverity;
-}
-
-/**
  * Configuration for AuditLogger
  */
-export interface AuditLoggerConfig {
+export interface IAuditLoggerConfig {
   /** DatabaseService instance (optional - allows file-only mode) */
   db?: DatabaseService;
 
@@ -60,12 +35,12 @@ export interface AuditLoggerConfig {
  * Specialized audit logger for security-critical operations.
  * Provides tamper-evident logging with alerting capabilities.
  */
-export class AuditLogger {
+export class AuditLogger implements IAuditLogger {
   private readonly db?: DatabaseService;
-  private readonly config: AuditLoggerConfig;
+  private readonly config: IAuditLoggerConfig;
   private currentSessionId: string;
 
-  constructor(config: AuditLoggerConfig = {}) {
+  constructor(config: IAuditLoggerConfig = {}) {
     this.db = config.db;
     this.config = config;
     this.currentSessionId = crypto.randomUUID();

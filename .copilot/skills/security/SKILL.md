@@ -1,4 +1,5 @@
 ---
+name: security
 agent: senior-coder
 tools:
   - read_file

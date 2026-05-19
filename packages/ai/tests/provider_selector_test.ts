@@ -6,14 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import {
-  DEFAULT_MCP_VERSION,
-  EvaluationCategory,
-  HealthCheckVerdict,
-  PricingTier,
-  ProviderCostTier,
-  TaskComplexity,
-} from "@exaix/core";
+import { EvaluationCategory, PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 import { createTestConfig } from "./helpers/test_config.ts";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import type { Config } from "@exaix/schemas";
@@ -21,9 +14,8 @@ import type { Config } from "@exaix/schemas";
 import { initTestDbService } from "@exaix/testing";
 import { ProviderRegistry } from "../src/provider_registry.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
-import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
+import { createStubCostTracker, createStubHealthChecker } from "./helpers/service_stubs.ts";
 import { ProviderSelector } from "../src/provider_selector.ts";
-import { HealthCheckService } from "../../../src/services/core/health_check_service.ts";
 
 async function withEnv<T>(vars: Record<string, string | undefined>, fn: () => Promise<T> | T): Promise<T> {
   const previous: Record<string, string | undefined> = {};
@@ -54,7 +46,7 @@ async function withEnv<T>(vars: Record<string, string | undefined>, fn: () => Pr
 // ============================================================================
 
 Deno.test("ProviderSelector: selects optimal provider based on criteria", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -77,20 +69,8 @@ Deno.test("ProviderSelector: selects optimal provider based on criteria", async 
       strengths: ["complex"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-    // Mock health check to return healthy for both providers
-    healthService.registerCheck({
-      name: "free-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "paid-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     // Import and create selector
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
@@ -107,12 +87,12 @@ Deno.test("ProviderSelector: selects optimal provider based on criteria", async 
 });
 
 Deno.test("ProviderSelector: throws error when no suitable provider found", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
 
@@ -132,7 +112,7 @@ Deno.test("ProviderSelector: throws error when no suitable provider found", asyn
 });
 
 Deno.test("ProviderSelector: respects budget constraints", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -155,8 +135,8 @@ Deno.test("ProviderSelector: respects budget constraints", async () => {
       strengths: ["general"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     // Set up high cost for expensive provider
     await costTracker.trackGeneration(
@@ -166,18 +146,6 @@ Deno.test("ProviderSelector: respects budget constraints", async () => {
       "trace-budget",
     );
     await costTracker.flush(); // Ensure the cost is written immediately for the test
-
-    // Mock health checks
-    healthService.registerCheck({
-      name: "cheap-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "expensive-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
 
@@ -193,7 +161,7 @@ Deno.test("ProviderSelector: respects budget constraints", async () => {
 });
 
 Deno.test("ProviderSelector: routes tasks by complexity", async () => {
-  const { db, tempDir: _tempDir, cleanup } = await initTestDbService();
+  const { db: _db, tempDir: _tempDir, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -216,20 +184,8 @@ Deno.test("ProviderSelector: routes tasks by complexity", async () => {
       strengths: ["complex"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-    // Mock health checks
-    healthService.registerCheck({
-      name: "local-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "premium-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
 
@@ -252,7 +208,7 @@ Deno.test("ProviderSelector: routes tasks by complexity", async () => {
 });
 
 Deno.test("ProviderSelector: filters by required capabilities", async () => {
-  const { db, tempDir: _tempDir, cleanup } = await initTestDbService();
+  const { db: _db, tempDir: _tempDir, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -275,20 +231,8 @@ Deno.test("ProviderSelector: filters by required capabilities", async () => {
       strengths: ["general"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-    // Mock health checks
-    healthService.registerCheck({
-      name: "chat-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "vision-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
 
@@ -303,7 +247,7 @@ Deno.test("ProviderSelector: filters by required capabilities", async () => {
 });
 
 Deno.test("ProviderSelector: excludes unhealthy providers", async () => {
-  const { db, tempDir: _tempDir, cleanup } = await initTestDbService();
+  const { db: _db, tempDir: _tempDir, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -326,20 +270,8 @@ Deno.test("ProviderSelector: excludes unhealthy providers", async () => {
       strengths: ["general"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-    // Mock health checks - unhealthy provider fails
-    healthService.registerCheck({
-      name: "healthy-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "unhealthy-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.FAIL }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
 
@@ -354,7 +286,7 @@ Deno.test("ProviderSelector: excludes unhealthy providers", async () => {
 });
 
 Deno.test("ProviderSelector: uses configuration for task routing", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -377,20 +309,8 @@ Deno.test("ProviderSelector: uses configuration for task routing", async () => {
       strengths: ["reasoning"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-
-    // Mock health checks
-    healthService.registerCheck({
-      name: "simple-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "complex-provider",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     // Create config with task routing
     const config = createTestConfig();
@@ -418,7 +338,7 @@ Deno.test("ProviderSelector: uses configuration for task routing", async () => {
 });
 
 Deno.test("ProviderSelector: env provider selected when healthy and allowed", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -431,13 +351,8 @@ Deno.test("ProviderSelector: env provider selected when healthy and allowed", as
       strengths: ["general"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-    healthService.registerCheck({
-      name: "mock",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
     const config = createTestConfig();
@@ -454,7 +369,7 @@ Deno.test("ProviderSelector: env provider selected when healthy and allowed", as
 });
 
 Deno.test("ProviderSelector: env provider fallback when unregistered or unhealthy", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -467,31 +382,13 @@ Deno.test("ProviderSelector: env provider fallback when unregistered or unhealth
       strengths: ["general"],
     });
 
-    ProviderRegistry.registerWithMetadata("ollama", new MockProviderFactory(), {
-      name: "ollama",
-      description: "Ollama provider",
-      capabilities: ["chat"],
-      costTier: ProviderCostTier.FREE,
-      pricingTier: PricingTier.FREE,
-      strengths: ["general"],
-    });
-
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-    healthService.registerCheck({
-      name: "mock",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "ollama",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.FAIL }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
     const config = createTestConfig();
 
+    // ollama is not registered, so env provider falls back to intelligent selection
     const selected = await withEnv(
       { EXA_LLM_PROVIDER: "ollama", EXA_TEST_MODE: "1" },
       () => selector.selectProviderForTask(config, "simple"),
@@ -504,7 +401,7 @@ Deno.test("ProviderSelector: env provider fallback when unregistered or unhealth
 });
 
 Deno.test("ProviderSelector: blocks paid env provider in test mode", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
     ProviderRegistry.clear();
 
@@ -526,18 +423,8 @@ Deno.test("ProviderSelector: blocks paid env provider in test mode", async () =>
       strengths: ["general"],
     });
 
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
-    healthService.registerCheck({
-      name: PROVIDER_OPENAI,
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
-    healthService.registerCheck({
-      name: "mock",
-      critical: false,
-      check: async () => await ({ status: HealthCheckVerdict.PASS }),
-    });
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
     const config = createTestConfig();
@@ -554,10 +441,10 @@ Deno.test("ProviderSelector: blocks paid env provider in test mode", async () =>
 });
 
 Deno.test("ProviderSelector: enforces budget constraints", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { db: _db, cleanup } = await initTestDbService();
   try {
-    const costTracker = new CostTracker(db);
-    const healthService = new HealthCheckService(DEFAULT_MCP_VERSION);
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
 
     // Track enough usage to exceed budget
     await costTracker.trackGeneration(
@@ -596,7 +483,7 @@ Deno.test("ProviderSelector: enforces budget constraints", async () => {
 
     assertEquals(provider, "free-provider");
 
-    await db.close();
+    await _db.close();
   } finally {
     await cleanup();
   }

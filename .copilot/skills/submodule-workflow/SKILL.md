@@ -1,4 +1,5 @@
 ---
+name: submodule-workflow
 agent: copilot
 tools:
   - git_status

@@ -1,4 +1,5 @@
 ---
+name: commit
 agent: general
 tools:
   - git_status

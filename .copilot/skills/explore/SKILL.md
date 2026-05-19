@@ -1,4 +1,5 @@
 ---
+name: explore
 agent: general
 tools:
   - read_file

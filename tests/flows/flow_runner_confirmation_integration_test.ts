@@ -6,7 +6,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import type { INotificationService } from "@exaix/core/types";
+import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,
@@ -72,16 +72,14 @@ class RecordingCreateRequestHandler extends ToolHandler {
   }
 }
 
-class DecisionWritingNotificationService implements INotificationService {
+class DecisionWritingNotificationService extends StubNotificationServiceBase {
   constructor(
     private readonly writer: (proposalId: string) => Promise<void>,
-  ) {}
-
-  notifyMemoryUpdate(): Promise<void> {
-    return Promise.resolve();
+  ) {
+    super();
   }
 
-  async notify(
+  override async notify(
     _message: string,
     _type?: string,
     proposalId?: string,
@@ -89,30 +87,6 @@ class DecisionWritingNotificationService implements INotificationService {
     if (proposalId) {
       await this.writer(proposalId);
     }
-  }
-
-  notifyApproval(): void {}
-
-  notifyRejection(): void {}
-
-  getNotifications() {
-    return Promise.resolve([]);
-  }
-
-  getPendingCount(): Promise<number> {
-    return Promise.resolve(0);
-  }
-
-  notifyPendingDigestIfNeeded(): Promise<boolean> {
-    return Promise.resolve(false);
-  }
-
-  clearNotification(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  clearAllNotifications(): Promise<void> {
-    return Promise.resolve();
   }
 }
 

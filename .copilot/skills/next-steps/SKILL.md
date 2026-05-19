@@ -1,4 +1,5 @@
 ---
+name: next-steps
 agent: general
 tools:
   - read_file

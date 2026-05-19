@@ -1,4 +1,5 @@
 ---
+name: fix
 agent: general
 tools:
   - read_file

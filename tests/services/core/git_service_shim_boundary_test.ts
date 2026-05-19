@@ -51,7 +51,6 @@ const GIT_TESTING_SHIM_OFFENDERS = [
   "tests/services/request/request_processor_knowledge_test.ts",
   "tests/services/workspace/workspace_execution_context_test.ts",
   "tests/services/portal/portal_context_grounding_test.ts",
-  "tests/services/portal/portal_permissions_test.ts",
   "tests/services/portal/portal_multi_support_test.ts",
   "tests/services/portal/portal_context_grounding_regression_test.ts",
   "tests/services/agent/agent_executor_test.ts",

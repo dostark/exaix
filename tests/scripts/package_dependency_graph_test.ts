@@ -483,7 +483,7 @@ Deno.test("explainBoundary: src/mcp handler shim still reports current src block
     report.transitiveGroups.some(
       (group) =>
         group.packageName === "@exaix (src/)" &&
-        group.modules.includes("src/services/portal/portal_permissions.ts"),
+        group.modules.includes("src/api/sse_handler.ts"),
     ),
     true,
   );

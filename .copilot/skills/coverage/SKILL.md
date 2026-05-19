@@ -1,4 +1,5 @@
 ---
+name: coverage
 agent: senior-coder
 tools:
   - run_command

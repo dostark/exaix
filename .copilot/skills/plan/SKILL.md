@@ -1,4 +1,5 @@
 ---
+name: plan
 agent: senior-coder
 tools:
   - read_file
