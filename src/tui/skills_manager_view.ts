@@ -27,7 +27,7 @@ import {
   TUI_STATUS_ICONS,
 } from "./helpers/constants.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types";
 
 // ===== Interfaces =====
 

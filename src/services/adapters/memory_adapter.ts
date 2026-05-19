@@ -3,10 +3,10 @@
  * @path src/services/adapters/memory_adapter.ts
  * @description Adapter implementing IMemoryService by delegating to MemoryBankService and MemoryExtractorService.
  * @architectural-layer Services
- * @related-files ["src/services/memory/memory_bank.ts", "src/services/memory/memory_extractor.ts", @exaix/core/types/i_memory_service.ts]
+ * @related-files ["src/services/memory/memory_bank.ts", "src/services/memory/memory_extractor.ts", @exaix/core/types]
  */
 
-import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
+import type { IMemoryService } from "@exaix/core/types";
 import type { MemoryBankService } from "../memory/memory_bank.ts";
 import type { MemoryExtractorService } from "../memory/memory_extractor.ts";
 import type {

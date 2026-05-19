@@ -22,14 +22,14 @@ import {
   ReviewType,
   VerificationStatus,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
-import type { IRequestOptions } from "@exaix/core/types/mod.ts";
-import type { RequestStatusType } from "@exaix/core";
-import type { PlanStatusType } from "@exaix/core";
-import type { IPlanMetadata } from "@exaix/core/types/plan.ts";
+import type { IRequestOptions } from "@exaix/core/types";
+import type { RequestStatusType } from "@exaix/core/status";
+import type { PlanStatusType } from "@exaix/core/status";
+import type { IPlanMetadata } from "@exaix/core/types";
 import type { BlueprintCreateOptions, BlueprintRemoveOptions } from "../../src/cli/commands/blueprint_commands.ts";
 
 /*

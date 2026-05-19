@@ -13,7 +13,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddingSearchResult } from "@exaix/core/types/memory.ts";
+import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { IEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider.ts";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { cosineSimilarity } from "./memory_embedding.ts";

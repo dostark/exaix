@@ -32,7 +32,7 @@ import {
   renderTree,
   toggleNode,
 } from "./helpers/tree_view.ts";
-import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status/agent_status.ts";
+import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status";
 import { TuiColorName, TuiGroupBy } from "@exaix/tui";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { type ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
@@ -53,7 +53,7 @@ import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";
 import { buildFlatTree, buildTreeByModel, buildTreeByStatus } from "./agent_status/tree_builder.ts";
 import type { IAgentService } from "@exaix/core/types";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 
 // ===== View State =====
 

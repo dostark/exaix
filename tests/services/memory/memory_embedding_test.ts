@@ -22,7 +22,7 @@ import {
 } from "../../../src/services/memory/memory_embedding.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryIndexDir } from "../../helpers/paths_helper.ts";
 
 // ===== Test Fixtures =====

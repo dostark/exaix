@@ -23,7 +23,7 @@ import {
   SecurityMode,
   SecuritySeverity,
 } from "@exaix/core";
-import { toSafeJson } from "@exaix/core/types/json.ts";
+import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /**

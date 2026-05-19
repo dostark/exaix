@@ -15,7 +15,7 @@ import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schema
 import { QualityGateMode } from "@exaix/core";
 import { LlmQualityAssessor } from "../../../src/services/quality_gate/llm_assessor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

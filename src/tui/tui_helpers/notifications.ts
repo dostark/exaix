@@ -10,7 +10,7 @@ import { KEYS } from "../helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "../helpers/colors.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IMemoryNotification } from "@exaix/core/types";
 import type { INotificationService } from "@exaix/core/types";
 interface ITuiNotification extends IMemoryNotification {
   icon?: string;

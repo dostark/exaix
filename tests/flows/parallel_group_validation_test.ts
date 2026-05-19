@@ -18,7 +18,7 @@ import {
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class StubAgentExecutor implements IAgentExecutor {
   async run(_identityId: string, _request: IFlowStepRequest): Promise<IAgentExecutionResult> {

@@ -28,7 +28,7 @@ import {
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;
 

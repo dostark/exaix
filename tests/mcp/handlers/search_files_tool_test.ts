@@ -15,7 +15,7 @@ import {
 import { PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class MockToolRegistry implements IToolRegistry {
   private result: IToolResult = { success: true };

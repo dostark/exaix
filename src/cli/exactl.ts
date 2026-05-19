@@ -34,8 +34,8 @@ import {
   RequestPriority,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
-import { AnalysisMode } from "@exaix/core";
-import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { AnalysisMode } from "@exaix/core/request";
+import { ReviewStatus } from "@exaix/core/status";
 import { CLI_DEFAULTS } from "./cli.config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
@@ -49,6 +49,7 @@ import {
   PORTAL_LABEL,
   WORKSPACE_SCHEMA_VERSION,
 } from "@exaix/core";
+import type { IReviewStatus } from "@exaix/core/status";
 import { GIT_CMD_STATUS } from "@exaix/git";
 import { WatchCommand } from "./commands/watch.ts";
 

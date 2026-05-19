@@ -8,10 +8,10 @@
 
 import { assert, assertExists } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import { GoogleProvider } from "@exaix/ai/providers/google_provider.ts";
-import { OpenAIProvider } from "@exaix/ai/providers/openai_provider.ts";
-import { AnthropicProvider } from "@exaix/ai/providers/anthropic_provider.ts";
+import { EventLogger } from "@exaix/core/logger";
+import { GoogleProvider } from "@exaix/ai/providers";
+import { OpenAIProvider } from "@exaix/ai/providers";
+import { AnthropicProvider } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import * as TEST_CONST from "@exaix/testing";
 

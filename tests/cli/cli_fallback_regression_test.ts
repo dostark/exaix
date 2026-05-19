@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import type { IDatabaseService } from "../../src/services/core/db.ts";

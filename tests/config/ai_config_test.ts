@@ -51,7 +51,7 @@ import {
   TEST_RETRY_MAX_ATTEMPTS_SINGLE,
 } from "@exaix/testing";
 
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 const customProviderFactory: IProviderFactory = {
   create: () =>
     Promise.resolve({

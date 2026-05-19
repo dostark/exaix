@@ -21,15 +21,15 @@ import {
   VerificationStatus,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
-import { MemoryStatus } from "@exaix/core";
-import { PlanStatus } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
-import { ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { MemoryStatus } from "@exaix/core/status";
+import { PlanStatus } from "@exaix/core/status";
+import { RequestStatus } from "@exaix/core/status";
+import { ReviewStatus } from "@exaix/core/status";
 import { GitService } from "@exaix/git";
 import type { OutputFormat } from "../../src/cli/memory_types.ts";
 import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
-import type { IRequestOptions } from "@exaix/core/types/mod.ts";
-import type { RequestStatusType } from "@exaix/core";
+import type { IRequestOptions } from "@exaix/core/types";
+import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";

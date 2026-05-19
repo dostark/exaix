@@ -25,11 +25,11 @@ import {
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import { RetryPolicy } from "@exaix/core/request/retry_policy.ts";
+import { RetryPolicy } from "@exaix/core/request";
 import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
-import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types";
 import { createMockConfig } from "../helpers/config.ts";
 
 /** Local type matching the shape logged by FlowRunner for flow.token_summary events */

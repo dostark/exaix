@@ -34,7 +34,7 @@ import {
   TUI_PREFIX_EXECUTION,
   TUI_PREFIX_PROJECT,
 } from "../../../src/tui/helpers/constants.ts";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 
 function node(id: string, label = id, data?: any, badge?: number): ITreeNode {
   return {

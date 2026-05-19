@@ -19,7 +19,7 @@ import {
   MemoryBankSource,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryExecutionDir, getMemoryIndexDir, getMemoryProjectsDir } from "../../helpers/paths_helper.ts";
 import {
   createMinimalExecutionMemory,

@@ -14,8 +14,8 @@ import { RequestProcessor } from "../../../src/services/request/request_processo
 import type { IRequestProcessingContext } from "../../../src/services/request/request_processor.ts";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import { PlanValidationError } from "../../../src/services/plan/plan_adapter.ts";
-import { PlanStatus } from "@exaix/core";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import { PlanStatus } from "@exaix/core/status";
+import type { JSONObject } from "@exaix/core/types";
 import { MiddlewarePipeline } from "../../../src/services/middleware/pipeline.ts";
 import { makeRequestProcessorEnv } from "./request_test_helpers.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";

@@ -10,27 +10,24 @@ import {
   LegacyRequestManagerTuiSession as _LegacyRequestManagerTuiSession,
   RequestManagerView,
 } from "../../src/tui/request_manager_view.ts";
-import type {
-  IRequestAnalysis,
-  IRequestEntry as IRequest,
-  IRequestMetadata as _IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "@exaix/core/types/mod.ts";
-import type { AnalysisMode } from "@exaix/core/types/mod.ts";
+import type { IRequestAnalysis } from "@exaix/core/types";
+import type { AnalysisMode } from "@exaix/core/types";
 import type { IJournalService, IMemoryService, IPortalService, IRequestService } from "@exaix/core/types";
 import { PortalManagerView } from "../../src/tui/portal_manager_view.ts";
 import { type ILogEntry, MonitorView } from "../../src/tui/monitor_view.ts";
 import { type IPlan, MinimalPlanServiceMock, PlanReviewerTuiSession } from "../../src/tui/plan_reviewer_view.ts";
 import { commonTestData, requestFactory } from "../helpers/test_utils.ts";
-import { DEFAULT_GLOBAL_MEMORY_VERSION, RequestStatus, type RequestStatusType } from "@exaix/core";
+import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 import type {
-  IPortalDetails,
-  IPortalInfo,
-  IVerificationResult as _IVerificationResult,
-} from "@exaix/core/types/portal.ts";
+  IRequestEntry as IRequest,
+  IRequestMetadata as _IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
+} from "@exaix/core/request";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
+import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
-import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import {
   type ISkillSummary,
   MinimalSkillsServiceMock,
@@ -45,7 +42,7 @@ import type {
   IProjectMemory,
   IProposalLearning,
 } from "@exaix/schemas/memory_bank.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import {
   ConfidenceAssessmentLevel,
   EvaluationCategory,

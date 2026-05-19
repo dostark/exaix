@@ -9,14 +9,15 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { RequestKind, RequestPriority, RequestSource, RequestStatus } from "@exaix/core";
+import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { CommandUtils } from "../helpers/command_utils.ts";
-import type { IRequestMetadata, IRequestOptions } from "@exaix/core/types/mod.ts";
+import type { IRequestMetadata, IRequestOptions } from "@exaix/core/types";
 import { resolveSubject } from "../helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
-import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/types/mod.ts";
+import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/types";
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";
 
 const VALID_PRIORITIES: RequestPriority[] = [

@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EXECUTION_REPORT_FILENAME, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
-import { getDefaultPaths } from "@exaix/core/config/paths.ts";
+import { getDefaultPaths } from "@exaix/core/config";
 import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
@@ -21,7 +21,7 @@ import {
   getWorkspaceRequestsDir,
 } from "../../helpers/paths_helper.ts";
 import { ensureDir } from "@std/fs/ensure-dir";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";

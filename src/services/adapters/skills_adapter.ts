@@ -8,7 +8,7 @@
 import type { ISkillsService } from "@exaix/core/types";
 import type { SkillsService } from "../skills/skills.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types";
 import { MemoryBankSource, SkillStatus } from "@exaix/core";
 
 export class SkillsAdapter implements ISkillsService {

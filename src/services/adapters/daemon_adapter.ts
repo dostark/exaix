@@ -3,11 +3,11 @@
  * @path src/services/adapters/daemon_adapter.ts
  * @description Module for DaemonAdapter.
  * @architectural-layer Services
- * @related-files [src/cli/commands/daemon_commands.ts, @exaix/core/types/i_daemon_service.ts]
+ * @related-files [src/cli/commands/daemon_commands.ts, @exaix/core/types]
  */
 
 import type { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
-import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
+import type { IDaemonService } from "@exaix/core/types";
 import { DaemonStatus } from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";

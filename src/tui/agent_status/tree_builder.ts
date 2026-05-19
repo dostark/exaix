@@ -7,8 +7,8 @@
  */
 
 import { createGroupNode, createNode, type ITreeNode } from "../helpers/tree_view.ts";
-import type { IAgentStatusItem } from "@exaix/core/types/mod.ts";
-import { AGENT_STATUS_ORDER, AgentStatus, type AgentStatusType } from "@exaix/core/status/agent_status.ts";
+import type { IAgentStatusItem } from "@exaix/core/types";
+import { AGENT_STATUS_ORDER, AgentStatus, type AgentStatusType } from "@exaix/core/status";
 import {
   TUI_AGENT_STATUS_ICONS,
   TUI_ICON_AGENT,

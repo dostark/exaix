@@ -16,7 +16,7 @@ import {
   PortalStatus,
   VerificationStatus,
 } from "@exaix/core";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import { GIT_CMD_BRANCH } from "@exaix/git";
 import { PORTAL_ALIAS_MAX_LENGTH } from "./constants.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
@@ -27,7 +27,7 @@ import type {
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
 } from "@exaix/core/types";
-import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types";
 
 export class PortalService {
   private portalsDir: string;

@@ -15,7 +15,7 @@ import { RequestAnalyzer } from "../../src/services/request_analysis/request_ana
 import { loadAnalysis } from "../../src/services/request_analysis/mod.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 

@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts";
 import { MemoryBankAdapter } from "../../../src/services/adapters/memory_bank_adapter.ts";
 import { MemoryExtractorAdapter } from "../../../src/services/adapters/memory_extractor_adapter.ts";
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
 import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
 import { MemoryType, PortalExecutionStrategy } from "@exaix/core";

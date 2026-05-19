@@ -11,7 +11,8 @@ import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import { FrontmatterParser } from "@exaix/parsing";
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { PlanStatus, type PlanStatusType, RequestStatus } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
+import { type PlanStatusType, RequestStatus } from "@exaix/core/status";
 import { RequestCommands } from "./request_commands.ts";
 import { ValidationChain } from "../validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
@@ -32,7 +33,7 @@ import { type IPlanAmendmentPatch, ZPlanAmendmentPatch } from "@exaix/schemas/pl
 import { type PlanFrontmatter, PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { JSONValue } from "@exaix/core";
 
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 
 const FIELD_PLAN_ID = "planId";
 

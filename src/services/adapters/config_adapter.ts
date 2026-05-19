@@ -7,7 +7,7 @@
  */
 
 import type { IConfigService, IPortalConfigEntry } from "@exaix/core/types";
-import type { ConfigService } from "@exaix/core/config/service.ts";
+import type { ConfigService } from "@exaix/core/config";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
 

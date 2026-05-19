@@ -6,8 +6,8 @@
  * @related-files ["src/cli/commands/request_commands.ts"]
  */
 import type { RequestCommands } from "../commands/request_commands.ts";
-import { isTestMode } from "@exaix/core/config/env_schema.ts";
-import type { IRequestMetadata } from "@exaix/core";
+import { isTestMode } from "@exaix/core/config";
+import type { IRequestMetadata } from "@exaix/core/request";
 
 export interface IRequestEnrichable {
   request_id?: string;

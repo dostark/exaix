@@ -17,9 +17,9 @@ import {
   MockStructuredLogger,
   MockStructuredLoggerService,
 } from "../../src/tui/tui_dashboard_mocks.ts";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { RequestPriority } from "@exaix/core";
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import {
   TEST_MODEL_OPENAI,
   TEST_PROPOSAL_ID,

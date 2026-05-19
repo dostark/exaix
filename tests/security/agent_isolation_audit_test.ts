@@ -21,14 +21,14 @@ import {
 } from "../../src/services/agent/agent_executor.ts";
 import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import { PathResolver } from "../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
 import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import type { LogMetadata } from "@exaix/core/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types";
 import { createMockConfig } from "../helpers/config.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { initTestDbService } from "../helpers/db.ts";

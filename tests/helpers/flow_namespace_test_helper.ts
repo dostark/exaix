@@ -8,7 +8,7 @@
 
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 export type ScriptedExecutorResponse =
   | IAgentExecutionResult

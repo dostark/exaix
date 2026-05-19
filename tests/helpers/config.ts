@@ -6,9 +6,9 @@
  */
 
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
-import { getDefaultPaths } from "@exaix/core/config/paths.ts";
+import { getDefaultPaths } from "@exaix/core/config";
 import { SqliteJournalMode } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

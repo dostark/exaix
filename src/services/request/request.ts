@@ -9,16 +9,17 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { DEFAULT_IDENTITY_ID, RequestPriority, RequestSource } from "@exaix/core";
-import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/types/mod.ts";
-import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
+import type { IRequestShowResult } from "@exaix/core/types";
+import type { IDisplayService } from "@exaix/core/types";
 import type { IApplicationContext, IConfigService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
 

@@ -19,7 +19,7 @@ import { PlanSchema, PlanStepSchema } from "@exaix/schemas/plan_schema.ts";
 import { AnalysisFindingSeverity, AnalysisFindingType } from "@exaix/core";
 import { repairJSON } from "../utils/json_repair.ts";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
-import { JSONValueSchema } from "@exaix/core/types/json.ts";
+import { JSONValueSchema } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
 

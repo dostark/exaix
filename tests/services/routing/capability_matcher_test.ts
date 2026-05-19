@@ -8,6 +8,18 @@ import { assertEquals, assertExists } from "@std/assert";
 import { CapabilityMatcher } from "../../../src/services/routing/capability_matcher.ts";
 import type { ILoadedBlueprint } from "../../../src/services/blueprint/blueprint_loader.ts";
 
+function createFrontmatter(overrides: Partial<ILoadedBlueprint["frontmatter"]> = {}): ILoadedBlueprint["frontmatter"] {
+  return {
+    capabilities: [],
+    version: "1.0.0",
+    reflexive: false,
+    max_reflexion_iterations: 3,
+    memory_enabled: false,
+    deprecated: false,
+    ...overrides,
+  };
+}
+
 const makeBlueprint = (overrides: Partial<ILoadedBlueprint>): ILoadedBlueprint => ({
   identityId: overrides.identityId ?? "test-agent",
   name: overrides.name ?? "Test Agent",
@@ -15,14 +27,7 @@ const makeBlueprint = (overrides: Partial<ILoadedBlueprint>): ILoadedBlueprint =
   capabilities: overrides.capabilities ?? ["code_review", "documentation"],
   systemPrompt: overrides.systemPrompt ?? "You are a test agent.",
   version: overrides.version ?? "1.0.0",
-  frontmatter: overrides.frontmatter ?? {
-    capabilities: [],
-    version: "1.0.0",
-    reflexive: false,
-    max_reflexion_iterations: 3,
-    memory_enabled: false,
-    deprecated: false,
-  },
+  frontmatter: overrides.frontmatter ?? createFrontmatter(),
   path: overrides.path ?? "/tmp/test-agent.md",
 });
 
@@ -54,17 +59,11 @@ Deno.test("CapabilityMatcher: boosts score when language, taskType, and portalTy
   const matcher = new CapabilityMatcher();
   const blueprint = makeBlueprint({
     capabilities: ["code_review"],
-    frontmatter: {
-      capabilities: [],
-      version: "1.0.0",
-      reflexive: false,
-      max_reflexion_iterations: 3,
-      memory_enabled: false,
-      deprecated: false,
+    frontmatter: createFrontmatter({
       language: "typescript",
       task_type: "implementation",
       portal_type: "api",
-    },
+    }),
   });
 
   const candidate = matcher.matchBlueprint(blueprint, {
@@ -83,17 +82,11 @@ Deno.test("CapabilityMatcher: lowers score when metadata fields mismatch", () =>
   const matcher = new CapabilityMatcher();
   const blueprint = makeBlueprint({
     capabilities: ["code_review"],
-    frontmatter: {
-      capabilities: [],
-      version: "1.0.0",
-      reflexive: false,
-      max_reflexion_iterations: 3,
-      memory_enabled: false,
-      deprecated: false,
+    frontmatter: createFrontmatter({
       language: "python",
       task_type: "analysis",
       portal_type: "console",
-    },
+    }),
   });
 
   const candidate = matcher.matchBlueprint(blueprint, {
@@ -112,14 +105,7 @@ Deno.test("CapabilityMatcher: excludes deprecated blueprints by default", () => 
   const matcher = new CapabilityMatcher();
   const blueprint = makeBlueprint({
     capabilities: ["code_review"],
-    frontmatter: {
-      capabilities: [],
-      version: "1.0.0",
-      reflexive: false,
-      max_reflexion_iterations: 3,
-      memory_enabled: false,
-      deprecated: true,
-    },
+    frontmatter: createFrontmatter({ deprecated: true }),
   });
 
   const candidate = matcher.matchBlueprint(blueprint, { capability: "code_review", tags: [] });
@@ -131,14 +117,7 @@ Deno.test("CapabilityMatcher: includes deprecated blueprints when allowed", () =
   const matcher = new CapabilityMatcher({ allowDeprecated: true });
   const blueprint = makeBlueprint({
     capabilities: ["code_review"],
-    frontmatter: {
-      capabilities: [],
-      version: "1.0.0",
-      reflexive: false,
-      max_reflexion_iterations: 3,
-      memory_enabled: false,
-      deprecated: true,
-    },
+    frontmatter: createFrontmatter({ deprecated: true }),
   });
 
   const candidate = matcher.matchBlueprint(blueprint, { capability: "code_review", tags: [] });

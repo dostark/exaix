@@ -8,7 +8,7 @@
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
 
 /**

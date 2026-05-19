@@ -14,7 +14,7 @@ import {
   TaskType,
 } from "@exaix/core";
 import { RequestGroupingMode } from "@exaix/tui";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import {
   AnalysisMode,
   type IRequest,
@@ -22,7 +22,7 @@ import {
   type IRequestEntry,
   type IRequestMetadata,
   type IRequestShowResult,
-} from "@exaix/core/types/mod.ts";
+} from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
 import { RequestAdapter } from "../../src/services/adapters/request_adapter.ts";
 import {

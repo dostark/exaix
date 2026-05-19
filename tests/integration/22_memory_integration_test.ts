@@ -14,7 +14,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 
 import { assertEquals, assertExists, assertGreaterOrEqual, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";

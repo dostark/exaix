@@ -14,7 +14,7 @@ import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PortalOperation } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";

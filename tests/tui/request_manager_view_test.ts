@@ -8,9 +8,9 @@
 import { assert, assertEquals } from "@std/assert";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import { RequestGroupingMode } from "@exaix/tui";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { commonTestData } from "../helpers/test_utils.ts";
-import type { IRequest } from "@exaix/core/types/mod.ts";
+import type { IRequest } from "@exaix/core/types";
 
 import {
   MinimalRequestServiceMock,

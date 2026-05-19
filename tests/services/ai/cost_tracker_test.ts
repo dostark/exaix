@@ -26,11 +26,19 @@ import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
 const COST_PER_TOKEN_OPENAI = COST_RATE_OPENAI / TOKENS_PER_COST_UNIT;
 const COST_PER_TOKEN_ANTHROPIC = COST_RATE_ANTHROPIC / TOKENS_PER_COST_UNIT;
 
-Deno.test("CostTracker: tracks single request", async () => {
+async function withTracker(testFn: (tracker: CostTracker) => Promise<void>): Promise<void> {
   const { db, cleanup } = await initTestDbService();
   try {
     const tracker = new CostTracker(db);
+    await testFn(tracker);
+    await db.close();
+  } finally {
+    await cleanup();
+  }
+}
 
+Deno.test("CostTracker: tracks single request", async () => {
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 500,
       completionTokens: 500,
@@ -42,18 +50,11 @@ Deno.test("CostTracker: tracks single request", async () => {
     // 1000 tokens * COST_PER_TOKEN_OPENAI
     const expectedCost = 1000 * COST_PER_TOKEN_OPENAI;
     assertEquals(dailyCost, expectedCost);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: accumulates multiple requests", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 500,
       completionTokens: 500,
@@ -70,18 +71,11 @@ Deno.test("CostTracker: accumulates multiple requests", async () => {
     // (1000 + 2000) tokens * COST_PER_TOKEN_OPENAI
     const expectedCost = 3000 * COST_PER_TOKEN_OPENAI;
     assertEquals(dailyCost, expectedCost);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: handles different providers", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 500,
       completionTokens: 500,
@@ -99,18 +93,11 @@ Deno.test("CostTracker: handles different providers", async () => {
 
     assertEquals(openaiCost, 1000 * COST_PER_TOKEN_OPENAI);
     assertEquals(anthropicCost, 1000 * COST_PER_TOKEN_ANTHROPIC);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: free providers cost zero", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration("ollama", "llama", {
       promptTokens: 5000,
       completionTokens: 5000,
@@ -128,18 +115,11 @@ Deno.test("CostTracker: free providers cost zero", async () => {
     assertEquals(ollamaCost, 0);
     // assertEquals(googleCost, 0);
     assertEquals(mockCost, 0);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: isWithinBudget returns true when under budget", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 250,
       completionTokens: 250,
@@ -149,18 +129,11 @@ Deno.test("CostTracker: isWithinBudget returns true when under budget", async ()
 
     const withinBudget = await tracker.isWithinBudget(PROVIDER_OPENAI, 0.01);
     assert(withinBudget);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: isWithinBudget returns false when over budget", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 7500,
       completionTokens: 7500,
@@ -170,18 +143,11 @@ Deno.test("CostTracker: isWithinBudget returns false when over budget", async ()
 
     const exceededBudget = await tracker.isWithinBudget(PROVIDER_OPENAI, 0.01);
     assert(!exceededBudget);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: getDailyCost without provider sums all", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     await tracker.trackGeneration(PROVIDER_OPENAI, "gpt-4", {
       promptTokens: 500,
       completionTokens: 500,
@@ -197,18 +163,11 @@ Deno.test("CostTracker: getDailyCost without provider sums all", async () => {
     const totalCost = await tracker.getDailyCost();
     const expectedTotal = (1000 * COST_PER_TOKEN_OPENAI) + (2000 * COST_PER_TOKEN_ANTHROPIC);
     assertAlmostEquals(totalCost, expectedTotal);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: getCostSummary returns records in date range", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     const startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
@@ -235,18 +194,11 @@ Deno.test("CostTracker: getCostSummary returns records in date range", async () 
     assertEquals(summary[1].provider, PROVIDER_OPENAI);
     assertEquals(summary[1].tokens, 1000);
     assertEquals(summary[1].estimatedCostUsd, 1000 * COST_PER_TOKEN_OPENAI);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: getCostSummary filters by provider", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
-
+  await withTracker(async (tracker) => {
     const startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
@@ -268,17 +220,11 @@ Deno.test("CostTracker: getCostSummary filters by provider", async () => {
 
     assertEquals(openaiSummary.length, 1);
     assertEquals(openaiSummary[0].provider, PROVIDER_OPENAI);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("CostTracker: queryByCriteria filters by traceId and portal", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const tracker = new CostTracker(db);
+  await withTracker(async (tracker) => {
     const traceId = crypto.randomUUID();
     const portal = "test-portal";
 
@@ -303,9 +249,5 @@ Deno.test("CostTracker: queryByCriteria filters by traceId and portal", async ()
     assertEquals(results[0].promptTokens, 400);
     assertEquals(results[0].completionTokens, 600);
     assertEquals(results[0].tokens, 1000);
-
-    await db.close();
-  } finally {
-    await cleanup();
-  }
+  });
 });

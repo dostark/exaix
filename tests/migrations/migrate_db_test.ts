@@ -10,7 +10,7 @@ import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { Database } from "@db/sqlite";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const REPO_ROOT = join(__dirname, "..", "..");

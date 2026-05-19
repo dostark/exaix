@@ -22,9 +22,9 @@ import {
   MemoryBankSource,
   MemoryReferenceType,
   MemoryScope,
-  MemoryStatus,
   type MemoryType,
 } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import {
   DEFAULT_EXECUTION_MEMORY_PATH,

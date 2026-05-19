@@ -6,7 +6,7 @@
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import { ActorType, AgentKind } from "@exaix/core";
 import {
@@ -44,22 +44,21 @@ function createMockConfigForTest(): ReturnType<typeof createMockConfig> {
   return createMockConfig("/tmp/test");
 }
 
-Deno.test("AgentExecutor: logExecutionStart writes correct field separation", async () => {
-  // Arrange
+function createExecutorHarness(): { executor: AgentExecutor; loggedEvents: ILogEvent[] } {
   const loggedEvents: ILogEvent[] = [];
-  const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfigForTest();
-  const mockDb = {} as Partial<DatabaseService>;
-  const mockPathResolver = {} as Partial<PathResolver>;
-  const mockPermissions = {} as Partial<PortalPermissionsService>;
-
   const executor = new AgentExecutor(
-    mockConfig,
-    mockDb as DatabaseService,
-    mockLogger as EventLogger,
-    mockPathResolver as PathResolver,
-    mockPermissions as PortalPermissionsService,
+    createMockConfigForTest(),
+    {} as Partial<DatabaseService> as DatabaseService,
+    createMockLogger(loggedEvents) as EventLogger,
+    {} as Partial<PathResolver> as PathResolver,
+    {} as Partial<PortalPermissionsService> as PortalPermissionsService,
   );
+
+  return { executor, loggedEvents };
+}
+
+Deno.test("AgentExecutor: logExecutionStart writes correct field separation", async () => {
+  const { executor, loggedEvents } = createExecutorHarness();
 
   // Act
   await executor.logExecutionStart("trace-123", "senior-coder", "my-portal");
@@ -80,21 +79,7 @@ Deno.test("AgentExecutor: logExecutionStart writes correct field separation", as
 });
 
 Deno.test("AgentExecutor: logExecutionComplete writes correct field separation", async () => {
-  // Arrange
-  const loggedEvents: ILogEvent[] = [];
-  const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfigForTest();
-  const mockDb = {} as Partial<DatabaseService>;
-  const mockPathResolver = {} as Partial<PathResolver>;
-  const mockPermissions = {} as Partial<PortalPermissionsService>;
-
-  const executor = new AgentExecutor(
-    mockConfig,
-    mockDb as DatabaseService,
-    mockLogger as EventLogger,
-    mockPathResolver as PathResolver,
-    mockPermissions as PortalPermissionsService,
-  );
+  const { executor, loggedEvents } = createExecutorHarness();
 
   const mockResult: IChangesetResult = {
     branch: "feature/test",
@@ -129,21 +114,7 @@ Deno.test("AgentExecutor: logExecutionComplete writes correct field separation",
 });
 
 Deno.test("AgentExecutor: logExecutionError writes correct field separation", async () => {
-  // Arrange
-  const loggedEvents: ILogEvent[] = [];
-  const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfigForTest();
-  const mockDb = {} as Partial<DatabaseService>;
-  const mockPathResolver = {} as Partial<PathResolver>;
-  const mockPermissions = {} as Partial<PortalPermissionsService>;
-
-  const executor = new AgentExecutor(
-    mockConfig,
-    mockDb as DatabaseService,
-    mockLogger as EventLogger,
-    mockPathResolver as PathResolver,
-    mockPermissions as PortalPermissionsService,
-  );
+  const { executor, loggedEvents } = createExecutorHarness();
 
   const errorPayload = {
     type: "execution_error",
@@ -169,21 +140,7 @@ Deno.test("AgentExecutor: logExecutionError writes correct field separation", as
 });
 
 Deno.test("AgentExecutor: REGRESSION - agentId must never be identity blueprint slug", async () => {
-  // Arrange
-  const loggedEvents: ILogEvent[] = [];
-  const mockLogger = createMockLogger(loggedEvents);
-  const mockConfig = createMockConfigForTest();
-  const mockDb = {} as Partial<DatabaseService>;
-  const mockPathResolver = {} as Partial<PathResolver>;
-  const mockPermissions = {} as Partial<PortalPermissionsService>;
-
-  const executor = new AgentExecutor(
-    mockConfig,
-    mockDb as DatabaseService,
-    mockLogger as EventLogger,
-    mockPathResolver as PathResolver,
-    mockPermissions as PortalPermissionsService,
-  );
+  const { executor, loggedEvents } = createExecutorHarness();
 
   // Act - log with identityId = "senior-coder"
   await executor.logExecutionStart("trace-999", "senior-coder", "test-portal");

@@ -22,7 +22,7 @@ import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy
 import type { IMemoryBankService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE, PortalAnalysisMode } from "@exaix/core";
 
 export interface IPortalKnowledgeServiceOptions {

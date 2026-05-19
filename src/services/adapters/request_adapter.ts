@@ -8,15 +8,10 @@
 
 import type { IRequestService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { RequestStatusType } from "@exaix/core/status/request_status.ts";
-import type {
-  AnalysisMode,
-  IRequestEntry,
-  IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "@exaix/core/types/mod.ts";
+import type { RequestStatusType } from "@exaix/core/status";
+import type { AnalysisMode } from "@exaix/core/types";
 import type { RequestSource } from "@exaix/core";
+import type { IRequestEntry, IRequestMetadata, IRequestOptions, IRequestShowResult } from "@exaix/core/request";
 
 interface IRequestCommandService {
   create(description: string, options?: IRequestOptions, source?: RequestSource): Promise<IRequestMetadata>;

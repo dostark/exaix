@@ -8,7 +8,7 @@ import { assertEquals } from "@std/assert";
 import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { PlanStatus } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo } from "../../helpers/test_helpers.ts";
 

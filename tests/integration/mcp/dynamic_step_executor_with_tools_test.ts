@@ -12,7 +12,7 @@ import { McpClient } from "../../../src/mcp/mcp_client.ts";
 import { ToolHandler } from "../../../src/mcp/tool_handler.ts";
 import { FlowRunner, type IFlowEventLogger } from "../../../src/flows/flow_runner.ts";
 import { createStubContext } from "../../helpers/test_helpers.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;

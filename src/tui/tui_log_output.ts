@@ -6,8 +6,8 @@
  * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
-import type { ILogOutput } from "@exaix/core/types/i_log_service.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types";
+import type { ILogOutput } from "@exaix/core/types";
 import type { StructuredLoggerService } from "./structured_log_service.ts";
 
 /**

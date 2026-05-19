@@ -11,7 +11,7 @@ import type { ITuiTheme } from "../helpers/colors.ts";
 import { TUI_MSG_DASHBOARD_HEADER, TUI_MSG_PRESS_CLOSE_HELP, TUI_STATUS_MSG_READY } from "../helpers/constants.ts";
 import { type IPane, renderGlobalHelpOverlay, renderPaneTitleBar, renderViewIndicator } from "../tui_dashboard.ts";
 import { renderNotificationPanel } from "../tui_helpers/notifications.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IMemoryNotification } from "@exaix/core/types";
 import type { INotificationService, IPortalService } from "@exaix/core/types";
 import type { IDashboardViewState } from "../tui_dashboard.ts";
 import { Table } from "@cliffy/table";

@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertNotEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { CritiqueSeverity, RequestPriority, RequestSource } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
@@ -18,7 +18,7 @@ import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import { AnalysisMode, type IRequestOptions } from "@exaix/core/types/mod.ts";
+import { AnalysisMode, type IRequestOptions } from "@exaix/core/types";
 
 describe("RequestCommands", () => {
   let tempDir: string;

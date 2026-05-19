@@ -12,7 +12,7 @@ import { createStubDb } from "../helpers/test_helpers.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class MockFailingRegistry implements IToolRegistry {
   private error: string;

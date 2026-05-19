@@ -12,7 +12,7 @@ import {
   MemoryBankSource,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import type {
   IChanges,
   IDecision,

@@ -7,11 +7,11 @@
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
-import { ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IRegisterReviewInput } from "@exaix/schemas/review.ts";
 

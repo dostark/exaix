@@ -11,12 +11,13 @@ import { assertEquals } from "@std/assert";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { ANALYZER_VERSION as _ANALYZER_VERSION } from "@exaix/core";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
-import { RequestSource, RequestStatus, TaskComplexity } from "@exaix/core";
+import { RequestSource, TaskComplexity } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import type { IApplicationContext } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IBlueprint, IParsedRequest } from "../../../src/services/agent/agent_runner.ts";
-import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 import {
   COMPLEXITY_BODY_LENGTH_LOW,
   COMPLEXITY_BULLET_THRESHOLD_HIGH,

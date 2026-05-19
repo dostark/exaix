@@ -11,14 +11,10 @@ import { assertEquals, assertExists } from "@std/assert";
 import { assessHeuristic } from "../../../src/services/quality_gate/heuristic_assessor.ts";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { RequestQualityIssueType, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
-import {
-  AmbiguityImpact,
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AmbiguityImpact, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { QualityGateMode } from "@exaix/core";
+import type { IRequestAnalysis } from "@exaix/core/request";
 
 // ---------------------------------------------------------------------------
 // Test helper — builds a minimal valid IRequestAnalysis

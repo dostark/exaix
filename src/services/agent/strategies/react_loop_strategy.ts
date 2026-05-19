@@ -14,7 +14,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";
 import { parse as parseToml } from "@std/toml";
 import type { JSONValue } from "@exaix/core";
-import type { IEventBusService } from "@exaix/core/observability/mod.ts";
+import type { IEventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
   DEFAULT_AGENT_MAX_ITERATIONS,

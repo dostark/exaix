@@ -7,7 +7,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { MemoryType } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import {
   type ISearchDeps,
   searchByKeyword,

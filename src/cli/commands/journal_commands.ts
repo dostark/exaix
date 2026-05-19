@@ -8,7 +8,7 @@
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import * as colors from "@std/fmt/colors";
-import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types";
 import { JournalFormatter } from "../formatters/journal_formatter.ts";
 import type { UIOutputFormat } from "@exaix/tui";
 

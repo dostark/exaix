@@ -16,10 +16,10 @@ import {
   LOG_LEVEL_ICONS,
   MinimalAgentServiceMock,
 } from "../../src/tui/agent_status_view.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
 import type { IAgentService } from "@exaix/core/types";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
-import { AgentStatus } from "@exaix/core/status/agent_status.ts";
+import { AgentStatus } from "@exaix/core/status";
 import { AgentHealth, CritiqueSeverity, LogLevel } from "@exaix/core";
 import { TuiGroupBy } from "@exaix/tui";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";

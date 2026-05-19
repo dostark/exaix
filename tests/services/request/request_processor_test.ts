@@ -6,7 +6,8 @@
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { MemoryStatus, MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
+import { MockStrategy, PricingTier, ProviderCostTier } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/services/request/request_processor.ts";
@@ -14,7 +15,7 @@ import { type IRequestProcessorConfig, RequestProcessor } from "../../../src/ser
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "@exaix/ai/providers";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";

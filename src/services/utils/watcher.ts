@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import {
   DEFAULT_UNKNOWN_LABEL,
   DEFAULT_WATCHER_STABILITY_BACKOFF_MS,

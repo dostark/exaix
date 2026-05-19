@@ -7,7 +7,7 @@
  * @related-files [.copilot/planning/phase-49-quality-pipeline-hardening.md]
  */
 import { assertEquals, assertExists } from "@std/assert";
-import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 // ---------------------------------------------------------------------------
 // acceptance_criteria
 // ---------------------------------------------------------------------------

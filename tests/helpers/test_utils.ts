@@ -6,8 +6,8 @@
  */
 
 import { MemoryBankSource, RequestSource, SkillStatus } from "@exaix/core";
-import { PlanStatus, type PlanStatusType } from "@exaix/core";
-import { RequestStatus, type RequestStatusType } from "@exaix/core";
+import { PlanStatus, type PlanStatusType } from "@exaix/core/status";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 
 // ===== Test Data Factories =====
 

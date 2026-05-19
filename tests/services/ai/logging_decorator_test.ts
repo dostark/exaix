@@ -8,9 +8,9 @@
 
 import { assertEquals } from "@std/assert";
 import { LogMethod } from "../../../src/services/decorators/logging.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 type LoggedCall = {
   level: LogLevel;

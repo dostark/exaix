@@ -25,7 +25,7 @@ import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/sch
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { MockStrategy, QualityGateMode } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";

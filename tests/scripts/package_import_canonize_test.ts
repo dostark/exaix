@@ -7,13 +7,19 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 
+interface CanonizeWorkspace {
+  tempRoot: string;
+  importerPath: string;
+  packageDir: string;
+}
+
 function scriptPath(): string {
   return new URL("../../scripts/package_import_canonize.ts", import.meta.url).pathname;
 }
 
-Deno.test("package_import_canonize dry-run reports canonical subfolder barrel without creating it", async () => {
+async function createCanonizeWorkspace(options: { rootBarrel?: boolean } = {}): Promise<CanonizeWorkspace> {
   const tempRoot = await Deno.makeTempDir();
-  const packageDir = join(tempRoot, "packages/testing/src/helpers");
+  const packageDir = join(tempRoot, options.rootBarrel ? "packages/testing/src" : "packages/testing/src/helpers");
   const importerDir = join(tempRoot, "packages/parsing/src");
 
   await Deno.mkdir(packageDir, { recursive: true });
@@ -27,73 +33,66 @@ Deno.test("package_import_canonize dry-run reports canonical subfolder barrel wi
       },
     }),
   );
-  await Deno.writeTextFile(join(tempRoot, "packages/testing/mod.ts"), "export {}\n");
+  await Deno.writeTextFile(
+    join(tempRoot, "packages/testing/mod.ts"),
+    options.rootBarrel ? 'export * from "./src/db.ts";\n' : "export {}\n",
+  );
   await Deno.writeTextFile(join(packageDir, "db.ts"), "export function createLoggingTestDb() {}\n");
 
-  const importerPath = join(importerDir, "markdown.ts");
-  const original = 'import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";\n';
-  await Deno.writeTextFile(importerPath, original);
+  return {
+    tempRoot,
+    importerPath: join(importerDir, "markdown.ts"),
+    packageDir,
+  };
+}
 
+async function runCanonize(
+  tempRoot: string,
+  ...extraArgs: string[]
+): Promise<{ code: number; stdout: string; stderr: string }> {
   const command = new Deno.Command(Deno.execPath(), {
     args: [
       "run",
       "--allow-read",
       "--allow-write",
       scriptPath(),
+      ...extraArgs,
     ],
     cwd: tempRoot,
     stdout: "piped",
     stderr: "piped",
   });
   const { code, stdout, stderr } = await command.output();
+  return {
+    code,
+    stdout: new TextDecoder().decode(stdout),
+    stderr: new TextDecoder().decode(stderr),
+  };
+}
 
-  assertEquals(code, 0, new TextDecoder().decode(stderr));
-  const output = new TextDecoder().decode(stdout);
-  assertStringIncludes(output, 'from "@exaix/testing/helpers";');
+Deno.test("package_import_canonize dry-run reports canonical subfolder barrel without creating it", async () => {
+  const { tempRoot, importerPath, packageDir } = await createCanonizeWorkspace();
+  const original = 'import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";\n';
+  await Deno.writeTextFile(importerPath, original);
+
+  const { code, stdout, stderr } = await runCanonize(tempRoot);
+
+  assertEquals(code, 0, stderr);
+  assertStringIncludes(stdout, 'from "@exaix/testing/helpers";');
   assertEquals(await Deno.readTextFile(importerPath), original);
   assert(!(await fileExists(join(packageDir, "mod.ts"))));
 });
 
 Deno.test("package_import_canonize --edit rewrites imports and creates missing subfolder barrel", async () => {
-  const tempRoot = await Deno.makeTempDir();
-  const packageDir = join(tempRoot, "packages/testing/src/helpers");
-  const importerDir = join(tempRoot, "packages/parsing/src");
-
-  await Deno.mkdir(packageDir, { recursive: true });
-  await Deno.mkdir(importerDir, { recursive: true });
-  await Deno.writeTextFile(
-    join(tempRoot, "deno.json"),
-    JSON.stringify({
-      imports: {
-        "@exaix/testing": "./packages/testing/mod.ts",
-        "@exaix/testing/": "./packages/testing/src/",
-      },
-    }),
-  );
-  await Deno.writeTextFile(join(tempRoot, "packages/testing/mod.ts"), "export {}\n");
-  await Deno.writeTextFile(join(packageDir, "db.ts"), "export function createLoggingTestDb() {}\n");
-
-  const importerPath = join(importerDir, "markdown.ts");
+  const { tempRoot, importerPath, packageDir } = await createCanonizeWorkspace();
   await Deno.writeTextFile(
     importerPath,
     'import { createLoggingTestDb } from "@exaix/testing/helpers/db.ts";\n',
   );
 
-  const command = new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      scriptPath(),
-      "--edit",
-    ],
-    cwd: tempRoot,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { code, stderr } = await command.output();
+  const { code, stderr } = await runCanonize(tempRoot, "--edit");
 
-  assertEquals(code, 0, new TextDecoder().decode(stderr));
+  assertEquals(code, 0, stderr);
   assertStringIncludes(
     await Deno.readTextFile(importerPath),
     'import { createLoggingTestDb } from "@exaix/testing/helpers";',
@@ -105,45 +104,15 @@ Deno.test("package_import_canonize --edit rewrites imports and creates missing s
 });
 
 Deno.test("package_import_canonize prefers exact package alias for root barrel imports", async () => {
-  const tempRoot = await Deno.makeTempDir();
-  const packageSrcDir = join(tempRoot, "packages/testing/src");
-  const importerDir = join(tempRoot, "packages/parsing/src");
-
-  await Deno.mkdir(packageSrcDir, { recursive: true });
-  await Deno.mkdir(importerDir, { recursive: true });
-  await Deno.writeTextFile(
-    join(tempRoot, "deno.json"),
-    JSON.stringify({
-      imports: {
-        "@exaix/testing": "./packages/testing/mod.ts",
-        "@exaix/testing/": "./packages/testing/src/",
-      },
-    }),
-  );
-  await Deno.writeTextFile(join(packageSrcDir, "db.ts"), "export function createLoggingTestDb() {}\n");
-  await Deno.writeTextFile(join(tempRoot, "packages/testing/mod.ts"), 'export * from "./src/db.ts";\n');
-
-  const importerPath = join(importerDir, "markdown.ts");
+  const { tempRoot, importerPath } = await createCanonizeWorkspace({ rootBarrel: true });
   await Deno.writeTextFile(
     importerPath,
     'import { createLoggingTestDb } from "@exaix/testing/db.ts";\n',
   );
 
-  const command = new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      scriptPath(),
-      "--edit",
-    ],
-    cwd: tempRoot,
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { code, stderr } = await command.output();
+  const { code, stderr } = await runCanonize(tempRoot, "--edit");
 
-  assertEquals(code, 0, new TextDecoder().decode(stderr));
+  assertEquals(code, 0, stderr);
   assertStringIncludes(
     await Deno.readTextFile(importerPath),
     'import { createLoggingTestDb } from "@exaix/testing";',

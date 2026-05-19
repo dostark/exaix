@@ -13,7 +13,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { ensureScenarioUsesFixtureOnly, type IRequestFixture, loadRequestFixture } from "./request_fixtures.ts";
 import type { IScenario } from "../schema/scenario_schema.ts";
 import type { IScenarioStep } from "../schema/step_schema.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 export interface IScenarioLoaderOptions {
   frameworkHome: string;

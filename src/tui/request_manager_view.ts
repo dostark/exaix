@@ -9,8 +9,8 @@
 import { KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "./tui_common.ts";
-import type { AnalysisMode } from "@exaix/core/types/mod.ts";
-import { isRequestStatus, RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
+import type { AnalysisMode } from "@exaix/core/types";
+import { isRequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { createGroupNode, createNode, findNode, flattenTree, type ITreeNode, renderTree } from "./helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import type { IKeyBinding } from "./helpers/keyboard.ts";
@@ -29,6 +29,7 @@ import {
   type RequestDialogTypeUnion,
 } from "./request_manager/dialog_handlers.ts";
 import { MessageType, type NavDirection, RequestOperation, RequestPriority, RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
 import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
 
@@ -37,7 +38,7 @@ import type {
   IRequestMetadata,
   IRequestOptions,
   IRequestShowResult,
-} from "@exaix/core/types/mod.ts";
+} from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
 import {
   TUI_ELEMENT_ACTION_BUTTONS,

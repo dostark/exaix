@@ -20,7 +20,7 @@ import {
   LearningSchema,
 } from "@exaix/schemas/memory_bank.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { getMemoryGlobalDir } from "../../helpers/paths_helper.ts";
 import { createSampleLearning, createTestMemoryBankWithGlobal } from "../helpers/memory_bank_test_helpers.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";

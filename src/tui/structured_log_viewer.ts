@@ -12,11 +12,8 @@ import type { DialogBase } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import type { ITreeViewState } from "./base/tree_view_state.ts";
-import type {
-  ILogger as IStructuredLogger,
-  ILogService as IStructuredLogService,
-} from "@exaix/core/types/i_log_service.ts";
-import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
+import type { ILogger, ILogService } from "@exaix/core/types";
+import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import {
   TUI_ACTION_SEARCH,
@@ -269,15 +266,15 @@ export const STRUCTURED_LOG_VIEWER_KEY_BINDINGS = new StructuredLogViewerKeyBind
  */
 export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   protected logViewExtensions: ILogViewExtensions;
-  private logService: IStructuredLogService;
-  private structuredLogger: IStructuredLogger;
+  private logService: ILogService;
+  private structuredLogger: ILogger;
   private unsubscribeRealTime?: () => void;
   private refreshInterval?: number;
   private pendingDialogType: "search" | "filter-level" | "export" | null = null;
 
   constructor(
-    logService: IStructuredLogService,
-    structuredLogger: IStructuredLogger,
+    logService: ILogService,
+    structuredLogger: ILogger,
     options: { testMode?: boolean } = {},
   ) {
     super(options.testMode ? false : true);

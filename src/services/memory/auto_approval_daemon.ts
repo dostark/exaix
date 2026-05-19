@@ -6,7 +6,7 @@
  * @architectural-layer Services
  * @related-files [src/main.ts, src/services/memory/memory_auto_approval_service.ts, src/services/notification/notification.ts]
  */
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.ts";
 import type { MemoryExtractorService } from "./memory_extractor.ts";
 import type { NotificationService } from "../notification/notification.ts";

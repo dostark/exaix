@@ -10,7 +10,7 @@
 
 export { buildQualityGateConfig, RequestQualityGate } from "./request_quality_gate.ts";
 export { type IQualityGateTomlConfig } from "./request_quality_gate.ts";
-export { type IRequestQualityGateConfig } from "@exaix/core/types/i_request_quality_gate_service.ts";
+export { type IRequestQualityGateConfig } from "@exaix/core/types";
 export { assessHeuristic } from "./heuristic_assessor.ts";
 export { LlmQualityAssessor } from "./llm_assessor.ts";
 export { enrichRequest } from "./request_enricher_llm.ts";

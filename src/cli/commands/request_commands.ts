@@ -7,7 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import type { RequestStatusType } from "@exaix/core";
+import type { RequestStatusType } from "@exaix/core/status";
 import { RequestCreateHandler } from "../handlers/request_create_handler.ts";
 import { RequestListHandler } from "../handlers/request_list_handler.ts";
 import { RequestShowHandler } from "../handlers/request_show_handler.ts";
@@ -24,7 +24,7 @@ import {
   type IRequestMetadata,
   type IRequestOptions,
   type IRequestShowResult,
-} from "@exaix/core";
+} from "@exaix/core/request";
 
 /**
  * RequestCommands provides CLI operations for creating and managing requests.

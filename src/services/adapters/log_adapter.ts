@@ -6,9 +6,9 @@
  * @related-files ["packages/core/src/logger/structured_logger.ts", src/tui/structured_log_service.ts]
  */
 
-import type { ILogOutput, ILogService } from "@exaix/core/types/i_log_service.ts";
-import { FileOutput, ObservableOutput } from "@exaix/core/logger/structured_logger.ts";
-import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
+import type { ILogOutput, ILogService } from "@exaix/core/types";
+import { FileOutput, ObservableOutput } from "@exaix/core/logger";
+import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
 import { join } from "@std/path";
 
 interface LoggerWithOutputs {

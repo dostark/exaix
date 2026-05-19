@@ -17,12 +17,12 @@ import {
   MemoryReferenceType,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import type { ILearning, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 function makeProposalLearning(overrides: Partial<IProposalLearning> = {}): IProposalLearning {
   return {

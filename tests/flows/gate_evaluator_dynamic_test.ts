@@ -10,7 +10,7 @@ import { type GateConfig, GateEvaluator } from "../../src/flows/gate_evaluator.t
 import type { IJudgeInvoker } from "@exaix/core/types";
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { ANALYZER_VERSION, FlowGateOnFail } from "@exaix/core";
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 

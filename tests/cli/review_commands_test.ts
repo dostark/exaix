@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { FlowStepType, MemoryOperation } from "@exaix/core";
-import { ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
@@ -203,6 +203,7 @@ describe("ReviewCommands", () => {
         "code-analyst",
         "# Early artifact\n\nFirst",
       );
+      await db.waitForFlush();
 
       // Ensure git commit timestamp is later (git timestamps are second precision)
       await delay(1500);

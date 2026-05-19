@@ -9,10 +9,10 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueSeverity } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import type { JSONObject, JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONObject, JSONValue } from "@exaix/core/types";
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import {
   createFastToolReflector,
   createStrictToolReflector,

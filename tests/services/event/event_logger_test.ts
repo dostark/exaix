@@ -7,9 +7,9 @@
 
 import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { initTestDbService } from "../../helpers/db.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
-import { EventBusService } from "@exaix/core/observability/mod.ts";
+import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { STREAMING_EVENT_FLOW_STATUS, STREAMING_EVENT_TOOL_START } from "@exaix/core";
 

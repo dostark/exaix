@@ -13,7 +13,7 @@ import {
   TUI_LAYOUT_VALUE_WIDTH,
   TUI_MSG_PRESS_QUIT,
 } from "../helpers/constants.ts";
-import type { IRequest } from "@exaix/core/types/mod.ts";
+import type { IRequest } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 
 /**

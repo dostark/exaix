@@ -6,7 +6,7 @@
  */
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { makeGenerateResult } from "./test_helpers.ts";
 
 /**

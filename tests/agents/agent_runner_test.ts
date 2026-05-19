@@ -11,7 +11,7 @@ import { AgentRunner, type IBlueprint, type IParsedRequest } from "../../src/ser
 import { MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
 import { buildPortalContextBlock } from "../../src/services/context/prompt_context.ts";
 import type { ISkillsService } from "@exaix/core/types";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { IGenerateResult } from "@exaix/ai/types.ts";
 // ============================================================================

@@ -9,9 +9,10 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { PlanStatus, type PlanStatusType } from "@exaix/core";
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
-import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
+import { PlanStatus } from "@exaix/core/status";
+import type { PlanStatusType } from "@exaix/core/status";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
+import type { IDisplayService } from "@exaix/core/types";
 import type { IConfigService } from "@exaix/core/types";
 import type { IDatabaseService } from "../../services/core/db.ts";
 

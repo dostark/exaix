@@ -7,7 +7,7 @@
  */
 
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
-import type { IStructuredLogger } from "@exaix/core/logger/structured_logger.ts";
+import type { IStructuredLogger } from "@exaix/core/logger";
 
 /**
  * Cleanup task interface for graceful shutdown

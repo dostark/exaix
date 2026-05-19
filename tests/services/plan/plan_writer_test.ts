@@ -17,7 +17,7 @@ import type {
   IRequestMetadata,
 } from "../../../src/services/plan/plan_writer.ts";
 import type { IDatabaseService } from "@exaix/core/types";
-import type { IActivityRecord } from "@exaix/core/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types";
 
 /**
  * Helper: Retrieve calls from a spy

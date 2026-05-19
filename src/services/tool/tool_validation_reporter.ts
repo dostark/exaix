@@ -9,7 +9,7 @@
  * @related-files ["src/services/tool/tool_validation_reporter.ts", "packages/schemas/src/tool_result_remediation.ts"]
  */
 
-import { EventLogger, type IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger, type IEventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import type { IDatabaseService, IPlanAmendmentService } from "@exaix/core/types";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";

@@ -8,104 +8,21 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ChangesetResultSchema } from "@exaix/schemas/agent_executor.ts";
-import { SecurityMode } from "@exaix/core";
-import { join } from "@std/path";
-import { initTestDbService } from "../helpers/db.ts";
-import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import { PathResolver } from "../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
-
-import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
-import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
-
-/**
- * Helper: set up a full AgentExecutor with all dependencies for strategy testing.
- */
-async function setupExecutor(
-  tempDir: string,
-  provider: MockProvider,
-): Promise<{
-  executor: AgentExecutor;
-  cleanup: () => Promise<void>;
-}> {
-  const { db, cleanup: dbCleanup } = await initTestDbService();
-  const config = createTestConfig();
-  config.system.root = tempDir;
-  config.paths = {
-    ...config.paths,
-    workspace: join(tempDir, "Workspace"),
-    blueprints: join(tempDir, "Blueprints"),
-  };
-  config.portals = [{
-    alias: "workspace",
-    target_path: tempDir,
-    default_branch: "main",
-    identities_allowed: ["*"],
-    operations: [],
-  }];
-
-  // Create blueprint
-  const blueprintsDir = join(tempDir, "Blueprints", "Identities");
-  await Deno.mkdir(blueprintsDir, { recursive: true });
-  const fixture_1 = readFixtureTextSync(import.meta.url, "regression", "strategy_parity_test", "fixture_1.md");
-  await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture_1);
-
-  const logger = new EventLogger({ db });
-  const pathResolver = new PathResolver(config);
-  const permissions = new PortalPermissionsService(config.portals);
-
-  // Create strategy registry with both strategies sharing the same provider
-  const executor = new AgentExecutor(
-    config,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider,
-  );
-
-  return {
-    executor,
-    cleanup: async () => {
-      executor.dispose();
-      await dbCleanup();
-      try {
-        await Deno.remove(tempDir, { recursive: true });
-      } catch { /* ignore */ }
-    },
-  };
-}
-
-const TEST_OPTIONS: IAgentExecutionOptions = {
-  identity_id: "test-agent",
-  portal: "workspace",
-  security_mode: SecurityMode.HYBRID,
-  audit_enabled: true,
-  timeout_ms: 30000,
-  max_tool_calls: 10,
-};
-
-const TEST_BLUEPRINT: IAgentFileBlueprint = {
-  name: "test-agent",
-  model: "mock-model",
-  provider: "mock",
-  capabilities: ["write"],
-  allowed_paths: ["test.txt"],
-  systemPrompt: "You are a test agent.",
-};
+import type { IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";
 
 Deno.test("Strategy parity: LegacyAgentStrategy returns valid ChangesetResult schema", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "strategy-parity-legacy-" });
   const mockResponse = "No actions needed. Task is complete.";
   const provider = new MockProvider(mockResponse);
 
-  const { executor, cleanup } = await setupExecutor(tempDir, provider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, provider, {
+    group: "regression",
+    file: "strategy_parity_test",
+  });
 
   try {
     const legacyStrategy = new LegacyAgentStrategy(executor, provider);
@@ -153,7 +70,10 @@ Deno.test("Strategy parity: ReActLoopStrategy returns valid ChangesetResult sche
   // ReAct strategy needs a response that signals completion
   const mockProvider = new MockProvider("STATUS: COMPLETE\n\nSummary: Task done.");
 
-  const { executor, cleanup } = await setupExecutor(tempDir, mockProvider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, mockProvider, {
+    group: "regression",
+    file: "strategy_parity_test",
+  });
 
   try {
     const reactStrategy = new ReActLoopStrategy(executor, mockProvider);
@@ -189,7 +109,10 @@ Deno.test("Strategy parity: both strategies produce identical result schema fiel
   const mockResponse = "STATUS: COMPLETE\n\nDone.";
   const provider = new MockProvider(mockResponse);
 
-  const { executor, cleanup } = await setupExecutor(tempDir, provider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, provider, {
+    group: "regression",
+    file: "strategy_parity_test",
+  });
 
   try {
     const legacyStrategy = new LegacyAgentStrategy(executor, provider);

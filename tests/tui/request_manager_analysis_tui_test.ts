@@ -7,15 +7,10 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MinimalRequestServiceMock, RequestManagerTuiSession } from "../../src/tui/request_manager_view.ts";
 import { RequestFormatter } from "../../src/tui/request_manager/formatters.ts";
-import {
-  AmbiguityImpact,
-  AnalysisMode,
-  type IRequestAnalysis,
-  RequestAnalysisComplexity,
-  RequestTaskType,
-} from "@exaix/schemas/request_analysis.ts";
+import { AmbiguityImpact, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { RequestPriority, RequestSource } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
+import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
+import { RequestStatus } from "@exaix/core/status";
 import { ANALYZER_VERSION } from "@exaix/core";
 
 Deno.test("RequestManagerTuiSession - Detail View includes Analysis section", async () => {

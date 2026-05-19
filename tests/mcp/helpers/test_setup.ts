@@ -28,7 +28,7 @@ import {
 } from "../../helpers/test_helpers.ts";
 
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";

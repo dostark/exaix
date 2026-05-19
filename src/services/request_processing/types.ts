@@ -9,7 +9,7 @@
 import type {
   IRequestFrontmatter as CoreRequestFrontmatter,
   ParsedRequestFile as CoreParsedRequestFile,
-} from "@exaix/core/request/request_frontmatter.ts";
+} from "@exaix/core/request";
 
 export type IRequestFrontmatter = CoreRequestFrontmatter;
 export type ParsedRequestFile = CoreParsedRequestFile;

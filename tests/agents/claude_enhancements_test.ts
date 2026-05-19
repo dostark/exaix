@@ -11,7 +11,7 @@
 import { assert, assertExists } from "@std/assert";
 import { parse } from "@std/yaml";
 import { inject } from "../../scripts/inject_agent_context.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 Deno.test("Claude enhancements: verify all required files exist", async () => {
   // Verify all enhanced files were created

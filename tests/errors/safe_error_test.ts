@@ -6,9 +6,9 @@
  */
 
 import { assertEquals, assertInstanceOf } from "@std/assert";
-import { SafeError } from "@exaix/core/errors/safe_error.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import { SafeError } from "@exaix/core/errors";
+import type { EventLogger } from "@exaix/core/logger";
+import type { JSONObject } from "@exaix/core/types";
 
 // Mock EventLogger for testing
 class MockEventLogger {

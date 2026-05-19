@@ -11,14 +11,14 @@ import { join } from "@std/path";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
 import { defineFlow } from "../../src/flows/define_flow.ts";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
-import { MockLLMProvider } from "@exaix/ai/providers/mock_llm_provider.ts";
+import { MockLLMProvider } from "@exaix/ai/providers";
 import { DEFAULT_FLOW_VERSION, EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import type { DatabaseService } from "../../src/services/core/db.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 describe("Example Flows - Step 7.9", {
   sanitizeResources: false,

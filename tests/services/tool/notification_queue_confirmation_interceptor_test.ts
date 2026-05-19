@@ -11,23 +11,9 @@ import {
   TOOL_CONFIRMATION_NOTIFY_TYPE,
 } from "@exaix/core";
 import type { INotificationService } from "@exaix/core/types";
-import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { IActivityJournal, JournalEntry } from "../../../src/flows/dynamic_step_executor.ts";
 import { NotificationQueueConfirmationInterceptor } from "../../../src/services/tool/notification_queue_confirmation_interceptor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-
-class MockActivityJournal implements IActivityJournal {
-  private entries: JournalEntry[] = [];
-
-  getEntries(): JournalEntry[] {
-    return [...this.entries];
-  }
-
-  log(entry: JournalEntry): Promise<void> {
-    this.entries.push(entry);
-    return Promise.resolve();
-  }
-}
+import { createToolConfirmationRequest, MockActivityJournal } from "./helpers/confirmation_test_helpers.ts";
 
 class MockNotificationService implements Pick<INotificationService, "notify"> {
   calls: Array<{ message: string; type?: string; proposalId?: string; traceId?: string; metadata?: string }> = [];
@@ -44,24 +30,12 @@ class MockNotificationService implements Pick<INotificationService, "notify"> {
   }
 }
 
-function createRequest(id: string, expiresAt: string): ToolConfirmationRequest {
-  return {
-    id,
-    toolName: "exaix_create_request",
-    args: { title: "Create request" },
-    stepId: "step-1",
-    traceId: "trace-1",
-    requestedAt: "2026-05-18T10:00:00.000Z",
-    expiresAt,
-  };
-}
-
 Deno.test("NotificationQueueConfirmationInterceptor: resolves approval after queued decision", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const notificationService = new MockNotificationService();
     const activityJournal = new MockActivityJournal();
-    const request = createRequest(crypto.randomUUID(), "2026-05-18T10:02:00.000Z");
+    const request = createToolConfirmationRequest();
 
     let wroteDecision = false;
     const interceptor = new NotificationQueueConfirmationInterceptor(
@@ -101,7 +75,7 @@ Deno.test("NotificationQueueConfirmationInterceptor: resolves denial after queue
   try {
     const notificationService = new MockNotificationService();
     const activityJournal = new MockActivityJournal();
-    const request = createRequest(crypto.randomUUID(), "2026-05-18T10:02:00.000Z");
+    const request = createToolConfirmationRequest();
 
     let wroteDecision = false;
     const interceptor = new NotificationQueueConfirmationInterceptor(
@@ -141,7 +115,7 @@ Deno.test("NotificationQueueConfirmationInterceptor: timeout auto-denies when no
   try {
     const notificationService = new MockNotificationService();
     const activityJournal = new MockActivityJournal();
-    const request = createRequest(crypto.randomUUID(), "2026-05-18T10:02:00.000Z");
+    const request = createToolConfirmationRequest();
 
     let now = Date.parse("2026-05-18T10:01:00.000Z");
     const interceptor = new NotificationQueueConfirmationInterceptor(
@@ -174,7 +148,7 @@ Deno.test("NotificationQueueConfirmationInterceptor: logs requested event exactl
   try {
     const notificationService = new MockNotificationService();
     const activityJournal = new MockActivityJournal();
-    const request = createRequest(crypto.randomUUID(), "2026-05-18T10:02:00.000Z");
+    const request = createToolConfirmationRequest();
 
     let now = Date.parse("2026-05-18T10:01:00.000Z");
     const interceptor = new NotificationQueueConfirmationInterceptor(

@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { AgentExecutor, type IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
 import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { Config } from "@exaix/schemas/config.ts";

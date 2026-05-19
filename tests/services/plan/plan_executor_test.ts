@@ -14,7 +14,7 @@ import {
 import { join } from "@std/path";
 import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createGitTestContext, GitTestHelper, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";

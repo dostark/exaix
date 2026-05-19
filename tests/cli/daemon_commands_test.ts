@@ -16,9 +16,9 @@ import type { DatabaseService as DatabaseService } from "../../src/services/core
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { IDisplayService } from "@exaix/core/types";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { createStubContext, createStubDb } from "../helpers/test_helpers.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 

@@ -10,7 +10,7 @@
 import { resolve } from "@std/path";
 import { z } from "zod";
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 export interface IScenarioSelectionOptions {
   explicitScenarioIds?: string[];

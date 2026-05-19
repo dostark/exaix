@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { IActivityRecord } from "@exaix/core/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import { IdentityPerformanceRepository } from "../../../src/services/routing/identity_performance_repository.ts";
 

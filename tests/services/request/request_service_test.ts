@@ -7,13 +7,13 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { RequestService } from "../../../src/services/request/request.ts";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { RequestPriority, RequestSource } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay } from "../../helpers/test_helpers.ts";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { saveAnalysis } from "../../../src/services/request_analysis/mod.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 
 function createTestRequestService(root: string, overrides?: {

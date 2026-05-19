@@ -7,7 +7,7 @@
  */
 
 import type { TuiNodeType } from "@exaix/tui";
-import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
+import type { IMemoryService } from "@exaix/core/types";
 
 export type ITreeNodeType = TuiNodeType;
 

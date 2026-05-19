@@ -11,9 +11,9 @@ import { GroupingMode, LogGroupingMode } from "@exaix/tui";
 import { MONITOR_KEY_BINDINGS, MonitorView } from "../../src/tui/monitor_view.ts";
 import { LOG_COLORS, LOG_ICONS } from "../../src/tui/tui.config.ts";
 import type { ILogEntry } from "../../src/tui/monitor_view.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import type { ActivityRecord } from "../../src/services/core/db.ts";
-import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IJournalFilterOptions } from "@exaix/core/types";
 import {
   createMockDatabaseService,
   createMonitorViewWithLogs,

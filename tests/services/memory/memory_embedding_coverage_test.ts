@@ -6,7 +6,7 @@
  */
 import { ensureDir } from "@std/fs";
 import { assert } from "@std/assert";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { assertAlmostEquals, assertEquals, assertExists, assertGreaterOrEqual } from "@std/assert";

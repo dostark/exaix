@@ -7,14 +7,15 @@
  */
 
 import { join } from "@std/path";
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 import { GitService } from "@exaix/git";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
 import { FlowLoader } from "../flows/flow_loader.ts";
 import { ActivityActor, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
-import { DatabaseService, type IDatabaseService } from "../services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
+import type { IDatabaseService } from "@exaix/core/types";
 import { ToolRegistry } from "../services/tool/tool_registry.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";

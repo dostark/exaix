@@ -7,7 +7,8 @@
 import { assertEquals, assertMatch } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { ExaPathDefaults, PlanStatus, PortalOperation } from "@exaix/core";
+import { ExaPathDefaults, PortalOperation } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
 import type { Config } from "@exaix/schemas/config.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
 import { GitCommitTool } from "../../src/mcp/handlers/git_commit_tool.ts";

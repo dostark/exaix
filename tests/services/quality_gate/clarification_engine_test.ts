@@ -17,7 +17,7 @@ import {
 } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { ClarificationEngine } from "../../../src/services/quality_gate/clarification_engine.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

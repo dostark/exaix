@@ -8,7 +8,6 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
-import { Severity, ToolSideEffectScope } from "@exaix/core";
 import {
   applyRemediationPolicy,
   REMEDIATION_OUTCOME_ESCALATED,
@@ -23,21 +22,15 @@ import {
   REMEDIATION_MODE_FAIL_CLOSED,
   REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
 } from "@exaix/schemas/tool_result.ts";
-import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
-import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result_validator.ts";
+import {
+  createRemediationPolicy,
+  createValidationFailure,
+  SYNTHETIC_FAILURE,
+  VALIDATION_ADAPTER,
+} from "./helpers/tool_result_policy_test_helpers.ts";
 
 const KNOWN_MUTATING_TOOL = "write_file";
 const KNOWN_READONLY_TOOL = "read_file";
-
-const syntheticFailure: IToolResultValidationFailure = {
-  tool: "run_command",
-  stage: "registry_boundary",
-  severity: Severity.ERROR,
-  retryAllowed: false,
-  sideEffectRisk: ToolSideEffectScope.NONE,
-  issues: [{ path: ["success"], message: "Expected boolean, received string", code: "invalid_type" }],
-  rawResult: { success: "yes" },
-};
 
 // ============================================================================
 // lookupRemediationPolicy
@@ -72,20 +65,12 @@ Deno.test("tool_result_remediation_policy: read-only tool gets normalize_then_va
 // ============================================================================
 
 Deno.test("tool_result_remediation_policy: fail_closed mode returns fail_closed outcome immediately", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: "run_command",
-    mode: REMEDIATION_MODE_FAIL_CLOSED,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy("run_command", REMEDIATION_MODE_FAIL_CLOSED);
   const result = await applyRemediationPolicy(
     "run_command",
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({ ...SYNTHETIC_FAILURE, retryAllowed: false }),
+    VALIDATION_ADAPTER,
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_FAIL_CLOSED);
   assertExists(result.failure);
@@ -97,20 +82,12 @@ Deno.test("tool_result_remediation_policy: fail_closed mode returns fail_closed 
 // ============================================================================
 
 Deno.test("tool_result_remediation_policy: escalate_only mode returns escalated outcome", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: "run_command",
-    mode: REMEDIATION_MODE_ESCALATE_ONLY,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy("run_command", REMEDIATION_MODE_ESCALATE_ONLY);
   const result = await applyRemediationPolicy(
     "run_command",
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({ ...SYNTHETIC_FAILURE, retryAllowed: false }),
+    VALIDATION_ADAPTER,
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_ESCALATED);
   assertExists(result.failure);
@@ -122,40 +99,30 @@ Deno.test("tool_result_remediation_policy: escalate_only mode returns escalated 
 // ============================================================================
 
 Deno.test("tool_result_remediation_policy: normalize_then_validate without normalize fn returns normalization_failed", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: "read_file",
-    mode: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(
+    "read_file",
+    REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
+  );
   const result = await applyRemediationPolicy(
     "read_file",
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({ ...SYNTHETIC_FAILURE, retryAllowed: false }),
+    VALIDATION_ADAPTER,
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_NORMALIZATION_FAILED);
   assertEquals(result.retriesAttempted, 0);
 });
 
 Deno.test("tool_result_remediation_policy: normalize_then_validate with fix-producing normalize returns passed", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: "read_file",
-    mode: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(
+    "read_file",
+    REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
+  );
   const result = await applyRemediationPolicy(
     "read_file",
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({ ...SYNTHETIC_FAILURE, retryAllowed: false }),
+    VALIDATION_ADAPTER,
     {
       normalize: (_raw: JSONValue) => ({ success: true, data: "normalized" }),
     },
@@ -166,20 +133,15 @@ Deno.test("tool_result_remediation_policy: normalize_then_validate with fix-prod
 });
 
 Deno.test("tool_result_remediation_policy: normalize_then_validate with still-broken normalize returns normalization_failed", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: "read_file",
-    mode: REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
-    maxRetries: 0,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(
+    "read_file",
+    REMEDIATION_MODE_NORMALIZE_THEN_VALIDATE,
+  );
   const result = await applyRemediationPolicy(
     "read_file",
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({ ...SYNTHETIC_FAILURE, retryAllowed: false }),
+    VALIDATION_ADAPTER,
     {
       normalize: (_raw: JSONValue) => ({ success: "still wrong" }),
     },

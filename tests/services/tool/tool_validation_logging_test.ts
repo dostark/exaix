@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 import { type ILogEvent, type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
 import {
   type IValidationReportContext,

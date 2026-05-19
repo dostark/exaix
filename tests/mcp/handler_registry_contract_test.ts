@@ -10,7 +10,7 @@ import { SearchFilesTool } from "../../src/mcp/handlers/search_files_tool.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class FixedResultRegistry implements IToolRegistry {
   private result: IToolResult;

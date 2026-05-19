@@ -15,7 +15,7 @@ import {
   MemoryScope,
   type MemoryType as _MemoryType,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { KEYS } from "../../../src/tui/helpers/keyboard.ts";
 import type {
   IExecutionMemory,

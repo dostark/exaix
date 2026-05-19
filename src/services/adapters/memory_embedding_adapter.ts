@@ -9,7 +9,7 @@
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type { MemoryEmbeddingService } from "../memory/memory_embedding.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddingSearchResult } from "@exaix/core/types/memory.ts";
+import type { IEmbeddingSearchResult } from "@exaix/core/types";
 
 export class MemoryEmbeddingAdapter implements IMemoryEmbeddingService {
   constructor(private inner: MemoryEmbeddingService) {}

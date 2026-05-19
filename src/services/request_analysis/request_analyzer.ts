@@ -16,10 +16,10 @@
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysisContext, IRequestAnalyzerConfig, IRequestAnalyzerService } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { analyzeHeuristic } from "./heuristic_analyzer.ts";
 import { LlmAnalyzer } from "./llm_analyzer.ts";
 import {

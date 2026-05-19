@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { ContextError } from "@exaix/core/errors/context_error.ts";
+import { ContextError } from "@exaix/core/errors";
 
 /**
  * ContextError - Enhanced error class with context preservation

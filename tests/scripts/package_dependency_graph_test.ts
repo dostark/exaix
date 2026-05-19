@@ -468,7 +468,7 @@ Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => 
 // explainBoundary — integration test against live repo files
 // ---------------------------------------------------------------------------
 
-Deno.test("explainBoundary: src/mcp handler is not extractable due to src/ service deps", async () => {
+Deno.test("explainBoundary: src/mcp handler shim still reports current src blockers", async () => {
   const discovery = await discoverPackageRoots();
   const report = await explainBoundary(
     "src/mcp/handlers/run_command_tool.ts",
@@ -479,6 +479,14 @@ Deno.test("explainBoundary: src/mcp handler is not extractable due to src/ servi
   assertEquals(report.extractable, false);
   assertStringIncludes(report.targetPath, "run_command_tool");
   assertEquals(report.srcDepsCount > 0, true);
+  assertEquals(
+    report.transitiveGroups.some(
+      (group) =>
+        group.packageName === "@exaix (src/)" &&
+        group.modules.includes("src/services/portal/portal_permissions.ts"),
+    ),
+    true,
+  );
 });
 
 Deno.test("explainBoundary: packages/mcp/src/tool_result_converter.ts is extractable", async () => {

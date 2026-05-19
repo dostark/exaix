@@ -8,7 +8,7 @@
 
 import type { PortalService } from "../portal/portal.ts";
 import type { IPortalService } from "@exaix/core/types";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 

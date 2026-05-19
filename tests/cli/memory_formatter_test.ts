@@ -17,7 +17,7 @@ import {
   MemoryScope,
   SkillStatus,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import type {
   IExecutionMemory,
   IGlobalMemory,

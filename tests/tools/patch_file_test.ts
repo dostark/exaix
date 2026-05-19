@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import { cleanupTempDir, createToolRegistryForTests } from "./helpers.ts";
 import { ToolName } from "@exaix/core";
 

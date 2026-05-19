@@ -7,9 +7,9 @@
  */
 
 import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";
-import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
-import type { ILogger } from "@exaix/core/types/i_log_service.ts";
-import type { ILogService } from "@exaix/core/types/i_log_service.ts";
+import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { ILogger } from "@exaix/core/types";
+import type { ILogService } from "@exaix/core/types";
 
 /**
  * Implementation of ILogService using ILogger

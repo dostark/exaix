@@ -7,7 +7,7 @@
  */
 
 import { LogLevel } from "@exaix/core";
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import type { PerformanceStats } from "./types.ts";
 
 /**

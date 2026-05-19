@@ -16,9 +16,9 @@ import { RequestManagerView } from "../request_manager_view.ts";
 import { MemoryView } from "../memory_view.ts";
 import { SkillsManagerView } from "../skills_manager_view.ts";
 import type { ITuiView } from "../tui_dashboard.ts";
-import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
-import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
-import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
+import type { ILogService, IStructuredLogger } from "@exaix/core/types";
+import type { IJournalService } from "@exaix/core/types";
+import type { IMemoryService } from "@exaix/core/types";
 import {
   MockAgentService,
   MockDaemonService,
@@ -32,9 +32,9 @@ import {
   MockStructuredLoggerService,
 } from "../tui_dashboard_mocks.ts";
 
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { IAgentService, IPlanService, IPortalService, IRequestService, ISkillsService } from "@exaix/core/types";
-import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
+import type { IDaemonService } from "@exaix/core/types";
 import { TUI_ELEMENT_ACTION_BUTTONS, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 

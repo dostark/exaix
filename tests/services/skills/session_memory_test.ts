@@ -23,7 +23,7 @@ import {
   MemoryScope,
   MemoryType,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { NullEmbeddingStub, NullMemoryBankStub } from "../../helpers/memory_test_helper.ts";
 
 // ===== Mock Services =====

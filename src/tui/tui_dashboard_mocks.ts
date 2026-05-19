@@ -26,19 +26,12 @@ import { type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } f
 import { TuiIcon } from "@exaix/tui";
 import { GitBranchName } from "@exaix/git";
 import type { JSONValue as _JSONValue } from "@exaix/core";
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
-import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types/plan.ts";
-import type {
-  AnalysisMode,
-  IRequestAnalysis,
-  IRequestEntry,
-  IRequestMetadata,
-  IRequestOptions,
-  IRequestShowResult,
-} from "@exaix/core/types/mod.ts";
-import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types/mod.ts";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
-import type { LogMetadata } from "@exaix/core/types/json.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
+import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
+import type { AnalysisMode } from "@exaix/core/types";
+import type { AgentHealthData, AgentLogEntry, IAgentStatusItem } from "@exaix/core/types";
+import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { LogMetadata } from "@exaix/core/types";
 import type {
   IActivitySummary,
   IDecision,
@@ -64,19 +57,28 @@ import type {
   IRequestService,
   ISkillsService,
 } from "@exaix/core/types";
-import type { IDaemonService } from "@exaix/core/types/i_daemon_service.ts";
-import type { ILogService, IStructuredLogger } from "@exaix/core/types/i_log_service.ts";
-import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
-import type { IMemoryService } from "@exaix/core/types/i_memory_service.ts";
+import type { IDaemonService } from "@exaix/core/types";
+import type { ILogService, IStructuredLogger } from "@exaix/core/types";
+import type { IJournalService } from "@exaix/core/types";
+import type { IMemoryService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { PlanStatus, type PlanStatusType, SECONDS_PER_HOUR } from "@exaix/core";
-import { RequestStatus, type RequestStatusType } from "@exaix/core/status/request_status.ts";
-import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status/agent_status.ts";
-import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status/memory_status.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
-import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types/database.ts";
+import { SECONDS_PER_HOUR } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
+import type {
+  IRequestAnalysis,
+  IRequestEntry,
+  IRequestMetadata,
+  IRequestOptions,
+  IRequestShowResult,
+} from "@exaix/core/request";
+import type { PlanStatusType } from "@exaix/core/status";
+import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
+import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status";
+import type { MemoryStatus as _MemoryStatus, MemoryStatusType } from "@exaix/core/status";
+import type { IMemoryNotification } from "@exaix/core/types";
+import type { ISkillMatchRequest } from "@exaix/core/types";
+import type { IDatabaseService } from "@exaix/core/types";
+import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix/core/types";
 
 /** Default identity ID used across all mock service implementations */
 const MOCK_IDENTITY_ID = "test-agent";

@@ -16,7 +16,7 @@ import {
 } from "../../../src/services/agent/reflexive_agent.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import type {
   IAgentExecutionResult,
   IAgentRunner,

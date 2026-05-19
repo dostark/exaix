@@ -9,14 +9,15 @@ import { assertEquals } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { CriteriaGenerator } from "../../../src/services/skills/criteria_generator.ts";
 import { ANALYZER_VERSION } from "@exaix/core";
-import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import {
   ACCEPTANCE_CRITERION_WEIGHT,
   DEFAULT_GOAL_WEIGHT,
   MAX_DYNAMIC_CRITERIA,
   PRIORITY_1_GOAL_WEIGHT,
 } from "@exaix/core";
+import type { IRequestAnalysis } from "@exaix/core/request";
 
 function makeAnalysis(overrides: Partial<IRequestAnalysis> = {}): IRequestAnalysis {
   return {

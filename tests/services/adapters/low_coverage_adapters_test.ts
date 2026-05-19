@@ -12,13 +12,14 @@ import { DisplayAdapter } from "../../../src/services/adapters/display_adapter.t
 import { JournalServiceAdapter } from "../../../src/services/adapters/journal_adapter.ts";
 import { AgentServiceAdapter } from "../../../src/services/adapters/agent_adapter.ts";
 import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts";
-import { LogLevel, RequestPriority, RequestSource, RequestStatus, TaskComplexity, TaskType } from "@exaix/core";
+import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
-import { FileOutput, ObservableOutput, StructuredLogger } from "@exaix/core/logger/structured_logger.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { AnalysisMode } from "@exaix/core/types";
+import type { IStructuredLogEntry } from "@exaix/core/types";
+import { FileOutput, ObservableOutput, StructuredLogger } from "@exaix/core/logger";
+import type { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../../helpers/test_helpers.ts";
 

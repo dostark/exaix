@@ -6,16 +6,16 @@
  */
 
 import type { IDatabaseService } from "../../src/services/core/db.ts";
-import type { ActivityRepository } from "@exaix/core/repositories/activity_repository.ts";
+import type { ActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IConfigService, IDisplayService, IGitService, IPortalConfigEntry } from "@exaix/core/types";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalExecutionStrategy } from "@exaix/core";
-import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types/json.ts";
+import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types";
 import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

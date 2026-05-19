@@ -11,7 +11,7 @@ import { analyzeTrace } from "../../src/tui/analytics/trace_analyzer.ts";
 import { calculatePerformanceStats } from "../../src/tui/analytics/performance_analyzer.ts";
 import { detectErrorPatterns } from "../../src/tui/analytics/error_analyzer.ts";
 import { findRelatedLogs, findTraceLogs, groupByCorrelation } from "../../src/tui/analytics/queries.ts";
-import type { IStructuredLogEntry } from "@exaix/core/logger/structured_logger.ts";
+import type { IStructuredLogEntry } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 
 // Helper to create mock log entries

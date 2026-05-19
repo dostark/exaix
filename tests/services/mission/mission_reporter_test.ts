@@ -75,25 +75,66 @@ async function runGitCommand(cwd: string, args: string[]): Promise<string> {
   return new TextDecoder().decode(stdout);
 }
 
-// ============================================================================
-// Test: Basic Report Generation
-// ============================================================================
+async function withMissionReporter(
+  testFn: (ctx: {
+    db: IDatabaseService;
+    tempDir: string;
+    memoryBank: MemoryBankService;
+    reporter: MissionReporter;
+  }) => Promise<void>,
+  options: { setupGit?: boolean; withDb?: boolean } = {},
+): Promise<void> {
+  if (options.withDb === false) {
+    const tempDir = await Deno.makeTempDir();
+    try {
+      await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
+      if (options.setupGit !== false) {
+        await setupTestGitRepo(tempDir);
+      }
 
-Deno.test("MissionReporter: generates execution memory record after successful execution", async () => {
+      const config = createMockConfig(tempDir);
+      const reportConfig: ReportConfig = {
+        reportsDirectory: getMemoryExecutionDir(tempDir),
+      };
+      const mockDb = {
+        logActivity: () => {},
+      } as Partial<IDatabaseService> as IDatabaseService;
+      const memoryBank = new MemoryBankService(config, mockDb);
+      const reporter = new MissionReporter(config, reportConfig, memoryBank);
+
+      await testFn({ db: mockDb, tempDir, memoryBank, reporter });
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+    return;
+  }
+
   const { db, tempDir, cleanup } = await initTestDbService();
-
   try {
-    // Create required directories for Memory Banks
     await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    await setupTestGitRepo(tempDir);
+    if (options.setupGit !== false) {
+      await setupTestGitRepo(tempDir);
+    }
 
     const config = createMockConfig(tempDir);
     const reportConfig: ReportConfig = {
       reportsDirectory: getMemoryExecutionDir(tempDir),
     };
-
     const memoryBank = new MemoryBankService(config, db);
     const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+
+    await testFn({ db, tempDir, memoryBank, reporter });
+  } finally {
+    await cleanup();
+  }
+}
+
+// ============================================================================
+// Test: Basic Report Generation
+// ============================================================================
+
+Deno.test("MissionReporter: generates execution memory record after successful execution", async () => {
+  await withMissionReporter(async ({ tempDir, reporter }) => {
     const traceData = createTestTraceData();
 
     const result = await reporter.generate(traceData);
@@ -117,25 +158,11 @@ Deno.test("MissionReporter: generates execution memory record after successful e
 
     assert(summaryExists, "summary.md should exist");
     assert(contextExists, "context.json should exist");
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("MissionReporter: creates structured execution memory with lessons learned", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
-
-  try {
-    await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    await setupTestGitRepo(tempDir);
-
-    const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
-      reportsDirectory: getMemoryExecutionDir(tempDir),
-    };
-
-    const memoryBank = new MemoryBankService(config, db);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+  await withMissionReporter(async ({ memoryBank, reporter }) => {
     const traceData = createTestTraceData({
       reasoning:
         "I learned that JWT tokens are better for stateless auth. I discovered that Redis is useful for caching.",
@@ -158,25 +185,11 @@ Deno.test("MissionReporter: creates structured execution memory with lessons lea
         lesson.toLowerCase().includes("jwt") || lesson.toLowerCase().includes("redis")
       ),
     );
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("MissionReporter: handles failed execution status", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
-
-  try {
-    await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    await setupTestGitRepo(tempDir);
-
-    const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
-      reportsDirectory: getMemoryExecutionDir(tempDir),
-    };
-
-    const memoryBank = new MemoryBankService(config, db);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+  await withMissionReporter(async ({ memoryBank, reporter }) => {
     const traceData = createTestTraceData({
       status: ExecutionStatus.FAILED,
       summary: "Failed to implement authentication due to dependency issues.",
@@ -192,25 +205,11 @@ Deno.test("MissionReporter: handles failed execution status", async () => {
     assertExists(executionMemory);
     assertEquals(executionMemory.status, ExecutionStatus.FAILED);
     assertExists(executionMemory.error_message);
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("MissionReporter: extracts portal from context files", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
-
-  try {
-    await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    await setupTestGitRepo(tempDir);
-
-    const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
-      reportsDirectory: getMemoryExecutionDir(tempDir),
-    };
-
-    const memoryBank = new MemoryBankService(config, db);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+  await withMissionReporter(async ({ memoryBank, reporter }) => {
     const traceData = createTestTraceData({
       contextFiles: [
         "Portals/TestPortal/config.md",
@@ -227,30 +226,11 @@ Deno.test("MissionReporter: extracts portal from context files", async () => {
     const executionMemory = await memoryBank.getExecutionByTraceId(traceData.traceId);
     assertExists(executionMemory);
     assertEquals(executionMemory.portal, "TestPortal");
-  } finally {
-    await cleanup();
-  }
+  });
 });
 
 Deno.test("MissionReporter: works without database service", async () => {
-  const tempDir = await Deno.makeTempDir();
-
-  try {
-    await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    await setupTestGitRepo(tempDir);
-
-    const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
-      reportsDirectory: getMemoryExecutionDir(tempDir),
-    };
-
-    // Create memoryBank without db (should fall back to console logging)
-    const mockDb = {
-      logActivity: () => {},
-    } as Partial<IDatabaseService> as IDatabaseService;
-
-    const memoryBank = new MemoryBankService(config, mockDb);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank);
+  await withMissionReporter(async ({ reporter }) => {
     const traceData = createTestTraceData();
 
     const result = await reporter.generate(traceData);
@@ -258,9 +238,7 @@ Deno.test("MissionReporter: works without database service", async () => {
     // Should still work without database
     assert(result.success);
     assertExists(result.reportPath);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
+  }, { withDb: false });
 });
 
 Deno.test("MissionReporter: handles generation errors gracefully", async () => {
@@ -294,19 +272,7 @@ Deno.test("MissionReporter: handles generation errors gracefully", async () => {
 });
 
 Deno.test("MissionReporter: handles git stats failure gracefully", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
-
-  try {
-    await Deno.mkdir(getMemoryExecutionDir(tempDir), { recursive: true });
-    // Note: We DO NOT setup git repo here, so git commands should fail
-
-    const config = createMockConfig(tempDir);
-    const reportConfig: ReportConfig = {
-      reportsDirectory: getMemoryExecutionDir(tempDir),
-    };
-
-    const memoryBank = new MemoryBankService(config, db);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+  await withMissionReporter(async ({ reporter }) => {
     const traceData = createTestTraceData({
       branch: "non-existent-branch",
     });
@@ -319,7 +285,5 @@ Deno.test("MissionReporter: handles git stats failure gracefully", async () => {
     // Should have empty stats
     assertEquals(result.gitStats?.totalFilesChanged, 0);
     assertEquals(result.gitStats?.insertions, 0);
-  } finally {
-    await cleanup();
-  }
+  }, { setupGit: false });
 });

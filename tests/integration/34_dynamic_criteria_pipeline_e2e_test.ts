@@ -26,7 +26,7 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
 import type {
   ICriteriaGeneratorService,
@@ -36,9 +36,9 @@ import type {
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
 import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";

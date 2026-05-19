@@ -9,7 +9,7 @@ import type { INotificationService } from "@exaix/core/types";
 import { McpToolName } from "@exaix/mcp";
 import { ToolsConfigSchema } from "@exaix/schemas/config.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { DynamicStepExecutor } from "../../src/flows/dynamic_step_executor.ts";
 import { FlowRunner, type IFlowEventLogger } from "../../src/flows/flow_runner.ts";
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
@@ -94,19 +94,33 @@ function createAgentExecutor() {
   };
 }
 
-Deno.test("FlowRunner wires NotificationQueueConfirmationInterceptor when notificationService exists in context", () => {
-  const config = createMockConfig("/tmp/flow-runner-confirmation-queue");
+function createRunner(
+  options: { tempRoot: string; notificationService?: INotificationService; timeoutSeconds?: number },
+) {
+  const config = createMockConfig(
+    options.tempRoot,
+    options.timeoutSeconds === undefined ? undefined : {
+      tools: ToolsConfigSchema.parse({ confirmation_timeout_s: options.timeoutSeconds }),
+    },
+  );
   const context = createStubContext({
     config: createStubConfig(config),
     db: createStubDb(),
-    notificationService: new MockNotificationService(),
+    notificationService: options.notificationService,
   });
 
-  const runner = new FlowRunnerTestHarness({
+  return new FlowRunnerTestHarness({
     agentExecutor: createAgentExecutor(),
     eventLogger: new NoopEventLogger(),
     context,
     dynamicHandlers: new Map([[McpToolName.READ_FILE, new StubReadHandler()]]),
+  });
+}
+
+Deno.test("FlowRunner wires NotificationQueueConfirmationInterceptor when notificationService exists in context", () => {
+  const runner = createRunner({
+    tempRoot: "/tmp/flow-runner-confirmation-queue",
+    notificationService: new MockNotificationService(),
   });
 
   const dynamicExecutor = runner.getDynamicStepExecutor();
@@ -116,18 +130,7 @@ Deno.test("FlowRunner wires NotificationQueueConfirmationInterceptor when notifi
 });
 
 Deno.test("FlowRunner falls back to CliConfirmationInterceptor when notificationService is absent", () => {
-  const config = createMockConfig("/tmp/flow-runner-confirmation-cli");
-  const context = createStubContext({
-    config: createStubConfig(config),
-    db: createStubDb(),
-  });
-
-  const runner = new FlowRunnerTestHarness({
-    agentExecutor: createAgentExecutor(),
-    eventLogger: new NoopEventLogger(),
-    context,
-    dynamicHandlers: new Map([[McpToolName.READ_FILE, new StubReadHandler()]]),
-  });
+  const runner = createRunner({ tempRoot: "/tmp/flow-runner-confirmation-cli" });
 
   const dynamicExecutor = runner.getDynamicStepExecutor();
   assertExists(dynamicExecutor, "FlowRunner should create DynamicStepExecutor when dynamic handlers are configured");
@@ -136,19 +139,9 @@ Deno.test("FlowRunner falls back to CliConfirmationInterceptor when notification
 });
 
 Deno.test("FlowRunner passes confirmation_timeout_s from config to CliConfirmationInterceptor", () => {
-  const config = createMockConfig("/tmp/flow-runner-confirmation-timeout", {
-    tools: ToolsConfigSchema.parse({ confirmation_timeout_s: 30 }),
-  });
-  const context = createStubContext({
-    config: createStubConfig(config),
-    db: createStubDb(),
-  });
-
-  const runner = new FlowRunnerTestHarness({
-    agentExecutor: createAgentExecutor(),
-    eventLogger: new NoopEventLogger(),
-    context,
-    dynamicHandlers: new Map([[McpToolName.READ_FILE, new StubReadHandler()]]),
+  const runner = createRunner({
+    tempRoot: "/tmp/flow-runner-confirmation-timeout",
+    timeoutSeconds: 30,
   });
 
   const dynamicExecutor = runner.getDynamicStepExecutor();

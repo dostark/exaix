@@ -12,7 +12,7 @@ import { McpToolName } from "@exaix/mcp";
 import { FlowExecutionError, FlowRunner } from "../../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";

@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { parse as parseYaml } from "@std/yaml";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";

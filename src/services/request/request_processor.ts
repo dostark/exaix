@@ -23,8 +23,8 @@ import { applyAnalysisToRequest, buildParsedRequest } from "./request_common.ts"
 import { BlueprintLoader, type ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
 import { type IRequestMetadata, PlanWriter } from "../plan/plan_writer.ts";
 import { PlanValidationError } from "../plan/plan_adapter.ts";
-import { RequestStatus } from "@exaix/core/status/request_status.ts";
-import { PlanStatus } from "@exaix/core/status/plan_status.ts";
+import { RequestStatus } from "@exaix/core/status";
+import { PlanStatus } from "@exaix/core/status";
 import {
   COMPLEXITY_BODY_LENGTH_LOW,
   COMPLEXITY_BULLET_THRESHOLD_HIGH,
@@ -48,7 +48,7 @@ import type {
 } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
@@ -58,16 +58,16 @@ import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breake
 import { LogMethod } from "../decorators/logging.ts";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
 import { OutputValidator } from "../tool/output_validator.ts";
-import type { LogMetadata } from "@exaix/core/types/json.ts";
+import type { LogMetadata } from "@exaix/core/types";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
 
-import type { AnalysisMode } from "@exaix/core/types/mod.ts";
+import type { AnalysisMode } from "@exaix/core/types";
 import { buildQualityGateConfig, RequestQualityGate } from "../quality_gate/request_quality_gate.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";

@@ -3,7 +3,7 @@
  * @path src/tui/monitor_view.ts
  * @description TUI log monitoring view with advanced filtering, grouping, and bookmarking capabilities for real-time log analysis.
  * @architectural-layer TUI
- * @related-files ["@exaix/core/types/i_journal_service.ts", src/tui/tui_dashboard.ts]
+ * @related-files ["@exaix/core/types", src/tui/tui_dashboard.ts]
  */
 
 import { BaseTreeView } from "./base/base_tree_view.ts";
@@ -12,11 +12,11 @@ import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./h
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import type { DialogBase } from "./helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
-import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import { DialogStatus } from "@exaix/core";
 import { GroupingMode } from "@exaix/tui";
-import type { JSONObject } from "@exaix/core/types/json.ts";
-import type { IJournalService } from "@exaix/core/types/i_journal_service.ts";
+import type { JSONObject } from "@exaix/core/types";
+import type { IJournalService } from "@exaix/core/types";
 import { LOG_COLORS, LOG_ICONS, MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import {
   TUI_ACTION_SEARCH,

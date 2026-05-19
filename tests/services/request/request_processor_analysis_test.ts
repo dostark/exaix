@@ -19,9 +19,10 @@ import {
   type RequestAnalysisComplexity as _RequestAnalysisComplexity,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
-import { RequestSource, RequestStatus } from "@exaix/core";
-import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
+import { RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { initTestDbService as _initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";

@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { detectErrorPatterns } from "../../src/tui/analytics/error_analyzer.ts";
-import type { IStructuredLogEntry } from "@exaix/core/logger/structured_logger.ts";
+import type { IStructuredLogEntry } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 
 function entry(overrides: Partial<IStructuredLogEntry>): IStructuredLogEntry {

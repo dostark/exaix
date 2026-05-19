@@ -32,8 +32,8 @@ import {
   type IDashboardContext,
   renderNotificationPanel,
 } from "./tui_helpers/notifications.ts";
-import type { IPortalInfo } from "@exaix/core/types/portal.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IPortalInfo } from "@exaix/core/types";
+import type { IMemoryNotification } from "@exaix/core/types";
 import {
   resetToDefault as helperResetToDefault,
   restoreLayout as helperRestoreLayout,
@@ -41,7 +41,7 @@ import {
 } from "./tui_helpers/layout_persistence.ts";
 import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";

@@ -8,10 +8,11 @@
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
 import { addTokenFields } from "./display_helpers.ts";
-import type { JSONValue, PlanStatus } from "@exaix/core";
+import type { JSONValue } from "@exaix/core";
+import type { PlanStatus } from "@exaix/core/status";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";
-import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
-import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
+import type { IDisplayService } from "@exaix/core/types";
+import { type JSONObject, toSafeJson } from "@exaix/core/types";
 
 export interface IPlanActionContext {
   planCommands: PlanCommands;

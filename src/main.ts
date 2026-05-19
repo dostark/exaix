@@ -7,14 +7,14 @@
  * @architectural-layer Core System
  * @related-files ["src/services/agent/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
  */
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
 import { FileWatcher } from "./services/utils/watcher.ts";
-import { DatabaseService } from "./services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "./services/request/request_processor.ts";
 import { ReviewRegistry } from "./services/artifact/review_registry.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { ExecutionLoop } from "./services/agent/execution_loop.ts";
 import { MemoryBankService } from "./services/memory/memory_bank.ts";
 import { MemoryExtractorService } from "./services/memory/memory_extractor.ts";
@@ -22,19 +22,13 @@ import { MemoryAutoApprovalService } from "./services/memory/memory_auto_approva
 import { initializeMemoryAutoApprovalMaintenance } from "./services/memory/auto_approval_daemon.ts";
 import { NotificationService } from "./services/notification/notification.ts";
 import { MemoryBankAdapter } from "./services/adapters/memory_bank_adapter.ts";
-import { createConfigReloadHandler } from "@exaix/core/config/config_reload_handler.ts";
-import {
-  ConsoleOutput,
-  FileOutput,
-  getGlobalLogger,
-  initializeGlobalLogger,
-  logInfo,
-} from "@exaix/core/logger/structured_logger.ts";
+import { createConfigReloadHandler } from "@exaix/core/config";
+import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import type { ILogOutput } from "@exaix/core/types/mod.ts";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types/json.ts";
+import type { ILogOutput } from "@exaix/core/types";
+import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";

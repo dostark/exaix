@@ -7,9 +7,9 @@
  */
 import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request/mod.ts";
-import { coerceRequestStatus } from "@exaix/core/status/request_status.ts";
+import type { EventLogger } from "@exaix/core/logger";
+import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
+import { coerceRequestStatus } from "@exaix/core/status";
 
 export class RequestParser {
   constructor(private readonly logger: EventLogger) {}

@@ -13,10 +13,10 @@ import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "@exaix/core";
-import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { buildQualityGateConfig, RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
 import type { IRequestQualityGateConfig } from "@exaix/core/types";
 import {

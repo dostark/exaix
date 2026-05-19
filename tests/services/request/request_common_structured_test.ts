@@ -9,7 +9,7 @@
  */
 import { assertEquals } from "@std/assert";
 import { buildParsedRequest } from "../../../src/services/request/request_common.ts";
-import { RequestStatus } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 
 const BASE_FRONTMATTER = {
   priority: "normal",

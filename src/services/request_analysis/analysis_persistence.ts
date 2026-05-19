@@ -9,8 +9,9 @@
  * @related-files [src/services/request_analysis/request_analyzer.ts, src/services/request_analysis/mod.ts]
  */
 
-import { type IRequestAnalysis, RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
+import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 import type { JSONValue } from "@exaix/core";
+import type { IRequestAnalysis } from "@exaix/core/request";
 
 // ---------------------------------------------------------------------------
 // Path helpers

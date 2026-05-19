@@ -8,8 +8,8 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { StructuredLogViewer } from "../../src/tui/structured_log_viewer.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
-import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types/logging.ts";
-import type { LogMetadata } from "@exaix/core/types/json.ts";
+import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
+import type { LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { KEYS } from "../../src/tui/helpers/keyboard.ts";
 import { InputDialog } from "../../src/tui/helpers/dialog_base.ts";

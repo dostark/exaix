@@ -15,7 +15,8 @@ import {
   RequestQualityLevel,
   RequestQualityRecommendation,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { QualityGateMode, RequestSource, RequestStatus } from "@exaix/core";
+import { QualityGateMode, RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";

@@ -8,7 +8,7 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 
 import { initActivityTableSchema, initTestDbService } from "../helpers/db.ts";
-import { DatabaseService } from "../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "../helpers/config.ts";
 
 /**

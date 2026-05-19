@@ -17,7 +17,7 @@ import {
   DEFAULT_MEMORY_WARN_PERCENT,
 } from "@exaix/core";
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { LogMethod } from "../decorators/logging.ts";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";

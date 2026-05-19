@@ -12,7 +12,7 @@
  */
 import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import {
   type IWorkspaceExecutionContext,
@@ -22,7 +22,7 @@ import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";

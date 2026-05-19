@@ -7,8 +7,8 @@
 
 import { RequestSource } from "@exaix/core";
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { PlanStatus } from "@exaix/core";
-import { RequestStatus } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
+import { RequestStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";

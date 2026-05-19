@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
-import type { IAgentStatusItem } from "@exaix/core/types/mod.ts";
+import type { IAgentStatusItem } from "@exaix/core/types";
 import {
   type AgentStatusTuiSession,
   AgentStatusView,
@@ -15,7 +15,7 @@ import {
 } from "../../src/tui/agent_status_view.ts";
 import { AgentHealth } from "@exaix/core";
 import { TuiGroupBy } from "@exaix/tui";
-import { AgentStatus } from "@exaix/core/status/agent_status.ts";
+import { AgentStatus } from "@exaix/core/status";
 
 function makeAgent(id: string, overrides: Partial<IAgentStatusItem> = {}): IAgentStatusItem {
   return {

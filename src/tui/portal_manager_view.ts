@@ -6,7 +6,7 @@
  * @related-files ["src/services/portal/portal.ts", src/tui/tui_dashboard.ts]
  */
 
-import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types/portal.ts";
+import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";

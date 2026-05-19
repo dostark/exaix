@@ -15,7 +15,6 @@
 import {
   AmbiguityImpact,
   type IAmbiguity,
-  type IRequestAnalysis,
   RequestAnalysisComplexity,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
@@ -29,6 +28,7 @@ import {
   ANALYSIS_SIMPLE_MAX_CHARS,
   ANALYSIS_TASK_TYPE_VERBS,
 } from "@exaix/core";
+import type { IRequestAnalysis } from "@exaix/core/request";
 import type { IRequestAnalysisContext } from "@exaix/core/types";
 // ---------------------------------------------------------------------------
 // File reference extraction

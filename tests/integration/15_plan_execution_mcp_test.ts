@@ -9,13 +9,13 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryOperation, PortalOperation, SecurityMode } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import { ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { ReviewStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 
 import { ensureDir } from "@std/fs";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import { parse as parseYaml } from "@std/yaml";
 import { initTestDbService } from "../helpers/db.ts";
 import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";

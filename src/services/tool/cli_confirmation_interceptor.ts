@@ -14,7 +14,7 @@ import {
   TOOL_CONFIRMATION_EVENT_APPROVED,
   TOOL_CONFIRMATION_EVENT_DENIED,
 } from "@exaix/core";
-import { isTestMode } from "@exaix/core/config/env_schema.ts";
+import { isTestMode } from "@exaix/core/config";
 import type { IToolConfirmationInterceptor } from "@exaix/core/types";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 import type { IActivityJournal } from "../../flows/dynamic_step_executor.ts";

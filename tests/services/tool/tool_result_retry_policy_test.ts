@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { type JSONValue, Severity, ToolSideEffectScope } from "@exaix/core";
+import { type JSONValue, ToolSideEffectScope } from "@exaix/core";
 import {
   applyRemediationPolicy,
   REMEDIATION_OUTCOME_FAIL_CLOSED,
@@ -19,20 +19,16 @@ import {
   REMEDIATION_MODE_RETRY_ONCE,
   REMEDIATION_MODE_RETRY_WITH_BACKOFF,
 } from "@exaix/schemas/tool_result.ts";
-import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result_validator.ts";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-
-const syntheticFailure: IToolResultValidationFailure = {
-  tool: "search_files",
-  stage: "registry_boundary",
-  severity: Severity.ERROR,
-  retryAllowed: true,
-  sideEffectRisk: ToolSideEffectScope.NONE,
-  issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
-  rawResult: { success: "yes" },
-};
+import {
+  createRemediationPolicy,
+  createRetryValidator,
+  createToolMetadata,
+  createValidationFailure,
+  VALIDATION_ADAPTER,
+} from "./helpers/tool_result_policy_test_helpers.ts";
 
 // idempotent=true, side_effect_scope=NONE (read-only, safe to retry)
 const SAFE_RETRY_TOOL = "search_files";
@@ -44,23 +40,20 @@ const UNSAFE_RETRY_TOOL = "write_file";
 // ============================================================================
 
 Deno.test("tool_result_retry_policy: retry_once with successful retry returns passed", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: SAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_ONCE,
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(SAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
     maxRetries: 1,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  });
   const result = await applyRemediationPolicy(
     SAFE_RETRY_TOOL,
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({
+      tool: SAFE_RETRY_TOOL,
+      issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
+    }),
+    VALIDATION_ADAPTER,
     {
       retry: () => Promise.resolve({ success: true, data: { files: ["file_a.ts", "file_b.ts"] } }),
-      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
+      toolMetadata: createToolMetadata(),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_PASSED);
@@ -69,23 +62,20 @@ Deno.test("tool_result_retry_policy: retry_once with successful retry returns pa
 });
 
 Deno.test("tool_result_retry_policy: retry_once with still-failing retry returns retry_exhausted", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: SAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_ONCE,
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(SAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
     maxRetries: 1,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  });
   const result = await applyRemediationPolicy(
     SAFE_RETRY_TOOL,
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({
+      tool: SAFE_RETRY_TOOL,
+      issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
+    }),
+    VALIDATION_ADAPTER,
     {
       retry: () => Promise.resolve({ success: "still wrong" }),
-      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
+      toolMetadata: createToolMetadata(),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_RETRY_EXHAUSTED);
@@ -94,20 +84,17 @@ Deno.test("tool_result_retry_policy: retry_once with still-failing retry returns
 });
 
 Deno.test("tool_result_retry_policy: retry_once without retry callback returns fail_closed", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: SAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_ONCE,
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(SAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
     maxRetries: 1,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  });
   const result = await applyRemediationPolicy(
     SAFE_RETRY_TOOL,
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({
+      tool: SAFE_RETRY_TOOL,
+      issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
+    }),
+    VALIDATION_ADAPTER,
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_FAIL_CLOSED);
   assertEquals(result.retriesAttempted, 0);
@@ -119,27 +106,26 @@ Deno.test("tool_result_retry_policy: retry_once without retry callback returns f
 
 Deno.test("tool_result_retry_policy: retry_with_backoff retries up to maxRetries and returns passed on success", async () => {
   let callCount = 0;
-  const policy: IToolResultRemediationPolicy = {
-    tool: SAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_WITH_BACKOFF,
-    maxRetries: 3,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(
+    SAFE_RETRY_TOOL,
+    REMEDIATION_MODE_RETRY_WITH_BACKOFF,
+    { maxRetries: 3 },
+  );
   const result = await applyRemediationPolicy(
     SAFE_RETRY_TOOL,
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({
+      tool: SAFE_RETRY_TOOL,
+      issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
+    }),
+    VALIDATION_ADAPTER,
     {
       retry: () => {
         callCount += 1;
         const payload = callCount >= 2 ? { success: true } : { success: "bad" };
         return Promise.resolve(payload);
       },
-      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
+      toolMetadata: createToolMetadata(),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_PASSED);
@@ -148,23 +134,22 @@ Deno.test("tool_result_retry_policy: retry_with_backoff retries up to maxRetries
 });
 
 Deno.test("tool_result_retry_policy: retry_with_backoff returns retry_exhausted after maxRetries", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: SAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_WITH_BACKOFF,
-    maxRetries: 2,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(
+    SAFE_RETRY_TOOL,
+    REMEDIATION_MODE_RETRY_WITH_BACKOFF,
+    { maxRetries: 2 },
+  );
   const result = await applyRemediationPolicy(
     SAFE_RETRY_TOOL,
     policy,
-    syntheticFailure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    createValidationFailure({
+      tool: SAFE_RETRY_TOOL,
+      issues: [{ path: ["success"], message: "Expected boolean", code: "invalid_type" }],
+    }),
+    VALIDATION_ADAPTER,
     {
       retry: () => Promise.resolve({ success: "always wrong" }),
-      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.NONE },
+      toolMetadata: createToolMetadata(),
     },
   );
   assertEquals(result.outcome, REMEDIATION_OUTCOME_RETRY_EXHAUSTED);
@@ -177,24 +162,18 @@ Deno.test("tool_result_retry_policy: retry_with_backoff returns retry_exhausted 
 // ============================================================================
 
 Deno.test("tool_result_retry_policy: retry blocked for non-idempotent tool when requiresIdempotency=true", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: UNSAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_ONCE,
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(UNSAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
     maxRetries: 1,
-    requiresIdempotency: true,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
-  const failure: IToolResultValidationFailure = { ...syntheticFailure, tool: UNSAFE_RETRY_TOOL };
+  });
+  const failure: IToolResultValidationFailure = createValidationFailure({ tool: UNSAFE_RETRY_TOOL });
   const result = await applyRemediationPolicy(
     UNSAFE_RETRY_TOOL,
     policy,
     failure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    VALIDATION_ADAPTER,
     {
       retry: () => Promise.resolve({ success: true }),
-      toolMetadata: { idempotent: false, sideEffectScope: ToolSideEffectScope.PORTAL },
+      toolMetadata: createToolMetadata({ idempotent: false, sideEffectScope: ToolSideEffectScope.PORTAL }),
     },
   );
   assertEquals(
@@ -206,24 +185,19 @@ Deno.test("tool_result_retry_policy: retry blocked for non-idempotent tool when 
 });
 
 Deno.test("tool_result_retry_policy: retry blocked for side-effecting tool when allowRetryAfterSideEffect=false", async () => {
-  const policy: IToolResultRemediationPolicy = {
-    tool: UNSAFE_RETRY_TOOL,
-    mode: REMEDIATION_MODE_RETRY_ONCE,
+  const policy: IToolResultRemediationPolicy = createRemediationPolicy(UNSAFE_RETRY_TOOL, REMEDIATION_MODE_RETRY_ONCE, {
     maxRetries: 1,
     requiresIdempotency: false,
-    allowRetryAfterSideEffect: false,
-    logValidationFailures: true,
-    triggerPlanAmendmentOnFailure: false,
-  };
-  const failure: IToolResultValidationFailure = { ...syntheticFailure, tool: UNSAFE_RETRY_TOOL };
+  });
+  const failure: IToolResultValidationFailure = createValidationFailure({ tool: UNSAFE_RETRY_TOOL });
   const result = await applyRemediationPolicy(
     UNSAFE_RETRY_TOOL,
     policy,
     failure,
-    { validateEnvelope: validateToolResultEnvelope, validateMCPResponse: () => null },
+    VALIDATION_ADAPTER,
     {
       retry: () => Promise.resolve({ success: true }),
-      toolMetadata: { idempotent: true, sideEffectScope: ToolSideEffectScope.PORTAL },
+      toolMetadata: createToolMetadata({ sideEffectScope: ToolSideEffectScope.PORTAL }),
     },
   );
   assertEquals(
@@ -242,23 +216,19 @@ Deno.test("tool_result_retry_policy: registry boundary recovers read-only result
     await Deno.writeTextFile(`${tempDir}/match.ts`, "export const value = 1;\n");
 
     const config = createMockConfig(tempDir);
+    const baseValidator = createRetryValidator((toolName: string, rawResult: JSONValue) => {
+      return createValidationFailure({
+        tool: toolName,
+        issues: [{ path: ["data"], message: "synthetic validation failure", code: "custom" }],
+        rawResult: rawResult as IToolResultValidationFailure["rawResult"],
+      });
+    });
     const validator = {
       validateEnvelope: (toolName: string, rawResult: JSONValue): IToolResultValidationFailure | null => {
         validationCalls += 1;
-        if (validationCalls === 1) {
-          return {
-            tool: toolName,
-            stage: "registry_boundary",
-            severity: Severity.ERROR,
-            retryAllowed: true,
-            sideEffectRisk: ToolSideEffectScope.NONE,
-            issues: [{ path: ["data"], message: "synthetic validation failure", code: "custom" }],
-            rawResult: rawResult as IToolResultValidationFailure["rawResult"],
-          };
-        }
-        return validateToolResultEnvelope(toolName, rawResult as Parameters<typeof validateToolResultEnvelope>[1]);
+        return baseValidator.validateEnvelope(toolName, rawResult);
       },
-      validateMCPResponse: () => null,
+      validateMCPResponse: baseValidator.validateMCPResponse,
     };
 
     const registry = new ToolRegistry({ config, resultValidator: validator });

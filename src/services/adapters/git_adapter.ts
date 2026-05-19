@@ -7,7 +7,7 @@
  */
 
 import { GitService } from "@exaix/git";
-import type { IDatabaseService, IGitService } from "@exaix/core/types/mod.ts";
+import type { IDatabaseService, IGitService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 
 export interface IGitServiceOptions {

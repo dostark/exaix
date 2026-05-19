@@ -3,9 +3,9 @@
  * @path src/services/adapters/archive_adapter.ts
  * @description Adapter for ArchiveService that satisfies the IArchiveService interface.
  * @architectural-layer Services/Adapters
- * @related-files [@exaix/core/types/i_archive_service.ts, "src/services/artifact/archive_service.ts"] */
+ * @related-files [@exaix/core/types, "src/services/artifact/archive_service.ts"] */
 
-import type { IArchiveEntry, IArchiveService } from "@exaix/core/types/i_archive_service.ts";
+import type { IArchiveEntry, IArchiveService } from "@exaix/core/types";
 import type { ArchiveService } from "../artifact/archive_service.ts";
 
 export class ArchiveAdapter implements IArchiveService {

@@ -6,7 +6,7 @@
  * @related-files [src/services/core/db.ts, src/services/routing/routing_policy_service.ts]
  */
 
-import type { IActivityRecord } from "@exaix/core/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "../core/db.ts";
 import type { JSONValue } from "@exaix/core";
 

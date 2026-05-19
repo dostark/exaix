@@ -6,6 +6,6 @@
  * @related-files ["packages/core/src/types/service_context.ts"]
  */
 
-import type * as ServiceContextTypes from "@exaix/core/types/service_context.ts";
+import type * as ServiceContextTypes from "@exaix/core/types";
 
 export type IServiceContext = ServiceContextTypes.IServiceContext;

@@ -5,11 +5,11 @@
  */
 
 import { Database } from "@db/sqlite";
-import { DatabaseService } from "../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { existsSync } from "@std/fs";
 import { join } from "@std/path";
-import { REVIEW_STATUS_VALUES } from "@exaix/core/status/review_status.ts";
+import { REVIEW_STATUS_VALUES } from "@exaix/core/status";
 import type { Config } from "@exaix/schemas/config.ts";
 
 /**

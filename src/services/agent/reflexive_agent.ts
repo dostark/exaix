@@ -20,10 +20,10 @@ import {
   type IParsedRequest,
 } from "./agent_runner.ts";
 import { createOutputValidator, type IOutputValidator } from "../tool/output_validator.ts";
-import { logDebug } from "@exaix/core/logger/structured_logger.ts";
+import { logDebug } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { LogMethod } from "../decorators/logging.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";

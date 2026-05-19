@@ -23,7 +23,7 @@ import {
   MemoryScope,
   MemoryType,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 
 function mapConfidenceLevelToAssessment(
   confidence: ConfidenceLevel,

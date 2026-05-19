@@ -26,7 +26,7 @@ import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
 import { PathAccessError, PathSecurity, PathTraversalError } from "../../helpers/path_security.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import {

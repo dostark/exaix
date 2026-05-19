@@ -7,103 +7,23 @@
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { join } from "@std/path";
-import { initTestDbService } from "../helpers/db.ts";
-import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts";
-
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
-import { PathResolver } from "../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
-import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
-import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import { MockProvider } from "@exaix/ai/providers.ts";
-import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
-
-const TEST_OPTIONS: IAgentExecutionOptions = {
-  identity_id: "test-agent",
-  portal: "workspace",
-  security_mode: SecurityMode.HYBRID,
-  audit_enabled: true,
-  timeout_ms: 30000,
-  max_tool_calls: 10,
-};
-
-const TEST_BLUEPRINT: IAgentFileBlueprint = {
-  name: "test-agent",
-  model: "mock-model",
-  provider: "mock",
-  capabilities: ["write"],
-  allowed_paths: ["test.txt"],
-  systemPrompt: "You are a test agent.",
-};
-
-/**
- * Helper: set up a full AgentExecutor with all dependencies.
- */
-async function setupExecutor(
-  tempDir: string,
-  provider: MockProvider,
-): Promise<{
-  executor: AgentExecutor;
-  cleanup: () => Promise<void>;
-}> {
-  const { db, cleanup: dbCleanup } = await initTestDbService();
-  const config = createTestConfig();
-  config.system.root = tempDir;
-  config.paths = {
-    ...config.paths,
-    workspace: join(tempDir, "Workspace"),
-    blueprints: join(tempDir, "Blueprints"),
-  };
-  config.portals = [{
-    alias: "workspace",
-    target_path: tempDir,
-    default_branch: "main",
-    identities_allowed: ["*"],
-    operations: [],
-  }];
-
-  const blueprintsDir = join(tempDir, "Blueprints", "Identities");
-  await Deno.mkdir(blueprintsDir, { recursive: true });
-  const fixture_1 = readFixtureTextSync(import.meta.url, "load", "agent_executor_strategy_swap_test", "fixture_1.md");
-  await Deno.writeTextFile(join(blueprintsDir, "strategy-agent.md"), fixture_1);
-
-  const logger = new EventLogger({ db });
-  const pathResolver = new PathResolver(config);
-  const permissions = new PortalPermissionsService(config.portals);
-
-  const executor = new AgentExecutor(
-    config,
-    db,
-    logger,
-    pathResolver,
-    permissions,
-    provider,
-  );
-
-  return {
-    executor,
-    cleanup: async () => {
-      executor.dispose();
-      await dbCleanup();
-      try {
-        await Deno.remove(tempDir, { recursive: true });
-      } catch { /* ignore */ }
-    },
-  };
-}
+import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
+import { ExecutionStrategyName } from "@exaix/core";
+import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";
 
 Deno.test("Strategy swap: Registry resolves different strategies without state corruption", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "strategy-swap-" });
   const mockResponse = "Task complete.";
   const provider = new MockProvider(mockResponse);
 
-  const { executor, cleanup } = await setupExecutor(tempDir, provider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, provider, {
+    group: "load",
+    file: "agent_executor_strategy_swap_test",
+  });
 
   try {
     // Create a fresh strategy registry with both strategies
@@ -144,7 +64,10 @@ Deno.test("Strategy swap: Executor can be constructed with custom strategy regis
   const mockResponse = "Done.";
   const provider = new MockProvider(mockResponse);
 
-  const { executor, cleanup } = await setupExecutor(tempDir, provider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, provider, {
+    group: "load",
+    file: "agent_executor_strategy_swap_test",
+  });
 
   try {
     // Create a custom registry with only Legacy strategy
@@ -178,7 +101,10 @@ Deno.test("Strategy swap: Consecutive executions with same strategy maintain sta
   const mockResponse = "No actions.";
   const provider = new MockProvider(mockResponse);
 
-  const { executor, cleanup } = await setupExecutor(tempDir, provider);
+  const { executor, cleanup } = await setupStrategyExecutor(tempDir, provider, {
+    group: "load",
+    file: "agent_executor_strategy_swap_test",
+  });
 
   try {
     const registry = executor["strategyRegistry"]!;

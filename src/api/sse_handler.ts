@@ -9,7 +9,7 @@
  * @related-files [packages/core/src/logger/event_logger.ts, src/cli/commands/watch.ts]
  */
 
-import type { IEventBusService } from "@exaix/core/observability/mod.ts";
+import type { IEventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { ZStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 

@@ -6,9 +6,9 @@
  * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import type { StructuredLoggerService } from "./structured_log_service.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import { ConnectionStatus } from "@exaix/core";
 

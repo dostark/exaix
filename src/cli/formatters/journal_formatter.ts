@@ -8,8 +8,8 @@
 
 import { Table } from "@cliffy/table";
 import * as colors from "@std/fmt/colors";
-import type { IActivityRecord } from "@exaix/core/types/database.ts";
-import type { IJournalFilterOptions } from "@exaix/core/types/database.ts";
+import type { IActivityRecord } from "@exaix/core/types";
+import type { IJournalFilterOptions } from "@exaix/core/types";
 import { DataFormat } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 

@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { buildParsedRequest, loadBlueprint } from "../../../src/services/request/request_common.ts";
-import type { IRequestFrontmatter } from "@exaix/core/request/mod.ts";
+import type { IRequestFrontmatter } from "@exaix/core/request";
 Deno.test("loadBlueprint: returns null when blueprint does not exist", async () => {
   const dir = await Deno.makeTempDir();
   const out = await loadBlueprint(dir, "missing");

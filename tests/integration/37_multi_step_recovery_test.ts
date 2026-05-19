@@ -21,7 +21,7 @@ import {
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import { DeleteFileTool } from "../../src/mcp/handlers/delete_file_tool.ts";
 import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";

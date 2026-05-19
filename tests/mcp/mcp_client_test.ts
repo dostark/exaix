@@ -8,7 +8,7 @@ import { McpClient } from "../../src/mcp/mcp_client.ts";
 import { McpToolName } from "@exaix/mcp";
 import { ToolHandler } from "../../src/mcp/tool_handler.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { createStubContext } from "../helpers/test_helpers.ts";
 

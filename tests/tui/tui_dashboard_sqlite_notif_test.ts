@@ -13,7 +13,7 @@ import {
   MemoryOperation,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { createTuiDashboardWithNotification } from "./dashboard_helper.ts";
 
 Deno.test("TUI Dashboard + SQLite: handles notification service integration", async () => {

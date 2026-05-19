@@ -5,8 +5,8 @@
  */
 
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import { AnalysisMode } from "@exaix/core/types";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";

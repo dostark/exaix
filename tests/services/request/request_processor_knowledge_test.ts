@@ -11,10 +11,11 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { buildPortalKnowledgeSummary, RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, PortalOperation, RequestStatus } from "@exaix/core";
+import { PORTAL_KNOWLEDGE_PROMPT_MAX_LINES, PortalOperation } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import type { IApplicationContext, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   makeKnowledge,

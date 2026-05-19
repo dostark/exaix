@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { FileOutput, type IStructuredLogEntry } from "@exaix/core/logger/structured_logger.ts";
+import { FileOutput, type IStructuredLogEntry } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 
 const TEST_LOG_MESSAGE = "Test log message";

@@ -5,9 +5,10 @@
  */
 
 import { join } from "@std/path";
-import { ANALYZER_VERSION, PortalAnalysisMode, RequestSource, RequestStatus } from "@exaix/core";
+import { ANALYZER_VERSION, PortalAnalysisMode, RequestSource } from "@exaix/core";
+import { RequestStatus } from "@exaix/core/status";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IPortalKnowledgeService, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";

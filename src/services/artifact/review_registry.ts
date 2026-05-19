@@ -8,7 +8,7 @@
  */
 
 import type { IDatabaseService, SqliteParam } from "../core/db.ts";
-import type { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { EventLogger } from "@exaix/core/logger";
 import {
   type IRegisterReviewInput,
   type IReview,
@@ -16,7 +16,7 @@ import {
   RegisterReviewSchema,
   ReviewSchema,
 } from "@exaix/schemas/review.ts";
-import { type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { ACTIVITY_ACTOR_AGENT } from "@exaix/core";
 
 export class ReviewRegistry {

@@ -9,9 +9,9 @@
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
 import { LogLevel, ProviderCostTier } from "@exaix/core";
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { initializeGlobalLogger, resetGlobalLogger } from "@exaix/core/logger/structured_logger.ts";
+import { initializeGlobalLogger, resetGlobalLogger } from "@exaix/core/logger";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExaPathDefaults } from "@exaix/core";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";

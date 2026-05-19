@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { AgentStatus, coerceAgentStatus, isAgentStatus } from "@exaix/core/status/agent_status.ts";
+import { AgentStatus, coerceAgentStatus, isAgentStatus } from "@exaix/core/status";
 import { TEST_AGENT_STATUS_INVALID } from "@exaix/testing";
 
 Deno.test("isAgentStatus: accepts known values", () => {

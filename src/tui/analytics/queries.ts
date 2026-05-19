@@ -6,7 +6,7 @@
  * @related-files [src/tui/structured_log_viewer.ts]
  */
 
-import type { IStructuredLogEntry } from "@exaix/core/types/logging.ts";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 
 /**
  * Find related logs by correlation ID

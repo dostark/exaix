@@ -15,7 +15,7 @@ import {
   MemoryOperation,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 
 /**
  * Creates test environment for notification tests

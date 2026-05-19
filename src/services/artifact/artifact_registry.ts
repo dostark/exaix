@@ -15,8 +15,9 @@ import type {
   IArtifactFrontmatter,
   IArtifactWithContent,
 } from "@exaix/schemas/artifact.ts";
-import { coerceReviewStatus, type IReviewStatus, ReviewStatus } from "@exaix/core/status/review_status.ts";
+import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
+import type { IReviewStatus } from "@exaix/core/status";
 
 interface IArtifactRow {
   id: string;

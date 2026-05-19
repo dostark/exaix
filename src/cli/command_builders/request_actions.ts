@@ -12,15 +12,14 @@ import {
   DEFAULT_NONE_LABEL,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   FlowInputSource,
-  isRequestStatus,
   type JSONValue,
-  REQUEST_STATUS_VALUES,
   type RequestPriority,
-  type RequestStatus,
 } from "@exaix/core";
-import { AnalysisMode, type IRequestAnalysis } from "@exaix/core";
+import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
+import type { RequestStatus } from "@exaix/core/status";
+import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
 import { PRIORITY_ICONS } from "../cli.config.ts";
-import type { IDisplayService } from "@exaix/core/types/i_display_service.ts";
+import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 
 export interface IRequestActionContext {

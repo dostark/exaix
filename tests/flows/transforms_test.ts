@@ -13,7 +13,7 @@ import {
   passthrough,
   templateFill,
 } from "../../src/flows/transforms.ts";
-import { jsonExtract } from "@exaix/core/types/json.ts";
+import { jsonExtract } from "@exaix/core/types";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 
 /**

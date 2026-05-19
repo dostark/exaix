@@ -17,7 +17,7 @@ import {
   RequestAnalysisSchema,
   RequestTaskType,
 } from "@exaix/schemas/request_analysis.ts";
-import { AnalysisMode } from "@exaix/core/types/mod.ts";
+import { AnalysisMode } from "@exaix/core/types";
 import type { IRequestAnalysisContext } from "@exaix/core/types";
 import { ANALYZER_VERSION } from "@exaix/core";
 

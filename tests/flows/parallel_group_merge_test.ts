@@ -21,7 +21,7 @@ import {
   DEFAULT_FLOW_VERSION,
   FLOW_EVENT_PARALLEL_GROUP_MERGE_FAILED,
 } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class CapturingExecutor implements IAgentExecutor {
   readonly capturedRequests: Array<{ identityId: string; request: IFlowStepRequest }> = [];

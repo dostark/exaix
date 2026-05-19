@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { BaseCommand, type ICommandContext } from "../../src/cli/base.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";

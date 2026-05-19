@@ -21,7 +21,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../../../src/services/core/db.ts";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IExecutionMemory, IMemoryUpdateProposal, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to proposals", async () => {
   // Use a more structured mock to avoid casting if possible

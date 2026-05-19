@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
 import { GitService } from "@exaix/git";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { GitTestHelper, setupPortalGitRepos } from "@exaix/git/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 

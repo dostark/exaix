@@ -32,10 +32,10 @@ import {
   SkillSchema,
   type SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
+import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { ISkillsService } from "@exaix/core/types";
-import type { ISkillMatchRequest } from "@exaix/core/types/skill.ts";
+import type { ISkillMatchRequest } from "@exaix/core/types";
 
 /**
  * Skills Service Configuration

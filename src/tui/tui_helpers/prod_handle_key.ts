@@ -9,7 +9,7 @@
 import { MessageType } from "@exaix/core";
 import { SplitDirection } from "@exaix/tui";
 import type { IDashboardViewState, IPane, ITuiView } from "../tui_dashboard.ts";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IMemoryNotification } from "@exaix/core/types";
 import type { INotificationService } from "@exaix/core/types";
 import { closePane, maximizePane, resizePane, splitPane } from "../dashboard/pane_manager.ts";
 import { KEYS } from "../helpers/keyboard.ts";

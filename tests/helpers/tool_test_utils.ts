@@ -11,8 +11,8 @@ import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import type { JSONValue } from "@exaix/core/types/json.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
+import type { JSONObject } from "@exaix/core/types";
 
 export interface IToolTestContext {
   registry: ToolRegistry;

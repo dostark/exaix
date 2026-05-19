@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { CritiqueQuality, CritiqueSeverity, TaskType } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import {
   createCodeReviewReflexiveAgent,
   createHighQualityReflexiveAgent,

@@ -9,7 +9,7 @@
  * - Notification lifecycle management with soft-deletes
  *
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", "src/services/memory_bank/index_builder.ts", @exaix/core/types/notification.ts]
+ * @related-files ["src/services/core/db.ts", "src/services/memory_bank/index_builder.ts", @exaix/core/types]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
@@ -17,9 +17,9 @@ import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "@exaix/core/types/json.ts";
+import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import type { IMemoryNotification } from "@exaix/core/types/notification.ts";
+import type { IMemoryNotification } from "@exaix/core/types";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */

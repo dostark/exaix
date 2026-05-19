@@ -13,10 +13,10 @@ import { CLI_DEFAULTS } from "../cli.config.ts";
 import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
 import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { isProcessAlive } from "../process_utils.ts";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core/version.ts";
 
-import type { IDaemonStatus } from "@exaix/core/types/daemon.ts";
+import type { IDaemonStatus } from "@exaix/core/types";
 
 /** Logger actor name for daemon operations */
 const DAEMON_ACTOR = "daemon";

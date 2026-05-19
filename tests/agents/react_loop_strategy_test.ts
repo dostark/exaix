@@ -8,7 +8,7 @@ import { assert, assertEquals, assertFalse } from "@std/assert";
 import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
 import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode, ToolName } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {
@@ -17,7 +17,7 @@ import {
   REACT_THOUGHT_PREFIX,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 
 class MockModelProvider implements IModelProvider {
   readonly id = "mock-react-provider";

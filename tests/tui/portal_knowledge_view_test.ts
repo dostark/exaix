@@ -13,7 +13,7 @@ import { PortalManagerTuiSession, renderKnowledgeSection } from "../../src/tui/p
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalService } from "@exaix/core/types";
 import { PortalStatus, SystemCommand } from "@exaix/core";
-import type { IPortalInfo } from "@exaix/core/types/portal.ts";
+import type { IPortalInfo } from "@exaix/core/types";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Fixtures

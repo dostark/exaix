@@ -11,7 +11,7 @@
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IOutputValidator } from "../tool/output_validator.ts";
-import type { IEventLogger } from "@exaix/core/logger/event_logger.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";

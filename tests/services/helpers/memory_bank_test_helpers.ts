@@ -20,7 +20,7 @@ import {
   MemoryReferenceType,
   MemoryScope,
 } from "@exaix/core";
-import { MemoryStatus } from "@exaix/core";
+import { MemoryStatus } from "@exaix/core/status";
 
 /**
  * Creates a test setup with MemoryBankService and a pre-created project memory

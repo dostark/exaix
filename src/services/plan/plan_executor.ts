@@ -12,7 +12,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { SafeSubprocess } from "../../helpers/subprocess.ts";
-import { EventLogger } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "../agent/agent_executor.ts";
 import { PathResolver } from "../portal/path_resolver.ts";
 import { PortalPermissionsService } from "../portal/portal_permissions.ts";
@@ -37,7 +37,7 @@ import {
 } from "@exaix/git";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IPlanAmendmentService } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import { PlanAmendmentService } from "./plan_amendment_service.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
 import { PlanAmendmentPendingError } from "./errors.ts";

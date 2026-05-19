@@ -10,35 +10,8 @@ import {
   TOOL_CONFIRMATION_EVENT_APPROVED,
   TOOL_CONFIRMATION_EVENT_DENIED,
 } from "@exaix/core";
-import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { IActivityJournal, JournalEntry } from "../../../src/flows/dynamic_step_executor.ts";
 import { CliConfirmationInterceptor } from "../../../src/services/tool/cli_confirmation_interceptor.ts";
-
-class MockActivityJournal implements IActivityJournal {
-  private entries: JournalEntry[] = [];
-
-  getEntries(): JournalEntry[] {
-    return [...this.entries];
-  }
-
-  log(entry: JournalEntry): Promise<void> {
-    this.entries.push(entry);
-    return Promise.resolve();
-  }
-}
-
-function createRequest(): ToolConfirmationRequest {
-  const requestedAt = new Date();
-  return {
-    id: crypto.randomUUID(),
-    toolName: "exaix_create_request",
-    args: { title: "Create request" },
-    stepId: "step-1",
-    traceId: "trace-1",
-    requestedAt: requestedAt.toISOString(),
-    expiresAt: new Date(requestedAt.getTime() + 120000).toISOString(),
-  };
-}
+import { createToolConfirmationRequest, MockActivityJournal } from "./helpers/confirmation_test_helpers.ts";
 
 Deno.test("CliConfirmationInterceptor: 'y' input approves the request", async () => {
   const journal = new MockActivityJournal();
@@ -48,7 +21,7 @@ Deno.test("CliConfirmationInterceptor: 'y' input approves the request", async ()
     () => Promise.resolve("y"),
   );
 
-  const decision = await interceptor.requestApproval(createRequest());
+  const decision = await interceptor.requestApproval(createToolConfirmationRequest());
 
   assertEquals(decision.approved, true);
   assertEquals(decision.reason, undefined);
@@ -63,7 +36,7 @@ Deno.test("CliConfirmationInterceptor: 'n' input denies with user-declined reaso
     () => Promise.resolve("n"),
   );
 
-  const decision = await interceptor.requestApproval(createRequest());
+  const decision = await interceptor.requestApproval(createToolConfirmationRequest());
 
   assertEquals(decision.approved, false);
   assertEquals(decision.reason, "User declined");
@@ -79,7 +52,7 @@ Deno.test("CliConfirmationInterceptor: empty input denies with user-declined rea
     () => Promise.resolve(""),
   );
 
-  const decision = await interceptor.requestApproval(createRequest());
+  const decision = await interceptor.requestApproval(createToolConfirmationRequest());
 
   assertEquals(decision.approved, false);
   assertEquals(decision.reason, "User declined");
@@ -94,7 +67,7 @@ Deno.test("CliConfirmationInterceptor: timeout auto-denies and records timeout s
     () => new Promise<string | null>(() => undefined),
   );
 
-  const decision = await interceptor.requestApproval(createRequest());
+  const decision = await interceptor.requestApproval(createToolConfirmationRequest());
 
   assertEquals(decision.approved, false);
   assertEquals(decision.reason, "TIMEOUT");

@@ -5,10 +5,10 @@
  * network deadlines are correctly propagated to provider-specific SDKs.
  */
 import { assertEquals } from "@std/assert";
-import { OpenAIProvider } from "@exaix/ai/providers/openai_provider.ts";
-import { AnthropicProvider } from "@exaix/ai/providers/anthropic_provider.ts";
-import { GoogleProvider } from "@exaix/ai/providers/google_provider.ts";
-import { LlamaProvider } from "@exaix/ai/providers/llama_provider.ts";
+import { OpenAIProvider } from "@exaix/ai/providers";
+import { AnthropicProvider } from "@exaix/ai/providers";
+import { GoogleProvider } from "@exaix/ai/providers";
+import { LlamaProvider } from "@exaix/ai/providers";
 Deno.test("Provider timeout configuration - OpenAI with option", () => {
   const provider = new OpenAIProvider({
     apiKey: "test-key",

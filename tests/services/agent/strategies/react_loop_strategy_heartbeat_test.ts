@@ -7,11 +7,11 @@
 
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
 import { ReActLoopStrategy } from "../../../../src/services/agent/strategies/react_loop_strategy.ts";
-import { EventBusService } from "@exaix/core/observability/mod.ts";
+import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "../../../../src/services/agent/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers/common.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import {
@@ -20,7 +20,7 @@ import {
   REACT_SUMMARY_PREFIX,
   STREAMING_EVENT_HEARTBEAT,
 } from "@exaix/core";
-import type { JSONValue } from "@exaix/core/types/json.ts";
+import type { JSONValue } from "@exaix/core/types";
 import { makeGenerateResult as makeResult } from "../../../helpers/test_helpers.ts";
 
 // ============================================================================
@@ -87,11 +87,7 @@ function createBaseExecutor(bus?: EventBusService): ReActExecutor {
   };
 }
 
-// ============================================================================
-// Heartbeat Emission Tests
-// ============================================================================
-
-Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running LLM call", async () => {
+function createHeartbeatRecorder(): { bus: EventBusService; heartbeats: IStreamingEvent[] } {
   const bus = new EventBusService();
   const heartbeats: IStreamingEvent[] = [];
   bus.subscribe(testContext.trace_id, (event) => {
@@ -99,19 +95,37 @@ Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running L
       heartbeats.push(event);
     }
   });
+  return { bus, heartbeats };
+}
 
-  let resolveGenerate: (v: string) => void;
+function createDeferredProvider(id: string): {
+  provider: IModelProvider;
+  resolve: (value: string) => void;
+} {
+  let resolveGenerate!: (value: string) => void;
   const generatePromise = new Promise<string>((resolve) => {
     resolveGenerate = resolve;
   });
 
-  const provider: IModelProvider = {
-    id: "slow-provider",
-    async generate(_prompt: string): Promise<IGenerateResult> {
-      await Promise.resolve();
-      return generatePromise.then(makeResult);
+  return {
+    provider: {
+      id,
+      async generate(_prompt: string): Promise<IGenerateResult> {
+        await Promise.resolve();
+        return generatePromise.then(makeResult);
+      },
     },
+    resolve: resolveGenerate,
   };
+}
+
+// ============================================================================
+// Heartbeat Emission Tests
+// ============================================================================
+
+Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running LLM call", async () => {
+  const { bus, heartbeats } = createHeartbeatRecorder();
+  const { provider, resolve } = createDeferredProvider("slow-provider");
 
   const strategy = new ReActLoopStrategy(createBaseExecutor(bus), provider);
   const execPromise = strategy.execute(testBlueprint, testContext, createOptions());
@@ -120,7 +134,7 @@ Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running L
   await new Promise((r) => setTimeout(r, EXECUTION_HEARTBEAT_INTERVAL_MS * 2 + 500));
 
   // Resolve the LLM call with completion
-  resolveGenerate!(
+  resolve(
     `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
   );
   await execPromise;
@@ -133,33 +147,15 @@ Deno.test("ReActLoopStrategy: should emit heartbeat events during long-running L
 });
 
 Deno.test("ReActLoopStrategy: heartbeat should include step name and elapsed time", async () => {
-  const bus = new EventBusService();
-  const heartbeats: IStreamingEvent[] = [];
-  bus.subscribe(testContext.trace_id, (event) => {
-    if (event.type === STREAMING_EVENT_HEARTBEAT) {
-      heartbeats.push(event);
-    }
-  });
-
-  let resolveGenerate: (v: string) => void;
-  const generatePromise = new Promise<string>((resolve) => {
-    resolveGenerate = resolve;
-  });
-
-  const provider: IModelProvider = {
-    id: "slow-provider-2",
-    async generate(_prompt: string): Promise<IGenerateResult> {
-      await Promise.resolve();
-      return generatePromise.then(makeResult);
-    },
-  };
+  const { bus, heartbeats } = createHeartbeatRecorder();
+  const { provider, resolve } = createDeferredProvider("slow-provider-2");
 
   const strategy = new ReActLoopStrategy(createBaseExecutor(bus), provider);
   const execPromise = strategy.execute(testBlueprint, testContext, createOptions());
 
   await new Promise((r) => setTimeout(r, EXECUTION_HEARTBEAT_INTERVAL_MS + 500));
 
-  resolveGenerate!(
+  resolve(
     `${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}Done`,
   );
   await execPromise;

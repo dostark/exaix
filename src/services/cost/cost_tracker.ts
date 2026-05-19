@@ -6,10 +6,10 @@
  * @related-files [src/services/core/db.ts, "packages/schemas/src/config.ts"]
  */
 import type { SqliteParam } from "../core/db.ts";
-import type { IDatabaseService } from "@exaix/core/types/i_database_service.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ICostTracker } from "@exaix/core/types";
-import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types/database.ts";
+import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,

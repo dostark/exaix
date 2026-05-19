@@ -15,7 +15,7 @@ import {
   type IRequestActionContext,
 } from "../../src/cli/command_builders/request_actions.ts";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
-import { EventLogger, type IEventLoggerConfig } from "@exaix/core/logger/event_logger.ts";
+import { EventLogger, type IEventLoggerConfig } from "@exaix/core/logger";
 
 import { LogLevel } from "@exaix/core";
 

@@ -11,7 +11,7 @@ import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { PlanStatus } from "@exaix/core";
+import { PlanStatus } from "@exaix/core/status";
 
 interface Frontmatter {
   status?: string;
