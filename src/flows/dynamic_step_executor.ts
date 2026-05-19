@@ -21,6 +21,7 @@ import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
+import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 /**
@@ -63,17 +64,6 @@ export interface IDynamicStepExecutorOptions {
 
 const DEFAULT_MAX_ITERATIONS = 10;
 
-/**
- * MCP client interface for tool execution
- */
-export interface IMcpClient {
-  callTool(tool: McpToolName, args: ToolArgs): Promise<string>;
-  getToolDefinitions(tools: McpToolName[]): Array<{
-    name: string;
-    description: string;
-    inputSchema: Record<string, JSONValue>;
-  }>;
-}
 /**
  * Activity journal interface for audit logging
  */

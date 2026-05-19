@@ -11,7 +11,7 @@ import { PortalOperation } from "@exaix/core";
 import { GitStatusTool } from "../../src/mcp/handlers/git_status_tool.ts";
 import { ReadFileTool } from "../../src/mcp/handlers/read_file_tool.ts";
 import { WriteFileTool } from "../../src/mcp/handlers/write_file_tool.ts";
-import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
+import { PortalPermissionsService } from "@exaix/portal";
 import { initToolPermissionTest } from "./helpers/test_setup.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";

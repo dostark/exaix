@@ -17,7 +17,8 @@
     "./packages/cli",
     "./packages/testing",
     "./packages/storage-sqlite",
-    "./packages/memory"
+    "./packages/memory",
+    "./packages/portal"
   ],
   "lock": true,
   "exports": "./src/main.ts",
@@ -134,7 +135,11 @@
     "@exaix/testing": "./packages/testing/mod.ts",
     "@exaix/testing/": "./packages/testing/src/",
     "@exaix/storage-sqlite": "./packages/storage-sqlite/mod.ts",
-    "@exaix/storage-sqlite/": "./packages/storage-sqlite/src/"
+    "@exaix/storage-sqlite/": "./packages/storage-sqlite/src/",
+    "@exaix/portal": "./packages/portal/mod.ts",
+    "@exaix/portal/knowledge": "./packages/portal/knowledge/mod.ts",
+    "@exaix/portal/knowledge/": "./packages/portal/knowledge/",
+    "@exaix/portal/": "./packages/portal/src/"
   },
   "exclude": [
     "cov_profile",

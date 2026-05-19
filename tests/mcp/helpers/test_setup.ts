@@ -15,7 +15,7 @@ import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
 import { MCPServer } from "../../../src/mcp/server.ts";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
+import { PortalPermissionsService } from "@exaix/portal";
 import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";

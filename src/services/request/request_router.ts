@@ -14,10 +14,7 @@ import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
 import type { EventLogger } from "@exaix/core/logger";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
-import {
-  type IWorkspaceExecutionContext,
-  WorkspaceExecutionContextBuilder,
-} from "../portal/workspace_execution_context.ts";
+import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
 import { buildPortalContextBlock } from "../context/prompt_context.ts";

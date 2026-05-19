@@ -2,11 +2,16 @@
  * @module PortalServicesIndex
  * @path src/services/portal/mod.ts
  * @description Barrel export for portal and workspace service modules.
+ * All sources have been migrated to @exaix/portal. This barrel re-exports for compatibility.
  * @architectural-layer Services
- * @related-files [src/services/portal/*.ts]
+ * @related-files [packages/portal/src/]
  */
 
-export * from "./portal.ts";
-export * from "./portal_permissions.ts";
-export * from "./path_resolver.ts";
-export * from "./workspace_execution_context.ts";
+export {
+  type IPathResolverConfig,
+  type IWorkspaceExecutionContext,
+  PathResolver,
+  PortalPermissionsService,
+  PortalService,
+  WorkspaceExecutionContextBuilder,
+} from "@exaix/portal";

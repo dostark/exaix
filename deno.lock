@@ -1200,6 +1200,12 @@
           "jsr:@std/yaml@^1.1.0"
         ]
       },
+      "packages/portal": {
+        "dependencies": [
+          "jsr:@std/fs@^1.0.23",
+          "jsr:@std/path@^1.1.4"
+        ]
+      },
       "packages/storage-sqlite": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",

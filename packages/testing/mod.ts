@@ -8,3 +8,5 @@ export * from "./src/constants.ts";
 export type { ILoggedActivity, TestDatabaseService } from "./src/helpers/db.ts";
 export * from "./src/helpers/mod.ts";
 export { initTestDbService } from "../../tests/helpers/db.ts";
+export { createMockConfig } from "../../tests/helpers/config.ts";
+export { createStubConfig, createStubDisplay, createStubGit } from "../../tests/helpers/test_helpers.ts";

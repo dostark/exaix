@@ -11,8 +11,7 @@ import { AgentExecutor, type IAgentFileBlueprint } from "../../../src/services/a
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "@exaix/core/logger";
-import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
+import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ToolName } from "@exaix/core";

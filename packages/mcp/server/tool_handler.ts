@@ -8,7 +8,7 @@
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
-import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalOperation, ToolErrorCode } from "@exaix/core";

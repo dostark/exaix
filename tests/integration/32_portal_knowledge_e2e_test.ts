@@ -5,16 +5,14 @@
  * pipeline: analysis → persistence → retrieval → request-context injection.
  * Covers quick and standard modes, knowledge.json round-trip, IProjectMemory
  * file updates, and RequestProcessor portal-knowledge injection.
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, *   src/services/portal_knowledge/knowledge_persistence.ts, "src/services/request/request_processor.ts", "packages/schemas/src/portal_knowledge.ts"]
+ * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, *   packages/portal/knowledge/knowledge_persistence.ts, "src/services/request/request_processor.ts", "packages/schemas/src/portal_knowledge.ts"]
  */
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { MockStrategy, PortalAnalysisMode, PortalOperation } from "@exaix/core";
-import { PortalKnowledgeService } from "../../src/services/portal_knowledge/portal_knowledge_service.ts";
-import type { IDocCommandRunner } from "../../src/services/portal_knowledge/symbol_extractor.ts";
-import { loadKnowledge, saveKnowledge } from "../../src/services/portal_knowledge/knowledge_persistence.ts";
+import { type IDocCommandRunner, loadKnowledge, PortalKnowledgeService, saveKnowledge } from "@exaix/portal/knowledge";
 import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";

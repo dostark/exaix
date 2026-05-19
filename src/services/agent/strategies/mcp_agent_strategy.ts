@@ -9,7 +9,7 @@
 import type { IExecutionStrategy } from "./execution_strategy.ts";
 import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
-import { SafeSubprocess } from "../../../helpers/subprocess.ts";
+import { SafeSubprocess } from "@exaix/core";
 import { ProcessManager } from "../process_manager.ts";
 import { TextLineStream } from "@std/streams";
 import {

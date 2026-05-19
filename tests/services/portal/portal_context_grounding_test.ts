@@ -8,13 +8,11 @@
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { initTestDbService } from "../../helpers/db.ts";
-import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "@exaix/core/types";
-import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, initTestDbService } from "@exaix/testing";
+import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 const CODE_ANALYST_BLUEPRINT_PATH = new URL("../../../Blueprints/Identities/code-analyst.md", import.meta.url);
 

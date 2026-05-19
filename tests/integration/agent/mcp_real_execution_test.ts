@@ -12,8 +12,7 @@ import { StrategyRegistry } from "../../../src/services/agent/strategies/strateg
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
 import { EventLogger } from "@exaix/core/logger";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
+import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { SecurityMode } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { ToolRegistryTestHelper } from "../../helpers/tool_registry_test_helper.ts";

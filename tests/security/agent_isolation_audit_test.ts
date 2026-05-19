@@ -22,8 +22,7 @@ import {
 import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";
 import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
 import type { EventLogger } from "@exaix/core/logger";
-import { PathResolver } from "../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
+import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
 import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";

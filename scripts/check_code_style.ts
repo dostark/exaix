@@ -719,26 +719,47 @@ async function checkFile(path: string) {
       }
 
       const relativePath = path.startsWith(REPO_ROOT) ? path.slice(REPO_ROOT.length + 1) : path;
-      if (relativePath.startsWith("packages/") && relativePath.includes("/tests/")) {
+      if (relativePath.startsWith("packages/")) {
         const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
         const importPath = importMatch?.[1];
 
         if (importPath && importPath.startsWith("..")) {
           const normalizedImport = normalize(join(dirname(relativePath), importPath));
           const packageRoot = relativePath.split("/").slice(0, 2).join("/");
+          const isTestFile = relativePath.includes("/tests/");
 
-          if (normalizedImport.startsWith("tests/")) {
-            console.log(
-              `ERROR [package-test-boundary] ${relativePath}:${
-                idx + 1
-              } – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
-            );
-            errorCount++;
+          if (normalizedImport.startsWith("src/")) {
+            // Allow bridge zone: packages/mcp/server/ is a concrete wiring layer
+            if (relativePath.startsWith("packages/mcp/server/")) {
+              // Bridge zone — skip
+            } else {
+              const label = isTestFile
+                ? `Package tests under '${packageRoot}/tests/'`
+                : `Package module '${packageRoot}'`;
+              console.log(
+                `ERROR [package-boundary] ${relativePath}:${
+                  idx + 1
+                } – ${label} must not import from the root src/ directory: '${importPath}'. Use @exaix/ package aliases instead.`,
+              );
+              errorCount++;
+            }
+          } else if (normalizedImport.startsWith("tests/")) {
+            if (isTestFile) {
+              console.log(
+                `ERROR [package-boundary] ${relativePath}:${
+                  idx + 1
+                } – Package tests under '${packageRoot}/tests/' must not import test fixtures from the root tests/ directory: '${importPath}'.`,
+              );
+              errorCount++;
+            }
           } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
+            const label = isTestFile
+              ? `Package tests under '${packageRoot}/tests/'`
+              : `Package module '${packageRoot}'`;
             console.log(
-              `ERROR [package-test-boundary] ${relativePath}:${
+              `ERROR [package-boundary] ${relativePath}:${
                 idx + 1
-              } – Package tests under '${packageRoot}/tests/' must not import code from another package ('${importPath}').`,
+              } – ${label} must not import code from another package ('${importPath}').`,
             );
             errorCount++;
           }

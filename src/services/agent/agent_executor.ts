@@ -13,12 +13,10 @@ import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "../core/db.ts";
 import type { EventLogger } from "@exaix/core/logger";
-import type { PathResolver } from "../portal/path_resolver.ts";
-import type { PortalPermissionsService } from "../portal/portal_permissions.ts";
+import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { SafeError } from "@exaix/core/errors";
-import { SafeSubprocess, SubprocessTimeoutError } from "../../helpers/subprocess.ts";
-import type { IWorkspaceExecutionContext } from "../portal/workspace_execution_context.ts";
+import { SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,

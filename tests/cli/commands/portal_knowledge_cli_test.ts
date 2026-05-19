@@ -4,7 +4,7 @@
  * @description Tests for the `analyze` and `knowledge` CLI subcommands added to
  * PortalCommands (Step 15 of Phase 46). Covers analysis trigger, mode flag,
  * force re-analysis, formatted/JSON knowledge output, and graceful error handling.
- * @related-files [src/cli/commands/portal_commands.ts, src/services/portal_knowledge/knowledge_persistence.ts]
+ * @related-files [src/cli/commands/portal_commands.ts, packages/portal/knowledge/knowledge_persistence.ts]
  */
 
 import { assert, assertRejects, assertStringIncludes } from "@std/assert";

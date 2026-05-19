@@ -29,11 +29,11 @@ import { SkillsService } from "../services/skills/skills.ts";
 import { ArchiveService } from "../services/artifact/archive_service.ts";
 import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
 import { ContextCardGenerator } from "../services/context/context_card_generator.ts";
-import { PortalService } from "../services/portal/portal.ts";
+import { PortalService } from "@exaix/portal";
+import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { RequestService } from "../services/request/request.ts";
 import { PlanService } from "../services/plan/plan.ts";
 import { PlanAmendmentService } from "../services/plan/plan_amendment_service.ts";
-import { PortalKnowledgeService } from "../services/portal_knowledge/portal_knowledge_service.ts";
 import { bootstrapProviderRegistry } from "../ai/registry_bootstrap.ts";
 
 // Adapters

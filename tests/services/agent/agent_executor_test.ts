@@ -33,7 +33,7 @@ import {
 } from "../../../src/services/agent/agent_executor.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IWorkspaceExecutionContext } from "../../../src/services/portal/workspace_execution_context.ts";
+import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { stub } from "@std/testing/mock";
 import { SafeError } from "@exaix/core/errors";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -42,8 +42,6 @@ import { initTestDbService } from "../../helpers/db.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import { EventLogger } from "@exaix/core/logger";
-import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";

@@ -16,7 +16,7 @@ import {
 } from "../helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
-import { SafeSubprocess } from "../../../src/helpers/subprocess.ts";
+import { SafeSubprocess } from "@exaix/core";
 
 function createHandler(env: Parameters<typeof createToolContext>[0]): GitCommitTool {
   return new GitCommitTool(createToolContext(env), createPermissionsService(env));

@@ -14,7 +14,7 @@ import type { DatabaseService as DatabaseService } from "../../src/services/core
 import { ContextCardGenerator } from "../../src/services/context/context_card_generator.ts";
 import { ContextCardAdapter } from "../../src/services/adapters/context_card_adapter.ts";
 import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
-import { PortalService } from "../../src/services/portal/portal.ts";
+import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../src/services/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";

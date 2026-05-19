@@ -23,7 +23,7 @@ import type { IAgentExecutionResult } from "../../src/services/agent/agent_runne
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 import { DeleteFileTool } from "../../src/mcp/handlers/delete_file_tool.ts";
-import { PortalPermissionsService } from "../../src/services/portal/portal_permissions.ts";
+import { PortalPermissionsService } from "@exaix/portal";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { initToolPermissionTest } from "../mcp/helpers/test_setup.ts";

@@ -6,7 +6,7 @@
  * @related-files [src/cli/commands/portal_commands.ts, "packages/core/src/types/i_portal_service.ts"]
  */
 
-import type { PortalService } from "../portal/portal.ts";
+import type { PortalService } from "@exaix/portal";
 import type { IPortalService } from "@exaix/core/types";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";

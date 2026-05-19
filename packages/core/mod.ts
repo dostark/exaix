@@ -23,3 +23,6 @@ export { SecureCredentialStore } from "./src/helpers/credential_security.ts";
 
 export type { IProviderDefaults } from "./src/types/provider_defaults.ts";
 export { ProviderDefaultsRegistry } from "./src/types/provider_defaults.ts";
+
+export { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "./src/helpers/subprocess.ts";
+export type { ISubprocessOptions } from "./src/helpers/subprocess.ts";

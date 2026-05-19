@@ -13,7 +13,7 @@
 
 import { McpToolName, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
-import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/core/types";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
 import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";

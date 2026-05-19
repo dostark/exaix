@@ -11,3 +11,4 @@ export * from "./src/tool_result_metadata.ts";
 export * from "./src/tool_result_converter.ts";
 export { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, TOOL_MANIFEST } from "./src/manifest.ts";
 export type { IJsonSchemaDescriptor, IToolManifestEntry } from "./src/manifest.ts";
+export type { IMcpClient } from "./src/i_mcp_client.ts";

@@ -11,11 +11,10 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { SafeSubprocess } from "../../helpers/subprocess.ts";
+import { SafeSubprocess } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "../agent/agent_executor.ts";
-import { PathResolver } from "../portal/path_resolver.ts";
-import { PortalPermissionsService } from "../portal/portal_permissions.ts";
+import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
 import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {

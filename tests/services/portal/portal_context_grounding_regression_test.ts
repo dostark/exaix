@@ -6,7 +6,7 @@
  */
 
 import { assert, assertStringIncludes } from "@std/assert";
-import { TestEnvironment } from "../../integration/helpers/test_environment.ts";
+import { TestEnvironment } from "../../../tests/integration/helpers/test_environment.ts";
 import { join } from "@std/path";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

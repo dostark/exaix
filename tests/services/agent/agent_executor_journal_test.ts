@@ -16,8 +16,7 @@ import {
   AGENT_EVENT_SECURITY_VIOLATION,
 } from "@exaix/core";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
-import type { PathResolver } from "../../../src/services/portal/path_resolver.ts";
-import type { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
+import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 

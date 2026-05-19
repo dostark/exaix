@@ -24,7 +24,7 @@ import { getGlobalLogger } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 import { DisplayAdapter } from "../adapters/display_adapter.ts";
 import { ContextCardGenerator } from "../context/context_card_generator.ts";
-import { PortalService } from "../portal/portal.ts";
+import { PortalService } from "@exaix/portal";
 import { createGitServiceStub } from "@exaix/testing/helpers/stub_factories.ts";
 import { MemoryBankService } from "../memory/memory_bank.ts";
 import { MemoryExtractorService } from "../memory/memory_extractor.ts";

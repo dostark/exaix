@@ -7,8 +7,8 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
-import { TestEnvironment } from "../../integration/helpers/test_environment.ts";
+import { PortalPermissionsService } from "@exaix/portal";
+import { TestEnvironment } from "../../../tests/integration/helpers/test_environment.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test("[portal-multi] validateGitRepo() returns true for portal with .git directory", async () => {

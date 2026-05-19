@@ -10,7 +10,7 @@ import { MemoryReferenceType } from "@exaix/core";
 import type { ActivityRecord } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { join } from "@std/path";
-import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
+import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "../../helpers/config.ts";
 
 /**

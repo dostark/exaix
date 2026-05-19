@@ -6,7 +6,7 @@
  * @related-files [packages/mcp/server/tool_handler.ts, src/flows/dynamic_step_executor.ts]
  */
 import type { ToolArgs } from "@exaix/ai";
-import type { IMcpClient } from "../../../src/flows/dynamic_step_executor.ts";
+import type { IMcpClient } from "../src/i_mcp_client.ts";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import type { McpToolName } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";

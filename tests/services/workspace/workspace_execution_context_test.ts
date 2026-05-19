@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
+import { WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { IPortalConfig } from "@exaix/schemas/config.ts";
 import { ensureDir } from "@std/fs";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

@@ -1,0 +1,29 @@
+{
+  "name": "@exaix/portal",
+  "version": "0.1.0",
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@exaix/portal": "./mod.ts",
+    "@exaix/portal/knowledge": "./knowledge/mod.ts",
+    "@exaix/portal/knowledge/": "./knowledge/",
+    "@exaix/portal/": "./src/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/testing": "../testing/mod.ts",
+    "@exaix/testing/": "../testing/src/"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
+  }
+}

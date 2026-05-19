@@ -9,14 +9,12 @@ import { assertEquals, assertExists } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
-import { WorkspaceExecutionContextBuilder } from "../../../src/services/portal/workspace_execution_context.ts";
+import { PathResolver, PortalPermissionsService, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PortalOperation } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "@exaix/core/logger";
-import { PathResolver } from "../../../src/services/portal/path_resolver.ts";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
 import { setupPortalWorkspaceTestDirs } from "../helpers/portal_workspace_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 

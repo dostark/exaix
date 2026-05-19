@@ -10,7 +10,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import { PathResolver } from "../portal/path_resolver.ts";
+import { PathResolver } from "@exaix/portal";
 import {
   ActivityActor,
   BYTES_PER_KB,

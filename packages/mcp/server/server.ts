@@ -7,7 +7,7 @@
  */
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
-import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/core/types";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
 import { JsonRpcErrorCode } from "@exaix/core";
@@ -19,7 +19,7 @@ import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
 import { logInfo } from "@exaix/core/logger";
-import { PortalPermissionsService } from "../../../src/services/portal/portal_permissions.ts";
+import { PortalPermissionsService } from "@exaix/portal";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import { buildToolResultSchemaDescriptor, lookupRemediationPolicy, lookupRemediationToolMetadata } from "@exaix/mcp";

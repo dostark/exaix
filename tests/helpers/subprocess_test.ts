@@ -11,7 +11,7 @@ import {
   TEST_SUBPROCESS_LONG_RUNNING_MS,
   TEST_SUBPROCESS_TIMEOUT_MS_SHORT,
 } from "@exaix/testing";
-import { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "../../src/helpers/subprocess.ts";
+import { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "@exaix/core";
 
 function getDenoCmd(): string {
   return Deno.execPath();
