@@ -24,7 +24,7 @@ logs/
 # --------------------------------------------
 # Test Artifacts
 # --------------------------------------------
-coverage*/
+/coverage*/
 .coverage/
 jscpd-report/
 report/
