@@ -12,7 +12,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { MigrationDirection } from "@exaix/core";
 
-import { ConfigService } from "@exaix/core/config/service.ts";
+import { ConfigService } from "@exaix/core/config";
 
 const configService = new ConfigService();
 const cfg = configService.get();

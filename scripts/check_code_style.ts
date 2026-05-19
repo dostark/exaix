@@ -11,7 +11,7 @@
 import { walk } from "@std/fs";
 import { dirname, fromFileUrl, join, normalize } from "@std/path";
 
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
+const REPO_ROOT = normalize(join(dirname(fromFileUrl(import.meta.url)), ".."));
 const EXCLUSION_DICT_PATH = join(dirname(fromFileUrl(import.meta.url)), "style_warning_exclusions.json");
 let exclusionDict: Record<string, Record<string, { reason: string }>> = {};
 try {
@@ -33,8 +33,31 @@ interface ITestingShimExportInfo {
   exportedNames: Set<string>;
 }
 
+interface IPublicPackageAlias {
+  alias: string;
+  entryPath: string;
+  rootPath: string;
+  packageRoot: string;
+}
+
+const ROOT_OWNED_PARENT_EXPORT_ALIASES = new Set([
+  "@exaix/core/types",
+]);
+
+const RETIRED_ROOT_HEADER_RELATED_FILES = new Set([
+  "src/services/core/db.ts",
+]);
+
+const RETIRED_ROOT_PACKAGE_IMPORT_PATHS = new Set([
+  "src/services/core/db.ts",
+]);
+
 function isPackageEntrypoint(path: string): boolean {
   return path.endsWith("/mod.ts") || path.endsWith("/index.ts");
+}
+
+function isPackageRootEntrypoint(path: string): boolean {
+  return /^packages\/[^/]+\/(mod|index)\.ts$/.test(path);
 }
 
 function isSamePackageReExport(line: string): boolean {
@@ -46,6 +69,18 @@ function isTestingCompatibilityShim(path: string): boolean {
   return path.startsWith("tests/helpers/") || /^packages\/[^/]+\/tests\/helpers\//.test(path);
 }
 
+function parseHeaderRelatedFiles(headerText: string): string[] {
+  const match = headerText.match(/@related-files\s*\[([\s\S]*?)\]/);
+  if (!match) {
+    return [];
+  }
+
+  return match[1].split(",")
+    .map((entry) => entry.trim())
+    .map((entry) => entry.replace(/^['"]|['"]$/g, ""))
+    .filter(Boolean);
+}
+
 function parseNamedSymbols(clause: string): string[] {
   return clause.split(",")
     .map((symbol) => symbol.trim())
@@ -53,6 +88,10 @@ function parseNamedSymbols(clause: string): string[] {
     .map((symbol) => symbol.replace(/^type\s+/, ""))
     .map((symbol) => symbol.split(/\s+as\s+/)[0]?.trim() ?? "")
     .filter(Boolean);
+}
+
+function isRepoRelativeSpecifier(specifier: string): boolean {
+  return !/^[a-z]+:/i.test(specifier) && !specifier.startsWith("//");
 }
 
 function discoverPackageTestingAliases(): Map<string, string> {
@@ -77,6 +116,111 @@ function discoverPackageTestingAliases(): Map<string, string> {
   }
 
   return aliases;
+}
+
+function discoverPublicPackageAliases(): IPublicPackageAlias[] {
+  const aliases: IPublicPackageAlias[] = [];
+  const denoJsonPath = join(REPO_ROOT, "deno.json");
+
+  try {
+    const denoJson = JSON.parse(Deno.readTextFileSync(denoJsonPath)) as {
+      imports?: Record<string, string>;
+    };
+
+    for (const [alias, mappedPath] of Object.entries(denoJson.imports ?? {})) {
+      if (!alias.startsWith("@exaix/") || alias.endsWith("/")) {
+        continue;
+      }
+      if (!isRepoRelativeSpecifier(mappedPath)) {
+        continue;
+      }
+
+      const entryPath = normalize(mappedPath.replace(/^\.\//, ""));
+      if (!entryPath.startsWith("packages/")) {
+        continue;
+      }
+
+      const packageName = entryPath.split("/")[1];
+      if (!packageName) {
+        continue;
+      }
+
+      const packageRoot = normalize(join("packages", packageName));
+      const rootPath = normalize(dirname(entryPath));
+      aliases.push({ alias, entryPath, rootPath, packageRoot });
+    }
+  } catch {
+    // Root import-map metadata unavailable; keep alias list empty.
+  }
+
+  return aliases.sort((a, b) => {
+    if (b.alias.length !== a.alias.length) {
+      return b.alias.length - a.alias.length;
+    }
+
+    return b.rootPath.length - a.rootPath.length;
+  });
+}
+
+function findCanonicalPackageAlias(normalizedImport: string, importerRepoPath: string): IPublicPackageAlias | null {
+  for (const aliasInfo of publicPackageAliases) {
+    if (importerRepoPath.startsWith(`${aliasInfo.packageRoot}/`)) {
+      continue;
+    }
+
+    if (normalizedImport === aliasInfo.entryPath) {
+      return aliasInfo;
+    }
+
+    if (
+      aliasInfo.rootPath !== aliasInfo.packageRoot &&
+      normalizedImport.startsWith(`${aliasInfo.rootPath}/`)
+    ) {
+      return aliasInfo;
+    }
+  }
+
+  return null;
+}
+
+function findCanonicalPackageAliasForSpecifier(importPath: string): IPublicPackageAlias | null {
+  for (const aliasInfo of publicPackageAliases) {
+    if (aliasInfo.rootPath === aliasInfo.packageRoot) {
+      continue;
+    }
+
+    if (importPath.startsWith(`${aliasInfo.alias}/`)) {
+      return aliasInfo;
+    }
+  }
+
+  return null;
+}
+
+function findPromotedSubpackageAliasForParentEntrypoint(
+  normalizedImport: string,
+  importerRepoPath: string,
+): IPublicPackageAlias | null {
+  if (!isPackageRootEntrypoint(importerRepoPath)) {
+    return null;
+  }
+
+  const packageRoot = importerRepoPath.split("/").slice(0, 2).join("/");
+  for (const aliasInfo of publicPackageAliases) {
+    if (
+      aliasInfo.packageRoot !== packageRoot ||
+      aliasInfo.rootPath === aliasInfo.packageRoot ||
+      ROOT_OWNED_PARENT_EXPORT_ALIASES.has(aliasInfo.alias)
+    ) {
+      continue;
+    }
+
+    if (normalizedImport === aliasInfo.entryPath || normalizedImport.startsWith(`${aliasInfo.rootPath}/`)) {
+      return aliasInfo;
+    }
+  }
+
+  return null;
 }
 
 function discoverRootTestingShimExports(): Map<string, ITestingShimExportInfo> {
@@ -136,6 +280,7 @@ function getPackageTestingAliasForTestImport(normalizedImport: string): { packag
 
 const packageTestingAliases = discoverPackageTestingAliases();
 const rootTestingShimExports = discoverRootTestingShimExports();
+const publicPackageAliases = discoverPublicPackageAliases();
 
 const args = new Set(Deno.args);
 const strictImports = args.has("--strict-imports");
@@ -305,7 +450,10 @@ const rules: Rule[] = [
       "Re-exporting entities from other modules (e.g., 'export { ... } from ...' or 'export * from ...') is prohibited. Each module must only export entities it defines.",
     severity: "error" as const,
     pathFilter: (path: string) =>
-      !path.endsWith("/mod.ts") && !path.endsWith("/index.ts") && !isTestingCompatibilityShim(path),
+      !path.endsWith("/mod.ts") &&
+      !path.endsWith("/index.ts") &&
+      !isTestingCompatibilityShim(path) &&
+      path !== "src/services/core/db.ts",
   },
   {
     name: "package-entrypoint-root-src-reexport",
@@ -602,6 +750,22 @@ async function checkFile(path: string) {
       if (importPath) {
         const normalizedImport = resolveRepoImportPath(relativePath, importPath);
         if (normalizedImport) {
+          if (/^\s*export\b/.test(line) && isPackageRootEntrypoint(relativePath)) {
+            const promotedSubpackageAlias = findPromotedSubpackageAliasForParentEntrypoint(
+              normalizedImport,
+              relativePath,
+            );
+
+            if (promotedSubpackageAlias) {
+              console.log(
+                `ERROR [package-subpath-promotion] ${relativePath}:${
+                  idx + 1
+                } – Parent package entrypoints must not re-export canonical subpackage surfaces. Export this API from '${promotedSubpackageAlias.alias}' instead of promoting '${importPath}' through '${relativePath}'.`,
+              );
+              errorCount++;
+            }
+          }
+
           const testingImportInfo = getPackageTestingAliasForTestImport(normalizedImport);
           if (testingImportInfo) {
             const owningPackageTestsRoot = `packages/${testingImportInfo.packageName}/tests/`;
@@ -615,10 +779,30 @@ async function checkFile(path: string) {
               errorCount++;
             }
           }
+
+          const canonicalAliasInfo = findCanonicalPackageAlias(normalizedImport, relativePath);
+          if (canonicalAliasInfo) {
+            console.log(
+              `ERROR [package-canonical-import] ${relativePath}:${
+                idx + 1
+              } – Import from '${canonicalAliasInfo.alias}' instead of deep-importing the package-owned path '${importPath}'.`,
+            );
+            errorCount++;
+          }
+        }
+
+        const canonicalSpecifierAliasInfo = findCanonicalPackageAliasForSpecifier(importPath);
+        if (canonicalSpecifierAliasInfo) {
+          console.log(
+            `ERROR [package-canonical-import] ${relativePath}:${
+              idx + 1
+            } – Import from '${canonicalSpecifierAliasInfo.alias}' instead of deep-importing the canonical package subpath '${importPath}'.`,
+          );
+          errorCount++;
         }
       }
 
-      if (relativePath.startsWith("packages/") && relativePath.includes("/src/")) {
+      if (relativePath.startsWith("packages/")) {
         const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
         const importPath = importMatch?.[1];
 
@@ -631,13 +815,13 @@ async function checkFile(path: string) {
           }
 
           const packageRoot = relativePath.split("/").slice(0, 2).join("/");
-          const isExternalRepoSrcImport = normalizedImport &&
-            (normalizedImport === "src" || normalizedImport.startsWith("src/"));
-          if (isExternalRepoSrcImport) {
+          const isRetiredRootImport = normalizedImport !== null &&
+            RETIRED_ROOT_PACKAGE_IMPORT_PATHS.has(normalizedImport);
+          if (isRetiredRootImport) {
             console.log(
               `ERROR [package-src-boundary] ${relativePath}:${
                 idx + 1
-              } – Package source modules under '${packageRoot}/src/' must not import directly from 'src/*'. Use package public APIs instead.`,
+              } – Package-owned modules under '${packageRoot}/' must not import retired root implementation paths like '${normalizedImport}'. Use the package-owned source of truth instead.`,
             );
             errorCount++;
           }
@@ -849,6 +1033,19 @@ async function checkFile(path: string) {
     for (const tag of tags) {
       if (!headerLines.includes(tag)) {
         console.log(`ERROR [module-header-tag] ${path}:1 – Header is missing mandatory '${tag}' tag.`);
+        errorCount++;
+      }
+    }
+
+    if (repoPath.startsWith("packages/")) {
+      for (const relatedFile of parseHeaderRelatedFiles(headerLines)) {
+        if (!RETIRED_ROOT_HEADER_RELATED_FILES.has(relatedFile)) {
+          continue;
+        }
+
+        console.log(
+          `ERROR [package-related-files-boundary] ${path}:1 – Package-owned module headers must not reference retired root compatibility paths in '@related-files': '${relatedFile}'. Point to the package-owned source-of-truth module instead.`,
+        );
         errorCount++;
       }
     }

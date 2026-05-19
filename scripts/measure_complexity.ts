@@ -20,7 +20,7 @@
  */
 import { walk } from "@std/fs";
 import { parse } from "@std/flags";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 // Import all parser candidates at the top-level (see CODE_STYLE.md for rationale)
 // Only use local or npm imports that are available and versioned
 import * as BabelParser1 from "@babel/parser";

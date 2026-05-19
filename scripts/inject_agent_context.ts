@@ -10,7 +10,7 @@
 
 import { walk } from "@std/fs";
 import { parse } from "@std/yaml";
-import type { JSONObject } from "@exaix/core/types/json.ts";
+import type { JSONObject } from "@exaix/core/types";
 
 const AGENTS_DIR = ".copilot";
 

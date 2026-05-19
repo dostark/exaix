@@ -185,13 +185,25 @@ import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
 ```
 
-**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited.
+**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited.
+
+**Canonical subpackage boundary:** if the root import map exposes an exact canonical subpackage alias such as `@exaix/core/status` or `@exaix/ai/providers`, the parent package entrypoint must not promote that subpackage's exports through `@exaix/core` or `@exaix/ai`. Keep the boundary explicit: consumers import subpackage-owned symbols from the canonical subpackage barrel, not from the parent package barrel.
+
+**Root-owned surface exception:** a package may still expose symbols from modules that define the parent package's primary root API even if the import map also offers a convenience grouping alias for that root-owned surface. In this repository, `@exaix/core/types` is treated as a root-owned grouping, so `@exaix/core` may continue to export those contracts.
 
 ```ts
 // packages/core/mod.ts
 export type { IToolRegistry } from "./src/interfaces/i_tool_registry.ts";
 export type { IActivityRecord } from "./src/types/database.ts";
 export { PortalOperation } from "./src/enums.ts";
+```
+
+**Prohibited in parent package entrypoints when a canonical subpackage barrel exists:**
+
+```ts
+// packages/core/mod.ts
+export * from "./src/status/mod.ts"; // ❌ Import from @exaix/core/status instead
+export { RetryPolicy } from "./src/request/retry_policy.ts"; // ❌ Import from @exaix/core/request instead
 ```
 
 **Prohibited in package entrypoints:**
@@ -245,9 +257,12 @@ Package-local tests under `packages/<package>/tests/` must remain self-contained
 - **Use package testing subpaths when they exist:** If a package exposes a public testing surface such as `@exaix/<package>/testing`, any tests outside that package must import package-specific helpers, config builders, fixtures, or test-only data structures through that public subpath.
 - **No deep imports into another package's test internals:** Once a package-specific testing subpath exists, outside consumers must not import from `packages/<package>/tests/...` or equivalent relative deep paths.
 - **No root shim indirection for package-owned test support:** When `@exaix/<package>/testing` exists, do not keep routing package-specific test helpers through root `tests/helpers/*` shims except as temporary compatibility layers being actively drained.
+- **Use canonical public package barrels:** When the workspace root import map declares an exact package or subpackage alias such as `@exaix/mcp/server`, `@exaix/git/testing`, or `@exaix/core/types`, outside consumers must import through that exact alias. Do not deep-import the underlying repository path like `packages/...`, and do not deep-import file paths beneath the canonical alias such as `@exaix/mcp/server/resources.ts` or `@exaix/core/types/json.ts`.
+- **Package root aliases are not a license for arbitrary source imports:** `@exaix/<package>` is only valid for the symbols exported by that package root barrel. Use only explicitly declared canonical subpath barrels for narrower public surfaces.
 - **Avoid inline multiline structured text in tests:** It is highly recommended to avoid embedding YAML frontmatter, markdown documents, JSON payloads, or other multiline fixture text directly in a test file using backtick template literals. Move this content into a package-local fixture and load it from the test instead to keep test files readable.
 - **Package tests may depend on package source code only:** They may import from `packages/<package>/src/` and from shared runtime dependencies, but not from external test infrastructure.
-- **Package source must not import repository source directly:** Files under `packages/<package>/src/` must not import from repository `src/*` paths directly. Use package public APIs instead.
+- **Package-owned modules must not import retired root implementation paths:** Files under package-owned runtime or support surfaces such as `packages/<package>/server/`, `packages/<package>/testing/`, or `packages/<package>/src/` must not import retired root implementation modules such as `src/services/core/db.ts`. Use the package-owned source-of-truth path or canonical package alias instead.
+- **Package headers must not point at retired root ownership paths:** In package-owned modules, `@related-files` must not reference retired root compatibility modules such as `src/services/core/db.ts`. Header metadata must point at the package-owned source-of-truth path, not the old root shim or legacy runtime location.
 - **Boundary enforcement:** This prevents one package's test setup from leaking into another package or into repository-wide test fixtures, preserving package portability and isolation.
 
 **Prohibited when a testing subpath exists:**
@@ -263,7 +278,9 @@ import { setupGitRepo } from "../helpers/git_test_helper.ts";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 ```
 
-These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+
+- Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
 
 - Structured multiline test fixtures are also flagged as `[test-inline-multiline-fixture]` in test files.
 
