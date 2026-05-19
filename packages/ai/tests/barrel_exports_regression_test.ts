@@ -1,11 +1,13 @@
 /**
  * @module AIPackageBarrelExportsRegressionTest
  * @path packages/ai/tests/barrel_exports_regression_test.ts
- * @description Guards the public @exaix/ai barrel so provider contracts and
- * helpers remain available to downstream packages.
+ * @description Guards the public @exaix/ai surfaces so provider contracts and
+ * helpers remain available to downstream packages via their canonical aliases.
+ * Provider contracts live in @exaix/ai/providers; shared utilities in @exaix/ai.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
+import { ModelFactory } from "@exaix/ai";
 import {
   BaseProvider,
   ConnectionError,
@@ -24,7 +26,7 @@ function assertGenerateResultShape(_result: IGenerateResult): void {
   // Type-level helper: compiles only if IGenerateResult is publicly reachable.
 }
 
-Deno.test("@exaix/ai/providers exports provider contracts and helpers", async () => {
+Deno.test("@exaix/ai/providers subpath exports provider contracts and helpers", async () => {
   assertExists(BaseProvider);
   assertExists(LazyProvider);
   assertExists(MockLLMProvider);
@@ -49,4 +51,8 @@ Deno.test("@exaix/ai/providers exports provider contracts and helpers", async ()
     model: "mock-model",
     provider: "mock",
   });
+});
+
+Deno.test("@exaix/ai root barrel exports shared utilities", () => {
+  assertExists(ModelFactory);
 });

@@ -209,24 +209,6 @@ export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN = 1000;
 export const AI_RETRY_TIMEOUT_PER_REQUEST_MS_MAX = 300000;
 export const AI_TIMEOUT_MS_MIN = 1000;
 export const AI_TIMEOUT_MS_MAX = 300000;
-export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = 1000;
-export const DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS = 5;
-export const DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS = 2000;
-export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_OPENAI_RETRY_BACKOFF_MS = 1000;
-export const DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS = 3;
-export const DEFAULT_GOOGLE_RETRY_BACKOFF_MS = 1000;
-export const DEFAULT_OPENAI_TIMEOUT_MS = 30000;
-export const DEFAULT_GOOGLE_TIMEOUT_MS = 30000;
-export const DEFAULT_OLLAMA_TIMEOUT_MS = 120000;
-export const DEFAULT_OLLAMA_MODEL = "llama3.2";
-export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
-export const DEFAULT_GOOGLE_MODEL = "gemini-flash-latest";
-export const DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
-export const DEFAULT_ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
-export const DEFAULT_OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-export const DEFAULT_GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 export const MOCK_DELAY_MS_MIN = 0;
 export const MOCK_DELAY_MS_MAX = 5000;
 export const MOCK_INPUT_TOKENS_MIN = 1;
@@ -264,10 +246,6 @@ export const PROMPT_PREVIEW_EXTENDED_MAX = 1000;
 // UI defaults
 export const PROMPT_PREVIEW_LENGTH = 100;
 export const PROMPT_PREVIEW_EXTENDED = 500;
-export const DEFAULT_ANTHROPIC_API_VERSION = "2023-06-01";
-// Options: claude-haiku-4-5-20251001 (default), claude-sonnet-4-5-20250929, claude-opus-4-5-20251101
-export const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
-export const DEFAULT_ANTHROPIC_MAX_TOKENS = 4096;
 
 // ============================================================================
 // MCP Defaults

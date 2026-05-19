@@ -49,3 +49,22 @@ Deno.test("OllamaEmbeddingClient rejects non-localhost baseUrl", () => {
     "localhost only",
   );
 });
+
+Deno.test("OllamaProviderFactory routes llama model patterns to LlamaProvider", async () => {
+  const factory = new OllamaProviderFactory();
+  const provider = await factory.create({ provider: "ollama" as never, model: "llama3.2:latest", timeoutMs: 1000 });
+  // LlamaProvider produces ids prefixed with "llama-", not "ollama-"
+  assertEquals(provider.id, "llama-llama3.2:latest");
+});
+
+Deno.test("OllamaProviderFactory routes codellama patterns to LlamaProvider", async () => {
+  const factory = new OllamaProviderFactory();
+  const provider = await factory.create({ provider: "ollama" as never, model: "codellama:7b", timeoutMs: 1000 });
+  assertEquals(provider.id, "llama-codellama:7b");
+});
+
+Deno.test("OllamaProviderFactory routes non-llama models to OllamaProvider", async () => {
+  const factory = new OllamaProviderFactory();
+  const provider = await factory.create({ provider: "ollama" as never, model: "mistral:latest", timeoutMs: 1000 });
+  assertEquals(provider.id, "ollama-mistral:latest");
+});

@@ -5,7 +5,7 @@
  * @architectural-layer AI
  */
 
-import { ProviderCostTier, ProviderType } from "@exaix/core";
+import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 export const DEFAULT_GOOGLE_MODEL = "gemini-flash-latest";
 export const DEFAULT_GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -26,3 +26,11 @@ export const GOOGLE_PROVIDER_METADATA = {
   costTier: PROVIDER_GOOGLE_COST_TIER,
   strengths: PROVIDER_GOOGLE_STRENGTHS,
 } as const;
+
+export const GOOGLE_DEFAULTS: IProviderDefaults = {
+  defaultModel: DEFAULT_GOOGLE_MODEL,
+  defaultEndpoint: DEFAULT_GOOGLE_ENDPOINT,
+  defaultTimeoutMs: DEFAULT_GOOGLE_TIMEOUT_MS,
+  defaultRetryMaxAttempts: DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
+  defaultRetryBackoffMs: DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
+};

@@ -7,11 +7,16 @@
  */
 
 import { initializeRegistry, type IProviderMetadata, ProviderRegistry, setProviderRegistryBootstrap } from "@exaix/ai";
-import { PricingTier } from "@exaix/core";
-import { ANTHROPIC_PROVIDER_METADATA, AnthropicProviderFactory, PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
-import { GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
-import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
-import { OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
+import { PricingTier, ProviderDefaultsRegistry } from "@exaix/core";
+import {
+  ANTHROPIC_DEFAULTS,
+  ANTHROPIC_PROVIDER_METADATA,
+  AnthropicProviderFactory,
+  PROVIDER_ANTHROPIC,
+} from "@exaix/ai-anthropic";
+import { GOOGLE_DEFAULTS, GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
+import { OLLAMA_DEFAULTS, OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
+import { OPENAI_DEFAULTS, OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
 
 function registerConcreteProviders(): void {
   const supported = ProviderRegistry.getSupportedProviders();
@@ -77,9 +82,17 @@ function registerConcreteProviders(): void {
   }
 }
 
+function registerProviderDefaults(): void {
+  ProviderDefaultsRegistry.register(PROVIDER_OLLAMA, OLLAMA_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_ANTHROPIC, ANTHROPIC_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_OPENAI, OPENAI_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_GOOGLE, GOOGLE_DEFAULTS);
+}
+
 setProviderRegistryBootstrap(registerConcreteProviders);
 
 export function bootstrapProviderRegistry(): void {
   initializeRegistry();
   registerConcreteProviders();
+  registerProviderDefaults();
 }

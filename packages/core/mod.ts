@@ -20,3 +20,6 @@ export type { JSONArray, JSONObject, JSONValue, LogMetadata } from "./src/types/
 export { jsonExtract, JSONValueSchema, toSafeJson } from "./src/types/json.ts";
 
 export { SecureCredentialStore } from "./src/helpers/credential_security.ts";
+
+export type { IProviderDefaults } from "./src/types/provider_defaults.ts";
+export { ProviderDefaultsRegistry } from "./src/types/provider_defaults.ts";

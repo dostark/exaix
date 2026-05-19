@@ -5,16 +5,16 @@
  * @architectural-layer AI
  */
 
-import { ProviderCostTier, ProviderType } from "@exaix/core";
+import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
+export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
 export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com";
 export const DEFAULT_OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-export const DEFAULT_OPENAI_MODEL = "gpt-5-mini";
+export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
+export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
 export const DEFAULT_OPENAI_TIMEOUT_MS = 30000;
 export const DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS = 3;
 export const DEFAULT_OPENAI_RETRY_BACKOFF_MS = 1000;
-export const DEFAULT_OPENAI_EMBED_BASE_URL = "https://api.openai.com/v1";
-export const DEFAULT_OPENAI_EMBED_CHUNK_SIZE = 8000;
 
 export const PROVIDER_OPENAI = ProviderType.OPENAI;
 export const PROVIDER_OPENAI_DESCRIPTION = "OpenAI's GPT models for versatile AI tasks";
@@ -29,3 +29,11 @@ export const OPENAI_PROVIDER_METADATA = {
   costTier: PROVIDER_OPENAI_COST_TIER,
   strengths: PROVIDER_OPENAI_STRENGTHS,
 } as const;
+
+export const OPENAI_DEFAULTS: IProviderDefaults = {
+  defaultModel: DEFAULT_OPENAI_MODEL,
+  defaultEndpoint: DEFAULT_OPENAI_ENDPOINT,
+  defaultTimeoutMs: DEFAULT_OPENAI_TIMEOUT_MS,
+  defaultRetryMaxAttempts: DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
+  defaultRetryBackoffMs: DEFAULT_OPENAI_RETRY_BACKOFF_MS,
+};

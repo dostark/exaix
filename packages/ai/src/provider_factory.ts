@@ -1,14 +1,13 @@
 /**
  * @module ProviderFactory
- * @path src/ai/provider_factory.ts
+ * @path packages/ai/src/provider_factory.ts
  * @description Factory pattern implementation for instantiating LLM providers.
  * Handles configuration resolution, fallback chains, and provider initialization.
  * @architectural-layer AI Layer
- * @related-files [src/ai/provider_registry.ts, src/ai/providers.ts]
+ * @related-files [src/ai/registry_bootstrap.ts, packages/ai/src/provider_registry.ts]
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";
-import { LlamaProvider } from "@exaix/ai-ollama";
 import type { Config } from "@exaix/schemas";
 
 import { type AiConfig, getDefaultModels, InputValidator, type ModelConfigSchema } from "@exaix/schemas";
@@ -405,22 +404,6 @@ export class ProviderFactory {
       return new LazyProvider(factory, options, id);
     }
 
-    // Fall back to legacy direct instantiation for backward compatibility
-    return await this.createProviderLegacy(options);
-  }
-
-  /**
-   * Legacy provider creation for backward compatibility
-   * TODO: Deprecate this method once all providers are migrated to registry
-   */
-  private static async createProviderLegacy(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    // Llama/Ollama model routing (special case for llama models)
-    if (DEFAULTS.MODEL_ROUTING_LLAMA_PATTERN.test(options.model)) {
-      return await new LlamaProvider({ model: options.model, endpoint: options.baseUrl });
-    }
-
-    // For any other provider, this fallback should not be reached since all providers
-    // are now registered in the registry. If we reach here, it's an error.
     throw new ProviderFactoryError(
       `Provider '${options.provider}' is not registered in the provider registry. ` +
         `Available providers: ${ProviderRegistry.getSupportedProviders().join(", ")}`,

@@ -21,12 +21,6 @@ import { ensureProviderRegistryInitialized } from "./provider_factory.ts";
 import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_MODEL, DEFAULT_MOCK_PROVIDER_ID, MOCK_DELAY_MS } from "@exaix/ai";
 
 import { type MockStrategy, ProviderType } from "@exaix/core";
-import {
-  DEFAULT_OPENAI_MODEL,
-  DEFAULT_OPENAI_RETRY_BACKOFF_MS,
-  DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-  DEFAULT_OPENAI_TIMEOUT_MS,
-} from "@exaix/core";
 import { ModelProviderError } from "./providers/common.ts";
 
 /**
@@ -37,6 +31,12 @@ export interface IProviderConfig {
 }
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com";
+
+// Mirror @exaix/ai-openai constants — cannot import from there due to circular dependency.
+const _OPENAI_MODEL = "gpt-5-mini";
+const _OPENAI_RETRY_BACKOFF_MS = 1000;
+const _OPENAI_RETRY_MAX_ATTEMPTS = 3;
+const _OPENAI_TIMEOUT_MS = DEFAULT_AI_TIMEOUT_MS;
 
 declare const Deno: { env: { get(key: string): string | undefined } };
 
@@ -103,7 +103,7 @@ class OpenAIShim implements IModelProvider {
 
   constructor(options: { apiKey?: string; model?: string; baseUrl?: string; id?: string }) {
     this.apiKey = options.apiKey ?? "";
-    this.model = options.model ?? DEFAULT_OPENAI_MODEL;
+    this.model = options.model ?? _OPENAI_MODEL;
     this.baseUrl = options.baseUrl ?? DEFAULT_OPENAI_BASE_URL;
     this.id = options.id ?? `openai-${this.model}`;
   }
@@ -112,9 +112,9 @@ class OpenAIShim implements IModelProvider {
     const url = `${this.baseUrl}/v1/chat/completions`;
 
     // Use default retry parameters
-    const maxAttempts = DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS;
-    const backoffBaseMs = DEFAULT_OPENAI_RETRY_BACKOFF_MS;
-    const timeoutMs = DEFAULT_OPENAI_TIMEOUT_MS;
+    const maxAttempts = _OPENAI_RETRY_MAX_ATTEMPTS;
+    const backoffBaseMs = _OPENAI_RETRY_BACKOFF_MS;
+    const timeoutMs = _OPENAI_TIMEOUT_MS;
 
     const data = await fetchJsonWithRetries<OpenAIResponse>(
       url,

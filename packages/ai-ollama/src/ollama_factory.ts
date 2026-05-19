@@ -8,11 +8,15 @@
 
 import { AbstractProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
 import type { IModelProvider, IResolvedProviderOptions } from "@exaix/ai/types.ts";
-import { PROVIDER_OLLAMA } from "./constants.ts";
+import { LLAMA_MODEL_PATTERN, PROVIDER_OLLAMA } from "./constants.ts";
 import { OllamaProvider } from "./ollama_provider.ts";
+import { LlamaProvider } from "./llama_provider.ts";
 
 export class OllamaProviderFactory extends AbstractProviderFactory {
   async create(options: IResolvedProviderOptions): Promise<IModelProvider> {
+    if (options.model && LLAMA_MODEL_PATTERN.test(options.model)) {
+      return await new LlamaProvider({ model: options.model, endpoint: options.baseUrl });
+    }
     return await new OllamaProvider({
       id: options.id ?? `${PROVIDER_OLLAMA}-${options.model}`,
       model: options.model,

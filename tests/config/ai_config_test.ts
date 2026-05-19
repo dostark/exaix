@@ -14,6 +14,7 @@ import {
 } from "@exaix/schemas/ai_config.ts";
 import { initializeRegistry, ProviderRegistry } from "@exaix/ai";
 import {
+  ANTHROPIC_DEFAULTS,
   DEFAULT_ANTHROPIC_ENDPOINT,
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
@@ -24,21 +25,24 @@ import {
   DEFAULT_GOOGLE_MODEL,
   DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
   DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
+  GOOGLE_DEFAULTS,
 } from "@exaix/ai-google";
 import {
   DEFAULT_OLLAMA_ENDPOINT,
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
   DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
+  OLLAMA_DEFAULTS,
 } from "@exaix/ai-ollama";
 import {
   DEFAULT_OPENAI_ENDPOINT,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
+  OPENAI_DEFAULTS,
 } from "@exaix/ai-openai";
 import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, DEFAULT_MOCK_MODEL } from "@exaix/ai";
-import { PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
+import { PricingTier, ProviderCostTier, ProviderDefaultsRegistry, ProviderType } from "@exaix/core";
 import type { IProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
 import {
   TEST_AI_INVALID_URL,
@@ -71,6 +75,13 @@ const customProviderFactory: IProviderFactory = {
     }),
 };
 
+function registerAllProviderDefaults(): void {
+  ProviderDefaultsRegistry.register(ProviderType.OLLAMA, OLLAMA_DEFAULTS);
+  ProviderDefaultsRegistry.register(ProviderType.ANTHROPIC, ANTHROPIC_DEFAULTS);
+  ProviderDefaultsRegistry.register(ProviderType.OPENAI, OPENAI_DEFAULTS);
+  ProviderDefaultsRegistry.register(ProviderType.GOOGLE, GOOGLE_DEFAULTS);
+}
+
 function registerCustomProvider(): void {
   ProviderRegistry.registerWithMetadata(TEST_CUSTOM_PROVIDER_TYPE, customProviderFactory, {
     name: TEST_CUSTOM_PROVIDER_NAME,
@@ -94,7 +105,9 @@ Deno.test("AiConfigSchema: rejects invalid base_url", () => {
 
 Deno.test("getDefaultModels returns provider defaults", () => {
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
   initializeRegistry();
+  registerAllProviderDefaults();
   registerCustomProvider();
 
   const models = getDefaultModels();
@@ -107,11 +120,14 @@ Deno.test("getDefaultModels returns provider defaults", () => {
   assertEquals(models[TEST_CUSTOM_PROVIDER_TYPE], TEST_CUSTOM_PROVIDER_MODEL);
 
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
 });
 
 Deno.test("getDefaultEndpoints returns provider defaults", () => {
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
   initializeRegistry();
+  registerAllProviderDefaults();
   registerCustomProvider();
 
   const endpoints = getDefaultEndpoints();
@@ -124,11 +140,14 @@ Deno.test("getDefaultEndpoints returns provider defaults", () => {
   assertEquals(endpoints[TEST_CUSTOM_PROVIDER_TYPE], TEST_EMPTY_STRING);
 
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
 });
 
 Deno.test("getDefaultRetryConfig returns provider defaults", () => {
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
   initializeRegistry();
+  registerAllProviderDefaults();
   registerCustomProvider();
 
   const retryConfig = getDefaultRetryConfig();
@@ -147,4 +166,5 @@ Deno.test("getDefaultRetryConfig returns provider defaults", () => {
   assertEquals(retryConfig[TEST_CUSTOM_PROVIDER_TYPE].backoffBaseMs, DEFAULT_AI_RETRY_BACKOFF_BASE_MS);
 
   ProviderRegistry.clear();
+  ProviderDefaultsRegistry.clear();
 });

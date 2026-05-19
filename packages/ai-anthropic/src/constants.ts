@@ -5,7 +5,7 @@
  * @architectural-layer AI
  */
 
-import { ProviderCostTier, ProviderType } from "@exaix/core";
+import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 export const DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 export const DEFAULT_ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages";
@@ -28,3 +28,11 @@ export const ANTHROPIC_PROVIDER_METADATA = {
   costTier: PROVIDER_ANTHROPIC_COST_TIER,
   strengths: PROVIDER_ANTHROPIC_STRENGTHS,
 } as const;
+
+export const ANTHROPIC_DEFAULTS: IProviderDefaults = {
+  defaultModel: DEFAULT_ANTHROPIC_MODEL,
+  defaultEndpoint: DEFAULT_ANTHROPIC_ENDPOINT,
+  defaultTimeoutMs: DEFAULT_ANTHROPIC_TIMEOUT_MS,
+  defaultRetryMaxAttempts: DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
+  defaultRetryBackoffMs: DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
+};

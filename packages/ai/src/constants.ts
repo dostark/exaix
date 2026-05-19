@@ -75,4 +75,3 @@ export const PROVIDER_HEALTH_CHECK_TIMEOUT_MS = 5000;
 
 export const PROVIDER_ID_MOCK_PREFIX = "mock-";
 export const PROVIDER_ID_MOCK_DEFAULT_STRATEGY = "recorded";
-export const MODEL_ROUTING_LLAMA_PATTERN = /^(codellama:|llama[0-9.]*:)/;

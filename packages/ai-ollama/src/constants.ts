@@ -5,7 +5,7 @@
  * @architectural-layer AI
  */
 
-import { ProviderCostTier, ProviderType } from "@exaix/core";
+import { type IProviderDefaults, ProviderCostTier, ProviderType } from "@exaix/core";
 
 export const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434";
 export const DEFAULT_OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
@@ -15,6 +15,8 @@ export const DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS = 3;
 export const DEFAULT_OLLAMA_RETRY_BACKOFF_MS = 1000;
 export const DEFAULT_OLLAMA_EMBED_CHUNK_SIZE = 1000;
 export const OLLAMA_EMBED_CACHE_MAX_ENTRIES = 512;
+
+export const LLAMA_MODEL_PATTERN = /^(codellama:|llama[0-9.]*:)/;
 
 export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
 export const PROVIDER_OLLAMA_DESCRIPTION = "Local Ollama instance for running open-source models";
@@ -29,3 +31,11 @@ export const OLLAMA_PROVIDER_METADATA = {
   costTier: PROVIDER_OLLAMA_COST_TIER,
   strengths: PROVIDER_OLLAMA_STRENGTHS,
 } as const;
+
+export const OLLAMA_DEFAULTS: IProviderDefaults = {
+  defaultModel: DEFAULT_OLLAMA_MODEL,
+  defaultEndpoint: DEFAULT_OLLAMA_ENDPOINT,
+  defaultTimeoutMs: DEFAULT_OLLAMA_TIMEOUT_MS,
+  defaultRetryMaxAttempts: DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
+  defaultRetryBackoffMs: DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
+};

@@ -25,14 +25,8 @@ import {
   DEFAULT_AI_TEMPERATURE_MAX,
   DEFAULT_AI_TEMPERATURE_MIN,
   DEFAULT_AI_TIMEOUT_MS,
-  DEFAULT_ANTHROPIC_API_VERSION,
-  DEFAULT_ANTHROPIC_MAX_TOKENS,
-  DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_FAST_MODEL_NAME,
-  DEFAULT_GOOGLE_MODEL,
-  DEFAULT_GOOGLE_TIMEOUT_MS,
   DEFAULT_LOCAL_MODEL_NAME,
-  DEFAULT_OLLAMA_TIMEOUT_MS,
   MOCK_DELAY_MS,
   MOCK_DELAY_MS_MAX,
   MOCK_DELAY_MS_MIN,
@@ -308,18 +302,18 @@ export const ConfigSchema = z.object({
   })).default({
     [DEFAULTS.DEFAULT_AGENT_MODEL]: {
       provider: PROVIDER_GOOGLE,
-      model: DEFAULT_GOOGLE_MODEL,
-      timeout_ms: DEFAULT_GOOGLE_TIMEOUT_MS,
+      model: DEFAULT_FAST_MODEL_NAME,
+      timeout_ms: DEFAULT_AI_TIMEOUT_MS,
     },
     fast: {
       provider: PROVIDER_GOOGLE,
       model: DEFAULT_FAST_MODEL_NAME,
-      timeout_ms: DEFAULT_GOOGLE_TIMEOUT_MS,
+      timeout_ms: DEFAULT_AI_TIMEOUT_MS,
     },
     local: {
       provider: PROVIDER_OLLAMA,
       model: DEFAULT_LOCAL_MODEL_NAME,
-      timeout_ms: DEFAULT_OLLAMA_TIMEOUT_MS,
+      timeout_ms: 120000,
     },
   }),
   /** AI provider endpoints configuration */
@@ -371,13 +365,13 @@ export const ConfigSchema = z.object({
   }),
   /** Anthropic-specific configuration */
   ai_anthropic: z.object({
-    api_version: z.string().default(DEFAULT_ANTHROPIC_API_VERSION),
-    default_model: z.string().default(DEFAULT_ANTHROPIC_MODEL),
-    max_tokens_default: z.number().positive().default(DEFAULT_ANTHROPIC_MAX_TOKENS),
+    api_version: z.string().default("2023-06-01"),
+    default_model: z.string().default("claude-haiku-4-5-20251001"),
+    max_tokens_default: z.number().positive().default(4096),
   }).optional().default({
-    api_version: DEFAULT_ANTHROPIC_API_VERSION,
-    default_model: DEFAULT_ANTHROPIC_MODEL,
-    max_tokens_default: DEFAULT_ANTHROPIC_MAX_TOKENS,
+    api_version: "2023-06-01",
+    default_model: "claude-haiku-4-5-20251001",
+    max_tokens_default: 4096,
   }),
   /** MCP (Model Context Protocol) server configuration */
   mcp: MCPConfigSchema.optional().default({

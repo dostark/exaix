@@ -7,8 +7,6 @@
  * @related-files [packages/core/src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
  */
 import { z } from "zod";
-import { MockStrategy, ProviderType } from "@exaix/core";
-
 import {
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
@@ -16,25 +14,11 @@ import {
   DEFAULT_AI_TEMPERATURE_MAX,
   DEFAULT_AI_TEMPERATURE_MIN,
   DEFAULT_AI_TIMEOUT_MS,
-  DEFAULT_ANTHROPIC_API_VERSION,
-  DEFAULT_ANTHROPIC_ENDPOINT,
-  DEFAULT_ANTHROPIC_MODEL,
-  DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
-  DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
-  DEFAULT_GOOGLE_ENDPOINT,
-  DEFAULT_GOOGLE_MODEL,
-  DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
-  DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
   DEFAULT_MOCK_MODEL,
   DEFAULT_MOCK_STRATEGY,
-  DEFAULT_OLLAMA_ENDPOINT,
-  DEFAULT_OLLAMA_MODEL,
-  DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
-  DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
-  DEFAULT_OPENAI_ENDPOINT,
-  DEFAULT_OPENAI_MODEL,
-  DEFAULT_OPENAI_RETRY_BACKOFF_MS,
-  DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
+  MockStrategy,
+  ProviderDefaultsRegistry,
+  ProviderType,
 } from "@exaix/core";
 
 /**
@@ -158,15 +142,8 @@ export function getDefaultModels(): Record<string, string> {
  * Get the default model for a specific provider type
  */
 function getDefaultModelForProvider(providerType: string): string {
-  // Provider-specific defaults using constants and enum values
   if (providerType === ProviderType.MOCK) return DEFAULT_MOCK_MODEL;
-  if (providerType === ProviderType.OLLAMA) return DEFAULT_OLLAMA_MODEL;
-  if (providerType === ProviderType.ANTHROPIC) return DEFAULT_ANTHROPIC_MODEL;
-  if (providerType === ProviderType.OPENAI) return DEFAULT_OPENAI_MODEL;
-  if (providerType === ProviderType.GOOGLE) return DEFAULT_GOOGLE_MODEL;
-
-  // Fallback for unknown providers
-  return `${providerType}-model`;
+  return ProviderDefaultsRegistry.getDefaultModel(providerType) ?? `${providerType}-model`;
 }
 
 /**
@@ -180,15 +157,8 @@ export function getDefaultEndpoints(): Record<string, string> {
  * Get the default endpoint for a specific provider type
  */
 function getDefaultEndpointForProvider(providerType: string): string {
-  // Provider-specific defaults using constants and enum values
   if (providerType === ProviderType.MOCK) return "";
-  if (providerType === ProviderType.OLLAMA) return DEFAULT_OLLAMA_ENDPOINT;
-  if (providerType === ProviderType.ANTHROPIC) return DEFAULT_ANTHROPIC_ENDPOINT;
-  if (providerType === ProviderType.OPENAI) return DEFAULT_OPENAI_ENDPOINT;
-  if (providerType === ProviderType.GOOGLE) return DEFAULT_GOOGLE_ENDPOINT;
-
-  // Fallback for unknown providers
-  return "";
+  return ProviderDefaultsRegistry.getDefaultEndpoint(providerType) ?? "";
 }
 
 /**
@@ -202,26 +172,9 @@ export function getDefaultRetryConfig(): Record<string, { maxAttempts: number; b
  * Get the default retry config for a specific provider type
  */
 function getDefaultRetryConfigForProvider(providerType: string): { maxAttempts: number; backoffBaseMs: number } {
-  // Provider-specific defaults using constants and enum values
   if (providerType === ProviderType.MOCK) return { maxAttempts: 1, backoffBaseMs: 0 };
-  if (providerType === ProviderType.OLLAMA) {
-    return { maxAttempts: DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS, backoffBaseMs: DEFAULT_OLLAMA_RETRY_BACKOFF_MS };
-  }
-  if (providerType === ProviderType.ANTHROPIC) {
-    return { maxAttempts: DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS, backoffBaseMs: DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS };
-  }
-  if (providerType === ProviderType.OPENAI) {
-    return { maxAttempts: DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS, backoffBaseMs: DEFAULT_OPENAI_RETRY_BACKOFF_MS };
-  }
-  if (providerType === ProviderType.GOOGLE) {
-    return { maxAttempts: DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS, backoffBaseMs: DEFAULT_GOOGLE_RETRY_BACKOFF_MS };
-  }
-
-  // Fallback for unknown providers
-  return { maxAttempts: DEFAULT_AI_RETRY_MAX_ATTEMPTS, backoffBaseMs: DEFAULT_AI_RETRY_BACKOFF_BASE_MS };
+  return {
+    maxAttempts: ProviderDefaultsRegistry.getDefaultRetryMaxAttempts(providerType) ?? DEFAULT_AI_RETRY_MAX_ATTEMPTS,
+    backoffBaseMs: ProviderDefaultsRegistry.getDefaultRetryBackoffMs(providerType) ?? DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
+  };
 }
-
-/**
- * Anthropic API version header default
- */
-export const ANTHROPIC_API_VERSION = DEFAULT_ANTHROPIC_API_VERSION;
