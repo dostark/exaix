@@ -46,7 +46,7 @@ Do / Don't
 - ❌ Don't skip CI gates (lint, type-check) when adding test files.
 
 Related skills:
-- #fix       — If coverage reveals an untested bug, fix it first
+- #fix-bug   — If coverage reveals an untested bug, fix it first
 - #next-steps — If coverage is tracked as a phase success criterion
 - #commit    — Structured commit after coverage improvements
 
@@ -104,7 +104,7 @@ For each selected gap:
    ```bash
    deno test --allow-all <test-file>
    ```
-3. If the test reveals a bug, pause and use `#fix` before continuing.
+3. If the test reveals a bug, pause and use `#fix-bug` before continuing.
 
 ### Phase 4 — Re-measure
 

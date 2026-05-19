@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-19T20:15:44.144Z",
+  "generated_at": "2026-05-19T20:38:04.198Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -34,20 +34,6 @@
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/doc.prompt.md.chunk0.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/fix.prompt.md",
-      "short_summary": "",
-      "chunks": [
-        ".copilot/chunks/fix.prompt.md.chunk0.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/duplication.prompt.md",
-      "short_summary": "",
-      "chunks": [
-        ".copilot/chunks/duplication.prompt.md.chunk0.txt"
       ]
     },
     {
@@ -134,6 +120,13 @@
       ]
     },
     {
+      "path": ".copilot/prompts/fix-bug.prompt.md",
+      "short_summary": "",
+      "chunks": [
+        ".copilot/chunks/fix-bug.prompt.md.chunk0.txt"
+      ]
+    },
+    {
       "path": ".copilot/prompts/security.prompt.md",
       "short_summary": "",
       "chunks": [
@@ -145,13 +138,6 @@
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/explore.prompt.md.chunk0.txt"
-      ]
-    },
-    {
-      "path": ".copilot/prompts/lint.prompt.md",
-      "short_summary": "",
-      "chunks": [
-        ".copilot/chunks/lint.prompt.md.chunk0.txt"
       ]
     },
     {
@@ -545,25 +531,30 @@
       ]
     },
     {
-      "path": ".copilot/skills/duplication/SKILL.md",
+      "path": ".copilot/skills/fix-bug/SKILL.md",
       "agent": "general",
       "scope": "dev",
-      "title": "Reduce Code Duplication (#duplication)",
-      "short_summary": "Reduce structural code duplication below 2% using the measure_duplication script and targeted refactoring.",
+      "title": "Fix Bug Skill (#fix-bug)",
+      "short_summary": "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test.",
       "version": "1.0",
       "topics": [
-        "duplication",
-        "jscpd",
-        "refactoring",
-        "code-quality"
+        "bug-fix",
+        "tdd",
+        "regression",
+        "root-cause",
+        "ci",
+        "validation"
       ],
-      "qwen_skill": "duplication",
+      "qwen_skill": "fix-bug",
       "chunks": [
         ".copilot/chunks/SKILL.md.chunk0.txt",
         ".copilot/chunks/SKILL.md.chunk1.txt",
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt"
+        ".copilot/chunks/SKILL.md.chunk4.txt",
+        ".copilot/chunks/SKILL.md.chunk5.txt",
+        ".copilot/chunks/SKILL.md.chunk6.txt",
+        ".copilot/chunks/SKILL.md.chunk7.txt"
       ]
     },
     {
@@ -633,54 +624,6 @@
         ".copilot/chunks/SKILL.md.chunk2.txt",
         ".copilot/chunks/SKILL.md.chunk3.txt",
         ".copilot/chunks/SKILL.md.chunk4.txt"
-      ]
-    },
-    {
-      "path": ".copilot/skills/lint/SKILL.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Linting/Formatting Skill (#lint)",
-      "short_summary": "Fix lint, formatting, and style violations in touched files using exact Exaix check commands.",
-      "version": "1.0",
-      "topics": [
-        "linting",
-        "formatting",
-        "code-quality",
-        "style"
-      ],
-      "qwen_skill": "lint",
-      "chunks": [
-        ".copilot/chunks/SKILL.md.chunk0.txt",
-        ".copilot/chunks/SKILL.md.chunk1.txt",
-        ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt"
-      ]
-    },
-    {
-      "path": ".copilot/skills/fix/SKILL.md",
-      "agent": "general",
-      "scope": "dev",
-      "title": "Fix Skill (#fix)",
-      "short_summary": "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test.",
-      "version": "1.0",
-      "topics": [
-        "bug-fix",
-        "tdd",
-        "regression",
-        "root-cause",
-        "ci",
-        "validation"
-      ],
-      "qwen_skill": "fix",
-      "chunks": [
-        ".copilot/chunks/SKILL.md.chunk0.txt",
-        ".copilot/chunks/SKILL.md.chunk1.txt",
-        ".copilot/chunks/SKILL.md.chunk2.txt",
-        ".copilot/chunks/SKILL.md.chunk3.txt",
-        ".copilot/chunks/SKILL.md.chunk4.txt",
-        ".copilot/chunks/SKILL.md.chunk5.txt",
-        ".copilot/chunks/SKILL.md.chunk6.txt",
-        ".copilot/chunks/SKILL.md.chunk7.txt"
       ]
     },
     {

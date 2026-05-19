@@ -1,5 +1,5 @@
 ---
-name: fix
+name: fix-bug
 agent: general
 tools:
   - read_file
@@ -10,12 +10,12 @@ tools:
   - git_status
   - git_commit
 scope: dev
-title: "Fix Skill (#fix)"
+title: "Fix Bug Skill (#fix-bug)"
 description: Fix a bug or failing test using TDD root-cause loop — regression test first, minimal fix, CI gates, structured commit
 short_summary: "Systematic bug-fix workflow: reproduce → regress → fix → CI gates → commit. Never skip the regression test."
 version: "1.0"
 topics: ["bug-fix", "tdd", "regression", "root-cause", "ci", "validation"]
-qwen_skill: fix
+qwen_skill: fix-bug
 ---
 
 ```text
@@ -33,8 +33,8 @@ Canonical prompt (short):
 the minimal fix to make it pass. Run CI gates and commit with #commit."
 
 Examples
-- "#fix PathResolver is not resolving symlinks to files outside the portal"
-- "#fix deno test tests/services/memory_bank_test.ts — 3 failing tests"
+- "#fix-bug PathResolver is not resolving symlinks to files outside the portal"
+- "#fix-bug deno test tests/services/memory_bank_test.ts — 3 failing tests"
 
 Workflow
 ─────────
@@ -155,7 +155,7 @@ in the `tests:` field.
 
 ## Workflow Chain
 
-#next-steps (bug discovered) → **#fix** → #commit
+#next-steps (bug discovered) → **#fix-bug** → #commit
 
 ## Related
 

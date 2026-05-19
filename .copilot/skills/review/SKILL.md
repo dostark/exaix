@@ -49,12 +49,12 @@ Do / Don't
 - ❌ Don't suggest refactoring out of scope unless it is blocking correctness.
 
 Related skills:
-- #fix      — Implement a fix for a Critical finding
+- #fix-bug  — Implement a fix for a Critical finding
 - #security — Deep security audit (when 3+ security findings exist)
 - #commit   — Structured commit after implementing review fixes
 
 Workflow chain:
-  #next-steps (implement) → **#review** → #fix (if needed) → #commit
+  #next-steps (implement) → **#review** → #fix-bug (if needed) → #commit
 ```
 
 ---
@@ -175,5 +175,5 @@ Severity scale:
 2. **Findings table** — all categorised findings.
 3. **Detail section** — one paragraph per Critical or Security finding explaining the risk
    and the required fix.
-4. **Suggested next action** — use `#fix` for each Critical/Security finding, or
+4. **Suggested next action** — use `#fix-bug` for each Critical/Security finding, or
    `#commit` if the review is clean.

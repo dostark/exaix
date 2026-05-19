@@ -47,11 +47,11 @@ Do / Don't
 
 Related skills:
 - #review   — General code review (use #security when 3+ security findings exist)
-- #fix      — Implement the fix for a specific finding
+- #fix-bug  — Implement the fix for a specific finding
 - #commit   — Structured commit after all security findings are remediated
 
 Workflow chain:
-  #review (found security issues) → **#security** → #fix → #commit
+  #review (found security issues) → **#security** → #fix-bug → #commit
 ```
 
 ---
@@ -215,5 +215,5 @@ Mandatory fields: `what:`, `rationale:`, `tests:`, `who:`, `impact:`.
 2. **Findings table** — one row per finding (item, OWASP, file, description).
 3. **Detail section** — one block per finding with attack scenario and required fix.
 4. **Remediation steps** — TDD-First steps ready for `#next-steps` or direct implementation.
-5. **Next action** — use `#fix` per finding, then `#commit` when all resolved.
+5. **Next action** — use `#fix-bug` per finding, then `#commit` when all resolved.
 6. **Commit payload** — structured commit message generated via `#commit` once all findings are remediated.

@@ -101,7 +101,7 @@ Do / Don't
 
 Related skills
 - #coverage          — Boost test coverage on affected modules before upgrading
-- #fix               — Fix regressions discovered during upgrade validation
+- #fix-bug           — Fix regressions discovered during upgrade validation
 - #next-steps        — When the upgrade is one step in a larger phase plan
 - #commit            — Create a structured commit message after the upgrade
 

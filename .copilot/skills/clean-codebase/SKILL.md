@@ -129,7 +129,7 @@ Do / Don't
 
 Related skills
 - #refactor-check-magic — Run when magic violation count is non-trivial (> 5)
-- #fix                  — For any regression introduced by a cleanup fix
+- #fix-bug              — For any regression introduced by a cleanup fix
 - #next-steps           — When cleanup is one gated step in a phase plan
 - #commit               — Create a structured commit message after cleanup
 

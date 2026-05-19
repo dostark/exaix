@@ -122,7 +122,7 @@ Related skills
 - #commit            — Create a structured commit message (used at end of each step)
 - #tdd-workflow      — Full TDD red-green-refactor reference for individual components (used within each step)
 - #refactor-check-magic — Run when check:magic violations are non-trivial
-- #fix               — Fix a bug discovered during implementation (branches off this skill)
+- #fix-bug           — Fix a bug discovered during implementation (branches off this skill)
 
 Workflow chain (typical):
   #plan → #pre-gap-analysis → **#next-steps** → #post-gap-analysis → #commit

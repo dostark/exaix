@@ -109,7 +109,7 @@ Do / Don't
 Related skills
 - #next-steps         — Multi-step plan execution using this TDD cycle per step
 - #coverage           — When coverage has dropped, run the full coverage improvement loop
-- #fix                — When a bug is found, this skill mandates regression tests first
+- #fix-bug            — When a bug is found, this skill mandates regression tests first
 - #refactor-check-magic — Run when check:magic violations are non-trivial
 - #plan               — Create the feature plan before starting (precedes this skill)
 - #commit             — Create a structured commit message after CI gates pass

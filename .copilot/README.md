@@ -42,7 +42,7 @@ Content is organized by **role**, not by provider.
 ## Quick Navigation
 
 - **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
-- **Skills**: [skills/](skills/) — 22 skills covering commit, plan, package extraction, fix, review, security, coverage, and more
+- **Skills**: [skills/](skills/) — 20 skills covering commit, plan, package extraction, fix-bug, review, security, coverage, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Guidelines**: [guidelines/](guidelines/) — exaix-development, testing, documentation, security-review, self-improvement, etc.
 - **Providers**: [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md), [providers/google.md](providers/google.md)
