@@ -34,6 +34,7 @@ import { RequestService } from "../services/request/request.ts";
 import { PlanService } from "../services/plan/plan.ts";
 import { PlanAmendmentService } from "../services/plan/plan_amendment_service.ts";
 import { PortalKnowledgeService } from "../services/portal_knowledge/portal_knowledge_service.ts";
+import { bootstrapProviderRegistry } from "../ai/registry_bootstrap.ts";
 
 // Adapters
 import {
@@ -127,6 +128,7 @@ export async function initializeServices(
     const gitLocal = new GitService({ config: cfg, db: dbLocal });
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
+    bootstrapProviderRegistry();
     const providerLocal = await ProviderFactory.createByName(cfg, model);
     const displayLogger = new EventLogger({ db: dbLocal });
     const displayAdapter = new DisplayAdapter(displayLogger);
@@ -233,6 +235,7 @@ export async function initializeServices(
     // Attempt to create provider even in fallback, or stub
     let providerLocal: IModelProvider;
     try {
+      bootstrapProviderRegistry();
       providerLocal = await ProviderFactory.createByName(cfg, cfg.agents.default_model);
     } catch {
       // Create minimal provider stub

@@ -7,11 +7,11 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { type Spy, spy } from "@std/testing/mock";
-import { RateLimitedProvider, RateLimitError } from "../../src/rate_limited_provider.ts";
+import { RateLimitedProvider, RateLimiterError } from "../../src/rate_limited_provider.ts";
 import type { IModelProvider } from "../../src/types.ts";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { CostTracker } from "../../../../src/services/cost/cost_tracker.ts";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { initTestDbService } from "@exaix/testing";
 
 function makeResult(content: string): IGenerateResult {
@@ -97,7 +97,7 @@ Deno.test("RateLimitedProvider: blocks calls over minute limit", async () => {
   // Third call should fail
   await assertRejects(
     () => rateLimited.generate("test 3"),
-    RateLimitError,
+    RateLimiterError,
     "calls per minute",
   );
 
@@ -120,7 +120,7 @@ Deno.test("RateLimitedProvider: estimates and tracks cost", async () => {
 
   await assertRejects(
     () => rateLimited.generate(largePrompt),
-    RateLimitError,
+    RateLimiterError,
     "Cost limit exceeded",
   );
 
@@ -181,7 +181,7 @@ Deno.test("RateLimitedProvider: enforces token limits per hour", async () => {
   const largePrompt = "X".repeat(2000); // ~500 tokens, should exceed remaining limit
   await assertRejects(
     () => rateLimited.generate(largePrompt),
-    RateLimitError,
+    RateLimiterError,
     "tokens per hour",
   );
 });
@@ -201,10 +201,10 @@ Deno.test("RateLimitedProvider: provides detailed error messages", async () => {
     await rateLimited.generate("test");
     throw new Error("Should have thrown");
   } catch (error) {
-    if (!(error instanceof RateLimitError)) {
+    if (!(error instanceof RateLimiterError)) {
       throw error;
     }
-    assertStringIncludes((error as RateLimitError).message, "calls per minute");
+    assertStringIncludes((error as RateLimiterError).message, "calls per minute");
   }
 });
 
@@ -228,7 +228,7 @@ Deno.test("RateLimitedProvider: handles concurrent requests correctly", async ()
   // Third concurrent request should fail
   await assertRejects(
     () => rateLimited.generate("test 3"),
-    RateLimitError,
+    RateLimiterError,
   );
 });
 
@@ -310,7 +310,7 @@ Deno.test("RateLimitedProvider: blocks when persistent budget exceeded", async (
 
     await assertRejects(
       () => rateLimited.generate("tiny"),
-      RateLimitError,
+      RateLimiterError,
       "Persistent cost budget exceeded for " + PROVIDER_OPENAI,
     );
 

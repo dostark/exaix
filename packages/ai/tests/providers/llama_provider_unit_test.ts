@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { LlamaProvider } from "../../src/providers/llama_provider.ts";
+import { LlamaProvider } from "@exaix/ai-ollama";
 import { spyFetch } from "../helpers/provider_test_helper.ts";
 
 Deno.test("LlamaProvider: constructor validates model name", () => {

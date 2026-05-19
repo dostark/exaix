@@ -17,7 +17,8 @@ import {
 import { McpToolName } from "@exaix/mcp";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
-import type { IGenerateResult, IModelProvider } from "../../packages/ai/src/types.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
+import type { IModelProvider } from "../../packages/ai/src/types.ts";
 import { ModelFactory } from "../../packages/ai/src/providers.ts";
 import {
   FlowRunner,

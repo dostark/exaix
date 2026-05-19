@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { OpenAIProvider } from "../../src/providers/openai_provider.ts";
+import { OpenAIProvider } from "@exaix/ai-openai";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 
 /**

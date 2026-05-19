@@ -5,7 +5,7 @@
  * message formatting, tool call handling, and token usage tracking for Claude models.
  */
 
-import { AnthropicProvider } from "../../src/providers/anthropic_provider.ts";
+import { AnthropicProvider } from "@exaix/ai-anthropic";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { anthropicResponseConfig, registerProviderTests } from "../helpers/provider_test_helper.ts";
 

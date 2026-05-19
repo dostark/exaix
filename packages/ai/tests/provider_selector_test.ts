@@ -15,7 +15,7 @@ import {
   TaskComplexity,
 } from "@exaix/core";
 import { createTestConfig } from "./helpers/test_config.ts";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import type { Config } from "@exaix/schemas";
 
 import { initTestDbService } from "@exaix/testing";

@@ -1,54 +1,34 @@
 /**
- * @module OllamaEmbeddingClient
- * @path src/ai/providers/ollama_embedding_client.ts
- * @description IEmbeddingProvider implementation that calls Ollama's
- * /api/embed endpoint with localhost-only SSRF validation.
+ * @module OllamaPackageEmbeddingClient
+ * @path packages/ai-ollama/src/ollama_embedding_client.ts
+ * @description Ollama embedding client owned by the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @dependencies [src/ai/embeddings/embedding_provider.ts, src/ai/embeddings/embedding_errors.ts, src/shared/constants.ts]
- * @related-files [src/ai/embeddings/embedding_provider_factory.ts, "packages/core/src/types/i_memory_embedding_service.ts"]
+ * @related-files [packages/ai/src/providers/ollama_embedding_client.ts]
  */
 
-import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";
+import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, DEFAULT_OLLAMA_TIMEOUT_MS } from "./constants.ts";
+import { EmbeddingError } from "@exaix/ai/embeddings/embedding_errors.ts";
+import type { IEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider.ts";
 import type { JSONValue } from "@exaix/core";
-import { EmbeddingError } from "../embeddings/embedding_errors.ts";
-import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, DEFAULT_OLLAMA_TIMEOUT_MS } from "@exaix/ai";
 
-/**
- * Ollama /api/embed response validated by Zod before consumption (OWASP A08).
- */
-/**
- * Raw Ollama /api/embed HTTP response body structure.
- */
 interface IOllamaRawEmbedResponse {
   embeddings?: JSONValue;
   error?: JSONValue;
 }
 
-/**
- * Ollama /api/embed response validated before consumption (OWASP A08).
- */
 const ZOllamaEmbedResponse = {
   parse: (body: JSONValue): { embeddings: number[][] } => {
     if (typeof body !== "object" || body === null) {
-      throw new EmbeddingError(
-        "EMBEDDING_FAILED",
-        "Ollama response is not an object",
-      );
+      throw new EmbeddingError("EMBEDDING_FAILED", "Ollama response is not an object");
     }
     const raw = body as IOllamaRawEmbedResponse;
     if (!("embeddings" in raw) || !Array.isArray(raw.embeddings)) {
-      throw new EmbeddingError(
-        "EMBEDDING_FAILED",
-        "Ollama response missing embeddings array",
-      );
+      throw new EmbeddingError("EMBEDDING_FAILED", "Ollama response missing embeddings array");
     }
     const embeddings = raw.embeddings as JSONValue[];
     for (const entry of embeddings) {
-      if (!Array.isArray(entry) || !(entry as JSONValue[]).every((v) => typeof v === "number")) {
-        throw new EmbeddingError(
-          "EMBEDDING_FAILED",
-          "Ollama embeddings entry is not a number array",
-        );
+      if (!Array.isArray(entry) || !(entry as JSONValue[]).every((value) => typeof value === "number")) {
+        throw new EmbeddingError("EMBEDDING_FAILED", "Ollama embeddings entry is not a number array");
       }
     }
     return { embeddings: embeddings as number[][] };
@@ -72,10 +52,8 @@ export class OllamaEmbeddingClient implements IEmbeddingProvider {
 
   constructor(config?: IOllamaEmbeddingConfig) {
     const rawUrl = config?.baseUrl ?? DEFAULT_OLLAMA_BASE_URL;
-
-    // SSRF mitigation — localhost only (OWASP A10)
     const parsed = new URL(rawUrl);
-    const hostname = parsed.hostname.replace(/^\[|\]$/g, ""); // Strip IPv6 brackets
+    const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
     const allowedHosts = ["localhost", "127.0.0.1", "::1"];
     if (!allowedHosts.includes(hostname)) {
       throw new EmbeddingError(
@@ -88,14 +66,12 @@ export class OllamaEmbeddingClient implements IEmbeddingProvider {
     this.model = config?.model ?? "nomic-embed-text";
     this.chunkSize = config?.chunkSize ?? DEFAULT_OLLAMA_EMBED_CHUNK_SIZE;
     this.timeoutMs = config?.timeoutMs ?? DEFAULT_OLLAMA_TIMEOUT_MS;
-    // nomic-embed-text uses 768 dimensions
     this.dimension = 768;
   }
 
   async embed(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
 
-    // Batch if texts exceeds chunkSize
     const batches: string[][] = [];
     for (let i = 0; i < texts.length; i += this.chunkSize) {
       batches.push(texts.slice(i, i + this.chunkSize));
@@ -133,18 +109,18 @@ export class OllamaEmbeddingClient implements IEmbeddingProvider {
       }
 
       const raw = await response.json();
-      const parsed = ZOllamaEmbedResponse.parse(raw);
+      const parsed = ZOllamaEmbedResponse.parse(raw as JSONValue);
       return parsed.embeddings;
-    } catch (err) {
+    } catch (error) {
       clearTimeout(timeoutId);
-      if (err instanceof EmbeddingError) throw err;
-      if (err instanceof DOMException && err.name === "AbortError") {
+      if (error instanceof EmbeddingError) throw error;
+      if (error instanceof DOMException && error.name === "AbortError") {
         throw new EmbeddingError("TIMEOUT", `Embedding request timed out after ${this.timeoutMs}ms`);
       }
       throw new EmbeddingError(
         "EMBEDDING_FAILED",
-        `Ollama embed request failed: ${err instanceof Error ? err.message : String(err)}`,
-        err instanceof Error ? err : undefined,
+        `Ollama embed request failed: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error : undefined,
       );
     }
   }

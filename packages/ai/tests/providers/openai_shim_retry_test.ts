@@ -6,10 +6,10 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
+import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai-openai";
 import { ModelFactory } from "../../src/providers.ts";
 import { getTestModel } from "../helpers/test_model.ts";
 import { isCi } from "@exaix/testing";
-import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai";
 
 function isCiGuardActive(): boolean {
   return isCi() && Deno.env.get("EXA_ENABLE_PAID_LLM") !== "1";

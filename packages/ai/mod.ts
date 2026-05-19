@@ -16,3 +16,7 @@ export * from "./src/provider_api_key.ts";
 export * from "./src/llm_client.ts";
 export * from "./src/circuit_breaker.ts";
 export * from "./src/rate_limited_provider.ts";
+export * from "./src/factories/abstract_provider_factory.ts";
+export * from "./src/embeddings/embedding_provider.ts";
+export * from "./src/embeddings/embedding_errors.ts";
+export * from "./src/embeddings/embedding_provider_factory.ts";

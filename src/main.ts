@@ -32,6 +32,7 @@ import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
+import { bootstrapProviderRegistry } from "./ai/registry_bootstrap.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -116,6 +117,7 @@ if (import.meta.main) {
     await logger.info("database.connected", "journal.db", { mode: "WAL" });
 
     // Initialize LLM Provider
+    bootstrapProviderRegistry();
     const defaultModelName = config.agents.default_model;
     const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
     const llmProvider = await ProviderFactory.createByName(config, defaultModelName);

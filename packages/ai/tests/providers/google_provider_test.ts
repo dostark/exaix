@@ -6,7 +6,7 @@
  */
 
 import { assertStringIncludes } from "@std/assert";
-import { GoogleProvider } from "../../src/providers/google_provider.ts";
+import { GoogleProvider } from "@exaix/ai-google";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { googleResponseConfig, registerProviderTests, spyFetch } from "../helpers/provider_test_helper.ts";
 

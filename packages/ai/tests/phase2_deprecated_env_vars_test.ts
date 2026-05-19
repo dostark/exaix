@@ -7,8 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { withEnv } from "@exaix/testing";
-import { OllamaProvider } from "../src/providers.ts";
-import { LlamaProvider } from "../src/providers/llama_provider.ts";
+import { LlamaProvider, OllamaProvider } from "@exaix/ai-ollama";
 
 import { createTestConfig } from "./helpers/test_config.ts";
 

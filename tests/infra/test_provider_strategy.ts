@@ -16,8 +16,8 @@ import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
 import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
 import { HealthCheckService } from "../../src/services/core/health_check_service.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
-import { OllamaProviderFactory } from "@exaix/ai/factories/ollama_factory.ts";
-import { OpenAIProviderFactory } from "@exaix/ai/factories/openai_factory.ts";
+import { OllamaProviderFactory } from "@exaix/ai-ollama";
+import { OpenAIProviderFactory } from "@exaix/ai-openai";
 import { ProviderRegistry } from "@exaix/ai";
 
 Deno.test("Provider Strategy: Full agent execution with provider switching", async (t) => {

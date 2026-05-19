@@ -6,10 +6,8 @@
  */
 
 import { assertEquals } from "@std/assert";
+import { DEFAULT_OLLAMA_ENDPOINT, type LlamaProvider, LlamaProviderFactory } from "@exaix/ai-ollama";
 import { ProviderType } from "@exaix/core";
-import { DEFAULT_OLLAMA_ENDPOINT } from "@exaix/core";
-import { LlamaProviderFactory } from "../src/factories/llama_factory.ts";
-import type { LlamaProvider } from "../src/providers/llama_provider.ts";
 
 Deno.test("LlamaProviderFactory.create wires model + baseUrl into LlamaProvider", async () => {
   const factory = new LlamaProviderFactory();

@@ -5,7 +5,8 @@
  * and secure lifecycle management of agent secrets and API keys.
  */
 
-import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 import { SecureCredentialStore } from "@exaix/core";

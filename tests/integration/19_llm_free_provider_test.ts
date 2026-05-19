@@ -15,7 +15,7 @@ import { ModelFactory } from "@exaix/ai/providers.ts";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import { getTestModel } from "../../packages/ai/tests/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
-import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai";
+import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai-openai";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";

@@ -14,26 +14,30 @@ import {
 } from "@exaix/schemas/ai_config.ts";
 import { initializeRegistry, ProviderRegistry } from "@exaix/ai";
 import {
-  DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
-  DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_ANTHROPIC_ENDPOINT,
   DEFAULT_ANTHROPIC_MODEL,
   DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
   DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
+} from "@exaix/ai-anthropic";
+import {
   DEFAULT_GOOGLE_ENDPOINT,
   DEFAULT_GOOGLE_MODEL,
   DEFAULT_GOOGLE_RETRY_BACKOFF_MS,
   DEFAULT_GOOGLE_RETRY_MAX_ATTEMPTS,
-  DEFAULT_MOCK_MODEL,
+} from "@exaix/ai-google";
+import {
   DEFAULT_OLLAMA_ENDPOINT,
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
   DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
+} from "@exaix/ai-ollama";
+import {
   DEFAULT_OPENAI_ENDPOINT,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
-} from "@exaix/ai";
+} from "@exaix/ai-openai";
+import { DEFAULT_AI_RETRY_BACKOFF_BASE_MS, DEFAULT_AI_RETRY_MAX_ATTEMPTS, DEFAULT_MOCK_MODEL } from "@exaix/ai";
 import { PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import type { IProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";
 import {

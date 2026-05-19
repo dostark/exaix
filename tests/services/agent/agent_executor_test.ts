@@ -23,7 +23,7 @@ import {
   ToolName,
 } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { join } from "@std/path";
 
 import {

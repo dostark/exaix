@@ -52,6 +52,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
+import { bootstrapProviderRegistry } from "../../ai/registry_bootstrap.ts";
 import { CostTracker } from "../cost/cost_tracker.ts";
 import { HealthCheckService } from "../core/health_check_service.ts";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
@@ -650,6 +651,7 @@ export class RequestProcessor {
         selectedProviderName = ProviderType.MOCK;
       }
 
+      bootstrapProviderRegistry();
       const rawProvider = await ProviderFactory.createByName(
         this.config,
         selectedProviderName,

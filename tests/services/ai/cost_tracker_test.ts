@@ -9,7 +9,8 @@ import { assert, assertAlmostEquals, assertEquals } from "@std/assert";
 import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { COST_RATE_ANTHROPIC, COST_RATE_OPENAI, TOKENS_PER_COST_UNIT } from "@exaix/core";
-import { PROVIDER_ANTHROPIC, PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
 /**
  * Tests for CostTracker service.

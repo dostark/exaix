@@ -11,8 +11,8 @@
 
 import type { IEmbeddingProvider } from "./embedding_provider.ts";
 import { EmbeddingError } from "./embedding_errors.ts";
-import { type IOllamaEmbeddingConfig, OllamaEmbeddingClient } from "../providers/ollama_embedding_client.ts";
-import { type IOpenAIEmbeddingConfig, OpenAIEmbeddingClient } from "../providers/openai_embedding_client.ts";
+import { type IOllamaEmbeddingConfig, OllamaEmbeddingClient } from "@exaix/ai-ollama";
+import { type IOpenAIEmbeddingConfig, OpenAIEmbeddingClient } from "@exaix/ai-openai";
 import { type ILlamaCppEmbeddingConfig, LlamaCppEmbeddingClient } from "../providers/llamacpp_embedding_client.ts";
 
 /**

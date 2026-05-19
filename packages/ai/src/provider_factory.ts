@@ -8,22 +8,17 @@
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";
+import { LlamaProvider } from "@exaix/ai-ollama";
 import type { Config } from "@exaix/schemas";
 
 import { type AiConfig, getDefaultModels, InputValidator, type ModelConfigSchema } from "@exaix/schemas";
-
-import { LlamaProvider } from "./providers/llama_provider.ts";
 
 import type { z } from "zod";
 import type { ICostTracker, IDatabaseService, JSONValue } from "@exaix/core";
 import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
 import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core/request";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
-import { AnthropicProviderFactory } from "./factories/anthropic_factory.ts";
-import { GoogleProviderFactory } from "./factories/google_factory.ts";
 import { MockProviderFactory } from "./factories/mock_factory.ts";
-import { OllamaProviderFactory } from "./factories/ollama_factory.ts";
-import { OpenAIProviderFactory } from "./factories/openai_factory.ts";
 import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_factory.ts";
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
@@ -33,6 +28,19 @@ import type { EventLogger } from "@exaix/core/logger";
 import { LazyProvider } from "./providers/lazy_provider.ts";
 
 declare const Deno: { env: { get(key: string): string | undefined } };
+
+export type ProviderRegistryBootstrap = () => void;
+
+let externalProviderRegistryBootstrap: ProviderRegistryBootstrap | undefined;
+
+export function setProviderRegistryBootstrap(bootstrap?: ProviderRegistryBootstrap): void {
+  externalProviderRegistryBootstrap = bootstrap;
+}
+
+export function ensureProviderRegistryInitialized(): void {
+  initializeRegistry();
+  externalProviderRegistryBootstrap?.();
+}
 
 // ============================================================================
 // ProviderFactory Implementation
@@ -258,7 +266,7 @@ export class ProviderFactory {
     let providerType: ProviderType = ProviderType.MOCK;
     // Ensure the registry is initialized before validation so tests and runtime
     // cannot observe a partially-registered provider set.
-    initializeRegistry();
+    ensureProviderRegistryInitialized();
 
     if (envProvider) {
       const normalized = envProvider.toLowerCase().trim();
@@ -377,7 +385,7 @@ export class ProviderFactory {
    */
   private static async createProvider(options: IResolvedProviderOptions): Promise<IModelProvider> {
     // Ensure registry is initialized
-    initializeRegistry();
+    ensureProviderRegistryInitialized();
 
     // Try registry first for modern providers
     const factory = ProviderRegistry.getFactory(options.provider);
@@ -453,7 +461,8 @@ export class ProviderFactory {
 // ============================================================================
 
 /**
- * Initialize default provider factories in registry with metadata (lazy initialization)
+ * Initialize package-owned provider factories in registry with metadata.
+ * Concrete extracted providers are registered by a root composition bootstrap.
  */
 export function initializeRegistry(): void {
   const supported = ProviderRegistry.getSupportedProviders();
@@ -469,70 +478,6 @@ export function initializeRegistry(): void {
       strengths: DEFAULTS.PROVIDER_MOCK_STRENGTHS,
     };
     ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_MOCK, new MockProviderFactory(), mockMetadata);
-  }
-
-  // Ollama provider - local open-source models
-  if (!supported.includes(DEFAULTS.PROVIDER_OLLAMA)) {
-    const ollamaMetadata: IProviderMetadata = {
-      name: DEFAULTS.PROVIDER_OLLAMA,
-      description: DEFAULTS.PROVIDER_OLLAMA_DESCRIPTION,
-      capabilities: DEFAULTS.PROVIDER_OLLAMA_CAPABILITIES,
-      costTier: DEFAULTS.PROVIDER_COST_TIER_FREE,
-      pricingTier: PricingTier.LOCAL,
-      strengths: DEFAULTS.PROVIDER_OLLAMA_STRENGTHS,
-    };
-    ProviderRegistry.registerWithMetadata(DEFAULTS.PROVIDER_OLLAMA, new OllamaProviderFactory(), ollamaMetadata);
-  }
-
-  // Anthropic provider - Claude models
-  if (!supported.includes(DEFAULTS.PROVIDER_ANTHROPIC)) {
-    const anthropicMetadata: IProviderMetadata = {
-      name: DEFAULTS.PROVIDER_ANTHROPIC,
-      description: DEFAULTS.PROVIDER_ANTHROPIC_DESCRIPTION,
-      capabilities: DEFAULTS.PROVIDER_ANTHROPIC_CAPABILITIES,
-      costTier: DEFAULTS.PROVIDER_COST_TIER_PAID,
-      pricingTier: PricingTier.HIGH,
-      strengths: DEFAULTS.PROVIDER_ANTHROPIC_STRENGTHS,
-    };
-    ProviderRegistry.registerWithMetadata(
-      DEFAULTS.PROVIDER_ANTHROPIC,
-      new AnthropicProviderFactory(),
-      anthropicMetadata,
-    );
-  }
-
-  // OpenAI provider - GPT models
-  if (!supported.includes(DEFAULTS.PROVIDER_OPENAI)) {
-    const openaiMetadata: IProviderMetadata = {
-      name: DEFAULTS.PROVIDER_OPENAI,
-      description: DEFAULTS.PROVIDER_OPENAI_DESCRIPTION,
-      capabilities: DEFAULTS.PROVIDER_OPENAI_CAPABILITIES,
-      costTier: DEFAULTS.PROVIDER_COST_TIER_PAID,
-      pricingTier: PricingTier.MEDIUM,
-      strengths: DEFAULTS.PROVIDER_OPENAI_STRENGTHS,
-    };
-    ProviderRegistry.registerWithMetadata(
-      DEFAULTS.PROVIDER_OPENAI,
-      new OpenAIProviderFactory(),
-      openaiMetadata,
-    );
-  }
-
-  // Google provider - Gemini models
-  if (!supported.includes(DEFAULTS.PROVIDER_GOOGLE)) {
-    const googleMetadata: IProviderMetadata = {
-      name: DEFAULTS.PROVIDER_GOOGLE,
-      description: DEFAULTS.PROVIDER_GOOGLE_DESCRIPTION,
-      capabilities: DEFAULTS.PROVIDER_GOOGLE_CAPABILITIES,
-      costTier: DEFAULTS.PROVIDER_COST_TIER_FREEMIUM,
-      pricingTier: PricingTier.LOW,
-      strengths: DEFAULTS.PROVIDER_GOOGLE_STRENGTHS,
-    };
-    ProviderRegistry.registerWithMetadata(
-      DEFAULTS.PROVIDER_GOOGLE,
-      new GoogleProviderFactory(),
-      googleMetadata,
-    );
   }
 }
 

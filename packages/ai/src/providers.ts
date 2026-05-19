@@ -13,33 +13,21 @@ import {
   createOpenAIChatCompletionsRequestInit,
   extractOpenAIContent,
   fetchJsonWithRetries,
-  type OllamaResponse,
   type OpenAIResponse,
   tokenMapperOpenAI,
 } from "./provider_common_utils.ts";
 
-import { initializeRegistry } from "./provider_factory.ts";
+import { ensureProviderRegistryInitialized } from "./provider_factory.ts";
+import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_MODEL, DEFAULT_MOCK_PROVIDER_ID, MOCK_DELAY_MS } from "@exaix/ai";
+
+import { type MockStrategy, ProviderType } from "@exaix/core";
 import {
-  DEFAULT_AI_TIMEOUT_MS,
-  DEFAULT_MOCK_MODEL,
-  DEFAULT_MOCK_PROVIDER_ID,
-  DEFAULT_OLLAMA_BASE_URL,
-  DEFAULT_OLLAMA_MODEL,
-  DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
-  DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
-  DEFAULT_OLLAMA_TIMEOUT_MS,
-  DEFAULT_OPENAI_BASE_URL,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_RETRY_BACKOFF_MS,
   DEFAULT_OPENAI_RETRY_MAX_ATTEMPTS,
   DEFAULT_OPENAI_TIMEOUT_MS,
-  MOCK_DELAY_MS,
-} from "@exaix/ai";
-
-import { type MockStrategy, ProviderType } from "@exaix/core";
-import { ConnectionError, ModelProviderError, TimeoutError } from "./providers/common.ts";
-
-declare const Deno: { env: { get(key: string): string | undefined } };
+} from "@exaix/core";
+import { ModelProviderError } from "./providers/common.ts";
 
 /**
  * Provider configuration options
@@ -47,6 +35,10 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 export interface IProviderConfig {
   [key: string]: string | number | boolean | string[] | null | undefined;
 }
+
+const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com";
+
+declare const Deno: { env: { get(key: string): string | undefined } };
 
 // ============================================================================
 // Mock Provider (for testing)
@@ -80,106 +72,6 @@ export class MockProvider implements IModelProvider {
       provider: DEFAULT_MOCK_PROVIDER_ID,
       cost_usd: 0,
     };
-  }
-}
-
-// ============================================================================
-// Ollama Provider (local inference)
-// ============================================================================
-
-/**
- * Provider for Ollama local LLM inference.
- * Communicates with Ollama API at localhost:11434.
- */
-export class OllamaProvider implements IModelProvider {
-  public readonly id: string;
-  private readonly baseUrl: string;
-  private readonly defaultModel: string;
-  private readonly timeoutMs: number;
-
-  constructor(
-    options: {
-      baseUrl?: string;
-      model?: string;
-      timeoutMs?: number;
-      id?: string;
-    } = {},
-  ) {
-    this.baseUrl = options.baseUrl ?? DEFAULT_OLLAMA_BASE_URL;
-    this.defaultModel = options.model ?? DEFAULT_OLLAMA_MODEL;
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_OLLAMA_TIMEOUT_MS;
-    this.id = options.id ?? `ollama-${this.defaultModel}`;
-  }
-
-  async generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
-    try {
-      // Import helper dynamically to avoid module cycles
-      const data = await fetchJsonWithRetries<OllamaResponse>(
-        `${this.baseUrl}/api/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: this.defaultModel,
-            prompt: prompt,
-            stream: false,
-            options: {
-              temperature: options?.temperature,
-              num_predict: options?.max_tokens,
-              top_p: options?.top_p,
-              stop: options?.stop,
-            },
-          }),
-        },
-        {
-          id: this.id,
-          maxAttempts: DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
-          backoffBaseMs: DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
-          timeoutMs: this.timeoutMs,
-        },
-      );
-
-      if (!data.response) {
-        throw new ModelProviderError(
-          "Invalid response from Ollama: missing 'response' field",
-          this.id,
-        );
-      }
-
-      return {
-        content: data.response,
-        usage: {
-          promptTokens: data.prompt_eval_count ?? 0,
-          completionTokens: data.eval_count ?? 0,
-          totalTokens: (data.prompt_eval_count ?? 0) + (data.eval_count ?? 0),
-        },
-        model: this.defaultModel,
-        provider: "ollama",
-        cost_usd: 0,
-      };
-    } catch (error) {
-      if (error instanceof ModelProviderError) {
-        throw error;
-      }
-
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new TimeoutError(this.id, this.timeoutMs);
-      }
-
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new ConnectionError(
-          this.id,
-          `Failed to connect to Ollama at ${this.baseUrl}. Is Ollama running?`,
-        );
-      }
-
-      throw new ModelProviderError(
-        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
-        this.id,
-      );
-    }
   }
 }
 
@@ -273,7 +165,7 @@ export class ModelFactory {
 
     // Initialize registry if needed
     if (ProviderRegistry.getSupportedProviders().length === 0) {
-      initializeRegistry();
+      ensureProviderRegistryInitialized();
     }
 
     // Check if this is a registered provider type

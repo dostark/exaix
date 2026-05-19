@@ -36,10 +36,10 @@ export interface IRateLimitConfig {
 /**
  * Error thrown when rate limits are exceeded
  */
-export class RateLimitError extends Error {
+export class RateLimiterError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "RateLimitError";
+    this.name = "RateLimiterError";
   }
 }
 
@@ -68,7 +68,7 @@ export class RateLimitedProvider implements IModelProvider {
 
     // Check rate limits
     if (this.callsThisMinute >= this.limits.maxCallsPerMinute) {
-      throw new RateLimitError(`Rate limit exceeded: ${this.limits.maxCallsPerMinute} calls per minute`);
+      throw new RateLimiterError(`Rate limit exceeded: ${this.limits.maxCallsPerMinute} calls per minute`);
     }
 
     // Estimate cost and tokens
@@ -76,11 +76,11 @@ export class RateLimitedProvider implements IModelProvider {
     const estimatedCost = (estimatedTokens / 1000) * this.limits.costPer1kTokens;
 
     if (this.tokensThisHour + estimatedTokens > this.limits.maxTokensPerHour) {
-      throw new RateLimitError(`Rate limit exceeded: ${this.limits.maxTokensPerHour} tokens per hour`);
+      throw new RateLimiterError(`Rate limit exceeded: ${this.limits.maxTokensPerHour} tokens per hour`);
     }
 
     if (this.costThisDay + estimatedCost > this.limits.maxCostPerDay) {
-      throw new RateLimitError(
+      throw new RateLimiterError(
         `Cost limit exceeded: $${this.costThisDay.toFixed(2)}/$${this.limits.maxCostPerDay} per day`,
       );
     }
@@ -90,7 +90,7 @@ export class RateLimitedProvider implements IModelProvider {
       const providerName = this.extractProviderName(this.inner.id);
       const withinBudget = await this.limits.costTracker.isWithinBudget(providerName, this.limits.maxCostPerDay);
       if (!withinBudget) {
-        throw new RateLimitError(`Persistent cost budget exceeded for ${providerName}`);
+        throw new RateLimiterError(`Persistent cost budget exceeded for ${providerName}`);
       }
     }
 

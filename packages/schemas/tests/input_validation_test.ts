@@ -7,7 +7,7 @@
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { SecurityMode } from "@exaix/core";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
 import {
   AgentExecutionOptionsSchema,

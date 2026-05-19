@@ -6,7 +6,7 @@
  */
 
 import { McpToolName } from "@exaix/mcp";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 
 import { join } from "@std/path";

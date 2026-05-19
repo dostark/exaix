@@ -21,7 +21,6 @@ export interface IModelOptions {
 }
 
 import type { IGenerateResult } from "./providers/common.ts";
-export type { IGenerateResult };
 
 /**
  * Standard interface that all model providers must implement.

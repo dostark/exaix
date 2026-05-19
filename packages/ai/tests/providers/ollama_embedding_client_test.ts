@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { OllamaEmbeddingClient } from "../../src/providers/ollama_embedding_client.ts";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { EmbeddingError } from "../../src/embeddings/embedding_errors.ts";
 
 // ============================================================================

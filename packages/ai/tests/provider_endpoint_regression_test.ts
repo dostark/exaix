@@ -7,10 +7,9 @@
  */
 
 import { assert } from "@std/assert";
-import { GoogleProvider } from "../src/providers/google_provider.ts";
-import { OpenAIProvider } from "../src/providers/openai_provider.ts";
-import { AnthropicProvider } from "../src/providers/anthropic_provider.ts";
-import { DEFAULT_ANTHROPIC_MODEL, DEFAULT_GOOGLE_MODEL, DEFAULT_OPENAI_MODEL } from "@exaix/ai";
+import { AnthropicProvider, DEFAULT_ANTHROPIC_MODEL } from "@exaix/ai-anthropic";
+import { DEFAULT_GOOGLE_MODEL, GoogleProvider } from "@exaix/ai-google";
+import { DEFAULT_OPENAI_MODEL, OpenAIProvider } from "@exaix/ai-openai";
 import * as TEST_CONSTANTS from "@exaix/testing";
 
 /**

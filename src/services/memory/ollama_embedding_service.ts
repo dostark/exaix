@@ -16,8 +16,8 @@ import type { ILearning } from "@exaix/schemas/memory_bank.ts";
 import type { IEmbeddingSearchResult } from "@exaix/core/types";
 import type { IEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider.ts";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
+import { OLLAMA_EMBED_CACHE_MAX_ENTRIES } from "@exaix/ai-ollama";
 import { cosineSimilarity } from "./memory_embedding.ts";
-import { OLLAMA_EMBED_CACHE_MAX_ENTRIES } from "@exaix/ai";
 
 /**
  * Embedding file structure stored on disk.

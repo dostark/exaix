@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { OpenAIProvider } from "../../src/providers/openai_provider.ts";
+import { OpenAIProvider } from "@exaix/ai-openai";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { openaiResponseConfig, registerProviderTests, spyFetch } from "../helpers/provider_test_helper.ts";
 

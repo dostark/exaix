@@ -7,10 +7,38 @@
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { MockProvider, ModelFactory, OllamaProvider } from "../../src/providers.ts";
+import { OLLAMA_PROVIDER_METADATA, OllamaProvider, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
+import { MockProvider, ModelFactory } from "../../src/providers.ts";
 import type { IModelProvider } from "../../src/types.ts";
 import { ConnectionError, ModelProviderError, TimeoutError } from "../../src/providers/common.ts";
-import type { JSONObject } from "@exaix/core";
+import { type JSONObject, PricingTier } from "@exaix/core";
+import { ProviderRegistry } from "../../src/provider_registry.ts";
+import { setProviderRegistryBootstrap } from "../../src/provider_factory.ts";
+
+function registerOllamaProvider(): void {
+  if (!ProviderRegistry.getSupportedProviders().includes(PROVIDER_OLLAMA)) {
+    ProviderRegistry.registerWithMetadata(PROVIDER_OLLAMA, new OllamaProviderFactory(), {
+      name: OLLAMA_PROVIDER_METADATA.name,
+      description: OLLAMA_PROVIDER_METADATA.description,
+      capabilities: [...OLLAMA_PROVIDER_METADATA.capabilities],
+      costTier: OLLAMA_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [...OLLAMA_PROVIDER_METADATA.strengths],
+    });
+  }
+}
+
+async function withOllamaProvider<T>(fn: () => Promise<T> | T): Promise<T> {
+  ProviderRegistry.clear();
+  setProviderRegistryBootstrap(registerOllamaProvider);
+
+  try {
+    return await fn();
+  } finally {
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+  }
+}
 
 // ============================================================================
 // Test 1: MockProvider returns configured response
@@ -160,11 +188,13 @@ Deno.test("ModelFactory creates MockProvider for 'mock' type", async () => {
 });
 
 Deno.test("ModelFactory creates OllamaProvider for 'ollama' type", async () => {
-  const provider = await ModelFactory.create("ollama", { model: "llama3.2" });
+  await withOllamaProvider(async () => {
+    const provider = await ModelFactory.create("ollama", { model: "llama3.2" });
 
-  assertExists(provider);
-  assertStringIncludes(provider.id, "ollama");
-  assertExists(provider.generate);
+    assertExists(provider);
+    assertStringIncludes(provider.id, "ollama");
+    assertExists(provider.generate);
+  });
 });
 
 Deno.test("ModelFactory is case-insensitive", async () => {
@@ -178,10 +208,12 @@ Deno.test("ModelFactory is case-insensitive", async () => {
 });
 
 Deno.test("ModelFactory handles whitespace in provider type", async () => {
-  const provider = await ModelFactory.create("  ollama  ");
+  await withOllamaProvider(async () => {
+    const provider = await ModelFactory.create("  ollama  ");
 
-  assertExists(provider);
-  assertStringIncludes(provider.id, "ollama");
+    assertExists(provider);
+    assertStringIncludes(provider.id, "ollama");
+  });
 });
 
 Deno.test("ModelFactory throws error for unknown provider type", async () => {

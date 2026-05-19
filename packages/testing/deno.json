@@ -6,6 +6,7 @@
     "@exaix/testing": "./mod.ts",
     "@exaix/testing/": "./src/",
     "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",

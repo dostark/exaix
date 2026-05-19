@@ -6,9 +6,9 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { AnthropicProviderFactory } from "../src/factories/anthropic_factory.ts";
-import { GoogleProviderFactory } from "../src/factories/google_factory.ts";
-import { OpenAIProviderFactory } from "../src/factories/openai_factory.ts";
+import { AnthropicProviderFactory } from "@exaix/ai-anthropic";
+import { GoogleProviderFactory } from "@exaix/ai-google";
+import { OpenAIProviderFactory } from "@exaix/ai-openai";
 import type { IResolvedProviderOptions } from "../src/types.ts";
 import { MockStrategy, ProviderType } from "@exaix/core";
 import { SecureCredentialStore } from "@exaix/core";

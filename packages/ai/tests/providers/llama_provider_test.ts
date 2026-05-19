@@ -8,7 +8,7 @@
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { PlanSchema } from "@exaix/schemas";
 
-import { LlamaProvider } from "../../src/providers/llama_provider.ts";
+import { LlamaProvider } from "@exaix/ai-ollama";
 import type { IGenerateResult } from "../../src/providers/common.ts";
 import { getProviderForModel } from "../helpers/test_config.ts";
 

@@ -6,12 +6,13 @@
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { AnthropicProviderFactory } from "@exaix/ai-anthropic";
+import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
 import { ExaPathDefaults, MockStrategy, PricingTier, ProviderCostTier, ProviderType } from "@exaix/core";
 import { ProviderRegistry } from "../src/provider_registry.ts";
-import { AnthropicProviderFactory } from "../src/factories/anthropic_factory.ts";
 import { MockProviderFactory } from "../src/factories/mock_factory.ts";
 import type { IResolvedProviderOptions } from "../src/types.ts";
-import { ProviderFactory } from "../src/provider_factory.ts";
+import { ProviderFactory, setProviderRegistryBootstrap } from "../src/provider_factory.ts";
 import type { Config } from "@exaix/schemas";
 
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
@@ -250,6 +251,24 @@ Deno.test("ProviderFactory: maintains backward compatibility for ollama", async 
   Deno.env.delete("EXA_LLM_MODEL");
   Deno.env.delete("EXA_LLM_BASE_URL");
 
+  ProviderRegistry.clear();
+  setProviderRegistryBootstrap(() => {
+    if (!ProviderRegistry.getSupportedProviders().includes(PROVIDER_OLLAMA)) {
+      ProviderRegistry.registerWithMetadata(
+        PROVIDER_OLLAMA,
+        new OllamaProviderFactory(),
+        {
+          name: OLLAMA_PROVIDER_METADATA.name,
+          description: OLLAMA_PROVIDER_METADATA.description,
+          capabilities: [...OLLAMA_PROVIDER_METADATA.capabilities],
+          costTier: OLLAMA_PROVIDER_METADATA.costTier,
+          pricingTier: PricingTier.LOCAL,
+          strengths: [...OLLAMA_PROVIDER_METADATA.strengths],
+        },
+      );
+    }
+  });
+
   const config = {
     system: {
       root: "/tmp/test",
@@ -262,7 +281,12 @@ Deno.test("ProviderFactory: maintains backward compatibility for ollama", async 
     },
   } as Config;
 
-  const provider = await ProviderFactory.create(config);
-  assertExists(provider);
-  assertEquals(provider.id, "ollama-llama3.2");
+  try {
+    const provider = await ProviderFactory.create(config);
+    assertExists(provider);
+    assertEquals(provider.id, "ollama-llama3.2");
+  } finally {
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+  }
 });

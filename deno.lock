@@ -1154,6 +1154,26 @@
           "jsr:@std/testing@^1.0.18"
         ]
       },
+      "packages/ai-anthropic": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
+      "packages/ai-google": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
+      "packages/ai-ollama": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
+      "packages/ai-openai": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
       "packages/core": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",

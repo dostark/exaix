@@ -8,7 +8,7 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ModelFactory } from "../../src/providers.ts";
-import { OpenAIProvider } from "../../src/providers/openai_provider.ts";
+import { OpenAIProvider } from "@exaix/ai-openai";
 import { getTestModel, getTestModelDisplay } from "../helpers/test_model.ts";
 import { isCi } from "@exaix/testing";
 

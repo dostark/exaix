@@ -1,0 +1,21 @@
+{
+  "name": "@exaix/ai-anthropic",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
+  }
+}

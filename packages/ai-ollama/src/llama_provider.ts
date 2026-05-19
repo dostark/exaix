@@ -1,33 +1,50 @@
 /**
- * @module LlamaProvider
- * @path src/ai/providers/llama_provider.ts
- * @description IModelProvider implementation for Llama and CodeLlama models, typically served via Ollama.
+ * @module LlamaPackageProvider
+ * @path packages/ai-ollama/src/llama_provider.ts
+ * @description Llama and CodeLlama provider implementation owned by the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @related-files [src/ai/factories/llama_factory.ts, src/ai/factories/ollama_factory.ts]
+ * @related-files [packages/ai-ollama/src/llama_factory.ts, packages/ai/src/providers/llama_provider.ts]
  */
-import type { IModelOptions, IModelProvider } from "../types.ts";
-import type { Config } from "@exaix/schemas";
 
-import * as DEFAULTS from "@exaix/ai";
-import { calculateCost, fetchJsonWithRetries, type OllamaResponse } from "../provider_common_utils.ts";
-import type { IGenerateResult } from "./common.ts";
+import {
+  DEFAULT_OLLAMA_ENDPOINT,
+  DEFAULT_OLLAMA_RETRY_BACKOFF_MS,
+  DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS,
+  DEFAULT_OLLAMA_TIMEOUT_MS,
+} from "./constants.ts";
+import { calculateCost, fetchJsonWithRetries, type OllamaResponse } from "@exaix/ai/provider_common_utils.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
+import type { IModelOptions, IModelProvider } from "@exaix/ai/types.ts";
 
-/**
- * Options for LlamaProvider.
- */
+export interface ILlamaProviderRuntimeConfig {
+  ai_endpoints?: {
+    ollama?: string;
+  };
+  ai_retry?: {
+    providers?: {
+      ollama?: {
+        max_attempts?: number;
+        backoff_base_ms?: number;
+      };
+    };
+  };
+  ai_timeout?: {
+    providers?: {
+      ollama?: number;
+    };
+  };
+}
+
 export interface ILlamaProviderOptions {
   model: string;
   endpoint?: string;
   id?: string;
-  config?: Config;
+  config?: ILlamaProviderRuntimeConfig;
   maxAttempts?: number;
   backoffBaseMs?: number;
   timeoutMs?: number;
 }
 
-/**
- * LlamaProvider implements IModelProvider for Llama and CodeLlama models (Ollama API).
- */
 export class LlamaProvider implements IModelProvider {
   readonly id: string;
   readonly model: string;
@@ -36,43 +53,27 @@ export class LlamaProvider implements IModelProvider {
   private readonly backoffBaseMs: number;
   public readonly timeoutMs: number;
 
-  /**
-   * @param options.model Model name (must start with codellama: or llamaX:)
-   * @param options.endpoint Ollama API endpoint (reads from config or defaults)
-   * @param options.id Optional provider id
-   * @param options.config Optional config for endpoint and retry settings
-   */
   constructor(options: ILlamaProviderOptions) {
     if (!/^codellama:|^llama[0-9.]*:/.test(options.model)) {
       throw new Error("Unsupported model");
     }
-    this.model = options.model;
 
-    // Read endpoint from config or use default
+    this.model = options.model;
     this.endpoint = options.endpoint ||
       options.config?.ai_endpoints?.ollama ||
-      DEFAULTS.DEFAULT_OLLAMA_ENDPOINT;
-
+      DEFAULT_OLLAMA_ENDPOINT;
     this.id = options.id || `llama-${this.model}`;
-
-    // Read retry settings from config or use defaults
     this.maxAttempts = options.maxAttempts ||
       options.config?.ai_retry?.providers?.ollama?.max_attempts ||
-      DEFAULTS.DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS;
-
+      DEFAULT_OLLAMA_RETRY_MAX_ATTEMPTS;
     this.backoffBaseMs = options.backoffBaseMs ||
       options.config?.ai_retry?.providers?.ollama?.backoff_base_ms ||
-      DEFAULTS.DEFAULT_OLLAMA_RETRY_BACKOFF_MS;
-
-    // Read timeout from options, config, or default
+      DEFAULT_OLLAMA_RETRY_BACKOFF_MS;
     this.timeoutMs = options.timeoutMs ||
       options.config?.ai_timeout?.providers?.ollama ||
-      DEFAULTS.DEFAULT_OLLAMA_TIMEOUT_MS;
+      DEFAULT_OLLAMA_TIMEOUT_MS;
   }
 
-  /**
-   * Generate a completion from the model.
-   */
   async generate(prompt: string, _options?: IModelOptions): Promise<IGenerateResult> {
     const body = {
       model: this.model,
@@ -95,15 +96,11 @@ export class LlamaProvider implements IModelProvider {
       throw new Error("Invalid Ollama response");
     }
 
-    // Extract JSON from response, handling markdown formatting
     let jsonText = data.response.trim();
-
-    // Remove markdown code blocks if present
     const jsonMatch = jsonText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
     if (jsonMatch) {
       jsonText = jsonMatch[1];
     } else {
-      // Try to find JSON object directly
       const jsonStart = jsonText.indexOf("{");
       const jsonEnd = jsonText.lastIndexOf("}");
       if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
@@ -124,12 +121,10 @@ export class LlamaProvider implements IModelProvider {
       };
     };
 
-    // Try to parse as JSON
     try {
       JSON.parse(jsonText);
       return generateResult(jsonText);
-    } catch (_parseError) {
-      // If not valid JSON, return the raw response and let caller handle it
+    } catch {
       return generateResult(data.response);
     }
   }

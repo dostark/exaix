@@ -9,7 +9,8 @@ import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
 import { McpToolName, ToolName } from "@exaix/core";
 import { ModelFactory } from "../src/providers.ts";
-import type { IGenerateResult, IModelProvider } from "../src/types.ts";
+import type { IModelProvider } from "../src/types.ts";
+import type { IGenerateResult } from "../src/providers/common.ts";
 
 const mockIdentity: IBlueprintFrontmatter = {
   identity_id: "test",

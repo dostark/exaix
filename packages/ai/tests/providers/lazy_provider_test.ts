@@ -9,7 +9,8 @@ import { assertEquals } from "@std/assert";
 import type { IProviderFactory } from "../../src/factories/abstract_provider_factory.ts";
 import { LazyProvider } from "../../src/providers/lazy_provider.ts";
 import { ProviderType } from "@exaix/core";
-import type { IGenerateResult, IModelOptions, IModelProvider, IResolvedProviderOptions } from "../../src/types.ts";
+import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../../src/types.ts";
+import type { IGenerateResult } from "../../src/providers/common.ts";
 
 Deno.test("LazyProvider: derives id from constructor arg > options.id > provider-model", () => {
   const factory: IProviderFactory = {

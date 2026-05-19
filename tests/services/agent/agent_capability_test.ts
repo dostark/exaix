@@ -16,7 +16,7 @@ import { PortalPermissionsService } from "../../../src/services/portal/portal_pe
 import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ToolName } from "@exaix/core";
-import { PROVIDER_OPENAI } from "@exaix/ai";
+import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 
 /**
  * TDD Tests for Agent Capability Differentiation

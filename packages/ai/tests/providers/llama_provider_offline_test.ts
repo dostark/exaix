@@ -17,7 +17,7 @@ import {
   TEST_RETRY_BACKOFF_BASE_MS_ZERO,
   TEST_RETRY_MAX_ATTEMPTS_SINGLE,
 } from "@exaix/testing";
-import { LlamaProvider } from "../../src/providers/llama_provider.ts";
+import { LlamaProvider } from "@exaix/ai-ollama";
 
 function jsonResponse(body: any, init?: ResponseInit): Response {
   return new Response(JSON.stringify(body), {

@@ -6,13 +6,19 @@
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
+import { ANTHROPIC_PROVIDER_METADATA, AnthropicProviderFactory, PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
+import { GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
+import { OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
+import { OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { ProviderFactory } from "../src/provider_factory.ts";
 import { TEST_MODEL_ANTHROPIC, TEST_MODEL_OPENAI } from "@exaix/testing";
 import { ProviderFactoryError } from "../src/errors.ts";
-import type { IGenerateResult } from "../src/types.ts";
-import { RateLimitError } from "../src/rate_limited_provider.ts";
-import { DaemonStatus, MockStrategy, ProviderType, SecureCredentialStore } from "@exaix/core";
+import type { IGenerateResult } from "../src/providers/common.ts";
+import { RateLimiterError } from "../src/rate_limited_provider.ts";
+import { DaemonStatus, MockStrategy, PricingTier, ProviderType, SecureCredentialStore } from "@exaix/core";
 import { AiConfigSchema } from "@exaix/schemas";
+import { ProviderRegistry } from "../src/provider_registry.ts";
+import { setProviderRegistryBootstrap } from "../src/provider_factory.ts";
 
 import { createTestConfig, getProviderForModel } from "./helpers/test_config.ts";
 
@@ -49,6 +55,66 @@ function withEnvVars(
       }
     }
   };
+}
+
+function registerConcreteProviders(): void {
+  const supported = ProviderRegistry.getSupportedProviders();
+
+  if (!supported.includes(PROVIDER_OLLAMA)) {
+    ProviderRegistry.registerWithMetadata(PROVIDER_OLLAMA, new OllamaProviderFactory(), {
+      name: OLLAMA_PROVIDER_METADATA.name,
+      description: OLLAMA_PROVIDER_METADATA.description,
+      capabilities: [...OLLAMA_PROVIDER_METADATA.capabilities],
+      costTier: OLLAMA_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.LOCAL,
+      strengths: [...OLLAMA_PROVIDER_METADATA.strengths],
+    });
+  }
+
+  if (!supported.includes(PROVIDER_ANTHROPIC)) {
+    ProviderRegistry.registerWithMetadata(PROVIDER_ANTHROPIC, new AnthropicProviderFactory(), {
+      name: ANTHROPIC_PROVIDER_METADATA.name,
+      description: ANTHROPIC_PROVIDER_METADATA.description,
+      capabilities: [...ANTHROPIC_PROVIDER_METADATA.capabilities],
+      costTier: ANTHROPIC_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.HIGH,
+      strengths: [...ANTHROPIC_PROVIDER_METADATA.strengths],
+    });
+  }
+
+  if (!supported.includes(PROVIDER_OPENAI)) {
+    ProviderRegistry.registerWithMetadata(PROVIDER_OPENAI, new OpenAIProviderFactory(), {
+      name: OPENAI_PROVIDER_METADATA.name,
+      description: OPENAI_PROVIDER_METADATA.description,
+      capabilities: [...OPENAI_PROVIDER_METADATA.capabilities],
+      costTier: OPENAI_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [...OPENAI_PROVIDER_METADATA.strengths],
+    });
+  }
+
+  if (!supported.includes(PROVIDER_GOOGLE)) {
+    ProviderRegistry.registerWithMetadata(PROVIDER_GOOGLE, new GoogleProviderFactory(), {
+      name: GOOGLE_PROVIDER_METADATA.name,
+      description: GOOGLE_PROVIDER_METADATA.description,
+      capabilities: [...GOOGLE_PROVIDER_METADATA.capabilities],
+      costTier: GOOGLE_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.FREE,
+      strengths: [...GOOGLE_PROVIDER_METADATA.strengths],
+    });
+  }
+}
+
+async function withConcreteProviders<T>(fn: () => Promise<T> | T): Promise<T> {
+  ProviderRegistry.clear();
+  setProviderRegistryBootstrap(registerConcreteProviders);
+
+  try {
+    return await fn();
+  } finally {
+    setProviderRegistryBootstrap(undefined);
+    ProviderRegistry.clear();
+  }
 }
 
 // ============================================================================
@@ -149,22 +215,26 @@ parallelSafeTest(
 parallelSafeTest(
   "ProviderFactory: EXA_LLM_PROVIDER=ollama creates OllamaProvider",
   withEnvVars({ EXA_LLM_PROVIDER: "ollama" }, async () => {
-    const config = createTestConfig();
-    const provider = await ProviderFactory.create(config);
+    await withConcreteProviders(async () => {
+      const config = createTestConfig();
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    assertStringIncludes(provider.id, "ollama");
+      assertExists(provider);
+      assertStringIncludes(provider.id, "ollama");
+    });
   }),
 );
 
 parallelSafeTest(
   "ProviderFactory: EXA_LLM_MODEL overrides config model",
   withEnvVars({ EXA_LLM_PROVIDER: "ollama", EXA_LLM_MODEL: "codellama" }, async () => {
-    const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
-    const provider = await ProviderFactory.create(config);
+    await withConcreteProviders(async () => {
+      const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    assertStringIncludes(provider.id, "codellama");
+      assertExists(provider);
+      assertStringIncludes(provider.id, "codellama");
+    });
   }),
 );
 
@@ -185,12 +255,14 @@ parallelSafeTest(
 // ============================================================================
 
 Deno.test("ProviderFactory: config ai.provider=ollama creates OllamaProvider", async () => {
-  const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
-  const provider = await ProviderFactory.create(config);
+  await withConcreteProviders(async () => {
+    const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
+    const provider = await ProviderFactory.create(config);
 
-  assertExists(provider);
-  assertStringIncludes(provider.id, "ollama");
-  assertStringIncludes(provider.id, "llama3.2");
+    assertExists(provider);
+    assertStringIncludes(provider.id, "ollama");
+    assertStringIncludes(provider.id, "llama3.2");
+  });
 });
 
 Deno.test("ProviderFactory: config ai.provider=mock creates MockLLMProvider", async () => {
@@ -209,32 +281,34 @@ Deno.test("ProviderFactory: config ai.provider=mock creates MockLLMProvider", as
 parallelSafeTest(
   "ProviderFactory: anthropic requires ANTHROPIC_API_KEY",
   withEnvVars({ EXA_LLM_PROVIDER: "anthropic", ANTHROPIC_API_KEY: "" }, async () => {
-    // Ensure API key is not in secure store
-    SecureCredentialStore.clear("ANTHROPIC_API_KEY");
+    await withConcreteProviders(async () => {
+      SecureCredentialStore.clear("ANTHROPIC_API_KEY");
 
-    const config = createTestConfig();
+      const config = createTestConfig();
 
-    await assertRejects(
-      async () => await ProviderFactory.create(config),
-      ProviderFactoryError,
-      "Authentication failed",
-    );
+      await assertRejects(
+        async () => await ProviderFactory.create(config),
+        ProviderFactoryError,
+        "Authentication failed",
+      );
+    });
   }),
 );
 
 parallelSafeTest(
   "ProviderFactory: openai requires OPENAI_API_KEY",
   withEnvVars({ EXA_LLM_PROVIDER: "openai", OPENAI_API_KEY: "" }, async () => {
-    // Ensure API key is not in secure store
-    SecureCredentialStore.clear("OPENAI_API_KEY");
+    await withConcreteProviders(async () => {
+      SecureCredentialStore.clear("OPENAI_API_KEY");
 
-    const config = createTestConfig();
+      const config = createTestConfig();
 
-    await assertRejects(
-      async () => await ProviderFactory.create(config),
-      ProviderFactoryError,
-      "Authentication failed",
-    );
+      await assertRejects(
+        async () => await ProviderFactory.create(config),
+        ProviderFactoryError,
+        "Authentication failed",
+      );
+    });
   }),
 );
 
@@ -280,12 +354,13 @@ Deno.test(
     EXA_LLM_PROVIDER: "ollama",
     EXA_LLM_BASE_URL: "http://custom-host:8080",
   }, async () => {
-    const config = createTestConfig();
-    const provider = await ProviderFactory.create(config);
+    await withConcreteProviders(async () => {
+      const config = createTestConfig();
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    // Provider should be created (we can't easily test internal baseUrl)
-    assertStringIncludes(provider.id, "ollama");
+      assertExists(provider);
+      assertStringIncludes(provider.id, "ollama");
+    });
   }),
 );
 
@@ -295,12 +370,13 @@ Deno.test(
     EXA_LLM_PROVIDER: "ollama",
     EXA_LLM_TIMEOUT_MS: "60000",
   }, async () => {
-    const config = createTestConfig();
-    const provider = await ProviderFactory.create(config);
+    await withConcreteProviders(async () => {
+      const config = createTestConfig();
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    // Provider should be created (we can't easily test internal timeout)
-    assertStringIncludes(provider.id, "ollama");
+      assertExists(provider);
+      assertStringIncludes(provider.id, "ollama");
+    });
   }),
 );
 
@@ -358,22 +434,26 @@ Deno.test("ProviderFactory: provider can be used for plan generation", async () 
 // ============================================================================
 
 Deno.test("ProviderFactory: getProviderInfo returns provider details", () => {
-  const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
-  const info = ProviderFactory.getProviderInfo(config);
-
-  assertEquals(info.type, "ollama");
-  assertEquals(info.model, "llama3.2");
-  assertExists(info.id);
-});
-
-Deno.test(
-  "ProviderFactory: getProviderInfo respects env vars",
-  withEnvVars({ EXA_LLM_PROVIDER: "ollama" }, () => {
+  return withConcreteProviders(() => {
     const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
     const info = ProviderFactory.getProviderInfo(config);
 
     assertEquals(info.type, "ollama");
     assertEquals(info.model, "llama3.2");
+    assertExists(info.id);
+  });
+});
+
+Deno.test(
+  "ProviderFactory: getProviderInfo respects env vars",
+  withEnvVars({ EXA_LLM_PROVIDER: "ollama" }, () => {
+    return withConcreteProviders(() => {
+      const config = createTestConfig({ provider: ProviderType.OLLAMA, model: "llama3.2" });
+      const info = ProviderFactory.getProviderInfo(config);
+
+      assertEquals(info.type, "ollama");
+      assertEquals(info.model, "llama3.2");
+    });
   }),
 );
 
@@ -387,20 +467,19 @@ Deno.test(
     EXA_LLM_PROVIDER: "anthropic",
     EXA_LLM_MODEL: TEST_MODEL_ANTHROPIC,
   }, async () => {
-    // Initialize secure store with test key
-    await SecureCredentialStore.set("ANTHROPIC_API_KEY", "test-key");
+    await withConcreteProviders(async () => {
+      await SecureCredentialStore.set("ANTHROPIC_API_KEY", "test-key");
 
-    const config = createTestConfig();
-    config.rate_limiting.enabled = false; // Disable rate limiting for this test
-    const provider = await ProviderFactory.create(config);
+      const config = createTestConfig();
+      config.rate_limiting.enabled = false;
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    assertStringIncludes(provider.id, `anthropic-${TEST_MODEL_ANTHROPIC}`);
-    // Should be a MockLLMProvider placeholder
-    assertEquals(provider.id.startsWith("anthropic"), true);
+      assertExists(provider);
+      assertStringIncludes(provider.id, `anthropic-${TEST_MODEL_ANTHROPIC}`);
+      assertEquals(provider.id.startsWith("anthropic"), true);
 
-    // Clean up
-    SecureCredentialStore.clear("ANTHROPIC_API_KEY");
+      SecureCredentialStore.clear("ANTHROPIC_API_KEY");
+    });
   }),
 );
 
@@ -414,20 +493,19 @@ Deno.test(
     EXA_LLM_PROVIDER: "openai",
     EXA_LLM_MODEL: TEST_MODEL_OPENAI,
   }, async () => {
-    // Initialize secure store with test key
-    await SecureCredentialStore.set("OPENAI_API_KEY", "test-key");
+    await withConcreteProviders(async () => {
+      await SecureCredentialStore.set("OPENAI_API_KEY", "test-key");
 
-    const config = createTestConfig();
-    config.rate_limiting.enabled = false; // Disable rate limiting for this test
-    const provider = await ProviderFactory.create(config);
+      const config = createTestConfig();
+      config.rate_limiting.enabled = false;
+      const provider = await ProviderFactory.create(config);
 
-    assertExists(provider);
-    assertStringIncludes(provider.id, `openai-${TEST_MODEL_OPENAI}`);
-    // Should be a MockLLMProvider placeholder
-    assertEquals(provider.id.startsWith("openai"), true);
+      assertExists(provider);
+      assertStringIncludes(provider.id, `openai-${TEST_MODEL_OPENAI}`);
+      assertEquals(provider.id.startsWith("openai"), true);
 
-    // Clean up
-    SecureCredentialStore.clear("OPENAI_API_KEY");
+      SecureCredentialStore.clear("OPENAI_API_KEY");
+    });
   }),
 );
 
@@ -523,52 +601,54 @@ Deno.test("ProviderFactory: createWithFallback returns primary if healthy", asyn
 });
 
 Deno.test("ProviderFactory: createWithFallback falls back if primary fails", async () => {
-  const config = createTestConfig();
-  config.models = {
-    primary: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
-    fallback: { provider: ProviderType.MOCK, model: "fallback-mock", timeout_ms: 30000 },
-  };
-  // Ensure no API key for anthropic
-  Deno.env.set("ANTHROPIC_API_KEY", "");
-  SecureCredentialStore.clear("ANTHROPIC_API_KEY");
+  await withConcreteProviders(async () => {
+    const config = createTestConfig();
+    config.models = {
+      primary: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
+      fallback: { provider: ProviderType.MOCK, model: "fallback-mock", timeout_ms: 30000 },
+    };
+    Deno.env.set("ANTHROPIC_API_KEY", "");
+    SecureCredentialStore.clear("ANTHROPIC_API_KEY");
 
-  try {
-    const provider = await ProviderFactory.createWithFallback(config, {
-      primary: "primary",
-      fallbacks: ["fallback"],
-      healthCheck: false,
-    });
-    assertExists(provider);
-    assertStringIncludes(provider.id, "fallback-mock");
-  } finally {
-    Deno.env.delete("ANTHROPIC_API_KEY");
-  }
+    try {
+      const provider = await ProviderFactory.createWithFallback(config, {
+        primary: "primary",
+        fallbacks: ["fallback"],
+        healthCheck: false,
+      });
+      assertExists(provider);
+      assertStringIncludes(provider.id, "fallback-mock");
+    } finally {
+      Deno.env.delete("ANTHROPIC_API_KEY");
+    }
+  });
 });
 
 Deno.test("ProviderFactory: createWithFallback throws if all fail", async () => {
-  const config = createTestConfig();
-  config.models = {
-    primary: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
-    fallback: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
-  };
-  // Ensure no API key for anthropic
-  Deno.env.set("ANTHROPIC_API_KEY", "");
-  SecureCredentialStore.clear("ANTHROPIC_API_KEY");
+  await withConcreteProviders(async () => {
+    const config = createTestConfig();
+    config.models = {
+      primary: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
+      fallback: { provider: ProviderType.ANTHROPIC, model: "bad-model", timeout_ms: 30000 },
+    };
+    Deno.env.set("ANTHROPIC_API_KEY", "");
+    SecureCredentialStore.clear("ANTHROPIC_API_KEY");
 
-  try {
-    await assertRejects(
-      () =>
-        ProviderFactory.createWithFallback(config, {
-          primary: "primary",
-          fallbacks: ["fallback"],
-          healthCheck: false,
-        }),
-      ProviderFactoryError,
-      "All providers in fallback chain failed",
-    );
-  } finally {
-    Deno.env.delete("ANTHROPIC_API_KEY");
-  }
+    try {
+      await assertRejects(
+        () =>
+          ProviderFactory.createWithFallback(config, {
+            primary: "primary",
+            fallbacks: ["fallback"],
+            healthCheck: false,
+          }),
+        ProviderFactoryError,
+        "All providers in fallback chain failed",
+      );
+    } finally {
+      Deno.env.delete("ANTHROPIC_API_KEY");
+    }
+  });
 });
 
 Deno.test("ProviderFactory: createWithFallback healthCheck calls validateConnection", async () => {
@@ -655,7 +735,7 @@ Deno.test("ProviderFactory: applies rate limiting when enabled", async () => {
   await provider.generate("test");
   await assertRejects(
     () => provider.generate("test"),
-    RateLimitError,
+    RateLimiterError,
     "calls per minute",
   );
 });
