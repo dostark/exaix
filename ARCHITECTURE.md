@@ -3,7 +3,7 @@ title: ARCHITECTURE.md
 description: Complete Exaix execution model and component map
 agent_priority: critical
 copilot_knowledge_base: true
-version: 2.1
+version: 2.2
 capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
 links:
   - "src/services/request/request_processor.ts:RequestProcessor"
@@ -16,8 +16,8 @@ tools_referenced:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-**Version:** 2.0.0\
-**Date:** January 16, 2026
+**Version:** 2.2.0\
+**Date:** May 19, 2026
 
 ## Quick Agent Summary
 
@@ -26,7 +26,7 @@ Key facts for agents reading this file under token constraints:
 - **Entry point**: `src/main.ts` — starts the daemon, wires all services
 - **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
 - **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
-- **AI providers**: selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory` (Ollama, Claude, OpenAI, Gemini, Mock)
+- **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `src/ai/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in the `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`src/tui/`) and CLI (`src/cli/commands/`) must not import directly from `src/services/` — use interfaces in `src/shared/interfaces/`
 - **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `src/mcp/handlers/`
@@ -37,7 +37,7 @@ Exaix is currently in a mixed-layout migration state:
 
 - Runtime orchestration, daemon flows, and many feature implementations still live under `src/`.
 - Extracted shared modules and package-local tests now also live under `packages/`.
-- The active workspace packages are `@exaix/schemas`, `@exaix/parsing`, `@exaix/core`, `@exaix/ai`, `@exaix/tui`, `@exaix/mcp`, `@exaix/git`, `@exaix/cli`, `@exaix/testing`, and `@exaix/memory`.
+- The active workspace packages are `@exaix/schemas`, `@exaix/parsing`, `@exaix/core`, `@exaix/ai`, `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-ollama`, `@exaix/tui`, `@exaix/mcp`, `@exaix/git`, `@exaix/cli`, `@exaix/testing`, `@exaix/memory`, and `@exaix/storage-sqlite`.
 - When this document references `src/` paths, treat them as the current runtime ownership map, not as the only canonical package structure.
 - For migration status and intended package boundaries, use [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md) and the linked phase tracker in `exaix-dev-docs/`.
 
@@ -1145,6 +1145,7 @@ For keyboard shortcuts, see [TUI Keyboard Reference](./TUI_Keyboard_Reference.md
   "flow": "LLM Provider Lifecycle",
   "steps": [
     "ConfigService loads [ai] section from exa.config.toml",
+    "src/ai/registry_bootstrap.ts bootstrapProviderRegistry() registers all provider factories and defaults",
     "ProviderFactory selects concrete class based on provider name",
     "Provider instance validates required API keys and base URLs",
     "Request/Plan services call generate(prompt, params)",
@@ -1153,12 +1154,21 @@ For keyboard shortcuts, see [TUI Keyboard Reference](./TUI_Keyboard_Reference.md
   ]
 } -->
 
-| Component         | Responsibility                | Implementation Path                                     |
-| ----------------- | ----------------------------- | ------------------------------------------------------- |
-| `ProviderFactory` | Registry & Instance creation  | `src/ai/provider_factory.ts:ProviderFactory`            |
-| `BaseProvider`    | Common logic & error handling | `src/ai/providers/common/base_provider.ts:BaseProvider` |
-| `CostTracker`     | Token & cost validation       | `src/services/billing/cost_tracker.ts:CostTracker`      |
-| `MockProvider`    | Deterministic testing         | `src/ai/providers/mock_provider.ts:MockLLMProvider`     |
+Each concrete provider lives in its own package. Provider-specific constants (default model, endpoint, timeout, retry) are owned by their package and registered via `ProviderDefaultsRegistry` at bootstrap. `@exaix/ai` owns shared contracts, retry logic, mock providers, and the factory registry. `@exaix/core` defines the `IProviderDefaults` interface and the `ProviderDefaultsRegistry` static registry.
+
+| Component                  | Responsibility                        | Implementation Path                                                     |
+| -------------------------- | ------------------------------------- | ----------------------------------------------------------------------- |
+| `ProviderFactory`          | Registry & instance creation          | `src/ai/provider_factory.ts:ProviderFactory`                            |
+| `registry_bootstrap`       | Registers all factories and defaults  | `src/ai/registry_bootstrap.ts:bootstrapProviderRegistry`                |
+| `BaseProvider`             | Common logic & error handling         | `packages/ai/src/providers/common/base_provider.ts:BaseProvider`        |
+| `IProviderDefaults`        | Per-provider defaults interface (DI)  | `packages/core/src/types/provider_defaults.ts:IProviderDefaults`        |
+| `ProviderDefaultsRegistry` | Runtime registry of provider defaults | `packages/core/src/types/provider_defaults.ts:ProviderDefaultsRegistry` |
+| `AnthropicProvider`        | Claude models                         | `packages/ai-anthropic/src/anthropic_provider.ts`                       |
+| `OpenAIProvider`           | GPT + OpenAI embeddings               | `packages/ai-openai/src/openai_provider.ts`                             |
+| `GoogleProvider`           | Gemini models                         | `packages/ai-google/src/google_provider.ts`                             |
+| `OllamaProvider`           | Ollama + Llama + embeddings           | `packages/ai-ollama/src/ollama_provider.ts`                             |
+| `CostTracker`              | Token & cost validation               | `src/services/billing/cost_tracker.ts:CostTracker`                      |
+| `MockLLMProvider`          | Deterministic testing                 | `packages/ai/src/providers/mock_provider.ts:MockLLMProvider`            |
 
 Exaix supports multiple LLM providers with **edition-based availability**:
 
