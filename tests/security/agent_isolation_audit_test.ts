@@ -15,8 +15,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutionError, AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
-import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";
-import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
+import type { IExecutionStrategy } from "@exaix/execution";
+import { StrategyRegistry } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { AGENT_EVENT_SECURITY_VIOLATION } from "@exaix/core";

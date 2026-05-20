@@ -5,7 +5,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
+import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager } from "@exaix/core";
 import type { AgentExecutor, IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";

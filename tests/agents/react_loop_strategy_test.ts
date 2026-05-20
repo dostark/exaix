@@ -5,7 +5,7 @@
  */
 
 import { assert, assertEquals, assertFalse } from "@std/assert";
-import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
+import { ReActLoopStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";

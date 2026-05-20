@@ -7,7 +7,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutor } from "@exaix/execution";
-import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
+import { StrategyRegistry } from "@exaix/execution";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/core";

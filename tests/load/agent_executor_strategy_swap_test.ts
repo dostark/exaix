@@ -7,9 +7,9 @@
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
-import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
-import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
+import { StrategyRegistry } from "@exaix/execution";
+import { LegacyAgentStrategy } from "@exaix/execution";
+import { ReActLoopStrategy } from "@exaix/execution";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { ExecutionStrategyName } from "@exaix/core";

@@ -8,8 +8,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { AgentExecutor } from "@exaix/execution";
-import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
-import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
+import { StrategyRegistry } from "@exaix/execution";
+import { McpAgentStrategy } from "@exaix/execution";
 import { ProcessManager } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";

@@ -216,12 +216,12 @@ export class AgentRunner implements IAgentRunner {
     }
     this.modelProvider = provider;
     this.db = ctx?.db || this.config?.db;
-    this.disableRetry = config?.disableRetry ?? false;
-    this.skillsService = ctx?.skills || config?.skillsService;
-    this.disableSkills = config?.disableSkills ?? false;
-    this.retryPolicy = config?.retryPolicyInstance ||
-      (config?.retryPolicy ? createRetryPolicy(config.retryPolicy) : createLLMRetryPolicy());
-    this.outputValidator = config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
+    this.disableRetry = this.config?.disableRetry ?? false;
+    this.skillsService = ctx?.skills || this.config?.skillsService;
+    this.disableSkills = this.config?.disableSkills ?? false;
+    this.retryPolicy = this.config?.retryPolicyInstance ||
+      (this.config?.retryPolicy ? createRetryPolicy(this.config.retryPolicy) : createLLMRetryPolicy());
+    this.outputValidator = this.config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
 
     // Set up retry logging
     this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => {

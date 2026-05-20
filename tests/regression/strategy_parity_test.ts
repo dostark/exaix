@@ -8,8 +8,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ChangesetResultSchema } from "@exaix/schemas/agent_executor.ts";
-import { LegacyAgentStrategy } from "../../src/services/agent/strategies/legacy_strategy.ts";
-import { ReActLoopStrategy } from "../../src/services/agent/strategies/react_loop_strategy.ts";
+import { LegacyAgentStrategy } from "@exaix/execution";
+import { ReActLoopStrategy } from "@exaix/execution";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { setupStrategyExecutor, TEST_BLUEPRINT, TEST_OPTIONS } from "../helpers/agent_strategy_test_helpers.ts";

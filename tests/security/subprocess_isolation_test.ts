@@ -7,11 +7,11 @@
  * 61.7 (G3) success criterion: subprocess_isolation_test asserts permission flags match
  * SecurityMode.SANDBOXED.
  * @architectural-layer Tests
- * @related-files [src/services/agent/strategies/mcp_agent_strategy.ts]
+ * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts]
  */
 
 import { assert, assertFalse } from "@std/assert";
-import { McpAgentStrategy } from "../../src/services/agent/strategies/mcp_agent_strategy.ts";
+import { McpAgentStrategy } from "@exaix/execution";
 import type { AgentExecutor, IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_executor.ts";
 import { SecurityMode } from "@exaix/core";

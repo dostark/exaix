@@ -5,8 +5,8 @@
  */
 
 import { assertEquals, assertFalse, assertThrows } from "@std/assert";
-import { StrategyRegistry } from "../../src/services/agent/strategies/strategy_registry.ts";
-import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";
+import { StrategyRegistry } from "@exaix/execution";
+import type { IExecutionStrategy } from "@exaix/execution";
 import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 

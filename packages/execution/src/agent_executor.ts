@@ -138,21 +138,12 @@ export class AgentExecutor {
     private logger: EventLogger,
     private pathResolver: PathResolver,
     private permissions: PortalPermissionsService,
-    promptBudgetAllocatorOrProvider?: IPromptBudgetAllocator | IModelProvider,
     private provider?: IModelProvider,
     private strategyRegistry?: StrategyRegistry,
     private _toolRegistry?: IToolRegistry,
+    promptBudgetAllocator?: IPromptBudgetAllocator,
   ) {
-    // Support both calling conventions:
-    //   new AgentExecutor(config, db, logger, resolver, permissions, provider)  (old style)
-    //   new AgentExecutor(config, db, logger, resolver, permissions, allocator, provider)  (DI style)
-    const isOldStyle = promptBudgetAllocatorOrProvider != null && "generate" in promptBudgetAllocatorOrProvider;
-    this.promptBudgetAllocator = isOldStyle
-      ? createNoopBudgetAllocator()
-      : (promptBudgetAllocatorOrProvider as IPromptBudgetAllocator | undefined) ?? createNoopBudgetAllocator();
-    if (isOldStyle) {
-      this.provider = promptBudgetAllocatorOrProvider as IModelProvider;
-    }
+    this.promptBudgetAllocator = promptBudgetAllocator ?? createNoopBudgetAllocator();
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();

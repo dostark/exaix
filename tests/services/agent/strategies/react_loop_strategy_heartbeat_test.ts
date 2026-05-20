@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
-import { ReActLoopStrategy } from "../../../../src/services/agent/strategies/react_loop_strategy.ts";
+import { ReActLoopStrategy } from "@exaix/execution";
 import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import type { IAgentFileBlueprint } from "@exaix/execution";
