@@ -50,6 +50,13 @@ const RETIRED_ROOT_HEADER_RELATED_FILES = new Set([
 
 const RETIRED_ROOT_PACKAGE_IMPORT_PATHS = new Set([
   "src/services/core/db.ts",
+  "src/services/tool/tool_validation_reporter.ts",
+  "src/services/tool/cli_confirmation_interceptor.ts",
+  "src/services/tool/notification_queue_confirmation_interceptor.ts",
+  "src/services/tool/output_validator.ts",
+  "src/services/tool/tool_reflector.ts",
+  "src/services/tool/tool_registry.ts",
+  "src/services/utils/json_repair.ts",
 ]);
 
 function isPackageEntrypoint(path: string): boolean {

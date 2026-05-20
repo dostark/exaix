@@ -26,3 +26,5 @@ export { ProviderDefaultsRegistry } from "./src/types/provider_defaults.ts";
 
 export { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "./src/helpers/subprocess.ts";
 export type { ISubprocessOptions } from "./src/helpers/subprocess.ts";
+
+export { ProcessManager } from "./src/process_manager.ts";

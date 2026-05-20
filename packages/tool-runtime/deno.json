@@ -1,0 +1,29 @@
+{
+  "name": "@exaix/tool-runtime",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/streams": "jsr:@std/streams@^1.0.13",
+    "@std/testing/mock": "jsr:@std/testing@^1.0.18/mock",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/func": "../core/src/func/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
+  }
+}

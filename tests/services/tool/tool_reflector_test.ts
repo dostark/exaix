@@ -11,38 +11,20 @@ import { CritiqueSeverity } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import type { JSONObject, JSONValue } from "@exaix/core/types";
 
-import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
 import {
   createFastToolReflector,
+  createOutputValidator,
   createStrictToolReflector,
   createToolReflector,
+  type IToolAgentExecutor,
   type IToolCall,
   type IToolResult,
   ToolReflectionSchema,
-} from "../../../src/services/tool/tool_reflector.ts";
+} from "@exaix/tool-runtime";
 
 // ============================================================================
 // Mock LLM Provider
 // ============================================================================
-
-function createMockProvider(responses: string[]): IModelProvider {
-  let callCount = 0;
-  return {
-    id: "mock-provider",
-    generate: (_prompt: string): Promise<IGenerateResult> => {
-      const response = responses[Math.min(callCount, responses.length - 1)];
-      callCount++;
-      return Promise.resolve({
-        content: response,
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-        model: "mock-model",
-        provider: "mock",
-        cost_usd: 0,
-      });
-    },
-  };
-}
 
 function makeReflectionJSON(options: {
   success?: boolean;
@@ -90,12 +72,25 @@ function createMockToolCall(overrides?: Partial<IToolCall>): IToolCall {
 // ============================================================================
 
 // Helper to setup reflector test context
+function createMockAgentRunner(responses: string[]): IToolAgentExecutor {
+  let callCount = 0;
+  return {
+    run(_blueprint, _request) {
+      const response = responses[Math.min(callCount, responses.length - 1)];
+      callCount++;
+      return { content: response };
+    },
+  };
+}
+
 function setupReflector(
   responses: string[] = [],
-  config?: Parameters<typeof createToolReflector>[1],
+  config?: Parameters<typeof createToolReflector>[2],
 ) {
-  const provider = createMockProvider(responses.length ? responses : [makeReflectionJSON({ success: true })]);
-  const reflector = createToolReflector(provider, config);
+  const mockResponses = responses.length ? responses : [makeReflectionJSON({ success: true })];
+  const agentRunner = createMockAgentRunner(mockResponses);
+  const outputValidator = createOutputValidator({ autoRepair: true });
+  const reflector = createToolReflector(agentRunner, outputValidator, config);
 
   // Default mock executor
   const createExecutor = (
@@ -108,7 +103,7 @@ function setupReflector(
       });
   };
 
-  return { reflector, createExecutor, provider };
+  return { reflector, createExecutor };
 }
 
 // ============================================================================
@@ -416,34 +411,49 @@ Deno.test("[ToolReflector] resets metrics", async () => {
 // ============================================================================
 
 Deno.test("[createToolReflector] creates reflector with defaults", () => {
-  const reflector = createToolReflector(createMockProvider([]));
+  const noopRunner: IToolAgentExecutor = { run: () => Promise.resolve({ content: "" }) };
+  const validator = createOutputValidator({ autoRepair: true });
+  const reflector = createToolReflector(noopRunner, validator);
   assertExists(reflector);
 });
 
 Deno.test("[createStrictToolReflector] creates strict reflector", async () => {
   const mockResponses = [
-    makeReflectionJSON({ success: true, confidence: 80 }), // Below strict threshold of 85
-    makeReflectionJSON({ success: true, confidence: 90 }), // Above threshold
+    makeReflectionJSON({ success: true, confidence: 80 }),
+    makeReflectionJSON({ success: true, confidence: 90 }),
   ];
 
-  // We are testing factory - mocking behavior manually in the test body as specific logic is tested
-  // Create reflector but we use the one with retry responses below
-  createStrictToolReflector(createMockProvider(mockResponses));
-
   let callCount = 0;
+  const mockRunner: IToolAgentExecutor = {
+    run: () => {
+      const content = mockResponses[Math.min(callCount, mockResponses.length - 1)];
+      callCount++;
+      return { content };
+    },
+  };
+  const validator = createOutputValidator({ autoRepair: true });
+
+  createStrictToolReflector(mockRunner, validator);
+
+  callCount = 0;
   const executor = (_params: JSONObject) => {
-    callCount++;
     return Promise.resolve(createMockToolResult(true, "result"));
   };
 
-  // Since first reflection is below 85 threshold but doesn't suggest retry, it should fail
-  // But wait, the test implies we use reflector2.
   const mockResponsesWithRetry = [
     makeReflectionJSON({ success: true, confidence: 80, retry_suggested: true }),
     makeReflectionJSON({ success: true, confidence: 90 }),
   ];
 
-  const reflector2 = createStrictToolReflector(createMockProvider(mockResponsesWithRetry));
+  callCount = 0;
+  const mockRunner2: IToolAgentExecutor = {
+    run: () => {
+      const content = mockResponsesWithRetry[Math.min(callCount, mockResponsesWithRetry.length - 1)];
+      callCount++;
+      return { content };
+    },
+  };
+  const reflector2 = createStrictToolReflector(mockRunner2, validator);
 
   const result = await reflector2.executeWithReflection(createMockToolCall(), executor);
 
@@ -452,10 +462,16 @@ Deno.test("[createStrictToolReflector] creates strict reflector", async () => {
 
 Deno.test("[createFastToolReflector] creates fast reflector", async () => {
   const mockResponses = [
-    makeReflectionJSON({ success: true, confidence: 55 }), // Above fast threshold of 50
+    makeReflectionJSON({ success: true, confidence: 55 }),
   ];
 
-  const reflector = createFastToolReflector(createMockProvider(mockResponses));
+  const mockRunner: IToolAgentExecutor = {
+    run: () => {
+      return { content: mockResponses[0] };
+    },
+  };
+  const validator = createOutputValidator({ autoRepair: true });
+  const reflector = createFastToolReflector(mockRunner, validator);
 
   const executor = (_params: JSONObject) => {
     return Promise.resolve(createMockToolResult(true, "result"));

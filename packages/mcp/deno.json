@@ -23,7 +23,8 @@
     "@exaix/core/config": "../core/src/config/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/schemas": "../schemas/mod.ts",
-    "@exaix/schemas/": "../schemas/src/"
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/tool-runtime": "../tool-runtime/mod.ts"
   },
   "exports": {
     ".": "./mod.ts",

@@ -7,6 +7,7 @@
  */
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
@@ -29,11 +30,7 @@ import {
   type IRemediationResult,
   REMEDIATION_OUTCOME_FAIL_CLOSED,
 } from "@exaix/schemas/tool_result_remediation.ts";
-import {
-  createValidationEventLogger,
-  type IValidationReportContext,
-  logValidationResult,
-} from "../../../src/services/tool/tool_validation_reporter.ts";
+import { type IValidationReportContext, logValidationResult } from "@exaix/tool-runtime";
 
 type JsonRpcResult = JSONValue | object;
 type JsonRpcErrorData = JSONValue | object;
@@ -580,7 +577,7 @@ export class MCPServer {
         toolName,
         policy,
         result,
-        createValidationEventLogger(this.db, this.validationReportContext?.traceId),
+        createDbEventLogger(this.db),
         this.validationReportContext,
       );
     } catch {
@@ -995,4 +992,31 @@ export class MCPServer {
 
     await Deno.serve({ port, hostname: "localhost" }, (request: Request) => this.handleHTTPRequest(request));
   }
+}
+
+const LOGGER_ACTOR = "system";
+
+function createDbEventLogger(db: IDatabaseService): IEventLogger {
+  return {
+    log: async (event) => {
+      await db.logActivity(
+        LOGGER_ACTOR,
+        event.action,
+        event.target || "",
+        event.payload || {},
+        event.traceId,
+      );
+    },
+    info: (action, target, payload, traceId) =>
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    warn: (action, target, payload, traceId) =>
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    error: (action, target, payload, traceId) =>
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    fatal: (action, target, payload, traceId) =>
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    debug: (action, target, payload, traceId) =>
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    child: () => createDbEventLogger(db),
+  };
 }

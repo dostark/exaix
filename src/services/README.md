@@ -37,7 +37,6 @@ src/services/
 │   ├── agent_runner.ts               # Agent lifecycle management
 │   ├── reflexive_agent.ts            # Self-improving agent
 │   ├── execution_loop.ts             # Main execution loop
-│   ├── agent_capabilities.ts         # Agent capability definitions
 │   └── mod.ts                        # Barrel export
 │
 ├── request/                # Request processing
@@ -68,8 +67,7 @@ src/services/
 ├── context/                # Context and knowledge generation
 │   ├── context_card_generator.ts     # Generate context cards
 │   ├── context_loader.ts             # Load context for requests
-│   ├── prompt_context.ts             # Build prompt context blocks
-│   ├── code_parser.ts                # Parse code for context
+│   ├── prompt_budget_allocator.ts    # Budget-aware prompt allocation
 │   └── mod.ts                        # Barrel export
 │
 ├── skills/                 # Skills and capabilities
@@ -130,18 +128,18 @@ src/services/
 
 ### Domain Services
 
-| Folder          | Purpose                  | Examples                                     |
-| --------------- | ------------------------ | -------------------------------------------- |
-| `agent/`        | **Agent orchestration**  | Agent execution, reflexive improvement       |
-| `request/`      | **Request processing**   | Request CRUD, routing, processing            |
-| `plan/`         | **Planning services**    | Plan generation, execution, parsing          |
-| `tool/`         | **Tool execution**       | Tool registry, reflection, validation        |
-| `blueprint/`    | **Blueprint management** | Blueprint loading and validation             |
-| `context/`      | **Context generation**   | Context cards, prompt building, code parsing |
-| `skills/`       | **Skills and criteria**  | Skills service, evaluation criteria          |
-| `cost/`         | **Cost tracking**        | LLM token cost tracking                      |
-| `notification/` | **Notifications**        | User notifications                           |
-| `artifact/`     | **Artifact tracking**    | Code artifacts, reviews, mission reports     |
+| Folder          | Purpose                  | Examples                                          |
+| --------------- | ------------------------ | ------------------------------------------------- |
+| `agent/`        | **Agent orchestration**  | Agent execution, reflexive improvement            |
+| `request/`      | **Request processing**   | Request CRUD, routing, processing                 |
+| `plan/`         | **Planning services**    | Plan generation, execution, parsing               |
+| `tool/`         | **Tool execution**       | Tool registry, reflection, validation             |
+| `blueprint/`    | **Blueprint management** | Blueprint loading and validation                  |
+| `context/`      | **Context generation**   | Context cards, context loading, budget allocation |
+| `skills/`       | **Skills and criteria**  | Skills service, evaluation criteria               |
+| `cost/`         | **Cost tracking**        | LLM token cost tracking                           |
+| `notification/` | **Notifications**        | User notifications                                |
+| `artifact/`     | **Artifact tracking**    | Code artifacts, reviews, mission reports          |
 
 ### Cross-Cutting Concerns
 
@@ -166,12 +164,18 @@ src/services/
 
 The following directories have been extracted into standalone packages and **no longer exist** under `src/services/`. Import from `@exaix/<package>` instead.
 
-| Old path                    | Package         | Import from          |
-| --------------------------- | --------------- | -------------------- |
-| `src/services/memory/`      | `@exaix/memory` | `@exaix/memory`      |
-| `src/services/memory_bank/` | `@exaix/memory` | `@exaix/memory`      |
-| `src/services/portal/`      | `@exaix/portal` | `@exaix/portal`      |
-| `src/services/logger/`      | `@exaix/core`   | `@exaix/core/logger` |
+| Old path                                   | Package          | Import from          |
+| ------------------------------------------ | ---------------- | -------------------- |
+| `src/services/memory/`                     | `@exaix/memory`  | `@exaix/memory`      |
+| `src/services/memory_bank/`                | `@exaix/memory`  | `@exaix/memory`      |
+| `src/services/portal/`                     | `@exaix/portal`  | `@exaix/portal`      |
+| `src/services/logger/`                     | `@exaix/core`    | `@exaix/core/logger` |
+| `src/services/routing/`                    | `@exaix/routing` | `@exaix/routing`     |
+| `src/services/context/token_counter.ts`    | `@exaix/core`    | `@exaix/core/func`   |
+| `src/services/context/code_parser.ts`      | `@exaix/core`    | `@exaix/core/func`   |
+| `src/services/context/prompt_context.ts`   | `@exaix/core`    | `@exaix/core/func`   |
+| `src/services/agent/agent_capabilities.ts` | `@exaix/core`    | `@exaix/core/func`   |
+| `src/services/agent/prompt_formatter.ts`   | `@exaix/core`    | `@exaix/core/func`   |
 
 ---
 
@@ -345,7 +349,6 @@ export * from "./agent_executor.ts";
 export * from "./agent_runner.ts";
 export * from "./reflexive_agent.ts";
 export * from "./execution_loop.ts";
-export * from "./agent_capabilities.ts";
 ```
 
 ---

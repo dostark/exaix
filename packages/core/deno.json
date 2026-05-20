@@ -19,6 +19,7 @@
     "@exaix/core/logger": "./src/logger/mod.ts",
     "@exaix/core/config": "./src/config/mod.ts",
     "@exaix/core/cost": "./src/cost/mod.ts",
+    "@exaix/core/func": "./src/func/mod.ts",
     "@exaix/core/skills": "./src/skills/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
