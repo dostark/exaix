@@ -3,7 +3,7 @@
  * @path src/services/agent/agent_entrypoint.ts
  * @description Entry point for spawned agent subprocesses.
  * @architectural-layer Services
- * @related-files [src/services/agent/strategies/mcp_agent_strategy.ts]
+ * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts]
  */
 
 import { TextLineStream } from "@std/streams";

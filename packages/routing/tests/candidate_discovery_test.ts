@@ -1,3 +1,4 @@
+/** @module CandidateDiscoveryTest */
 import { assertEquals } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { CandidateDiscovery } from "@exaix/routing";

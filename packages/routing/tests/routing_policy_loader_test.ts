@@ -1,3 +1,4 @@
+/** @module RoutingPolicyLoaderTest */
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";

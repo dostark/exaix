@@ -1,3 +1,4 @@
+/** @module IdentityPerformanceRepositoryTest */
 import { assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";

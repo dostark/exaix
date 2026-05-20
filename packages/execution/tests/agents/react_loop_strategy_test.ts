@@ -1,6 +1,6 @@
 /**
  * @module ReActLoopStrategyTest
- * @path tests/agents/react_loop_strategy_test.ts
+ * @path packages/execution/tests/agents/react_loop_strategy_test.ts
  * @description Unit tests for ReActLoopStrategy.
  */
 

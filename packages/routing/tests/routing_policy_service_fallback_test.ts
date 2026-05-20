@@ -1,3 +1,4 @@
+/** @module RoutingPolicyServiceFallbackTest */
 import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";

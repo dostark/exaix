@@ -1,3 +1,4 @@
+/** @module CapabilityMatcherTest */
 import { assertEquals, assertExists } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { CapabilityMatcher } from "@exaix/routing";

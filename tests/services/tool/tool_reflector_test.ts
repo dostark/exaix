@@ -78,7 +78,7 @@ function createMockAgentRunner(responses: string[]): IToolAgentExecutor {
     run(_blueprint, _request) {
       const response = responses[Math.min(callCount, responses.length - 1)];
       callCount++;
-      return { content: response };
+      return Promise.resolve({ content: response });
     },
   };
 }
@@ -428,7 +428,7 @@ Deno.test("[createStrictToolReflector] creates strict reflector", async () => {
     run: () => {
       const content = mockResponses[Math.min(callCount, mockResponses.length - 1)];
       callCount++;
-      return { content };
+      return Promise.resolve({ content });
     },
   };
   const validator = createOutputValidator({ autoRepair: true });
@@ -450,7 +450,7 @@ Deno.test("[createStrictToolReflector] creates strict reflector", async () => {
     run: () => {
       const content = mockResponsesWithRetry[Math.min(callCount, mockResponsesWithRetry.length - 1)];
       callCount++;
-      return { content };
+      return Promise.resolve({ content });
     },
   };
   const reflector2 = createStrictToolReflector(mockRunner2, validator);
@@ -466,9 +466,7 @@ Deno.test("[createFastToolReflector] creates fast reflector", async () => {
   ];
 
   const mockRunner: IToolAgentExecutor = {
-    run: () => {
-      return { content: mockResponses[0] };
-    },
+    run: () => Promise.resolve({ content: mockResponses[0] }),
   };
   const validator = createOutputValidator({ autoRepair: true });
   const reflector = createFastToolReflector(mockRunner, validator);

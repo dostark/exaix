@@ -6,7 +6,7 @@
  * @related-files ["packages/core/src/errors/safe_error.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 
 /**
  * Safe error that prevents information leakage
@@ -19,7 +19,7 @@ export class SafeError extends Error {
     userMessage: string,
     errorCode: string,
     internalError?: Error,
-    logger?: EventLogger,
+    logger?: IEventLogger,
   ) {
     super(userMessage);
     this.name = "SafeError";

@@ -1,6 +1,6 @@
 /**
  * @module StrategyRegistryTest
- * @path tests/agents/strategy_registry_test.ts
+ * @path packages/execution/tests/agents/strategy_registry_test.ts
  * @description Unit tests for StrategyRegistry and IExecutionStrategy registration.
  */
 

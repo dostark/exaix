@@ -13,3 +13,5 @@ export { createMockProvider } from "../../tests/helpers/mock_provider.ts";
 export { NullEmbeddingStub, NullMemoryBankStub } from "../../tests/helpers/memory_test_helper.ts";
 export { createStubConfig, createStubDisplay, createStubGit } from "../../tests/helpers/test_helpers.ts";
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
+export { readFixtureTextSync } from "../../tests/helpers/fixtures.ts";
+export { makeGenerateResult } from "../../tests/helpers/test_helpers.ts";

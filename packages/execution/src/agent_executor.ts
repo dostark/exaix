@@ -12,7 +12,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { SafeError } from "@exaix/core/errors";
@@ -135,7 +135,7 @@ export class AgentExecutor {
   constructor(
     private config: Config,
     private db: IDatabaseService,
-    private logger: EventLogger,
+    private logger: IEventLogger,
     private pathResolver: PathResolver,
     private permissions: PortalPermissionsService,
     private provider?: IModelProvider,

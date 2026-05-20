@@ -28,6 +28,7 @@
     "@exaix/portal": "../portal/mod.ts",
     "@exaix/memory": "../memory/mod.ts",
     "@exaix/tool-runtime": "../tool-runtime/mod.ts",
+    "@exaix/testing": "../testing/mod.ts",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
   },
   "exports": {

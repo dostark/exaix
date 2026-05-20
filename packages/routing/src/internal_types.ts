@@ -1,3 +1,8 @@
+/**
+ * @module RoutingInternalTypes
+ * @path packages/routing/src/internal_types.ts
+ * @description Internal types for routing subpackage consumers (BlueprintLoader, ILoadedBlueprint, IBucketRule).
+ */
 import type { JSONValue } from "@exaix/core";
 
 export interface ILoadedBlueprint {
