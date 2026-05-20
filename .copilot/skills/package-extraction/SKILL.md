@@ -172,6 +172,12 @@ Script toolkit
    - Update phase-76-package-migration.md when package state, completed milestones, or next steps change
    - Update Exaix_Packages.md only when ownership definitions or package taxonomy change
    - Update Exaix_Package_Migration_Plan.md only when strategic sequencing or target mapping changes
+   - Update src/services/README.md whenever a directory under src/services/ is migrated or deleted:
+     - Remove the directory entry from the "Directory Structure" tree
+     - Remove its row from the appropriate "Folder Responsibilities" table
+     - Add a row to the "Migrated to packages" table (old path → package → import alias)
+     - Update the "Common Import Migrations" table with the new canonical import path
+     - Update any "Choose the Right Location" guidance that mentioned the removed directory
 
 Decision rules
 - Good extraction targets:
@@ -197,6 +203,7 @@ Decision rules
 - If a migrated file still mixes unrelated responsibilities that should now live in separate package sub-modules, the extraction is incomplete even if the file compiles in its new location
 
 Do / Don't
+- ✅ Do update src/services/README.md whenever a src/services/ directory is migrated or deleted: remove the tree entry, remove the folder-responsibilities row, and add a row to the "Migrated to packages" table
 - ✅ Do preserve root behavior and quality gates during the extraction
 - ✅ Do put ALL test files (`*_test.ts`) exclusively in `packages/<package>/tests/` — this is the only valid test folder in a package
 - ✅ Do create a package-owned testing subpath (`packages/<package>/testing/`) when package-specific test support must be shared with tests outside the package — this is a published support API, not a test folder

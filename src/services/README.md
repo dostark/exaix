@@ -40,15 +40,6 @@ src/services/
 │   ├── agent_capabilities.ts         # Agent capability definitions
 │   └── mod.ts                        # Barrel export
 │
-├── memory/                 # Memory services
-│   ├── memory_bank.ts                # Project and global memory
-│   ├── memory_extractor.ts           # Extract learnings from executions
-│   ├── learning_extractor.ts         # Learning extraction utilities
-│   ├── memory_embedding.ts           # Vector embeddings for memory
-│   ├── memory_search.ts              # Search memory by content/embedding
-│   ├── session_memory.ts             # Request session memory
-│   └── mod.ts                        # Barrel export
-│
 ├── request/                # Request processing
 │   ├── request.ts                    # Request service CRUD
 │   ├── request_processor.ts          # Main request processing pipeline
@@ -108,10 +99,6 @@ src/services/
 │   ├── archive_service.ts            # Archive management
 │   └── mod.ts                        # Barrel export
 │
-├── logger/                 # Logging utilities
-│   ├── structured_logger.ts          # Structured logging to files
-│   └── mod.ts                        # Barrel export
-│
 ├── flow/                   # Flow execution services
 │   ├── flow_reporter.ts              # Flow execution reporting
 │   ├── flow_validator.ts             # Flow validation
@@ -127,12 +114,14 @@ src/services/
 ├── adapters/               # Service adapters for DI
 ├── middleware/             # Middleware pipeline
 ├── decorators/             # TypeScript decorators
-├── memory_bank/            # Memory bank submodules
 ├── portal_knowledge/       # Portal knowledge service
 ├── quality_gate/           # Quality gate service
-├── request_analysis/       # Request analysis service
+├── request_analysis/       # Request analysis engine
 └── request_processing/     # Request processing types
 ```
+
+> **Note:** Several directories have been extracted into dedicated packages.
+> Import from the package instead of `src/services/`. See [Migrated to packages](#migrated-to-packages) below.
 
 ---
 
@@ -140,19 +129,17 @@ src/services/
 
 ### Core Infrastructure
 
-| Folder    | Purpose                 | Examples                                    |
-| --------- | ----------------------- | ------------------------------------------- |
-| `core/`   | **Core infrastructure** | Database, event logging, health checks, Git |
-| `logger/` | **Logging utilities**   | Structured file logging                     |
-| `utils/`  | **Utility services**    | JSON repair, file watching, TUI factory     |
-| `flow/`   | **Flow services**       | Flow reporting, validation                  |
+| Folder   | Purpose                 | Examples                                    |
+| -------- | ----------------------- | ------------------------------------------- |
+| `core/`  | **Core infrastructure** | Database, event logging, health checks, Git |
+| `utils/` | **Utility services**    | JSON repair, file watching, TUI factory     |
+| `flow/`  | **Flow services**       | Flow reporting, validation                  |
 
 ### Domain Services
 
 | Folder          | Purpose                  | Examples                                     |
 | --------------- | ------------------------ | -------------------------------------------- |
 | `agent/`        | **Agent orchestration**  | Agent execution, reflexive improvement       |
-| `memory/`       | **Memory operations**    | Memory bank, embeddings, extraction, search  |
 | `request/`      | **Request processing**   | Request CRUD, routing, processing            |
 | `plan/`         | **Planning services**    | Plan generation, execution, parsing          |
 | `portal/`       | **Portal management**    | Portal CRUD, permissions, path resolution    |
@@ -176,11 +163,22 @@ src/services/
 
 | Folder                | Purpose                        |
 | --------------------- | ------------------------------ |
-| `memory_bank/`        | Memory bank internal modules   |
 | `portal_knowledge/`   | Portal knowledge analysis      |
 | `quality_gate/`       | Quality gate and clarification |
 | `request_analysis/`   | Request analysis engine        |
 | `request_processing/` | Request processing types       |
+
+---
+
+## Migrated to packages
+
+The following directories have been extracted into standalone packages and **no longer exist** under `src/services/`. Import from `@exaix/<package>` instead.
+
+| Old path                    | Package         | Import from          |
+| --------------------------- | --------------- | -------------------- |
+| `src/services/memory/`      | `@exaix/memory` | `@exaix/memory`      |
+| `src/services/memory_bank/` | `@exaix/memory` | `@exaix/memory`      |
+| `src/services/logger/`      | `@exaix/core`   | `@exaix/core/logger` |
 
 ---
 
@@ -192,7 +190,7 @@ src/services/
 
 1. **What domain does this service belong to?**
    - Agent execution → `agent/`
-   - Memory operations → `memory/`
+   - Memory operations → `@exaix/memory` package (not `src/services/`)
    - Request handling → `request/`
    - Infrastructure → `core/` or `utils/`
    - Flow execution → `flow/`
@@ -316,6 +314,9 @@ import { EventLogger } from "./event_logger.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
 import { EventLogger } from "../core/event_logger.ts";
 
+// ✅ DO: Import memory-domain services from the package
+import { MemoryBankService } from "@exaix/memory";
+
 // ❌ DON'T: Omit .ts extension
 import { EventLogger } from "./event_logger"; // Missing .ts
 
@@ -333,6 +334,9 @@ import { ToolRegistry } from "./services/tool/tool_registry.ts";
 // ✅ DO: Use barrel exports for cleaner imports
 import { DatabaseService, EventLogger } from "./services/core/mod.ts";
 import { AgentExecutor, AgentRunner } from "./services/agent/mod.ts";
+
+// ✅ DO: Import package-owned modules from their package
+import { MemoryBankService, MemoryEmbeddingService } from "@exaix/memory";
 
 // ✅ DO: Import interfaces from shared
 import type { IMyService } from "./shared/interfaces/i_my_service.ts";
@@ -465,24 +469,25 @@ Use your IDE's "Find References" to update all imports.
 
 ### Common Import Migrations
 
-| Old Path                          | New Path                                        |
-| --------------------------------- | ----------------------------------------------- |
-| `./services/db.ts`                | `./services/core/db.ts`                         |
-| `./services/event_logger.ts`      | `./services/core/event_logger.ts`               |
-| `./services/agent_executor.ts`    | `./services/agent/agent_executor.ts`            |
-| `./services/memory_bank.ts`       | `./services/memory/memory_bank.ts`              |
-| `./services/request.ts`           | `./services/request/request.ts`                 |
-| `./services/plan.ts`              | `./services/plan/plan.ts`                       |
-| `./services/portal.ts`            | `./services/portal/portal.ts`                   |
-| `./services/tool_registry.ts`     | `./services/tool/tool_registry.ts`              |
-| `./services/blueprint_loader.ts`  | `./services/blueprint/blueprint_loader.ts`      |
-| `./services/skills.ts`            | `./services/skills/skills.ts`                   |
-| `./services/cost_tracker.ts`      | `./services/cost/cost_tracker.ts`               |
-| `./services/notification.ts`      | `./services/notification/notification.ts`       |
-| `./services/artifact_registry.ts` | `./services/artifact/artifact_registry.ts`      |
-| `./services/structured_logger.ts` | `packages/core/src/logger/structured_logger.ts` |
-| `./services/flow_reporter.ts`     | `./services/flow/flow_reporter.ts`              |
-| `./services/json_repair.ts`       | `./services/utils/json_repair.ts`               |
+| Old Path                           | New Path                                   |
+| ---------------------------------- | ------------------------------------------ |
+| `./services/db.ts`                 | `./services/core/db.ts`                    |
+| `./services/event_logger.ts`       | `./services/core/event_logger.ts`          |
+| `./services/agent_executor.ts`     | `./services/agent/agent_executor.ts`       |
+| `./services/memory_bank.ts`        | `@exaix/memory` (package)                  |
+| `./services/memory/memory_bank.ts` | `@exaix/memory` (package)                  |
+| `./services/request.ts`            | `./services/request/request.ts`            |
+| `./services/plan.ts`               | `./services/plan/plan.ts`                  |
+| `./services/portal.ts`             | `./services/portal/portal.ts`              |
+| `./services/tool_registry.ts`      | `./services/tool/tool_registry.ts`         |
+| `./services/blueprint_loader.ts`   | `./services/blueprint/blueprint_loader.ts` |
+| `./services/skills.ts`             | `./services/skills/skills.ts`              |
+| `./services/cost_tracker.ts`       | `./services/cost/cost_tracker.ts`          |
+| `./services/notification.ts`       | `./services/notification/notification.ts`  |
+| `./services/artifact_registry.ts`  | `./services/artifact/artifact_registry.ts` |
+| `./services/structured_logger.ts`  | `@exaix/core/logger` (package)             |
+| `./services/flow_reporter.ts`      | `./services/flow/flow_reporter.ts`         |
+| `./services/json_repair.ts`        | `./services/utils/json_repair.ts`          |
 
 ---
 
