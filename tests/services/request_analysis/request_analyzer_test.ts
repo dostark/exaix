@@ -10,7 +10,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
+import { createOutputValidator } from "@exaix/tool-runtime";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";

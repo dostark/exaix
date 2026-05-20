@@ -1,13 +1,7 @@
-/**
- * @module IdentityPerformanceRepositoryTest
- * @path tests/services/routing/identity_performance_repository_test.ts
- * @description Unit tests for the IdentityPerformanceRepository routing performance aggregation.
- */
-
 import { assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
-import type { IDatabaseService } from "../../../src/services/core/db.ts";
-import { IdentityPerformanceRepository } from "../../../src/services/routing/identity_performance_repository.ts";
+import type { IDatabaseService } from "@exaix/core/types";
+import { IdentityPerformanceRepository } from "@exaix/routing";
 
 const makeStubDb = (records: IActivityRecord[]): IDatabaseService => ({
   queryActivity: () => Promise.resolve(records),

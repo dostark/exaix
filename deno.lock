@@ -34,13 +34,16 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/regexp@^1.0.2": "1.0.2",
     "jsr:@std/semver@^1.0.8": "1.0.8",
+    "jsr:@std/streams@^1.0.13": "1.1.0",
     "jsr:@std/streams@^1.1.0": "1.1.0",
     "jsr:@std/testing@^1.0.18": "1.0.18",
     "jsr:@std/text@^1.0.17": "1.0.18",
     "jsr:@std/text@^1.0.18": "1.0.18",
     "jsr:@std/toml@^1.0.11": "1.0.11",
+    "jsr:@std/yaml@^1.0.2": "1.1.0",
     "jsr:@std/yaml@^1.1.0": "1.1.0",
     "npm:@babel/parser@7.29.3": "7.29.3",
+    "npm:sql.js@*": "1.14.1",
     "npm:typescript@6.0.3": "6.0.3",
     "npm:zod@*": "4.3.6"
   },
@@ -224,6 +227,9 @@
         "@babel/helper-string-parser",
         "@babel/helper-validator-identifier"
       ]
+    },
+    "sql.js@1.14.1": {
+      "integrity": "sha512-gcj8zBWU5cFsi9WUP+4bFNXAyF1iRpA3LLyS/DP5xlrNzGmPIizUeBggKa8DbDwdqaKwUcTEnChtd2grWo/x/A=="
     },
     "typescript@6.0.3": {
       "integrity": "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==",
@@ -1221,6 +1227,14 @@
           "jsr:@std/testing@^1.0.18"
         ]
       },
+      "packages/routing": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/path@^1.1.4",
+          "jsr:@std/testing@^1.0.18",
+          "jsr:@std/yaml@^1.0.2"
+        ]
+      },
       "packages/storage-sqlite": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",
@@ -1231,6 +1245,15 @@
       "packages/testing": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19"
+        ]
+      },
+      "packages/tool-runtime": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/fs@^1.0.23",
+          "jsr:@std/path@^1.1.4",
+          "jsr:@std/streams@^1.0.13",
+          "jsr:@std/testing@^1.0.18"
         ]
       }
     }

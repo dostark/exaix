@@ -10,7 +10,7 @@ import { DaemonStatus, ToolName } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
 import { join } from "@std/path";
 import type { DatabaseService } from "../../src/services/core/db.ts";
-import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createToolRegistryTestContext } from "../helpers/tool_registry_test_helper.ts";

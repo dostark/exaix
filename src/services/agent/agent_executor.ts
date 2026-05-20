@@ -47,7 +47,6 @@ import {
   GIT_EMPTY_SHA,
 } from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import { isReadOnlyAgentCapabilities, requiresGitTracking } from "./agent_capabilities.ts";
 import {
   ChangesetResultSchema,
   type IAgentExecutionOptions,
@@ -65,13 +64,13 @@ import {
   SecurityMode,
 } from "@exaix/core";
 import { InputValidator } from "@exaix/schemas/input_validation.ts";
-import { buildPortalContextBlock } from "../context/prompt_context.ts";
+import { buildPortalContextBlock, isReadOnlyAgentCapabilities, requiresGitTracking } from "@exaix/core/func";
 import type { JSONValue } from "@exaix/core";
 import { StrategyRegistry } from "./strategies/strategy_registry.ts";
 import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
-import { ToolRegistry } from "../tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { PromptBudgetAllocator } from "../context/prompt_budget_allocator.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 

@@ -41,7 +41,6 @@ const GIT_TESTING_SHIM_OFFENDERS = [
   "tests/agents/git_audit_parser_test.ts",
   "tests/agents/SHA_accuracy_test.ts",
   "tests/security/agent_isolation_audit_test.ts",
-  "tests/security/portal_permissions_test.ts",
   "tests/integration/36_portal_workspace_integration_test.ts",
   "tests/cli/review_commands_coverage_test.ts",
   "tests/cli/review_commands_test.ts",

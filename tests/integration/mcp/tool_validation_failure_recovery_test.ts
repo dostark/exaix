@@ -8,17 +8,14 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { Severity, ToolSideEffectScope } from "@exaix/core";
-import {
-  TOOL_VALIDATION_EVENT_FAIL_CLOSED,
-  TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS,
-} from "../../../src/services/tool/tool_validation_reporter.ts";
+import { TOOL_VALIDATION_EVENT_FAIL_CLOSED, TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS } from "@exaix/tool-runtime";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import { validateMCPToolResponse } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "../../../src/mcp/server.ts";
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";

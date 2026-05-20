@@ -9,11 +9,11 @@
  * 3. Provide structured error reporting for validation failures
  *
  * @architectural-layer Services
- * @related-files ["src/services/plan/plan_writer.ts", src/services/tool/output_validator.ts]
+ * @related-files ["src/services/plan/plan_writer.ts", "packages/tool-runtime/src/output_validator.ts"]
  */
 
 import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";
-import { createOutputValidator, type OutputValidator } from "../tool/output_validator.ts";
+import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
 import { describeSchema } from "@exaix/schemas/schema_describer.ts";
 import type { JSONValue } from "@exaix/core";
 

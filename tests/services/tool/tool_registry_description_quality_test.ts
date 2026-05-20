@@ -8,7 +8,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "../../helpers/config.ts";
 
 const MIN_DESCRIPTION_LENGTH = 60;

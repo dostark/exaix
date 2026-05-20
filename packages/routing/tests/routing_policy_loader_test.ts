@@ -1,13 +1,7 @@
-/**
- * @module RoutingPolicyLoaderTest
- * @path tests/services/routing/routing_policy_loader_test.ts
- * @description Tests for the routing policy loader service.
- */
-
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { createMockConfig } from "../../helpers/config.ts";
-import { RoutingPolicyLoader } from "../../../src/services/routing/routing_policy_loader.ts";
+import { createMockConfig } from "@exaix/testing";
+import { RoutingPolicyLoader } from "@exaix/routing";
 
 Deno.test("RoutingPolicyLoader: missing file returns default policy", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "routing-policy-loader-missing-" });

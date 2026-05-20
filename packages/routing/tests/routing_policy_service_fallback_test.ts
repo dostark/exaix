@@ -1,9 +1,3 @@
-/**
- * @module RoutingPolicyServiceFallbackTest
- * @path tests/services/routing/routing_policy_service_fallback_test.ts
- * @description Verifies fallback behavior when no routing rules match.
- */
-
 import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";

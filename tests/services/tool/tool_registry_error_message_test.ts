@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { ToolName } from "@exaix/core";
 

@@ -10,4 +10,3 @@ export * from "./agent_executor.ts";
 export * from "./agent_runner.ts";
 export * from "./reflexive_agent.ts";
 export * from "./execution_loop.ts";
-export * from "./agent_capabilities.ts";

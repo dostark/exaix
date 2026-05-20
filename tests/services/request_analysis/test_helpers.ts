@@ -8,7 +8,7 @@ import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/reque
 import { AnalysisMode } from "@exaix/core/types";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
+import { createOutputValidator } from "@exaix/tool-runtime";
 import { RequestAnalyzer } from "../../../src/services/request_analysis/request_analyzer.ts";
 import { LlmAnalyzer } from "../../../src/services/request_analysis/llm_analyzer.ts";
 import type { IDatabaseService } from "@exaix/core/types";

@@ -17,7 +17,7 @@ import { Severity, ToolSideEffectScope } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "../../src/mcp/server.ts";
-import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

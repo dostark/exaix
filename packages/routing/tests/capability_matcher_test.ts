@@ -1,34 +1,38 @@
-/**
- * @module CapabilityMatcherTest
- * @path tests/services/routing/capability_matcher_test.ts
- * @description Unit tests for matching blueprint capabilities to routing criteria.
- */
-
 import { assertEquals, assertExists } from "@std/assert";
-import { CapabilityMatcher } from "../../../src/services/routing/capability_matcher.ts";
-import type { ILoadedBlueprint } from "../../../src/services/blueprint/blueprint_loader.ts";
+import type { JSONValue } from "@exaix/core";
+import { CapabilityMatcher } from "@exaix/routing";
 
-function createFrontmatter(overrides: Partial<ILoadedBlueprint["frontmatter"]> = {}): ILoadedBlueprint["frontmatter"] {
+interface TestBlueprintFrontmatter {
+  capabilities?: string[];
+  version?: string;
+  deprecated?: boolean;
+  language?: string;
+  task_type?: string;
+  portal_type?: string;
+  [key: string]: JSONValue;
+}
+
+interface TestBlueprint {
+  identityId: string;
+  version: string;
+  capabilities: string[];
+  frontmatter: TestBlueprintFrontmatter;
+}
+
+function createFrontmatter(overrides: Partial<TestBlueprintFrontmatter> = {}): TestBlueprintFrontmatter {
   return {
     capabilities: [],
     version: "1.0.0",
-    reflexive: false,
-    max_reflexion_iterations: 3,
-    memory_enabled: false,
     deprecated: false,
     ...overrides,
   };
 }
 
-const makeBlueprint = (overrides: Partial<ILoadedBlueprint>): ILoadedBlueprint => ({
+const makeBlueprint = (overrides: Partial<TestBlueprint>): TestBlueprint => ({
   identityId: overrides.identityId ?? "test-agent",
-  name: overrides.name ?? "Test Agent",
-  model: overrides.model ?? "anthropic:claude-sonnet-4-20250514",
-  capabilities: overrides.capabilities ?? ["code_review", "documentation"],
-  systemPrompt: overrides.systemPrompt ?? "You are a test agent.",
   version: overrides.version ?? "1.0.0",
+  capabilities: overrides.capabilities ?? ["code_review", "documentation"],
   frontmatter: overrides.frontmatter ?? createFrontmatter(),
-  path: overrides.path ?? "/tmp/test-agent.md",
 });
 
 Deno.test("CapabilityMatcher: matches blueprint with requested capability", () => {

@@ -16,7 +16,7 @@ import {
   validateMCPToolResponse,
 } from "@exaix/schemas/tool_result_validator.ts";
 import { MCPServer } from "../../src/mcp/server.ts";
-import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

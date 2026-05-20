@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { stub } from "@std/testing/mock";
 import { ToolName } from "@exaix/core";

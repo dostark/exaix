@@ -4,7 +4,7 @@
  * @description Shared setup helpers for tool registry tests.
  */
 
-import { ToolRegistry } from "../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { JSONObject } from "@exaix/core/types";
 

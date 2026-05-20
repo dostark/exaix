@@ -16,7 +16,7 @@ import { ActivityActor, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IDatabaseService } from "@exaix/core/types";
-import { ToolRegistry } from "../services/tool/tool_registry.ts";
+import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
@@ -50,7 +50,6 @@ import {
   RequestAdapter,
   SkillsAdapter,
 } from "../services/adapters/mod.ts";
-import { OutputValidator } from "../services/tool/output_validator.ts";
 
 export interface IServiceContext extends ICliApplicationContext {
   success: boolean;
@@ -171,7 +170,7 @@ export async function initializeServices(
 
     const toolRegistry = new ToolRegistry({
       config: cfg,
-      db: dbLocal as DatabaseService, // ToolRegistry expects concrete DatabaseService
+      db: dbLocal as DatabaseService,
     });
 
     const context: ICliApplicationContext = {

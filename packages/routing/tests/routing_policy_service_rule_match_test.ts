@@ -1,9 +1,3 @@
-/**
- * @module RoutingPolicyServiceRuleMatchTest
- * @path tests/services/routing/routing_policy_service_rule_match_test.ts
- * @description Verifies that routing policy rules select the preferred identity/version.
- */
-
 import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";

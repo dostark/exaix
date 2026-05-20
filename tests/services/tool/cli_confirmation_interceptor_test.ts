@@ -10,7 +10,7 @@ import {
   TOOL_CONFIRMATION_EVENT_APPROVED,
   TOOL_CONFIRMATION_EVENT_DENIED,
 } from "@exaix/core";
-import { CliConfirmationInterceptor } from "../../../src/services/tool/cli_confirmation_interceptor.ts";
+import { CliConfirmationInterceptor } from "@exaix/tool-runtime";
 import { createToolConfirmationRequest, MockActivityJournal } from "./helpers/confirmation_test_helpers.ts";
 
 Deno.test("CliConfirmationInterceptor: 'y' input approves the request", async () => {

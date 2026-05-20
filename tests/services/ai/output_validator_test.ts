@@ -9,11 +9,7 @@ import { assert, assertEquals, assertExists, assertFalse } from "@std/assert";
 import { CritiqueSeverity, EvaluationVerdict } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { z } from "zod";
-import {
-  createOutputValidator,
-  createPlanValidator,
-  OutputValidator,
-} from "../../../src/services/tool/output_validator.ts";
+import { createOutputValidator, createPlanValidator, OutputValidator } from "@exaix/tool-runtime";
 
 // ============================================================================
 // XML Tag Parsing Tests

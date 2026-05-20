@@ -8,12 +8,12 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "../core/db.ts";
-import type { IRoutingPolicyLoadResult } from "../routing/routing_policy_loader.ts";
+import type { IRoutingPolicyLoadResult } from "@exaix/routing";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
-import { CandidateDiscovery } from "../routing/candidate_discovery.ts";
-import { IdentityPerformanceRepository } from "../routing/identity_performance_repository.ts";
-import { RoutingPolicyLoader } from "../routing/routing_policy_loader.ts";
-import { RoutingPolicyService } from "../routing/routing_policy_service.ts";
+import { CandidateDiscovery } from "@exaix/routing";
+import { IdentityPerformanceRepository } from "@exaix/routing";
+import { RoutingPolicyLoader } from "@exaix/routing";
+import { RoutingPolicyService } from "@exaix/routing";
 
 export interface ICreateRoutingPolicyServiceOptions {
   config: Config;

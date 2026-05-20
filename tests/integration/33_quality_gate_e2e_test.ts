@@ -15,7 +15,7 @@ import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
 import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
 import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
 import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
-import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
+import { createOutputValidator } from "@exaix/tool-runtime";
 import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,

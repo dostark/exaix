@@ -20,7 +20,7 @@ import {
   REMEDIATION_MODE_RETRY_WITH_BACKOFF,
 } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidationFailure } from "@exaix/schemas/tool_result_validator.ts";
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "../../helpers/config.ts";
 import {
   createRemediationPolicy,

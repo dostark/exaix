@@ -19,7 +19,7 @@ import {
   type IBlueprint,
   type IParsedRequest,
 } from "./agent_runner.ts";
-import { createOutputValidator, type IOutputValidator } from "../tool/output_validator.ts";
+import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
 import { logDebug } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { LogMethod } from "../decorators/logging.ts";

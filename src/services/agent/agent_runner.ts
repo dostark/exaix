@@ -21,9 +21,9 @@ import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
-import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "../tool/output_validator.ts";
+import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "../../helpers/text.ts";
-import { renderSkillsSection } from "./prompt_formatter.ts";
+import { renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
   AGENT_EVENT_EXECUTION_COMPLETED,

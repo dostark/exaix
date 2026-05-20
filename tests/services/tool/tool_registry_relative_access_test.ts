@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import type { Config } from "@exaix/schemas/config.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import { ToolName } from "@exaix/core";

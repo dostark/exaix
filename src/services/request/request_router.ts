@@ -17,13 +17,13 @@ import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import { PORTAL_CONTEXT_KEY, RequestKind } from "@exaix/core";
-import { buildPortalContextBlock } from "../context/prompt_context.ts";
+import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";
-import type { IRoutingPolicyService } from "../routing/routing_policy_service.ts";
+import type { IRoutingPolicyService } from "@exaix/routing";
 import { GitBranchName } from "@exaix/git";
 
 /**

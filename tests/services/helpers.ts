@@ -13,7 +13,7 @@ import type {
   IBlueprint,
   IParsedRequest,
 } from "../../src/services/agent/agent_runner.ts";
-import type { IRoutingPolicyService } from "../../src/services/routing/routing_policy_service.ts";
+import type { IRoutingPolicyService } from "@exaix/routing";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILogEvent } from "@exaix/core";

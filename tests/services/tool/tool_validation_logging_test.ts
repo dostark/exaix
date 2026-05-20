@@ -17,7 +17,7 @@ import {
   TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS,
   TOOL_VALIDATION_EVENT_RETRY_EXHAUSTED,
   TOOL_VALIDATION_EVENT_RETRY_SUCCESS,
-} from "../../../src/services/tool/tool_validation_reporter.ts";
+} from "@exaix/tool-runtime";
 import {
   type IToolResultRemediationPolicy,
   REMEDIATION_MODE_ESCALATE_ONLY,

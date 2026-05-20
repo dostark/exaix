@@ -18,7 +18,7 @@ import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.t
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";
 import { buildParsedRequest } from "../../src/services/request/request_common.ts";
-import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
+import { createOutputValidator } from "@exaix/tool-runtime";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import type { EnhancedRequest } from "@exaix/memory";

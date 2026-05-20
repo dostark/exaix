@@ -11,11 +11,7 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import {
-  createOutputValidator,
-  type IOutputSchemaName,
-  type IOutputValidator,
-} from "../../../src/services/tool/output_validator.ts";
+import { createOutputValidator, type IOutputSchemaName, type IOutputValidator } from "@exaix/tool-runtime";
 import { LlmAnalyzer } from "../../../src/services/request_analysis/llm_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";

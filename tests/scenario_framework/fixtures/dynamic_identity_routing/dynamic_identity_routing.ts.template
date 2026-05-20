@@ -1,8 +1,6 @@
 import { join } from "https://deno.land/std/path/mod.ts";
 import { RequestRouter } from "{{REPO_ROOT}}src/services/request/request_router.ts";
-import { RoutingPolicyService } from "{{REPO_ROOT}}src/services/routing/routing_policy_service.ts";
-import { RoutingPolicyLoader } from "{{REPO_ROOT}}src/services/routing/routing_policy_loader.ts";
-import { CandidateDiscovery } from "{{REPO_ROOT}}src/services/routing/candidate_discovery.ts";
+import { RoutingPolicyService, RoutingPolicyLoader, CandidateDiscovery } from "@exaix/routing";
 import { BlueprintLoader } from "{{REPO_ROOT}}src/services/blueprint/blueprint_loader.ts";
 
 const root = Deno.cwd();

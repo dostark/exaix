@@ -10,7 +10,7 @@ import { LearningCategory, PortalOperation, ToolName } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
 import { join } from "@std/path";
 
-import { ToolRegistry } from "../../../src/services/tool/tool_registry.ts";
+import { ToolRegistry } from "@exaix/tool-runtime";
 import { ExaPathDefaults } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { DatabaseService as DatabaseService } from "../../../src/services/core/db.ts";

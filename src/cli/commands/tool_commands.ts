@@ -3,7 +3,7 @@
  * @path src/cli/commands/tool_commands.ts
  * @description CLI commands for listing, approving, and denying queued tool confirmations.
  * @architectural-layer CLI
- * @related-files [src/cli/exactl.ts, src/services/core/db.ts, src/services/tool/notification_queue_confirmation_interceptor.ts]
+ * @related-files [src/cli/exactl.ts, src/services/core/db.ts, packages/tool-runtime/src/notification_queue_confirmation_interceptor.ts]
  */
 
 import { z } from "zod";

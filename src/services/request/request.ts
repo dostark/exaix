@@ -21,7 +21,7 @@ import { AnalysisMode } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IOutputValidator } from "../tool/output_validator.ts";
+import type { IOutputValidator } from "@exaix/tool-runtime";
 
 export interface IRequestServiceConfig {
   config: Config;

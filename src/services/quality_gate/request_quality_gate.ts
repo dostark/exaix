@@ -10,7 +10,7 @@
  */
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IOutputValidator } from "../tool/output_validator.ts";
+import type { IOutputValidator } from "@exaix/tool-runtime";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas/request_quality_assessment.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";

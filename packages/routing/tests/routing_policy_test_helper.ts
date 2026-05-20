@@ -1,15 +1,6 @@
-/**
- * @module RoutingPolicyTestHelper
- * @path tests/services/routing/routing_policy_test_helper.ts
- * @description Shared factories for routing policy service tests.
- */
-
 import type { IRoutingCandidate, IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
-import {
-  type IRoutingPolicyServiceOptions,
-  RoutingPolicyService,
-} from "../../../src/services/routing/routing_policy_service.ts";
-import type { IIdentityPerformanceSnapshot } from "../../../src/services/routing/identity_performance_repository.ts";
+import { type IRoutingPolicyServiceOptions, RoutingPolicyService } from "@exaix/routing";
+import type { IIdentityPerformanceSnapshot } from "@exaix/routing";
 
 const TEST_EXPERIMENT_SALT = "test-salt";
 

@@ -11,7 +11,7 @@ import {
   TOOL_CONFIRMATION_NOTIFY_TYPE,
 } from "@exaix/core";
 import type { INotificationService } from "@exaix/core/types";
-import { NotificationQueueConfirmationInterceptor } from "../../../src/services/tool/notification_queue_confirmation_interceptor.ts";
+import { NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createToolConfirmationRequest, MockActivityJournal } from "./helpers/confirmation_test_helpers.ts";
 

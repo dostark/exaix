@@ -47,7 +47,7 @@ import type {
   IRequestQualityGateService,
 } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
-import { buildPortalContextBlock } from "../context/prompt_context.ts";
+import { buildPortalContextBlock } from "@exaix/core/func";
 import { EventLogger } from "@exaix/core/logger";
 import { FlowValidatorImpl } from "../flow/flow_validator.ts";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
@@ -60,7 +60,7 @@ import { LogMethod } from "../decorators/logging.ts";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
 import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
-import { OutputValidator } from "../tool/output_validator.ts";
+import { OutputValidator } from "@exaix/tool-runtime";
 import type { LogMetadata } from "@exaix/core/types";
 import { MiddlewarePipeline } from "../middleware/pipeline.ts";
 import type { IServiceContext } from "@exaix/core/types";

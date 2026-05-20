@@ -1,9 +1,3 @@
-/**
- * @module RoutingPolicyServiceExperimentSplitTest
- * @path tests/services/routing/routing_policy_service_experiment_split_test.ts
- * @description Verifies deterministic experiment bucket selection for routing rules.
- */
-
 import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";

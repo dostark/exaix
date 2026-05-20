@@ -10,7 +10,7 @@ import { join } from "@std/path";
 import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
-import { ProcessManager } from "../../../src/services/agent/process_manager.ts";
+import { ProcessManager } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { SecurityMode } from "@exaix/core";

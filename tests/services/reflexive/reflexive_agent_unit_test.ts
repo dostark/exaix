@@ -21,12 +21,7 @@ import type {
 } from "../../../src/services/agent/agent_runner.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import type {
-  IOutputValidator,
-  IValidationMetrics,
-  IValidationResult,
-  OutputValidator,
-} from "../../../src/services/tool/output_validator.ts";
+import type { IOutputValidator, IValidationMetrics, IValidationResult, OutputValidator } from "@exaix/tool-runtime";
 import { createStubDb } from "../../helpers/test_helpers.ts";
 import type { JSONValue } from "@exaix/core/types";
 
