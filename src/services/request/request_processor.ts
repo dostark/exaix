@@ -38,7 +38,7 @@ import {
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
 } from "@exaix/core";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
-import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { DEFAULT_AI_MODEL, DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type {
   IApplicationContext,
   IPortalKnowledgeService,
@@ -69,6 +69,7 @@ import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
 
 import type { AnalysisMode } from "@exaix/core/types";
+import { getValidatedEnvOverrides } from "@exaix/core/config";
 import { buildQualityGateConfig, RequestQualityGate } from "../quality_gate/request_quality_gate.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
@@ -588,6 +589,27 @@ export class RequestProcessor {
     });
   }
 
+  private getProviderSelectionConfig(): Config {
+    const envOverrides = getValidatedEnvOverrides();
+    if (!envOverrides.EXA_LLM_PROVIDER) {
+      return this.config;
+    }
+
+    return {
+      ...this.config,
+      ai: this.config.ai
+        ? {
+          ...this.config.ai,
+          provider: envOverrides.EXA_LLM_PROVIDER,
+        }
+        : {
+          provider: envOverrides.EXA_LLM_PROVIDER,
+          model: DEFAULT_AI_MODEL,
+          timeout_ms: DEFAULT_AI_TIMEOUT_MS,
+        },
+    };
+  }
+
   private async processAgentRequest(
     frontmatter: IRequestFrontmatter,
     body: string,
@@ -643,7 +665,7 @@ export class RequestProcessor {
       let selectedProviderName: string;
       try {
         selectedProviderName = await this.providerSelector.selectProviderForTask(
-          this.config,
+          this.getProviderSelectionConfig(),
           taskComplexity,
         );
       } catch (selErr) {

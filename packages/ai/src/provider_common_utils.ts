@@ -5,7 +5,7 @@
  * @architectural-layer AI
  * @related-files [src/ai/providers.ts]
  */
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 
 import {
   AuthenticationError,
@@ -121,7 +121,7 @@ export function calculateCost(provider: string, totalTokens: number): number {
 export async function handleProviderResponse<T>(
   response: Response,
   id: string,
-  logger?: EventLogger,
+  logger?: IEventLogger,
   tokenMapper?: ResponseTokenMapper<T>,
 ): Promise<T> {
   if (!response.ok) {
@@ -286,7 +286,7 @@ export async function fetchJsonWithRetries<T>(
     maxAttempts?: number;
     backoffBaseMs?: number;
     timeoutMs?: number;
-    logger?: EventLogger;
+    logger?: IEventLogger;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
   },
 ): Promise<T> {
@@ -335,7 +335,7 @@ export async function performProviderCall<T>(
     maxAttempts?: number;
     backoffBaseMs?: number;
     timeoutMs?: number;
-    logger?: EventLogger;
+    logger?: IEventLogger;
     tokenMapper?: (d: T, providerId?: string) => TokenMap | undefined;
     extractor?: (d: T) => string;
   },

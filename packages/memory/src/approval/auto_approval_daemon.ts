@@ -6,7 +6,7 @@
  * @architectural-layer Services
  * @related-files [src/main.ts, src/services/memory/memory_auto_approval_service.ts, src/services/notification/notification.ts]
  */
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.ts";
 import type { MemoryExtractorService } from "../extraction/memory_extractor.ts";
 import type { INotificationService } from "@exaix/core/types";
@@ -14,7 +14,7 @@ import type { INotificationService } from "@exaix/core/types";
 type INotificationServiceMinimal = Pick<INotificationService, "notifyPendingDigestIfNeeded">;
 type IMemoryExtractorServiceMinimal = Pick<MemoryExtractorService, "listPending">;
 type IAutoApprovalServiceMinimal = Pick<MemoryAutoApprovalService, "runApprovalCycle">;
-type ILoggerMinimal = Pick<EventLogger, "info">;
+type ILoggerMinimal = Pick<IEventLogger, "info">;
 
 export async function initializeMemoryAutoApprovalMaintenance(
   notificationService: INotificationServiceMinimal,

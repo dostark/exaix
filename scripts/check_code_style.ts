@@ -1203,6 +1203,60 @@ async function checkFile(path: string) {
     }
   }
 
+  // Package Module Purity — CODE_STYLE.md §13
+  // Detect runtime infrastructure usage inside package src/ files.
+  // Exemptions: packages/core/ (defines these entities) and packages/mcp/server/ (bridge zone).
+  const packageSrcPurityMatch = repoPath.match(/^packages\/([^/]+)\/src\//);
+  if (packageSrcPurityMatch && packageSrcPurityMatch[1] !== "core" && !repoPath.startsWith("packages/mcp/server/")) {
+    for (let idx = 0; idx < lines.length; idx++) {
+      const line = lines[idx];
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith("//") || trimmedLine.startsWith("*") || trimmedLine.startsWith("/*")) {
+        continue;
+      }
+
+      if (line.match(/\bnew\s+EventLogger\s*\(/)) {
+        console.log(
+          `ERROR [package-instantiates-event-logger] ${repoPath}:${
+            idx + 1
+          } – Package source modules must not instantiate EventLogger. Accept IEventLogger as an optional constructor parameter injected by the service layer.`,
+        );
+        errorCount++;
+      }
+
+      if (
+        trimmedLine.startsWith("import") &&
+        trimmedLine.match(/\bEventLogger\b/) &&
+        trimmedLine.match(/from\s+["']@exaix\/core/)
+      ) {
+        const prefix = convertWarnings ? "ERROR" : "WARN";
+        console.log(
+          `${prefix} [package-concrete-logger-type] ${repoPath}:${
+            idx + 1
+          } – Package source modules should import IEventLogger (the interface) instead of the concrete EventLogger class. Decouples the package from the runtime logger implementation.`,
+        );
+        if (convertWarnings) errorCount++;
+        else warnCount++;
+      }
+
+      const isConfigReaderImport = trimmedLine.startsWith("import") &&
+        (trimmedLine.includes("getValidatedEnvOverrides") || trimmedLine.includes("ConfigService")) &&
+        trimmedLine.includes("@exaix/core");
+      const isConfigReaderUsage = !trimmedLine.startsWith("import") &&
+        (line.match(/\bgetValidatedEnvOverrides\s*\(/) !== null || line.match(/\bnew\s+ConfigService\s*\(/) !== null);
+      if (isConfigReaderImport || isConfigReaderUsage) {
+        const prefix = convertWarnings ? "ERROR" : "WARN";
+        console.log(
+          `${prefix} [package-uses-config-reader] ${repoPath}:${
+            idx + 1
+          } – Package source modules must not call getValidatedEnvOverrides() or instantiate ConfigService. Receive a Config value as a constructor parameter instead.`,
+        );
+        if (convertWarnings) errorCount++;
+        else warnCount++;
+      }
+    }
+  }
+
   const multilineFixtureExemptLines = new Set<number>();
   const multilineFixtureWarnLines = new Set<number>();
   const fixtureStartRegex = /^\s*(?:const|let|var)\s+(?:markdown|yaml|json|input|payload|text|content)\s*=\s*`/;

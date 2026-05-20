@@ -6,7 +6,7 @@
  * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
  */
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
 /**
@@ -61,7 +61,7 @@ export interface IResolvedProviderOptions {
   /** Responses for scripted mock */
   responses?: string[];
   /** Optional event logger for usage tracking */
-  logger?: EventLogger;
+  logger?: IEventLogger;
 }
 
 /**

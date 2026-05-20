@@ -357,10 +357,14 @@ Deno.test("ProviderSelector: env provider selected when healthy and allowed", as
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
     const config = createTestConfig();
 
-    const selected = await withEnv(
-      { EXA_LLM_PROVIDER: "mock", EXA_TEST_MODE: "1" },
-      () => selector.selectProviderForTask(config, "simple"),
-    );
+    config.ai = {
+      ...(config.ai ?? { model: "mock", timeout_ms: 30_000, provider: "mock" }),
+      model: config.ai?.model ?? "mock",
+      timeout_ms: config.ai?.timeout_ms ?? 30_000,
+      provider: "mock",
+    };
+
+    const selected = await selector.selectProviderForTask(config, "simple");
 
     assertEquals(selected, "mock");
   } finally {
@@ -389,10 +393,14 @@ Deno.test("ProviderSelector: env provider fallback when unregistered or unhealth
     const config = createTestConfig();
 
     // ollama is not registered, so env provider falls back to intelligent selection
-    const selected = await withEnv(
-      { EXA_LLM_PROVIDER: "ollama", EXA_TEST_MODE: "1" },
-      () => selector.selectProviderForTask(config, "simple"),
-    );
+    config.ai = {
+      ...(config.ai ?? { model: "mock", timeout_ms: 30_000, provider: "mock" }),
+      model: config.ai?.model ?? "mock",
+      timeout_ms: config.ai?.timeout_ms ?? 30_000,
+      provider: "ollama",
+    };
+
+    const selected = await selector.selectProviderForTask(config, "simple");
 
     assertEquals(selected, "mock");
   } finally {
@@ -429,8 +437,15 @@ Deno.test("ProviderSelector: blocks paid env provider in test mode", async () =>
     const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
     const config = createTestConfig();
 
+    config.ai = {
+      ...(config.ai ?? { model: "mock", timeout_ms: 30_000, provider: "mock" }),
+      model: config.ai?.model ?? "mock",
+      timeout_ms: config.ai?.timeout_ms ?? 30_000,
+      provider: "openai",
+    };
+
     const selected = await withEnv(
-      { EXA_LLM_PROVIDER: "openai", EXA_TEST_MODE: "1", EXA_TEST_ENABLE_PAID_LLM: undefined },
+      { EXA_TEST_MODE: "1", EXA_TEST_ENABLE_PAID_LLM: undefined },
       () => selector.selectProviderForTask(config, "simple"),
     );
 

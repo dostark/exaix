@@ -6,7 +6,7 @@
  * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
  */
 
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 
 import type { Config } from "@exaix/schemas";
 
@@ -19,7 +19,7 @@ export interface IBaseProviderOptions {
   apiKey: string;
   model?: string;
   id?: string;
-  logger?: EventLogger;
+  logger?: IEventLogger;
   retryDelayMs?: number;
   maxRetries?: number;
   baseUrl?: string;
@@ -35,7 +35,7 @@ export abstract class BaseProvider implements IModelProvider {
   protected readonly apiKey: string;
   protected readonly model: string;
   protected readonly baseUrl: string;
-  protected readonly logger?: EventLogger;
+  protected readonly logger?: IEventLogger;
   protected readonly retryDelayMs: number;
   protected readonly maxRetries: number;
   public readonly timeoutMs: number;

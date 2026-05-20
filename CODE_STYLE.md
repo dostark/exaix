@@ -522,6 +522,97 @@ Example:
 
 ---
 
+## 13. Package Module Purity {#package-module-purity}
+
+A _pure package module_ can be consumed by an external project with no
+knowledge of the Exaix daemon. The canonical test is in
+[`ARCHITECTURE.md §"Packages vs. Services — Placement Model"`](./ARCHITECTURE.md).
+The rules in this section are the **enforceable subset** of that model — they
+target the most common ways packages accidentally acquire daemon-awareness.
+
+### No instantiation of runtime infrastructure
+
+Package source files under `packages/<name>/src/` must not create runtime
+infrastructure instances:
+
+- **No `new EventLogger(...)`** — Packages do not own audit-event infrastructure.
+  If a package needs to surface trace information, accept `IEventLogger` as an
+  _optional_ constructor parameter. The service layer creates and passes the
+  logger instance.
+- **No `new ConfigService(...)`** — Packages receive a typed `Config` value
+  from their callers; they do not read config files or environment variables.
+
+```ts
+// ❌ Wrong — bootstraps runtime infrastructure inside a package
+import { EventLogger } from "@exaix/core/logger";
+
+class MemoryBankService {
+  private logger = new EventLogger({ prefix: "[Memory]" }); // ← runtime infra
+}
+
+// ✅ Correct — logger is injected by the service layer
+import type { IEventLogger } from "@exaix/core/logger";
+
+class MemoryBankService {
+  constructor(private readonly logger?: IEventLogger) {}
+}
+```
+
+### Prefer `IEventLogger` over the concrete `EventLogger` class
+
+Package source files should use `IEventLogger` (the interface) rather than the
+concrete `EventLogger` class for field types, constructor parameters, and type
+annotations. The concrete class couples the package to the runtime logger
+implementation.
+
+```ts
+// ⚠️ Avoid — couples package type to a concrete runtime class
+import type { EventLogger } from "@exaix/core/logger";
+protected readonly logger?: EventLogger;
+
+// ✅ Prefer — depends on the public interface contract only
+import type { IEventLogger } from "@exaix/core/logger";
+protected readonly logger?: IEventLogger;
+```
+
+### No reading runtime config or environment variables
+
+Package source files must not call `getValidatedEnvOverrides()` or instantiate
+`ConfigService`. Both read runtime state (env vars, TOML files) that belongs
+exclusively to the `src/services/` or startup layer.
+
+- Receive config as a typed `Config` constructor parameter — the service layer
+  reads the config file and injects the plain value object.
+- `isTestMode()` / `isCIMode()` are permitted in packages for test-conditional
+  behaviour only.
+
+```ts
+// ❌ Wrong — reads env vars inside a package
+import { getValidatedEnvOverrides } from "@exaix/core/config";
+const overrides = getValidatedEnvOverrides();
+
+// ✅ Correct — config is passed in as a plain typed value
+import type { Config } from "@exaix/schemas";
+constructor(private readonly config: Config) {}
+```
+
+### Automated enforcement
+
+`scripts/check_code_style.ts` enforces these rules for all files under
+`packages/<name>/src/`, with two exemptions:
+
+- `packages/core/` — defines the runtime entities themselves
+- `packages/mcp/server/` — the declared bridge zone between package contracts
+  and runtime wiring
+
+| Error tag                             | Severity | What it detects                                                                    |
+| ------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `[package-instantiates-event-logger]` | error    | `new EventLogger(` inside a package `src/` file                                    |
+| `[package-concrete-logger-type]`      | warn     | Importing concrete `EventLogger` instead of `IEventLogger` from `@exaix/core`      |
+| `[package-uses-config-reader]`        | warn     | `getValidatedEnvOverrides` or `new ConfigService(` imported or called in a package |
+
+---
+
 > ⚠️ Keep this file short and focused. Architectural patterns such as timeout
 > protection, file locking, or error classification belong in other guides
 > (e.g. `.copilot/workflows/exaix-development.md`) and **are not** repeated here unless they

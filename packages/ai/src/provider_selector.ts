@@ -11,7 +11,7 @@ import type { IProviderFactory } from "./factories/abstract_provider_factory.ts"
 import type { ICostTracker } from "@exaix/core";
 import type { Config } from "@exaix/schemas";
 
-import { getValidatedEnvOverrides, isCIMode, isTestMode } from "@exaix/core/config";
+import { isCIMode, isTestMode } from "@exaix/core/config";
 
 import { PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 
@@ -121,7 +121,7 @@ export class ProviderSelector {
    * @throws Error if no suitable provider is found
    */
   async selectProviderForTask(config: Config, taskType: string): Promise<string> {
-    const envProvider = await this.trySelectEnvProvider();
+    const envProvider = await this.trySelectEnvProvider(config.ai?.provider);
     if (envProvider) return envProvider;
 
     const strategy = config.provider_strategy;
@@ -135,9 +135,7 @@ export class ProviderSelector {
     return this.selectProvider(criteria);
   }
 
-  private async trySelectEnvProvider(): Promise<string | null> {
-    const envOverrides = getValidatedEnvOverrides();
-    const providerName = envOverrides.EXA_LLM_PROVIDER;
+  private async trySelectEnvProvider(providerName?: string): Promise<string | null> {
     if (!providerName) return null;
 
     const metadata = this.registry.getProviderMetadata(providerName);

@@ -15,6 +15,7 @@ import { type AiConfig, getDefaultModels, InputValidator, type ModelConfigSchema
 import type { z } from "zod";
 import type { ICostTracker, IDatabaseService, JSONValue } from "@exaix/core";
 import { ConfigSource, type MockStrategy, PricingTier, ProviderType } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 import { createAPIRetryPolicy, RetryPolicy } from "@exaix/core/request";
 import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";
 import { MockProviderFactory } from "./factories/mock_factory.ts";
@@ -22,7 +23,6 @@ import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_f
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
-import type { EventLogger } from "@exaix/core/logger";
 
 import { LazyProvider } from "./providers/lazy_provider.ts";
 
@@ -68,7 +68,7 @@ export class ProviderFactory {
       healthCheck?: boolean;
     },
     db?: IDatabaseService,
-    logger?: EventLogger,
+    logger?: IEventLogger,
     costTracker?: ICostTracker,
   ): Promise<IModelProvider> {
     const chain = [fallback.primary, ...fallback.fallbacks];
@@ -125,7 +125,7 @@ export class ProviderFactory {
     config: Config,
     chainName: string,
     db?: IDatabaseService,
-    logger?: EventLogger,
+    logger?: IEventLogger,
     costTracker?: ICostTracker,
   ): Promise<IModelProvider> {
     const chain = config.provider_strategy?.fallback_chains?.[chainName];
@@ -168,7 +168,7 @@ export class ProviderFactory {
   static async create(
     config: Config,
     db?: IDatabaseService,
-    logger?: EventLogger,
+    logger?: IEventLogger,
     costTracker?: ICostTracker,
   ): Promise<IModelProvider> {
     const options = this.resolveOptions(config);
@@ -188,7 +188,7 @@ export class ProviderFactory {
     config: Config,
     name: string,
     db?: IDatabaseService,
-    logger?: EventLogger,
+    logger?: IEventLogger,
     costTracker?: ICostTracker,
   ): Promise<IModelProvider> {
     // Check if name refers to a fallback chain
