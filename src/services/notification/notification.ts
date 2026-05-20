@@ -9,7 +9,7 @@
  * - Notification lifecycle management with soft-deletes
  *
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", "src/services/memory_bank/index_builder.ts", @exaix/core/types]
+ * @related-files ["packages/memory/src/bank/index_builder.ts", @exaix/core/types]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
