@@ -24,6 +24,7 @@ qwen_skill: package-extraction
 Key points
 - Use this skill when the goal is to extract the next package-owned slice from src/ into packages/
 - The package name is input-specific; this skill must remain generic and must not assume one fixed package
+- Read ARCHITECTURE.md "Packages vs. Services — Placement Model" FIRST to determine whether a candidate module belongs in a package or must stay in src/services/; the placement model defines the one-question test, dependency signals, and concrete examples that settle ambiguous cases before any files are moved
 - Consult exaix-dev-docs/dev/Exaix_Packages.md for current ownership and target package boundaries
 - Consult exaix-dev-docs/dev/Exaix_Package_Migration_Plan.md for strategic sequencing and ambiguous-module rules
 - Consult exaix-dev-docs/planning/phase-76-package-migration.md for the live backlog and current branch state
@@ -47,6 +48,7 @@ Canonical prompt (short):
 
 Workflow
 1. Confirm the target ownership slice
+   - Read ARCHITECTURE.md §"Packages vs. Services — Placement Model" to apply the canonical placement test: if an external consumer cannot use the module without knowing the Exaix daemon exists, it belongs in src/services/, not in a package — stop here and do not extract it
    - Read Exaix_Packages.md to verify that the requested source files belong in a package and are not runtime-only or transport-only concerns
    - Read Exaix_Package_Migration_Plan.md to verify that the extraction fits the current strategic phase
    - Read phase-76-package-migration.md to confirm the extraction is not contradictory to the live backlog
@@ -234,22 +236,23 @@ Workflow chain (typical)
 
 When invoked, the agent should:
 
-1. Read `exaix-dev-docs/dev/Exaix_Packages.md`, `exaix-dev-docs/dev/Exaix_Package_Migration_Plan.md`, and `exaix-dev-docs/planning/phase-76-package-migration.md` before proposing or implementing an extraction.
-2. Determine whether the requested slice is:
+1. Read `ARCHITECTURE.md` §"Packages vs. Services — Placement Model" first. Apply the one-question placement test to each candidate module before reading any other document. Modules that fail the test (external consumer cannot use them without knowing the Exaix daemon) must not be extracted — stop and report the reason instead of proceeding.
+2. Read `exaix-dev-docs/dev/Exaix_Packages.md`, `exaix-dev-docs/dev/Exaix_Package_Migration_Plan.md`, and `exaix-dev-docs/planning/phase-76-package-migration.md` before proposing or implementing an extraction.
+3. Determine whether the requested slice is:
    - a package-boundary clarification task,
    - a low-risk test migration,
    - a source extraction with compatibility shims, or
    - a strategic planning problem that needs `#plan` first.
-3. Prefer the smallest slice that moves real ownership forward without destabilizing the root app.
-4. Require package-local tests for the moved slice whenever a package can own tests for that behavior.
-5. Use `scripts/package_dependency_graph.ts` when package coupling or candidate selection is unclear; do not guess when the graph can answer it quickly.
-6. Use `scripts/package_import_migration.ts` for broad import rewrites after the new package-owned files exist, then verify the result with focused tests.
-7. Use `scripts/package_import_canonize.ts` after migration rewrites to normalize package imports to canonical aliases or subfolder barrels.
-8. Update migrated module frontmatter or file-level metadata as part of the extraction, not as optional cleanup.
-9. Keep the target package layout intentionally organized into correspondent folders that communicate responsibility; optionally follow the old `src/` tree where that structure is still clean and meaningful.
-10. Split legacy mixed-responsibility modules into coherent sub-modules when that is needed to achieve a clean package architecture instead of preserving old accidental structure.
-11. A package has exactly two test-related directories with distinct roles: `tests/` for test files (`*_test.ts`) only, and optionally `testing/` as a published support API surface (never containing test files). When package-specific helpers/fixtures must be shared outside the package, put them in `packages/<package>/testing/` and export as `@exaix/<package>/testing` — never put `*_test.ts` files into `testing/`.
-12. Update only the migration docs whose purpose actually changed.
+4. Prefer the smallest slice that moves real ownership forward without destabilizing the root app.
+5. Require package-local tests for the moved slice whenever a package can own tests for that behavior.
+6. Use `scripts/package_dependency_graph.ts` when package coupling or candidate selection is unclear; do not guess when the graph can answer it quickly.
+7. Use `scripts/package_import_migration.ts` for broad import rewrites after the new package-owned files exist, then verify the result with focused tests.
+8. Use `scripts/package_import_canonize.ts` after migration rewrites to normalize package imports to canonical aliases or subfolder barrels.
+9. Update migrated module frontmatter or file-level metadata as part of the extraction, not as optional cleanup.
+10. Keep the target package layout intentionally organized into correspondent folders that communicate responsibility; optionally follow the old `src/` tree where that structure is still clean and meaningful.
+11. Split legacy mixed-responsibility modules into coherent sub-modules when that is needed to achieve a clean package architecture instead of preserving old accidental structure.
+12. A package has exactly two test-related directories with distinct roles: `tests/` for test files (`*_test.ts`) only, and optionally `testing/` as a published support API surface (never containing test files). When package-specific helpers/fixtures must be shared outside the package, put them in `packages/<package>/testing/` and export as `@exaix/<package>/testing` — never put `*_test.ts` files into `testing/`.
+13. Update only the migration docs whose purpose actually changed.
 
 ## Output format
 

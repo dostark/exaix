@@ -55,13 +55,6 @@ src/services/
 │   ├── structured_plan_parser.ts     # Parse structured plans
 │   └── mod.ts                        # Barrel export
 │
-├── portal/                 # Portal and workspace management
-│   ├── portal.ts                     # Portal service CRUD
-│   ├── portal_permissions.ts         # Portal access control
-│   ├── path_resolver.ts              # Resolve portal/workspace paths
-│   ├── workspace_execution_context.ts # Workspace execution context
-│   └── mod.ts                        # Barrel export
-│
 ├── tool/                   # Tool execution
 │   ├── tool_registry.ts              # Tool registration and execution
 │   ├── tool_reflector.ts             # Reflective tool execution
@@ -142,7 +135,6 @@ src/services/
 | `agent/`        | **Agent orchestration**  | Agent execution, reflexive improvement       |
 | `request/`      | **Request processing**   | Request CRUD, routing, processing            |
 | `plan/`         | **Planning services**    | Plan generation, execution, parsing          |
-| `portal/`       | **Portal management**    | Portal CRUD, permissions, path resolution    |
 | `tool/`         | **Tool execution**       | Tool registry, reflection, validation        |
 | `blueprint/`    | **Blueprint management** | Blueprint loading and validation             |
 | `context/`      | **Context generation**   | Context cards, prompt building, code parsing |
@@ -178,7 +170,60 @@ The following directories have been extracted into standalone packages and **no 
 | --------------------------- | --------------- | -------------------- |
 | `src/services/memory/`      | `@exaix/memory` | `@exaix/memory`      |
 | `src/services/memory_bank/` | `@exaix/memory` | `@exaix/memory`      |
+| `src/services/portal/`      | `@exaix/portal` | `@exaix/portal`      |
 | `src/services/logger/`      | `@exaix/core`   | `@exaix/core/logger` |
+
+---
+
+## Packages vs. Services
+
+Before adding code anywhere, decide which layer it belongs in. The distinction is architectural, not cosmetic.
+
+### The core difference
+
+| Dimension              | `packages/<name>/`                               | `src/services/<domain>/`                                      |
+| ---------------------- | ------------------------------------------------ | ------------------------------------------------------------- |
+| **What it owns**       | A self-contained domain capability               | Application-layer orchestration inside the Exaix process      |
+| **Dependency profile** | No `src/` imports; only other packages or stdlib | Consumes packages, `Config`, `DatabaseService`, `EventLogger` |
+| **Runtime coupling**   | None — could run in any Deno process             | Tightly coupled to daemon bootstrap and lifecycle             |
+| **Test isolation**     | Tested with in-memory stubs and temp dirs only   | Tested with `initTestDbService()` and full service wiring     |
+| **Import alias**       | `@exaix/<name>` — canonical, stable              | Relative or `src/` path — internal to the root app            |
+| **Reusability**        | Usable by any consumer; publishable in principle | Only meaningful inside the Exaix daemon                       |
+| **Role**               | Defines _how_ a domain concept works             | Decides _what_ happens and _when_ at runtime                  |
+
+### The placement test
+
+Ask one question: **Can an external consumer use this module without knowing the Exaix daemon exists?**
+
+- **Yes** → it belongs in `packages/`.
+- **No** → it belongs in `src/services/`.
+
+### Signals that point to a package
+
+- No `Config`, `DatabaseService`, or `EventLogger` in the constructor.
+- Tests use only in-memory inputs — no database, no temp filesystem state wired through `initTestDbService`.
+- The logic describes _what_ a domain object is or does (schema validation, embedding computation, parsing rules, Git operation, AI provider protocol) rather than _coordinating_ the application.
+- Another package already imports it, or would need to for type correctness.
+- The same code would be equally valid in a different application that has nothing to do with Exaix.
+
+### Signals that point to `src/services/`
+
+- The constructor receives a `DatabaseService` to persist state.
+- Emitting events via `EventLogger` is part of the contract — the module produces audit trail entries as a side-effect.
+- Runtime `Config` drives behaviour (paths, thresholds, feature flags).
+- The module is _glue_: it wires two or more packages together into a coherent flow (receive a request, route it, persist the result, notify the user).
+- It is registered in `src/main.ts` or `src/cli/init.ts` and would break daemon startup if removed.
+
+### Practical examples
+
+| Module                                 | Correct location       | Reason                                                            |
+| -------------------------------------- | ---------------------- | ----------------------------------------------------------------- |
+| Memory schema types and Zod validators | `@exaix/schemas`       | Pure domain contracts; no runtime coupling                        |
+| Cosine similarity, embedding storage   | `@exaix/memory`        | Domain algorithm; only needs a temp dir to test                   |
+| AI provider protocol (`ILLMProvider`)  | `@exaix/ai`            | Abstract contract; no Exaix-specific wiring                       |
+| Request processing pipeline            | `src/services/request` | Wires `RequestAnalyzer`, `MemoryBankService`, `EventLogger`, etc. |
+| `EventLogger` (writes to SQLite)       | `src/services/core`    | Owns the audit trail side-effect; depends on `DatabaseService`    |
+| Cost tracker (per-request counters)    | `src/services/cost`    | Persists token counts to `DatabaseService` per daemon lifecycle   |
 
 ---
 
@@ -188,19 +233,22 @@ The following directories have been extracted into standalone packages and **no 
 
 **Ask yourself:**
 
-1. **What domain does this service belong to?**
+1. **Does it belong in a package or a service?** (See [Packages vs. Services](#packages-vs-services) above.)
+
+2. **What domain does this service belong to?**
    - Agent execution → `agent/`
    - Memory operations → `@exaix/memory` package (not `src/services/`)
+   - Portal management → `@exaix/portal` package (not `src/services/`)
    - Request handling → `request/`
    - Infrastructure → `core/` or `utils/`
    - Flow execution → `flow/`
 
-2. **Does it need to be a service?**
+3. **Does it need to be a service?**
    - Coordinates multiple components? → Service
    - Simple utility function? → `utils/` or `helpers/`
    - Data access only? → Repository pattern (in `repositories/`)
 
-3. **Does a similar service exist?**
+4. **Does a similar service exist?**
    - Check existing folders for related services
    - Follow established patterns
 

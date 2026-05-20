@@ -41,6 +41,47 @@ Exaix is currently in a mixed-layout migration state:
 - When this document references `src/` paths, treat them as the current runtime ownership map, not as the only canonical package structure.
 - For migration status and intended package boundaries, use [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md) and the linked phase tracker in `exaix-dev-docs/`.
 
+### Packages vs. Services — Placement Model
+
+These two locations encode a hard architectural distinction. Misplacing a module in the wrong one creates dependency inversions that become expensive to untangle.
+
+**A `packages/<name>/` module** owns a self-contained domain capability. It:
+
+- Can be fully described as _"a library that does X"_ with no reference to the Exaix daemon or its runtime state.
+- Has no imports from `src/services/`, `src/main.ts`, or any other `src/` runtime wiring.
+- Can be consumed, tested, and reasoned about in isolation: its inputs and outputs are plain values, schemas, or well-defined interfaces.
+- Owns a bounded domain concept — schemas, AI provider protocol, parsing rules, memory domain logic, Git operations — not application policy.
+- Is imported by other modules via a canonical `@exaix/<name>` alias, never via a relative path into `packages/`.
+- Could, in principle, be published to a package registry and used by a project that has nothing to do with the Exaix daemon.
+
+**A `src/services/<domain>/` module** orchestrates the running Exaix process. It:
+
+- Coordinates multiple packages and runtime concerns: `Config`, `DatabaseService`, `EventLogger`, file-system state, process lifecycle.
+- Implements the _application layer_ — deciding _what_ happens and _when_, not defining _how_ a domain concept works.
+- Wires packages together into coherent business flows: receiving a request, routing it to the right agent, persisting the result, emitting audit events.
+- Is bootstrapped in `src/main.ts` and `src/cli/init.ts`; it exists only inside the Exaix process.
+- Often implements or consumes interfaces defined in packages (e.g., `IMemoryEmbeddingService` from `@exaix/core/types`) but adds the wiring and side-effects that make them useful at runtime.
+
+**The placement test — one question:** _Can an external consumer use this module without knowing the Exaix daemon exists?_
+
+- **Yes** → it belongs in a package under `packages/`.
+- **No** → it belongs in `src/services/`.
+
+**Common tells that a module belongs in a package:**
+
+- It has no `Config`, `DatabaseService`, or `EventLogger` in its constructor.
+- Its tests use only in-memory stubs or temp directories — no `initTestDbService()`.
+- Another package already imports it (or would need to, for type correctness).
+- Its domain logic would be equally valid in a different application.
+
+**Common tells that a module belongs in `src/services/`:**
+
+- It instantiates or receives a `DatabaseService` to persist state.
+- It emits events via `EventLogger` as part of its contract.
+- It reads from `Config` to determine runtime behaviour (paths, thresholds, feature flags).
+- It coordinates two or more packages — it is glue, not logic.
+- Removing it from `src/` would break daemon startup or the request-processing pipeline directly.
+
 ## Tool Result Validation & Discovery
 
 Phase 78 adds a documented contract around tool result payloads before they cross runtime boundaries.
