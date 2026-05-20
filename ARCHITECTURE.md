@@ -8,7 +8,7 @@ capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
 links:
   - "src/services/request/request_processor.ts:RequestProcessor"
   - "src/services/agent/agent_runner.ts:AgentRunner"
-  - "src/services/memory/memory_bank.ts:MemoryBankService"
+  - "packages/memory/src/bank/memory_bank.ts:MemoryBankService"
   - "tests/services/request/request_processor_test.ts"
 tools_referenced:
   - write_file: src/mcp/handlers/write_file_tool.ts

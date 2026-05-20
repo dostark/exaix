@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { ExecutionStatus, MemoryOperation, PortalOperation } from "@exaix/core";
-import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import { MemoryBankService } from "@exaix/memory";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";

@@ -16,7 +16,7 @@ import {
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
 import type { IExecutionMemory, ILearning, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import type { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
+import type { MemoryExtractorService } from "@exaix/memory";
 import type { JSONObject } from "@exaix/core/types";
 
 export function createSuccessfulExecutionMemory(portal: string, traceId: string): IExecutionMemory {

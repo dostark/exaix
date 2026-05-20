@@ -1,7 +1,38 @@
 {
   "name": "@exaix/memory",
   "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/testing/bdd": "jsr:@std/testing@^1.0.18/bdd",
+    "@exaix/memory": "./mod.ts",
+    "@exaix/memory/": "./src/",
+    "@exaix/memory/testing": "./testing/mod.ts",
+    "@exaix/memory/testing/": "./testing/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/testing": "../testing/mod.ts",
+    "@exaix/testing/": "../testing/src/",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/": "../ai/src/",
+    "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
+    "@exaix/storage-sqlite/": "../storage-sqlite/src/"
+  },
   "exports": {
-    ".": "./mod.ts"
+    ".": "./mod.ts",
+    "./testing": "./testing/mod.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
   }
 }

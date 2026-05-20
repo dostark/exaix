@@ -26,7 +26,7 @@ import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { ToolRegistry } from "../tool/tool_registry.ts";
 import type { ReviewRegistry } from "../artifact/review_registry.ts";
-import { MemoryBankService } from "../memory/memory_bank.ts";
+import { MemoryBankService } from "@exaix/memory";
 import { MissionReporter } from "../artifact/mission_reporter.ts";
 import { PlanExecutor } from "../plan/plan_executor.ts";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";

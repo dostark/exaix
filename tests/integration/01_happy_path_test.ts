@@ -12,7 +12,7 @@ import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
 import { MissionReporter } from "../../src/services/artifact/mission_reporter.ts";
-import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
+import { MemoryBankService } from "@exaix/memory";
 
 Deno.test("Integration: Happy Path - Request to Report", async (t) => {
   const env = await TestEnvironment.create();

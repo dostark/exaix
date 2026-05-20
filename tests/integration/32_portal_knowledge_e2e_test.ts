@@ -13,7 +13,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { MockStrategy, PortalAnalysisMode, PortalOperation } from "@exaix/core";
 import { type IDocCommandRunner, loadKnowledge, PortalKnowledgeService, saveKnowledge } from "@exaix/portal/knowledge";
-import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
+import { MemoryBankService } from "@exaix/memory";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
 import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { MockLLMProvider } from "@exaix/ai/providers";

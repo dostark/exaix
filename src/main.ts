@@ -16,10 +16,12 @@ import { RequestProcessor } from "./services/request/request_processor.ts";
 import { ReviewRegistry } from "./services/artifact/review_registry.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { ExecutionLoop } from "./services/agent/execution_loop.ts";
-import { MemoryBankService } from "./services/memory/memory_bank.ts";
-import { MemoryExtractorService } from "./services/memory/memory_extractor.ts";
-import { MemoryAutoApprovalService } from "./services/memory/memory_auto_approval_service.ts";
-import { initializeMemoryAutoApprovalMaintenance } from "./services/memory/auto_approval_daemon.ts";
+import {
+  initializeMemoryAutoApprovalMaintenance,
+  MemoryAutoApprovalService,
+  MemoryBankService,
+  MemoryExtractorService,
+} from "@exaix/memory";
 import { NotificationService } from "./services/notification/notification.ts";
 import { MemoryBankAdapter } from "./services/adapters/memory_bank_adapter.ts";
 import { createConfigReloadHandler } from "@exaix/core/config";

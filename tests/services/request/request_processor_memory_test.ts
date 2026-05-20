@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import type { IApplicationContext, IRequestAnalysisContext, IRequestAnalyzerService } from "@exaix/core/types";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import type { EnhancedRequest, SessionMemoryService } from "../../../src/services/memory/session_memory.ts";
+import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
 import {

@@ -7,9 +7,9 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import { MemoryCommands } from "../../src/cli/commands/memory_commands.ts";
-import { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
-import { MemoryExtractorService } from "../../src/services/memory/memory_extractor.ts";
-import { MemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
+import { MemoryBankService } from "@exaix/memory";
+import { MemoryExtractorService } from "@exaix/memory";
+import { MemoryEmbeddingService } from "@exaix/memory";
 import { SkillsService } from "../../src/services/skills/skills.ts";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
 import {

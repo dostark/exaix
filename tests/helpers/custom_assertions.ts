@@ -6,8 +6,8 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import type { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
-import type { MemoryExtractorService } from "../../src/services/memory/memory_extractor.ts";
+import type { MemoryBankService } from "@exaix/memory";
+import type { MemoryExtractorService } from "@exaix/memory";
 import { ExecutionStatus } from "@exaix/core";
 
 /**

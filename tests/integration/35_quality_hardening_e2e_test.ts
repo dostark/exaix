@@ -21,7 +21,7 @@ import { buildParsedRequest } from "../../src/services/request/request_common.ts
 import { createOutputValidator } from "../../src/services/tool/output_validator.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type { EnhancedRequest } from "../../src/services/memory/session_memory.ts";
+import type { EnhancedRequest } from "@exaix/memory";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";

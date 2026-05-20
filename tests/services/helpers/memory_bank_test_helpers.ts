@@ -8,7 +8,7 @@
 import type { ILearning, IPattern } from "@exaix/schemas/memory_bank.ts";
 import type { IExecutionMemory, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import type { IDecision } from "@exaix/schemas/memory_bank.ts";
-import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import { MemoryBankService } from "@exaix/memory";
 import type { DatabaseService } from "../../../src/services/core/db.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";

@@ -6,9 +6,9 @@
  */
 
 import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
-import type { MemoryBankService } from "../../src/services/memory/memory_bank.ts";
+import type { MemoryBankService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../src/services/memory/memory_embedding.ts";
+import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
 import type {
   IActivitySummary,
   IDecision,

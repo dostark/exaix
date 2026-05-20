@@ -11,9 +11,9 @@ import {
   createSessionMemoryService,
   type Insight,
   SessionMemoryService,
-} from "../../../src/services/memory/session_memory.ts";
+} from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "../../../src/services/memory/memory_embedding.ts";
+import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
 import type { IExecutionMemory, ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceLevel,

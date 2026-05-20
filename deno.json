@@ -139,7 +139,11 @@
     "@exaix/portal": "./packages/portal/mod.ts",
     "@exaix/portal/knowledge": "./packages/portal/knowledge/mod.ts",
     "@exaix/portal/knowledge/": "./packages/portal/knowledge/",
-    "@exaix/portal/": "./packages/portal/src/"
+    "@exaix/portal/": "./packages/portal/src/",
+    "@exaix/memory": "./packages/memory/mod.ts",
+    "@exaix/memory/testing": "./packages/memory/testing/mod.ts",
+    "@exaix/memory/testing/": "./packages/memory/testing/",
+    "@exaix/memory/": "./packages/memory/src/"
   },
   "exclude": [
     "cov_profile",

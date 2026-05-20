@@ -74,7 +74,7 @@ import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_ass
 import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
-import type { EnhancedRequest, SessionMemoryService } from "../memory/session_memory.ts";
+import type { EnhancedRequest, SessionMemoryService } from "@exaix/memory";
 
 export interface IRequestProcessingContext extends IServiceContext {
   filePath: string;

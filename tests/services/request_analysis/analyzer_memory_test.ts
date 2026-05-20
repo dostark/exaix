@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { analyzeHeuristic } from "../../../src/services/request_analysis/heuristic_analyzer.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type { EnhancedRequest } from "../../../src/services/memory/session_memory.ts";
+import type { EnhancedRequest } from "@exaix/memory";
 import {
   createMockProvider,
   makeValidAnalysisJson as makeValidJson,

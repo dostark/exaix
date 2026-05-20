@@ -22,9 +22,7 @@ import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_conte
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 
 // Concrete services for adapters
-import { MemoryBankService } from "../services/memory/memory_bank.ts";
-import { MemoryExtractorService } from "../services/memory/memory_extractor.ts";
-import { MemoryEmbeddingService } from "../services/memory/memory_embedding.ts";
+import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "../services/skills/skills.ts";
 import { ArchiveService } from "../services/artifact/archive_service.ts";
 import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";

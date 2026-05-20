@@ -26,8 +26,8 @@ import { DisplayAdapter } from "../adapters/display_adapter.ts";
 import { ContextCardGenerator } from "../context/context_card_generator.ts";
 import { PortalService } from "@exaix/portal";
 import { createGitServiceStub } from "@exaix/testing/helpers/stub_factories.ts";
-import { MemoryBankService } from "../memory/memory_bank.ts";
-import { MemoryExtractorService } from "../memory/memory_extractor.ts";
+import { MemoryBankService } from "@exaix/memory";
+import { MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "../skills/skills.ts";
 import { GitBranchName } from "@exaix/git";
 import type {

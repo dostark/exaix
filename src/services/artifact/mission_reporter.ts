@@ -9,7 +9,7 @@
  * - Format results for terminal and web presentation
  *
  * @architectural-layer Services
- * @related-files ["src/services/agent/execution_loop.ts", "src/services/memory/memory_bank.ts"]
+ * @related-files ["src/services/agent/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -20,7 +20,7 @@ import {
   DEFAULT_PORTALS_PATH,
 } from "@exaix/core";
 import type { IDatabaseService } from "../core/db.ts";
-import type { MemoryBankService } from "../memory/memory_bank.ts";
+import type { MemoryBankService } from "@exaix/memory";
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 import { ActivityActor, ExecutionStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";

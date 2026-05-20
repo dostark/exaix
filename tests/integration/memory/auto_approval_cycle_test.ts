@@ -5,9 +5,9 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { MemoryAutoApprovalService } from "../../../src/services/memory/memory_auto_approval_service.ts";
-import { MemoryExtractorService } from "../../../src/services/memory/memory_extractor.ts";
-import { MemoryBankService } from "../../../src/services/memory/memory_bank.ts";
+import { MemoryAutoApprovalService } from "@exaix/memory";
+import { MemoryExtractorService } from "@exaix/memory";
+import { MemoryBankService } from "@exaix/memory";
 import { MemoryBankAdapter } from "../../../src/services/adapters/memory_bank_adapter.ts";
 import { TestEnvironment } from "../helpers/test_environment.ts";
 import {
