@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
-import { createMockConfig } from "../helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test("PathResolver: resolves user-defined portal", async () => {

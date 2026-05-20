@@ -1,19 +1,19 @@
 /**
  * @module LlmQualityAssessorTest
- * @path tests/services/quality_gate/llm_assessor_test.ts
+ * @path packages/quality-gate/tests/llm_assessor_test.ts
  * @description Tests for the LLM-based quality assessor, verifying prompt
  * construction, schema validation, fallback behaviour, and integration with
  * the OutputValidator.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/llm_assessor.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/llm_assessor.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
-import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
+import { createMockProvider } from "@exaix/testing";
+import { createTestValidator } from "./test_helpers.ts";
 import { RequestQualityLevel, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "@exaix/core";
-import { LlmQualityAssessor } from "../../../src/services/quality_gate/llm_assessor.ts";
+import { LlmQualityAssessor } from "@exaix/quality-gate";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ function makeValidLlmResponseWithIssues(): string {
 Deno.test("[LlmQualityAssessor] parses valid LLM response", async () => {
   const assessor = new LlmQualityAssessor(
     createMockProvider([makeValidLlmResponse()]),
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   const result = await assessor.assess("Implement user login with JWT tokens");
@@ -68,7 +68,7 @@ Deno.test("[LlmQualityAssessor] parses valid LLM response", async () => {
 Deno.test("[LlmQualityAssessor] handles invalid LLM JSON gracefully", async () => {
   const assessor = new LlmQualityAssessor(
     createMockProvider(["this is not valid json {{{broken"]),
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   // Should not throw — falls back to heuristic
@@ -99,7 +99,7 @@ Deno.test("[LlmQualityAssessor] passes request text in prompt", async () => {
 
   const assessor = new LlmQualityAssessor(
     capturingProvider,
-    createOutputValidator({}),
+    createTestValidator(),
   );
   await assessor.assess(requestText);
 
@@ -111,7 +111,7 @@ Deno.test("[LlmQualityAssessor] uses OutputValidator for parsing", async () => {
   // if the value lands in the result it came from LLM validation, not fallback.
   const assessor = new LlmQualityAssessor(
     createMockProvider([makeValidLlmResponseWithIssues()]),
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   const result = await assessor.assess("make it work");
@@ -129,7 +129,7 @@ Deno.test("[LlmQualityAssessor] returns fallback on validation failure", async (
 
   const assessor = new LlmQualityAssessor(
     createMockProvider([badResponse]),
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   // Should not throw — falls back to heuristic

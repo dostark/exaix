@@ -1214,6 +1214,13 @@
           "jsr:@std/path@^1.1.4"
         ]
       },
+      "packages/quality-gate": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/path@^1.1.4",
+          "jsr:@std/testing@^1.0.18"
+        ]
+      },
       "packages/storage-sqlite": {
         "dependencies": [
           "jsr:@db/sqlite@0.13",

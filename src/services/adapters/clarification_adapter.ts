@@ -7,7 +7,7 @@
  * @related-files [src/services/quality_gate/clarification_persistence.ts, src/cli/handlers/request_clarify_handler.ts]
  */
 
-import { loadClarification, saveClarification } from "../quality_gate/clarification_persistence.ts";
+import { loadClarification, saveClarification } from "@exaix/quality-gate";
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 
 export class ClarificationAdapter {

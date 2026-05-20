@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 
 function createRequest(id: string): ToolConfirmationRequest {
   return {

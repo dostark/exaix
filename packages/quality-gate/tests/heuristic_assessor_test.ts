@@ -1,14 +1,14 @@
 /**
  * @module HeuristicAssessorTest
- * @path tests/services/quality_gate/heuristic_assessor_test.ts
+ * @path packages/quality-gate/tests/heuristic_assessor_test.ts
  * @description Tests for the heuristic quality assessor — a zero-cost
  * text-signal-based scorer for incoming request bodies.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/heuristic_assessor.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/heuristic_assessor.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { assessHeuristic } from "../../../src/services/quality_gate/heuristic_assessor.ts";
+import { assessHeuristic } from "@exaix/quality-gate";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { RequestQualityIssueType, RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { AmbiguityImpact, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";

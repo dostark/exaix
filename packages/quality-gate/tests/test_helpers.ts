@@ -1,0 +1,31 @@
+/**
+ * @module QualityGateTestHelpers
+ * @path packages/quality-gate/tests/test_helpers.ts
+ * @description Test helpers for quality-gate tests. Provides factory functions
+ * that create minimal implementations of interfaces consumed by quality-gate
+ * modules, avoiding imports from root src/services/.
+ */
+
+import type { ZodType, ZodTypeDef } from "zod";
+import type { IOutputValidator, IValidationResult } from "../src/internal_types.ts";
+
+/**
+ * Create a minimal IOutputValidator for testing.
+ * Performs JSON.parse + Zod schema validation with no repair logic.
+ */
+export function createTestValidator(): IOutputValidator {
+  return {
+    validate<T>(
+      content: string,
+      schema: ZodType<T, ZodTypeDef, unknown>,
+    ): IValidationResult<T> {
+      try {
+        const parsed = JSON.parse(content);
+        const value = schema.parse(parsed);
+        return { success: true, value, repairAttempted: false, repairSucceeded: false, raw: content };
+      } catch {
+        return { success: false, repairAttempted: false, repairSucceeded: false, raw: content };
+      }
+    },
+  };
+}

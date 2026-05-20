@@ -1,20 +1,16 @@
 /**
  * @module ClarificationPersistenceTest
- * @path tests/services/quality_gate/clarification_persistence_test.ts
+ * @path packages/quality-gate/tests/clarification_persistence_test.ts
  * @description Tests for clarification session JSON persistence helpers.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/clarification_persistence.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/clarification_persistence.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
 import { ClarificationSessionStatus, type IClarificationSession } from "@exaix/schemas/clarification_session.ts";
-import {
-  loadClarification,
-  renderSpecificationAsPrompt,
-  saveClarification,
-} from "../../../src/services/quality_gate/clarification_persistence.ts";
+import { loadClarification, renderSpecificationAsPrompt, saveClarification } from "@exaix/quality-gate";
 
 // ---------------------------------------------------------------------------
 // Helpers

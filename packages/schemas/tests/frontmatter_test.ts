@@ -6,7 +6,7 @@
 
 import { assertEquals } from "@std/assert";
 import { RequestStatus } from "@exaix/core/status";
-import { RequestSchema } from "@exaix/schemas";
+import { RequestSchema } from "@exaix/schemas/request.ts";
 
 /**
  * Tests for Step 2.2: The Zod Frontmatter Parser
@@ -77,7 +77,6 @@ Deno.test("RequestSchema: rejects invalid enum value", () => {
     identity_id: "coder-agent",
     status: "banana", // invalid
   };
-
   try {
     RequestSchema.parse(invalidRequest);
     throw new Error("Should have thrown");

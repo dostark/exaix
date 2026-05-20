@@ -1,0 +1,30 @@
+{
+  "name": "@exaix/quality-gate",
+  "version": "0.1.0",
+  "imports": {
+    "@exaix/quality-gate": "./mod.ts",
+    "@exaix/quality-gate/": "./src/",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/": "../ai/src/",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/providers/": "../ai/src/providers/",
+    "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/testing/bdd": "jsr:@std/testing@^1.0.18/bdd",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

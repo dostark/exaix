@@ -13,9 +13,6 @@ const TEST_DIR = dirname(fromFileUrl(import.meta.url));
 const PORTAL_PERMISSIONS_SCHEMA_PATH = join(
   TEST_DIR,
   "..",
-  "..",
-  "packages",
-  "schemas",
   "src",
   "portal_permissions.ts",
 );

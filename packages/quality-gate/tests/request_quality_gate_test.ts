@@ -1,23 +1,23 @@
 /**
  * @module RequestQualityGateTest
- * @path tests/services/quality_gate/request_quality_gate_test.ts
+ * @path packages/quality-gate/tests/request_quality_gate_test.ts
  * @description Tests for the RequestQualityGate orchestrator service, covering
  * heuristic/hybrid/llm assessment modes, threshold routing, enrichment, activity
  * logging, and the disabled-gate short-circuit.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/request_quality_gate.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/request_quality_gate.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
-import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
+import { createMockProvider } from "@exaix/testing";
+import { createTestValidator } from "./test_helpers.ts";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { buildQualityGateConfig, RequestQualityGate } from "../../../src/services/quality_gate/request_quality_gate.ts";
+import { buildQualityGateConfig, RequestQualityGate } from "@exaix/quality-gate";
 import type { IRequestQualityGateConfig } from "@exaix/core/types";
 import {
   DEFAULT_MAX_CLARIFICATION_ROUNDS,
@@ -119,7 +119,7 @@ Deno.test("[RequestQualityGate] heuristic mode avoids LLM calls", async () => {
   const gate = new RequestQualityGate(
     makeConfig({ mode: QualityGateMode.HEURISTIC }),
     trackingProvider,
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   await gate.assess(HIGH_SCORE_REQUEST);
@@ -149,7 +149,7 @@ Deno.test("[RequestQualityGate] hybrid mode skips LLM for high scores", async ()
   const gate = new RequestQualityGate(
     makeConfig({ mode: QualityGateMode.HYBRID }),
     trackingProvider,
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   await gate.assess(HIGH_SCORE_REQUEST);
@@ -175,7 +175,7 @@ Deno.test("[RequestQualityGate] hybrid mode calls LLM for borderline scores", as
   const gate = new RequestQualityGate(
     makeConfig({ mode: QualityGateMode.HYBRID }),
     trackingProvider,
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   await gate.assess(MID_SCORE_REQUEST);
@@ -220,7 +220,7 @@ Deno.test("[RequestQualityGate] enriches request when autoEnrich enabled", async
   const gate = new RequestQualityGate(
     makeConfig({ mode: QualityGateMode.HEURISTIC, autoEnrich: true }),
     createMockProvider([enrichedText]),
-    createOutputValidator({}),
+    createTestValidator(),
   );
 
   // action verb + file ref → score 65 → AUTO_ENRICH → enrichment triggered

@@ -1,22 +1,22 @@
 /**
  * @module ClarificationEngineTest
- * @path tests/services/quality_gate/clarification_engine_test.ts
+ * @path packages/quality-gate/tests/clarification_engine_test.ts
  * @description Tests for ClarificationEngine — the multi-turn Q&A loop that
  * refines underspecified requests through iterative planning-agent questioning.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/clarification_engine.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/clarification_engine.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
-import { createOutputValidator } from "../../../src/services/tool/output_validator.ts";
+import { createMockProvider } from "@exaix/testing";
+import { createTestValidator } from "./test_helpers.ts";
 import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,
   type IClarificationSession,
 } from "@exaix/schemas/clarification_session.ts";
 import type { IRequestSpecification } from "@exaix/schemas/request_specification.ts";
-import { ClarificationEngine } from "../../../src/services/quality_gate/clarification_engine.ts";
+import { ClarificationEngine } from "@exaix/quality-gate";
 import type { IGenerateResult } from "@exaix/ai/providers";
 // ---------------------------------------------------------------------------
 // Helpers
@@ -91,7 +91,7 @@ function makeSessionWithRound1(): IClarificationSession {
 Deno.test("[ClarificationEngine] startSession generates Round 1 questions", async () => {
   const engine = new ClarificationEngine(
     createMockProvider([makeQuestionsResponse()]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -121,7 +121,7 @@ Deno.test("[ClarificationEngine] questions include category and rationale", asyn
         ],
       }),
     ]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -140,7 +140,7 @@ Deno.test("[ClarificationEngine] questions include category and rationale", asyn
 Deno.test("[ClarificationEngine] processAnswers incorporates answers", async () => {
   const engine = new ClarificationEngine(
     createMockProvider([makeQuestionsResponse("Any constraints on libraries?")]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -154,7 +154,7 @@ Deno.test("[ClarificationEngine] processAnswers incorporates answers", async () 
 Deno.test("[ClarificationEngine] tracks quality score across rounds", async () => {
   const engine = new ClarificationEngine(
     createMockProvider([makeSatisfiedResponse()]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -167,7 +167,7 @@ Deno.test("[ClarificationEngine] tracks quality score across rounds", async () =
 Deno.test("[ClarificationEngine] finalizes when agent satisfied", async () => {
   const engine = new ClarificationEngine(
     createMockProvider([makeSatisfiedResponse("Implement JWT validation in src/auth.ts")]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -182,7 +182,7 @@ Deno.test("[ClarificationEngine] finalizes when max rounds reached", async () =>
   // maxRounds: 1, session already has round 1 → next processAnswers should hit the limit
   const engine = new ClarificationEngine(
     createMockProvider([makeQuestionsResponse()]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 1 },
   );
 
@@ -195,7 +195,7 @@ Deno.test("[ClarificationEngine] generates IRequestSpecification from Q&A", asyn
   const spec = makeSpec("Add JWT token validation to authenticate API requests");
   const engine = new ClarificationEngine(
     createMockProvider([JSON.stringify({ satisfied: true, refinedBody: spec })]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -214,7 +214,7 @@ Deno.test("[ClarificationEngine] generates IRequestSpecification from Q&A", asyn
 Deno.test("[ClarificationEngine] supports user cancellation", () => {
   const engine = new ClarificationEngine(
     createMockProvider([]),
-    createOutputValidator({}),
+    createTestValidator(),
     { maxRounds: 3 },
   );
 
@@ -234,7 +234,7 @@ Deno.test("[ClarificationEngine] handles LLM failure in question generation", as
     generate: (_prompt: string): Promise<IGenerateResult> => Promise.reject(new Error("LLM unavailable")),
   };
 
-  const engine = new ClarificationEngine(failingProvider, createOutputValidator({}), { maxRounds: 3 });
+  const engine = new ClarificationEngine(failingProvider, createTestValidator(), { maxRounds: 3 });
 
   // Should not throw — session is created with fallback empty questions
   const session = await engine.startSession("req-10", "Fix the authentication bug in src/auth.ts");

@@ -1,14 +1,14 @@
 /**
  * @module RequestEnricherLlmTest
- * @path tests/services/quality_gate/request_enricher_llm_test.ts
+ * @path packages/quality-gate/tests/request_enricher_llm_test.ts
  * @description Tests for the LLM-based request enricher that rewrites
  * underspecified request bodies while preserving original intent.
- * @architectural-layer Services
- * @related-files [src/services/quality_gate/request_enricher_llm.ts]
+ * @architectural-layer Domain
+ * @related-files [packages/quality-gate/src/request_enricher_llm.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { createMockProvider } from "../../helpers/mock_provider.ts";
+import { createMockProvider } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import {
@@ -16,7 +16,7 @@ import {
   RequestQualityIssueSeverity,
   RequestQualityIssueType,
 } from "@exaix/schemas/request_quality_assessment.ts";
-import { enrichRequest } from "../../../src/services/quality_gate/request_enricher_llm.ts";
+import { enrichRequest } from "@exaix/quality-gate";
 
 // ---------------------------------------------------------------------------
 // Helpers
