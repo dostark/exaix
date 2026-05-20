@@ -8,7 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { McpAgentStrategy } from "../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "@exaix/core";
-import type { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+import type { AgentExecutor } from "@exaix/execution";
 import type { IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 
 function createFailingStderrStream(errorMessage: string): ReadableStream<Uint8Array> {

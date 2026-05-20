@@ -24,7 +24,7 @@ import {
 } from "../../src/flows/flow_runner.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
-import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import { RetryPolicy } from "@exaix/core/request";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";

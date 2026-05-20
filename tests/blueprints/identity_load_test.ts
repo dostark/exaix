@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";

@@ -3,13 +3,13 @@
  * @path src/services/utils/confidence_scorer.ts
  * @description Evaluates agent outputs to extract confidence scores and reasoning, flagging low-confidence results for human review.
  * @architectural-layer Services
- * @related-files [src/services/agent/agent_runner.ts, src/services/agent/reflexive_agent.ts]
+ * @related-files [packages/execution/src/agent_runner.ts, src/services/agent/reflexive_agent.ts]
  */
 
 import { z } from "zod";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
-import { AgentRunner, type IBlueprint, type IParsedRequest } from "../agent/agent_runner.ts";
+import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
 import { logDebug } from "@exaix/core/logger";
 import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";

@@ -16,7 +16,7 @@ import { DEFAULT_FLOW_VERSION, EvaluationCategory, FlowInputSource, FlowOutputFo
 import { initTestDbService } from "../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
-import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import type { DatabaseService } from "../../src/services/core/db.ts";
 import type { JSONValue } from "@exaix/core/types";
 

@@ -18,7 +18,7 @@ import type {
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
 import { DependencyResolver } from "./dependency_resolver.ts";
-import type { IAgentExecutionResult } from "../services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
 import { jsonExtract } from "@exaix/core/types";

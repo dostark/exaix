@@ -12,7 +12,7 @@
 
 import { assert, assertFalse } from "@std/assert";
 import { McpAgentStrategy } from "../../src/services/agent/strategies/mcp_agent_strategy.ts";
-import type { AgentExecutor, IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
+import type { AgentExecutor, IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_executor.ts";
 import { SecurityMode } from "@exaix/core";
 

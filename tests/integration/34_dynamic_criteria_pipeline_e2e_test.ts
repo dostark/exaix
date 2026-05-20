@@ -37,7 +37,7 @@ import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/eval
 import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";

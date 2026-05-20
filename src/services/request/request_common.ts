@@ -4,11 +4,11 @@
  * @description Provides common utility functions for loading agent blueprints
  * and building parsed request objects.
  * @architectural-layer Services
- * @related-files ["src/services/request/request_processor.ts", "src/services/agent/agent_runner.ts", "packages/schemas/src/request_analysis.ts"]
+ * @related-files ["src/services/request/request_processor.ts", "packages/execution/src/agent_runner.ts", "packages/schemas/src/request_analysis.ts"]
  */
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import type { IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
+import type { IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 

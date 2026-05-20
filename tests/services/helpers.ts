@@ -7,12 +7,7 @@
 
 import { type IFlowValidator, RequestRouter } from "../../src/services/request/request_router.ts";
 import type { IFlowResult, IFlowRunner } from "../../src/flows/flow_runner.ts";
-import type {
-  IAgentExecutionResult,
-  IAgentRunner,
-  IBlueprint,
-  IParsedRequest,
-} from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IRoutingPolicyService } from "@exaix/routing";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";

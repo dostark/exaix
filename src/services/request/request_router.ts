@@ -11,7 +11,7 @@
  * @related-files [src/services/request/request_processor.ts, "src/flows/flow_runner.ts", src/services/flow/flow_validator.ts]
  */
 import type { IFlowResult, IFlowRunner } from "../../flows/flow_runner.ts";
-import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "../agent/agent_runner.ts";
+import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";

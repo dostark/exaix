@@ -1,0 +1,39 @@
+{
+  "name": "@exaix/execution",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/streams": "jsr:@std/streams@^1.0.13",
+    "@std/toml": "jsr:@std/toml@^1.0.2",
+    "@std/yaml": "jsr:@std/yaml@^1.0.2",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/func": "../core/src/func/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/errors": "../core/src/errors/mod.ts",
+    "@exaix/core/observability": "../core/src/observability/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/types": "../ai/src/types.ts",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/circuit_breaker": "../ai/src/circuit_breaker.ts",
+    "@exaix/git": "../git/mod.ts",
+    "@exaix/mcp": "../mcp/mod.ts",
+    "@exaix/portal": "../portal/mod.ts",
+    "@exaix/memory": "../memory/mod.ts",
+    "@exaix/tool-runtime": "../tool-runtime/mod.ts",
+    "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

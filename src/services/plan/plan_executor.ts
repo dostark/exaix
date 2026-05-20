@@ -13,7 +13,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "../core/db.ts";
 import { SafeSubprocess } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
-import { AgentExecutor } from "../agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
 import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";

@@ -1,10 +1,10 @@
 /**
  * @module ExecutionStrategy
- * @path src/services/agent/strategies/execution_strategy.ts
+ * @path packages/execution/src/strategies/execution_strategy.ts
  * @description Interface for agent execution strategies, including the optional
  * `dispose?()` lifecycle contract for strategies that manage external resources.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_executor.ts, src/services/agent/strategies/strategy_registry.ts]
+ * @related-files [packages/execution/src/strategies/strategy_registry.ts, packages/execution/src/agent_executor.ts]
  * Allows different execution models (ReAct, MCP, etc.) to be used interchangeably.
  */
 

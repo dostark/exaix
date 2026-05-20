@@ -1,14 +1,14 @@
 /**
  * @module ReActLoopStrategy
- * @path src/services/agent/strategies/react_loop_strategy.ts
+ * @path packages/execution/src/strategies/react_loop_strategy.ts
  * @description In-process reasoning strategy using the ReAct (Reasoning + Acting) loop.
  * Executes tasks by prompting an LLM for tool calls and processing results within Exaix.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_executor.ts, src/services/plan/plan_executor.ts]
+ * @related-files [packages/execution/src/agent_executor.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { AgentExecutionErrorType, ExecutionStrategyName, ToolName } from "@exaix/core";

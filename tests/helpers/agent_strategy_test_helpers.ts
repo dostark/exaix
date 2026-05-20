@@ -10,10 +10,10 @@ import { createTestConfig } from "../../packages/ai/tests/helpers/test_config.ts
 import { EventLogger } from "@exaix/core/logger";
 import { SecurityMode } from "@exaix/core";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { readFixtureTextSync } from "./fixtures.ts";
 import type { MockProvider } from "@exaix/ai/providers.ts";
-import type { IAgentFileBlueprint } from "../../src/services/agent/agent_executor.ts";
+import type { IAgentFileBlueprint } from "@exaix/execution";
 import type { IAgentExecutionOptions } from "@exaix/schemas/agent_executor.ts";
 
 export const TEST_OPTIONS: IAgentExecutionOptions = {

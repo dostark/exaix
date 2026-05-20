@@ -4,7 +4,7 @@
  * @description Validates incoming request files, determines routing strategies (Agent vs Flow),
  * and generates execution plans. Acts as the primary entry point for the "Request Processing" phase.
  * @architectural-layer Services
- * @related-files ["src/services/request/request_router.ts", "src/services/agent/agent_runner.ts"]
+ * @related-files ["src/services/request/request_router.ts", "packages/execution/src/agent_runner.ts"]
  * @architectural-link [ARCHITECTURE.md#request-processing-flow]
  */
 
@@ -18,7 +18,7 @@ import {
   type IBlueprint,
   type IParsedRequest,
   type IRequestContextContext,
-} from "../agent/agent_runner.ts";
+} from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./request_common.ts";
 import { BlueprintLoader, type ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
 import { type IRequestMetadata, PlanWriter } from "../plan/plan_writer.ts";

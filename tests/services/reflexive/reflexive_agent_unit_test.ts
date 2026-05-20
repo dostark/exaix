@@ -13,12 +13,7 @@ import {
   type ICritique,
   ReflexiveAgent,
 } from "../../../src/services/agent/reflexive_agent.ts";
-import type {
-  IAgentExecutionResult,
-  IAgentRunner,
-  IBlueprint,
-  IParsedRequest,
-} from "../../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IOutputValidator, IValidationMetrics, IValidationResult, OutputValidator } from "@exaix/tool-runtime";

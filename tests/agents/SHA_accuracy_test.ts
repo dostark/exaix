@@ -11,7 +11,7 @@
 
 import { assertMatch, assertNotEquals } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IExecutionStrategy } from "../../src/services/agent/strategies/execution_strategy.ts";

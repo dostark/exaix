@@ -64,7 +64,7 @@ export interface IToolReflectorMetrics {
 /**
  * Schema for tool reflection output
  */
-export const ToolReflectionSchema: z.ZodTypeAny = z.object({
+export const ToolReflectionSchema = z.object({
   success: z.boolean(),
   confidence: z.number().min(0).max(100),
   achieved_purpose: z.boolean(),
@@ -77,7 +77,7 @@ export const ToolReflectionSchema: z.ZodTypeAny = z.object({
   retry_reason: z.string().optional(),
   alternative_parameters: z.record(JSONValueSchema).optional(),
   insights: z.array(z.string()).default([]),
-});
+}) satisfies z.ZodTypeAny;
 
 export type IToolReflection = z.infer<typeof ToolReflectionSchema>;
 

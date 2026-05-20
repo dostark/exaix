@@ -10,3 +10,4 @@ export * from "./prompt_context.ts";
 export * from "./agent_capabilities.ts";
 export * from "./prompt_formatter.ts";
 export * from "./json_repair.ts";
+export { extractKeywords } from "../skills/text_utils.ts";

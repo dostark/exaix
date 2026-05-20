@@ -26,11 +26,7 @@ import { McpToolName } from "@exaix/mcp";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { join } from "@std/path";
 
-import {
-  AgentExecutionError,
-  AgentExecutor,
-  type IAgentFileBlueprint,
-} from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutionError, AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";

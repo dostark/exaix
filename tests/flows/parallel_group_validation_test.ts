@@ -16,7 +16,7 @@ import {
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";
 

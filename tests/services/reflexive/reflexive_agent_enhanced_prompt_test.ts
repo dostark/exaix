@@ -17,12 +17,7 @@ import {
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type {
-  IAgentExecutionResult,
-  IAgentRunner,
-  IBlueprint,
-  IParsedRequest,
-} from "../../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { MAX_CRITIQUE_REQUIREMENTS } from "@exaix/core";
 

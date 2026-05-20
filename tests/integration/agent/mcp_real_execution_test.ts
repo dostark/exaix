@@ -7,7 +7,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { McpAgentStrategy } from "../../../src/services/agent/strategies/mcp_agent_strategy.ts";
 import { ProcessManager } from "@exaix/core";

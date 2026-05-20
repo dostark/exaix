@@ -1,6 +1,6 @@
 /**
  * @module AgentRunner
- * @path src/services/agent/agent_runner.ts
+ * @path packages/execution/src/agent_runner.ts
  * @description Core orchestrator for agent logic.
  *
  * Features:
@@ -10,7 +10,7 @@
  * - Handle agent feedback loops
  *
  * @architectural-layer Services
- * @related-files ["src/services/request/request_processor.ts", "src/services/blueprint/blueprint_loader.ts"]
+ * @related-files ["packages/execution/src/request_processor.ts", "packages/execution/src/blueprint_loader.ts"]
  */
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -22,7 +22,7 @@ import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix
 import type { IDatabaseService } from "@exaix/core/types";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
-import { extractKeywords } from "../../helpers/text.ts";
+import { extractKeywords } from "@exaix/core/func";
 import { renderSkillsSection } from "@exaix/core/func";
 import {
   ACTIVITY_ACTOR_AGENT,
@@ -35,7 +35,6 @@ import {
   PORTAL_KNOWLEDGE_KEY,
 } from "@exaix/core";
 import type { IRetryContext, IRetryPolicy, IRetryPolicyConfig, IRetryResult } from "@exaix/core/request";
-import { PlanAdapter } from "../plan/plan_adapter.ts";
 
 /**
  * Blueprint defines the agent's persona and system instructions
@@ -157,6 +156,12 @@ export interface IAgentRunner {
   ): Promise<IAgentExecutionResult>;
 }
 
+export interface IPlanAdapter {
+  parseAndValidate(blueprint: IBlueprint, request: IParsedRequest): Promise<IAgentExecutionResult>;
+  formatForModel?(blueprint: IBlueprint, request: IParsedRequest): string;
+  getSchemaInstructions(): string;
+}
+
 // ============================================================================
 // Agent Runner Service
 // ============================================================================
@@ -187,30 +192,36 @@ export class AgentRunner implements IAgentRunner {
   private outputValidator: IOutputValidator;
   private skillsService?: ISkillsService;
   private disableSkills: boolean;
-  private planAdapter: PlanAdapter;
+  private planAdapter: IPlanAdapter;
 
   private modelProvider: IModelProvider;
   private config?: IAgentRunnerConfig;
 
   constructor(
-    modelProvider?: IModelProvider,
+    planAdapterOrProvider?: IPlanAdapter | IModelProvider,
+    modelProviderOrConfig?: IModelProvider | IAgentRunnerConfig,
     config?: IAgentRunnerConfig,
   ) {
-    this.config = config;
-    const ctx = config?.context;
-    const provider = modelProvider || ctx?.provider;
+    const isOldStyle = planAdapterOrProvider != null && "generate" in planAdapterOrProvider;
+    this.planAdapter = isOldStyle
+      ? createNoopPlanAdapter()
+      : (planAdapterOrProvider as IPlanAdapter | undefined) ?? createNoopPlanAdapter();
+    this.config = isOldStyle ? (modelProviderOrConfig as IAgentRunnerConfig | undefined) : config;
+    const ctx = this.config?.context;
+    const provider = isOldStyle
+      ? (planAdapterOrProvider as IModelProvider)
+      : (modelProviderOrConfig as IModelProvider | undefined) || ctx?.provider;
     if (!provider) {
       throw new Error("AgentRunner requires a model provider");
     }
     this.modelProvider = provider;
-    this.db = ctx?.db || config?.db;
+    this.db = ctx?.db || this.config?.db;
     this.disableRetry = config?.disableRetry ?? false;
     this.skillsService = ctx?.skills || config?.skillsService;
     this.disableSkills = config?.disableSkills ?? false;
     this.retryPolicy = config?.retryPolicyInstance ||
       (config?.retryPolicy ? createRetryPolicy(config.retryPolicy) : createLLMRetryPolicy());
     this.outputValidator = config?.outputValidatorInstance || createOutputValidator({ autoRepair: true });
-    this.planAdapter = new PlanAdapter();
 
     // Set up retry logging
     this.retryPolicy.setOnRetry?.((ctx: IRetryContext) => {
@@ -679,4 +690,19 @@ export class AgentRunner implements IAgentRunner {
       console.error("[AgentRunner] Failed to log activity:", error);
     }
   }
+}
+
+function createNoopPlanAdapter(): IPlanAdapter {
+  return {
+    parseAndValidate: () => Promise.resolve({ thought: "", content: "", raw: "" }),
+    getSchemaInstructions: () => "",
+  };
+}
+
+export function createAgentRunner(
+  planAdapter?: IPlanAdapter,
+  modelProvider?: IModelProvider,
+  agentConfig?: IAgentRunnerConfig,
+): AgentRunner {
+  return new AgentRunner(planAdapter, modelProvider, agentConfig);
 }

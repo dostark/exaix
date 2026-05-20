@@ -1,13 +1,13 @@
 /**
  * @module McpAgentStrategy
- * @path src/services/agent/strategies/mcp_agent_strategy.ts
+ * @path packages/execution/src/strategies/mcp_agent_strategy.ts
  * @description Implementation of the MCP-based agent execution strategy (Out-of-Process).
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_executor.ts, packages/core/src/process_manager.ts, src/services/agent/agent_entrypoint.ts]
+ * @related-files [packages/execution/src/agent_executor.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";
-import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
+import { AgentExecutionError, type AgentExecutor, type IAgentFileBlueprint } from "../agent_executor.ts";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { SafeSubprocess } from "@exaix/core";
 import { ProcessManager } from "@exaix/core";

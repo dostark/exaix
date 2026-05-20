@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { PortalOperation } from "@exaix/core";

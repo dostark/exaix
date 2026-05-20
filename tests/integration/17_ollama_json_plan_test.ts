@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { OllamaProvider } from "@exaix/ai-ollama";
-import { AgentRunner } from "../../src/services/agent/agent_runner.ts";
+import { AgentRunner } from "@exaix/execution";
 import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "../../src/services/plan/plan_writer.ts";
 import { PlanAdapter } from "../../src/services/plan/plan_adapter.ts";
 import { initTestDbService } from "../helpers/db.ts";

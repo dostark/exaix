@@ -1,17 +1,17 @@
 /**
  * @module AgentExecutor
- * @path src/services/agent/agent_executor.ts
+ * @path packages/execution/src/agent_executor.ts
  * @description Orchestrates LLM agent execution via MCP with security mode enforcement.
  * Handles blueprint loading, subprocess spawning, MCP connection, and git audit.
  * @architectural-layer Services
- * @related-files ["src/services/agent/agent_runner.ts", "src/services/agent/execution_loop.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
  */
 
 import { isAbsolute, join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { EventLogger } from "@exaix/core/logger";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -71,8 +71,11 @@ import { LegacyAgentStrategy } from "./strategies/legacy_strategy.ts";
 import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { PromptBudgetAllocator } from "../context/prompt_budget_allocator.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+
+export interface IPromptBudgetAllocator {
+  allocate(modelId: string, hints?: object): IPromptBudget;
+}
 
 /**
  * Agent blueprint loaded from file
@@ -127,20 +130,29 @@ export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
   private currentPromptBudget?: IPromptBudget;
+  private promptBudgetAllocator?: IPromptBudgetAllocator;
 
   constructor(
     private config: Config,
-    private db: DatabaseService,
+    private db: IDatabaseService,
     private logger: EventLogger,
     private pathResolver: PathResolver,
     private permissions: PortalPermissionsService,
+    promptBudgetAllocatorOrProvider?: IPromptBudgetAllocator | IModelProvider,
     private provider?: IModelProvider,
     private strategyRegistry?: StrategyRegistry,
     private _toolRegistry?: IToolRegistry,
-    private promptBudgetAllocator: { allocate: (modelId: string) => IPromptBudget } = new PromptBudgetAllocator(
-      config.budget_enforcement ?? {},
-    ),
   ) {
+    // Support both calling conventions:
+    //   new AgentExecutor(config, db, logger, resolver, permissions, provider)  (old style)
+    //   new AgentExecutor(config, db, logger, resolver, permissions, allocator, provider)  (DI style)
+    const isOldStyle = promptBudgetAllocatorOrProvider != null && "generate" in promptBudgetAllocatorOrProvider;
+    this.promptBudgetAllocator = isOldStyle
+      ? createNoopBudgetAllocator()
+      : (promptBudgetAllocatorOrProvider as IPromptBudgetAllocator | undefined) ?? createNoopBudgetAllocator();
+    if (isOldStyle) {
+      this.provider = promptBudgetAllocatorOrProvider as IModelProvider;
+    }
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
@@ -472,7 +484,7 @@ export class AgentExecutor {
     // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
-    this.currentPromptBudget = this.promptBudgetAllocator.allocate(modelId);
+    this.currentPromptBudget = this.promptBudgetAllocator!.allocate(modelId);
 
     // Log execution start
     await this.logExecutionStart(
@@ -1420,6 +1432,17 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       },
     });
   }
+}
+
+function createNoopBudgetAllocator(): IPromptBudgetAllocator {
+  return {
+    allocate: () => ({
+      model: "default",
+      totalBudgetTokens: 32000,
+      safetyBufferTokens: 2000,
+      sections: { system: 2000, plan: 4000, portalKnowledge: 4000, memory: 4000, skills: 2000, loopHistory: 4000 },
+    }),
+  };
 }
 
 /** Replacement marker used when sanitizing prompt-injection patterns from user input */

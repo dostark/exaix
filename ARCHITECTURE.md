@@ -7,7 +7,7 @@ version: 2.2
 capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
 links:
   - "src/services/request/request_processor.ts:RequestProcessor"
-  - "src/services/agent/agent_runner.ts:AgentRunner"
+  - "packages/execution/src/agent_runner.ts:AgentRunner"
   - "packages/memory/src/bank/memory_bank.ts:MemoryBankService"
   - "tests/services/request/request_processor_test.ts"
 tools_referenced:
@@ -387,7 +387,7 @@ The `RequestAnalyzer` performs intent extraction before routing, identifying goa
 | 2 | `RequestProcessor` | `src/services/request_processor.ts:RequestProcessor.process()` |
 | 3 | `RequestAnalyzer` | `src/services/request_analysis/request_analyzer.ts` |
 | 4 | `RequestRouter` | `src/services/request_router.ts:RequestRouter.route()` |
-| 5 | `AgentRunner` | `src/services/agent_runner.ts:AgentRunner.execute()` |
+| 5 | `AgentRunner` | `packages/execution/src/agent_runner.ts:AgentRunner.execute()` |
 | 6 | `PlanAdapter` | `src/services/plan_adapter.ts:PlanAdapter.write()` |
 
 
@@ -2174,7 +2174,7 @@ graph LR
 | **Request Quality Gate**      | Pre-execution quality scoring and Q&A refinement                                                                                                  | `src/services/quality_gate/request_quality_gate.ts`                   | 🟢 All   |
 | **Clarification Engine**      | Multi-turn Q&A loop for request refinement                                                                                                        | `src/services/quality_gate/clarification_engine.ts`                   | 🟢 All   |
 | **Plan Executor**             | Execute approved plans                                                                                                                            | `src/services/plan_executor.ts`                                       | 🟢 All   |
-| **Agent Runner**              | Execute agent logic with LLM                                                                                                                      | `src/services/agent_runner.ts:AgentRunner`                            | 🟢 All   |
+| **Agent Runner**              | Execute agent logic with LLM                                                                                                                      | `packages/execution/src/agent_runner.ts:AgentRunner`                  | 🟢 All   |
 | **Flow Runner**               | Execute multi-agent flows                                                                                                                         | `src/flows/flow_runner.ts:FlowRunner`                                 | 🟢 All   |
 | **Flow Checkpoint Service**   | Persist and resume completed flow steps                                                                                                           | `src/services/flow/flow_checkpoint_service.ts:FlowCheckpointService`  | 🟢 All   |
 | **Flow Namespace Service**    | Shared blackboard persistence and key-based flow coordination                                                                                     | `src/services/flow/flow_namespace_service.ts:FlowNamespaceService`    | 🟢 All   |

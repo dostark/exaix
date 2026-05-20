@@ -10,7 +10,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner, type IAgentExecutor, type IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import type { IAgentExecutionResult } from "../../src/services/agent/agent_runner.ts";
+import type { IAgentExecutionResult } from "@exaix/execution";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,

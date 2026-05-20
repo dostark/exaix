@@ -22,6 +22,7 @@
     "./packages/quality-gate",
     "./packages/routing",
     "./packages/tool-runtime"
+    "./packages/execution",
   ],
   "lock": true,
   "exports": "./src/main.ts",
@@ -153,7 +154,8 @@
     "@exaix/core/cost": "./packages/core/src/cost/mod.ts",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
-    "@exaix/tool-runtime": "./packages/tool-runtime/mod.ts"
+    "@exaix/tool-runtime": "./packages/tool-runtime/mod.ts",
+    "@exaix/execution": "./packages/execution/mod.ts"
   },
   "exclude": [
     "cov_profile",

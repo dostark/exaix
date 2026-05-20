@@ -1580,7 +1580,7 @@ export class ToolRegistry implements IToolRegistry {
 
 function createDbEventLogger(db: IDatabaseService, identityId?: string): IEventLogger {
   return {
-    log: (event) =>
+    log: (event) => {
       db.logActivity(
         ActivityActor.SYSTEM,
         event.action,
@@ -1588,17 +1588,29 @@ function createDbEventLogger(db: IDatabaseService, identityId?: string): IEventL
         event.payload || {},
         event.traceId,
         identityId,
-      ),
-    info: (action, target, payload, traceId) =>
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId),
-    warn: (action, target, payload, traceId) =>
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId),
-    error: (action, target, payload, traceId) =>
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId),
-    fatal: (action, target, payload, traceId) =>
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId),
-    debug: (action, target, payload, traceId) =>
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId),
+      );
+      return Promise.resolve();
+    },
+    info: (action, target, payload, traceId) => {
+      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
+      return Promise.resolve();
+    },
+    warn: (action, target, payload, traceId) => {
+      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
+      return Promise.resolve();
+    },
+    error: (action, target, payload, traceId) => {
+      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
+      return Promise.resolve();
+    },
+    fatal: (action, target, payload, traceId) => {
+      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
+      return Promise.resolve();
+    },
+    debug: (action, target, payload, traceId) => {
+      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
+      return Promise.resolve();
+    },
     child: () => createNoopEventLogger(),
   };
 }

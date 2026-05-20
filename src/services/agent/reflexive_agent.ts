@@ -3,14 +3,14 @@
  * @path src/services/agent/reflexive_agent.ts
  * @description Implements the reflexive agent loop, enabling self-critique and iterative output improvement before finalization.
  * @architectural-layer Services
- * @related-files ["src/services/agent/agent_runner.ts", "src/services/utils/confidence_scorer.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "src/services/utils/confidence_scorer.ts"]
  */
 
 import { z } from "zod";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import {
   AgentRunner,
   type IAgentExecutionResult,
@@ -18,7 +18,7 @@ import {
   type IAgentRunnerConfig,
   type IBlueprint,
   type IParsedRequest,
-} from "./agent_runner.ts";
+} from "@exaix/execution";
 import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
 import { logDebug } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";

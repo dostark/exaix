@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import type { EventLogger } from "@exaix/core/logger";
 import type { ILogEvent } from "@exaix/core";
 import { ActorType, AgentKind } from "@exaix/core";

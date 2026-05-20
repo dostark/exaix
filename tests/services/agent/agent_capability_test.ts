@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { AgentExecutor, type IAgentFileBlueprint } from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { EventLogger } from "@exaix/core/logger";

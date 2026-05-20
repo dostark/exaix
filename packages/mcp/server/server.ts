@@ -1007,16 +1007,26 @@ function createDbEventLogger(db: IDatabaseService): IEventLogger {
         event.traceId,
       );
     },
-    info: (action, target, payload, traceId) =>
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
-    warn: (action, target, payload, traceId) =>
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
-    error: (action, target, payload, traceId) =>
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
-    fatal: (action, target, payload, traceId) =>
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
-    debug: (action, target, payload, traceId) =>
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId),
+    info: (action, target, payload, traceId) => {
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
+      return Promise.resolve();
+    },
+    warn: (action, target, payload, traceId) => {
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
+      return Promise.resolve();
+    },
+    error: (action, target, payload, traceId) => {
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
+      return Promise.resolve();
+    },
+    fatal: (action, target, payload, traceId) => {
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
+      return Promise.resolve();
+    },
+    debug: (action, target, payload, traceId) => {
+      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
+      return Promise.resolve();
+    },
     child: () => createDbEventLogger(db),
   };
 }

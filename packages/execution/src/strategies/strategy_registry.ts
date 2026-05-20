@@ -1,9 +1,9 @@
 /**
  * @module StrategyRegistry
- * @path src/services/agent/strategies/strategy_registry.ts
+ * @path packages/execution/src/strategies/strategy_registry.ts
  * @description Central registry for managing and resolving agent execution strategies.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_executor.ts, src/services/agent/strategies/execution_strategy.ts]
+ * @related-files [packages/execution/src/agent_executor.ts, packages/execution/src/strategies/execution_strategy.ts]
  */
 
 import type { IExecutionStrategy } from "./execution_strategy.ts";

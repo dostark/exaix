@@ -6,7 +6,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
-import { AgentExecutor } from "../../../src/services/agent/agent_executor.ts";
+import { AgentExecutor } from "@exaix/execution";
 import { StrategyRegistry } from "../../../src/services/agent/strategies/strategy_registry.ts";
 import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";

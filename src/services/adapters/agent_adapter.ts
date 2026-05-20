@@ -3,7 +3,7 @@
  * @path src/services/adapters/agent_adapter.ts
  * @description Module for AgentAdapter.
  * @architectural-layer Services
- * @related-files ["src/services/agent/agent_runner.ts", @exaix/core/types]
+ * @related-files ["packages/execution/src/agent_runner.ts", @exaix/core/types]
  */
 
 import { BaseCommand, type ICommandContext } from "../../cli/base.ts";
