@@ -1,12 +1,12 @@
 /**
  * @module EventLoggerTest
- * @path tests/services/event/event_logger_test.ts
+ * @path packages/core/tests/event/event_logger_test.ts
  * @description Verifies the EventLogger service, ensuring that high-level system
  * lifecycle events are correctly captured and routed to the persistent journal.
  */
 
 import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import { EventBusService } from "@exaix/core/observability";

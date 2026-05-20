@@ -1,19 +1,22 @@
 /**
  * @module QualityGateMod
  * @path src/services/quality_gate/mod.ts
- * @description Barrel export for the quality_gate service module, providing a
- * single import point for the RequestQualityGate orchestrator and its supporting
- * assessors, enricher, and persistence helpers.
+ * @description Compatibility re-exports from @exaix/quality-gate package.
+ * @deprecated Import directly from "@exaix/quality-gate" instead.
  * @architectural-layer Services
- * @related-files ["packages/core/src/types/i_request_quality_gate_service.ts"]
+ * @related-files [packages/quality-gate]
  */
 
-export { buildQualityGateConfig, RequestQualityGate } from "./request_quality_gate.ts";
-export { type IQualityGateTomlConfig } from "./request_quality_gate.ts";
-export { type IRequestQualityGateConfig } from "@exaix/core/types";
-export { assessHeuristic } from "./heuristic_assessor.ts";
-export { LlmQualityAssessor } from "./llm_assessor.ts";
-export { enrichRequest } from "./request_enricher_llm.ts";
-export { ClarificationEngine } from "./clarification_engine.ts";
-export { type IClarificationEngineConfig } from "./clarification_engine.ts";
-export { loadClarification, saveClarification } from "./clarification_persistence.ts";
+export {
+  assessHeuristic,
+  buildQualityGateConfig,
+  ClarificationEngine,
+  enrichRequest,
+  type IClarificationEngineConfig,
+  type IQualityGateTomlConfig,
+  LlmQualityAssessor,
+  loadClarification,
+  RequestQualityGate,
+  saveClarification,
+} from "@exaix/quality-gate";
+export type { IRequestQualityGateConfig } from "@exaix/core/types";

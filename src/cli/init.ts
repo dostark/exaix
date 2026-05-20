@@ -23,7 +23,7 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 
 // Concrete services for adapters
 import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
-import { SkillsService } from "../services/skills/skills.ts";
+import { SkillsService } from "@exaix/core/skills";
 import { ArchiveService } from "../services/artifact/archive_service.ts";
 import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
 import { ContextCardGenerator } from "../services/context/context_card_generator.ts";

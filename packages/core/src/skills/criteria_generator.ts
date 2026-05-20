@@ -1,16 +1,14 @@
 /**
  * @module CriteriaGenerator
- * @path src/services/skills/criteria_generator.ts
+ * @path packages/core/src/skills/criteria_generator.ts
  * @description Converts structured RequestAnalysis output (goals and acceptance
  * criteria) into EvaluationCriterion arrays suitable for quality gate evaluation.
  * Implements ICriteriaGeneratorService for dependency injection.
- * @architectural-layer Services
- * @related-files ["packages/core/src/types/i_criteria_generator_service.ts", src/flows/evaluation_criteria.ts]
  */
 
-import type { EvaluationCriterion } from "../../flows/evaluation_criteria.ts";
-import { EvaluationCategory } from "@exaix/core";
-import type { ICriteriaGeneratorService } from "@exaix/core/types";
+import type { EvaluationCriterion } from "../types/mod.ts";
+import { EvaluationCategory } from "../../mod.ts";
+import type { ICriteriaGeneratorService } from "../types/mod.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   ACCEPTANCE_CRITERION_WEIGHT,
@@ -19,26 +17,12 @@ import {
   DEFAULT_GOAL_WEIGHT,
   MAX_DYNAMIC_CRITERIA,
   PRIORITY_1_GOAL_WEIGHT,
-} from "@exaix/core";
+} from "../../mod.ts";
 
 const PRIORITY_1 = 1;
 const PRIORITY_REQUIRED_THRESHOLD = 2;
 
-/**
- * Generates dynamic EvaluationCriterion arrays from RequestAnalysis data.
- * Only explicit goals are converted; inferred goals are ignored.
- */
 export class CriteriaGenerator implements ICriteriaGeneratorService {
-  /**
-   * Converts RequestAnalysis goals and acceptance criteria into a sorted,
-   * truncated list of EvaluationCriterion objects.
-   *
-   * Algorithm:
-   * 1. Explicit goals → criterion named `goal_{sanitized}`, weighted by priority
-   * 2. Acceptance criteria → criterion named `ac_{sanitized}`, weight 1.5, required
-   * 3. Sort descending by weight; tiebreak ascending goal priority
-   * 4. Truncate to MAX_DYNAMIC_CRITERIA
-   */
   fromAnalysis(analysis: IRequestAnalysis): EvaluationCriterion[] {
     const goalCriteria = analysis.goals
       .filter((g) => g.explicit)

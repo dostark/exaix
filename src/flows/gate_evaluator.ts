@@ -24,7 +24,7 @@ import type {
   IGateResult,
   IJudgeInvoker,
 } from "@exaix/core/types";
-import { CriteriaGenerator } from "../services/skills/criteria_generator.ts";
+import { CriteriaGenerator } from "@exaix/core/skills";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 /**
  * Gate configuration schema

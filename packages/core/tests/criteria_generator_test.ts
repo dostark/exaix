@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
-import { CriteriaGenerator } from "../../../src/services/skills/criteria_generator.ts";
+import { CriteriaGenerator } from "@exaix/core/skills";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";

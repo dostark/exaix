@@ -1,6 +1,6 @@
 /**
  * @module SessionMemoryTest
- * @path tests/services/skills/session_memory_test.ts
+ * @path packages/core/tests/skills/session_memory_test.ts
  * @description Verifies the SessionMemoryService, ensuring short-term execution state is
  * correctly isolated, updated, and cleared across different agent sessions.
  */
@@ -24,7 +24,7 @@ import {
   MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { NullEmbeddingStub, NullMemoryBankStub } from "../../helpers/memory_test_helper.ts";
+import { NullEmbeddingStub, NullMemoryBankStub } from "@exaix/testing";
 
 // ===== Mock Services =====
 

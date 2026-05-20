@@ -1,15 +1,15 @@
 /**
  * @module CostTracker
- * @path src/services/cost/cost_tracker.ts
+ * @path packages/core/src/cost/cost_tracker.ts
  * @description Service for tracking and managing LLM provider costs, token usage, and budget enforcement.
- * @architectural-layer Services
- * @related-files [src/services/core/db.ts, "packages/schemas/src/config.ts"]
+ * @architectural-layer Domain
+ * @related-files ["packages/core/src/types/i_cost_tracker.ts", "packages/schemas/src/config.ts"]
  */
-import type { SqliteParam } from "../core/db.ts";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { SqliteParam } from "../types/mod.ts";
+import type { IDatabaseService } from "../types/mod.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { ICostTracker } from "@exaix/core/types";
-import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";
+import type { ICostTracker } from "../types/mod.ts";
+import type { ICostFilter, IProviderCostRecord } from "../types/mod.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
@@ -19,8 +19,8 @@ import {
   DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
   DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
   TOKENS_PER_COST_UNIT,
-} from "@exaix/core";
-import { ProviderType } from "@exaix/core";
+} from "../../mod.ts";
+import { ProviderType } from "../../mod.ts";
 
 /**
  * Service for tracking and managing LLM provider costs.
@@ -28,7 +28,6 @@ import { ProviderType } from "@exaix/core";
  */
 export class CostTracker implements ICostTracker {
   private static getCostRates(config?: Config): Record<string, number> {
-    // Use configured rates if available, otherwise fall back to defaults
     const configuredRates = config?.cost_tracking?.rates ?? {};
     const defaultRates: Record<string, number> = {
       [ProviderType.OPENAI]: COST_RATE_OPENAI,
@@ -38,8 +37,6 @@ export class CostTracker implements ICostTracker {
       [ProviderType.MOCK]: COST_RATE_MOCK,
     };
 
-    // For now, just return the default rates since registry initialization is complex
-    // TODO: Initialize registry properly for dynamic provider discovery
     return { ...defaultRates, ...configuredRates };
   }
 
@@ -85,16 +82,13 @@ export class CostTracker implements ICostTracker {
       timestamp: new Date(),
     };
 
-    // Add to pending batch
     this.pendingRecords.push(record);
 
-    // Flush immediately if batch is full
     if (this.pendingRecords.length >= this.maxBatchSize) {
       await this.flushBatch();
       return;
     }
 
-    // Schedule batch flush if not already scheduled
     if (this.batchTimeout === null) {
       this.batchTimeout = setTimeout(() => {
         this.flushBatch().catch((error) => {
@@ -104,9 +98,6 @@ export class CostTracker implements ICostTracker {
     }
   }
 
-  /**
-   * Track a single LLM generation (Interface implementation)
-   */
   async trackGeneration(
     provider: string,
     model: string,
@@ -125,9 +116,6 @@ export class CostTracker implements ICostTracker {
     return cost;
   }
 
-  /**
-   * Persist a per-generation cost record (Interface implementation)
-   */
   async persistEntry(record: IProviderCostRecord): Promise<void> {
     await this.trackRequest(record.provider, record.tokens, {
       model: record.model,
@@ -138,9 +126,6 @@ export class CostTracker implements ICostTracker {
     });
   }
 
-  /**
-   * Query cost records by criteria.
-   */
   async queryByCriteria(filter: ICostFilter): Promise<IProviderCostRecord[]> {
     const whereParts: string[] = [];
     const params: SqliteParam[] = [];
@@ -194,29 +179,16 @@ export class CostTracker implements ICostTracker {
     }));
   }
 
-  /**
-   * Get total cost for a provider/model (Interface implementation)
-   */
   getTotalCost(_provider?: string, _model?: string): number {
-    // This would ideally query the DB but for sync call we might need a cache
-    // or change the interface to be async.
-    // For now, returning 0 if not implemented as async.
-    // However, I'll keep the interface as is and maybe fix it later if needed.
     return 0;
   }
 
-  /**
-   * Check if execution is within budget (Interface implementation)
-   */
   async isWithinBudget(provider?: string, budget?: number): Promise<boolean> {
     const dailyBudget = budget ?? this.config?.provider_strategy?.max_daily_cost_usd ?? 5.0;
     const dailyCost = await this.getDailyCost(provider);
     return dailyCost < dailyBudget;
   }
 
-  /**
-   * Get total daily cost for a specific provider or all providers.
-   */
   async getDailyCost(provider?: string): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -239,9 +211,6 @@ export class CostTracker implements ICostTracker {
     return result?.total_cost ?? 0;
   }
 
-  /**
-   * Get cost summary for a date range.
-   */
   async getCostSummary(
     startDate: Date,
     endDate: Date,
@@ -282,18 +251,12 @@ export class CostTracker implements ICostTracker {
     }));
   }
 
-  /**
-   * Estimate cost for a provider and token count.
-   */
   private estimateCost(provider: string, tokens: number): number {
     const rates = CostTracker.getCostRates();
     const rate = rates[provider] ?? 0;
-    return rate * (tokens / TOKENS_PER_COST_UNIT); // Cost per 1K tokens
+    return rate * (tokens / TOKENS_PER_COST_UNIT);
   }
 
-  /**
-   * Insert multiple cost records into the database in batch.
-   */
   private async insertCostRecordsBatch(
     records: Array<Omit<IProviderCostRecord, "id"> & { requests: number }>,
   ): Promise<void> {
@@ -301,7 +264,6 @@ export class CostTracker implements ICostTracker {
       return;
     }
 
-    // Use batch insert for better performance
     const placeholders = records.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
     const query = `
       INSERT INTO provider_costs (id, provider, model, requests, tokens, prompt_tokens, completion_tokens, estimated_cost_usd, trace_id, portal, timestamp)
@@ -328,9 +290,6 @@ export class CostTracker implements ICostTracker {
     await this.db.preparedRun(query, params);
   }
 
-  /**
-   * Flush pending cost records to database in batch.
-   */
   private async flushBatch(): Promise<void> {
     if (this.pendingRecords.length === 0) {
       return;
@@ -343,9 +302,6 @@ export class CostTracker implements ICostTracker {
     await this.insertCostRecordsBatch(records);
   }
 
-  /**
-   * Force flush any pending records (useful for shutdown).
-   */
   async flush(): Promise<void> {
     if (this.batchTimeout !== null) {
       clearTimeout(this.batchTimeout);

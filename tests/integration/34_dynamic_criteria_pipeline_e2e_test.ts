@@ -41,7 +41,7 @@ import type { IAgentExecutionResult } from "../../src/services/agent/agent_runne
 import type { JSONValue } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";
-import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
+import { CriteriaGenerator } from "@exaix/core/skills";
 
 // ============================================================
 // Shared fixtures

@@ -9,7 +9,7 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory, MemoryBankSource, MemoryOperation, MemoryScope, SkillStatus } from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { SkillsService } from "../../../src/services/skills/skills.ts";
+import { SkillsService } from "@exaix/core/skills";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemorySkillsDir } from "../../helpers/paths_helper.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";

@@ -3,7 +3,7 @@
  * @path src/tui/skills_manager_view.ts
  * @description Interactive TUI view for managing Skills (agent capabilities), supporting discovery, status filtering, and skill deletion.
  * @architectural-layer TUI
- * @related-files ["src/services/skills/skills.ts", src/tui/tui_dashboard.ts]
+ * @related-files ["packages/core/src/skills/skills.ts", src/tui/tui_dashboard.ts]
  */
 
 import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus } from "@exaix/core";

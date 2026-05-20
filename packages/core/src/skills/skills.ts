@@ -1,17 +1,15 @@
 /**
  * @module SkillsService
- * @path src/services/skills/skills.ts
+ * @path packages/core/src/skills/skills.ts
  * @description Manages procedural memory (skills).
  *
  * Skills encode domain expertise, procedures, and best practices as reusable
  * instruction modules that agents apply to tasks.
- * @architectural-layer Services
- * @related-files ["packages/schemas/src/memory_bank.ts", "src/services/agent/agent_runner.ts"]
  */
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import {
   ActivityActor,
   DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
@@ -19,8 +17,8 @@ import {
   type MemoryBankSource,
   MemoryScope,
   SkillStatus,
-} from "@exaix/core";
-import { extractKeywords } from "../../helpers/text.ts";
+} from "../../mod.ts";
+import { extractKeywords } from "./text_utils.ts";
 import {
   type ISkill,
   type ISkillIndex,
@@ -32,22 +30,15 @@ import {
   SkillSchema,
   type SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
-import type { ISkillsService } from "@exaix/core/types";
-import type { ISkillMatchRequest } from "@exaix/core/types";
+import { type JSONObject, toSafeJson } from "../types/mod.ts";
+import type { JSONValue } from "../../mod.ts";
+import type { ISkillsService } from "../types/mod.ts";
+import type { ISkillMatchRequest } from "../types/mod.ts";
 
-/**
- * Skills Service Configuration
- */
 export interface ISkillsConfig {
-  /** Enable automatic skill matching */
   autoMatch: boolean;
-  /** Maximum number of skills to inject into a single request */
   maxSkillsPerRequest: number;
-  /** Maximum character budget for skill context */
   skillContextBudget: number;
-  /** Minimum confidence score for skill matching (0-1) */
   matchThreshold: number;
 }
 
@@ -58,15 +49,6 @@ const DEFAULT_CONFIG: ISkillsConfig = {
   matchThreshold: 0.3,
 };
 
-/**
- * Skills Service
- *
- * Provides skill management and matching capabilities:
- * - CRUD operations for skills
- * - Trigger-based skill matching
- * - Skill context building for prompt injection
- * - Learning-to-skill derivation
- */
 export class SkillsService implements ISkillsService {
   private skillsConfig: ISkillsConfig;
   private skillsDir: string | null = null;
@@ -80,7 +62,6 @@ export class SkillsService implements ISkillsService {
     this.skillsConfig = { ...DEFAULT_CONFIG, ...skillsConfig };
   }
 
-  // Initialize skills directory structure
   async initialize(): Promise<void> {
     this.skillsDir = join(this.config.memoryDir, "Skills");
     const globalDir = join(this.skillsDir, MemoryScope.GLOBAL);
@@ -101,11 +82,9 @@ export class SkillsService implements ISkillsService {
       }
     }
 
-    // Ensure index exists
     await this.loadIndex();
   }
 
-  // Get a skill by ID
   async getSkill(skillId: string): Promise<ISkill | null> {
     const skillPath = await this.findSkillPath(skillId);
     if (!skillPath) return null;
@@ -120,7 +99,6 @@ export class SkillsService implements ISkillsService {
     }
   }
 
-  // List all skills with optional filtering
   async listSkills(filter?: {
     status?: SkillStatus;
     scope?: MemoryScope;
@@ -136,7 +114,6 @@ export class SkillsService implements ISkillsService {
       filtered = filtered.filter((s: ISkillIndexEntry) => s.scope === filter.scope);
     }
 
-    // For source, we need to load full skills (index doesn't have source)
     const skills = await Promise.all(
       filtered.map((entry: ISkillIndexEntry) => this.getSkill(entry.skill_id)),
     );
@@ -163,7 +140,6 @@ export class SkillsService implements ISkillsService {
     }
   }
 
-  // Create a new skill
   async createSkill(
     skill: SkillDefinition,
   ): Promise<ISkill> {
@@ -179,7 +155,6 @@ export class SkillsService implements ISkillsService {
       usage_count: 0,
     };
 
-    // Determine path
     const fileName = `${newSkill.skill_id}.json`;
     const skillPath = newSkill.scope === MemoryScope.GLOBAL
       ? join(this.skillsDir!, MemoryScope.GLOBAL, fileName)
@@ -187,7 +162,6 @@ export class SkillsService implements ISkillsService {
 
     await this.writeSkillToFile(newSkill, skillPath);
 
-    // Update index
     const index = await this.loadIndex();
     index.skills.push({
       skill_id: newSkill.skill_id,
@@ -211,7 +185,6 @@ export class SkillsService implements ISkillsService {
     return newSkill;
   }
 
-  // Update an existing skill
   async updateSkill(
     skillId: string,
     updates: SkillUpdates,
@@ -229,7 +202,6 @@ export class SkillsService implements ISkillsService {
 
     await this.writeSkillToFile(updatedSkill, skillPath);
 
-    // Update index
     const index = await this.loadIndex();
     const entryIdx = index.skills.findIndex((s: ISkillIndexEntry) => s.skill_id === skillId);
     if (entryIdx !== -1) {
@@ -253,21 +225,16 @@ export class SkillsService implements ISkillsService {
     return updatedSkill;
   }
 
-  // Activate a draft skill
   async activateSkill(skillId: string): Promise<boolean> {
     const updated = await this.updateSkill(skillId, { status: SkillStatus.ACTIVE });
     return updated !== null;
   }
 
-  // Deprecate an active skill
   async deprecateSkill(skillId: string): Promise<boolean> {
     const updated = await this.updateSkill(skillId, { status: SkillStatus.DEPRECATED });
     return updated !== null;
   }
 
-  /**
-   * Match skills based on request context
-   */
   async matchSkills(request: ISkillMatchRequest): Promise<{ matches: ISkillMatch[]; totalAvailable: number }> {
     if (!this.skillsDir) await this.initialize();
     if (!this.skillsConfig.autoMatch) return { matches: [], totalAvailable: 0 };
@@ -289,7 +256,6 @@ export class SkillsService implements ISkillsService {
       }
     }
 
-    // Sort by confidence
     matches.sort((a, b) => b.confidence - a.confidence);
 
     const totalAvailable = matches.length;
@@ -321,7 +287,6 @@ export class SkillsService implements ISkillsService {
     return { matches: budgetedMatches, totalAvailable };
   }
 
-  // Calculate trigger match score
   private calculateTriggerMatch(
     triggers: ISkillTriggers,
     request: ISkillMatchRequest,
@@ -330,38 +295,31 @@ export class SkillsService implements ISkillsService {
     let maxPossibleScore = 0;
     const matched: Partial<ISkillTriggers> = {};
 
-    // 1. Keyword match (highest weight)
     const keywordResults = this.scoreKeywordTriggers(triggers.keywords, request.keywords);
     totalScore += keywordResults.score;
     maxPossibleScore += keywordResults.max;
     if (keywordResults.matched) matched.keywords = keywordResults.matched;
 
-    // 2. Task type match
     const taskTypeResults = this.scoreTaskTypeTriggers(triggers.task_types, request.taskType);
     totalScore += taskTypeResults.score;
     maxPossibleScore += taskTypeResults.max;
     if (taskTypeResults.matched) matched.task_types = taskTypeResults.matched;
 
-    // 3. File pattern match
     const fileResults = this.scoreFilePatternTriggers(triggers.file_patterns, request.filePaths);
     totalScore += fileResults.score;
     maxPossibleScore += fileResults.max;
     if (fileResults.matched) matched.file_patterns = fileResults.matched;
 
-    // 4. Tag match
     const tagResults = this.scoreTagTriggers(triggers.tags, request.tags);
     totalScore += tagResults.score;
     maxPossibleScore += tagResults.max;
     if (tagResults.matched) matched.tags = tagResults.matched;
 
-    // 5. Semantic/Heuristic match (from raw request text)
     if (request.requestText && triggers.keywords) {
       const requestKeywords = extractKeywords(request.requestText);
       const textMatch = this.scoreKeywordTriggers(triggers.keywords, requestKeywords);
-      // Half weight for derived keywords
       totalScore += textMatch.score * 0.5;
       maxPossibleScore += textMatch.max * 0.5;
-      // We don't add to matched.keywords as they are derived
     }
 
     const confidence = maxPossibleScore > 0 ? totalScore / maxPossibleScore : 0;
@@ -381,7 +339,6 @@ export class SkillsService implements ISkillsService {
 
     if (matches.length === 0) return { max, score: 0 };
 
-    // Progressive score based on how many keywords matched
     const score = (matches.length / triggerKeywords.length) * 1.0;
     return { max, score, matched: matches };
   }
@@ -406,7 +363,6 @@ export class SkillsService implements ISkillsService {
     const max = 0.5;
     if (!requestFilePaths || requestFilePaths.length === 0) return { max, score: 0 };
 
-    // For now, simple suffix or exact match (no full glob lib for brevity)
     const matches = triggerPatterns.filter((p) =>
       requestFilePaths.some((f) => {
         if (p.startsWith("*.")) return f.endsWith(p.slice(1));
@@ -429,9 +385,6 @@ export class SkillsService implements ISkillsService {
     return { max, score: matches.length > 0 ? max : 0, matched: matches.length > 0 ? matches : undefined };
   }
 
-  /**
-   * Build combined skill context for prompt injection
-   */
   async buildSkillContext(skillIds: string[]): Promise<string> {
     if (skillIds.length === 0) return "";
 
@@ -452,8 +405,7 @@ export class SkillsService implements ISkillsService {
         context += skillBlock + "\n";
         currentBudget -= skillBlock.length;
       } else {
-        // Budget exceeded
-        context += `*(Other compatible skills matched but excluded due to context budget)*\n`;
+        context += "*(Other compatible skills matched but excluded due to context budget)*\n";
         break;
       }
     }
@@ -479,9 +431,6 @@ export class SkillsService implements ISkillsService {
     return block;
   }
 
-  /**
-   * Record that a skill was successfully used
-   */
   async recordSkillUsage(skillId: string): Promise<void> {
     const skillPath = await this.findSkillPath(skillId);
     if (!skillPath) return;
@@ -502,9 +451,6 @@ export class SkillsService implements ISkillsService {
     }
   }
 
-  /**
-   * Derive a new skill from one or more learning entries
-   */
   async deriveSkillFromLearnings(
     learningIds: string[],
     skillDef: SkillDefinition,
@@ -523,26 +469,19 @@ export class SkillsService implements ISkillsService {
     return skill;
   }
 
-  /**
-   * Rebuild the skill index by scanning the filesystem
-   */
   async rebuildIndex(): Promise<void> {
     const index = await this.buildIndex();
     await this.saveIndex(index);
   }
 
-  // ===== Private Utilities =====
-
   private async findSkillPath(skillId: string): Promise<string | null> {
     if (!this.skillsDir) await this.initialize();
 
-    // 1. Check project skills
     if (this.projectSkillsDir) {
       const projectPath = join(this.projectSkillsDir, `${skillId}.json`);
       if (await exists(projectPath)) return projectPath;
     }
 
-    // 2. Check global skills
     const globalPath = join(this.skillsDir!, MemoryScope.GLOBAL, `${skillId}.json`);
     if (await exists(globalPath)) return globalPath;
 
@@ -565,7 +504,6 @@ export class SkillsService implements ISkillsService {
     return fullPath.replace(this.skillsDir! + "/", "");
   }
 
-  // Build skill index
   private async buildIndex(): Promise<ISkillIndex> {
     const skills: ISkillIndexEntry[] = [];
     const files = await this.findSkillFiles(this.skillsDir!);
@@ -597,7 +535,6 @@ export class SkillsService implements ISkillsService {
     };
   }
 
-  // Load index from file or build it
   private async loadIndex(): Promise<ISkillIndex> {
     if (!this.skillsDir) await this.initialize();
     const indexPath = join(this.skillsDir!, "index.json");
@@ -606,26 +543,22 @@ export class SkillsService implements ISkillsService {
       const content = await Deno.readTextFile(indexPath);
       return JSON.parse(content) as ISkillIndex;
     } catch {
-      // Index not found or invalid, build it
       const index = await this.buildIndex();
       await this.saveIndex(index);
       return index;
     }
   }
 
-  // Save index to file
   private async saveIndex(index: ISkillIndex): Promise<void> {
     if (!this.skillsDir) return;
     const indexPath = join(this.skillsDir!, "index.json");
     await Deno.writeTextFile(indexPath, JSON.stringify(index, null, 2));
   }
 
-  // Write skill to file
   private async writeSkillToFile(skill: ISkill, path: string): Promise<void> {
     await Deno.writeTextFile(path, JSON.stringify(skill, null, 2));
   }
 
-  // Log activity to database
   private logActivity(event: {
     event_type: string;
     target: string;

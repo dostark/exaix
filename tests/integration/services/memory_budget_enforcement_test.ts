@@ -4,13 +4,13 @@
  * @description Integration tests for Phase 62 Step 62.3 budget enforcement in
  * SessionMemoryService and SkillsService.
  * @architectural-layer Test
- * @related-files [packages/memory/src/session/session_memory.ts, src/services/skills/skills.ts]
+ * @related-files [packages/memory/src/session/session_memory.ts, packages/core/src/skills/skills.ts]
  */
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { SessionMemoryService } from "@exaix/memory";
-import { SkillsService } from "../../../src/services/skills/skills.ts";
+import { SkillsService } from "@exaix/core/skills";
 import type { IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION, MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";

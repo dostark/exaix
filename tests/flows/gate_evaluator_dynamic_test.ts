@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { type GateConfig, GateEvaluator } from "../../src/flows/gate_evaluator.ts";
 import type { IJudgeInvoker } from "@exaix/core/types";
-import { CriteriaGenerator } from "../../src/services/skills/criteria_generator.ts";
+import { CriteriaGenerator } from "@exaix/core/skills";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import { ANALYZER_VERSION, FlowGateOnFail } from "@exaix/core";

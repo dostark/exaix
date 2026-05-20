@@ -3,7 +3,7 @@
  * @path src/cli/commands/cost_commands.ts
  * @description CLI command handler for LLM cost and token usage reporting.
  * @architectural-layer CLI
- * @related-files [src/services/cost/cost_tracker.ts, src/cli/exactl.ts]
+ * @related-files [packages/core/src/cost/cost_tracker.ts, src/cli/exactl.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

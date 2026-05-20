@@ -13,7 +13,7 @@ import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { HealthCheckVerdict, PricingTier, ProviderCostTier, TaskComplexity } from "@exaix/core";
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
-import { CostTracker } from "../../src/services/cost/cost_tracker.ts";
+import { CostTracker } from "@exaix/core/cost";
 import { HealthCheckService } from "../../src/services/core/health_check_service.ts";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { OllamaProviderFactory } from "@exaix/ai-ollama";

@@ -12,7 +12,7 @@ import { parse } from "@std/yaml";
 import type { IApplicationContext } from "@exaix/core/types";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IRequestProcessingContext } from "../../../src/services/request/request_processor.ts";
-import { CostTracker } from "../../../src/services/cost/cost_tracker.ts";
+import { CostTracker } from "@exaix/core/cost";
 import { PlanValidationError } from "../../../src/services/plan/plan_adapter.ts";
 import { PlanStatus } from "@exaix/core/status";
 import type { JSONObject } from "@exaix/core/types";

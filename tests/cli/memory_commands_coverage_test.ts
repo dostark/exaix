@@ -16,7 +16,7 @@ import {
 import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { MemoryEmbeddingService } from "@exaix/memory";
-import { SkillsService } from "../../src/services/skills/skills.ts";
+import { SkillsService } from "@exaix/core/skills";
 import { TestEnvironmentFactory } from "../fixtures/test_environment_factory.ts";
 import { ExecutionMemoryBuilder, LearningBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
 import {

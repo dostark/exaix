@@ -1,12 +1,12 @@
 /**
  * @module ActivityRepositoryIdentityFieldsTest
- * @path tests/repositories/activity_repository_identity_fields_test.ts
+ * @path packages/core/tests/repositories/activity_repository_identity_fields_test.ts
  * @description Integration tests verifying ActivityRepository persists and reads back Actor/Agent/Identity separation fields.
  */
 
 import { assertEquals, assertNotEquals } from "@std/assert";
 import { DatabaseActivityRepository, type LogActivityRequest } from "@exaix/core/repositories";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 
 /**
  * Tests for Step 55.2: ActivityRepository field persistence

@@ -18,7 +18,8 @@
     "./packages/testing",
     "./packages/storage-sqlite",
     "./packages/memory",
-    "./packages/portal"
+    "./packages/portal",
+    "./packages/quality-gate"
   ],
   "lock": true,
   "exports": "./src/main.ts",
@@ -115,7 +116,6 @@
     "@exaix/git/": "./packages/git/src/",
     "@exaix/git/testing": "./packages/git/testing/mod.ts",
     "@exaix/git/testing/": "./packages/git/testing/",
-    "@exaix/core/reviews/": "./src/reviews/",
     "@exaix/schemas": "./packages/schemas/mod.ts",
     "@exaix/schemas/": "./packages/schemas/src/",
     "@exaix/parsing": "./packages/parsing/mod.ts",
@@ -143,7 +143,11 @@
     "@exaix/memory": "./packages/memory/mod.ts",
     "@exaix/memory/testing": "./packages/memory/testing/mod.ts",
     "@exaix/memory/testing/": "./packages/memory/testing/",
-    "@exaix/memory/": "./packages/memory/src/"
+    "@exaix/memory/": "./packages/memory/src/",
+    "@exaix/quality-gate": "./packages/quality-gate/mod.ts",
+    "@exaix/quality-gate/": "./packages/quality-gate/src/",
+    "@exaix/core/cost": "./packages/core/src/cost/mod.ts",
+    "@exaix/core/skills": "./packages/core/src/skills/mod.ts"
   },
   "exclude": [
     "cov_profile",

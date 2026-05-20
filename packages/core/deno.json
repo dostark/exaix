@@ -18,10 +18,14 @@
     "@exaix/core/repositories": "./src/repositories/mod.ts",
     "@exaix/core/logger": "./src/logger/mod.ts",
     "@exaix/core/config": "./src/config/mod.ts",
+    "@exaix/core/cost": "./src/cost/mod.ts",
+    "@exaix/core/skills": "./src/skills/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/schemas": "../schemas/mod.ts",
-    "@exaix/schemas/": "../schemas/src/"
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
+    "@exaix/storage-sqlite/": "../storage-sqlite/src/"
   },
   "exports": {
     ".": "./mod.ts"

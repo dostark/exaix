@@ -118,6 +118,8 @@ const STRING_WHITELIST = new Set([
   "any",
   "never",
   "void",
+  // Common English words that appear in stop-word lists across the codebase
+  "other",
 ]);
 const NUMBER_WHITELIST = new Set([0, 1, -1]);
 
