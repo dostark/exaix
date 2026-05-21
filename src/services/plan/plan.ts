@@ -14,7 +14,7 @@ import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
 import type { IConfigService } from "@exaix/core/types";
-import type { IDatabaseService } from "../../services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 
 export class PlanService {
   private workspacePlansDir: string;

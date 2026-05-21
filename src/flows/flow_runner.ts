@@ -23,7 +23,7 @@ import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
 import { jsonExtract } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
-import type { IDatabaseService } from "../services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";

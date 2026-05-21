@@ -13,7 +13,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
 import { GitCommitTool } from "../../src/mcp/handlers/git_commit_tool.ts";
 import { ListDirectoryTool } from "../../src/mcp/handlers/list_directory_tool.ts";
-import { DatabaseService } from "../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import { initActivityTableSchema } from "../helpers/db.ts";

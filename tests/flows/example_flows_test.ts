@@ -17,7 +17,7 @@ import { initTestDbService } from "../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
-import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { JSONValue } from "@exaix/core/types";
 
 describe("Example Flows - Step 7.9", {

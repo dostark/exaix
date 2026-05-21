@@ -18,7 +18,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
-import type { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";

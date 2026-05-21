@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { DaemonCommands } from "../../src/cli/commands/daemon_commands.ts";
 import { isProcessAlive } from "../../src/cli/process_utils.ts";
-import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { getRuntimeDir } from "../helpers/paths_helper.ts";
 import type { IDisplayService } from "@exaix/core/types";

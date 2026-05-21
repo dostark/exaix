@@ -10,7 +10,7 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { SafeSubprocess } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "@exaix/execution";

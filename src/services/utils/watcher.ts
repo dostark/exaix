@@ -8,7 +8,7 @@
  */
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { EventLogger } from "@exaix/core/logger";
 import {
   DEFAULT_UNKNOWN_LABEL,

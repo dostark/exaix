@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
 import { logDebug } from "@exaix/core/logger";

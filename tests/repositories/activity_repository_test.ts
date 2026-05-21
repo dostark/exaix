@@ -10,7 +10,7 @@ import { MemoryBankSource } from "@exaix/core";
 import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "@exaix/core/repositories";
 import type { ActivityRepository } from "@exaix/core/repositories";
-import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { createStubDb } from "../helpers/test_helpers.ts";
 
 // Mock IActivity entity for testing

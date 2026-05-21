@@ -4,9 +4,9 @@
  * @description Orchestrates system-wide health checks, including database connectivity,
  * LLM provider availability, disk space, and memory usage.
  * @architectural-layer Services
- * @related-files [src/main.ts, "src/services/core/db.ts"]
+ * @related-files [src/main.ts, "packages/storage-sqlite/src/database_service.ts"]
  */
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import {

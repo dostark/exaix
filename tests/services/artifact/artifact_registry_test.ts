@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import type { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { join } from "@std/path";
 import { ArtifactRegistry } from "../../../src/services/artifact/artifact_registry.ts";
 import { initTestDbService } from "../../helpers/db.ts";

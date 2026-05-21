@@ -5,7 +5,7 @@
  */
 
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { DatabaseService } from "../../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
 import type { IApplicationContext } from "@exaix/core/types";

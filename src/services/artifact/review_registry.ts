@@ -4,10 +4,10 @@
  * @description Manages the lifecycle of agent-created reviews, including registration,
  * status updates, and diff generation for approval workflows.
  * @architectural-layer Services
- * @related-files ["src/services/agent/execution_loop.ts", "src/services/core/db.ts"]
+ * @related-files ["src/services/agent/execution_loop.ts", "packages/storage-sqlite/src/database_service.ts"]
  */
 
-import type { IDatabaseService, SqliteParam } from "../core/db.ts";
+import type { IDatabaseService, SqliteParam } from "@exaix/storage-sqlite";
 import type { EventLogger } from "@exaix/core/logger";
 import {
   type IRegisterReviewInput,

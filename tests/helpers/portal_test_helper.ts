@@ -10,7 +10,7 @@ import { PortalCommands } from "../../src/cli/commands/portal_commands.ts";
 import { initTestDbService } from "./db.ts";
 import { createTestConfigService } from "./config.ts";
 import type { ConfigService } from "@exaix/core/config";
-import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ContextCardGenerator } from "@exaix/context";
 import { ContextCardAdapter } from "../../src/services/adapters/context_card_adapter.ts";
 import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

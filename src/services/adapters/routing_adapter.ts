@@ -7,7 +7,7 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRoutingPolicyLoadResult } from "@exaix/routing";
 import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
 import { CandidateDiscovery } from "@exaix/routing";

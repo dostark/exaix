@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus, ToolName } from "@exaix/core";
 import type { IToolResult } from "@exaix/core/types";
 import { join } from "@std/path";
-import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";

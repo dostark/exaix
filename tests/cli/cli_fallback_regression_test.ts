@@ -9,7 +9,7 @@ import { assert, assertEquals, assertExists } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { createMockConfig } from "../helpers/config.ts";
-import type { IDatabaseService } from "../../src/services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
 import { RequestCommands } from "../../src/cli/commands/request_commands.ts";

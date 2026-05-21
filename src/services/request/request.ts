@@ -16,7 +16,7 @@ import type { IDisplayService } from "@exaix/core/types";
 import type { IApplicationContext, IConfigService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { AnalysisMode } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestEntry, IRequestMetadata, IRequestOptions } from "@exaix/core/request";

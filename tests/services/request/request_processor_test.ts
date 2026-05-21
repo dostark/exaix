@@ -17,7 +17,7 @@ import { ProviderRegistry } from "@exaix/ai";
 import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { CostTracker } from "@exaix/core/cost";
-import type { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import {

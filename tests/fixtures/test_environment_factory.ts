@@ -11,7 +11,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
-import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import {
   MemoryBankAdapter,
   MemoryEmbeddingAdapter,

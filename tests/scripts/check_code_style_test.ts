@@ -342,7 +342,7 @@ Deno.test("fix(check_code_style): flags package runtime modules importing root s
  * @related-files ["packages/core/src/types/i_database_service.ts"]
  */
 
-import type { IDatabaseService } from "../../../src/services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 
 export type TempDb = IDatabaseService;
 `,

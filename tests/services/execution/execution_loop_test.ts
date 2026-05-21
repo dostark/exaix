@@ -23,7 +23,7 @@ import {
 import { ensureDir } from "@std/fs/ensure-dir";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { ActivityRecord } from "../../../src/services/core/db.ts";
+import type { ActivityRecord } from "@exaix/storage-sqlite";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 /**

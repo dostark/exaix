@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IFlowResult } from "../../flows/flow_runner.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";

@@ -7,7 +7,7 @@
 
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { initTestDbService } from "./db.ts";
 import { getMemoryProjectsDir } from "./paths_helper.ts";

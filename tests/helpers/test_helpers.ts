@@ -5,7 +5,7 @@
  * of mock files, request factories, and common visual primitives.
  */
 
-import type { IDatabaseService } from "../../src/services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { ActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";

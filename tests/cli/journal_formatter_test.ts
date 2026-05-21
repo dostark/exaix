@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { JournalFormatter } from "../../src/cli/formatters/journal_formatter.ts";
-import type { ActivityRecord } from "../../src/services/core/db.ts";
+import type { ActivityRecord } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { DataFormat } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";

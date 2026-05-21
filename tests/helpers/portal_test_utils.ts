@@ -17,7 +17,7 @@ import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
 import { createMockConfig } from "./config.ts";
-import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { withCliProcessMutex } from "./cli_process_mutex.ts";
 
 export type { IPortalGitRepoSetup } from "@exaix/git/testing";

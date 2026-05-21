@@ -13,7 +13,7 @@ import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { ExaPathDefaults } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { DatabaseService as DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 
 // Mock dependencies
 const mockConfig = ConfigSchema.parse({

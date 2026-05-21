@@ -19,7 +19,7 @@ import {
   DEFAULT_MEMORY_PATH,
   DEFAULT_PORTALS_PATH,
 } from "@exaix/core";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { MemoryBankService } from "@exaix/memory";
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
 import { ActivityActor, ExecutionStatus } from "@exaix/core";

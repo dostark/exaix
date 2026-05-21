@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type {
   IArtifact,
   IArtifactFilters,

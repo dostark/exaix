@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { MemoryReferenceType } from "@exaix/core";
-import type { ActivityRecord } from "../../../src/services/core/db.ts";
+import type { ActivityRecord } from "@exaix/storage-sqlite";
 import { initTestDbService } from "../../helpers/db.ts";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";

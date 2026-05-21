@@ -10,7 +10,7 @@ import { NotificationService } from "@exaix/core/notification";
 import { initTestDbService } from "../helpers/db.ts";
 
 import type { ITuiDashboard } from "../../src/tui/tui_dashboard.ts";
-import type { IDatabaseService } from "../../src/services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 
 interface TestDashboardProps {
   nonInteractive?: boolean;

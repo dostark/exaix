@@ -7,7 +7,7 @@
 
 import { join } from "@std/path";
 import { FileWatcher } from "../../src/services/utils/watcher.ts";
-import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "./config.ts";
 import { getWorkspaceRequestsDir } from "./paths_helper.ts";
 

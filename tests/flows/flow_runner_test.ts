@@ -29,7 +29,7 @@ import { RetryPolicy } from "@exaix/core/request";
 import { PROVIDER_ANTHROPIC } from "@exaix/ai-anthropic";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import type { JSONValue } from "@exaix/core/types";
-import type { ActivityRecord, SqliteParam } from "../../src/services/core/db.ts";
+import type { ActivityRecord, SqliteParam } from "@exaix/storage-sqlite";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { createMockConfig } from "../helpers/config.ts";
 

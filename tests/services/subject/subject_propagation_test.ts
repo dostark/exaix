@@ -8,7 +8,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
-import { DatabaseService } from "../../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initActivityTableSchema } from "../../helpers/db.ts";

@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import type { DatabaseService } from "../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
 
 import type { join as _join } from "@std/path";

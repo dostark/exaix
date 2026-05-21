@@ -3,7 +3,7 @@
  * @path src/services/adapters/journal_adapter.ts
  * @description Adapter for Journal Service using DatabaseService.
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", @exaix/core/types]
+ * @related-files ["packages/storage-sqlite/src/database_service.ts", @exaix/core/types]
  */
 
 import type { IJournalService } from "@exaix/core/types";

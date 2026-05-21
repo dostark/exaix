@@ -8,7 +8,7 @@ import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { ConfigService } from "@exaix/core/config";
-import { DatabaseService } from "../../../src/services/core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
 import { ProviderFactory } from "@exaix/ai";
 import { initializeGlobalLogger } from "@exaix/core/logger";

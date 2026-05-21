@@ -3,10 +3,10 @@
  * @path src/services/core/audit_logger.ts
  * @description specialized audit logger for security-critical operations, providing tamper-evident logging with alerting.
  * @architectural-layer Services
- * @related-files ["src/services/core/db.ts", "packages/core/src/types/enums.ts"]
+ * @related-files ["packages/storage-sqlite/src/database_service.ts", "packages/core/src/types/enums.ts"]
  */
 
-import type { DatabaseService } from "../core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import { dirname, join } from "@std/path";
 
 import type { JSONValue } from "@exaix/core";

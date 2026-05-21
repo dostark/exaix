@@ -10,7 +10,7 @@
 
 import { basename, dirname, join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { DatabaseService } from "../core/db.ts";
+import { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
   AgentRunner,

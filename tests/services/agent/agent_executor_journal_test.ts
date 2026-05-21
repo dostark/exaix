@@ -15,7 +15,7 @@ import {
   AGENT_EVENT_OUTPUT,
   AGENT_EVENT_SECURITY_VIOLATION,
 } from "@exaix/core";
-import type { DatabaseService } from "../../../src/services/core/db.ts";
+import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
 import { createMockConfig } from "../../helpers/config.ts";

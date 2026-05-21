@@ -11,7 +11,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
-import type { IDatabaseService } from "../../../src/services/core/db.ts";
+import type { IDatabaseService } from "@exaix/storage-sqlite";
 import {
   type ITraceData,
   MissionReporter,

@@ -26,7 +26,7 @@ import type {
 } from "@exaix/core/request";
 import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
-import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "../../src/services/core/db.ts";
+import type { ActivityRecord as _ActivityRecord, IDatabaseService, SqliteParam } from "@exaix/storage-sqlite";
 import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import {
   type ISkillSummary,
