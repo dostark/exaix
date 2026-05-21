@@ -8,7 +8,7 @@
 import { assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { FrontmatterParser } from "@exaix/parsing";
+import { FrontmatterParser } from "@exaix/core/parsing";
 
 Deno.test("Integration: Invalid Input - System stability after parser failures", async (t) => {
   const env = await TestEnvironment.create();
