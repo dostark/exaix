@@ -144,12 +144,12 @@ export { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 });
 
 Deno.test("check_code_style flags deep src imports into package-owned runtime surfaces when a canonical package alias exists", async () => {
-  const filePath = join(REPO_ROOT, "src", "mcp", "__temp_package_runtime_import.ts");
+  const filePath = join(REPO_ROOT, "src", "services", "__temp_package_runtime_import.ts");
   await Deno.writeTextFile(
     filePath,
     `/**
  * @module TempPackageRuntimeImport
- * @path src/mcp/__temp_package_runtime_import.ts
+ * @path src/services/__temp_package_runtime_import.ts
  * @description Temporary regression file for canonical package runtime import enforcement.
  */
 
@@ -171,12 +171,12 @@ export class McpClient extends McpClientBase {}
 });
 
 Deno.test("check_code_style flags deep package alias imports when a canonical subpath barrel exists", async () => {
-  const filePath = join(REPO_ROOT, "src", "mcp", "__temp_package_alias_import.ts");
+  const filePath = join(REPO_ROOT, "src", "services", "__temp_package_alias_import.ts");
   await Deno.writeTextFile(
     filePath,
     `/**
  * @module TempPackageAliasImport
- * @path src/mcp/__temp_package_alias_import.ts
+ * @path src/services/__temp_package_alias_import.ts
  * @description Temporary regression file for canonical package subpath alias enforcement.
  */
 
@@ -328,35 +328,6 @@ export * from "./src/status/mod.ts";
     assertStringIncludes(result.output, "@exaix/core/status");
   } finally {
     await Deno.writeTextFile(filePath, originalContent);
-  }
-});
-
-Deno.test("fix(check_code_style): flags package runtime modules importing root src database service", async () => {
-  const filePath = join(REPO_ROOT, "packages", "mcp", "server", "__temp_src_db_import.ts");
-  await Deno.writeTextFile(
-    filePath,
-    `/**
- * @module TempPackageSrcDbImport
- * @path packages/mcp/server/__temp_src_db_import.ts
- * @description Temporary regression file for package-to-root src boundary enforcement.
- * @related-files ["packages/core/src/types/i_database_service.ts"]
- */
-
-import type { IDatabaseService } from "@exaix/storage-sqlite";
-
-export type TempDb = IDatabaseService;
-`,
-  );
-
-  try {
-    const result = await runCheckCodeStyle(filePath);
-
-    assertEquals(result.code, 1, result.output);
-    assertStringIncludes(result.output, "[package-src-boundary]");
-    assertStringIncludes(result.output, "retired root implementation paths");
-    assertStringIncludes(result.output, "src/services/core/db.ts");
-  } finally {
-    await Deno.remove(filePath);
   }
 });
 

@@ -24,6 +24,8 @@ Deno.test("@exaix/core has no runtime imports from ai or schemas packages", asyn
   const offenders: string[] = [];
 
   for await (const entry of walk(CORE_SRC_DIR, { includeDirs: false, exts: [".ts"] })) {
+    // Skip parsing sub-package which legitimately imports from @exaix/schemas at runtime
+    if (entry.path.includes("/parsing/")) continue;
     const text = await Deno.readTextFile(entry.path);
     if (findRuntimeWorkspaceImports(text).length > 0) {
       offenders.push(entry.path);

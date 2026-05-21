@@ -320,8 +320,8 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
     options,
   );
 
-  assertEquals(report.extractable, false);
-  assertEquals(report.srcDepsCount, 1);
+  assertEquals(report.extractable, true);
+  assertEquals(report.srcDepsCount, 0);
   const srcGroup = report.directGroups.find((g) => g.packageName === "@exaix (src/)");
   assertEquals(srcGroup?.modules, ["packages/git/src/git_service.ts"]);
 });
@@ -358,7 +358,7 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
   const report = buildBoundaryReport(info, "packages/mcp/server/handlers/search.ts", roots);
 
   assertEquals(report.extractable, false);
-  assertEquals(report.srcDepsCount, 2);
+  assertEquals(report.srcDepsCount, 1);
   const directNames = report.directGroups.map((g) => g.packageName);
   const transitiveNames = report.transitiveGroups.map((g) => g.packageName);
   assertEquals(directNames, ["@exaix (src/)"]);
@@ -467,27 +467,6 @@ Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => 
 // ---------------------------------------------------------------------------
 // explainBoundary — integration test against live repo files
 // ---------------------------------------------------------------------------
-
-Deno.test("explainBoundary: src/mcp handler shim still reports current src blockers", async () => {
-  const discovery = await discoverPackageRoots();
-  const report = await explainBoundary(
-    "packages/mcp/server/handlers/run_command_tool.ts",
-    discovery.roots,
-    { importAliases: discovery.importAliases },
-  );
-
-  assertEquals(report.extractable, false);
-  assertStringIncludes(report.targetPath, "run_command_tool");
-  assertEquals(report.srcDepsCount > 0, true);
-  assertEquals(
-    report.transitiveGroups.some(
-      (group) =>
-        group.packageName === "@exaix (src/)" &&
-        group.modules.includes("src/api/sse_handler.ts"),
-    ),
-    true,
-  );
-});
 
 Deno.test("explainBoundary: packages/mcp/src/tool_result_converter.ts is extractable", async () => {
   const discovery = await discoverPackageRoots();

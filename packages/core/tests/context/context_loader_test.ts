@@ -9,7 +9,7 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { ContextLoader } from "@exaix/core/context";
 import type { ContextLoadResult, IContextConfig } from "@exaix/core/context";
-import type { ActivityRecord } from "@exaix/testing";
+import type { IActivityRecord } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
 
 // ============================================================================
@@ -993,7 +993,7 @@ describe("IActivity Logging with Database", () => {
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       const logs = db.getActivitiesByTrace("test-context-trace");
-      const contextLog = logs.find((l: ActivityRecord) => l.action_type === "context.loaded");
+      const contextLog = logs.find((l: IActivityRecord) => l.action_type === "context.loaded");
       assertExists(contextLog, "context.loaded should be logged");
 
       const payload = JSON.parse(contextLog.payload);
@@ -1028,7 +1028,7 @@ describe("IActivity Logging with Database", () => {
       await new Promise((resolve) => setTimeout(resolve, 150));
 
       const logs = db.getActivitiesByTrace("test-error-trace");
-      const errorLog = logs.find((l: ActivityRecord) => l.action_type === "context.file_load_error");
+      const errorLog = logs.find((l: IActivityRecord) => l.action_type === "context.file_load_error");
       assertExists(errorLog, "context.file_load_error should be logged");
 
       const payload = JSON.parse(errorLog.payload);
@@ -1061,7 +1061,7 @@ describe("IActivity Logging with Database", () => {
 
       // Should not have logged anything (no traceId)
       const allLogs = await db.getRecentActivity(100);
-      const contextLogs = allLogs.filter((l: ActivityRecord) => l.action_type === "context.loaded");
+      const contextLogs = allLogs.filter((l: IActivityRecord) => l.action_type === "context.loaded");
       assertEquals(contextLogs.length, 0, "Should not log without traceId");
     } finally {
       await cleanup();

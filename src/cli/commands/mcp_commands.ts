@@ -7,7 +7,7 @@
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";
-import { MCPServer } from "../../mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
 import { validateMCPToolResponse, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";

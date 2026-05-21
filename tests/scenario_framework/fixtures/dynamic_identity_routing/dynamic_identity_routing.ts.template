@@ -1,7 +1,7 @@
 import { join } from "https://deno.land/std/path/mod.ts";
 import { RequestRouter } from "{{REPO_ROOT}}src/services/request/request_router.ts";
 import { RoutingPolicyService, RoutingPolicyLoader, CandidateDiscovery } from "@exaix/routing";
-import { BlueprintLoader } from "{{REPO_ROOT}}src/services/blueprint/blueprint_loader.ts";
+import { BlueprintLoader } from "@exaix/core/blueprint";
 
 const root = Deno.cwd();
 const selectedIdentity = "senior-coder";
