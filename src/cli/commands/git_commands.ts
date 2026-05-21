@@ -3,7 +3,7 @@
  * @path src/cli/commands/git_commands.ts
  * @description Provides CLI commands for repository interaction, including trace-id aware branch listing, commit history, and status reporting.
  * @architectural-layer CLI
- * @related-files ["src/services/core/git_service.ts", "src/main.ts"]
+ * @related-files ["packages/git/src/git_service.ts", "src/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "../base.ts";

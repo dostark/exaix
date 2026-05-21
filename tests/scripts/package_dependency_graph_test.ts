@@ -301,13 +301,13 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
         dependencies: [
           { specifier: "@exaix/mcp", code: { specifier: "@exaix/mcp" } },
           {
-            specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href,
-            code: { specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href },
+            specifier: toFileUrl(`${repo}/packages/git/src/git_service.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/packages/git/src/git_service.ts`).href },
           },
         ],
       },
       { specifier: toFileUrl(`${repo}/packages/mcp/mod.ts`).href },
-      { specifier: toFileUrl(`${repo}/src/services/core/git_service.ts`).href },
+      { specifier: toFileUrl(`${repo}/packages/git/src/git_service.ts`).href },
     ],
   };
   const roots = ["src", "packages/mcp"];
@@ -323,7 +323,7 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
   assertEquals(report.extractable, false);
   assertEquals(report.srcDepsCount, 1);
   const srcGroup = report.directGroups.find((g) => g.packageName === "@exaix (src/)");
-  assertEquals(srcGroup?.modules, ["src/services/core/git_service.ts"]);
+  assertEquals(srcGroup?.modules, ["packages/git/src/git_service.ts"]);
 });
 
 Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split from direct", () => {
@@ -435,7 +435,7 @@ Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () =
   const report: BoundaryReport = {
     targetPath: "src/mcp/handlers/run_command_tool.ts",
     directGroups: [
-      { packageName: "@exaix (src/)", modules: ["src/services/core/git_service.ts"] },
+      { packageName: "@exaix (src/)", modules: ["packages/git/src/git_service.ts"] },
       { packageName: "@exaix/mcp", modules: ["packages/mcp/mod.ts"] },
     ],
     transitiveGroups: [],
@@ -446,7 +446,7 @@ Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () =
 
   const text = renderBoundaryReport(report);
   assertStringIncludes(text, "NOT extractable");
-  assertStringIncludes(text, "src/services/core/git_service.ts");
+  assertStringIncludes(text, "packages/git/src/git_service.ts");
   assertEquals(text.includes("EXTRACTABLE"), false);
 });
 

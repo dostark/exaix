@@ -3,7 +3,7 @@
  * @path packages/mcp/server/handlers/git_create_branch_tool.ts
  * @description MCP tool handler for creating feature branches in a portal git repository.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, src/services/core/git_service.ts]
+ * @related-files [packages/mcp/server/tool_handler.ts, packages/git/src/git_service.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
