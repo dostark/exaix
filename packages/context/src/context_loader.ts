@@ -1,6 +1,6 @@
 /**
  * @module ContextLoader
- * @path src/services/context/context_loader.ts
+ * @path packages/context/src/context_loader.ts
  * @description Intelligently loads and prioritizes codebase context for LLM execution.
  *
  * Responsibilities:
@@ -12,7 +12,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts"]
  */
 
-import type { DatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import { ActivityActor } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 
@@ -53,7 +53,7 @@ export interface IContextConfig {
   identityId?: string;
 
   /** Optional: Database service for activity logging */
-  db?: DatabaseService;
+  db?: IDatabaseService;
 }
 
 /**

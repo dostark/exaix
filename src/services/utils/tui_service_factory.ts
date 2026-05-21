@@ -23,7 +23,7 @@ import { ContextCardAdapter } from "../adapters/context_card_adapter.ts";
 import { getGlobalLogger } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 import { DisplayAdapter } from "../adapters/display_adapter.ts";
-import { ContextCardGenerator } from "../context/context_card_generator.ts";
+import { ContextCardGenerator } from "@exaix/context";
 import { PortalService } from "@exaix/portal";
 import { createGitServiceStub } from "@exaix/testing/helpers/stub_factories.ts";
 import { MemoryBankService } from "@exaix/memory";

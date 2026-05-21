@@ -1,6 +1,6 @@
 /**
  * @module PromptBudgetAllocator
- * @path src/services/context/prompt_budget_allocator.ts
+ * @path packages/context/src/prompt_budget_allocator.ts
  * @description Compatibility wrapper for the package-owned prompt budget allocator from @exaix/core.
  * @architectural-layer Services
  * @related-files ["packages/core/src/prompt_budget_allocator.ts"]

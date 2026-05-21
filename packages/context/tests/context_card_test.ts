@@ -1,16 +1,16 @@
 /**
  * @module ContextCardTest
- * @path tests/services/context/context_card_test.ts
+ * @path packages/context/tests/context_card_test.ts
  * @description Verifies the generation and discovery of portal "Context Cards",
  * ensuring that core portal identity and mission are correctly summarized.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { ContextCardGenerator } from "../../../src/services/context/context_card_generator.ts";
+import { ContextCardGenerator } from "@exaix/context";
 import { ExaPathDefaults } from "@exaix/core";
-import { createMockConfig } from "../../helpers/config.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { createMockConfig } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing";
 
 /**
  * Tests for Step 2.4: Context Card Generator

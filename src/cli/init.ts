@@ -26,7 +26,7 @@ import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } fro
 import { SkillsService } from "@exaix/core/skills";
 import { ArchiveService } from "../services/artifact/archive_service.ts";
 import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
-import { ContextCardGenerator } from "../services/context/context_card_generator.ts";
+import { ContextCardGenerator } from "@exaix/context";
 import { PortalService } from "@exaix/portal";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { RequestService } from "../services/request/request.ts";

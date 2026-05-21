@@ -1,16 +1,16 @@
 /**
  * @module ContextLoaderTest
- * @path tests/services/context/context_loader_test.ts
+ * @path packages/context/tests/context_loader_test.ts
  * @description Verifies the core context assembly logic, ensuring that relevant files,
  * memory, and portal data are correctly injected into the agent prompt.
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { ContextLoader } from "../../../src/services/context/context_loader.ts";
-import type { ContextLoadResult, IContextConfig } from "../../../src/services/context/context_loader.ts";
-import type { ActivityRecord } from "../../../src/services/core/db.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { ContextLoader } from "@exaix/context";
+import type { ContextLoadResult, IContextConfig } from "@exaix/context";
+import type { ActivityRecord } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing";
 
 // ============================================================================
 // Test Setup and Fixtures

@@ -105,8 +105,8 @@ src/services/
 ├── adapters/               # Service adapters for DI
 ├── middleware/             # Middleware pipeline
 ├── decorators/             # TypeScript decorators
-├── portal_knowledge/       # Portal knowledge service
 ├── quality_gate/           # Quality gate service
+├── request_analysis/       # Request analysis engine
 ├── request_analysis/       # Request analysis engine
 └── request_processing/     # Request processing types
 ```

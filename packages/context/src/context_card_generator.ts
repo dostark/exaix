@@ -1,6 +1,6 @@
 /**
  * @module ContextCardGenerator
- * @path src/services/context/context_card_generator.ts
+ * @path packages/context/src/context_card_generator.ts
  * @description Generates and updates portal context cards in the memory bank, preserving user notes.
  * @architectural-layer Services
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/core/src/types/i_database_service.ts"]
@@ -8,7 +8,7 @@
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import { ActivityActor } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { JSONValue } from "@exaix/core";

@@ -1,11 +1,9 @@
 /**
  * @module ContextServicesIndex
  * @path src/services/context/mod.ts
- * @description Barrel export for context service modules.
+ * @description Compatibility barrel — re-exports from @exaix/context.
  * @architectural-layer Services
- * @related-files [src/services/context/*.ts]
+ * @related-files ["packages/context/"]
  */
 
-export * from "./context_card_generator.ts";
-export * from "./context_loader.ts";
-export * from "./prompt_budget_allocator.ts";
+export * from "@exaix/context";

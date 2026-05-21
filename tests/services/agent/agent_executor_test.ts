@@ -41,7 +41,7 @@ import { EventLogger } from "@exaix/core/logger";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "@exaix/execution";
-import { PromptBudgetAllocator } from "../../../src/services/context/prompt_budget_allocator.ts";
+import { PromptBudgetAllocator } from "@exaix/context";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 // Test fixtures - initialized once

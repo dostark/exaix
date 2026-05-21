@@ -11,7 +11,7 @@ import { initTestDbService } from "./db.ts";
 import { createTestConfigService } from "./config.ts";
 import type { ConfigService } from "@exaix/core/config";
 import type { DatabaseService as DatabaseService } from "../../src/services/core/db.ts";
-import { ContextCardGenerator } from "../../src/services/context/context_card_generator.ts";
+import { ContextCardGenerator } from "@exaix/context";
 import { ContextCardAdapter } from "../../src/services/adapters/context_card_adapter.ts";
 import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import { PortalService } from "@exaix/portal";

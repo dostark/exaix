@@ -10,7 +10,7 @@ import { assert, assertEquals, assertExists, type assertRejects as _assertReject
 
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ContextLoader } from "../../src/services/context/context_loader.ts";
+import { ContextLoader } from "@exaix/context";
 
 Deno.test("[security] Integration: Portal Access - Security enforcement", async (t) => {
   const env = await TestEnvironment.create();
