@@ -4,7 +4,7 @@
  * @description Unit tests for the DeleteFileTool MCP tool.
  */
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { DeleteFileTool } from "../../../src/mcp/handlers/delete_file_tool.ts";
+import { DeleteFileTool } from "@exaix/mcp/server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

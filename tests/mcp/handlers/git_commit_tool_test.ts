@@ -5,7 +5,7 @@
  */
 import { assertEquals, assertMatch } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { GitCommitTool } from "../../../src/mcp/handlers/git_commit_tool.ts";
+import { GitCommitTool } from "@exaix/mcp/server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

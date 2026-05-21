@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { MCPServer } from "../../src/mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { McpCommands } from "../../src/cli/commands/mcp_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { TEST_MCP_DEFAULT_PORT, TEST_MCP_PORT } from "@exaix/testing";

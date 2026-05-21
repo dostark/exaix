@@ -16,7 +16,7 @@ import type { JSONValue } from "@exaix/core/types";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../../helpers/test_helpers.ts";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
-import { ToolHandler } from "../../../src/mcp/tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 

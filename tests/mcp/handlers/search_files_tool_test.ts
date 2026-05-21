@@ -4,7 +4,7 @@
  * @description Unit tests for the SearchFilesTool MCP tool.
  */
 import { assertEquals } from "@std/assert";
-import { SearchFilesTool } from "../../../src/mcp/handlers/search_files_tool.ts";
+import { SearchFilesTool } from "@exaix/mcp/server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

@@ -8,7 +8,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
-import { MCPServer } from "../../src/mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

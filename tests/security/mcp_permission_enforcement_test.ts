@@ -8,7 +8,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
 
-import { MCPServer } from "../../src/mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";

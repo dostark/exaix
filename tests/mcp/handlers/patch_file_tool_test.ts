@@ -5,7 +5,7 @@
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
-import { PatchFileTool } from "../../../src/mcp/handlers/patch_file_tool.ts";
+import { PatchFileTool } from "@exaix/mcp/server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

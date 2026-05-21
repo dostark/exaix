@@ -11,7 +11,7 @@ import { assert, assertEquals } from "@std/assert";
 import { TOOL_MANIFEST } from "@exaix/mcp";
 import { ToolKind } from "@exaix/core";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
-import { buildHandlers } from "../../src/mcp/tools.ts";
+import { buildHandlers } from "@exaix/mcp/server";
 import { createStubContext } from "../helpers/test_helpers.ts";
 
 const context = createStubContext();

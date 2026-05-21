@@ -4,7 +4,7 @@
  * @description Unit tests for the MoveFileTool MCP tool.
  */
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
-import { MoveFileTool } from "../../../src/mcp/handlers/move_file_tool.ts";
+import { MoveFileTool } from "@exaix/mcp/server";
 import {
   assertToolDefinitionFields,
   createBaseToolContext,

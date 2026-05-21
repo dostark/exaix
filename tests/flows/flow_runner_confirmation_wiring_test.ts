@@ -13,7 +13,7 @@ import type { JSONValue } from "@exaix/core/types";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import type { DynamicStepExecutor } from "../../src/flows/dynamic_step_executor.ts";
 import { FlowRunner, type IFlowEventLogger } from "../../src/flows/flow_runner.ts";
-import { ToolHandler } from "../../src/mcp/tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { createMockConfig } from "../helpers/config.ts";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { StubNotificationServiceBase } from "../helpers/notification_service_stub_helpers.ts";

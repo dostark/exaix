@@ -15,7 +15,7 @@ import {
   type IToolResultValidator,
   validateMCPToolResponse,
 } from "@exaix/schemas/tool_result_validator.ts";
-import { MCPServer } from "../../src/mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";

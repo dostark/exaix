@@ -294,10 +294,10 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
   const repo = Deno.cwd();
   const info: DenoInfoJson = {
     version: 1,
-    roots: [toFileUrl(`${repo}/src/mcp/handlers/run_command_tool.ts`).href],
+    roots: [toFileUrl(`${repo}/packages/mcp/server/handlers/run_command_tool.ts`).href],
     modules: [
       {
-        specifier: toFileUrl(`${repo}/src/mcp/handlers/run_command_tool.ts`).href,
+        specifier: toFileUrl(`${repo}/packages/mcp/server/handlers/run_command_tool.ts`).href,
         dependencies: [
           { specifier: "@exaix/mcp", code: { specifier: "@exaix/mcp" } },
           {
@@ -315,7 +315,7 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
 
   const report = buildBoundaryReport(
     info,
-    "src/mcp/handlers/run_command_tool.ts",
+    "packages/mcp/server/handlers/run_command_tool.ts",
     roots,
     options,
   );
@@ -330,19 +330,19 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
   const repo = Deno.cwd();
   const info: DenoInfoJson = {
     version: 1,
-    roots: [toFileUrl(`${repo}/src/mcp/handlers/search.ts`).href],
+    roots: [toFileUrl(`${repo}/packages/mcp/server/handlers/search.ts`).href],
     modules: [
       {
-        specifier: toFileUrl(`${repo}/src/mcp/handlers/search.ts`).href,
+        specifier: toFileUrl(`${repo}/packages/mcp/server/handlers/search.ts`).href,
         dependencies: [
           {
-            specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href,
-            code: { specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href },
+            specifier: toFileUrl(`${repo}/packages/mcp/server/handlers/base.ts`).href,
+            code: { specifier: toFileUrl(`${repo}/packages/mcp/server/handlers/base.ts`).href },
           },
         ],
       },
       {
-        specifier: toFileUrl(`${repo}/src/mcp/handlers/base.ts`).href,
+        specifier: toFileUrl(`${repo}/packages/mcp/server/handlers/base.ts`).href,
         dependencies: [
           {
             specifier: toFileUrl(`${repo}/src/services/portal/portal_service.ts`).href,
@@ -355,7 +355,7 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
   };
   const roots = ["src"];
 
-  const report = buildBoundaryReport(info, "src/mcp/handlers/search.ts", roots);
+  const report = buildBoundaryReport(info, "packages/mcp/server/handlers/search.ts", roots);
 
   assertEquals(report.extractable, false);
   assertEquals(report.srcDepsCount, 2);
@@ -363,7 +363,7 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
   const transitiveNames = report.transitiveGroups.map((g) => g.packageName);
   assertEquals(directNames, ["@exaix (src/)"]);
   assertEquals(transitiveNames, ["@exaix (src/)"]);
-  assertEquals(report.directGroups[0]!.modules, ["src/mcp/handlers/base.ts"]);
+  assertEquals(report.directGroups[0]!.modules, ["packages/mcp/server/handlers/base.ts"]);
   assertEquals(report.transitiveGroups[0]!.modules, ["src/services/portal/portal_service.ts"]);
 });
 
@@ -433,7 +433,7 @@ Deno.test("renderBoundaryReport: extractable file shows EXTRACTABLE verdict", ()
 
 Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () => {
   const report: BoundaryReport = {
-    targetPath: "src/mcp/handlers/run_command_tool.ts",
+    targetPath: "packages/mcp/server/handlers/run_command_tool.ts",
     directGroups: [
       { packageName: "@exaix (src/)", modules: ["packages/git/src/git_service.ts"] },
       { packageName: "@exaix/mcp", modules: ["packages/mcp/mod.ts"] },
@@ -471,7 +471,7 @@ Deno.test("renderBoundaryReport: external deps appear truncated after 5", () => 
 Deno.test("explainBoundary: src/mcp handler shim still reports current src blockers", async () => {
   const discovery = await discoverPackageRoots();
   const report = await explainBoundary(
-    "src/mcp/handlers/run_command_tool.ts",
+    "packages/mcp/server/handlers/run_command_tool.ts",
     discovery.roots,
     { importAliases: discovery.importAliases },
   );

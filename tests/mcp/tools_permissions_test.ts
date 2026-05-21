@@ -8,9 +8,9 @@
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { PortalOperation } from "@exaix/core";
 
-import { GitStatusTool } from "../../src/mcp/handlers/git_status_tool.ts";
-import { ReadFileTool } from "../../src/mcp/handlers/read_file_tool.ts";
-import { WriteFileTool } from "../../src/mcp/handlers/write_file_tool.ts";
+import { GitStatusTool } from "@exaix/mcp/server";
+import { ReadFileTool } from "@exaix/mcp/server";
+import { WriteFileTool } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { initToolPermissionTest } from "./helpers/test_setup.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

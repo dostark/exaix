@@ -31,9 +31,9 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
-import { McpClient } from "../mcp/mcp_client.ts";
+import { McpClient } from "@exaix/mcp/server";
 import { LlmClient } from "@exaix/ai/llm_client.ts";
-import type { ToolHandler } from "../mcp/tool_handler.ts";
+import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";

@@ -17,7 +17,7 @@ import {
   discoverPortalResources,
   getResourceTemplates,
   parsePortalURI,
-} from "../../src/mcp/resources.ts";
+} from "@exaix/mcp/server";
 
 // Helper for resource discovery tests
 async function createTestPortal(tempDir: string, portalName: string, files: Record<string, string>) {

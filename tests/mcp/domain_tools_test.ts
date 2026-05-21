@@ -8,7 +8,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { stub } from "@std/testing/mock";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "../../src/mcp/domain_tools.ts";
+import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "@exaix/mcp/server";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
 import { ExaPathDefaults } from "@exaix/core";

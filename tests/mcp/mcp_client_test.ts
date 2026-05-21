@@ -4,9 +4,9 @@
  * @description Unit tests for McpClient tool routing and canonical Map-based construction.
  */
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
-import { McpClient } from "../../src/mcp/mcp_client.ts";
+import { McpClient } from "@exaix/mcp/server";
 import { McpToolName } from "@exaix/mcp";
-import { ToolHandler } from "../../src/mcp/tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 import type { JSONValue } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";

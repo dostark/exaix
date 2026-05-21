@@ -26,7 +26,7 @@ import {
   type IFlowEventLogger,
   type IFlowStepRequest,
 } from "../../src/flows/flow_runner.ts";
-import { ToolHandler } from "../../src/mcp/tool_handler.ts";
+import { ToolHandler } from "@exaix/mcp/server";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import type { JSONValue } from "@exaix/core/types";

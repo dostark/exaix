@@ -16,7 +16,7 @@ import {
   generatePrompt,
   getPrompt,
   getPrompts,
-} from "../../src/mcp/prompts.ts";
+} from "@exaix/mcp/server";
 
 // ============================================================================
 // Prompt List Tests

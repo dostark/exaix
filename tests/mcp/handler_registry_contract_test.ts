@@ -5,8 +5,8 @@
  */
 import { assertEquals } from "@std/assert";
 import { toolResultToMcpResponse } from "@exaix/mcp";
-import { RunCommandTool } from "../../src/mcp/handlers/run_command_tool.ts";
-import { SearchFilesTool } from "../../src/mcp/handlers/search_files_tool.ts";
+import { RunCommandTool } from "@exaix/mcp/server";
+import { SearchFilesTool } from "@exaix/mcp/server";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";
 import { PortalOperation } from "@exaix/core";
 import type { IToolRegistry, IToolResult } from "@exaix/core/types";

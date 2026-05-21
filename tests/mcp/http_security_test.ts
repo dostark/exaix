@@ -9,7 +9,7 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
-import { MCPServer } from "../../src/mcp/server.ts";
+import { MCPServer } from "@exaix/mcp/server";
 import { initTestDbService } from "../helpers/db.ts";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";

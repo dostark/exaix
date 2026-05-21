@@ -7,7 +7,7 @@
  * (Phase 78 Step 78.3)
  * @architectural-layer Schemas
  * @dependencies ["packages/schemas/src/tool_result.ts", "packages/schemas/src/tool_result_validator.ts"]
- * @related-files ["src/mcp/server.ts", "src/services/tool/tool_registry.ts"]
+ * @related-files ["packages/mcp/server/server.ts", "src/services/tool/tool_registry.ts"]
  */
 
 import type { JSONValue } from "@exaix/core";

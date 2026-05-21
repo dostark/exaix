@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
-import { LIVE_MCP_TOOL_FACTORIES } from "../../src/mcp/tools.ts";
+import { LIVE_MCP_TOOL_FACTORIES } from "@exaix/mcp/server";
 import { createMCPRequest, initMCPTestWithoutPortal } from "./helpers/test_setup.ts";
 
 interface IToolsListResult {

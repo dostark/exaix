@@ -5,8 +5,8 @@
  */
 import { assertEquals } from "@std/assert";
 import { ToolErrorCode } from "@exaix/core";
-import { QueryJournalTool } from "../../src/mcp/domain_tools.ts";
-import { RunCommandTool } from "../../src/mcp/handlers/run_command_tool.ts";
+import { QueryJournalTool } from "@exaix/mcp/server";
+import { RunCommandTool } from "@exaix/mcp/server";
 import { createBaseToolContext } from "./helpers/test_setup.ts";
 import { createStubDb } from "../helpers/test_helpers.ts";
 import { createPermissionsService, createToolContext, withToolPermissionTest } from "./helpers/test_setup.ts";

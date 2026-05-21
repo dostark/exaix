@@ -9,8 +9,8 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
-import { McpClient } from "../../src/mcp/mcp_client.ts";
-import { ToolHandler } from "../../src/mcp/tool_handler.ts";
+import { McpClient } from "@exaix/mcp/server";
+import { ToolHandler } from "@exaix/mcp/server";
 import { FlowRunner, type IFlowEventLogger } from "../../src/flows/flow_runner.ts";
 import { createStubContext } from "../helpers/test_helpers.ts";
 import type { JSONValue } from "@exaix/core/types";
