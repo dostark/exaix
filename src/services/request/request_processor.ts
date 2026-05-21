@@ -20,7 +20,7 @@ import {
   type IRequestContextContext,
 } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./request_common.ts";
-import { BlueprintLoader, type ILoadedBlueprint } from "../blueprint/blueprint_loader.ts";
+import { BlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
 import { type IRequestMetadata, PlanWriter } from "../plan/plan_writer.ts";
 import { PlanValidationError } from "../plan/plan_adapter.ts";
 import { RequestStatus } from "@exaix/core/status";

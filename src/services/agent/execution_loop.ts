@@ -23,7 +23,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
-import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
+import { BlueprintLoader } from "@exaix/core/blueprint";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { ReviewRegistry } from "../artifact/review_registry.ts";
 import { MemoryBankService } from "@exaix/memory";

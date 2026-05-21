@@ -11,12 +11,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 
 import { join } from "@std/path";
 
-import {
-  BlueprintLoader,
-  BlueprintLoadError,
-  createBlueprintLoader,
-  loadBlueprint,
-} from "../../../src/services/blueprint/blueprint_loader.ts";
+import { BlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 

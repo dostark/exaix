@@ -36,7 +36,7 @@ import { LlmClient } from "@exaix/ai/llm_client.ts";
 import type { ToolHandler } from "@exaix/mcp/server";
 import type { McpToolName } from "@exaix/mcp";
 import type { Config } from "@exaix/schemas/config.ts";
-import { BlueprintLoader } from "../services/blueprint/blueprint_loader.ts";
+import { BlueprintLoader } from "@exaix/core/blueprint";
 import { RetryPolicy } from "@exaix/core/request";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
 import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";

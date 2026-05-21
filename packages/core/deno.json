@@ -24,6 +24,7 @@
     "@exaix/core/parsing": "./src/parsing/mod.ts",
     "@exaix/core/context": "./src/context/mod.ts",
     "@exaix/core/notification": "./src/notification/mod.ts",
+    "@exaix/core/blueprint": "./src/blueprint/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/schemas": "../schemas/mod.ts",

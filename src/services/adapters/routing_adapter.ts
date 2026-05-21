@@ -9,7 +9,7 @@
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { IRoutingPolicyLoadResult } from "@exaix/routing";
-import { BlueprintLoader } from "../blueprint/blueprint_loader.ts";
+import { BlueprintLoader } from "@exaix/core/blueprint";
 import { CandidateDiscovery } from "@exaix/routing";
 import { IdentityPerformanceRepository } from "@exaix/routing";
 import { RoutingPolicyLoader } from "@exaix/routing";

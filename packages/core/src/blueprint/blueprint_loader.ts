@@ -1,9 +1,9 @@
 /**
- * @module BlueprintLoader
- * @path src/services/blueprint/blueprint_loader.ts
+ * @module CoreBlueprintLoader
+ * @path packages/core/src/blueprint/blueprint_loader.ts
  * @description Unified service for loading and validating agent blueprints.
  * Handles YAML frontmatter parsing, schema validation, and blueprint resolution.
- * @architectural-layer Services
+ * @architectural-layer Core
  * @related-files ["packages/execution/src/agent_runner.ts", "src/services/request/request_processor.ts"]
  */
 
@@ -12,9 +12,8 @@ import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import { DataFormat } from "@exaix/core";
-import { McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH } from "@exaix/core";
+import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint
