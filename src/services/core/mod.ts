@@ -6,11 +6,7 @@
  * @related-files [src/services/core/*.ts]
  */
 
-export * from "./db.ts";
 export * from "./database_connection_pool.ts";
-export * from "@exaix/core/logger";
 export * from "./audit_logger.ts";
 export * from "./health_check_service.ts";
 export * from "./graceful_shutdown.ts";
-export * from "@exaix/core/request";
-export * from "./git_service.ts";
