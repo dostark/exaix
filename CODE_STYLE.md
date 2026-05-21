@@ -185,7 +185,7 @@ import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
 ```
 
-**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited.
+**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited. This restriction is enforced as `[src-barrel-re-export]` for barrel files under `src/`.
 
 **Canonical subpackage boundary:** if the root import map exposes an exact canonical subpackage alias such as `@exaix/core/status` or `@exaix/ai/providers`, the parent package entrypoint must not promote that subpackage's exports through `@exaix/core` or `@exaix/ai`. Keep the boundary explicit: consumers import subpackage-owned symbols from the canonical subpackage barrel, not from the parent package barrel.
 
@@ -279,6 +279,8 @@ import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 ```
 
 These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
+
+- Barrel re-export from packages in `src/` is reported as `[src-barrel-re-export]`.
 
 - Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
 

@@ -776,6 +776,21 @@ async function checkFile(path: string) {
       const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
       const importPath = importMatch?.[1];
       if (importPath) {
+        // Barrel files in src/ must not re-export from packages or other src/ paths
+        if (
+          /^\s*export\b/.test(line) &&
+          (relativePath.endsWith("/mod.ts") || relativePath.endsWith("/index.ts")) &&
+          relativePath.startsWith("src/") &&
+          importPath.startsWith("@exaix/")
+        ) {
+          console.log(
+            `ERROR [src-barrel-re-export] ${relativePath}:${
+              idx + 1
+            } – src/ barrel files must not re-export from packages. Import '${importPath}' directly in consumer files instead of through a src/ barrel.`,
+          );
+          errorCount++;
+        }
+
         const normalizedImport = resolveRepoImportPath(relativePath, importPath);
         if (normalizedImport) {
           if (/^\s*export\b/.test(line) && isPackageRootEntrypoint(relativePath)) {
