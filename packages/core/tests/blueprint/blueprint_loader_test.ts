@@ -1,6 +1,6 @@
 /**
  * @module BlueprintLoaderTest
- * @path tests/services/blueprint/blueprint_loader_test.ts
+ * @path packages/core/tests/blueprint/blueprint_loader_test.ts
  * @description Verifies the BlueprintLoader's ability to parse agent definitions from YAML
  * frontmatter, ensuring correct schema validation and default value application.
  */
@@ -12,8 +12,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { join } from "@std/path";
 
 import { BlueprintLoader, BlueprintLoadError, createBlueprintLoader, loadBlueprint } from "@exaix/core/blueprint";
-import { TEST_MODEL_OPENAI } from "@exaix/testing";
-import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+import { readFixtureTextSync, TEST_MODEL_OPENAI } from "@exaix/testing";
 
 // Test directory setup
 let testDir: string;
@@ -45,9 +44,7 @@ Deno.test("[BlueprintLoader] loads blueprint with YAML frontmatter", async () =>
   try {
     const content = readFixtureTextSync(
       import.meta.url,
-      "services",
       "blueprint",
-      "blueprint_loader_test",
       "content.md",
     );
     await Deno.writeTextFile(join(identitiesDir, "code-reviewer.md"), content);
@@ -135,8 +132,8 @@ Deno.test("[BlueprintLoader] lists all blueprints in Identities path", async () 
   const { blueprintsPath, identitiesDir, testDir } = await setup();
 
   try {
-    const alpha = readFixtureTextSync(import.meta.url, "services", "blueprint", "blueprint_loader_test", "alpha.md");
-    const beta = readFixtureTextSync(import.meta.url, "services", "blueprint", "blueprint_loader_test", "beta.md");
+    const alpha = readFixtureTextSync(import.meta.url, "blueprint", "alpha.md");
+    const beta = readFixtureTextSync(import.meta.url, "blueprint", "beta.md");
     await Deno.writeTextFile(join(identitiesDir, "alpha.md"), alpha);
     await Deno.writeTextFile(join(identitiesDir, "beta.md"), beta);
 
@@ -240,9 +237,7 @@ Deno.test("[BlueprintLoader] parses reflexive agent configuration", async () => 
   try {
     const content = readFixtureTextSync(
       import.meta.url,
-      "services",
       "blueprint",
-      "blueprint_loader_test",
       "content_1.md",
     );
     await Deno.writeTextFile(join(identitiesDir, "reflexive-agent.md"), content);
@@ -265,9 +260,7 @@ Deno.test("[BlueprintLoader] parses memory and skills configuration", async () =
   try {
     const content = readFixtureTextSync(
       import.meta.url,
-      "services",
       "blueprint",
-      "blueprint_loader_test",
       "content_2.md",
     );
     await Deno.writeTextFile(join(identitiesDir, "skilled-agent.md"), content);
@@ -466,9 +459,7 @@ Deno.test("[BlueprintLoader] loads from Identities path (canonical)", async () =
   try {
     const content = readFixtureTextSync(
       import.meta.url,
-      "services",
       "blueprint",
-      "blueprint_loader_test",
       "content_3.md",
     );
     await Deno.writeTextFile(join(identitiesDir, "senior-coder.md"), content);
