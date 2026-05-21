@@ -7,3 +7,4 @@
 export { AllowAllPermissionsService } from "./allow_all_permissions.ts";
 export { AllowAllConfirmationInterceptor } from "./allow_all_confirmation_interceptor.ts";
 export { DenyAllConfirmationInterceptor } from "./deny_all_confirmation_interceptor.ts";
+export * from "./test_setup.ts";

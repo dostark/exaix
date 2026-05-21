@@ -26,7 +26,7 @@ import { DeleteFileTool } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
-import { initToolPermissionTest } from "../mcp/helpers/test_setup.ts";
+import { initToolPermissionTest } from "@exaix/mcp/testing";
 
 type AgentStepHandler = () => Promise<IAgentExecutionResult>;
 

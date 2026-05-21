@@ -19,7 +19,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
-import { createMCPRequest } from "../../mcp/helpers/test_setup.ts";
+import { createMCPRequest } from "@exaix/mcp/testing";
 
 Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed validation writes event to journal", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "mcp-validation-fail-closed-" });

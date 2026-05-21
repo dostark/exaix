@@ -13,7 +13,7 @@ import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig } from "../helpers/config.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
-import { createToolCallRequest } from "../mcp/helpers/test_setup.ts";
+import { createToolCallRequest } from "@exaix/mcp/testing";
 
 import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
 

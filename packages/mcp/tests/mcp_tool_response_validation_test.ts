@@ -1,6 +1,6 @@
 /**
  * @module MCPToolResponseValidationTest
- * @path tests/mcp/mcp_tool_response_validation_test.ts
+ * @path packages/mcp/tests/mcp_tool_response_validation_test.ts
  * @description Tests for validateMCPToolResponse at the MCP server boundary
  * (Phase 78 Enforcement Point 3). Verifies that isError:true responses are treated
  * as valid, and that structured content blocks are validated correctly.

@@ -21,7 +21,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "../helpers/db.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
-import { createMCPRequest } from "../mcp/helpers/test_setup.ts";
+import { createMCPRequest } from "@exaix/mcp/testing";
 
 const SECRET_MARKER = "SUPER_SECRET_TOKEN_abc123xyz";
 

@@ -736,8 +736,9 @@ async function checkFile(path: string) {
           const isTestFile = relativePath.includes("/tests/");
 
           if (normalizedImport.startsWith("src/")) {
-            // Allow bridge zone: packages/mcp/server/ is a concrete wiring layer
-            if (relativePath.startsWith("packages/mcp/server/")) {
+            // Allow bridge zone: packages/mcp/server/ is a concrete wiring layer,
+            // and packages/mcp/tests/ tests bridge-zone code.
+            if (relativePath.startsWith("packages/mcp/server/") || relativePath.startsWith("packages/mcp/tests/")) {
               // Bridge zone — skip
             } else {
               const label = isTestFile

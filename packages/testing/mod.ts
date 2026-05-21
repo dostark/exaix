@@ -7,16 +7,16 @@ export { createLoggingTestDb } from "./src/helpers/db.ts";
 export * from "./src/constants.ts";
 export type { ILoggedActivity, TestDatabaseService } from "./src/helpers/db.ts";
 export * from "./src/helpers/mod.ts";
-export { initTestDbService } from "../../tests/helpers/db.ts";
+export { initActivityTableSchema, initTestDbService } from "../../tests/helpers/db.ts";
 export { createMockConfig } from "../../tests/helpers/config.ts";
 export { createMockProvider } from "../../tests/helpers/mock_provider.ts";
 export { NullEmbeddingStub, NullMemoryBankStub } from "../../tests/helpers/memory_test_helper.ts";
 export { createStubConfig, createStubDisplay, createStubGit } from "../../tests/helpers/test_helpers.ts";
-export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
+export { createStubContext, createStubDb } from "../../tests/helpers/test_helpers.ts";
+export { createStubProvider, makeGenerateResult } from "../../tests/helpers/test_helpers.ts";
 export { readFixtureTextSync } from "../../tests/helpers/fixtures.ts";
-export { makeGenerateResult } from "../../tests/helpers/test_helpers.ts";
-export { createStubProvider } from "../../tests/helpers/test_helpers.ts";
 export { REPO_ROOT } from "../../tests/helpers/repo_root.ts";
+export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
 export { setupPortalWorkspaceTestDirs } from "../../tests/services/helpers/portal_workspace_test_helper.ts";
 export {
   createMockAgentRunner,
