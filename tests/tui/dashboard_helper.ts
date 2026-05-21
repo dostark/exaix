@@ -6,7 +6,7 @@
  */
 
 import { launchTuiDashboard } from "../../src/tui/tui_dashboard.ts";
-import { NotificationService } from "../../src/services/notification/notification.ts";
+import { NotificationService } from "@exaix/core/notification";
 import { initTestDbService } from "../helpers/db.ts";
 
 import type { ITuiDashboard } from "../../src/tui/tui_dashboard.ts";

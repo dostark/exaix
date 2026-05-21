@@ -6,7 +6,7 @@
  */
 
 import { initTestDbService } from "../../helpers/db.ts";
-import { NotificationService } from "../../../src/services/notification/notification.ts";
+import { NotificationService } from "@exaix/core/notification";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,

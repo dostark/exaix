@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { createStubDb } from "../../helpers/test_helpers.ts";
 import { createMockConfig } from "../../helpers/config.ts";
-import { NotificationService } from "../../../src/services/notification/notification.ts";
+import { NotificationService } from "@exaix/core/notification";
 import { MemoryScope } from "@exaix/core";
 import { type JSONValue, toSafeJson } from "@exaix/core/types";
 

@@ -22,7 +22,7 @@ import {
   MemoryBankService,
   MemoryExtractorService,
 } from "@exaix/memory";
-import { NotificationService } from "./services/notification/notification.ts";
+import { NotificationService } from "@exaix/core/notification";
 import { MemoryBankAdapter } from "./services/adapters/memory_bank_adapter.ts";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";

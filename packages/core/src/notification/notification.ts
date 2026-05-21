@@ -1,6 +1,6 @@
 /**
- * @module INotificationService
- * @path src/services/notification/notification.ts
+ * @module CoreNotificationService
+ * @path packages/core/src/notification/notification.ts
  * @description Manages user notifications for memory updates.
  *
  * Key responsibilities:
@@ -8,14 +8,14 @@
  * - IActivity Journal integration for audit trail
  * - Notification lifecycle management with soft-deletes
  *
- * @architectural-layer Services
+ * @architectural-layer Core
  * @related-files ["packages/memory/src/bank/index_builder.ts", @exaix/core/types]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
-import type { IDatabaseService } from "../core/db.ts";
+import type { IDatabaseService } from "@exaix/core/types";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import { type JSONObject, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
