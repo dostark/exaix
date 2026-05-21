@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-20T19:41:55.916Z",
+  "generated_at": "2026-05-21T11:07:25.878Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -486,8 +486,8 @@
       "agent": "senior-coder",
       "scope": "dev",
       "title": "Package Extraction Skill (#package-extraction)",
-      "short_summary": "Guided workflow for selecting and extracting the next package-owned slice from src/ into packages/ using Exaix package-boundary rules and migration-plan sequencing.",
-      "version": "1.4",
+      "short_summary": "Guided workflow for selecting and extracting the next package-owned slice from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement.",
+      "version": "1.5",
       "topics": [
         "packages",
         "migration",

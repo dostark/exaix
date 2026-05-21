@@ -1,6 +1,6 @@
 ---
 name: package-extraction
-description: "Extract the next package-owned slice from src/ into packages/ while preserving root behavior, tests, and compatibility shims"
+description: "Extract the next package-owned slice from src/ into packages/, rewrite imports to canonical package paths, and retire the old src modules"
 ---
 
 # ⚠️ THIN WRAPPER — Chat Routing Prompt
