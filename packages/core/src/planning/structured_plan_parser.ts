@@ -1,6 +1,6 @@
 /**
  * @module StructuredPlanParser
- * @path src/services/plan/structured_plan_parser.ts
+ * @path packages/core/src/planning/structured_plan_parser.ts
  * @description Shared utility for detecting and parsing structured plans from markdown content,
  * specifically extracting execution steps and metadata.
  * @architectural-layer Services

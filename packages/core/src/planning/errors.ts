@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentErrors
- * @path src/services/plan/errors.ts
+ * @path packages/core/src/planning/errors.ts
  * @description Custom error types for the plan amendment lifecycle.
  * @architectural-layer Services
  * @related-files [src/services/plan/plan_executor.ts, src/services/agent/execution_loop.ts]

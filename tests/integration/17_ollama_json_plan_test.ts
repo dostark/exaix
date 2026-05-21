@@ -9,8 +9,8 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { join } from "@std/path";
 import { OllamaProvider } from "@exaix/ai-ollama";
 import { AgentRunner } from "@exaix/execution";
-import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "../../src/services/plan/plan_writer.ts";
-import { PlanAdapter } from "../../src/services/plan/plan_adapter.ts";
+import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "@exaix/core/planning";
+import { PlanAdapter } from "@exaix/core/planning";
 import { initTestDbService } from "../helpers/db.ts";
 import { getWorkspacePlansDir } from "../helpers/paths_helper.ts";
 

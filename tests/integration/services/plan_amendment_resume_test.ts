@@ -2,7 +2,7 @@
  * @module PlanAmendmentResumeTest
  * @path tests/integration/services/plan_amendment_resume_test.ts
  * @description Integration tests for plan amendment resume workflow after approval/rejection.
- * @related-files [src/services/plan/plan_amendment_service.ts, src/services/plan/plan_executor.ts]
+ * @related-files [@exaix/core/planning, @exaix/core/planning]
  */
 
 import { assertEquals, assertThrows } from "@std/assert";

@@ -3,12 +3,12 @@
  * @path src/services/adapters/plan_amendment_adapter.ts
  * @description Adapter for the PlanAmendmentService to expose it to the application context.
  * @architectural-layer Services/Adapters
- * @related-files [src/services/plan/plan_amendment_service.ts, "packages/core/src/types/i_plan_amendment_service.ts"]
+ * @related-files [@exaix/core/planning, "packages/core/src/types/i_plan_amendment_service.ts"]
  */
 
 import type { IPlanAmendmentService } from "@exaix/core/types";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import type { IPlanStep } from "../plan/plan_executor.ts";
+import type { IPlanStep } from "@exaix/core/planning";
 import type { JSONObject } from "@exaix/core/types";
 
 /**

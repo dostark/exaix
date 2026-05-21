@@ -7,7 +7,7 @@
 import { assertEquals } from "@std/assert";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
+import type { ConfidenceScorer } from "@exaix/execution";
 import { castAny as castTo } from "../../helpers/test_helpers.ts";
 import { withPlanAmendmentPendingScenario } from "./plan_amendment_test_helper.ts";
 

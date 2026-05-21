@@ -8,10 +8,10 @@ import { assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { Config } from "@exaix/schemas/config.ts";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
-import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
-import { PlanAmendmentPendingError } from "../../../src/services/plan/errors.ts";
-import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
+import { PlanAmendmentService } from "@exaix/core/planning";
+import { PlanExecutor } from "@exaix/core/planning";
+import { PlanAmendmentPendingError } from "@exaix/core/planning";
+import type { ConfidenceScorer } from "@exaix/execution";
 import { createMockConfig } from "../../helpers/config.ts";
 import { castAny as castTo, createStubDb } from "../../helpers/test_helpers.ts";
 

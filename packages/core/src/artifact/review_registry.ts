@@ -1,6 +1,6 @@
 /**
  * @module ReviewRegistry
- * @path src/services/artifact/review_registry.ts
+ * @path packages/core/src/artifact/review_registry.ts
  * @description Manages the lifecycle of agent-created reviews, including registration,
  * status updates, and diff generation for approval workflows.
  * @architectural-layer Services

@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { parseStructuredPlanFromMarkdown } from "../../../src/services/plan/structured_plan_parser.ts";
+import { parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 
 Deno.test("[regression] ExecutionLoop detects structured plans with steps", () => {
   const traceId = crypto.randomUUID();

@@ -17,7 +17,7 @@ import {
   type IReflexiveAgentConfig,
   type IReflexiveExecutionResult,
   type ReflexiveAgent,
-} from "../../../src/services/agent/reflexive_agent.ts";
+} from "@exaix/execution";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";

@@ -28,5 +28,6 @@ export { SafeSubprocess, SubprocessError, SubprocessTimeoutError } from "./src/h
 export type { ISubprocessOptions } from "./src/helpers/subprocess.ts";
 
 export { ProcessManager } from "./src/process_manager.ts";
+
 export { PromptBudgetAllocator } from "./src/prompt_budget_allocator.ts";
 export type { IAllocationHints } from "./src/prompt_budget_allocator.ts";

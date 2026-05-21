@@ -1,6 +1,6 @@
 /**
  * @module ArtifactRegistry
- * @path src/services/artifact/artifact_registry.ts
+ * @path packages/core/src/artifact/artifact_registry.ts
  * @description Manages analysis artifacts produced by agents, storing them as markdown files with frontmatter.
  * @architectural-layer Services
  * @related-files ["packages/execution/src/agent_runner.ts", "src/services/agent/execution_loop.ts"]

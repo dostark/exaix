@@ -7,10 +7,10 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
-import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
 import { ensureDir } from "@std/fs/ensure-dir";
 import { PlanStatus } from "@exaix/core/status";

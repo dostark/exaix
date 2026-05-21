@@ -10,7 +10,7 @@ import { MemoryBankSource } from "@exaix/core";
 import { ReviewStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
-import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IRegisterReviewInput } from "@exaix/schemas/review.ts";

@@ -1,6 +1,6 @@
 /**
  * @module PlanExecutor
- * @path src/services/plan/plan_executor.ts
+ * @path packages/core/src/planning/plan_executor.ts
  * @description Orchestrates the Step-by-Step execution of approved plans.
  * Managing the ReAct loop: prompting LLM for actions, executing tools, and committing results.
  * @architectural-layer Services
@@ -15,7 +15,7 @@ import { SafeSubprocess } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import type { ConfidenceScorer } from "../utils/confidence_scorer.ts";
+import type { ConfidenceScorer } from "@exaix/execution";
 import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,

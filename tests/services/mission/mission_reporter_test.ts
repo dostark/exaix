@@ -12,11 +12,7 @@ import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
-import {
-  type ITraceData,
-  MissionReporter,
-  type ReportConfig,
-} from "../../../src/services/artifact/mission_reporter.ts";
+import { type ITraceData, MissionReporter, type ReportConfig } from "@exaix/core/artifact";
 import { join } from "@std/path";
 
 // ============================================================================

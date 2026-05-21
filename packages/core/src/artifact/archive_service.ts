@@ -1,6 +1,6 @@
 /**
  * @module ArchiveService
- * @path src/services/artifact/archive_service.ts
+ * @path packages/core/src/artifact/archive_service.ts
  * @description Manages persistence of execution plans and metadata for long-term storage.
  * @architectural-layer Services
  * @related-files ["src/services/agent/execution_loop.ts", "packages/core/src/types/enums.ts"]

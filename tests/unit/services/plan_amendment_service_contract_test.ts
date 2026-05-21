@@ -2,15 +2,15 @@
  * @module PlanAmendmentServiceContractTest
  * @path tests/unit/services/plan_amendment_service_contract_test.ts
  * @description Contract tests for PlanAmendmentService ensuring interface compliance and lifecycle behavior.
- * @related-files [src/services/plan/plan_amendment_service.ts, "packages/core/src/types/i_plan_amendment_service.ts"]
+ * @related-files [@exaix/core/planning, "packages/core/src/types/i_plan_amendment_service.ts"]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
+import { PlanAmendmentService } from "@exaix/core/planning";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
-import type { IPlanStep } from "../../../src/services/plan/plan_executor.ts";
+import type { IPlanStep } from "@exaix/core/planning";
 import { createMockConfig } from "../../helpers/config.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";

@@ -10,12 +10,8 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { spy, type SpyCall } from "@std/testing/mock";
 
-import { PlanWriter } from "../../../src/services/plan/plan_writer.ts";
-import type {
-  IAgentExecutionResult,
-  IPlanWriterConfig,
-  IRequestMetadata,
-} from "../../../src/services/plan/plan_writer.ts";
+import { PlanWriter } from "@exaix/core/planning";
+import type { IAgentExecutionResult, IPlanWriterConfig, IRequestMetadata } from "@exaix/core/planning";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IActivityRecord } from "@exaix/core/types";
 

@@ -3,16 +3,12 @@
  * @path tests/services/plan/plan_writer_analysis_test.ts
  * @description Verifies that PlanWriter correctly includes structured request analysis
  * metadata in generated plan files.
- * @related-files [src/services/plan/plan_writer.ts, "packages/schemas/src/plan_schema.ts", "packages/schemas/src/request_analysis.ts"]
+ * @related-files [@exaix/core/planning, "packages/schemas/src/plan_schema.ts", "packages/schemas/src/request_analysis.ts"]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import {
-  type IAgentExecutionResult,
-  type IRequestMetadata,
-  PlanWriter,
-} from "../../../src/services/plan/plan_writer.ts";
+import { type IAgentExecutionResult, type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { initTestDbService } from "../../helpers/db.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";

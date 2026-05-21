@@ -24,14 +24,14 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 // Concrete services for adapters
 import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
-import { ArchiveService } from "../services/artifact/archive_service.ts";
+import { ArchiveService } from "@exaix/core/artifact";
 import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { RequestService } from "../services/request/request.ts";
-import { PlanService } from "../services/plan/plan.ts";
-import { PlanAmendmentService } from "../services/plan/plan_amendment_service.ts";
+import { PlanService } from "@exaix/core/planning";
+import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../ai/registry_bootstrap.ts";
 
 // Adapters

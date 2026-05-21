@@ -2,11 +2,11 @@
  * @module AmendmentThresholdPolicyTest
  * @path tests/unit/services/amendment_threshold_policy_test.ts
  * @description Unit tests for amendment threshold policy and config-driven trigger behavior.
- * @related-files [src/services/plan/plan_amendment_service.ts, "packages/schemas/src/config.ts"]
+ * @related-files [@exaix/core/planning, "packages/schemas/src/config.ts"]
  */
 
 import { assertEquals } from "@std/assert";
-import { PlanAmendmentService } from "../../../src/services/plan/plan_amendment_service.ts";
+import { PlanAmendmentService } from "@exaix/core/planning";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";

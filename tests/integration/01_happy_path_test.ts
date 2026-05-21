@@ -10,8 +10,8 @@ import { ExecutionStatus, MemoryBankSource, PortalOperation } from "@exaix/core"
 import { McpToolName } from "@exaix/mcp";
 import { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
-import { MissionReporter } from "../../src/services/artifact/mission_reporter.ts";
+import { ExecutionLoop } from "@exaix/execution";
+import { MissionReporter } from "@exaix/core/artifact";
 import { MemoryBankService } from "@exaix/memory";
 
 Deno.test("Integration: Happy Path - Request to Report", async (t) => {

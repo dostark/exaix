@@ -9,7 +9,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { EXECUTION_REPORT_FILENAME, MemoryOperation, PortalOperation } from "@exaix/core";
 import { join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
-import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

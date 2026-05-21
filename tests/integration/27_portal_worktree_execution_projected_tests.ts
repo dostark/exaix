@@ -8,8 +8,8 @@
 import { assertEquals, assertExists, assertMatch, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { EventLogger } from "@exaix/core/logger";
-import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
-import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
+import { ExecutionLoop } from "@exaix/execution";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import {
   assertPointerPointsTo,

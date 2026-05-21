@@ -12,7 +12,7 @@ import {
   PortalOperation as _PortalOperation,
 } from "@exaix/core";
 import { join } from "@std/path";
-import { type IPlanContext, PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
+import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";

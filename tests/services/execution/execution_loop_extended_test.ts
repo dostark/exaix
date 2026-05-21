@@ -7,7 +7,7 @@
 import { join } from "@std/path";
 
 import { assertEquals } from "@std/assert";
-import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";

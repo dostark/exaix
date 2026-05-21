@@ -8,11 +8,8 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
-import {
-  createCodeReviewReflexiveAgent,
-  type ICritique,
-  ReflexiveAgent,
-} from "../../../src/services/agent/reflexive_agent.ts";
+import { createCodeReviewReflexiveAgent, ReflexiveAgent } from "@exaix/execution";
+import type { ICritique } from "@exaix/execution";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";

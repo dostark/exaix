@@ -10,10 +10,7 @@
  */
 import { ANALYZER_VERSION } from "@exaix/core";
 import { assertEquals, assertExists } from "@std/assert";
-import {
-  createReflexiveAgent,
-  type ReflexiveAgent as _ReflexiveAgent,
-} from "../../../src/services/agent/reflexive_agent.ts";
+import { createReflexiveAgent, type ReflexiveAgent as _ReflexiveAgent } from "@exaix/execution";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";

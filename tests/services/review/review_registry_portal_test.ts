@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { ReviewRegistry } from "../../../src/services/artifact/review_registry.ts";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { GitTestHelper, setupPortalGitRepos } from "@exaix/git/testing";

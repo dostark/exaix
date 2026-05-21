@@ -17,7 +17,7 @@ import { MemoryServiceAdapter } from "../../../src/services/adapters/memory_adap
 import type { MemoryBankService } from "@exaix/memory";
 import type { MemoryExtractorService } from "@exaix/memory";
 import { ArchiveAdapter } from "../../../src/services/adapters/archive_adapter.ts";
-import type { ArchiveEntry, ArchiveService } from "../../../src/services/artifact/archive_service.ts";
+import type { ArchiveEntry, ArchiveService } from "@exaix/core/artifact";
 import { FlowValidatorAdapter } from "../../../src/services/adapters/flow_validator_adapter.ts";
 import type { FlowValidatorImpl } from "../../../src/services/flow/flow_validator.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";

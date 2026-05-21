@@ -17,6 +17,15 @@
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/errors": "../core/src/errors/mod.ts",
     "@exaix/core/observability": "../core/src/observability/mod.ts",
+    "@exaix/core/blueprint": "../core/src/blueprint/mod.ts",
+    "@exaix/core/skills": "../core/src/skills/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/cost": "../core/src/cost/mod.ts",
+    "@exaix/core/parsing": "../core/src/parsing/mod.ts",
+    "@exaix/core/context": "../core/src/context/mod.ts",
+    "@exaix/core/notification": "../core/src/notification/mod.ts",
+    "@exaix/core/artifact": "../core/src/artifact/mod.ts",
+    "@exaix/core/planning": "../core/src/planning/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/ai": "../ai/mod.ts",
@@ -29,6 +38,8 @@
     "@exaix/memory": "../memory/mod.ts",
     "@exaix/tool-runtime": "../tool-runtime/mod.ts",
     "@exaix/testing": "../testing/mod.ts",
+    "@exaix/execution": "../execution/mod.ts",
+
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts"
   },
   "exports": {

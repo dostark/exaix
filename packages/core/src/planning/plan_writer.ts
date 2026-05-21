@@ -1,6 +1,6 @@
 /**
  * @module PlanWriter
- * @path src/services/plan/plan_writer.ts
+ * @path packages/core/src/planning/plan_writer.ts
  * @description Formats agent execution results into structured plans.
  *
  * Notes:

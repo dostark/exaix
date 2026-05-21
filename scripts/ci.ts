@@ -383,7 +383,7 @@ const allCommand = new Command()
     console.log("\n--- Phase 2: Testing ---");
     if (
       !await runParallel([
-        { cmd: ["deno", "task", "test"], desc: "test suite" },
+        { cmd: ["deno", "task", "test_parallel"], desc: "test suite" },
       ])
     ) Deno.exit(1);
 

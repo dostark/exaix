@@ -2,14 +2,14 @@
  * @module PlanAmendmentPauseResumeTest
  * @path tests/integration/services/66_plan_amendment_pause_resume_test.ts
  * @description Functional tests for plan amendment pause/resume lifecycle using checkpoint-then-halt semantics.
- * @related-files [src/services/plan/plan_executor.ts, src/services/plan/errors.ts]
+ * @related-files [@exaix/core/planning, @exaix/core/planning]
  */
 
 import { assertEquals } from "@std/assert";
 import { initTestDbService } from "../../helpers/db.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
-import type { ConfidenceScorer } from "../../../src/services/utils/confidence_scorer.ts";
+import type { ConfidenceScorer } from "@exaix/execution";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
 import {

@@ -13,7 +13,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { FlowInputSource, MemoryOperation, RequestSource } from "@exaix/core";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ArtifactRegistry } from "../../src/services/artifact/artifact_registry.ts";
+import { ArtifactRegistry } from "@exaix/core/artifact";
 import { ReviewStatus } from "@exaix/core/status";
 import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
 

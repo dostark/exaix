@@ -14,7 +14,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { ANALYZER_VERSION, CritiqueQuality } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
-import { createReflexiveAgent } from "../../src/services/agent/reflexive_agent.ts";
+import { createReflexiveAgent } from "@exaix/execution";
 import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
 import { analyzeHeuristic } from "../../src/services/request_analysis/heuristic_analyzer.ts";
 import { buildParsedRequest } from "../../src/services/request/request_common.ts";

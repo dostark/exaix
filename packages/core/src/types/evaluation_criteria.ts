@@ -41,3 +41,10 @@ export const EvaluationResultSchema = z.object({
 });
 
 export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
+
+export const RequirementFulfillmentSchema = z.object({
+  requirement: z.string(),
+  status: z.enum(["MET", "PARTIAL", "MISSING"]),
+});
+
+export type IRequirementFulfillment = z.infer<typeof RequirementFulfillmentSchema>;

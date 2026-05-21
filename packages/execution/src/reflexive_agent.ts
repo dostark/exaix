@@ -1,35 +1,15 @@
 /**
  * @module ReflexiveAgent
- * @path src/services/agent/reflexive_agent.ts
+ * @path packages/execution/src/reflexive_agent.ts
  * @description Implements the reflexive agent loop, enabling self-critique and iterative output improvement before finalization.
  * @architectural-layer Services
- * @related-files ["packages/execution/src/agent_runner.ts", "src/services/utils/confidence_scorer.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/confidence_scorer.ts"]
  */
 
-import { z } from "zod";
-import { CritiqueIssueType, CritiqueQuality, CritiqueSeverity } from "@exaix/core";
-import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { JSONValue } from "@exaix/core";
-import type { IDatabaseService } from "@exaix/core/types";
 import {
-  AgentRunner,
-  type IAgentExecutionResult,
-  type IAgentRunner,
-  type IAgentRunnerConfig,
-  type IBlueprint,
-  type IParsedRequest,
-} from "@exaix/execution";
-import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
-import { logDebug } from "@exaix/core/logger";
-import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
-import { LogMethod } from "@exaix/core/logger";
-import { EventLogger } from "@exaix/core/logger";
-import { MiddlewarePipeline } from "@exaix/core/func";
-import type { IServiceContext } from "@exaix/core/types";
-import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
-import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
-import type { Config } from "@exaix/schemas/config.ts";
-import {
+  CritiqueIssueType,
+  CritiqueQuality,
+  CritiqueSeverity,
   DEFAULT_REFLEXIVE_CONVERGENCE_ABSOLUTE_MAX_ITERATIONS,
   DEFAULT_REFLEXIVE_CONVERGENCE_MIN_IMPROVEMENT_DELTA,
   DEFAULT_REFLEXIVE_CONVERGENCE_OSCILLATION_WINDOW,
@@ -37,7 +17,26 @@ import {
   DEFAULT_REFLEXIVE_CONVERGENCE_SCORE_EVERY_N_ITERATIONS,
   MAX_CRITIQUE_REQUIREMENTS,
 } from "@exaix/core";
-import { type ConfidenceAssessment, ConfidenceScorer } from "../utils/confidence_scorer.ts";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { JSONValue } from "@exaix/core";
+import type { IDatabaseService } from "@exaix/core/types";
+import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
+import { logDebug } from "@exaix/core/logger";
+import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
+import { MiddlewarePipeline } from "@exaix/core/func";
+import type { IServiceContext } from "@exaix/core/types";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { Config } from "@exaix/schemas/config.ts";
+import { CritiqueSchema, type ICritique } from "./types.ts";
+import { type ConfidenceAssessment, ConfidenceScorer } from "./confidence_scorer.ts";
+import {
+  AgentRunner,
+  type IAgentExecutionResult,
+  type IAgentRunner,
+  type IAgentRunnerConfig,
+  type IBlueprint,
+  type IParsedRequest,
+} from "./agent_runner.ts";
 
 export interface IReflexiveAgentConvergenceConfig {
   qualityExitThreshold: number;
@@ -103,27 +102,6 @@ const REFLEXIVE_AGENT_ACTIVITY_SOURCE = "reflexive_agent" as const;
 // ============================================================================
 // Critique Schema
 // ============================================================================
-
-/**
- * Schema for critique output from self-evaluation
- */
-export const CritiqueSchema = z.object({
-  quality: z.nativeEnum(CritiqueQuality),
-  confidence: z.number().min(0).max(100),
-  passed: z.boolean(),
-  issues: z.array(z.object({
-    type: z.nativeEnum(CritiqueIssueType),
-    severity: z.nativeEnum(CritiqueSeverity),
-    description: z.string(),
-    suggestion: z.string().optional(),
-  })).default([]),
-  reasoning: z.string(),
-  improvements: z.array(z.string()).optional(),
-  /** Structured fulfillment status per goal/AC — populated by enhanced prompt */
-  requirementsFulfillment: z.array(RequirementFulfillmentSchema).optional(),
-});
-
-export type ICritique = z.infer<typeof CritiqueSchema>;
 
 // ============================================================================
 // Reflexive Execution Types
@@ -308,7 +286,6 @@ export class ReflexiveAgent {
     });
   }
 
-  @LogMethod(new EventLogger({ prefix: "[ReflexiveAgent]" }), "reflexive.run")
   async run(
     blueprint: IBlueprint,
     request: IParsedRequest,

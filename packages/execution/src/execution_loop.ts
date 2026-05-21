@@ -1,6 +1,6 @@
 /**
  * @module ExecutionLoop
- * @path src/services/agent/execution_loop.ts
+ * @path packages/execution/src/execution_loop.ts
  * @description Core engine for executing agent plans.
  *
  * Responsibilities:
@@ -9,7 +9,7 @@
  * - Coordinate with PlanWriter and WorkflowManager
  *
  * @architectural-layer Services
- * @related-files [src/main.ts, "src/services/plan/plan_executor.ts"]
+ * @related-files [src/main.ts]
  */
 
 import { join } from "@std/path";
@@ -25,18 +25,18 @@ import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
 import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { BlueprintLoader } from "@exaix/core/blueprint";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import type { ReviewRegistry } from "../artifact/review_registry.ts";
+import type { ReviewRegistry } from "@exaix/core/artifact";
 import { MemoryBankService } from "@exaix/memory";
-import { MissionReporter } from "../artifact/mission_reporter.ts";
-import { PlanExecutor } from "../plan/plan_executor.ts";
+import { MissionReporter } from "@exaix/core/artifact";
+import { PlanExecutor } from "@exaix/core/planning";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
-import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "../plan/structured_plan_parser.ts";
+import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
-import { ArtifactRegistry } from "../artifact/artifact_registry.ts";
-import { PlanAmendmentPendingError } from "../plan/errors.ts";
-import { ConfidenceScorer } from "../utils/confidence_scorer.ts";
-import { PlanAmendmentService } from "../plan/plan_amendment_service.ts";
+import { ArtifactRegistry } from "@exaix/core/artifact";
+import { PlanAmendmentPendingError } from "@exaix/core/planning";
+import { ConfidenceScorer } from "./confidence_scorer.ts";
+import { PlanAmendmentService } from "@exaix/core/planning";
 import {
   ACTIVITY_ACTOR_AGENT,
   DEFAULT_AMENDMENT_EXPIRY_MS,

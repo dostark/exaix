@@ -5,7 +5,7 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Core System
- * @related-files ["src/services/agent/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
@@ -13,9 +13,9 @@ import { FileWatcher } from "./services/utils/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "./services/request/request_processor.ts";
-import { ReviewRegistry } from "./services/artifact/review_registry.ts";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
-import { ExecutionLoop } from "./services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,

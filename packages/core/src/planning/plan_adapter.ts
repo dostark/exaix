@@ -1,6 +1,6 @@
 /**
  * @module PlanAdapter
- * @path src/services/plan/plan_adapter.ts
+ * @path packages/core/src/planning/plan_adapter.ts
  * @description JSON validation and markdown conversion for LLM plans.
  *
  * Responsibilities:

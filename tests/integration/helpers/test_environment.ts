@@ -26,7 +26,7 @@ import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@e
 import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
 import type { IApplicationContext } from "@exaix/core/types";
-import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import {
   getBlueprintsIdentitiesDir,
   getMemoryDir,

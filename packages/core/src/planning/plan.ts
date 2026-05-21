@@ -1,6 +1,6 @@
 /**
  * @module PlanService
- * @path src/services/plan/plan.ts
+ * @path packages/core/src/planning/plan.ts
  * @description Core service for managing AI execution plans.
  * @architectural-layer Services
  * @related-files [src/cli/commands/plan_commands.ts, "packages/core/src/types/i_plan_service.ts"]

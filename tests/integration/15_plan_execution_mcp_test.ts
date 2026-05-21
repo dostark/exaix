@@ -14,7 +14,7 @@ import { join } from "@std/path";
 
 import { ensureDir } from "@std/fs";
 import { EventLogger } from "@exaix/core/logger";
-import { ReviewRegistry } from "../../src/services/artifact/review_registry.ts";
+import { ReviewRegistry } from "@exaix/core/artifact";
 import type { JSONValue } from "@exaix/core/types";
 import { parse as parseYaml } from "@std/yaml";
 import { initTestDbService } from "../helpers/db.ts";

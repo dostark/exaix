@@ -34,7 +34,8 @@ import type {
   IGateResult as _IGateResult,
 } from "@exaix/core/types";
 import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
-import { createReflexiveAgent, type ICritique } from "../../src/services/agent/reflexive_agent.ts";
+import { createReflexiveAgent } from "@exaix/execution";
+import type { ICritique } from "@exaix/execution";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import type { IAgentExecutionResult } from "@exaix/execution";

@@ -9,10 +9,10 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { PlanExecutor } from "../../../src/services/plan/plan_executor.ts";
+import { PlanExecutor } from "@exaix/core/planning";
 import { ProviderFactory } from "@exaix/ai";
 import { initializeGlobalLogger } from "@exaix/core/logger";
-import { ExecutionLoop } from "../../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import { LogLevel, type ProviderType } from "@exaix/core";
 
 /**

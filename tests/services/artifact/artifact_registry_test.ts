@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { join } from "@std/path";
-import { ArtifactRegistry } from "../../../src/services/artifact/artifact_registry.ts";
+import { ArtifactRegistry } from "@exaix/core/artifact";
 import { initTestDbService } from "../../helpers/db.ts";
 import { ReviewStatus } from "@exaix/core/status";
 

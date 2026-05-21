@@ -1,9 +1,9 @@
 /**
  * @module ConfidenceScorer
- * @path src/services/utils/confidence_scorer.ts
+ * @path packages/execution/src/confidence_scorer.ts
  * @description Evaluates agent outputs to extract confidence scores and reasoning, flagging low-confidence results for human review.
  * @architectural-layer Services
- * @related-files [packages/execution/src/agent_runner.ts, src/services/agent/reflexive_agent.ts]
+ * @related-files [packages/execution/src/agent_runner.ts, packages/execution/src/reflexive_agent.ts]
  */
 
 import { z } from "zod";
@@ -75,7 +75,7 @@ import {
   EXISTING_SCORE_CONFIDENCE_WEIGHT,
   GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
 } from "@exaix/core";
-import type { ICritique } from "../agent/reflexive_agent.ts";
+import type { ICritique } from "./types.ts";
 
 // ============================================================================
 // Confidence Schema

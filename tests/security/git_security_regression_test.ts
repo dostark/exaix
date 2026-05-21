@@ -8,10 +8,10 @@
 import { assert, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 import { createGitTestContext, GitTestHelper, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { type IPlanContext, PlanExecutor } from "../../src/services/plan/plan_executor.ts";
+import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { GitService } from "@exaix/git";
-import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 import { getFixturePath, readFixtureTextSync } from "../helpers/fixtures.ts";
 
 Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {

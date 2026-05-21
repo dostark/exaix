@@ -139,6 +139,8 @@
     "@exaix/core/notification": "./packages/core/src/notification/mod.ts",
     "@exaix/core/blueprint": "./packages/core/src/blueprint/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
+    "@exaix/core/artifact": "./packages/core/src/artifact/mod.ts",
+    "@exaix/core/planning": "./packages/core/src/planning/mod.ts",
     "@exaix/testing": "./packages/testing/mod.ts",
     "@exaix/testing/": "./packages/testing/src/",
     "@exaix/storage-sqlite": "./packages/storage-sqlite/mod.ts",

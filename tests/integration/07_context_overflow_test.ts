@@ -7,7 +7,7 @@
 
 import { McpToolName } from "@exaix/mcp";
 import { assert, assertEquals, assertExists } from "@std/assert";
-import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 
 import { join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";

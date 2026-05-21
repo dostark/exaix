@@ -21,8 +21,8 @@ import {
 } from "@exaix/execution";
 import { applyAnalysisToRequest, buildParsedRequest } from "./request_common.ts";
 import { BlueprintLoader, type ILoadedBlueprint } from "@exaix/core/blueprint";
-import { type IRequestMetadata, PlanWriter } from "../plan/plan_writer.ts";
-import { PlanValidationError } from "../plan/plan_adapter.ts";
+import { type IRequestMetadata, PlanWriter } from "@exaix/core/planning";
+import { PlanValidationError } from "@exaix/core/planning";
 import { RequestStatus } from "@exaix/core/status";
 import { PlanStatus } from "@exaix/core/status";
 import {

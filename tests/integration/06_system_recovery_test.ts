@@ -13,7 +13,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 
 import type { join as _join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ExecutionLoop } from "../../src/services/agent/execution_loop.ts";
+import { ExecutionLoop } from "@exaix/execution";
 
 // Mock RecoveryService for testing (actual service not yet implemented)
 class RecoveryService {

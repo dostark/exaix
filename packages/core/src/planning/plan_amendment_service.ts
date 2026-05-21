@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentService
- * @path src/services/plan/plan_amendment_service.ts
+ * @path packages/core/src/planning/plan_amendment_service.ts
  * @description Core service for managing mid-execution plan amendment proposals, approvals, and application.
  * @architectural-layer Services
  * @related-files [src/services/plan/plan_executor.ts, "packages/schemas/src/plan_amendment.ts"]

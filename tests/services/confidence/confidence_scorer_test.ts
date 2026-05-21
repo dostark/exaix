@@ -12,7 +12,7 @@ import {
   createConfidenceScorer,
   createLenientConfidenceScorer,
   createStrictConfidenceScorer,
-} from "../../../src/services/utils/confidence_scorer.ts";
+} from "@exaix/execution";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 
 function makeConfidenceJSON(options: {

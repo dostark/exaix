@@ -2,7 +2,7 @@
  * @module ExoctlPlanAmendmentTest
  * @path tests/cli/exoctl_plan_amendment_test.ts
  * @description CLI tests for plan amendment management commands (list, show, approve, reject).
- * @related-files [src/cli/commands/plan_commands.ts, src/services/plan/plan_amendment_service.ts]
+ * @related-files [src/cli/commands/plan_commands.ts, @exaix/core/planning]
  */
 
 import { assertEquals } from "@std/assert";

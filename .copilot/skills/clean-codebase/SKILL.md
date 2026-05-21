@@ -94,14 +94,13 @@ Phase 9 — Agent docs validation
      before proceeding.
 
 Phase 10 — Final full-suite validation
- 20. Run the complete CI pipeline to confirm all gates green:
-       deno run -A scripts/ci.ts all
-     Or manually:
-       deno check src/main.ts && deno lint && deno fmt --check &&
-       deno task check:style && deno task check:arch && deno task check:magic &&
-       deno task test && deno run -A scripts/measure_coverage.ts
-     Coverage thresholds: Line ≥ 70%, Branch ≥ 60%.
- 21. All checks must report zero errors/warnings/violations before committing.
+  20. Run tests to confirm all gates green:
+        deno task test_parallel
+     Or sequentially:
+        deno check src/main.ts && deno lint && deno fmt --check &&
+        deno task check:style && deno task check:arch && deno task check:magic &&
+        deno task test
+  21. All checks must report zero errors/warnings/violations before committing.
 
 Commit
  22. Use #commit for the structured commit body. Subject example:
@@ -111,9 +110,9 @@ Commit
        rationale: CI must be green before next feature phase
        tests: full suite N/N passing, coverage line X% branch Y%
        who: <agent identity>
-       impact: repository-wide cleanup, no behavior changes
+        impact: repository-wide cleanup, no behavior changes
 
-       CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, magic OK, dup OK
+        CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, magic OK
 
 Do / Don't
 - ✅ Do fix in dependency order (type errors first — they cascade into other failures)
@@ -146,7 +145,7 @@ Workflow chain (typical):
 1. Baseline tallies (type errors, lint, fmt, style, arch, magic, duplication).
 1. Fix log: per-phase — what was fixed, file/line.
 1. Intermediate check results after each phase (0 errors confirmed).
-1. Final `scripts/ci.ts all` output: all gates green.
+1. Final `deno task test_parallel` output: all gates green.
 1. Commit payload.
 
 ## Examples

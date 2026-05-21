@@ -1,6 +1,6 @@
 /**
  * @module MissionReporter
- * @path src/services/artifact/mission_reporter.ts
+ * @path packages/core/src/artifact/mission_reporter.ts
  * @description Generates comprehensive mission reports and updates Memory Banks.
  *
  * Responsibilities:

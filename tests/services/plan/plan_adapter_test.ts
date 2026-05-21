@@ -7,7 +7,7 @@
 
 import { McpToolName } from "@exaix/mcp";
 import { assertEquals } from "@std/assert";
-import { PlanAdapter } from "../../../src/services/plan/plan_adapter.ts";
+import { PlanAdapter } from "@exaix/core/planning";
 
 Deno.test("PlanAdapter: Plan validation fails for unsupported tool names", () => {
   const adapter = new PlanAdapter();
