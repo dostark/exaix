@@ -15,7 +15,7 @@ scope: dev
 title: "Package Extraction Skill (#package-extraction)"
 description: Extract the next package-owned slice from src/ into packages/, rewire imports to canonical package paths, and retire the legacy src modules
 short_summary: "Guided workflow for selecting and extracting the next package-owned slice from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement."
-version: "1.5"
+version: "2.0"
 topics: ["packages", "migration", "refactor", "tdd", "architecture", "workspace"]
 qwen_skill: package-extraction
 ---
@@ -40,7 +40,7 @@ Key points
 - Preserve a clear architectural layout inside the target package by placing migrated modules into correspondent subfolders that communicate intent and functionality
 - When practical, keep the old `src/` folder tree shape as the starting layout inside `packages/<package>/src/`, but only if that tree still reflects a clean package-internal architecture
 - When a legacy module mixes multiple responsibilities because the old root implementation was not cleanly separated, consider splitting it into smaller sub-modules during extraction instead of copying the mixed design into the package
-- After package-owned source-of-truth files exist, migrate all call sites to canonical package imports and retire the old src/ modules in the same extraction whenever feasible
+- After package-owned source-of-truth files exist, migrate every reachable call site — including all test files — to canonical package imports and retire all legacy src/ modules in the same extraction. Extraction is not complete until every old src/ module for the moved slice is deleted and zero consumers import from legacy paths.
 - Do not create or preserve src/ shim layers that simply route to package modules; they hide incomplete migration and mask clean package boundaries
 - If a temporary boundary or migration-regression test is introduced only to protect a transition, remove it before the extraction is considered complete once the legacy src/ module is deleted and callers are rewired
 - Do not move executable wrappers or runtime wiring into low-level packages prematurely
@@ -66,6 +66,7 @@ Workflow
 3. Define the migration contract before editing
    - Identify the source of truth path under packages/
    - Identify every legacy src/ path that must be deleted before the extraction is done
+   - Identify every consumer of each legacy path (including test files) that must be rewired before deletion
    - Identify which tests move into packages/<package>/tests/
    - Identify whether the slice also needs a public package-owned testing surface such as
      `packages/<package>/testing/` for helpers, configs, or fixtures that external tests must import
@@ -86,8 +87,8 @@ Workflow
    - Preserve or improve the old `src/` tree shape when it already provides a clear intent-based structure; do not copy confusing root runtime structure into a package mechanically
    - If the legacy module mixes concerns, split it into smaller files with clear intent during extraction instead of copying mixed design into the package
    - Update the migrated module frontmatter or file-level metadata immediately after the move so `@module`, `@path`, ownership notes, and other location-sensitive metadata do not drift
-   - Rewire all reachable imports to canonical package aliases or approved package subpath barrels as part of the extraction; do not leave new direct dependencies on legacy src/ paths behind
-   - Delete the old src/ module once imports are rewired; do not leave re-export shims, forwarding wrappers, or thin barrels in src/
+   - Rewire every reachable import — including all test files — to canonical package aliases or approved package subpath barrels as part of the extraction; do not leave any dependency on legacy src/ paths behind
+   - Delete every old src/ module for the moved slice once imports are rewired; do not leave re-export shims, forwarding wrappers, thin barrels, or any compatibility file in src/
    - Preserve public behavior and quality gates while changing import ownership
    - Use `scripts/package_import_migration.ts --edit <old-path-or-package> <new-path-or-package>` only after the new package-owned files exist
    - Treat import rewrite scripts as accelerators, not as substitutes for validating ownership boundaries and fully retiring the old src/ surface
@@ -130,7 +131,7 @@ Preferred invocation order
    - 3. If the old module mixes concerns, split it into coherent sub-modules before or during the move so the package layout improves rather than inherits the ambiguity
    - 4. Move the source-of-truth files into `packages/<package>/src/...`
    - 5. Update migrated module frontmatter or file headers to reflect the new path, ownership, and module responsibility
-   - 6. Rewrite broad import usage once the new files exist:
+   - 6. Rewrite every import — including all test files — from old paths to the new package-owned source of truth:
       `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit <old-path-or-package> <new-path-or-package>`
    - 7. Canonicalize package imports after the broad rewrite:
       `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`
@@ -202,7 +203,7 @@ Decision rules
   - process lifecycle and signal handling
   - HTTP/SSE server transport wiring
   - root executable/bootstrap code
-- If a root file is already a thin wrapper over a package, treat that as migration debt to retire, not as an acceptable final state
+- If a root file is already a thin wrapper over a package, treat that as a blocking incompletion — the extraction is not done until the shim is deleted and all consumers import from the package directly
 - If tests outside a package need package-specific support code, prefer a public package testing
    subpath over deep imports into `packages/<package>/tests/` or new root helper duplication
 - If a migrated module still exists under src/ only as a forwarding wrapper, re-export, or thin barrel to the package, the extraction is incomplete
@@ -218,7 +219,7 @@ Do / Don't
 - ✅ Do create a package-owned testing subpath (`packages/<package>/testing/`) when package-specific test support must be shared with tests outside the package — this is a published support API, not a test folder
 - ✅ Do align the extraction with the current strategic phase rather than the original idealized sequence
 - ✅ Do treat current workspace package names as authoritative for current-state work
-- ✅ Do retire the old src/ module in the same extraction whenever practical, after rewiring imports to canonical package paths
+- ✅ Do retire every legacy src/ module in the same extraction. Rewire all consumers including tests before deletion. No shims, no forwarding wrappers, no src/ barrel re-exports to packages.
 - ✅ Do remove temporary migration-only boundary tests before considering the extraction complete
 - ❌ Don't mention or hardcode one specific package in this skill
 - ❌ Don't start with orchestration hubs or executable surfaces unless the live plan says they are ready
@@ -263,7 +264,7 @@ When invoked, the agent should:
 11. Split legacy mixed-responsibility modules into coherent sub-modules when that is needed to achieve a clean package architecture instead of preserving old accidental structure.
 12. A package has exactly two test-related directories with distinct roles: `tests/` for test files (`*_test.ts`) only, and optionally `testing/` as a published support API surface (never containing test files). When package-specific helpers/fixtures must be shared outside the package, put them in `packages/<package>/testing/` and export as `@exaix/<package>/testing` — never put `*_test.ts` files into `testing/`.
 13. Update only the migration docs whose purpose actually changed.
-14. Before calling the extraction complete, verify that legacy src/ forwarding files for the migrated slice are deleted, imports use canonical package paths, and any temporary migration-only boundary test has been removed.
+14. Before calling the extraction complete, verify that every legacy src/ forwarding file for the migrated slice is deleted, every consumer including tests uses canonical package paths, and no src/ barrel re-exports to packages exist for the moved slice.
 
 ## Output format
 
