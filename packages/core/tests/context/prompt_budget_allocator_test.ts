@@ -1,13 +1,13 @@
 /**
  * @module PromptBudgetAllocatorTest
- * @path packages/context/tests/prompt_budget_allocator_test.ts
+ * @path packages/core/tests/context/prompt_budget_allocator_test.ts
  * @description Tests for Phase 62 Step 62.2 PromptBudgetAllocator service.
  * @architectural-layer Test
  * @related-files [src/services/context/prompt_budget_allocator.ts, "packages/schemas/src/prompt_budget.ts"]
  */
 
 import { assertEquals, assertGreater } from "@std/assert";
-import { PromptBudgetAllocator } from "@exaix/context";
+import { PromptBudgetAllocator } from "@exaix/core/context";
 import {
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   MODEL_CONTEXT_WINDOWS,

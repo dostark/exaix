@@ -1,11 +1,11 @@
 /**
  * @module ParsingPackageInvalidInputTest
- * @path packages/parsing/tests/invalid_input_test.ts
+ * @path packages/core/tests/parsing/invalid_input_test.ts
  * @description Verifies invalid YAML and frontmatter handling inside @exaix/parsing.
  */
 import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { FrontmatterParser } from "@exaix/parsing";
+import { FrontmatterParser } from "@exaix/core/parsing";
 import { createLoggingTestDb } from "@exaix/testing";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");

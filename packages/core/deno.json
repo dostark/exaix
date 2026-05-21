@@ -21,6 +21,8 @@
     "@exaix/core/cost": "./src/cost/mod.ts",
     "@exaix/core/func": "./src/func/mod.ts",
     "@exaix/core/skills": "./src/skills/mod.ts",
+    "@exaix/core/parsing": "./src/parsing/mod.ts",
+    "@exaix/core/context": "./src/context/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/schemas": "../schemas/mod.ts",

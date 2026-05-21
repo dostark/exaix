@@ -1,9 +1,6 @@
 /**
  * @module Context
  * @path packages/context/mod.ts
- * @description Barrel for @exaix/context.
+ * @description Compatibility shim — re-exports from @exaix/core/context.
  */
-
-export * from "./src/context_card_generator.ts";
-export * from "./src/context_loader.ts";
-export * from "./src/prompt_budget_allocator.ts";
+export * from "@exaix/core/context";

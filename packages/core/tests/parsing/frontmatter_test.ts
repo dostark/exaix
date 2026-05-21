@@ -1,12 +1,12 @@
 /**
  * @module ParsingPackageFrontmatterTest
- * @path packages/parsing/tests/frontmatter_test.ts
+ * @path packages/core/tests/parsing/frontmatter_test.ts
  * @description Verifies @exaix/parsing frontmatter parsing behavior, including validation and activity logging.
  */
 import { assertEquals, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { RequestStatus } from "@exaix/core/status";
-import { FrontmatterParser } from "@exaix/parsing";
+import { FrontmatterParser } from "@exaix/core/parsing";
 import { createLoggingTestDb } from "@exaix/testing";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");

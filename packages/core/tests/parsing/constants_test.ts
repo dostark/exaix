@@ -1,10 +1,10 @@
 /**
  * @module ParsingPackageConstantsTest
- * @path packages/parsing/tests/constants_test.ts
+ * @path packages/core/tests/parsing/constants_test.ts
  * @description Verifies @exaix/parsing package-local constants and enums are exported and behave as expected.
  */
 import { assertEquals, assertMatch } from "@std/assert";
-import { FRONTMATTER_REGEX, ParserActivityActionType } from "@exaix/parsing";
+import { FRONTMATTER_REGEX, ParserActivityActionType } from "@exaix/core/parsing";
 import { ActorType } from "@exaix/core";
 
 Deno.test("Parsing package constants are accessible and correct", () => {

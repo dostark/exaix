@@ -154,6 +154,8 @@
     "@exaix/routing/": "./packages/routing/src/",
     "@exaix/core/cost": "./packages/core/src/cost/mod.ts",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
+    "@exaix/core/parsing": "./packages/core/src/parsing/mod.ts",
+    "@exaix/core/context": "./packages/core/src/context/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
     "@exaix/tool-runtime": "./packages/tool-runtime/mod.ts",
     "@exaix/execution": "./packages/execution/mod.ts",

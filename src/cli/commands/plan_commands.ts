@@ -9,7 +9,7 @@
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import { FrontmatterParser } from "@exaix/parsing";
+import { FrontmatterParser } from "@exaix/core/parsing";
 import { BaseCommand, type ICommandContext } from "../base.ts";
 import { PlanStatus } from "@exaix/core/status";
 import { type PlanStatusType, RequestStatus } from "@exaix/core/status";
