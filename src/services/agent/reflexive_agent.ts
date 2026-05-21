@@ -24,7 +24,7 @@ import { logDebug } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { LogMethod } from "../decorators/logging.ts";
 import { EventLogger } from "@exaix/core/logger";
-import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequirementFulfillmentSchema } from "../../flows/evaluation_criteria.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";

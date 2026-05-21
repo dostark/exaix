@@ -62,7 +62,7 @@ import { StatusManager } from "../request_processing/status_manager.ts";
 import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
 import { OutputValidator } from "@exaix/tool-runtime";
 import type { LogMetadata } from "@exaix/core/types";
-import { MiddlewarePipeline } from "../middleware/pipeline.ts";
+import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "../request_analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";

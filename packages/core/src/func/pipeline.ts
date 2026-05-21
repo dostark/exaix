@@ -1,8 +1,8 @@
 /**
  * @module MiddlewarePipeline
- * @path src/services/middleware/pipeline.ts
+ * @path packages/core/src/func/pipeline.ts
  * @description Generic middleware pipeline for executing a chain of interceptors.
- * @architectural-layer Services
+ * @architectural-layer Core
  * @related-files [src/services/common/types.ts]
  */
 import type { IServiceContext } from "@exaix/core/types";

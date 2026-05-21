@@ -13,3 +13,4 @@ export * from "./json_repair.ts";
 export * from "./async_utils.ts";
 export * from "./secure_random.ts";
 export { extractKeywords } from "../skills/text_utils.ts";
+export { MiddlewarePipeline } from "./pipeline.ts";

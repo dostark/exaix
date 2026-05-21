@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { MiddlewarePipeline } from "../../../src/services/middleware/pipeline.ts";
+import { MiddlewarePipeline } from "@exaix/core/func";
 
 Deno.test("MiddlewarePipeline executes middlewares in correct order with around-next behavior", async () => {
   const pipeline = new MiddlewarePipeline();
