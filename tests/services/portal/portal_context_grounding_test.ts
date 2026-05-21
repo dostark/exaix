@@ -7,7 +7,7 @@
 
 import { assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { RequestProcessor } from "@exaix/request";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { MockStrategy, PortalOperation } from "@exaix/core";
 import type { IApplicationContext } from "@exaix/core/types";

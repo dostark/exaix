@@ -3,7 +3,7 @@
  * @path src/flows/flow_runner.ts
  * @description Core orchestrator for multi-agent flow execution.
  * @architectural-layer Flows
- * @related-files [src/flows/flow_loader.ts, src/services/request/request_router.ts, src/services/flow/flow_reporter.ts]
+ * @related-files [src/flows/flow_loader.ts, packages/request/src/router.ts, src/services/flow/flow_reporter.ts]
  */
 
 import type {

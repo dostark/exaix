@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
+import { StatusManager } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import { EventLogger } from "@exaix/core/logger";
 import { createStubDb } from "../../helpers/test_helpers.ts";

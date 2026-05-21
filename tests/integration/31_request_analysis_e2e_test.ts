@@ -5,14 +5,14 @@
  * analysis → _analysis.json → plan pipeline. Covers heuristic mode injection,
  * default analysis via MockLLMProvider, _analysis.json persistence and schema
  * round-trip, plan frontmatter annotations, and flow request analysis.
- * @related-files ["src/services/request/request_processor.ts", *   src/services/request_analysis/request_analyzer.ts, *   src/services/request_analysis/analysis_persistence.ts, "packages/schemas/src/request_analysis.ts"]
+ * @related-files ["packages/request/src/processor.ts", *   packages/request/src/analysis/analyzer.ts, *   packages/request/src/analysis/persistence.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { RequestProcessor } from "../../src/services/request/request_processor.ts";
-import { RequestAnalyzer } from "../../src/services/request_analysis/request_analyzer.ts";
-import { loadAnalysis } from "../../src/services/request_analysis/mod.ts";
+import { RequestProcessor } from "@exaix/request";
+import { RequestAnalyzer } from "@exaix/request";
+import { loadAnalysis } from "@exaix/request";
 import type { IApplicationContext } from "@exaix/core/types";
 import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";

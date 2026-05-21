@@ -14,6 +14,11 @@ export interface IFlowValidationResult {
   warnings: string[];
 }
 
+export interface IVerifyFlowResult {
+  valid: boolean;
+  error?: string;
+}
+
 export interface IFlowValidatorService {
   /**
    * Validate a flow object.
@@ -24,4 +29,9 @@ export interface IFlowValidatorService {
    * Validate a flow from a file path.
    */
   validateFile(path: string): Promise<IFlowValidationResult>;
+
+  /**
+   * Validate a flow by ID.
+   */
+  validateFlow(flowId: string): Promise<IVerifyFlowResult>;
 }

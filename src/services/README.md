@@ -39,13 +39,6 @@ src/services/
 │   ├── execution_loop.ts             # Main execution loop
 │   └── mod.ts                        # Barrel export
 │
-├── request/                # Request processing
-│   ├── request.ts                    # Request service CRUD
-│   ├── request_processor.ts          # Main request processing pipeline
-│   ├── request_router.ts             # Route requests to agents/flows
-│   ├── request_common.ts             # Shared request types/utilities
-│   └── mod.ts                        # Barrel export
-│
 ├── plan/                   # Planning services
 │   ├── plan.ts                       # Plan service CRUD
 │   ├── plan_executor.ts              # Execute plan steps via MCP
@@ -105,10 +98,7 @@ src/services/
 ├── adapters/               # Service adapters for DI
 ├── middleware/             # Middleware pipeline
 ├── decorators/             # TypeScript decorators
-├── quality_gate/           # Quality gate service
-├── request_analysis/       # Request analysis engine
-├── request_analysis/       # Request analysis engine
-└── request_processing/     # Request processing types
+└── quality_gate/           # Quality gate service
 ```
 
 > **Note:** Several directories have been extracted into dedicated packages.
@@ -176,6 +166,9 @@ The following directories have been extracted into standalone packages and **no 
 | `src/services/context/prompt_context.ts`   | `@exaix/core`    | `@exaix/core/func`   |
 | `src/services/agent/agent_capabilities.ts` | `@exaix/core`    | `@exaix/core/func`   |
 | `src/services/agent/prompt_formatter.ts`   | `@exaix/core`    | `@exaix/core/func`   |
+| `src/services/request/`                    | `@exaix/request` | `@exaix/request`     |
+| `src/services/request_analysis/`           | `@exaix/request` | `@exaix/request`     |
+| `src/services/request_processing/`         | `@exaix/request` | `@exaix/request`     |
 
 ---
 
@@ -527,7 +520,7 @@ Use your IDE's "Find References" to update all imports.
 | `./services/agent_executor.ts`     | `./services/agent/agent_executor.ts`       |
 | `./services/memory_bank.ts`        | `@exaix/memory` (package)                  |
 | `./services/memory/memory_bank.ts` | `@exaix/memory` (package)                  |
-| `./services/request.ts`            | `./services/request/request.ts`            |
+| `./services/request.ts`            | `@exaix/request` (package)                 |
 | `./services/plan.ts`               | `./services/plan/plan.ts`                  |
 | `./services/portal.ts`             | `./services/portal/portal.ts`              |
 | `./services/tool_registry.ts`      | `./services/tool/tool_registry.ts`         |

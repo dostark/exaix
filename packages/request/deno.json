@@ -1,0 +1,52 @@
+{
+  "name": "@exaix/request",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@std/yaml": "jsr:@std/yaml@^1.0.2",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/func": "../core/src/func/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/errors": "../core/src/errors/mod.ts",
+    "@exaix/core/observability": "../core/src/observability/mod.ts",
+    "@exaix/core/blueprint": "../core/src/blueprint/mod.ts",
+    "@exaix/core/skills": "../core/src/skills/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/cost": "../core/src/cost/mod.ts",
+    "@exaix/core/parsing": "../core/src/parsing/mod.ts",
+    "@exaix/core/context": "../core/src/context/mod.ts",
+    "@exaix/core/notification": "../core/src/notification/mod.ts",
+    "@exaix/core/artifact": "../core/src/artifact/mod.ts",
+    "@exaix/core/planning": "../core/src/planning/mod.ts",
+    "@exaix/schemas": "../schemas/mod.ts",
+    "@exaix/schemas/": "../schemas/src/",
+    "@exaix/ai": "../ai/mod.ts",
+    "@exaix/ai/types": "../ai/src/types.ts",
+    "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/circuit_breaker": "../ai/src/circuit_breaker.ts",
+    "@exaix/ai/constants": "../ai/src/constants.ts",
+    "@exaix/git": "../git/mod.ts",
+    "@exaix/mcp": "../mcp/mod.ts",
+    "@exaix/portal": "../portal/mod.ts",
+    "@exaix/memory": "../memory/mod.ts",
+    "@exaix/tool-runtime": "../tool-runtime/mod.ts",
+    "@exaix/testing": "../testing/mod.ts",
+    "@exaix/execution": "../execution/mod.ts",
+    "@exaix/quality-gate": "../quality-gate/mod.ts",
+    "@exaix/routing": "../routing/mod.ts",
+    "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
+    "@exaix/request": "../request/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

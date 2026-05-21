@@ -10,7 +10,7 @@ import { ConfigService } from "@exaix/core/config";
 import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { ContextCardAdapter } from "../../../src/services/adapters/context_card_adapter.ts";
-import { RequestService } from "../../../src/services/request/request.ts";
+import { RequestService } from "@exaix/request";
 import { RequestAdapter } from "../../../src/services/adapters/request_adapter.ts";
 import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../../src/services/adapters/portal_adapter.ts";

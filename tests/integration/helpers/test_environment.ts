@@ -24,7 +24,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import { RequestProcessor } from "../../../src/services/request/request_processor.ts";
+import { RequestProcessor } from "@exaix/request";
 import type { IApplicationContext } from "@exaix/core/types";
 import { ExecutionLoop } from "@exaix/execution";
 import {

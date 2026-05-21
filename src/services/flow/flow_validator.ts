@@ -3,11 +3,11 @@
  * @path src/services/flow/flow_validator.ts
  * @description Validates flow definitions, including structure, dependencies, and agent references.
  * @architectural-layer Services
- * @related-files [src/flows/flow_loader.ts, "src/services/request/request_router.ts"]
+ * @related-files [src/flows/flow_loader.ts, "packages/request/src/router.ts"]
  */
 import type { FlowLoader } from "../../flows/flow_loader.ts";
 import { DependencyResolver } from "../../flows/dependency_resolver.ts";
-import type { IFlowValidator } from "../request/request_router.ts";
+import type { IFlowValidator } from "@exaix/request";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 
 /**

@@ -6,10 +6,10 @@ copilot_knowledge_base: true
 version: 2.2
 capabilities: [architecture_overview, execution_flow, memory_bank, portal_ops]
 links:
-  - "src/services/request/request_processor.ts:RequestProcessor"
+  - "packages/request/src/processor.ts:RequestProcessor"
   - "packages/execution/src/agent_runner.ts:AgentRunner"
   - "packages/memory/src/bank/memory_bank.ts:MemoryBankService"
-  - "tests/services/request/request_processor_test.ts"
+  - "packages/request/tests/request_processor_test.ts"
 tools_referenced:
   - write_file: src/mcp/handlers/write_file_tool.ts
   - git_commit: src/mcp/handlers/git_tool.ts

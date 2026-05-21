@@ -5,7 +5,7 @@
  * core service logic in isolation.
  */
 
-import { type IFlowValidator, RequestRouter } from "../../src/services/request/request_router.ts";
+import { type IFlowValidator, RequestRouter } from "@exaix/request";
 import type { IFlowResult, IFlowRunner } from "../../src/flows/flow_runner.ts";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
 import type { IRoutingPolicyService } from "@exaix/routing";

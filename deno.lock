@@ -1231,6 +1231,14 @@
           "jsr:@std/testing@^1.0.18"
         ]
       },
+      "packages/request": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19",
+          "jsr:@std/fs@^1.0.23",
+          "jsr:@std/path@^1.1.4",
+          "jsr:@std/yaml@^1.0.2"
+        ]
+      },
       "packages/routing": {
         "dependencies": [
           "jsr:@std/assert@^1.0.19",

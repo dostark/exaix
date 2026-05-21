@@ -28,4 +28,12 @@ export class FlowValidatorAdapter implements IFlowValidatorService {
       warnings: result.warnings || [],
     };
   }
+
+  async validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }> {
+    const result = await this.inner.validateFlow(flowId);
+    return {
+      valid: result.valid,
+      error: result.error,
+    };
+  }
 }

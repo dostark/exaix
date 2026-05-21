@@ -29,7 +29,7 @@ import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
-import { RequestService } from "../services/request/request.ts";
+import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import { bootstrapProviderRegistry } from "../ai/registry_bootstrap.ts";

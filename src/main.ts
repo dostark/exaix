@@ -12,7 +12,7 @@ import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLeve
 import { FileWatcher } from "./services/utils/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
-import { RequestProcessor } from "./services/request/request_processor.ts";
+import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger } from "@exaix/core/logger";
 import { ExecutionLoop } from "@exaix/execution";

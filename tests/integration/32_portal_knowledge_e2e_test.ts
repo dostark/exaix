@@ -5,7 +5,7 @@
  * pipeline: analysis → persistence → retrieval → request-context injection.
  * Covers quick and standard modes, knowledge.json round-trip, IProjectMemory
  * file updates, and RequestProcessor portal-knowledge injection.
- * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, *   packages/portal/knowledge/knowledge_persistence.ts, "src/services/request/request_processor.ts", "packages/schemas/src/portal_knowledge.ts"]
+ * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, *   packages/portal/knowledge/knowledge_persistence.ts, "packages/request/src/processor.ts", "packages/schemas/src/portal_knowledge.ts"]
  */
 
 import { assert, assertEquals, assertExists, assertGreater } from "@std/assert";
@@ -14,7 +14,7 @@ import { ensureDir } from "@std/fs";
 import { MockStrategy, PortalAnalysisMode, PortalOperation } from "@exaix/core";
 import { type IDocCommandRunner, loadKnowledge, PortalKnowledgeService, saveKnowledge } from "@exaix/portal/knowledge";
 import { MemoryBankService } from "@exaix/memory";
-import { RequestProcessor } from "../../src/services/request/request_processor.ts";
+import { RequestProcessor } from "@exaix/request";
 import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { initTestDbService } from "../helpers/db.ts";

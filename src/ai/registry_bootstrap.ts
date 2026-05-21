@@ -3,7 +3,7 @@
  * @path src/ai/registry_bootstrap.ts
  * @description Root composition bootstrap for registering extracted concrete AI providers.
  * @architectural-layer Application
- * @related-files [packages/ai/src/provider_factory.ts, src/services/request/request_processor.ts]
+ * @related-files [packages/ai/src/provider_factory.ts, packages/request/src/processor.ts]
  */
 
 import { initializeRegistry, type IProviderMetadata, ProviderRegistry, setProviderRegistryBootstrap } from "@exaix/ai";

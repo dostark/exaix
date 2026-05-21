@@ -15,3 +15,27 @@ export { createStubConfig, createStubDisplay, createStubGit } from "../../tests/
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
 export { readFixtureTextSync } from "../../tests/helpers/fixtures.ts";
 export { makeGenerateResult } from "../../tests/helpers/test_helpers.ts";
+export { createStubProvider } from "../../tests/helpers/test_helpers.ts";
+export { REPO_ROOT } from "../../tests/helpers/repo_root.ts";
+export { setupPortalWorkspaceTestDirs } from "../../tests/services/helpers/portal_workspace_test_helper.ts";
+export {
+  createMockAgentRunner,
+  createMockEventLogger,
+  createMockFlowRunner,
+  createMockFlowValidator,
+  createRouterTestContext,
+  createTestRequestRouter,
+  sampleRouterRequest,
+} from "../../tests/services/helpers.ts";
+export {
+  getBlueprintsIdentitiesDir,
+  getMemoryDir,
+  getPortalsDir,
+  getRuntimeDir,
+  getWorkspaceActiveDir,
+  getWorkspaceArchiveDir,
+  getWorkspaceDir,
+  getWorkspacePlansDir,
+  getWorkspaceRejectedDir,
+  getWorkspaceRequestsDir,
+} from "../../tests/helpers/paths_helper.ts";

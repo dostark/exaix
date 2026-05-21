@@ -9,7 +9,7 @@ import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { parse } from "@std/yaml";
 
-import { StatusManager } from "../../../src/services/request_processing/status_manager.ts";
+import { StatusManager } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import { initTestDbService } from "../../helpers/db.ts";
 import { EventLogger } from "@exaix/core/logger";
