@@ -3,7 +3,7 @@
  * @path tests/services/request/request_processor_quality_gate_test.ts
  * @description Verifies that RequestProcessor integrates with RequestQualityGate
  * to assess, enrich, and route requests before analysis and agent execution.
- * @related-files ["src/services/request/request_processor.ts", src/services/quality_gate/request_quality_gate.ts]
+ * @related-files ["src/services/request/request_processor.ts", "packages/quality-gate/src/request_quality_gate.ts"]
  */
 
 import { assertEquals } from "@std/assert";
@@ -17,10 +17,10 @@ import {
 } from "@exaix/schemas/request_quality_assessment.ts";
 import { QualityGateMode, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
+import { saveClarification } from "@exaix/quality-gate";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createMockProvider } from "../../helpers/mock_provider.ts";
 import { createStubConfig, createStubDisplay, createStubGit } from "../../helpers/test_helpers.ts";
-import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";
 import type { IClarificationSession } from "@exaix/schemas/clarification_session.ts";
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
 

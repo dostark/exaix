@@ -60,7 +60,7 @@ export class ToolCommands extends BaseCommand {
   private async requirePendingRequest(id: string): Promise<ToolConfirmationRequest> {
     const parseResult = z.string().uuid().safeParse(id);
     if (!parseResult.success) {
-      this.fail(`Invalid confirmation ID: must be a valid UUID. Got: \"${id}\"`);
+      throw new Error(`Invalid confirmation ID: must be a valid UUID. Got: "${id}"`);
     }
 
     const pending = await this.db.listPendingToolConfirmations();

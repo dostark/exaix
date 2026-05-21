@@ -21,8 +21,8 @@
     "./packages/portal",
     "./packages/quality-gate",
     "./packages/routing",
-    "./packages/tool-runtime"
-    "./packages/execution",
+    "./packages/tool-runtime",
+    "./packages/execution"
   ],
   "lock": true,
   "exports": "./src/main.ts",

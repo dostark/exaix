@@ -10,6 +10,7 @@ export * from "./src/cli_confirmation_interceptor.ts";
 export * from "./src/notification_queue_confirmation_interceptor.ts";
 export * from "./src/tool_validation_reporter.ts";
 export { createOutputValidator, createPlanValidator, OutputSchemas, OutputValidator } from "./src/output_validator.ts";
+export { createPathSecurity, PathSecurity } from "./src/path_security.ts";
 export { PathAccessError, PathTraversalError } from "./src/types.ts";
 export type {
   IActionSequence,

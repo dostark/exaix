@@ -16,7 +16,7 @@ import {
   DEFAULT_WATCHER_STABILITY_MAX_ATTEMPTS,
 } from "@exaix/core";
 import { ActivityActor } from "@exaix/core";
-import { delay } from "../../helpers/async_utils.ts";
+import { delay } from "@exaix/core/func";
 
 /**
  * Event emitted when a stable file is detected

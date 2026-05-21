@@ -23,6 +23,7 @@ import {
 import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
+import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
 import type {
   IApplicationContext,
@@ -331,7 +332,7 @@ export class ToolRegistry implements IToolRegistry {
     this.pathResolver = new PathResolver(this.config);
     this.tools = new Map();
     this.pipeline = resolvedPipeline ?? createNoopPipeline<IToolContext>();
-    this.pathSecurity = resolvedPathSecurity ?? createDefaultPathSecurity();
+    this.pathSecurity = resolvedPathSecurity ?? createPathSecurity();
     this.resultValidator = resolvedOptions?.resultValidator;
     this.validationReportContext = resolvedOptions?.validationReportContext;
     this.remediationPolicyResolver = resolvedOptions?.remediationPolicyResolver;
@@ -1643,29 +1644,6 @@ function createNoopPipeline<T>(): IMiddlewarePipeline<T> {
         }
       };
       await next();
-    },
-  };
-}
-
-function createDefaultPathSecurity(): IPathSecurityOps {
-  return {
-    async resolveWithinRoots(inputPath: string, allowedRoots: string[], rootDir: string): Promise<string> {
-      const normalized = inputPath.replace(/\0/g, "").replace(/\\/g, "/").replace(/\/+/g, "/");
-      if (normalized.includes("..")) {
-        throw new PathTraversalError(`Path traversal detected: ${inputPath}`);
-      }
-      const absolutePath = normalized.startsWith("/") ? normalized : join(rootDir, normalized);
-      const realPath = absolutePath;
-      const isUnderAllowed = allowedRoots.length === 0 ||
-        allowedRoots.some((root) => realPath.startsWith(root));
-      if (!isUnderAllowed) {
-        throw new PathAccessError(`Access denied: ${inputPath} is not within allowed roots`);
-      }
-      try {
-        return await Deno.realPath(absolutePath);
-      } catch {
-        return absolutePath;
-      }
     },
   };
 }

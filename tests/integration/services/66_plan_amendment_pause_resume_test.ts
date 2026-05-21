@@ -17,145 +17,122 @@ import {
   createPlanAmendmentExecutor,
   createPlanAmendmentServiceForTest,
   createPlanExecutionContext,
-  executeUntilPlanAmendmentPending,
   readDirEntries,
-  readStoredPlanAmendmentArtifact,
+  withPlanAmendmentPendingScenario,
 } from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor pauses execution when amendment is proposed", async () => {
-  const root = await Deno.makeTempDir();
   const traceId = "550e8400-e29b-41d4-a716-446655440010";
   const requestId = "550e8400-e29b-41d4-a716-446655440011";
 
-  try {
-    const mockLLM = castTo<IModelProvider>({
-      generate: () =>
-        Promise.resolve(
-          makeResult(
-            JSON.stringify({
-              summary: "Amendment required due to tool failure",
-              affectedRemainingStepIds: ["2", "3"],
-              adds: [],
-              updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
-              removes: ["3"],
-            }),
-          ),
+  const mockLLM = castTo<IModelProvider>({
+    generate: () =>
+      Promise.resolve(
+        makeResult(
+          JSON.stringify({
+            summary: "Amendment required due to tool failure",
+            affectedRemainingStepIds: ["2", "3"],
+            adds: [],
+            updates: [{ number: 2, title: "Updated Step", content: "Updated content" }],
+            removes: ["3"],
+          }),
         ),
-    });
+      ),
+  });
+  const mockScorer = castTo<ConfidenceScorer>({
+    assessQuick: () => ({ score: 30, reasoning: "Very low confidence after tool failure" }),
+  });
+  const steps = [
+    { number: 1, title: "Step 1", content: "First step executed" },
+    { number: 2, title: "Step 2", content: "Second step" },
+    { number: 3, title: "Step 3", content: "Third step" },
+  ];
 
-    const mockScorer = castTo<ConfidenceScorer>({
-      assessQuick: () => ({ score: 30, reasoning: "Very low confidence after tool failure" }),
-    });
-
-    const { config, executor } = createPlanAmendmentExecutor({
-      root,
+  await withPlanAmendmentPendingScenario(
+    {
       llm: mockLLM,
+      traceId,
+      requestId,
+      steps,
       threshold: 80,
       expiryMs: 5000,
       scorer: mockScorer,
-    });
+      agentExecutor: {
+        executeStep: () => Promise.resolve({ description: "Step result" }),
+        dispose: () => {},
+      },
+    },
+    ({ amendmentContent, entries }) => {
+      assertEquals(entries.length, 1, "Expected exactly one amendment artifact");
 
-    const context = createPlanExecutionContext(traceId, requestId, [
-      { number: 1, title: "Step 1", content: "First step executed" },
-      { number: 2, title: "Step 2", content: "Second step" },
-      { number: 3, title: "Step 3", content: "Third step" },
-    ]);
+      const amendment = JSON.parse(amendmentContent);
 
-    const agentExecutor = {
-      executeStep: () => Promise.resolve({ description: "Step result" }),
-      dispose: () => {},
-    };
-
-    attachPlanAgentExecutor(executor, agentExecutor);
-
-    await executeUntilPlanAmendmentPending(executor, context);
-
-    const { amendmentContent, entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
-    assertEquals(entries.length, 1, "Expected exactly one amendment artifact");
-
-    const amendment = JSON.parse(amendmentContent);
-
-    assertEquals(amendment.planId, requestId);
-    assertEquals(typeof amendment.amendmentId, "string");
-    assertEquals(amendment.summary.length > 0, true);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+      assertEquals(amendment.planId, requestId);
+      assertEquals(typeof amendment.amendmentId, "string");
+      assertEquals(amendment.summary.length > 0, true);
+    },
+  );
 });
 
 Deno.test("Amendment artifact is stored in correct directory structure", async () => {
-  const root = await Deno.makeTempDir();
   const traceId = "550e8400-e29b-41d4-a716-446655440012";
   const requestId = "550e8400-e29b-41d4-a716-446655440013";
 
-  try {
-    const mockLLM = castTo<IModelProvider>({
-      generate: () =>
-        Promise.resolve(
-          makeResult(
-            JSON.stringify({
-              summary: "Test amendment",
-              affectedRemainingStepIds: ["2"],
-              adds: [],
-              updates: [],
-              removes: [],
-            }),
-          ),
+  const mockLLM = castTo<IModelProvider>({
+    generate: () =>
+      Promise.resolve(
+        makeResult(
+          JSON.stringify({
+            summary: "Test amendment",
+            affectedRemainingStepIds: ["2"],
+            adds: [],
+            updates: [],
+            removes: [],
+          }),
         ),
-    });
+      ),
+  });
+  const mockScorer = castTo<ConfidenceScorer>({
+    assessQuick: () => ({ score: 50, reasoning: "Below threshold" }),
+  });
+  const steps = [
+    { number: 1, title: "Step 1", content: "Done" },
+    { number: 2, title: "Step 2", content: "Pending" },
+  ];
 
-    const mockScorer = castTo<ConfidenceScorer>({
-      assessQuick: () => ({ score: 50, reasoning: "Below threshold" }),
-    });
-
-    const { config, executor } = createPlanAmendmentExecutor({
-      root,
+  await withPlanAmendmentPendingScenario(
+    {
       llm: mockLLM,
+      traceId,
+      requestId,
+      steps,
       threshold: 90,
       expiryMs: 10000,
       scorer: mockScorer,
-    });
+    },
+    async ({ config, root }) => {
+      const memoryPath = `${root}/${config.paths.memory}`;
+      const executionPath = `${memoryPath}/${config.paths.memoryExecution}`;
+      const tracePath = `${executionPath}/${traceId}`;
+      const amendmentsPath = `${tracePath}/amendments`;
 
-    const context = createPlanExecutionContext(traceId, requestId, [
-      { number: 1, title: "Step 1", content: "Done" },
-      { number: 2, title: "Step 2", content: "Pending" },
-    ]);
+      const memoryStat = await Deno.stat(memoryPath);
+      assertEquals(memoryStat.isDirectory, true);
 
-    const agentExecutor = {
-      executeStep: () => Promise.resolve({ description: "Result" }),
-      dispose: () => {},
-    };
+      const executionStat = await Deno.stat(executionPath);
+      assertEquals(executionStat.isDirectory, true);
 
-    attachPlanAgentExecutor(executor, agentExecutor);
+      const traceStat = await Deno.stat(tracePath);
+      assertEquals(traceStat.isDirectory, true);
 
-    await executeUntilPlanAmendmentPending(executor, context);
+      const amendmentsStat = await Deno.stat(amendmentsPath);
+      assertEquals(amendmentsStat.isDirectory, true);
 
-    // Verify directory structure: Memory/Execution/{traceId}/amendments/
-    const memoryPath = `${root}/${config.paths.memory}`;
-    const executionPath = `${memoryPath}/${config.paths.memoryExecution}`;
-    const tracePath = `${executionPath}/${traceId}`;
-    const amendmentsPath = `${tracePath}/amendments`;
-
-    // Verify directories exist
-    const memoryStat = await Deno.stat(memoryPath);
-    assertEquals(memoryStat.isDirectory, true);
-
-    const executionStat = await Deno.stat(executionPath);
-    assertEquals(executionStat.isDirectory, true);
-
-    const traceStat = await Deno.stat(tracePath);
-    assertEquals(traceStat.isDirectory, true);
-
-    const amendmentsStat = await Deno.stat(amendmentsPath);
-    assertEquals(amendmentsStat.isDirectory, true);
-
-    // Verify amendment file exists
-    const entries = await readDirEntries(amendmentsPath);
-    const amendmentFiles = entries.filter((e) => e.name.endsWith(".json"));
-    assertEquals(amendmentFiles.length, 1, "Expected one amendment JSON file");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+      const entries = await readDirEntries(amendmentsPath);
+      const amendmentFiles = entries.filter((entry) => entry.name.endsWith(".json"));
+      assertEquals(amendmentFiles.length, 1, "Expected one amendment JSON file");
+    },
+  );
 });
 
 Deno.test("applyApprovedAmendment updates plan status to approved", async () => {

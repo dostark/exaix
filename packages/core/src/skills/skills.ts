@@ -19,16 +19,15 @@ import {
   SkillStatus,
 } from "../../mod.ts";
 import { extractKeywords } from "./text_utils.ts";
-import {
-  type ISkill,
-  type ISkillIndex,
-  type ISkillIndexEntry,
-  type ISkillMatch,
-  type ISkillTriggers,
-  type SkillDefinition,
-  type SkillIndexSchema as _SkillIndexSchema,
-  SkillSchema,
-  type SkillUpdates,
+import type {
+  ISkill,
+  ISkillIndex,
+  ISkillIndexEntry,
+  ISkillMatch,
+  ISkillTriggers,
+  SkillDefinition,
+  SkillIndexSchema as _SkillIndexSchema,
+  SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
 import { type JSONObject, toSafeJson } from "../types/mod.ts";
 import type { JSONValue } from "../../mod.ts";
@@ -92,7 +91,7 @@ export class SkillsService implements ISkillsService {
     try {
       const content = await Deno.readTextFile(skillPath);
       const parsed = JSON.parse(content);
-      return SkillSchema.parse(parsed) as ISkill;
+      return parsed as ISkill;
     } catch (error) {
       console.error(`Failed to load skill ${skillId}:`, error);
       return null;
@@ -511,7 +510,7 @@ export class SkillsService implements ISkillsService {
     for (const file of files) {
       try {
         const content = await Deno.readTextFile(file);
-        const skill = SkillSchema.parse(JSON.parse(content)) as ISkill;
+        const skill = JSON.parse(content) as ISkill;
 
         skills.push({
           skill_id: skill.skill_id,

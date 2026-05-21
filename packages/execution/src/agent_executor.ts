@@ -16,7 +16,7 @@ import type { IEventLogger } from "@exaix/core/logger";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { SafeError } from "@exaix/core/errors";
-import { SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
+import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
   AGENT_EVENT_EXECUTION_COMPLETED,
   AGENT_EVENT_EXECUTION_FAILED,
@@ -143,7 +143,8 @@ export class AgentExecutor {
     private _toolRegistry?: IToolRegistry,
     promptBudgetAllocator?: IPromptBudgetAllocator,
   ) {
-    this.promptBudgetAllocator = promptBudgetAllocator ?? createNoopBudgetAllocator();
+    this.promptBudgetAllocator = promptBudgetAllocator ??
+      new PromptBudgetAllocator(this.config.budget_enforcement);
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
@@ -1423,17 +1424,6 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       },
     });
   }
-}
-
-function createNoopBudgetAllocator(): IPromptBudgetAllocator {
-  return {
-    allocate: () => ({
-      model: "default",
-      totalBudgetTokens: 32000,
-      safetyBufferTokens: 2000,
-      sections: { system: 2000, plan: 4000, portalKnowledge: 4000, memory: 4000, skills: 2000, loopHistory: 4000 },
-    }),
-  };
 }
 
 /** Replacement marker used when sanitizing prompt-injection patterns from user input */

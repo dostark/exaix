@@ -1,14 +1,12 @@
 /**
  * @module SecureRandom
- * @path src/helpers/secure_random.ts
+ * @path packages/core/src/func/secure_random.ts
  * @description Cryptographically secure random number and string generation utilities.
- * @architectural-layer Helpers
- * @related-files ["src/services/request/request_processor.ts"]
  */
 
 export class SecureRandom {
   /**
-   * Generate cryptographically secure random bytes
+   * Generate cryptographically secure random bytes.
    */
   static getRandomBytes(length: number): Uint8Array {
     const bytes = new Uint8Array(length);
@@ -17,17 +15,17 @@ export class SecureRandom {
   }
 
   /**
-   * Generate a cryptographically secure random number between 0 and 1
+   * Generate a cryptographically secure random number between 0 and 1.
    */
   static getRandomNumber(): number {
     const bytes = this.getRandomBytes(8);
     const view = new DataView(bytes.buffer);
-    const randomInt = view.getUint32(0) / 0x100000000; // Divide by 2^32
+    const randomInt = view.getUint32(0) / 0x100000000;
     return randomInt;
   }
 
   /**
-   * Generate a cryptographically secure random integer in the specified range
+   * Generate a cryptographically secure random integer in the specified range.
    */
   static getRandomInt(min: number, max: number): number {
     const range = max - min + 1;
@@ -36,10 +34,10 @@ export class SecureRandom {
   }
 
   /**
-   * Generate a URL-safe random string of specified length
+   * Generate a URL-safe random string of specified length.
    */
   static getRandomString(length: number): string {
-    const bytes = this.getRandomBytes(Math.ceil(length * 3 / 4)); // ~4/3 overhead for base64url
+    const bytes = this.getRandomBytes(Math.ceil(length * 3 / 4));
     const base64url = btoa(String.fromCharCode(...bytes))
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
@@ -48,14 +46,14 @@ export class SecureRandom {
   }
 
   /**
-   * Generate a cryptographically secure UUID v4
+   * Generate a cryptographically secure UUID v4.
    */
   static generateUUID(): string {
     return crypto.randomUUID();
   }
 
   /**
-   * Generate a unique ID with optional prefix
+   * Generate a unique ID with optional prefix.
    */
   static generateId(prefix = "id"): string {
     const randomPart = this.getRandomString(16);
@@ -63,14 +61,14 @@ export class SecureRandom {
   }
 
   /**
-   * Generate a secure session ID
+   * Generate a secure session ID.
    */
   static generateSessionId(): string {
     return this.getRandomString(32);
   }
 
   /**
-   * Generate a secure token as hex string
+   * Generate a secure token as hex string.
    */
   static generateToken(byteLength: number): string {
     const bytes = this.getRandomBytes(byteLength);

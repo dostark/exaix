@@ -16,7 +16,7 @@ import {
 } from "@exaix/schemas/clarification_session.ts";
 import { ClarifyResultStatus } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
-import { saveClarification } from "../../../src/services/quality_gate/clarification_persistence.ts";
+import { saveClarification } from "@exaix/quality-gate";
 import { createCliTestContext } from "../helpers/test_setup.ts";
 
 // ---------------------------------------------------------------------------

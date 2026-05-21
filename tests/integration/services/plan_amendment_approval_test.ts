@@ -14,14 +14,7 @@ import type { ConfidenceScorer } from "../../../src/services/utils/confidence_sc
 import type { JSONObject } from "@exaix/core/types";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
-import {
-  attachPlanAgentExecutor,
-  createPlanAmendmentExecutor,
-  createPlanAmendmentServiceForTest,
-  createPlanExecutionContext,
-  executeUntilPlanAmendmentPending,
-  readStoredPlanAmendmentArtifact,
-} from "./plan_amendment_test_helper.ts";
+import { createPlanAmendmentServiceForTest, withPlanAmendmentPendingScenario } from "./plan_amendment_test_helper.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_AWAITING_APPROVAL,
@@ -130,58 +123,46 @@ Deno.test("Amendment expired decision validates correctly", () => {
 });
 
 Deno.test("PlanExecutor with amendment service throws PlanAmendmentPendingError on trigger", async () => {
-  const root = await Deno.makeTempDir();
   const traceId = "550e8400-e29b-41d4-a716-446655440002";
   const requestId = "550e8400-e29b-41d4-a716-446655440003";
 
-  try {
-    const mockLLM = castTo<IModelProvider>({
-      generate: () =>
-        Promise.resolve(
-          makeResult(
-            JSON.stringify({
-              summary: "Amendment proposed",
-              affectedRemainingStepIds: ["2"],
-              adds: [],
-              updates: [],
-              removes: [],
-            }),
-          ),
+  const mockLLM = castTo<IModelProvider>({
+    generate: () =>
+      Promise.resolve(
+        makeResult(
+          JSON.stringify({
+            summary: "Amendment proposed",
+            affectedRemainingStepIds: ["2"],
+            adds: [],
+            updates: [],
+            removes: [],
+          }),
         ),
-    });
+      ),
+  });
+  const mockScorer = castTo<ConfidenceScorer>({
+    assessQuick: () => ({ score: 40, reasoning: "Low confidence" }),
+  });
+  const steps = [
+    { number: 1, title: "Step 1", content: "Do something" },
+    { number: 2, title: "Step 2", content: "Do more" },
+  ];
 
-    const mockScorer = castTo<ConfidenceScorer>({
-      assessQuick: () => ({ score: 40, reasoning: "Low confidence" }),
-    });
-
-    const { config, executor } = createPlanAmendmentExecutor({
-      root,
+  await withPlanAmendmentPendingScenario(
+    {
       llm: mockLLM,
+      traceId,
+      requestId,
+      steps,
       threshold: 80,
       expiryMs: 5000,
       scorer: mockScorer,
-    });
-
-    const context = createPlanExecutionContext(traceId, requestId, [
-      { number: 1, title: "Step 1", content: "Do something" },
-      { number: 2, title: "Step 2", content: "Do more" },
-    ]);
-
-    const agentExecutor = {
-      executeStep: () => Promise.resolve({ description: "Result" }),
-      dispose: () => {},
-    };
-
-    attachPlanAgentExecutor(executor, agentExecutor);
-
-    await executeUntilPlanAmendmentPending(executor, context);
-
-    const { entries } = await readStoredPlanAmendmentArtifact(root, config, traceId);
-    assertEquals(entries.length, 1);
-    assertEquals(entries[0].name.endsWith(".json"), true);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
+    },
+    ({ entries }) => {
+      assertEquals(entries.length, 1);
+      assertEquals(entries[0].name.endsWith(".json"), true);
+    },
+  );
 });
 
 Deno.test("applyApprovedAmendment correctly applies patch to plan content", async () => {

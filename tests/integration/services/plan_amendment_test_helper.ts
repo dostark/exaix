@@ -64,6 +64,23 @@ interface IStoredPlanAmendmentArtifact {
   entries: Deno.DirEntry[];
 }
 
+interface IPlanAmendmentPendingScenarioOptions {
+  llm: IModelProvider;
+  traceId: string;
+  requestId: string;
+  steps: IPlanStepInput[];
+  threshold: number;
+  expiryMs: number;
+  enabled?: boolean;
+  scorer?: ConfidenceScorer;
+  agentExecutor?: IPlanAgentExecutorLike;
+}
+
+interface IPlanAmendmentPendingScenarioResult extends IStoredPlanAmendmentArtifact {
+  config: Config;
+  root: string;
+}
+
 const DEFAULT_PLAN_AMENDMENT_THRESHOLD = 60;
 const DEFAULT_PLAN_AMENDMENT_EXPIRY_MS = 86_400_000;
 
@@ -167,4 +184,41 @@ export async function readStoredPlanAmendmentArtifact(
     amendmentsDir,
     entries,
   };
+}
+
+export async function withPlanAmendmentPendingScenario<T>(
+  options: IPlanAmendmentPendingScenarioOptions,
+  run: (result: IPlanAmendmentPendingScenarioResult) => T | Promise<T>,
+): Promise<T> {
+  const root = await Deno.makeTempDir();
+
+  try {
+    const { config, executor } = createPlanAmendmentExecutor({
+      root,
+      llm: options.llm,
+      enabled: options.enabled,
+      threshold: options.threshold,
+      expiryMs: options.expiryMs,
+      scorer: options.scorer,
+    });
+    const context = createPlanExecutionContext(options.traceId, options.requestId, options.steps);
+
+    attachPlanAgentExecutor(
+      executor,
+      options.agentExecutor ?? {
+        executeStep: () => Promise.resolve({ description: "Result" }),
+        dispose: () => {},
+      },
+    );
+
+    await executeUntilPlanAmendmentPending(executor, context);
+
+    return await run({
+      root,
+      config,
+      ...(await readStoredPlanAmendmentArtifact(root, config, options.traceId)),
+    });
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
 }

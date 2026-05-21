@@ -38,42 +38,70 @@ function assertIsErrorResponse(response: { isError?: boolean; content: Array<{ t
   assertEquals(response.content[0].type, "text", "Expected text content block in error response");
 }
 
+function assertErrorTextIncludes(
+  response: { content: Array<{ type: string; text?: string }> },
+  fragment: string,
+  message: string,
+): void {
+  assert(
+    (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes(fragment.toLowerCase()),
+    message,
+  );
+}
+
+async function expectProtectedToolError(
+  options: {
+    operations: PortalOperation[];
+    fileContent?: Record<string, string>;
+    initGit?: boolean;
+  },
+  execute: (
+    env: Parameters<typeof withToolPermissionTest>[1] extends (env: infer T) => Promise<void> ? T : never,
+  ) => Promise<{
+    isError?: boolean;
+    content: Array<{ type: string; text?: string }>;
+  }>,
+  expectedText?: { fragment: string; message: string },
+): Promise<void> {
+  await withToolPermissionTest(options, async (env) => {
+    const response = await execute(env);
+
+    assertIsErrorResponse(response);
+    if (expectedText) {
+      assertErrorTextIncludes(response, expectedText.fragment, expectedText.message);
+    }
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // ReadFileTool
 
 Deno.test("ReadFileTool: file not found returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.READ] }, async (env) => {
-    const handler = new ReadFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "nonexistent-file.txt",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("not found"),
-      "Error message should mention 'not found'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.READ] },
+    (env) =>
+      new ReadFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "nonexistent-file.txt",
+        identity_id: "test-agent",
+      }),
+    { fragment: "not found", message: "Error message should mention 'not found'" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // DeleteFileTool
 
 Deno.test("DeleteFileTool: file not found returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
-    const handler = new DeleteFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "nonexistent.txt",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.WRITE] },
+    (env) =>
+      new DeleteFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "nonexistent.txt",
+        identity_id: "test-agent",
+      }),
+  );
 });
 
 Deno.test("DeleteFileTool: directory target returns isError:true, not thrown exception", async () => {
@@ -101,192 +129,150 @@ Deno.test("DeleteFileTool: directory target returns isError:true, not thrown exc
 // MoveFileTool
 
 Deno.test("MoveFileTool: source not found returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
-    const handler = new MoveFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      from: "ghost.txt",
-      to: "dest.txt",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("not found"),
-      "Error message should mention 'not found'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.WRITE] },
+    (env) =>
+      new MoveFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        from: "ghost.txt",
+        to: "dest.txt",
+        identity_id: "test-agent",
+      }),
+    { fragment: "not found", message: "Error message should mention 'not found'" },
+  );
 });
 
 Deno.test("MoveFileTool: destination already exists returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({
-    operations: [PortalOperation.WRITE],
-    fileContent: { "src.txt": "source content", "dst.txt": "destination exists" },
-  }, async (env) => {
-    const handler = new MoveFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      from: "src.txt",
-      to: "dst.txt",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("destination"),
-      "Error message should mention 'destination'",
-    );
-  });
+  await expectProtectedToolError(
+    {
+      operations: [PortalOperation.WRITE],
+      fileContent: { "src.txt": "source content", "dst.txt": "destination exists" },
+    },
+    (env) =>
+      new MoveFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        from: "src.txt",
+        to: "dst.txt",
+        identity_id: "test-agent",
+      }),
+    { fragment: "destination", message: "Error message should mention 'destination'" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // PatchFileTool
 
 Deno.test("PatchFileTool: file not found returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.WRITE] }, async (env) => {
-    const handler = new PatchFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "ghost.ts",
-      search: "old",
-      replace: "new",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("not found"),
-      "Error message should mention 'not found'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.WRITE] },
+    (env) =>
+      new PatchFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "ghost.ts",
+        search: "old",
+        replace: "new",
+        identity_id: "test-agent",
+      }),
+    { fragment: "not found", message: "Error message should mention 'not found'" },
+  );
 });
 
 Deno.test("PatchFileTool: search string not found returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({
-    operations: [PortalOperation.WRITE],
-    fileContent: { "hello.ts": "export const greeting = 'hello';" },
-  }, async (env) => {
-    const handler = new PatchFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "hello.ts",
-      search: "DOES_NOT_EXIST_IN_FILE",
-      replace: "replacement",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.includes("not found"),
-      "Error message should mention 'not found'",
-    );
-  });
+  await expectProtectedToolError(
+    {
+      operations: [PortalOperation.WRITE],
+      fileContent: { "hello.ts": "export const greeting = 'hello';" },
+    },
+    (env) =>
+      new PatchFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "hello.ts",
+        search: "DOES_NOT_EXIST_IN_FILE",
+        replace: "replacement",
+        identity_id: "test-agent",
+      }),
+    { fragment: "not found", message: "Error message should mention 'not found'" },
+  );
 });
 
 Deno.test("PatchFileTool: ambiguous search returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({
-    operations: [PortalOperation.WRITE],
-    fileContent: { "dup.ts": "foo foo foo" },
-  }, async (env) => {
-    const handler = new PatchFileTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "dup.ts",
-      search: "foo",
-      replace: "bar",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.includes("times"),
-      "Error message should mention occurrence count",
-    );
-  });
+  await expectProtectedToolError(
+    {
+      operations: [PortalOperation.WRITE],
+      fileContent: { "dup.ts": "foo foo foo" },
+    },
+    (env) =>
+      new PatchFileTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "dup.ts",
+        search: "foo",
+        replace: "bar",
+        identity_id: "test-agent",
+      }),
+    { fragment: "times", message: "Error message should mention occurrence count" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // ListDirectoryTool
 
 Deno.test("ListDirectoryTool: missing subdirectory returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.READ] }, async (env) => {
-    const handler = new ListDirectoryTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      path: "does-not-exist/subdir",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.READ] },
+    (env) =>
+      new ListDirectoryTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        path: "does-not-exist/subdir",
+        identity_id: "test-agent",
+      }),
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // GitStatusTool
 
 Deno.test("GitStatusTool: non-git portal returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.GIT], initGit: false }, async (env) => {
-    const handler = new GitStatusTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("git"),
-      "Error message should mention 'git'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.GIT], initGit: false },
+    (env) =>
+      new GitStatusTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        identity_id: "test-agent",
+      }),
+    { fragment: "git", message: "Error message should mention 'git'" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // GitCreateBranchTool
 
 Deno.test("GitCreateBranchTool: non-git portal returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.GIT], initGit: false }, async (env) => {
-    const handler = new GitCreateBranchTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      branch: "feat/test-branch",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("git"),
-      "Error message should mention 'git'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.GIT], initGit: false },
+    (env) =>
+      new GitCreateBranchTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        branch: "feat/test-branch",
+        identity_id: "test-agent",
+      }),
+    { fragment: "git", message: "Error message should mention 'git'" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // GitCommitTool
 
 Deno.test("GitCommitTool: commit failure returns isError:true, not thrown exception", async () => {
-  await withToolPermissionTest({ operations: [PortalOperation.GIT], initGit: true }, async (env) => {
-    const handler = new GitCommitTool(createToolContext(env), createPermissionsService(env));
-
-    const response = await handler.execute({
-      portal: "TestPortal",
-      message: "test commit",
-      identity_id: "test-agent",
-    });
-
-    assertIsErrorResponse(response);
-    assert(
-      (response.content[0] as { type: "text"; text: string }).text.toLowerCase().includes("commit"),
-      "Error message should mention 'commit'",
-    );
-  });
+  await expectProtectedToolError(
+    { operations: [PortalOperation.GIT], initGit: true },
+    (env) =>
+      new GitCommitTool(createToolContext(env), createPermissionsService(env)).execute({
+        portal: "TestPortal",
+        message: "test commit",
+        identity_id: "test-agent",
+      }),
+    { fragment: "commit", message: "Error message should mention 'commit'" },
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

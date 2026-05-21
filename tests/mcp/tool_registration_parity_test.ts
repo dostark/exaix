@@ -14,10 +14,27 @@ interface IToolsListResult {
   tools: Array<{ name: string; description: string }>;
 }
 
+const LIVE_MANIFEST_ENTRIES = TOOL_MANIFEST.filter(
+  (entry) => entry.kind === ToolKind.MCP_HANDLER || entry.kind === ToolKind.MCP_DOMAIN,
+);
+
+async function withToolsListResult(fn: (result: IToolsListResult) => void | Promise<void>): Promise<void> {
+  const ctx = await initMCPTestWithoutPortal();
+
+  try {
+    const request = createMCPRequest("tools/list", {});
+    const response = await ctx.server.handleRequest(request);
+
+    assertExists(response.result);
+    await fn(response.result as IToolsListResult);
+  } finally {
+    await ctx.cleanup();
+  }
+}
+
 Deno.test("ToolRegistrationParity: manifest-owned factory registry covers every live MCP tool exactly once", () => {
-  const liveManifestNames = TOOL_MANIFEST
-    .filter((e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN)
-    .map((e) => e.name)
+  const liveManifestNames = LIVE_MANIFEST_ENTRIES
+    .map((entry) => entry.name)
     .sort();
 
   const factoryNames = [...LIVE_MCP_TOOL_FACTORIES.keys()].sort();
@@ -30,39 +47,21 @@ Deno.test("ToolRegistrationParity: manifest-owned factory registry covers every 
 });
 
 Deno.test("ToolRegistrationParity: every live MCP manifest entry is registered by MCPServer", async () => {
-  const ctx = await initMCPTestWithoutPortal();
-  try {
-    const request = createMCPRequest("tools/list", {});
-    const response = await ctx.server.handleRequest(request);
+  await withToolsListResult((result) => {
+    const registeredNames = new Set(result.tools.map((tool) => tool.name));
 
-    assertExists(response.result);
-    const result = response.result as IToolsListResult;
-    const registeredNames = new Set(result.tools.map((t) => t.name));
-
-    const liveManifestEntries = TOOL_MANIFEST.filter(
-      (e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN,
-    );
-
-    for (const entry of liveManifestEntries) {
+    for (const entry of LIVE_MANIFEST_ENTRIES) {
       assertEquals(
         registeredNames.has(entry.name),
         true,
         `Manifest live tool '${entry.name}' is not registered in MCPServer`,
       );
     }
-  } finally {
-    await ctx.cleanup();
-  }
+  });
 });
 
 Deno.test("ToolRegistrationParity: every MCPServer tool is in the manifest", async () => {
-  const ctx = await initMCPTestWithoutPortal();
-  try {
-    const request = createMCPRequest("tools/list", {});
-    const response = await ctx.server.handleRequest(request);
-
-    assertExists(response.result);
-    const result = response.result as IToolsListResult;
+  await withToolsListResult((result) => {
     const manifestNames = new Set(TOOL_MANIFEST.map((e) => e.name));
 
     for (const tool of result.tools) {
@@ -72,47 +71,24 @@ Deno.test("ToolRegistrationParity: every MCPServer tool is in the manifest", asy
         `MCPServer tool '${tool.name}' is not in TOOL_MANIFEST`,
       );
     }
-  } finally {
-    await ctx.cleanup();
-  }
+  });
 });
 
 Deno.test("ToolRegistrationParity: live MCP tool count matches manifest count", async () => {
-  const ctx = await initMCPTestWithoutPortal();
-  try {
-    const request = createMCPRequest("tools/list", {});
-    const response = await ctx.server.handleRequest(request);
-
-    assertExists(response.result);
-    const result = response.result as IToolsListResult;
-    const liveManifestCount = TOOL_MANIFEST.filter(
-      (e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN,
-    ).length;
+  await withToolsListResult((result) => {
+    const liveManifestCount = LIVE_MANIFEST_ENTRIES.length;
 
     assertEquals(
       result.tools.length,
       liveManifestCount,
       `MCPServer registers ${result.tools.length} tools but manifest has ${liveManifestCount} live entries`,
     );
-  } finally {
-    await ctx.cleanup();
-  }
+  });
 });
 
 Deno.test("ToolRegistrationParity: every tools/list description matches the canonical manifest", async () => {
-  const ctx = await initMCPTestWithoutPortal();
-  try {
-    const request = createMCPRequest("tools/list", {});
-    const response = await ctx.server.handleRequest(request);
-
-    assertExists(response.result);
-    const result = response.result as IToolsListResult;
-
-    const liveManifestEntries = TOOL_MANIFEST.filter(
-      (e) => e.kind === ToolKind.MCP_HANDLER || e.kind === ToolKind.MCP_DOMAIN,
-    );
-
-    const manifestByName = new Map(liveManifestEntries.map((e) => [e.name, e.description]));
+  await withToolsListResult((result) => {
+    const manifestByName = new Map(LIVE_MANIFEST_ENTRIES.map((entry) => [entry.name, entry.description]));
 
     const mismatches: string[] = [];
     for (const tool of result.tools) {
@@ -131,7 +107,5 @@ Deno.test("ToolRegistrationParity: every tools/list description matches the cano
       `tools/list descriptions do not match TOOL_MANIFEST for: [${mismatches.join("; ")}]. ` +
         `Update getToolDefinition() in each handler to match the manifest description.`,
     );
-  } finally {
-    await ctx.cleanup();
-  }
+  });
 });

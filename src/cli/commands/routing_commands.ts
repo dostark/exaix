@@ -3,7 +3,7 @@
  * @path src/cli/commands/routing_commands.ts
  * @description Provides CLI helpers for routing policy inspection and validation.
  * @architectural-layer CLI
- * @related-files [src/services/routing/routing_policy_service.ts, src/services/routing/routing_policy_loader.ts]
+ * @related-files ["packages/routing/src/routing_policy_service.ts", "packages/routing/src/routing_policy_loader.ts"]
  */
 
 import { exists } from "@std/fs";

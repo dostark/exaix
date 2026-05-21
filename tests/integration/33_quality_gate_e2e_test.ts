@@ -5,16 +5,14 @@
  * pipeline from request file through assessment, enrichment, and clarification
  * session creation. Tests both the RequestProcessor integration path and the
  * clarification session lifecycle independently.
- * @related-files ["src/services/request/request_processor.ts", *   src/services/quality_gate/request_quality_gate.ts, *   src/services/quality_gate/clarification_engine.ts, *   src/services/quality_gate/clarification_persistence.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
+ * @related-files ["src/services/request/request_processor.ts", "packages/quality-gate/src/request_quality_gate.ts", "packages/quality-gate/src/clarification_engine.ts", "packages/quality-gate/src/clarification_persistence.ts", "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { basename, join } from "@std/path";
+import { ClarificationEngine, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
 import { RequestProcessor } from "../../src/services/request/request_processor.ts";
-import { RequestQualityGate } from "../../src/services/quality_gate/mod.ts";
-import { loadClarification, saveClarification } from "../../src/services/quality_gate/clarification_persistence.ts";
 import type { IApplicationContext, IRequestQualityGateService } from "@exaix/core/types";
-import { ClarificationEngine } from "../../src/services/quality_gate/clarification_engine.ts";
 import { createOutputValidator } from "@exaix/tool-runtime";
 import {
   ClarificationQuestionCategory,
