@@ -18,7 +18,7 @@ import {
 } from "@exaix/core";
 import { HealthCheckVerdict, HealthStatus } from "@exaix/core";
 import { EventLogger } from "@exaix/core/logger";
-import { LogMethod } from "../decorators/logging.ts";
+import { LogMethod } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { MiddlewarePipeline } from "@exaix/core/func";

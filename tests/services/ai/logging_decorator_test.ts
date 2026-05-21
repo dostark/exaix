@@ -7,7 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { LogMethod } from "../../../src/services/decorators/logging.ts";
+import { LogMethod } from "@exaix/core/logger";
 import type { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
 import type { JSONObject } from "@exaix/core/types";

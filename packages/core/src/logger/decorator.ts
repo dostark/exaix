@@ -1,8 +1,8 @@
 /**
  * @module LoggingDecorator
- * @path src/services/decorators/logging.ts
+ * @path packages/core/src/logger/decorator.ts
  * @description Method decorator for automated execution logging.
- * @architectural-layer Services
+ * @architectural-layer Core
  * @related-files [packages/core/src/logger/event_logger.ts]
  */
 import type { EventLogger } from "@exaix/core/logger";

@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { LogMethod } from "../../../src/services/decorators/logging.ts";
+import { LogMethod } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 
 interface MockPayload {

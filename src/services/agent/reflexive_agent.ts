@@ -22,7 +22,7 @@ import {
 import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
 import { logDebug } from "@exaix/core/logger";
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
-import { LogMethod } from "../decorators/logging.ts";
+import { LogMethod } from "@exaix/core/logger";
 import { EventLogger } from "@exaix/core/logger";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";

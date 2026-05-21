@@ -56,7 +56,7 @@ import { bootstrapProviderRegistry } from "../../ai/registry_bootstrap.ts";
 import { CostTracker } from "@exaix/core/cost";
 import { HealthCheckService } from "../core/health_check_service.ts";
 import { CircuitBreaker, CircuitBreakerProvider } from "@exaix/ai/circuit_breaker.ts";
-import { LogMethod } from "../decorators/logging.ts";
+import { LogMethod } from "@exaix/core/logger";
 import { RequestParser } from "../request_processing/request_parser.ts";
 import { StatusManager } from "../request_processing/status_manager.ts";
 import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
