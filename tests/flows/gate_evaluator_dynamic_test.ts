@@ -12,7 +12,7 @@ import { CriteriaGenerator } from "@exaix/core/skills";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import { ANALYZER_VERSION, FlowGateOnFail } from "@exaix/core";
-import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 
 const BASE_CONFIG: GateConfig = {
   identity: "judge-agent",

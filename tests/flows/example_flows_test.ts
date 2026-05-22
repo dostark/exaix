@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { FlowSchema } from "@exaix/schemas/flow.ts";
-import { defineFlow } from "../../src/flows/define_flow.ts";
+import { defineFlow } from "@exaix/core/func";
 import { FlowRunner } from "../../src/flows/flow_runner.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { DEFAULT_FLOW_VERSION, EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";

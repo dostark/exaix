@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "@exaix/core";
 import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
 import type { IGateConfig } from "@exaix/core/types";
-import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 import type { IStepResult } from "../../src/flows/flow_runner.ts";
 
 const DEFAULT_CONFIG: IGateConfig = {

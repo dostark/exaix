@@ -8,7 +8,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { createReflexiveAgent, CritiqueSchema } from "@exaix/execution";
-import { ANALYZER_VERSION } from "@exaix/core";
+import { ANALYZER_VERSION, FulfillmentStatus } from "@exaix/core";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
@@ -60,8 +60,8 @@ function makeCritiqueJSON(withFulfillment = false): string {
     return JSON.stringify({
       ...base,
       requirementsFulfillment: [
-        { requirement: "Implement user authentication", status: "MET" },
-        { requirement: "Login must respond in under 200ms", status: "PARTIAL" },
+        { requirement: "Implement user authentication", status: FulfillmentStatus.MET },
+        { requirement: "Login must respond in under 200ms", status: FulfillmentStatus.PARTIAL },
       ],
     });
   }
@@ -217,8 +217,8 @@ Deno.test("[ReflexiveAgent] CritiqueSchema accepts requirementsFulfillment", () 
     reasoning: "Good work",
     improvements: [],
     requirementsFulfillment: [
-      { requirement: "Must authenticate users", status: "MET" },
-      { requirement: "Must rate limit", status: "MISSING" },
+      { requirement: "Must authenticate users", status: FulfillmentStatus.MET },
+      { requirement: "Must rate limit", status: FulfillmentStatus.MISSING },
     ],
   };
 

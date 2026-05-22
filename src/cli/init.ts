@@ -11,7 +11,7 @@ import { ConfigService } from "@exaix/core/config";
 import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
-import { FlowLoader } from "../flows/flow_loader.ts";
+import { FlowLoader } from "@exaix/flow-storage";
 import { ActivityActor, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -25,7 +25,7 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import { ArchiveService } from "@exaix/core/artifact";
-import { FlowValidatorImpl } from "../services/flow/flow_validator.ts";
+import { FlowValidatorImpl } from "@exaix/flow-storage";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
@@ -196,7 +196,6 @@ export async function initializeServices(
       userIdentityGetter,
       validator: validatorLocal,
       config: cfg,
-      configService: cfgService,
       display: displayAdapter,
     });
 

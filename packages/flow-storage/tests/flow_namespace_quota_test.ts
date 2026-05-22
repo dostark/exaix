@@ -1,19 +1,13 @@
 /**
  * @module FlowNamespaceQuotaTest
- * @path tests/services/flow/flow_namespace_quota_test.ts
- * @description Unit coverage for FlowNamespaceService quota enforcement before persistence.
- * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, "packages/core/src/types/constants.ts"]
+ * @path packages/flow-storage/tests/flow_namespace_quota_test.ts
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
-import {
-  FlowNamespaceService,
-  NamespaceQuotaExceededError,
-} from "../../../src/services/flow/flow_namespace_service.ts";
+import { FlowNamespaceService, NamespaceQuotaExceededError } from "@exaix/flow-storage";
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
-import { createMockConfig } from "../../helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService rejects writes that exceed the namespace quota before persisting", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa-flow-namespace-quota-" });

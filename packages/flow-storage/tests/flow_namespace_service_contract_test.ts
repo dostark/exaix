@@ -1,16 +1,12 @@
 /**
  * @module FlowNamespaceServiceContractTest
- * @path tests/services/flow/flow_namespace_service_contract_test.ts
- * @description Type-level and structural contract tests for the Phase 64 namespace service surface.
+ * @path packages/flow-storage/tests/flow_namespace_service_contract_test.ts
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import {
-  type IFlowNamespaceService,
-  type IFlowNamespaceSnapshot,
-  NamespaceQuotaExceededError,
-} from "../../../src/services/flow/flow_namespace_service.ts";
+import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow-storage";
+import { NamespaceQuotaExceededError } from "@exaix/flow-storage";
 
 class StubFlowNamespaceService implements IFlowNamespaceService {
   getNamespacePath(traceId: string): string {

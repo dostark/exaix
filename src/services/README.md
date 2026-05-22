@@ -83,10 +83,7 @@ src/services/
 │   ├── archive_service.ts            # Archive management
 │   └── mod.ts                        # Barrel export
 │
-├── flow/                   # Flow execution services
-│   ├── flow_reporter.ts              # Flow execution reporting
-│   ├── flow_validator.ts             # Flow validation
-│   └── mod.ts                        # Barrel export
+├── flow/                   # Flow execution services — see @exaix/flow-storage
 │
 ├── utils/                  # Utility services
 │   ├── json_repair.ts                # Repair malformed JSON
@@ -114,7 +111,6 @@ src/services/
 | -------- | ----------------------- | ------------------------------------------- |
 | `core/`  | **Core infrastructure** | Database, event logging, health checks, Git |
 | `utils/` | **Utility services**    | JSON repair, file watching, TUI factory     |
-| `flow/`  | **Flow services**       | Flow reporting, validation                  |
 
 ### Domain Services
 
@@ -154,21 +150,22 @@ src/services/
 
 The following directories have been extracted into standalone packages and **no longer exist** under `src/services/`. Import from `@exaix/<package>` instead.
 
-| Old path                                   | Package          | Import from          |
-| ------------------------------------------ | ---------------- | -------------------- |
-| `src/services/memory/`                     | `@exaix/memory`  | `@exaix/memory`      |
-| `src/services/memory_bank/`                | `@exaix/memory`  | `@exaix/memory`      |
-| `src/services/portal/`                     | `@exaix/portal`  | `@exaix/portal`      |
-| `src/services/logger/`                     | `@exaix/core`    | `@exaix/core/logger` |
-| `src/services/routing/`                    | `@exaix/routing` | `@exaix/routing`     |
-| `src/services/context/token_counter.ts`    | `@exaix/core`    | `@exaix/core/func`   |
-| `src/services/context/code_parser.ts`      | `@exaix/core`    | `@exaix/core/func`   |
-| `src/services/context/prompt_context.ts`   | `@exaix/core`    | `@exaix/core/func`   |
-| `src/services/agent/agent_capabilities.ts` | `@exaix/core`    | `@exaix/core/func`   |
-| `src/services/agent/prompt_formatter.ts`   | `@exaix/core`    | `@exaix/core/func`   |
-| `src/services/request/`                    | `@exaix/request` | `@exaix/request`     |
-| `src/services/request_analysis/`           | `@exaix/request` | `@exaix/request`     |
-| `src/services/request_processing/`         | `@exaix/request` | `@exaix/request`     |
+| Old path                                   | Package               | Import from           |
+| ------------------------------------------ | --------------------- | --------------------- |
+| `src/services/memory/`                     | `@exaix/memory`       | `@exaix/memory`       |
+| `src/services/memory_bank/`                | `@exaix/memory`       | `@exaix/memory`       |
+| `src/services/portal/`                     | `@exaix/portal`       | `@exaix/portal`       |
+| `src/services/logger/`                     | `@exaix/core`         | `@exaix/core/logger`  |
+| `src/services/routing/`                    | `@exaix/routing`      | `@exaix/routing`      |
+| `src/services/context/token_counter.ts`    | `@exaix/core`         | `@exaix/core/func`    |
+| `src/services/context/code_parser.ts`      | `@exaix/core`         | `@exaix/core/func`    |
+| `src/services/context/prompt_context.ts`   | `@exaix/core`         | `@exaix/core/func`    |
+| `src/services/agent/agent_capabilities.ts` | `@exaix/core`         | `@exaix/core/func`    |
+| `src/services/agent/prompt_formatter.ts`   | `@exaix/core`         | `@exaix/core/func`    |
+| `src/services/request/`                    | `@exaix/request`      | `@exaix/request`      |
+| `src/services/request_analysis/`           | `@exaix/request`      | `@exaix/request`      |
+| `src/services/request_processing/`         | `@exaix/request`      | `@exaix/request`      |
+| `src/services/flow/`                       | `@exaix/flow-storage` | `@exaix/flow-storage` |
 
 ---
 
@@ -238,7 +235,7 @@ Ask one question: **Can an external consumer use this module without knowing the
    - Portal management → `@exaix/portal` package (not `src/services/`)
    - Request handling → `request/`
    - Infrastructure → `core/` or `utils/`
-   - Flow execution → `flow/`
+   - Flow execution → `@exaix/flow-storage` (package)
 
 3. **Does it need to be a service?**
    - Coordinates multiple components? → Service
@@ -337,11 +334,9 @@ export class MyServiceAdapter implements IMyService {
 Each domain folder has a `mod.ts` file for clean imports:
 
 ```typescript
-// src/services/agent/mod.ts
-export * from "./agent_executor.ts";
-export * from "./agent_runner.ts";
-export * from "./reflexive_agent.ts";
-export * from "./execution_loop.ts";
+// src/services/core/mod.ts
+export * from "./db.ts";
+export * from "./event_logger.ts";
 ```
 
 ---

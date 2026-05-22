@@ -3,7 +3,7 @@
  * @path tests/flows/flow_runner_namespace_integration_test.ts
  * @description Covers FlowRunner namespace hydration, event emission, and artifact path reporting.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_namespace_service.ts]
+ * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

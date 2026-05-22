@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
-import { ConfidenceAssessmentLevel, CritiqueQuality } from "@exaix/core";
+import { ConfidenceAssessmentLevel, CritiqueQuality, FulfillmentStatus } from "@exaix/core";
 import { createConfidenceScorer } from "@exaix/execution";
 import type { ICritique } from "@exaix/execution";
 import { EXISTING_SCORE_CONFIDENCE_WEIGHT, GOAL_ALIGNMENT_CONFIDENCE_WEIGHT } from "@exaix/core";
@@ -29,7 +29,7 @@ function makeConfidenceJSON(score: number): string {
 }
 
 function makeCritique(
-  statuses: Array<"MET" | "PARTIAL" | "MISSING">,
+  statuses: FulfillmentStatus[],
 ): ICritique {
   return {
     quality: CritiqueQuality.GOOD,
@@ -56,7 +56,7 @@ Deno.test(
       createMockProvider([makeConfidenceJSON(RAW_SCORE)]),
     );
 
-    const allMetCritique = makeCritique(["MET", "MET", "MET"]);
+    const allMetCritique = makeCritique([FulfillmentStatus.MET, FulfillmentStatus.MET, FulfillmentStatus.MET]);
     const result = await scorer.assess("q", "r", undefined, allMetCritique);
 
     // goalAlignmentScore = 1.0  →  finalScore = 80*0.7 + 1.0*0.3*100 = 56+30 = 86
@@ -78,9 +78,9 @@ Deno.test(
         makeConfidenceJSON(RAW_SCORE),
       ]),
     );
+    const allMet = makeCritique([FulfillmentStatus.MET, FulfillmentStatus.MET]);
 
-    const allMet = makeCritique(["MET", "MET"]);
-    const allMissing = makeCritique(["MISSING", "MISSING"]);
+    const allMissing = makeCritique([FulfillmentStatus.MISSING, FulfillmentStatus.MISSING]);
 
     const resultHigh = await scorer.assess("q", "r", undefined, allMet);
     const resultLow = await scorer.assess("q", "r", undefined, allMissing);
@@ -97,7 +97,11 @@ Deno.test(
       createMockProvider([makeConfidenceJSON(RAW_SCORE)]),
     );
 
-    const allMissingCritique = makeCritique(["MISSING", "MISSING", "MISSING"]);
+    const allMissingCritique = makeCritique([
+      FulfillmentStatus.MISSING,
+      FulfillmentStatus.MISSING,
+      FulfillmentStatus.MISSING,
+    ]);
     const result = await scorer.assess("q", "r", undefined, allMissingCritique);
 
     // goalAlignmentScore = 0  →  finalScore = 80*0.7 + 0*0.3*100 = 56
@@ -157,7 +161,7 @@ Deno.test(
       },
     );
 
-    const allMetCritique = makeCritique(["MET", "MET"]);
+    const allMetCritique = makeCritique([FulfillmentStatus.MET, FulfillmentStatus.MET]);
     const result = await scorer.assess("q", "r", undefined, allMetCritique);
 
     // goalAlignmentScore = 1.0  →  finalScore = 60*0.5 + 1.0*0.5*100 = 30+50 = 80

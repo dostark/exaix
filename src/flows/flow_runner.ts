@@ -3,7 +3,7 @@
  * @path src/flows/flow_runner.ts
  * @description Core orchestrator for multi-agent flow execution.
  * @architectural-layer Flows
- * @related-files [src/flows/flow_loader.ts, packages/request/src/router.ts, src/services/flow/flow_reporter.ts]
+ * @related-files [packages/flow-storage/mod.ts, packages/request/src/router.ts]
  */
 
 import type {
@@ -17,10 +17,10 @@ import type {
 } from "@exaix/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
-import { DependencyResolver } from "./dependency_resolver.ts";
+import { DependencyResolver } from "@exaix/flow-storage";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
-import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "./transforms.ts";
+import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "@exaix/core/func";
 import { jsonExtract } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
@@ -39,8 +39,12 @@ import type { Config } from "@exaix/schemas/config.ts";
 import { BlueprintLoader } from "@exaix/core/blueprint";
 import { RetryPolicy } from "@exaix/core/request";
 import type { IApplicationContext, IGateConfig, IGateEvaluator, IGateResult } from "@exaix/core/types";
-import { FlowCheckpointService, type IFlowCheckpointService } from "../services/flow/flow_checkpoint_service.ts";
-import { FlowNamespaceService, type IFlowNamespaceService } from "../services/flow/flow_namespace_service.ts";
+import {
+  FlowCheckpointService,
+  FlowNamespaceService,
+  type IFlowCheckpointService,
+  type IFlowNamespaceService,
+} from "@exaix/flow-storage";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import {
   DEFAULT_COST_PRECISION_FACTOR,

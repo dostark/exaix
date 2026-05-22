@@ -1,15 +1,12 @@
 /**
  * @module FlowNamespaceMarkdownRenderTest
- * @path tests/services/flow/flow_namespace_markdown_render_test.ts
- * @description Unit coverage for deterministic markdown rendering of persisted flow namespace entries.
- * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, "packages/schemas/src/flow.ts"]
+ * @path packages/flow-storage/tests/flow_namespace_markdown_render_test.ts
  */
 
 import { assertEquals } from "@std/assert";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import { FlowNamespaceService } from "../../../src/services/flow/flow_namespace_service.ts";
-import { createMockConfig } from "../../helpers/config.ts";
+import { FlowNamespaceService } from "@exaix/flow-storage";
+import { createMockConfig } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService renders markdown deterministically with sorted key order", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa-flow-namespace-render-" });

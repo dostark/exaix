@@ -1,52 +1,57 @@
 /**
  * @module FlowReporter
- * @path src/services/flow/flow_reporter.ts
+ * @path packages/flow-storage/src/reporter.ts
  * @description Generates comprehensive reports for flow executions, analyzing multi-agent orchestration results.
- * @architectural-layer Services
- * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import type { IFlowResult } from "../../flows/flow_runner.ts";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import { ActivityActor } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+import type { IAgentExecutionResult } from "@exaix/execution";
 
-// ============================================================================
-// Types and Interfaces
-// ============================================================================
+export interface IFlowResult {
+  flowRunId: string;
+  success: boolean;
+  stepResults: Map<string, IStepResult>;
+  output: string;
+  duration: number;
+  startedAt: Date;
+  completedAt: Date;
+  namespaceArtifactPath?: string;
+  tokenSummary?: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    token_provider?: string;
+    token_model?: string;
+    token_cost_usd?: number;
+  };
+}
 
-/**
- * Configuration for the FlowReporter
- */
+export interface IStepResult {
+  stepId: string;
+  success: boolean;
+  result?: IAgentExecutionResult;
+  error?: string;
+  duration: number;
+  startedAt: Date;
+  completedAt: Date;
+}
+
 export interface IFlowReportConfig {
-  /** Directory where reports are written (now Memory/Execution/) */
   reportsDirectory: string;
-
-  /** Database service for activity logging */
   db?: DatabaseService;
 }
 
-/**
- * Result of flow report generation
- */
 export interface FlowReportResult {
-  /** Absolute path to the generated report */
   reportPath: string;
-
-  /** Generated report content */
   content: string;
-
-  /** Timestamp when report was created */
   createdAt: Date;
 }
-
-// ============================================================================
-// FlowReporter Implementation
-// ============================================================================
 
 export class FlowReporter {
   private config: Config;
@@ -57,9 +62,6 @@ export class FlowReporter {
     this.reportConfig = reportConfig;
   }
 
-  /**
-   * Generate a flow report for a completed flow execution
-   */
   async generate(
     flow: IFlow,
     flowResult: IFlowResult,
@@ -68,19 +70,15 @@ export class FlowReporter {
     const startTime = Date.now();
 
     try {
-      // Build the report content
       const content = await this.buildReport(flow, flowResult, requestId);
 
-      // Generate filename: flow_{flowId}_{runId}_{timestamp}.md
       const filename = this.generateFilename(flow, flowResult);
       const reportPath = join(this.reportConfig.reportsDirectory, filename);
 
-      // Write report to file
       await Deno.writeTextFile(reportPath, content);
 
       const createdAt = new Date();
 
-      // Log success to IActivity Journal
       this.logReportGenerated(flow, flowResult, reportPath, Date.now() - startTime);
 
       return {
@@ -89,15 +87,11 @@ export class FlowReporter {
         createdAt,
       };
     } catch (error) {
-      // Log failure to IActivity Journal
       this.logReportFailed(flow, flowResult, error as Error, Date.now() - startTime);
       throw error;
     }
   }
 
-  /**
-   * Build the complete report content
-   */
   private async buildReport(
     flow: IFlow,
     flowResult: IFlowResult,
@@ -105,32 +99,20 @@ export class FlowReporter {
   ): Promise<string> {
     const sections: string[] = [];
 
-    // 1. YAML Frontmatter
     sections.push(this.buildFrontmatter(flow, flowResult, requestId));
-
-    // 2. Title
     sections.push(this.buildTitle(flow, flowResult));
-
-    // 3. Execution Summary
     sections.push(this.buildExecutionSummary(flowResult));
-
-    // 4. Step Outputs
     sections.push(this.buildStepOutputs(flowResult));
 
-    // 5. Shared Namespace
     if (flowResult.namespaceArtifactPath) {
       sections.push(this.buildSharedNamespace(flowResult.namespaceArtifactPath));
     }
 
-    // 6. Dependency Graph
     sections.push(this.buildDependencyGraph(flow));
 
     return await sections.join("\n");
   }
 
-  /**
-   * Generate YAML frontmatter for the flow report
-   */
   private buildFrontmatter(
     flow: IFlow,
     flowResult: IFlowResult,
@@ -176,7 +158,6 @@ export class FlowReporter {
       frontmatter.namespace_artifact_path = flowResult.namespaceArtifactPath;
     }
 
-    // Convert to YAML format
     const yamlLines = Object.entries(frontmatter).map(([key, value]) => {
       if (typeof value === "string") {
         return `${key}: "${value}"`;
@@ -187,17 +168,11 @@ export class FlowReporter {
     return `---\n${yamlLines.join("\n")}\n---\n\n`;
   }
 
-  /**
-   * Generate title for the flow report
-   */
   private buildTitle(flow: IFlow, flowResult: IFlowResult): string {
     const status = flowResult.success ? `${ICON_SUCCESS} Success` : `${ICON_FAILURE} Failed`;
     return `# IFlow Report: ${flow.name} (${status})\n\n`;
   }
 
-  /**
-   * Build execution summary table
-   */
   private buildExecutionSummary(flowResult: IFlowResult): string {
     const steps = Array.from(flowResult.stepResults.values());
 
@@ -220,9 +195,6 @@ export class FlowReporter {
     return summary;
   }
 
-  /**
-   * Build step outputs section
-   */
   private buildStepOutputs(flowResult: IFlowResult): string {
     let outputs = "## Step Outputs\n\n";
 
@@ -233,12 +205,10 @@ export class FlowReporter {
         outputs += `**Status:** ${ICON_SUCCESS} Success\n`;
         outputs += `**Duration:** ${stepResult.duration}ms\n\n`;
 
-        // Include agent response content
         if (stepResult.result.content) {
           outputs += `**Output:**\n\n${stepResult.result.content}\n\n`;
         }
 
-        // Include any additional metadata
         if (stepResult.result.raw) {
           outputs += `**Raw Response:**\n\n\`\`\`\n${stepResult.result.raw}\n\`\`\`\n\n`;
         }
@@ -255,28 +225,20 @@ export class FlowReporter {
     return outputs;
   }
 
-  /**
-   * Build shared namespace section
-   */
   private buildSharedNamespace(namespaceArtifactPath: string): string {
     return `## Shared Namespace\n\n${namespaceArtifactPath}\n\n`;
   }
 
-  /**
-   * Build dependency graph visualization
-   */
   private buildDependencyGraph(flow: IFlow): string {
     let graph = "## Dependency Graph\n\n";
     graph += "```mermaid\ngraph TD\n";
 
-    // Add nodes for each step
     for (const step of flow.steps) {
       const stepName = step.id;
       const agent = step.identity;
       graph += `    ${stepName}["${stepName}<br/>(${agent})"]\n`;
     }
 
-    // Add edges for dependencies
     for (const step of flow.steps) {
       if (step.dependsOn && step.dependsOn.length > 0) {
         for (const dep of step.dependsOn) {
@@ -287,7 +249,6 @@ export class FlowReporter {
 
     graph += "```\n\n";
 
-    // Add text description
     graph += "**IFlow Structure:**\n\n";
     for (const step of flow.steps) {
       const deps = step.dependsOn && step.dependsOn.length > 0
@@ -300,18 +261,12 @@ export class FlowReporter {
     return graph;
   }
 
-  /**
-   * Generate filename for the flow report
-   */
   private generateFilename(flow: IFlow, flowResult: IFlowResult): string {
     const timestamp = flowResult.completedAt.toISOString().replace(/[:.]/g, "-");
     const shortRunId = flowResult.flowRunId.slice(0, 8);
     return `flow_${flow.id}_${shortRunId}_${timestamp}.md`;
   }
 
-  /**
-   * Log successful report generation to IActivity Journal
-   */
   private logReportGenerated(
     flow: IFlow,
     flowResult: IFlowResult,
@@ -337,9 +292,6 @@ export class FlowReporter {
     );
   }
 
-  /**
-   * Log failed report generation to IActivity Journal
-   */
   private logReportFailed(
     flow: IFlow,
     flowResult: IFlowResult,

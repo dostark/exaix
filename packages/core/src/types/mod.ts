@@ -51,7 +51,7 @@ export * from "./plan.ts";
 export * from "./portal.ts";
 export * from "./request.ts";
 export * from "./skill.ts";
-export * from "./evaluation_criteria.ts";
+export * from "../evaluation/evaluation_criteria.ts";
 export * from "./prompt_context.ts";
 export * from "./service_context.ts";
 export * from "./audit_logger.ts";

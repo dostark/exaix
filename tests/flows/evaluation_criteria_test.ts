@@ -18,8 +18,8 @@ import {
   EvaluationCriterionSchema,
   getCriteriaByNames,
   RequirementFulfillmentSchema,
-} from "../../src/flows/evaluation_criteria.ts";
-import { EvaluationCategory } from "@exaix/core";
+} from "@exaix/core/evaluation";
+import { EvaluationCategory, FulfillmentStatus } from "@exaix/core";
 
 // ============================================================
 // CRITERIA Constants Tests
@@ -579,16 +579,16 @@ Deno.test("[EvaluationCriteria] existing criteria remain unchanged", () => {
 Deno.test("[EvaluationCriteria] RequirementFulfillmentSchema validates MET status", () => {
   const result = RequirementFulfillmentSchema.parse({
     requirement: "implement login",
-    status: "MET",
+    status: FulfillmentStatus.MET,
   });
   assertEquals(result.requirement, "implement login");
-  assertEquals(result.status, "MET");
+  assertEquals(result.status, FulfillmentStatus.MET);
 });
 
 Deno.test("[EvaluationCriteria] RequirementFulfillmentSchema validates PARTIAL status", () => {
   const result = RequirementFulfillmentSchema.parse({
     requirement: "add error handling",
-    status: "PARTIAL",
+    status: FulfillmentStatus.PARTIAL,
   });
   assertEquals(result.status, "PARTIAL");
 });

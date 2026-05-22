@@ -3,15 +3,15 @@
  * @path src/flows/feedback_loop.ts
  * @description Implements the Reflexion pattern for iterative improvement of agent outputs based on judge feedback and target quality scores.
  * @architectural-layer Flows
- * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
+ * @related-files [src/flows/gate_evaluator.ts, packages/core/src/evaluation/mod.ts]
  */
 
 import { z } from "zod";
-import { type EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "./evaluation_criteria.ts";
+import { type EvaluationCriterion, EvaluationCriterionSchema, getCriteriaByNames } from "@exaix/core/evaluation";
 import { FlowGateOnFail, GeneralStatus, ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
 import type { GateEvaluator } from "./gate_evaluator.ts";
 import type { IGateResult } from "@exaix/core/types";
-import type { CriterionResult } from "./evaluation_criteria.ts";
+import type { CriterionResult } from "@exaix/core/evaluation";
 
 /**
  * Context data for agent requests

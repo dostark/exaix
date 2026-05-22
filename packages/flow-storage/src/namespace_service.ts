@@ -1,9 +1,7 @@
 /**
  * @module FlowNamespaceService
- * @path src/services/flow/flow_namespace_service.ts
+ * @path packages/flow-storage/src/namespace_service.ts
  * @description Runtime contract surface for flow namespace persistence and shared blackboard coordination.
- * @architectural-layer Services
- * @related-files ["packages/schemas/src/flow.ts", src/services/flow/flow_checkpoint_service.ts]
  */
 
 import { ensureDir, exists } from "@std/fs";

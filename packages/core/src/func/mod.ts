@@ -12,5 +12,7 @@ export * from "./prompt_formatter.ts";
 export * from "./json_repair.ts";
 export * from "./async_utils.ts";
 export * from "./secure_random.ts";
+export * from "./transforms.ts";
+export * from "./define_flow.ts";
 export { extractKeywords } from "../skills/text_utils.ts";
 export { MiddlewarePipeline } from "./pipeline.ts";

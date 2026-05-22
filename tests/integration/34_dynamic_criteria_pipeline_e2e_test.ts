@@ -17,6 +17,7 @@ import {
   FlowInputSource,
   FlowOutputFormat,
   FlowStepType,
+  FulfillmentStatus,
 } from "@exaix/core";
 import { assert, assertEquals, assertGreater, assertStringIncludes } from "@std/assert";
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
@@ -33,7 +34,7 @@ import type {
   IGateConfig as _GateConfig,
   IGateResult as _IGateResult,
 } from "@exaix/core/types";
-import type { EvaluationCriterion, EvaluationResult } from "../../src/flows/evaluation_criteria.ts";
+import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
 import { createReflexiveAgent } from "@exaix/execution";
 import type { ICritique } from "@exaix/execution";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
@@ -287,8 +288,8 @@ Deno.test(
       reasoning: "OK",
       issues: [],
       requirementsFulfillment: [
-        { requirement: "req1", status: "MET" },
-        { requirement: "req2", status: "MET" },
+        { requirement: "req1", status: FulfillmentStatus.MET },
+        { requirement: "req2", status: FulfillmentStatus.MET },
       ],
     };
 

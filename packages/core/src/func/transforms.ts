@@ -1,32 +1,21 @@
 /**
  * @module FlowTransforms
- * @path src/flows/transforms.ts
- * @description Transform functions for flow execution pipeline. Provides data transformation,
- * merging, and extraction utilities for flow step processing.
- * @architectural-layer Flows
- * @related-files ["src/flows/flow_runner.ts", src/flows/condition_evaluator.ts]
+ * @path packages/core/src/func/transforms.ts
+ * @description Transform functions for flow execution pipeline — pure string/JSON utilities.
  */
+
 import type { JSONValue } from "@exaix/core";
 
-/**
- * Passthrough transform - returns input unchanged
- */
 export function passthrough(input: string): string {
   return input;
 }
 
-/**
- * Merge multiple outputs as markdown sections
- * Creates a combined document with each input as a separate section
- */
 function normalizeMarkdownHeaders(input: string): string {
   return input.replace(/^(#{1,6} .+)\n([^\n#])/gm, "$1\n\n$2");
 }
 
 export function mergeAsContext(inputs: string[]): string {
-  if (inputs.length === 0) {
-    return "";
-  }
+  if (inputs.length === 0) return "";
 
   let prefix = "";
   const updatedInputs = [...inputs];
@@ -53,10 +42,6 @@ export function mergeAsContext(inputs: string[]): string {
   return hasHeaderInput && !output.endsWith("\n") ? `${output}\n` : output;
 }
 
-/**
- * Extract a specific markdown section from input
- * Finds content between ## SectionName and next ## or end of document
- */
 export function extractSection(input: string, sectionName: string): string {
   const lines = input.split("\n");
   let inSection = false;
@@ -69,7 +54,6 @@ export function extractSection(input: string, sectionName: string): string {
     }
 
     if (inSection && line.startsWith("## ")) {
-      // Found next section, stop
       break;
     }
 
@@ -82,7 +66,6 @@ export function extractSection(input: string, sectionName: string): string {
     throw new Error(`Section '${sectionName}' not found`);
   }
 
-  // Remove leading/trailing empty lines
   while (sectionContent.length > 0 && sectionContent[0].trim() === "") {
     sectionContent.shift();
   }
@@ -93,24 +76,15 @@ export function extractSection(input: string, sectionName: string): string {
   return sectionContent.join("\n");
 }
 
-/**
- * Append original request to step output
- * Useful for maintaining context across steps
- */
 export function appendToRequest(request: string, stepOutput: string): string {
   const requestPart = request ? `Original: ${request}` : "Original:";
   const outputPart = stepOutput ? `Step Output: ${stepOutput}` : "Step Output:";
   return `${requestPart}\n\n${outputPart}`;
 }
 
-/**
- * Fill template with context variables
- * Replaces {{variable}} placeholders with values from context object
- */
 export function templateFill(template: string, context: Record<string, JSONValue>): string {
   let result = template;
 
-  // Find all {{variable}} patterns
   const variablePattern = /\{\{(\w+)\}\}/g;
   const variables: string[] = [];
   let match;
@@ -122,7 +96,6 @@ export function templateFill(template: string, context: Record<string, JSONValue
     }
   }
 
-  // Replace each variable
   for (const variable of variables) {
     if (!(variable in context)) {
       throw new Error(`Missing context variable: ${variable}`);

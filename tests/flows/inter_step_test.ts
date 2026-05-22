@@ -6,13 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import {
-  appendToRequest,
-  extractSection,
-  mergeAsContext,
-  passthrough,
-  templateFill,
-} from "../../src/flows/transforms.ts";
+import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "@exaix/core/func";
 import { jsonExtract } from "@exaix/core/types";
 
 /**

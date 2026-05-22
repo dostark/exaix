@@ -3,12 +3,12 @@
  * @path src/cli/commands/flow_commands.ts
  * @description Provides CLI commands for flow management and execution, including list, show, run, plan, history, and validation.
  * @architectural-layer CLI
- * @related-files [src/flows/flow_loader.ts, "src/main.ts"]
+ * @related-files [packages/flow-storage/mod.ts, "src/main.ts"]
  */
 
 import { Table } from "@cliffy/table";
 import { join } from "@std/path";
-import { FlowLoader } from "../../flows/flow_loader.ts";
+import { FlowLoader } from "@exaix/flow-storage";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL } from "@exaix/core";
 import { BaseCommand } from "../base.ts";

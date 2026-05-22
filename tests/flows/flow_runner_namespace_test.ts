@@ -3,7 +3,7 @@
  * @path tests/flows/flow_runner_namespace_test.ts
  * @description Verifies namespace event payload fields emitted by FlowRunner.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_namespace_service.ts]
+ * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

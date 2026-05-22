@@ -3,10 +3,10 @@
  * @path src/flows/judge_evaluator.ts
  * @description Orchestrates judge agent invocation and result parsing for output quality evaluation, including JSON repair and heuristic recovery.
  * @architectural-layer Flows
- * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts]
+ * @related-files [src/flows/gate_evaluator.ts, packages/core/src/evaluation/mod.ts]
  */
 
-import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "./evaluation_criteria.ts";
+import { buildEvaluationPrompt, type EvaluationCriterion, type EvaluationResult } from "@exaix/core/evaluation";
 import type { IJudgeInvoker } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 

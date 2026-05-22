@@ -22,7 +22,8 @@
     "./packages/routing",
     "./packages/tool-runtime",
     "./packages/execution",
-    "./packages/request"
+    "./packages/request",
+    "./packages/flow-storage"
   ],
   "lock": true,
   "exports": "./src/main.ts",
@@ -139,6 +140,7 @@
     "@exaix/core/context": "./packages/core/src/context/mod.ts",
     "@exaix/core/notification": "./packages/core/src/notification/mod.ts",
     "@exaix/core/blueprint": "./packages/core/src/blueprint/mod.ts",
+    "@exaix/core/evaluation": "./packages/core/src/evaluation/mod.ts",
     "@exaix/core/skills": "./packages/core/src/skills/mod.ts",
     "@exaix/core/artifact": "./packages/core/src/artifact/mod.ts",
     "@exaix/core/planning": "./packages/core/src/planning/mod.ts",
@@ -161,7 +163,9 @@
     "@exaix/tool-runtime": "./packages/tool-runtime/mod.ts",
     "@exaix/execution": "./packages/execution/mod.ts",
     "@exaix/request": "./packages/request/mod.ts",
-    "@exaix/request/": "./packages/request/src/"
+    "@exaix/request/": "./packages/request/src/",
+    "@exaix/flow-storage": "./packages/flow-storage/mod.ts",
+    "@exaix/flow-storage/": "./packages/flow-storage/src/"
   },
   "exclude": [
     "cov_profile",

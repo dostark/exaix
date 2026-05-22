@@ -202,7 +202,6 @@ export async function createCliTestContext(options?: { createDirs?: string[] }):
   const requests = new RequestAdapter(
     new RequestService({
       config,
-      configService,
       display,
       userIdentityGetter: () => Promise.resolve("tester"),
     }),

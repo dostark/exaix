@@ -1,77 +1,46 @@
 /**
  * @module EvaluationCriteria
- * @path src/flows/evaluation_criteria.ts
+ * @path packages/core/src/evaluation/evaluation_criteria.ts
  * @description defines built-in and custom criteria for LLM-as-a-Judge evaluations, supporting weighted scoring and quality gates.
- * @architectural-layer Flows
- * @related-files [src/flows/gate_evaluator.ts, packages/execution/src/confidence_scorer.ts]
+ * @architectural-layer Core
  */
 
 import { z } from "zod";
-import { EvaluationCategory, type EvaluationCriterionProperty } from "@exaix/core";
+import { EvaluationCategory, type EvaluationCriterionProperty, FulfillmentStatus } from "@exaix/core";
 
-/**
- * Schema for an evaluation criterion
- */
 export const EvaluationCriterionSchema = z.object({
-  /** Unique identifier for the criterion */
   name: z.string(),
-  /** Human-readable description for the LLM judge */
   description: z.string(),
-  /** Weight for scoring (default 1.0) */
   weight: z.number().min(0).max(10).default(1.0),
-  /** Whether this criterion must pass for overall pass */
   required: z.boolean().default(false),
-  /** Category for grouping criteria */
   category: z.nativeEnum(EvaluationCategory),
 });
 
 export type EvaluationCriterion = z.infer<typeof EvaluationCriterionSchema>;
 
-/**
- * Schema for criterion evaluation result
- */
 export const CriterionResultSchema = z.object({
-  /** Criterion name */
   name: z.string(),
-  /** Score from 0.0 to 1.0 */
   score: z.number().min(0).max(1),
-  /** Brief reasoning for the score */
   reasoning: z.string(),
-  /** Specific issues found */
   issues: z.array(z.string()).default([]),
-  /** Whether this criterion passed (score >= threshold) */
   passed: z.boolean(),
 });
 
 export type CriterionResult = z.infer<typeof CriterionResultSchema>;
 
-/**
- * Schema for requirement fulfillment tracking
- */
 export const RequirementFulfillmentSchema = z.object({
-  /** The requirement text being tracked */
   requirement: z.string(),
-  /** Whether the requirement was met, partially met, or missing */
-  status: z.enum(["MET", "PARTIAL", "MISSING"]),
+  status: z.nativeEnum(FulfillmentStatus),
 });
 
 export type IRequirementFulfillment = z.infer<typeof RequirementFulfillmentSchema>;
 
-/**
- * Schema for complete evaluation result
- */
 export const EvaluationResultSchema = z.object({
-  /** Overall weighted score */
   overallScore: z.number().min(0).max(1),
-  /** Individual criterion results */
   criteriaScores: z.record(CriterionResultSchema),
-  /** Whether overall evaluation passed */
   pass: z.boolean(),
-  /** Overall feedback summary */
   feedback: z.string(),
-  /** Suggestions for improvement */
   suggestions: z.array(z.string()).default([]),
-  /** Evaluation metadata */
   metadata: z.object({
     evaluatedAt: z.string(),
     evaluatorAgent: z.string().optional(),
@@ -81,11 +50,7 @@ export const EvaluationResultSchema = z.object({
 
 export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
 
-/**
- * Built-in evaluation criteria for common use cases
- */
 export const CRITERIA = {
-  // Code Quality Criteria
   CODE_CORRECTNESS: {
     name: "code_correctness",
     description:
@@ -140,7 +105,6 @@ export const CRITERIA = {
     category: EvaluationCategory.QUALITY,
   },
 
-  // Content Quality Criteria
   CLARITY: {
     name: "clarity",
     description:
@@ -176,7 +140,6 @@ export const CRITERIA = {
     category: EvaluationCategory.STYLE,
   },
 
-  // Technical Documentation Criteria
   DOCUMENTATION_QUALITY: {
     name: "documentation_quality",
     description:
@@ -194,7 +157,6 @@ export const CRITERIA = {
     category: EvaluationCategory.STYLE,
   },
 
-  // Performance Criteria
   PERFORMANCE_CONSIDERATIONS: {
     name: "performance_considerations",
     description:
@@ -212,7 +174,6 @@ export const CRITERIA = {
     category: EvaluationCategory.PERFORMANCE,
   },
 
-  // Goal-Aligned Request Evaluation Criteria (Phase 48)
   GOAL_ALIGNMENT: {
     name: "goal_alignment",
     description: "The response directly accomplishes the stated objective(s). " +
@@ -244,11 +205,7 @@ export const CRITERIA = {
   },
 } as const;
 
-/**
- * Pre-defined criterion sets for common evaluation scenarios
- */
 export const CRITERION_SETS = {
-  /** Basic code review criteria */
   CODE_REVIEW: [
     CRITERIA.CODE_CORRECTNESS,
     CRITERIA.CODE_COMPLETENESS,
@@ -257,7 +214,6 @@ export const CRITERION_SETS = {
     CRITERIA.NO_SECURITY_ISSUES,
   ],
 
-  /** Full code review with tests and docs */
   CODE_REVIEW_FULL: [
     CRITERIA.CODE_CORRECTNESS,
     CRITERIA.CODE_COMPLETENESS,
@@ -269,14 +225,12 @@ export const CRITERION_SETS = {
     CRITERIA.PERFORMANCE_CONSIDERATIONS,
   ],
 
-  /** Security-focused review */
   SECURITY_REVIEW: [
     CRITERIA.NO_SECURITY_ISSUES,
     CRITERIA.ERROR_HANDLING,
     CRITERIA.CODE_CORRECTNESS,
   ],
 
-  /** Content/document quality */
   CONTENT_QUALITY: [
     CRITERIA.CLARITY,
     CRITERIA.ACCURACY,
@@ -285,14 +239,12 @@ export const CRITERION_SETS = {
     CRITERIA.DOCUMENTATION_QUALITY,
   ],
 
-  /** Minimal quality gate */
   MINIMAL_GATE: [
     CRITERIA.CODE_CORRECTNESS,
     CRITERIA.ACCURACY,
     CRITERIA.RELEVANCE,
   ],
 
-  /** API design review */
   API_REVIEW: [
     CRITERIA.CODE_CORRECTNESS,
     CRITERIA.API_CONSISTENCY,
@@ -300,7 +252,6 @@ export const CRITERION_SETS = {
     CRITERIA.ERROR_HANDLING,
   ],
 
-  /** Goal-aligned review — includes request-specific quality criteria (Phase 48) */
   GOAL_ALIGNED_REVIEW: [
     CRITERIA.GOAL_ALIGNMENT,
     CRITERIA.TASK_FULFILLMENT,
@@ -309,7 +260,6 @@ export const CRITERION_SETS = {
     CRITERIA.CODE_COMPLETENESS,
   ],
 
-  /** Full quality gate with goal alignment and all critical dimensions (Phase 48) */
   FULL_QUALITY_GATE: [
     CRITERIA.GOAL_ALIGNMENT,
     CRITERIA.TASK_FULFILLMENT,
@@ -321,9 +271,6 @@ export const CRITERION_SETS = {
   ],
 };
 
-/**
- * Get criteria by names
- */
 export function getCriteriaByNames(names: string[]): EvaluationCriterion[] {
   const criteria: EvaluationCriterion[] = [];
 
@@ -333,7 +280,6 @@ export function getCriteriaByNames(names: string[]): EvaluationCriterion[] {
     if (criterion) {
       criteria.push(criterion);
     } else {
-      // Check if it's a custom criterion name, skip if not found
       console.warn(`Unknown criterion: ${name}`);
     }
   }
@@ -341,9 +287,6 @@ export function getCriteriaByNames(names: string[]): EvaluationCriterion[] {
   return criteria;
 }
 
-/**
- * Calculate weighted average score from criterion results
- */
 export function calculateWeightedScore(
   criteriaResults: Record<string, CriterionResult>,
   criteria: EvaluationCriterion[],
@@ -362,9 +305,6 @@ export function calculateWeightedScore(
   return totalWeight > 0 ? weightedSum / totalWeight : 0;
 }
 
-/**
- * Check if all required criteria passed
- */
 export function checkRequiredCriteria(
   criteriaResults: Record<string, CriterionResult>,
   criteria: EvaluationCriterion[],
@@ -381,9 +321,6 @@ export function checkRequiredCriteria(
   return true;
 }
 
-/**
- * Create a custom evaluation criterion
- */
 export function createCriterion(
   name: string,
   description: string,
@@ -399,9 +336,6 @@ export function createCriterion(
   });
 }
 
-/**
- * Build evaluation prompt for judge agent
- */
 export function buildEvaluationPrompt(
   content: string,
   criteria: EvaluationCriterion[],

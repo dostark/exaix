@@ -1052,6 +1052,14 @@ export enum EvaluationCriterionProperty {
   CATEGORY = "category",
 }
 /**
+ * Status for requirement fulfillment tracking.
+ */
+export enum FulfillmentStatus {
+  MET = "MET",
+  PARTIAL = "PARTIAL",
+  MISSING = "MISSING",
+}
+/**
  * Connection status for real-time streams.
  */
 export enum ConnectionStatus {

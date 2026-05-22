@@ -3,7 +3,7 @@
  * @path tests/integration/services/flow_checkpoint_test.ts
  * @description Integration coverage for flow checkpoint save/load/resume lifecycle.
  * @architectural-layer Test
- * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_checkpoint_service.ts]
+ * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";

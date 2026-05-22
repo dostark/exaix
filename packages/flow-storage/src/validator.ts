@@ -1,28 +1,29 @@
 /**
  * @module FlowValidator
- * @path src/services/flow/flow_validator.ts
+ * @path packages/flow-storage/src/validator.ts
  * @description Validates flow definitions, including structure, dependencies, and agent references.
- * @architectural-layer Services
- * @related-files [src/flows/flow_loader.ts, "packages/request/src/router.ts"]
  */
-import type { FlowLoader } from "../../flows/flow_loader.ts";
-import { DependencyResolver } from "../../flows/dependency_resolver.ts";
-import type { IFlowValidator } from "@exaix/request";
-import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 
-/**
- * FlowValidatorImpl - Validates flow definitions before execution
- * Implements comprehensive validation for flow-aware request routing
- */
+import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
+import { DependencyResolver } from "./dependency_resolver.ts";
+
+export interface IFlowLoader {
+  loadFlow(flowId: string): Promise<IFlow>;
+  flowExists(flowId: string): Promise<boolean>;
+}
+
+export interface IFlowValidator {
+  validate(flow: IFlow): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }>;
+  validateFile(path: string): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }>;
+  validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }>;
+}
+
 export class FlowValidatorImpl implements IFlowValidator {
   constructor(
-    private flowLoader: FlowLoader,
+    private flowLoader: IFlowLoader,
     private blueprintsPath: string,
   ) {}
 
-  /**
-   * Validate an IFlow object
-   */
   validate(flow: IFlow): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
     const errors: string[] = [];
     const flowId = flow.id || "unnamed";
@@ -49,12 +50,8 @@ export class FlowValidatorImpl implements IFlowValidator {
     });
   }
 
-  /**
-   * Validate a flow from a file path
-   */
   async validateFile(path: string): Promise<{ isValid: boolean; errors: string[]; warnings: string[] }> {
     try {
-      // Simplistic ID extraction from path
       const flowId = path.split("/").pop()?.replace(".flow.yaml", "") || "unknown";
       const flow = await this.flowLoader.loadFlow(flowId);
       return await this.validate(flow);
@@ -67,9 +64,6 @@ export class FlowValidatorImpl implements IFlowValidator {
     }
   }
 
-  /**
-   * Validate a flow by ID (legacy method)
-   */
   async validateFlow(flowId: string): Promise<{ valid: boolean; error?: string }> {
     try {
       const exists = await this.flowLoader.flowExists(flowId);
@@ -97,7 +91,7 @@ export class FlowValidatorImpl implements IFlowValidator {
 
   private async tryLoadFlow(
     flowId: string,
-  ): Promise<{ flow?: Awaited<ReturnType<FlowLoader["loadFlow"]>>; error?: string }> {
+  ): Promise<{ flow?: IFlow; error?: string }> {
     try {
       const flow = await this.flowLoader.loadFlow(flowId);
       return { flow };

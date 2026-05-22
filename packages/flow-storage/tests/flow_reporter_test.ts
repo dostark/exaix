@@ -1,8 +1,6 @@
 /**
  * @module FlowReporterTest
- * @path tests/services/flow/flow_reporter_test.ts
- * @description Verifies the FlowReporter service, ensuring step execution results and
- * aggregate workflow metrics are correctly tracked and persisted in the activity journal.
+ * @path packages/flow-storage/tests/flow_reporter_test.ts
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
@@ -10,12 +8,9 @@ import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { FlowReporter, type IFlowReportConfig } from "../../../src/services/flow/flow_reporter.ts";
-import { createMockConfig } from "../../helpers/config.ts";
-import { initTestDbService } from "../../helpers/db.ts";
+import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResult } from "@exaix/flow-storage";
+import { createMockConfig, initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
-import type { IFlowResult, IStepResult } from "../../../src/flows/flow_runner.ts";
-import { TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 

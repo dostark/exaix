@@ -1,13 +1,13 @@
 /**
- * @module StepDefinitions
- * @path src/flows/define_flow.ts
+ * @module DefineFlow
+ * @path packages/core/src/func/define_flow.ts
  * @description Helper utility to construct Flow objects with sensible defaults and schema validation.
- * @architectural-layer Core
- * @related-files ["packages/schemas/src/flow.ts", "packages/core/src/types/enums.ts"]
  */
+
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+
 export function defineFlow(config: {
   id: string;
   name: string;
@@ -31,21 +31,17 @@ export function defineFlow(config: {
       maxAttempts?: number;
       backoffMs?: number;
     };
-    /** Skills to apply for this step (Phase 17) */
     skills?: string[];
   }>;
   output: { from: string | string[]; format?: FlowOutputFormat };
   settings?: { maxParallelism?: number; failFast?: boolean; timeout?: number; includeRequestCriteria?: boolean };
-  /** Default skills to apply to all steps (Phase 17) */
   defaultSkills?: string[];
 }): IFlow {
-  // Basic validation for required top-level fields
   if (!config.id || config.id.trim() === "") throw new Error("Flow ID cannot be empty");
   if (!config.name || config.name.trim() === "") throw new Error("Flow name cannot be empty");
   if (!config.description || config.description.trim() === "") throw new Error("Flow description cannot be empty");
   if (!config.steps || config.steps.length === 0) throw new Error("Flow must have at least one step");
 
-  // Validate each step basic constraints before applying defaults
   for (const s of config.steps) {
     if (!s.id || s.id.trim() === "") throw new Error("Step ID cannot be empty");
     if (!s.name || s.name.trim() === "") throw new Error("Step name cannot be empty");
@@ -59,7 +55,7 @@ export function defineFlow(config: {
     steps: config.steps.map((step) => ({
       id: step.id,
       name: step.name,
-      type: FlowStepType.AGENT, // Default step type
+      type: FlowStepType.AGENT,
       identity: step.identity,
       execution_mode: FlowStepExecutionMode.DECLARED,
       dependsOn: step.dependsOn ?? [],
@@ -89,7 +85,6 @@ export function defineFlow(config: {
     },
   };
 
-  // Validate against schema to surface numeric/range and structural errors
   const parsed = FlowSchema.parse(flow);
   return parsed;
 }

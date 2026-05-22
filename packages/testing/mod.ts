@@ -30,6 +30,7 @@ export {
 export {
   getBlueprintsIdentitiesDir,
   getMemoryDir,
+  getMemoryExecutionDir,
   getPortalsDir,
   getRuntimeDir,
   getWorkspaceActiveDir,

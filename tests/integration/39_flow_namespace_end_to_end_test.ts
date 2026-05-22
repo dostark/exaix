@@ -3,7 +3,7 @@
  * @path tests/integration/39_flow_namespace_end_to_end_test.ts
  * @description End-to-end coverage for namespace artifact persistence and same-wave write serialization.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_namespace_service.ts]
+ * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";

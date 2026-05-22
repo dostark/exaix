@@ -1,14 +1,12 @@
 /**
  * @module FlowDependencyResolverTest
- * @path tests/flows/dependency_resolver_test.ts
- * @description Validates the DAG-based dependency resolution for complex workflows, ensuring
- * circular dependency detection and optimal wave-based parallel step grouping.
+ * @path packages/flow-storage/tests/dependency_resolver_test.ts
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource } from "@exaix/core";
 
-import { DependencyResolver, FlowValidationError } from "../../src/flows/dependency_resolver.ts";
+import { DependencyResolver, FlowValidationError } from "@exaix/flow-storage";
 import type { IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 const defaultStepProps = {

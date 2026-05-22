@@ -1,18 +1,14 @@
 /**
  * @module FlowNamespacePersistenceTest
- * @path tests/integration/services/flow_namespace_persistence_test.ts
- * @description Integration coverage for FlowNamespaceService persistence lifecycle and trace-scoped storage.
- * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, src/services/flow/flow_checkpoint_service.ts]
+ * @path packages/flow-storage/tests/flow_namespace_persistence_test.ts
  */
 
 import { assertEquals } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import { FlowNamespaceService } from "../../../src/services/flow/flow_namespace_service.ts";
-import { initTestDbService } from "../../helpers/db.ts";
-import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
+import { FlowNamespaceService } from "@exaix/flow-storage";
+import { getMemoryExecutionDir, initTestDbService } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService persists, reads, appends, and deletes trace-scoped namespace state", async () => {
   const { config, tempDir, cleanup } = await initTestDbService();

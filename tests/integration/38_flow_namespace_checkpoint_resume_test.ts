@@ -3,7 +3,7 @@
  * @path tests/integration/38_flow_namespace_checkpoint_resume_test.ts
  * @description Verifies namespace persistence across checkpoint resume and guards failed-step non-writes.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, src/services/flow/flow_checkpoint_service.ts, src/services/flow/flow_namespace_service.ts]
+ * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";

@@ -1,9 +1,8 @@
 /**
  * @module FlowLoader
- * @path src/flows/flow_loader.ts
+ * @path packages/flow-storage/src/flow_loader.ts
  * @description Handles loading and managing flow definitions from the file system, including dynamic import and import rewriting for blueprint execution.
- * @architectural-layer Flows
- * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
+ * @architectural-layer FlowStorage
  */
 
 import { join } from "@std/path";
@@ -14,10 +13,6 @@ import { FlowStepExecutionMode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { WRITE_TOOLS } from "@exaix/mcp";
 
-/**
- * Validate that dynamic steps do not contain write tools in permitted_tools.
- * Returns an array of error messages (empty if valid).
- */
 function validateDynamicStepTools(steps: IFlowStep[]): string[] {
   const errors: string[] = [];
 
@@ -38,10 +33,6 @@ function validateDynamicStepTools(steps: IFlowStep[]): string[] {
   return errors;
 }
 
-/**
- * FlowLoader handles loading and managing flow definitions from the file system.
- * Loads YAML flow files from the /Blueprints/Flows/ directory.
- */
 export class FlowLoader {
   private flowsDir: string;
 
@@ -49,15 +40,10 @@ export class FlowLoader {
     this.flowsDir = flowsDir;
   }
 
-  /**
-   * Load all flow files from the flows directory.
-   * Only loads files ending with .flow.yaml and ignores invalid files.
-   */
   async loadAllFlows(): Promise<IFlow[]> {
     const flows: IFlow[] = [];
 
     try {
-      // Read all files in the flows directory
       const entries = [];
       for await (const entry of Deno.readDir(this.flowsDir)) {
         if (entry.isFile && entry.name.endsWith(".flow.yaml")) {
@@ -65,7 +51,6 @@ export class FlowLoader {
         }
       }
 
-      // Load each flow file
       for (const fileName of entries) {
         try {
           const flowId = fileName.replace(".flow.yaml", "");
@@ -73,12 +58,10 @@ export class FlowLoader {
           flows.push(flow);
         } catch (error) {
           console.warn(`Failed to load flow from ${fileName}:`, error instanceof Error ? error.message : String(error));
-          // Continue loading other flows
         }
       }
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
-        // Directory doesn't exist, return empty array
         return [];
       }
       throw error;
@@ -87,16 +70,11 @@ export class FlowLoader {
     return flows;
   }
 
-  /**
-   * Load a specific flow by its ID.
-   * The flow file should be named {flowId}.flow.yaml
-   */
   async loadFlow(flowId: string): Promise<IFlow> {
     const fileName = `${flowId}.flow.yaml`;
     const filePath = join(this.flowsDir, fileName);
 
     try {
-      // Read the yaml file content
       const originalContent = await Deno.readTextFile(filePath);
 
       let parsedYaml: JSONValue;
@@ -110,7 +88,6 @@ export class FlowLoader {
         throw new Error(`Flow file ${fileName} does not contain a valid flow definition object`);
       }
 
-      // Validate and parse the flow using FlowSchema
       let flow: IFlow;
       try {
         flow = FlowSchema.parse(parsedYaml);
@@ -118,12 +95,10 @@ export class FlowLoader {
         throw new Error(`Flow file ${fileName} does not match Flow schema: ${e}`);
       }
 
-      // Validate that the flow ID matches the filename
       if (flow.id !== flowId) {
         throw new Error(`Flow ID '${flow.id}' does not match filename '${flowId}'`);
       }
 
-      // Validate dynamic step tool permissions (Phase 56)
       const validationErrors = validateDynamicStepTools(flow.steps);
       if (validationErrors.length > 0) {
         throw new Error(`Flow validation failed:\n  - ${validationErrors.join("\n  - ")}`);
@@ -131,7 +106,6 @@ export class FlowLoader {
 
       return flow;
     } catch (error) {
-      // Normalize error messages so callers can assert on the standard message format
       if (error instanceof Deno.errors.NotFound) {
         throw new Error(`Failed to load flow '${flowId}': module not found`);
       }
@@ -139,9 +113,6 @@ export class FlowLoader {
     }
   }
 
-  /**
-   * Check if a flow exists without loading it.
-   */
   async flowExists(flowId: string): Promise<boolean> {
     const fileName = `${flowId}.flow.yaml`;
     const filePath = join(this.flowsDir, fileName);
@@ -154,9 +125,6 @@ export class FlowLoader {
     }
   }
 
-  /**
-   * Get a list of available flow IDs.
-   */
   async listFlowIds(): Promise<string[]> {
     const flowIds: string[] = [];
 

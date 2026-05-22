@@ -1,15 +1,12 @@
 /**
- * @module FlowNamespaceDotPathSafetyTest
- * @path tests/services/flow/flow_namespace_dotpath_safety_test.ts
- * @description Unit coverage for FlowNamespaceService key validation and dot-path extraction safety rules.
- * @architectural-layer Test
- * @related-files [src/services/flow/flow_namespace_service.ts, "packages/core/src/types/constants.ts"]
+ * @module FlowNamespaceDotpathSafetyTest
+ * @path packages/flow-storage/tests/flow_namespace_dotpath_safety_test.ts
  */
 
 import { assertEquals } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
-import { FlowNamespaceService } from "../../../src/services/flow/flow_namespace_service.ts";
-import { createMockConfig } from "../../helpers/config.ts";
+import { FlowNamespaceService } from "@exaix/flow-storage";
+import { createMockConfig } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService rejects invalid keys, falls back on non-JSON dot-path reads, and caps extracted values", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exa-flow-namespace-safety-" });

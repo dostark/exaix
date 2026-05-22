@@ -12,7 +12,7 @@
  */
 
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { ANALYZER_VERSION, CritiqueQuality } from "@exaix/core";
+import { ANALYZER_VERSION, CritiqueQuality, FulfillmentStatus } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import { createReflexiveAgent } from "@exaix/execution";
 import { RequestAnalyzer } from "@exaix/request";
@@ -82,7 +82,7 @@ const VALID_CRITIQUE_JSON = JSON.stringify({
   passed: true,
   reasoning: "The plan covers all requirements.",
   requirementsFulfillment: [
-    { requirement: "Feature must be covered by tests", status: "MET" },
+    { requirement: "Feature must be covered by tests", status: FulfillmentStatus.MET },
   ],
 });
 
