@@ -6,7 +6,7 @@
  * @related-files [src/tui/tui_dashboard.ts, "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { launchTuiDashboard } from "../../tui/tui_dashboard.ts";
 
 export type LaunchDashboardFn = typeof launchTuiDashboard;

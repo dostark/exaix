@@ -16,7 +16,7 @@ import type { IRecordedResponse } from "@exaix/ai/providers";
 
 import { dirname, fromFileUrl, join } from "@std/path";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
-import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { initTestDbService } from "../../helpers/db.ts";

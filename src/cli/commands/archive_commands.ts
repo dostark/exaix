@@ -6,7 +6,7 @@
  * @related-files [@exaix/core/artifact, "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 
 export class ArchiveCommands extends BaseCommand {
   constructor(context: ICommandContext) {

@@ -6,6 +6,5 @@
  * @related-files [src/services/utils/*.ts]
  */
 
-export * from "./confidence_scorer.ts";
 export * from "./watcher.ts";
 export * from "./tui_service_factory.ts";

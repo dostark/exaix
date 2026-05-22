@@ -2,6 +2,23 @@
   "name": "@exaix/cli",
   "version": "0.1.0",
   "exports": {
-    ".": "./mod.ts"
+    ".": "./mod.ts",
+    "./testing": "./testing/mod.ts"
+  },
+  "imports": {
+    "@cliffy/table": "jsr:@cliffy/table@^1.1.0",
+    "@std/fmt": "jsr:@std/fmt@^1.0.10",
+    "@exaix/ai": "../../packages/ai/mod.ts",
+    "@exaix/core": "../../packages/core/mod.ts",
+    "@exaix/core/types": "../../packages/core/src/types/mod.ts",
+    "@exaix/core/status": "../../packages/core/src/status/mod.ts",
+    "@exaix/schemas": "../../packages/schemas/mod.ts",
+    "@exaix/schemas/": "../../packages/schemas/src/",
+    "@exaix/mcp": "../../packages/mcp/mod.ts",
+    "@exaix/tui": "../../packages/tui/mod.ts",
+    "@exaix/testing": "../../packages/testing/mod.ts",
+    "@exaix/testing/": "../../packages/testing/src/",
+    "@exaix/storage-sqlite": "../../packages/storage-sqlite/mod.ts",
+    "@exaix/storage-sqlite/": "../../packages/storage-sqlite/src/"
   }
 }

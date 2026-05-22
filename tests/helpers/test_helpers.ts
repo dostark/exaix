@@ -9,7 +9,7 @@ import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { ActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IConfigService, IDisplayService, IGitService, IPortalConfigEntry } from "@exaix/core/types";

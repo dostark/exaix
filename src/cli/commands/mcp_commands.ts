@@ -6,7 +6,7 @@
  * @related-files [packages/mcp/server/server.ts, "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { MCPServer } from "@exaix/mcp/server";
 import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";

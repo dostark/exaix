@@ -9,7 +9,7 @@
  * @related-files [src/cli/commands/journal_commands.ts, src/api/sse_handler.ts]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import { z } from "zod";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
@@ -20,7 +20,7 @@ import {
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
-import { JournalFormatter } from "../formatters/journal_formatter.ts";
+import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 
 /**

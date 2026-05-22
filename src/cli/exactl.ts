@@ -3,7 +3,7 @@
  * @path src/cli/exactl.ts
  * @description Main entry point for the Exaix CLI (exactl). Orchestrates all commands, subcommands, and service initializations.
  * @architectural-layer CLI
- * @related-files [src/cli/init.ts, src/cli/cli.config.ts]
+ * @related-files [src/cli/init.ts]
  */
 
 import { Command } from "@cliffy/command";
@@ -36,12 +36,12 @@ import {
 import { UIOutputFormat } from "@exaix/tui";
 import { AnalysisMode } from "@exaix/core/request";
 import { ReviewStatus } from "@exaix/core/status";
-import { CLI_DEFAULTS } from "./cli.config.ts";
+import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
 import { McpCommands } from "./commands/mcp_commands.ts";
 import { initializeServices, isTestMode as isTestModeImport } from "./init.ts";
-import type { ICliApplicationContext } from "./cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { GitService } from "@exaix/git";
-import type { OutputFormat } from "./memory_types.ts";
+import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import {
   BINARY_VERSION,
   DAEMON_IDENTITY_ID,

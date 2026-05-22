@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestShowResult } from "@exaix/core/types";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";

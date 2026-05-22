@@ -9,7 +9,7 @@
  */
 
 import { join } from "@std/path";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { ClarificationAdapter } from "../../services/adapters/clarification_adapter.ts";
 import {
   ClarificationSessionStatus,

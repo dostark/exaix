@@ -18,7 +18,7 @@ import { DatabaseService } from "@exaix/storage-sqlite";
 import type { IDatabaseService } from "@exaix/core/types";
 import { OutputValidator, ToolRegistry } from "@exaix/tool-runtime";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { ICliApplicationContext, IPortalKnowledgeConfig } from "./cli_context.ts";
+import type { ICliApplicationContext, IPortalKnowledgeConfig } from "@exaix/cli/types/cli_context.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
 
 // Concrete services for adapters

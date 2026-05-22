@@ -8,14 +8,14 @@
 
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestKind, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
-import { ValidationChain } from "../validation/validation_chain.ts";
-import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
-import { CommandUtils } from "../helpers/command_utils.ts";
+import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
+import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
+import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 import type { IRequestMetadata, IRequestOptions } from "@exaix/core/types";
-import { resolveSubject } from "../helpers/subject_generator.ts";
+import { resolveSubject } from "@exaix/cli/helpers/subject_generator.ts";
 import { getWorkspaceRequestsDir } from "./request_paths.ts";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/types";
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";

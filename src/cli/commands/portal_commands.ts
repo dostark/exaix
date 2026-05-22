@@ -6,7 +6,7 @@
  * @related-files ["packages/portal/src/portal.ts", "packages/core/src/types/i_portal_service.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { PortalAnalysisMode, PortalExecutionStrategy } from "@exaix/core";
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";

@@ -6,7 +6,7 @@
  * @related-files ["packages/git/src/git_service.ts", "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { GIT_CMD_BRANCH } from "@exaix/git";
 
 export interface IBranchInfo {

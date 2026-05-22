@@ -9,16 +9,16 @@
 import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { MemoryAutoApprovalAdapter } from "../../services/adapters/memory_auto_approval_adapter.ts";
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
-import { MEMORY_COMMAND_DEFAULTS } from "../cli.config.ts";
-import { MemoryFormatter } from "../formatters/memory_formatter.ts";
-import type { IMemoryBankSummary, OutputFormat } from "../memory_types.ts";
+import { MEMORY_COMMAND_DEFAULTS } from "@exaix/cli/config.ts";
+import { MemoryFormatter } from "@exaix/cli/formatters/memory_formatter.ts";
+import type { IMemoryBankSummary, OutputFormat } from "@exaix/cli/types/memory_types.ts";
 
 export interface IMemoryCommandsContext extends ICommandContext {}
 

@@ -17,7 +17,7 @@ import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockConfig } from "../helpers/config.ts";
 import { getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
-import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { AnalysisMode, type IRequestOptions } from "@exaix/core/types";
 
 describe("RequestCommands", () => {

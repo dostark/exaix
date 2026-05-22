@@ -6,7 +6,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", @exaix/core/types]
  */
 
-import { BaseCommand, type ICommandContext } from "../../cli/base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { ActivityActor, AgentHealth, DEFAULT_AGENT_MODEL } from "@exaix/core";

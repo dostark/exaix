@@ -11,8 +11,8 @@ import { join } from "@std/path";
 import { FlowLoader } from "@exaix/flow-storage";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL } from "@exaix/core";
-import { BaseCommand } from "../base.ts";
-import type { ICliApplicationContext } from "../cli_context.ts";
+import { BaseCommand } from "@exaix/cli/base.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 
 interface FlowListOptions {
   json?: boolean;

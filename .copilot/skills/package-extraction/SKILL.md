@@ -32,6 +32,8 @@ Key points
 - Use scripts/package_import_migration.ts to rewrite imports from old ownership paths to the new package-owned source of truth
 - Use scripts/package_import_canonize.ts after extraction to normalize direct package file imports to canonical package or subfolder barrel imports
 - Every extraction must include the relevant test migration into packages/<package>/tests/ — this is the only folder where test files (*_test.ts) live in a package
+- When a legacy test module mixes unit-level tests (pure logic) with integration-level tests (require runtime setup like createCliTestContext), split it into separate test files during extraction. Move only the unit-level tests into the package; leave test cases that depend on root infrastructure in tests/ until that infrastructure is also migrated. Do not copy runtime dependencies into the package just to keep a test module whole.
+- When source code under extraction couples to runtime entities (daemon, services, config, filesystem), refactor it to accept those dependencies via constructor DI or function parameters so the extracted module exposes testable interfaces. Replace concrete runtime types with injectable interfaces in the package; wire real implementations only at the composition root or in the consumer adapter layer.
 - When package-specific test helpers, configs, or test-only data structures must be used both by
    tests inside the package and tests outside it, create a public package-owned testing subpath
    (`packages/<package>/testing/`) exported as `@exaix/<package>/testing` — this is a published
@@ -83,6 +85,11 @@ Workflow
    - If tests outside the package need package-specific support code, create a narrow exported
      testing surface for that package instead of telling external tests to import from
      `packages/<package>/tests/`
+   - When a legacy test module bundles test cases at multiple abstraction levels (pure-logic unit tests alongside tests that need createCliTestContext, filesystem fixtures, or daemon stubs), split the test cases into separate test files:
+     * Extract pure-logic, no-side-effect test cases into the package as unit tests
+     * Leave test cases requiring root infrastructure (runtime setup, helpers that import from src/services/, filesystem wiring, database setup) in tests/ until that infrastructure is migrated too
+     * Do not drag runtime dependencies into the package just to keep a test file whole — that leaks the very coupling the extraction is meant to sever
+   - When the source code under extraction depends on runtime entities (daemon services, global config, filesystem paths, database, or other concrete infrastructure), refactor it during extraction to accept those dependencies via constructor DI or function parameters. Use injectable interfaces in the package; wire concrete implementations only at the composition root. This keeps the extracted module unit-testable without importing runtime infrastructure.
    - Move the module into a package-local folder that preserves clear architectural intent, for example `types/`, `status/`, `config/`, `handlers/`, `registry/`, or another functionally coherent subfolder
    - Preserve or improve the old `src/` tree shape when it already provides a clear intent-based structure; do not copy confusing root runtime structure into a package mechanically
    - If the legacy module mixes concerns, split it into smaller files with clear intent during extraction instead of copying mixed design into the package
@@ -211,6 +218,8 @@ Decision rules
 - If a moved file keeps stale `@path`, `@module`, ownership comments, or other frontmatter/header metadata, the extraction is incomplete even if imports compile
 - If a proposed package folder structure only copies historical root layout without clarifying package intent, refactor the destination layout before considering the extraction done
 - If a migrated file still mixes unrelated responsibilities that should now live in separate package sub-modules, the extraction is incomplete even if the file compiles in its new location
+- If a migrated test module still depends on root runtime infrastructure (createCliTestContext, filesystem daemon stubs, src/services/ helpers) that was not extracted with it, the extraction is incomplete — either split the test module to isolate pure-unit tests inside the package, or migrate the supporting infrastructure via a `testing/` subpath before considering the extraction done
+- If source code was extracted without refactoring concrete runtime dependencies into injectable interfaces, the extraction is incomplete — package code must not hardcode daemon-coupled constructors or global service accessors that prevent consumers from testing the module without the full Exaix runtime
 
 Do / Don't
 - ✅ Do update src/services/README.md whenever a src/services/ directory is migrated or deleted: remove the tree entry, remove the folder-responsibilities row, and add a row to the "Migrated to packages" table

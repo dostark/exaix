@@ -7,7 +7,7 @@
  */
 
 import type { RequestCommands } from "../commands/request_commands.ts";
-import { addTokenFields } from "./display_helpers.ts";
+import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import {
   DEFAULT_NONE_LABEL,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
@@ -18,7 +18,7 @@ import {
 import { isRequestStatus, REQUEST_STATUS_VALUES } from "@exaix/core/status";
 import type { RequestStatus } from "@exaix/core/status";
 import { AnalysisMode, type IRequestAnalysis } from "@exaix/core/request";
-import { PRIORITY_ICONS } from "../cli.config.ts";
+import { PRIORITY_ICONS } from "@exaix/cli/config.ts";
 import type { IDisplayService } from "@exaix/core/types";
 import { type JSONObject, toSafeJson } from "@exaix/core";
 

@@ -7,7 +7,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
-import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockProvider } from "../helpers/mock_provider.ts";

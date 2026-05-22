@@ -9,7 +9,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
-import type { ICommandContext } from "../../src/cli/base.ts";
+import type { ICommandContext } from "@exaix/cli/base.ts";
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
 import {

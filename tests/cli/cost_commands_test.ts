@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { CostCommands } from "../../src/cli/commands/cost_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import type { ICostTracker } from "@exaix/core/types";
-import type { ICommandContext } from "../../src/cli/base.ts";
+import type { ICommandContext } from "@exaix/cli/base.ts";
 
 describe("CostCommands", () => {
   let cleanup: () => Promise<void>;

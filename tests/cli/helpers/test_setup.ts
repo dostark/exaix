@@ -21,7 +21,7 @@ import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../helpers/portal_test_helper.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
-import type { ICliApplicationContext } from "../../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 
 /**
  * Creates a complete portal test environment with all necessary directories

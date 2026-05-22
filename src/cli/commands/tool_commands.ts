@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
 
 const DEFAULT_DENIAL_REASON = "User declined";

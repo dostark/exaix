@@ -15,7 +15,7 @@ import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import { createToolCallRequest } from "@exaix/mcp/testing";
 
-import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 
 Deno.test("[security] MCPServer: denies unauthorized portal writes and logs permission denial", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "mcp-security-" });

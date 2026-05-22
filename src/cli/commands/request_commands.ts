@@ -6,7 +6,7 @@
  * @related-files ["packages/schemas/src/request.ts", "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { RequestStatusType } from "@exaix/core/status";
 import { RequestCreateHandler } from "../handlers/request_create_handler.ts";
 import { RequestListHandler } from "../handlers/request_list_handler.ts";

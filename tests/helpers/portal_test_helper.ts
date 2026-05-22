@@ -16,7 +16,7 @@ import { ContextCardAdapter } from "../../src/services/adapters/context_card_ada
 import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../src/services/adapters/portal_adapter.ts";
-import type { ICliApplicationContext } from "../../src/cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { PortalAnalysisMode } from "@exaix/core";
 import { getPortalsDir } from "./paths_helper.ts";

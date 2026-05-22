@@ -9,7 +9,7 @@
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";
 import { RequestPriority } from "@exaix/core";
 import { join } from "@std/path";
-import type { ICommandContext } from "../base.ts";
+import type { ICommandContext } from "@exaix/cli/base.ts";
 
 export function getWorkspaceRequestsDir(context: ICommandContext): string {
   const config = context.config.getAll();

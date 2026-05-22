@@ -9,12 +9,12 @@
 import { dirname, isAbsolute, join, resolve } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { RequestCommands } from "./request_commands.ts";
 import { PlanCommands } from "./plan_commands.ts";
-import { ValidationChain } from "../validation/validation_chain.ts";
-import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
-import { CommandUtils } from "../helpers/command_utils.ts";
+import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
+import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
+import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 import { enrichWithRequest } from "../helpers/request_enricher.ts";
 import { isReviewStatus, ReviewStatus } from "@exaix/core/status";
 import type { IReviewStatus } from "@exaix/core/status";

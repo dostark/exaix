@@ -115,6 +115,8 @@
     "@exaix/mcp/testing": "./packages/mcp/testing/mod.ts",
     "@exaix/mcp/testing/": "./packages/mcp/testing/",
     "@exaix/cli": "./packages/cli/mod.ts",
+    "@exaix/cli/testing": "./packages/cli/testing/mod.ts",
+    "@exaix/cli/testing/": "./packages/cli/testing/",
     "@exaix/cli/": "./packages/cli/src/",
     "@exaix/git": "./packages/git/mod.ts",
     "@exaix/git/": "./packages/git/src/",

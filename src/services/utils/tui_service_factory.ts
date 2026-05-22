@@ -48,7 +48,7 @@ import type {
   IStructuredLogger,
 } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas";
-import type { ICliApplicationContext } from "../../cli/cli_context.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 /**
  * Service bundle for TUI initialization

@@ -8,7 +8,7 @@
 
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import type { IRequestEntry } from "@exaix/core/types";
 import { getWorkspaceArchiveDir, getWorkspaceRejectedDir, getWorkspaceRequestsDir } from "./request_paths.ts";
 import { DEFAULT_IDENTITY_ID, PORTAL_LABEL } from "@exaix/core";

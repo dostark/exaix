@@ -8,7 +8,7 @@
 
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
-import { BaseCommand } from "../base.ts";
+import { BaseCommand } from "@exaix/cli/base.ts";
 import { createRoutingPolicyService, loadRoutingPolicy } from "../../services/adapters/routing_adapter.ts";
 import { ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import type { JSONValue } from "@exaix/core";

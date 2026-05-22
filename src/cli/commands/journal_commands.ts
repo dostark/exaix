@@ -6,10 +6,10 @@
  * @related-files ["packages/storage-sqlite/src/database_service.ts", "src/main.ts"]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import type { IJournalFilterOptions } from "@exaix/core/types";
-import { JournalFormatter } from "../formatters/journal_formatter.ts";
+import { JournalFormatter } from "@exaix/cli/formatters/journal_formatter.ts";
 import type { UIOutputFormat } from "@exaix/tui";
 
 export interface IJournalCommandOptions {

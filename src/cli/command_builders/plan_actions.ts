@@ -7,7 +7,7 @@
  */
 
 import type { PlanCommands } from "../commands/plan_commands.ts";
-import { addTokenFields } from "./display_helpers.ts";
+import { addTokenFields } from "@exaix/cli/command_builders/display_helpers.ts";
 import type { JSONValue } from "@exaix/core";
 import type { PlanStatus } from "@exaix/core/status";
 import { DEFAULT_UNKNOWN_ERROR_MESSAGE } from "@exaix/core";

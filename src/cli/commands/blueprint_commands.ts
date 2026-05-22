@@ -9,11 +9,11 @@
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { ProviderType } from "@exaix/core";
-import { ValidationChain } from "../validation/validation_chain.ts";
-import { DefaultErrorStrategy } from "../errors/error_strategy.ts";
-import { CommandUtils } from "../helpers/command_utils.ts";
+import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
+import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
+import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 import {
   BlueprintFrontmatterSchema,
   type IBlueprintCreateResult,

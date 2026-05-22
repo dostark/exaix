@@ -6,7 +6,7 @@
  * @related-files [packages/core/src/cost/cost_tracker.ts, src/cli/exactl.ts]
  */
 
-import { BaseCommand, type ICommandContext } from "../base.ts";
+import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import * as colors from "@std/fmt/colors";
 import { Table } from "@cliffy/table";
 import type { ICostTracker } from "@exaix/core/types";
