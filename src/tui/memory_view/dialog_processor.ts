@@ -3,7 +3,7 @@
  * @path src/tui/memory_view/dialog_processor.ts
  * @description Dialog result processor for Memory View, handling approvals, rejections, and learning additions.
  * @architectural-layer TUI
- * @related-files [src/tui/dialogs/memory_dialogs.ts]
+ * @related-files [packages/tui/src/dialogs/memory_dialogs.ts]
  */
 import { DialogStatus } from "@exaix/core";
 import type {
@@ -12,7 +12,7 @@ import type {
   ConfirmApproveDialog,
   ConfirmRejectDialog,
   PromoteDialog,
-} from "../dialogs/memory_dialogs.ts";
+} from "@exaix/tui/dialogs/memory_dialogs.ts";
 import {
   TUI_STATUS_MSG_BULK_APPROVE_COMPLETED,
   TUI_STATUS_MSG_CANCELLED,

@@ -1,13 +1,13 @@
 /**
  * @module BaseTreeViewModule
- * @path src/tui/base/base_tree_view.ts
+ * @path packages/tui/src/base/base_tree_view.ts
  * @description Abstract base class for tree-based TUI views, implementing common state management, navigation, and rendering logic.
  * @architectural-layer TUI
- * @related-files [src/tui/tui_common.ts, src/tui/base/tree_view_state.ts]
+ * @related-files ["packages/tui/src/base/tui_session_base.ts", "packages/tui/src/base/tree_view_state.ts"]
  */
 
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
-import { TuiSessionBase } from "../tui_common.ts";
+import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
@@ -23,12 +23,8 @@ import {
   toggleNode,
   type TreeRenderOptions,
 } from "@exaix/tui/helpers/tree_view.ts";
-import { createTreeViewState, type ITreeViewState } from "./tree_view_state.ts";
+import { createTreeViewState, type ITreeViewState } from "@exaix/tui/base/tree_view_state.ts";
 
-/**
- * Abstract base class for tree-based TUI views
- * @template T The type of data stored in tree nodes
- */
 export abstract class BaseTreeView<T> extends TuiSessionBase {
   public state: ITreeViewState<T>;
   protected localSpinnerState: SpinnerState;
@@ -45,24 +41,11 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     };
   }
 
-  // ===== Abstract Methods (must be implemented by subclasses) =====
-
-  /**
-   * Build the tree structure from items
-   */
   protected abstract buildTree(items: T[]): void;
 
-  /**
-   * Get the key bindings for this view
-   */
   abstract override getKeyBindings(): IKeyBinding<string>[];
 
-  /**
-   * Get the view name
-   */
   abstract override getViewName(): string;
-
-  // ===== Navigation Methods =====
 
   protected navigateUp(): void {
     if (!this.state.selectedId) {
@@ -76,9 +59,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Navigate to next node in tree
-   */
   protected navigateDown(): void {
     if (!this.state.selectedId) {
       this.navigateHome();
@@ -91,9 +71,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Navigate to first node in tree
-   */
   protected navigateHome(): void {
     const flat = flattenTree(this.state.tree);
     if (flat.length > 0) {
@@ -102,9 +79,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Navigate to last node in tree
-   */
   protected navigateEnd(): void {
     const flat = flattenTree(this.state.tree);
     if (flat.length > 0) {
@@ -113,35 +87,27 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Toggle expand/collapse of current node
-   */
   protected toggleCurrentNode(): void {
     if (this.state.selectedId) {
       this.state.tree = toggleNode(this.state.tree, this.state.selectedId);
     }
   }
 
-  /**
-   * Expand all nodes in tree
-   */
   protected expandAllNodes(): void {
     this.state.tree = expandAll(this.state.tree);
   }
 
-  /**
-   * Collapse all nodes in tree
-   */
   protected collapseAllNodes(): void {
     this.state.tree = collapseAll(this.state.tree);
   }
+
   protected syncSelectedIndex(): void {
     if (!this.state.selectedId) {
       this.selectedIndex = 0;
       return;
     }
     const flat = flattenTree(this.state.tree);
-    const idx = flat.findIndex((f) => f.node.id === this.state.selectedId);
+    const idx = flat.findIndex((item) => item.node.id === this.state.selectedId);
     if (idx !== -1) {
       this.selectedIndex = idx;
     }
@@ -157,12 +123,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  // ===== Key Handling =====
-
-  /**
-   * Handle common navigation keys
-   * Returns true if key was handled, false otherwise
-   */
   protected handleNavigationKeys(key: string): boolean {
     switch (key) {
       case KEYS.UP:
@@ -190,7 +150,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
         this.collapseAllNodes();
         return true;
       case KEYS.SLASH:
-        // By default, search is handled by subclasses if they have a search dialog
         return false;
       case KEYS.ESCAPE:
         if (this.state.filterText !== "") {
@@ -203,17 +162,13 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Handle help screen keys
-   * Returns true if key was handled, false otherwise
-   */
   protected handleHelpKeys(key: string): boolean {
     if (this.state.showHelp) {
       if (key === KEYS.QUESTION || key === KEYS.ESCAPE) {
         this.state.showHelp = false;
         return true;
       }
-      return true; // Consume all keys when help is shown
+      return true;
     }
 
     if (key === KEYS.QUESTION) {
@@ -231,10 +186,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     return false;
   }
 
-  /**
-   * Handle dialog keys
-   * Returns true if dialog is active and consumed the key
-   */
   protected async handleDialogKeys(key: string): Promise<boolean> {
     if (this.state.activeDialog) {
       this.state.activeDialog.handleKey(key);
@@ -251,23 +202,10 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     return false;
   }
 
-  /**
-   * Called when a dialog is closed
-   * Subclasses can override to handle dialog results
-   */
-  /**
-   * Called when a dialog is closed
-   * Subclasses can override to handle dialog results
-   */
   protected onDialogClosed(_dialog: DialogBase): void | Promise<void> {
     // Default: no-op
   }
 
-  // ===== Dialog Management =====
-
-  /**
-   * Show a confirmation dialog
-   */
   protected showConfirmDialog(options: {
     title: string;
     message: string;
@@ -278,9 +216,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     this.state.activeDialog = new ConfirmDialog(options);
   }
 
-  /**
-   * Show an input dialog
-   */
   protected showInputDialog(options: {
     title: string;
     label: string;
@@ -290,11 +225,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     this.state.activeDialog = new InputDialog(options);
   }
 
-  // ===== Loading State =====
-
-  /**
-   * Set loading state
-   */
   protected setLoading(loading: boolean, message = ""): void {
     this.state.isLoading = loading;
     this.state.loadingMessage = message;
@@ -305,9 +235,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     }
   }
 
-  /**
-   * Execute an async action with loading state and common error handling
-   */
   async executeWithLoading<R>(
     message: string,
     action: () => Promise<R>,
@@ -320,79 +247,48 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
         this.statusMessage = successMessage(result);
       }
       return result;
-    } catch (e) {
-      this.statusMessage = e instanceof Error ? `Error: ${e.message}` : `Error: ${String(e)}`;
+    } catch (error) {
+      this.statusMessage = error instanceof Error ? `Error: ${error.message}` : `Error: ${String(error)}`;
       return null;
     } finally {
       this.setLoading(false);
     }
   }
 
-  /**
-   * Advance spinner animation frame
-   */
   public tickSpinner(): void {
     this.localSpinnerState = nextFrame(this.localSpinnerState);
     this.state.spinnerFrame = this.localSpinnerState.frame % 10;
   }
 
-  // ===== State Accessors =====
-
-  /**
-   * Get currently selected node
-   */
   protected getSelectedNode(): ITreeNode<T> | null {
     const flat = flattenTree(this.state.tree);
-    return flat.find((f) => f.node.id === this.state.selectedId)?.node || null;
+    return flat.find((item) => item.node.id === this.state.selectedId)?.node || null;
   }
 
-  /**
-   * Check if loading
-   */
   isLoading(): boolean {
     return this.state.isLoading;
   }
 
-  /**
-   * Get loading message
-   */
   getLoadingMessage(): string {
     return this.state.loadingMessage;
   }
 
-  /**
-   * Check if help is visible
-   */
   override isHelpVisible(): boolean {
     return this.state.showHelp;
   }
 
-  /**
-   * Check if dialog is active
-   */
   hasActiveDialog(): boolean {
     return this.state.activeDialog !== null && this.state.activeDialog.isActive();
   }
 
-  /**
-   * Get active dialog
-   */
   getActiveDialog(): DialogBase | null {
     return this.state.activeDialog;
   }
 
-  /**
-   * Set color usage
-   */
   setUseColors(useColors: boolean): void {
     this.state.useColors = useColors;
   }
 
-  // ===== Rendering =====
-
-  /**
-   * Render the tree
-   */
   protected renderTreeView(options: Partial<TreeRenderOptions> = {}): string[] {
     return renderTree(this.state.tree, {
       useColors: this.state.useColors,
@@ -401,9 +297,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     });
   }
 
-  /**
-   * Render status bar
-   */
   renderStatusBar(): string {
     if (this.state.isLoading) {
       return renderSpinner(this.localSpinnerState, { useColors: this.state.useColors });
@@ -411,9 +304,6 @@ export abstract class BaseTreeView<T> extends TuiSessionBase {
     return this.statusMessage ? `Status: ${this.statusMessage}` : "Ready";
   }
 
-  /**
-   * Get tree for rendering
-   */
   getTree(): ITreeNode<T>[] {
     return this.state.tree;
   }

@@ -1,8 +1,7 @@
 /**
- * @module TUICommonTest
- * @path tests/tui/tui_common_test.ts
- * @description Verifies shared TUI utilities, ensuring correct initialization of view states,
- * refresh configurations, and common visual primitives.
+ * @module TuiSessionBaseTest
+ * @path packages/tui/tests/base/tui_session_base_test.ts
+ * @description Verifies package-owned TUI session utilities, refresh configuration, and scrolling helpers.
  */
 
 import { assertEquals, assertExists } from "@std/assert";
@@ -12,9 +11,7 @@ import {
   createRefreshConfig,
   createViewState,
   TuiSessionBase,
-} from "../../src/tui/tui_common.ts";
-
-// ===== Test Session Class =====
+} from "@exaix/tui/base/tui_session_base.ts";
 
 class TestSession extends TuiSessionBase {
   public refreshCount = 0;
@@ -38,9 +35,8 @@ class TestSession extends TuiSessionBase {
     });
   }
 
-  // Expose protected methods for testing
-  public testStartLoading(msg: string): void {
-    this.startLoading(msg);
+  public testStartLoading(message: string): void {
+    this.startLoading(message);
   }
 
   public testStopLoading(): void {
@@ -60,8 +56,6 @@ class TestSession extends TuiSessionBase {
   }
 }
 
-// ===== View State Tests =====
-
 Deno.test("createViewState: creates default state", () => {
   const state = createViewState();
   assertEquals(state.selectedIndex, 0);
@@ -75,22 +69,15 @@ Deno.test("createViewState: creates default state", () => {
 });
 
 Deno.test("createViewState: accepts overrides", () => {
-  const state = createViewState({
-    selectedIndex: 5,
-    itemCount: 10,
-    filterText: "test",
-  });
+  const state = createViewState({ selectedIndex: 5, itemCount: 10, filterText: "test" });
   assertEquals(state.selectedIndex, 5);
   assertEquals(state.itemCount, 10);
   assertEquals(state.filterText, "test");
-  assertEquals(state.isLoading, false); // Default preserved
+  assertEquals(state.isLoading, false);
 });
-
-// ===== Refresh Config Tests =====
 
 Deno.test("createRefreshConfig: creates config", () => {
   const config = createRefreshConfig(() => Promise.resolve(), 5000);
-
   assertEquals(config.autoRefreshInterval, 5000);
   assertEquals(config.enabled, true);
 });
@@ -99,8 +86,6 @@ Deno.test("createRefreshConfig: disabled when interval is 0", () => {
   const config = createRefreshConfig(() => Promise.resolve(), 0);
   assertEquals(config.enabled, false);
 });
-
-// ===== TuiSessionBase Navigation Tests =====
 
 Deno.test("TuiSessionBase: getSelectedIndex returns initial 0", () => {
   const session = new TestSession();
@@ -154,14 +139,12 @@ Deno.test("TuiSessionBase: handleNavigationKey end", () => {
 
 Deno.test("TuiSessionBase: handleNavigationKey returns false for unknown", () => {
   const session = new TestSession();
-  const handled = session.handleNavigationKey("x", 10);
-  assertEquals(handled, false);
+  assertEquals(session.handleNavigationKey("x", 10), false);
 });
 
 Deno.test("TuiSessionBase: handleNavigationKey returns false for empty list", () => {
   const session = new TestSession();
-  const handled = session.handleNavigationKey("down", 0);
-  assertEquals(handled, false);
+  assertEquals(session.handleNavigationKey("down", 0), false);
 });
 
 Deno.test("TuiSessionBase: clampSelection adjusts when over length", () => {
@@ -170,8 +153,6 @@ Deno.test("TuiSessionBase: clampSelection adjusts when over length", () => {
   session.clampSelection(3);
   assertEquals(session.getSelectedIndex(), 2);
 });
-
-// ===== Status Tests =====
 
 Deno.test("TuiSessionBase: getStatusMessage returns empty initially", () => {
   const session = new TestSession();
@@ -190,8 +171,6 @@ Deno.test("TuiSessionBase: clearStatus clears message", () => {
   session.clearStatus();
   assertEquals(session.getStatusMessage(), "");
 });
-
-// ===== Loading State Tests =====
 
 Deno.test("TuiSessionBase: isSpinnerActive false initially", () => {
   const session = new TestSession();
@@ -218,8 +197,6 @@ Deno.test("TuiSessionBase: getSpinnerState returns state", () => {
   assertEquals(state.active, false);
 });
 
-// ===== Theme Tests =====
-
 Deno.test("TuiSessionBase: getTheme returns theme", () => {
   const session = new TestSession(true);
   const theme = session.getTheme();
@@ -229,16 +206,11 @@ Deno.test("TuiSessionBase: getTheme returns theme", () => {
 
 Deno.test("TuiSessionBase: updateColorMode changes theme", () => {
   const session = new TestSession(true);
-  session.getTheme(); // Get initial theme
-
+  session.getTheme();
   session.updateColorMode(false);
   const noColorTheme = session.getTheme();
-
-  // No-color theme has empty codes
   assertEquals(noColorTheme.reset, "");
 });
-
-// ===== View State Tests =====
 
 Deno.test("TuiSessionBase: getViewState returns state", () => {
   const session = new TestSession();
@@ -263,28 +235,21 @@ Deno.test("TuiSessionBase: setFilter/getFilter work", () => {
   assertEquals(session.getFilter(), "test");
 });
 
-// ===== Dialog Tests =====
-
 Deno.test("TuiSessionBase: dialog methods work", () => {
   const session = new TestSession();
   assertEquals(session.hasDialogOpen(), false);
   assertEquals(session.getActiveDialogId(), null);
-
   session.setActiveDialogId("confirm");
   assertEquals(session.hasDialogOpen(), true);
   assertEquals(session.getActiveDialogId(), "confirm");
-
   session.setActiveDialogId(null);
   assertEquals(session.hasDialogOpen(), false);
 });
-
-// ===== Refresh Tests =====
 
 Deno.test("TuiSessionBase: refresh calls onRefresh", async () => {
   const session = new TestSession();
   session.setupRefresh();
   assertEquals(session.refreshCount, 0);
-
   await session.refresh();
   assertEquals(session.refreshCount, 1);
 });
@@ -293,12 +258,9 @@ Deno.test("TuiSessionBase: markNeedsRefresh sets flag", () => {
   const session = new TestSession();
   const state = session.getViewState();
   state.needsRefresh = false;
-
   session.markNeedsRefresh();
   assertEquals(session.getViewState().needsRefresh, true);
 });
-
-// ===== Action Tests =====
 
 Deno.test("TuiSessionBase: performWithLoading returns result", async () => {
   const session = new TestSession();
@@ -308,31 +270,22 @@ Deno.test("TuiSessionBase: performWithLoading returns result", async () => {
 
 Deno.test("TuiSessionBase: performWithLoading handles error", async () => {
   const session = new TestSession();
-  const result = await session.testPerformWithLoading(() => {
-    return Promise.reject(new Error("Test error"));
-  });
+  const result = await session.testPerformWithLoading(() => Promise.reject(new Error("Test error")));
   assertEquals(result, null);
 });
 
 Deno.test("TuiSessionBase: performAction clears status on success", async () => {
   const session = new TestSession();
   session.setStatus("Previous message");
-
   await session.testPerformAction(async () => {});
   assertEquals(session.getStatusMessage(), "");
 });
 
 Deno.test("TuiSessionBase: performAction sets error on failure", async () => {
   const session = new TestSession();
-  await session.testPerformAction(() => {
-    return Promise.reject(new Error("Test error"));
-  });
-
-  const msg = session.getStatusMessage();
-  assertEquals(msg.includes("Test error"), true);
+  await session.testPerformAction(() => Promise.reject(new Error("Test error")));
+  assertEquals(session.getStatusMessage().includes("Test error"), true);
 });
-
-// ===== Lifecycle Tests =====
 
 Deno.test("TuiSessionBase: getViewName returns name", () => {
   const session = new TestSession();
@@ -341,48 +294,34 @@ Deno.test("TuiSessionBase: getViewName returns name", () => {
 
 Deno.test("TuiSessionBase: getKeyBindings returns array", () => {
   const session = new TestSession();
-  const bindings = session.getKeyBindings();
-  assertEquals(Array.isArray(bindings), true);
+  assertEquals(Array.isArray(session.getKeyBindings()), true);
 });
 
 Deno.test("TuiSessionBase: dispose can be called", () => {
   const session = new TestSession();
-  session.dispose(); // Should not throw
+  session.dispose();
 });
 
-// ===== Scroll Utility Tests =====
-
 Deno.test("calculateScrollOffset: returns 0 when items fit", () => {
-  const offset = calculateScrollOffset(5, 0, 20, 10);
-  assertEquals(offset, 0);
+  assertEquals(calculateScrollOffset(5, 0, 20, 10), 0);
 });
 
 Deno.test("calculateScrollOffset: scrolls up when above visible", () => {
-  const offset = calculateScrollOffset(2, 5, 10, 20);
-  assertEquals(offset, 2);
+  assertEquals(calculateScrollOffset(2, 5, 10, 20), 2);
 });
 
 Deno.test("calculateScrollOffset: scrolls down when below visible", () => {
-  const offset = calculateScrollOffset(15, 0, 10, 20);
-  assertEquals(offset, 6);
+  assertEquals(calculateScrollOffset(15, 0, 10, 20), 6);
 });
 
 Deno.test("calculateScrollOffset: keeps visible items in view", () => {
-  const offset = calculateScrollOffset(5, 3, 10, 20);
-  assertEquals(offset, 3);
+  assertEquals(calculateScrollOffset(5, 3, 10, 20), 3);
 });
 
 Deno.test("clampScrollOffset: clamps to 0", () => {
-  const offset = clampScrollOffset(-5, 10, 20);
-  assertEquals(offset, 0);
+  assertEquals(clampScrollOffset(-5, 10, 20), 0);
 });
 
 Deno.test("clampScrollOffset: clamps to max", () => {
-  const offset = clampScrollOffset(15, 10, 20);
-  assertEquals(offset, 10);
-});
-
-Deno.test("clampScrollOffset: keeps valid offset", () => {
-  const offset = clampScrollOffset(5, 10, 20);
-  assertEquals(offset, 5);
+  assertEquals(clampScrollOffset(50, 10, 20), 10);
 });

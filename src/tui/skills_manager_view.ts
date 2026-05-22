@@ -8,11 +8,11 @@
 
 import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus } from "@exaix/core";
 import { GroupingField, SkillGroupingMode, TuiNodeType } from "@exaix/tui";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { ISkillsService } from "@exaix/core/types";
-import { BaseTreeView } from "./base/base_tree_view.ts";
+import { BaseTreeView } from "@exaix/tui/base/base_tree_view.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import {

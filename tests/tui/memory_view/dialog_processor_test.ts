@@ -23,7 +23,7 @@ import type {
   ConfirmApproveDialog,
   ConfirmRejectDialog,
   PromoteDialog,
-} from "../../../src/tui/dialogs/memory_dialogs.ts";
+} from "@exaix/tui/dialogs/memory_dialogs.ts";
 import { createMockDialog, createMockService, createTestContext, testDialogProcess } from "./memory_test_helpers.ts";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 

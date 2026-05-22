@@ -9,7 +9,7 @@
 import { KEYS } from "./keyboard.ts";
 import { colorize, getTheme } from "./colors.ts";
 import { renderBoxBottom, renderBoxLine, renderBoxLineCentered, renderBoxTop } from "./dialog_base.ts";
-import { ScrollDirection } from "@exaix/tui";
+import { ScrollDirection } from "../types/enums.ts";
 import type { IKeyBinding } from "./keyboard.ts";
 
 // ===== Help Interfaces =====

@@ -1,23 +1,31 @@
 /**
  * @module TuiNotificationsHelper
- * @path src/tui/tui_helpers/notifications.ts
+ * @path packages/tui/src/helpers/notifications.ts
  * @description Helper functions for rendering and managing TUI notifications, including time formatting and interaction logic.
  * @architectural-layer TUI
- * @related-files ["packages/core/src/notification/notification.ts", src/tui/tui_dashboard.ts]
+ * @related-files ["packages/core/src/notification/notification.ts"]
  */
 
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
-import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
-import type { IMemoryNotification } from "@exaix/core/types";
-import type { INotificationService } from "@exaix/core/types";
+import type { IMemoryNotification, INotificationService } from "@exaix/core/types";
+
 interface ITuiNotification extends IMemoryNotification {
   icon?: string;
 }
 
+export interface ITuiNotificationDashboardState {
+  showMemoryNotifications: boolean;
+  selectedMemoryNotifIndex: number;
+}
+
+export interface ITuiNotificationPane {
+  id: string;
+}
+
 export interface IDashboardContext {
-  state: IDashboardViewState;
+  state: ITuiNotificationDashboardState;
   activePaneId: string;
   approveMemoryUpdate: (id: string) => Promise<void>;
   rejectMemoryUpdate: (id: string) => Promise<void>;
@@ -35,7 +43,7 @@ export function formatTimeAgo(date: Date): string {
 export async function renderNotificationPanel(
   notificationService: INotificationService,
   theme: ITuiTheme,
-  state: IDashboardViewState,
+  state: ITuiNotificationDashboardState,
   maxHeight = 10,
 ): Promise<string[]> {
   const lines: string[] = [];
@@ -56,7 +64,7 @@ export async function renderNotificationPanel(
   };
 
   if (state.showMemoryNotifications) {
-    activeNotifications = activeNotifications.filter((n) => n.type === "memory_update_pending");
+    activeNotifications = activeNotifications.filter((notification) => notification.type === "memory_update_pending");
   }
 
   if (activeNotifications.length === 0) {
@@ -65,22 +73,19 @@ export async function renderNotificationPanel(
   }
 
   const title = state.showMemoryNotifications ? "Pending Memory Updates" : "Notifications";
-  lines.push(
-    colorize(`🔔 ${title} (${activeNotifications.length})`, theme.h2, theme.reset),
-  );
+  lines.push(colorize(`🔔 ${title} (${activeNotifications.length})`, theme.h2, theme.reset));
   lines.push("");
 
   const visibleNotifications = activeNotifications.slice(0, maxHeight - 2);
 
-  for (let i = 0; i < visibleNotifications.length; i++) {
-    const notification = visibleNotifications[i];
+  for (let index = 0; index < visibleNotifications.length; index++) {
+    const notification = visibleNotifications[index];
     const type = notification.type;
     const icon = notification.icon || "ℹ️";
     const timestamp = notification.created_at ? new Date(notification.created_at) : new Date();
     const timeAgo = formatTimeAgo(timestamp);
 
-    const isSelected = state.showMemoryNotifications && i === state.selectedMemoryNotifIndex;
-
+    const isSelected = state.showMemoryNotifications && index === state.selectedMemoryNotifIndex;
     const messageColor = messageColorByType[String(type)] ?? theme.text;
 
     const prefix = isSelected ? "▶ " : "  ";
@@ -105,17 +110,17 @@ export async function renderNotificationPanel(
 export async function handleMemoryNotifications(
   self: IDashboardContext,
   key: string,
-  panes: IPane[],
+  panes: ITuiNotificationPane[],
   notificationService: INotificationService,
 ): Promise<number> {
   if (key === KEYS.ESCAPE || key === KEYS.M) {
     self.state.showMemoryNotifications = false;
-    return panes.findIndex((p) => p.id === self.activePaneId);
+    return panes.findIndex((pane) => pane.id === self.activePaneId);
   }
 
-  const allNotifs = await notificationService.getNotifications();
-  const memoryNotifs = allNotifs.filter((n) => n.type === "memory_update_pending");
-  const count = memoryNotifs.length;
+  const allNotifications = await notificationService.getNotifications();
+  const memoryNotifications = allNotifications.filter((notification) => notification.type === "memory_update_pending");
+  const count = memoryNotifications.length;
 
   const updateIndex = (delta: number): void => {
     if (count > 0) {
@@ -125,7 +130,7 @@ export async function handleMemoryNotifications(
 
   const approveOrReject = async (approve: boolean): Promise<void> => {
     if (count > 0 && self.state.selectedMemoryNotifIndex < count) {
-      const selected = memoryNotifs[self.state.selectedMemoryNotifIndex];
+      const selected = memoryNotifications[self.state.selectedMemoryNotifIndex];
       const id = (selected.proposal_id || selected.id) as string;
       if (approve) {
         await self.approveMemoryUpdate(id);
@@ -153,5 +158,5 @@ export async function handleMemoryNotifications(
       // no default
   }
 
-  return panes.findIndex((p) => p.id === self.activePaneId);
+  return panes.findIndex((pane) => pane.id === self.activePaneId);
 }

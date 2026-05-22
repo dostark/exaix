@@ -10,7 +10,7 @@ import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 import { DEFAULT_UNKNOWN_LABEL, DialogStatus } from "@exaix/core";
 import { TUI_ACTION_SEARCH, TUI_ELEMENT_ACTION_BUTTONS, TUI_LABEL_CANCEL } from "@exaix/tui/helpers/constants.ts";
 import type { IPlanService } from "@exaix/core/types";
-import { BaseTreeView } from "./base/base_tree_view.ts";
+import { BaseTreeView } from "@exaix/tui/base/base_tree_view.ts";
 import { coercePlanStatus, PlanStatus, type PlanStatusType } from "@exaix/core/status";
 import { ConfirmDialog, type DialogBase, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import { TuiNodeType } from "@exaix/tui";

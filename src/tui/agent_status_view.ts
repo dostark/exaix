@@ -6,7 +6,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts", src/tui/tui_dashboard.ts]
  */
 
-import { TuiSessionBase } from "./tui_common.ts";
+import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import {
   AgentHealth,
   DEFAULT_IDENTITIES_PATH,
@@ -37,7 +37,7 @@ import { TuiColorName, TuiGroupBy } from "@exaix/tui";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import { type ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
 import {
   TUI_AGENT_HEALTH_ICONS,
@@ -47,7 +47,7 @@ import {
   TUI_LIMIT_MEDIUM,
   TUI_LOG_LEVEL_ICONS,
 } from "@exaix/tui/helpers/constants.ts";
-import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
+import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 
 // Extracted utilities
 import { MainViewHandler, ViewModeHandler } from "./agent_status/key_handlers.ts";

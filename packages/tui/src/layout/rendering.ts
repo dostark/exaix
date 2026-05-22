@@ -1,11 +1,11 @@
 /**
  * @module LayoutRendering
- * @path packages/tui/src/helpers/layout_rendering.ts
+ * @path packages/tui/src/layout/rendering.ts
  * @description Shared layout rendering utilities for TUI preset lists and indicators.
- * @architectural-layer Helpers
- * @related-files ["packages/tui/src/helpers/layout_manager.ts"]
+ * @architectural-layer Layout
+ * @related-files ["packages/tui/src/layout/manager.ts"]
  */
-import { colorize, type ITuiTheme } from "./colors.ts";
+import { colorize, type ITuiTheme } from "../helpers/colors.ts";
 
 export interface ILayoutPresetDisplay {
   name: string;

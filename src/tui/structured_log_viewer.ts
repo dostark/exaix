@@ -8,13 +8,13 @@
 
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import { BaseTreeView } from "@exaix/tui/base/base_tree_view.ts";
+import type { ITreeViewState } from "@exaix/tui/base/tree_view_state.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import type { ITreeViewState } from "./base/tree_view_state.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
 import type { IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
-import { BaseTreeView } from "./base/base_tree_view.ts";
 import {
   TUI_ACTION_SEARCH,
   TUI_KEY_LABEL_ENTER,
@@ -22,7 +22,7 @@ import {
   TUI_LIMIT_LOGS_DEFAULT,
   TUI_LIMIT_LOGS_MAX,
 } from "@exaix/tui/helpers/constants.ts";
-import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
+import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import { DialogStatus, LogLevel, MessageType } from "@exaix/core";
 import { LogGroupingMode, TuiColorName, TuiNodeType } from "@exaix/tui";
 

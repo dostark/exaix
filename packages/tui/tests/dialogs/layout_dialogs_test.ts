@@ -1,8 +1,7 @@
 /**
  * @module LayoutDialogsTest
- * @path tests/tui/layout_dialogs_test.ts
- * @description Verifies the interactive layout management dialogs, ensuring correct
- * keyboard-driven selection, persistence, and visual feedback for layout primitives.
+ * @path packages/tui/tests/dialogs/layout_dialogs_test.ts
+ * @description Verifies package-owned TUI layout dialogs and keyboard-driven state transitions.
  */
 
 import { assert, assertEquals } from "@std/assert";
@@ -21,7 +20,7 @@ import {
   renderNamedLayoutDialog,
   renderSwapIndicator,
   renderViewPickerDialog,
-} from "../../src/tui/dialogs/layout_dialogs.ts";
+} from "@exaix/tui/dialogs/layout_dialogs.ts";
 
 Deno.test("layout dialogs: view picker state defaults", () => {
   const state = createViewPickerState();

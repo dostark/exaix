@@ -1,11 +1,12 @@
 /**
  * @module TUILayoutTestHelper
- * @path tests/tui/layout_test_helper.ts
+ * @path packages/tui/tests/layout/layout_test_helper.ts
  * @description Provides helper functions for simulating terminal layout transitions and
  * verifying panel coordinates in complex multi-view dashboards.
  */
 
-import { createLayoutManager, type ILayoutPane } from "@exaix/tui/helpers/layout_manager.ts";
+import { createLayoutManager, type ILayoutPane } from "@exaix/tui/layout/manager.ts";
+import type { ITuiLayoutPersistencePane } from "@exaix/tui/layout/persistence.ts";
 
 export function setupLayoutManager(width = 80, height = 24): ReturnType<typeof createLayoutManager> {
   return createLayoutManager(width, height);
@@ -40,4 +41,26 @@ export function createPanes(count: number, width = 40, height = 24): ILayoutPane
     });
   }
   return panes;
+}
+
+export function makePersistencePane(
+  id: string,
+  viewName: string,
+  overrides: Partial<ITuiLayoutPersistencePane> = {},
+): ITuiLayoutPersistencePane {
+  return {
+    id,
+    view: { name: viewName },
+    flexX: 0,
+    flexY: 0,
+    flexWidth: 1,
+    flexHeight: 1,
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1,
+    focused: true,
+    maximized: false,
+    ...overrides,
+  };
 }

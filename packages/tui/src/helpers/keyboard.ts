@@ -6,7 +6,7 @@
  * @related-files ["packages/tui/src/helpers/tree_view.ts"]
  */
 
-import { KeyModifier } from "@exaix/tui";
+import { KeyModifier } from "../types/enums.ts";
 
 // ===== Key Handling Interfaces =====
 

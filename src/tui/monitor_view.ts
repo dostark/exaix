@@ -6,8 +6,8 @@
  * @related-files ["@exaix/core/types", src/tui/tui_dashboard.ts]
  */
 
-import { BaseTreeView } from "./base/base_tree_view.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { BaseTreeView } from "@exaix/tui/base/base_tree_view.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
@@ -17,7 +17,7 @@ import { DialogStatus } from "@exaix/core";
 import { GroupingMode } from "@exaix/tui";
 import type { JSONObject } from "@exaix/core/types";
 import type { IJournalService } from "@exaix/core/types";
-import { LOG_COLORS, LOG_ICONS, MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
+import { LOG_COLORS, LOG_ICONS, MONITOR_AUTO_REFRESH_INTERVAL_MS } from "@exaix/tui/config.ts";
 import {
   TUI_ACTION_SEARCH,
   TUI_ELEMENT_ACTION_BUTTONS,

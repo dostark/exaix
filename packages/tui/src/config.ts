@@ -1,12 +1,12 @@
 /**
  * @module TuiConfig
- * @path src/tui/tui.config.ts
+ * @path packages/tui/src/config.ts
  * @description TUI configuration and constants, including icons, colors for log entries, and refresh intervals.
  * @architectural-layer TUI
- * @related-files [src/tui/tui_dashboard.ts]
+ * @related-files ["packages/tui/src/helpers/constants.ts"]
  */
 
-import { TuiColorName } from "@exaix/tui";
+import { TuiColorName } from "./types/enums.ts";
 import { TUI_LOG_ICONS } from "@exaix/tui/helpers/constants.ts";
 
 export const LOG_ICONS: Record<string, string> = {

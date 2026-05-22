@@ -1,7 +1,7 @@
 /**
  * @module DialogRenderingTest
- * @path tests/tui/dialog_rendering_test.ts
- * @description Verifies internal TUI rendering helpers, ensuring correct dialog
+ * @path packages/tui/tests/helpers/dialog_rendering_test.ts
+ * @description Verifies package-owned dialog rendering helpers, ensuring correct dialog
  * width calculation, border drawing, and input field truncation.
  */
 

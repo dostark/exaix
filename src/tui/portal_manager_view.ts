@@ -9,12 +9,12 @@
 import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalService } from "@exaix/core/types";
-import { BaseTreeView } from "./base/base_tree_view.ts";
+import { BaseTreeView } from "@exaix/tui/base/base_tree_view.ts";
 import { ConfirmDialog, type DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import {
   createGroupNode,
   createNode,

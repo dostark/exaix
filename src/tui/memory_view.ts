@@ -6,7 +6,7 @@
  * @related-files ["@exaix/core/types", src/tui/tui_dashboard.ts]
  */
 
-import { TuiSessionBase } from "./tui_common.ts";
+import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import { TUI_ELEMENT_ACTION_BUTTONS } from "@exaix/tui/helpers/constants.ts";
 import { TuiNodeType } from "@exaix/tui";
 // Redundant import removed
@@ -21,12 +21,12 @@ import {
   ConfirmApproveDialog,
   ConfirmRejectDialog,
   PromoteDialog,
-} from "./dialogs/memory_dialogs.ts";
+} from "@exaix/tui/dialogs/memory_dialogs.ts";
 import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { renderSpinner } from "@exaix/tui/helpers/markdown_renderer.ts";
 import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { MEMORY_STALE_MS } from "@exaix/tui/config.ts";
 import { coerceMemoryTuiScope, type IMemoryTuiScopeType, MemoryTuiScope } from "./memory_view/memory_scope.ts";
-import { MEMORY_STALE_MS } from "./tui.config.ts";
 
 // ===== Interfaces =====
 

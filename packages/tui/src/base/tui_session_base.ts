@@ -1,9 +1,9 @@
 /**
- * @module TuiCommon
- * @path src/tui/tui_common.ts
- * @description Shared TUI session utilities, base classes, and state management patterns used across all dashboard views.
+ * @module TuiSessionBase
+ * @path packages/tui/src/base/tui_session_base.ts
+ * @description Shared TUI session utilities, base classes, and state management patterns used across TUI views.
  * @architectural-layer TUI
- * @related-files [src/tui/base/base_tree_view.ts, src/tui/tui_dashboard.ts]
+ * @related-files ["packages/tui/src/base/base_tree_view.ts"]
  */
 
 import { getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
@@ -19,33 +19,17 @@ import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
 import { MessageType } from "@exaix/core";
 
-// ===== View State Types =====
-
-/**
- * Common state for all TUI views
- */
 export interface ITuiViewState {
-  /** Currently selected item index */
   selectedIndex: number;
-  /** Total number of items */
   itemCount: number;
-  /** Scroll offset for virtual scrolling */
   scrollOffset: number;
-  /** Whether view is loading */
   isLoading: boolean;
-  /** Whether view needs refresh */
   needsRefresh: boolean;
-  /** Current filter/search text */
   filterText: string;
-  /** Whether help is visible */
   showHelp: boolean;
-  /** Active dialog (if any) */
   activeDialog: string | null;
 }
 
-/**
- * Create initial view state
- */
 export function createViewState(overrides: Partial<ITuiViewState> = {}): ITuiViewState {
   return {
     selectedIndex: 0,
@@ -60,14 +44,9 @@ export function createViewState(overrides: Partial<ITuiViewState> = {}): ITuiVie
   };
 }
 
-// ===== Refresh Configuration =====
-
 export interface IRefreshConfig {
-  /** Auto-refresh interval in milliseconds (0 = disabled) */
   autoRefreshInterval: number;
-  /** Callback when refresh is triggered */
   onRefresh: () => Promise<void>;
-  /** Whether refresh is currently enabled */
   enabled: boolean;
 }
 
@@ -82,37 +61,14 @@ export function createRefreshConfig(
   };
 }
 
-// ===== Base Session Class =====
-
-/**
- * Enhanced base class for TUI sessions with modern patterns.
- *
- * Provides:
- * - Navigation handling (up/down/home/end)
- * - Loading state with spinner
- * - Status bar messages
- * - Color theme support
- * - Refresh mechanism
- * - Dialog management
- * - Error handling
- */
 export class TuiSessionBase {
-  // Navigation state
   protected selectedIndex = 0;
-
-  // Legacy status (for backwards compatibility)
   protected statusMessage = "";
-
-  // Enhanced state
   protected spinnerState: SpinnerState;
   protected statusBarState: IStatusBarState;
   protected theme: ITuiTheme;
   protected useColors = true;
-
-  // View state
   protected viewState: ITuiViewState;
-
-  // Refresh configuration
   protected refreshConfig: IRefreshConfig | null = null;
   protected refreshTimer: number | null = null;
 
@@ -123,8 +79,6 @@ export class TuiSessionBase {
     this.statusBarState = createStatusBarState();
     this.viewState = createViewState();
   }
-
-  // ===== Navigation Methods =====
 
   getSelectedIndex(): number {
     return this.selectedIndex;
@@ -138,10 +92,6 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Handle navigation keys (up/down/home/end) common to many TUI sessions.
-   * Returns true if the key was a navigation key and handled.
-   */
   handleNavigationKey(key: string, length: number): boolean {
     if (length === 0) return false;
     switch (key) {
@@ -167,151 +117,85 @@ export class TuiSessionBase {
     }
   }
 
-  // ===== Status Methods =====
-
   getStatusMessage(): string {
     return this.statusMessage;
   }
 
-  /**
-   * Set a status message that will auto-clear after duration
-   */
   setStatus(message: string, type: MessageType = MessageType.INFO): void {
     this.statusMessage = message;
     setStatusMessage(this.statusBarState, message, type);
   }
 
-  /**
-   * Clear status message
-   */
   clearStatus(): void {
     this.statusMessage = "";
     setStatusMessage(this.statusBarState, "");
   }
 
-  // ===== Loading State Methods =====
-
-  /**
-   * Check if spinner is active (view-level loading)
-   */
   isSpinnerActive(): boolean {
     return this.spinnerState.active;
   }
 
-  /**
-   * Start loading state with optional message
-   */
   protected startLoading(message = "Loading..."): void {
     this.spinnerState = startSpinner(this.spinnerState, message);
     this.viewState.isLoading = true;
   }
 
-  /**
-   * Stop loading state
-   */
   protected stopLoading(): void {
     this.spinnerState = stopSpinner(this.spinnerState);
     this.viewState.isLoading = false;
   }
 
-  /**
-   * Advance spinner animation frame
-   */
   protected advanceSpinner(): void {
     if (this.spinnerState.active) {
       this.spinnerState = nextFrame(this.spinnerState);
     }
   }
 
-  /**
-   * Get current spinner state for rendering
-   */
   getSpinnerState(): SpinnerState {
     return this.spinnerState;
   }
 
-  // ===== Theme Methods =====
-
-  /**
-   * Get current theme
-   */
   getTheme(): ITuiTheme {
     return this.theme;
   }
 
-  /**
-   * Update color mode
-   */
   updateColorMode(useColors: boolean): void {
     this.useColors = useColors;
     this.theme = getTheme(useColors);
   }
 
-  // ===== View State Methods =====
-
-  /**
-   * Get current view state
-   */
   getViewState(): ITuiViewState {
     return this.viewState;
   }
 
-  /**
-   * Toggle help display
-   */
   toggleHelp(): void {
     this.viewState.showHelp = !this.viewState.showHelp;
   }
 
-  /**
-   * Check if help is visible
-   */
   isHelpVisible(): boolean {
     return this.viewState.showHelp;
   }
 
-  /**
-   * Set filter text
-   */
   setFilter(text: string): void {
     this.viewState.filterText = text;
   }
 
-  /**
-   * Get filter text
-   */
   getFilter(): string {
     return this.viewState.filterText;
   }
 
-  // ===== Dialog Methods =====
-
-  /**
-   * Set active dialog ID (for simple string-based dialog tracking)
-   */
   setActiveDialogId(dialogId: string | null): void {
     this.viewState.activeDialog = dialogId;
   }
 
-  /**
-   * Get active dialog ID
-   */
   getActiveDialogId(): string | null {
     return this.viewState.activeDialog;
   }
 
-  /**
-   * Check if any dialog is open (by ID)
-   */
   hasDialogOpen(): boolean {
     return this.viewState.activeDialog !== null;
   }
 
-  // ===== Refresh Methods =====
-
-  /**
-   * Configure auto-refresh
-   */
   configureRefresh(onRefresh: () => Promise<void>, intervalMs = 0): void {
     this.refreshConfig = createRefreshConfig(onRefresh, intervalMs);
     if (intervalMs > 0) {
@@ -319,9 +203,6 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Start auto-refresh timer
-   */
   protected startAutoRefresh(): void {
     if (this.refreshConfig && this.refreshConfig.enabled && this.refreshTimer === null) {
       this.refreshTimer = setInterval(async () => {
@@ -332,9 +213,6 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Stop auto-refresh timer
-   */
   protected stopAutoRefresh(): void {
     if (this.refreshTimer !== null) {
       clearInterval(this.refreshTimer);
@@ -342,9 +220,6 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Manual refresh
-   */
   async refresh(): Promise<void> {
     if (this.refreshConfig) {
       this.startLoading("Refreshing...");
@@ -361,34 +236,23 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Mark view as needing refresh
-   */
   markNeedsRefresh(): void {
     this.viewState.needsRefresh = true;
   }
 
-  // ===== Action Methods =====
-
-  /**
-   * Perform an async action with error handling
-   */
   protected async performAction(actionFn: () => Promise<unknown>): Promise<void> {
     try {
       await actionFn();
       this.statusMessage = "";
-    } catch (e) {
-      if (e && typeof e === "object" && "message" in e) {
-        this.statusMessage = `Error: ${(e as Error).message}`;
+    } catch (error) {
+      if (error && typeof error === "object" && "message" in error) {
+        this.statusMessage = `Error: ${(error as Error).message}`;
       } else {
-        this.statusMessage = `Error: ${String(e)}`;
+        this.statusMessage = `Error: ${String(error)}`;
       }
     }
   }
 
-  /**
-   * Perform an action with loading state
-   */
   protected async performWithLoading<T>(
     actionFn: () => Promise<T>,
     loadingMessage = "Working...",
@@ -406,11 +270,6 @@ export class TuiSessionBase {
     }
   }
 
-  // ===== Lifecycle Methods =====
-
-  /**
-   * Called when view is activated
-   */
   onActivate(): void {
     if (this.viewState.needsRefresh && this.refreshConfig) {
       this.refresh();
@@ -420,44 +279,23 @@ export class TuiSessionBase {
     }
   }
 
-  /**
-   * Called when view is deactivated
-   */
   onDeactivate(): void {
     this.stopAutoRefresh();
   }
 
-  /**
-   * Cleanup resources
-   */
   dispose(): void {
     this.stopAutoRefresh();
   }
 
-  // ===== Optional Override Methods =====
-
-  /**
-   * Get key bindings for this view
-   * Override in subclasses to provide view-specific bindings
-   * The type parameter allows subclasses to use string actions or function handlers
-   */
   getKeyBindings(): IKeyBinding<KeyHandler | string>[] {
     return [];
   }
 
-  /**
-   * Get the view name for display
-   */
   getViewName(): string {
     return "View";
   }
 }
 
-// ===== Scrolling Utilities =====
-
-/**
- * Calculate scroll offset to keep selected item visible
- */
 export function calculateScrollOffset(
   selectedIndex: number,
   scrollOffset: number,
@@ -468,12 +306,10 @@ export function calculateScrollOffset(
     return 0;
   }
 
-  // Scroll up if selected is above visible area
   if (selectedIndex < scrollOffset) {
     return selectedIndex;
   }
 
-  // Scroll down if selected is below visible area
   if (selectedIndex >= scrollOffset + visibleHeight) {
     return selectedIndex - visibleHeight + 1;
   }
@@ -481,9 +317,6 @@ export function calculateScrollOffset(
   return scrollOffset;
 }
 
-/**
- * Clamp scroll offset to valid range
- */
 export function clampScrollOffset(
   scrollOffset: number,
   visibleHeight: number,

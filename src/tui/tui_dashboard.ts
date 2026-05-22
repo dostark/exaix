@@ -3,7 +3,7 @@
  * @path src/tui/tui_dashboard.ts
  * @description Main entry point and orchestrator for the Exaix TUI dashboard, managing layout, view switching, and cross-view state.
  * @architectural-layer TUI
- * @related-files [src/tui/tui_common.ts, src/tui/agent_status_view.ts, src/tui/daemon_control_view.ts]
+ * @related-files [src/tui/dashboard/renderer.ts, src/tui/agent_status_view.ts, src/tui/daemon_control_view.ts]
  *
  * This is the main entry point for the Exaix TUI, integrating all
  * enhanced views into a unified dashboard with:
@@ -31,29 +31,29 @@ import {
   handleMemoryNotifications as _handleMemoryNotifications,
   type IDashboardContext,
   renderNotificationPanel,
-} from "./tui_helpers/notifications.ts";
+} from "@exaix/tui/helpers/notifications.ts";
 import type { IPortalInfo } from "@exaix/core/types";
 import type { IMemoryNotification } from "@exaix/core/types";
 import {
   resetToDefault as helperResetToDefault,
   restoreLayout as helperRestoreLayout,
   saveLayout as helperSaveLayout,
-} from "./tui_helpers/layout_persistence.ts";
+} from "@exaix/tui/layout/persistence.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas/config.ts";
 import { initDashboardViews } from "./dashboard/view_registry.ts";
 import { prodRender } from "./dashboard/renderer.ts";
 
-import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "@exaix/tui/helpers/layout_rendering.ts";
+import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "@exaix/tui/layout/rendering.ts";
 import {
   closePane as helperClosePane,
   maximizePane as helperMaximizePane,
   resizePane as helperResizePane,
   splitPane as helperSplitPane,
   switchPane as helperSwitchPane,
-} from "./dashboard/pane_manager.ts";
+} from "@exaix/tui/layout/pane_manager.ts";
 
 // Type alias for convenience
 type Theme = ITuiTheme;
@@ -192,9 +192,9 @@ export interface ITuiDashboard {
 // dependency is still tracked by the module graph while avoiding imports inside
 // nested statements.
 // style-exclude:PLUGINS - runtime TUI helper loaded on demand
-const handleKeyModulePromise = import("./tui_helpers/handle_key.ts");
+const handleKeyModulePromise = import("@exaix/tui/helpers/handle_key.ts");
 // style-exclude:PLUGINS - runtime TUI helper loaded on demand
-const prodHandleKeyModulePromise = import("./tui_helpers/prod_handle_key.ts");
+const prodHandleKeyModulePromise = import("@exaix/tui/helpers/prod_handle_key.ts");
 // style-exclude:RUNTIME_REGISTRY - dynamic std/streams import used in non-tty fallback
 const stdStreamsModulePromise = import("@std/streams");
 
@@ -481,7 +481,7 @@ export function renderGlobalHelpOverlay(_theme: Theme): string[] {
 
 // ===== Notification Panel Rendering =====
 
-// `renderNotificationPanel` and `handleMemoryNotifications` moved to `src/tui/tui_helpers/notifications.ts`.
+// `renderNotificationPanel` and `handleMemoryNotifications` now live in `@exaix/tui/helpers/notifications.ts`.
 
 // ===== View Picker Rendering =====
 
@@ -711,8 +711,9 @@ function createTestDashboard(options: {
     handleMemoryNotifications: _handleMemoryNotificationsLocal,
     async handleKey(key: string) {
       const viewPickerRef = { index: viewPickerIndex };
-      const handleKeyModule: { testModeHandleKey: typeof import("./tui_helpers/handle_key.ts").testModeHandleKey } =
-        await handleKeyModulePromise;
+      const handleKeyModule: {
+        testModeHandleKey: typeof import("@exaix/tui/helpers/handle_key.ts").testModeHandleKey;
+      } = await handleKeyModulePromise;
       const idx = handleKeyModule.testModeHandleKey(this, key, panes, views, viewPickerRef);
       viewPickerIndex = viewPickerRef.index;
       // Check for Deno global in test debug mode
@@ -1043,8 +1044,9 @@ async function runProductionInteractiveLoop(context: {
         const input = decoder.decode(chunk);
         const key = input; // preserve escape sequences
 
-        const prodHandleKeyModule: { prodHandleKey: typeof import("./tui_helpers/prod_handle_key.ts").prodHandleKey } =
-          await prodHandleKeyModulePromise;
+        const prodHandleKeyModule: {
+          prodHandleKey: typeof import("@exaix/tui/helpers/prod_handle_key.ts").prodHandleKey;
+        } = await prodHandleKeyModulePromise;
         const res = await prodHandleKeyModule.prodHandleKey(key, {
           prodState: context.prodState,
           panes: context.panes,
@@ -1074,8 +1076,9 @@ async function runProductionInteractiveLoop(context: {
         const cmd = line.trim().toLowerCase();
         if (!cmd) continue;
 
-        const prodHandleKeyModule: { prodHandleKey: typeof import("./tui_helpers/prod_handle_key.ts").prodHandleKey } =
-          await prodHandleKeyModulePromise;
+        const prodHandleKeyModule: {
+          prodHandleKey: typeof import("@exaix/tui/helpers/prod_handle_key.ts").prodHandleKey;
+        } = await prodHandleKeyModulePromise;
         const res = await prodHandleKeyModule.prodHandleKey(cmd, {
           prodState: context.prodState,
           panes: context.panes,

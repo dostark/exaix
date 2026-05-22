@@ -8,8 +8,8 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { DaemonStatus, DialogStatus } from "@exaix/core";
 import { GroupingMode, LogGroupingMode } from "@exaix/tui";
+import { LOG_COLORS, LOG_ICONS } from "@exaix/tui/config.ts";
 import { MONITOR_KEY_BINDINGS, MonitorView } from "../../src/tui/monitor_view.ts";
-import { LOG_COLORS, LOG_ICONS } from "../../src/tui/tui.config.ts";
 import type { ILogEntry } from "../../src/tui/monitor_view.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { ActivityRecord } from "@exaix/storage-sqlite";

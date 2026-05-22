@@ -15,7 +15,7 @@ import {
   ConfirmApproveDialog,
   ConfirmRejectDialog,
   PromoteDialog,
-} from "../../src/tui/dialogs/memory_dialogs.ts";
+} from "@exaix/tui/dialogs/memory_dialogs.ts";
 import { createMockProposal, renderDialog, testDialogInteraction } from "./memory_view/memory_view_test_utils.ts";
 
 // ===== ConfirmApproveDialog Tests =====

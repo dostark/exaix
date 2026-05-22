@@ -8,7 +8,7 @@
 
 import { KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
-import { TuiSessionBase } from "./tui_common.ts";
+import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
 import type { AnalysisMode } from "@exaix/core/types";
 import { isRequestStatus, type RequestStatusType } from "@exaix/core/status";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@exaix/tui/helpers/tree_view.ts";
 import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
-import { KeyBindingsBase } from "./base/key_bindings_base.ts";
+import { KeyBindingsBase } from "@exaix/tui/base/key_bindings_base.ts";
 
 // --- Extracted utilities ---
 import {

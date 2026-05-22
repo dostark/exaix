@@ -1,63 +1,42 @@
 /**
  * @module LogStream
- * @path src/tui/log_stream.ts
- * @description Manager for real-time log streaming to the TUI, featuring buffering, filtering, and connection management.
- * @architectural-layer TUI
- * @related-files [src/tui/structured_log_viewer.ts]
+ * @path packages/tui/src/log/stream.ts
+ * @description Package-owned TUI log streaming helpers for buffering, delivery, websocket fallback, and polling.
  */
 
-import type { IStructuredLogEntry } from "@exaix/core/types";
-import type { StructuredLoggerService } from "./structured_log_service.ts";
-import type { JSONObject } from "@exaix/core/types";
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import { ConnectionStatus } from "@exaix/core";
+import type { IStructuredLogEntry, JSONObject } from "@exaix/core/types";
 
-/**
- * Log stream configuration
- */
 export interface ILogStreamConfig {
-  /** Maximum buffer size */
   maxBufferSize: number;
-  /** Stream update interval in milliseconds */
   updateInterval: number;
-  /** Whether to enable streaming */
   enabled: boolean;
-  /** Auto-cleanup interval for old entries */
   cleanupInterval: number;
-  /** Maximum age of entries to keep (milliseconds) */
   maxEntryAge: number;
 }
 
-/**
- * Log stream state
- */
-export interface LogStreamState {
-  /** Whether streaming is active */
+export interface ILogStreamState {
   isActive: boolean;
-  /** Current buffer size */
   bufferSize: number;
-  /** Number of subscribers */
   subscriberCount: number;
-  /** Last update timestamp */
   lastUpdate: Date | null;
-  /** Connection status */
   status: ConnectionStatus;
 }
 
-/**
- * Real-time log streaming manager
- */
+export interface ILogStreamSource {
+  subscribeToLogs(callback: (entry: IStructuredLogEntry) => void): () => void;
+}
+
 export class LogStreamManager {
   private buffer: IStructuredLogEntry[] = [];
   private subscribers: Array<(entries: IStructuredLogEntry[]) => void> = [];
   private updateTimer?: number;
   private cleanupTimer?: number;
-  private state: LogStreamState;
+  private unsubscribeSource?: () => void;
+  private state: ILogStreamState;
 
-  constructor(
-    private service: StructuredLoggerService,
-    private config: ILogStreamConfig,
-  ) {
+  constructor(private service: ILogStreamSource, private config: ILogStreamConfig) {
     this.state = {
       isActive: false,
       bufferSize: 0,
@@ -67,64 +46,38 @@ export class LogStreamManager {
     };
   }
 
-  /**
-   * Start the log stream
-   */
   start(): void {
     if (this.state.isActive) return;
 
     this.state.isActive = true;
     this.state.status = ConnectionStatus.CONNECTING;
-
-    // Subscribe to the log service
-    this.service.subscribeToLogs((entry) => {
-      this.handleNewEntry(entry);
-    });
-
-    // Start periodic updates
-    this.updateTimer = setInterval(() => {
-      this.flushBuffer();
-    }, this.config.updateInterval);
-
-    // Start cleanup timer
-    this.cleanupTimer = setInterval(() => {
-      this.cleanupOldEntries();
-    }, this.config.cleanupInterval);
-
+    this.unsubscribeSource = this.service.subscribeToLogs((entry) => this.handleNewEntry(entry));
+    this.updateTimer = setInterval(() => this.flushBuffer(), this.config.updateInterval);
+    this.cleanupTimer = setInterval(() => this.cleanupOldEntries(), this.config.cleanupInterval);
     this.state.status = ConnectionStatus.CONNECTED;
   }
 
-  /**
-   * Stop the log stream
-   */
   stop(): void {
     if (!this.state.isActive) return;
 
     this.state.isActive = false;
     this.state.status = ConnectionStatus.DISCONNECTED;
-
     if (this.updateTimer) {
       clearInterval(this.updateTimer);
       this.updateTimer = undefined;
     }
-
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = undefined;
     }
-
-    // Clear subscribers
+    this.unsubscribeSource?.();
+    this.unsubscribeSource = undefined;
     this.subscribers = [];
   }
 
-  /**
-   * Subscribe to log stream updates
-   */
   subscribe(callback: (entries: IStructuredLogEntry[]) => void): () => void {
     this.subscribers.push(callback);
     this.state.subscriberCount = this.subscribers.length;
-
-    // Return unsubscribe function
     return () => {
       const index = this.subscribers.indexOf(callback);
       if (index > -1) {
@@ -134,40 +87,24 @@ export class LogStreamManager {
     };
   }
 
-  /**
-   * Get current stream state
-   */
-  getState(): LogStreamState {
+  getState(): ILogStreamState {
     return { ...this.state, bufferSize: this.buffer.length };
   }
 
-  /**
-   * Handle new log entry
-   */
   private handleNewEntry(entry: IStructuredLogEntry): void {
     if (!this.state.isActive) return;
-
     this.buffer.push(entry);
     this.state.lastUpdate = new Date();
-
-    // Maintain buffer size
     if (this.buffer.length > this.config.maxBufferSize) {
       this.buffer = this.buffer.slice(-this.config.maxBufferSize);
     }
-
     this.state.bufferSize = this.buffer.length;
   }
 
-  /**
-   * Flush buffer to subscribers
-   */
   private flushBuffer(): void {
     if (this.buffer.length === 0) return;
-
     const entries = [...this.buffer];
     this.buffer = [];
-
-    // Notify all subscribers
     for (const subscriber of this.subscribers) {
       try {
         subscriber(entries);
@@ -175,44 +112,26 @@ export class LogStreamManager {
         console.error("[LogStreamManager] Subscriber error:", error);
       }
     }
-
     this.state.bufferSize = 0;
   }
 
-  /**
-   * Clean up old entries from buffer
-   */
   private cleanupOldEntries(): void {
-    const now = Date.now();
-    const cutoff = now - this.config.maxEntryAge;
-
-    this.buffer = this.buffer.filter((entry) => {
-      const entryTime = new Date(entry.timestamp).getTime();
-      return entryTime > cutoff;
-    });
-
+    const cutoff = Date.now() - this.config.maxEntryAge;
+    this.buffer = this.buffer.filter((entry) => new Date(entry.timestamp).getTime() > cutoff);
     this.state.bufferSize = this.buffer.length;
   }
 }
 
-/**
- * Create a log stream manager with default configuration
- */
-export function createLogStreamManager(service: StructuredLoggerService): LogStreamManager {
-  const defaultConfig: ILogStreamConfig = {
+export function createLogStreamManager(service: ILogStreamSource): LogStreamManager {
+  return new LogStreamManager(service, {
     maxBufferSize: 1000,
-    updateInterval: 1000, // 1 second
+    updateInterval: 1000,
     enabled: true,
-    cleanupInterval: DEFAULT_AI_TIMEOUT_MS, // 30 seconds
-    maxEntryAge: 300000, // 5 minutes
-  };
-
-  return new LogStreamManager(service, defaultConfig);
+    cleanupInterval: DEFAULT_AI_TIMEOUT_MS,
+    maxEntryAge: 300000,
+  });
 }
 
-/**
- * WebSocket-based log streaming (for future use)
- */
 export class WebSocketLogStream {
   private ws?: WebSocket;
   private reconnectTimer?: number;
@@ -231,12 +150,10 @@ export class WebSocketLogStream {
   connect(): void {
     try {
       this.ws = new WebSocket(this.url);
-
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
         this.onConnect();
       };
-
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -245,13 +162,11 @@ export class WebSocketLogStream {
           this.onError(new Error(`Failed to parse WebSocket message: ${error}`));
         }
       };
-
       this.ws.onclose = () => {
         this.onDisconnect();
         this.scheduleReconnect();
       };
-
-      this.ws.onerror = (_error) => {
+      this.ws.onerror = () => {
         this.onError(new Error("WebSocket error"));
       };
     } catch (error) {
@@ -265,7 +180,6 @@ export class WebSocketLogStream {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = undefined;
     }
-
     if (this.ws) {
       this.ws.close();
       this.ws = undefined;
@@ -277,19 +191,12 @@ export class WebSocketLogStream {
       this.onError(new Error("Max reconnection attempts reached"));
       return;
     }
-
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
-
-    this.reconnectTimer = setTimeout(() => {
-      this.connect();
-    }, delay);
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+    this.reconnectTimer = setTimeout(() => this.connect(), delay);
   }
 }
 
-/**
- * HTTP polling-based log streaming fallback
- */
 export class PollingLogStream {
   private timer?: number;
   private lastTimestamp?: string;
@@ -302,9 +209,7 @@ export class PollingLogStream {
   ) {}
 
   start(): void {
-    this.timer = setInterval(() => {
-      this.poll();
-    }, this.interval);
+    this.timer = setInterval(() => this.poll(), this.interval);
   }
 
   stop(): void {
@@ -319,17 +224,14 @@ export class PollingLogStream {
       const url = this.lastTimestamp
         ? `${this.endpoint}?since=${encodeURIComponent(this.lastTimestamp)}`
         : this.endpoint;
-
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const entries: IStructuredLogEntry[] = await response.json();
-
       if (entries.length > 0) {
         this.onEntries(entries);
-        // Update last timestamp to the most recent entry
         this.lastTimestamp = entries[entries.length - 1].timestamp;
       }
     } catch (error) {

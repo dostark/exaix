@@ -1,6 +1,6 @@
 /**
  * @module LayoutManagerTest
- * @path tests/tui/layout_manager_test.ts
+ * @path packages/tui/tests/layout/layout_manager_test.ts
  * @description Verifies the core LayoutManager service, ensuring flexible terminal partitioning,
  * dynamic resizing, and stable frame coordination for multi-view dashboards.
  */
@@ -18,7 +18,7 @@ import {
   renderLayoutPresetPicker,
   renderPaneBorder,
   renderResizeIndicator,
-} from "@exaix/tui/helpers/layout_manager.ts";
+} from "@exaix/tui/layout/manager.ts";
 import {
   AVAILABLE_VIEWS,
   createLayoutPresetState,
@@ -34,7 +34,7 @@ import {
   renderResizeModeIndicator,
   renderSwapIndicator,
   renderViewPickerDialog,
-} from "../../src/tui/dialogs/layout_dialogs.ts";
+} from "@exaix/tui/dialogs/layout_dialogs.ts";
 import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createPanes, createTestPane, setupLayoutManager } from "./layout_test_helper.ts";
 const theme = getTheme(true);

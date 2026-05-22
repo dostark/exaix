@@ -1,15 +1,20 @@
 /**
  * @module LayoutManager
- * @path packages/tui/src/helpers/layout_manager.ts
+ * @path packages/tui/src/layout/manager.ts
  * @description Layout Manager for split-view TUI dashboards, providing presets, resizing, and named layout persistence.
- * @architectural-layer TUI Helpers
- * @related-files [packages/tui/src/helpers/layout_rendering.ts]
+ * @architectural-layer TUI Layout
+ * @related-files [packages/tui/src/layout/rendering.ts]
  */
 
-import { colorize, type ITuiTheme } from "./colors.ts";
-import { renderLayoutPresetListLines } from "./layout_rendering.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID, TUI_SEPARATOR_ROW } from "./constants.ts";
-import { ResizeDirection, SplitDirection, TuiViewName } from "@exaix/tui";
+import { colorize, type ITuiTheme } from "../helpers/colors.ts";
+import {
+  TUI_LAYOUT_DEFAULT_HEIGHT,
+  TUI_LAYOUT_FULL_WIDTH,
+  TUI_MAIN_PANE_ID,
+  TUI_SEPARATOR_ROW,
+} from "../helpers/constants.ts";
+import { renderLayoutPresetListLines } from "./rendering.ts";
+import { ResizeDirection, SplitDirection, TuiViewName } from "../types/enums.ts";
 import type { JSONObject } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 

@@ -3,7 +3,7 @@
  * @path src/tui/dashboard/renderer.ts
  * @description Production renderer for the TUI dashboard, managing window sizing, header/footer rendering, and pane layout.
  * @architectural-layer TUI
- * @related-files [src/tui/tui_dashboard.ts, src/tui/dashboard/pane_manager.ts]
+ * @related-files [src/tui/tui_dashboard.ts, packages/tui/src/layout/pane_manager.ts]
  */
 
 import process from "node:process";
@@ -14,7 +14,7 @@ import {
   TUI_STATUS_MSG_READY,
 } from "@exaix/tui/helpers/constants.ts";
 import { type IPane, renderGlobalHelpOverlay, renderPaneTitleBar, renderViewIndicator } from "../tui_dashboard.ts";
-import { renderNotificationPanel } from "../tui_helpers/notifications.ts";
+import { renderNotificationPanel } from "@exaix/tui/helpers/notifications.ts";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { INotificationService, IPortalService } from "@exaix/core/types";
 import type { IDashboardViewState } from "../tui_dashboard.ts";

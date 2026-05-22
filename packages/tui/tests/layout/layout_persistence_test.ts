@@ -1,6 +1,6 @@
 /**
  * @module LayoutPersistenceTest
- * @path tests/tui/layout_persistence_test.ts
+ * @path packages/tui/tests/layout/layout_persistence_test.ts
  * @description Verifies the logic for saving and restoring TUI layout configurations,
  * ensuring stable filesystem persistence and graceful handling of missing or malformed data.
  */
@@ -9,14 +9,16 @@ import { assertAlmostEquals, assertEquals, assertExists, assertStringIncludes } 
 
 import {
   getLayoutFile,
+  type ITuiLayoutPersistencePane,
+  type ITuiLayoutPersistenceView,
   resetToDefault,
   restoreLayout,
   saveLayout,
-} from "../../src/tui/tui_helpers/layout_persistence.ts";
-import type { IPane } from "../../src/tui/tui_dashboard.ts";
+} from "@exaix/tui/layout/persistence.ts";
 import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "@exaix/tui/helpers/constants.ts";
 
-import { makePane } from "./layout_test_utils.ts";
+import { makePersistencePane } from "./layout_test_helper.ts";
+
 async function withTempHome(fn: (home: string) => Promise<void> | void): Promise<void> {
   const originalHome = Deno.env.get("HOME");
   const tempHome = await Deno.makeTempDir({ prefix: "exaix-home-" });
@@ -33,9 +35,15 @@ async function withTempHome(fn: (home: string) => Promise<void> | void): Promise
 
 Deno.test("saveLayout: writes layout JSON and notifies success", async () => {
   await withTempHome(async () => {
-    const panes: IPane[] = [
-      makePane("main", "MainView", { focused: true, flexX: 0.1, flexY: 0.2, flexWidth: 0.5, flexHeight: 0.6 }),
-      makePane("side", "SideView", { flexX: 0.6, flexY: 0.2, flexWidth: 0.4, flexHeight: 0.6 }),
+    const panes: ITuiLayoutPersistencePane[] = [
+      makePersistencePane("main", "MainView", {
+        focused: true,
+        flexX: 0.1,
+        flexY: 0.2,
+        flexWidth: 0.5,
+        flexHeight: 0.6,
+      }),
+      makePersistencePane("side", "SideView", { flexX: 0.6, flexY: 0.2, flexWidth: 0.4, flexHeight: 0.6 }),
     ];
 
     const notifications: Array<{ m: string; t?: string }> = [];
@@ -58,10 +66,9 @@ Deno.test("saveLayout: writes layout JSON and notifies success", async () => {
 
 Deno.test("saveLayout: notifies error when ~/.exaix is a file", async () => {
   await withTempHome(async (home) => {
-    // Create a file at ~/.exaix so mkdir fails
     await Deno.writeTextFile(`${home}/.exaix`, "not a dir");
 
-    const panes: IPane[] = [makePane("main", "MainView")];
+    const panes: ITuiLayoutPersistencePane[] = [makePersistencePane("main", "MainView")];
     const notifications: Array<{ m: string; t?: string }> = [];
 
     await saveLayout(panes, "main", (m, t) => notifications.push({ m, t }));
@@ -75,7 +82,7 @@ Deno.test("saveLayout: notifies error when ~/.exaix is a file", async () => {
 
 Deno.test("restoreLayout: returns null when file missing", async () => {
   await withTempHome(async () => {
-    const panes: IPane[] = [makePane("main", "MainView")];
+    const panes: ITuiLayoutPersistencePane[] = [makePersistencePane("main", "MainView")];
     const notifications: Array<{ m: string; t?: string }> = [];
 
     const result = await restoreLayout(panes, [{ name: "MainView" }], (m, t) => notifications.push({ m, t }));
@@ -87,8 +94,8 @@ Deno.test("restoreLayout: returns null when file missing", async () => {
 
 Deno.test("restoreLayout: restores v1.2 flex layout and notifies", async () => {
   await withTempHome(async () => {
-    const panes: IPane[] = [makePane("main", "MainView")];
-    const views = [{ name: "MainView" }, { name: "OtherView" }];
+    const panes: ITuiLayoutPersistencePane[] = [makePersistencePane("main", "MainView")];
+    const views: ITuiLayoutPersistenceView[] = [{ name: "MainView" }, { name: "OtherView" }];
 
     const layout = {
       version: "1.2",
@@ -123,15 +130,15 @@ Deno.test("restoreLayout: restores v1.2 flex layout and notifies", async () => {
 
     assertEquals(panes.length, 1);
     assertEquals(panes[0].id, "side");
-    assertEquals((panes[0].view as Partial<{ name: string }> as { name: string }).name, "OtherView");
+    assertEquals(panes[0].view.name, "OtherView");
     assertEquals(panes[0].maximized, true);
   });
 });
 
 Deno.test("restoreLayout: upgrades v1.0 absolute coords to flex", async () => {
   await withTempHome(async () => {
-    const panes: IPane[] = [makePane("main", "MainView")];
-    const views = [{ name: "MainView" }];
+    const panes: ITuiLayoutPersistencePane[] = [makePersistencePane("main", "MainView")];
+    const views: ITuiLayoutPersistenceView[] = [{ name: "MainView" }];
 
     const x = 10;
     const y = 5;
@@ -167,8 +174,8 @@ Deno.test("restoreLayout: upgrades v1.0 absolute coords to flex", async () => {
 });
 
 Deno.test("resetToDefault: resets panes and returns 'main'", () => {
-  const panes: IPane[] = [makePane("a", "A"), makePane("b", "B")];
-  const views = [{ name: "MainView" }];
+  const panes: ITuiLayoutPersistencePane[] = [makePersistencePane("a", "A"), makePersistencePane("b", "B")];
+  const views: ITuiLayoutPersistenceView[] = [{ name: "MainView" }];
   const notifications: string[] = [];
 
   const active = resetToDefault(panes, views, (m) => notifications.push(m));
