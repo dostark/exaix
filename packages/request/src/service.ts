@@ -13,7 +13,7 @@ import { RequestStatus, type RequestStatusType } from "@exaix/core/status";
 import { DEFAULT_IDENTITY_ID, RequestPriority, RequestSource } from "@exaix/core";
 import type { IRequestShowResult } from "@exaix/core/types";
 import type { IDisplayService } from "@exaix/core/types";
-import type { IApplicationContext, IConfigService } from "@exaix/core/types";
+import type { IApplicationContext } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { loadAnalysis, RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
@@ -25,7 +25,6 @@ import type { IOutputValidator } from "@exaix/tool-runtime";
 
 export interface IRequestServiceConfig {
   config: Config;
-  configService: IConfigService;
   display: IDisplayService;
   userIdentityGetter: () => Promise<string>;
   provider?: IModelProvider;
@@ -37,7 +36,6 @@ export interface IRequestServiceConfig {
 export class RequestService {
   private requestsDir: string;
   private config: Config;
-  private configService: IConfigService;
   private display: IDisplayService;
   private userIdentityGetter: () => Promise<string>;
   private provider?: IModelProvider;
@@ -46,7 +44,6 @@ export class RequestService {
 
   constructor(options: IRequestServiceConfig) {
     const ctx = options.context;
-    this.configService = ctx?.config || options.configService;
     this.config = ctx?.config.get() || options.config;
     this.display = ctx?.display || options.display;
     this.userIdentityGetter = options.userIdentityGetter;

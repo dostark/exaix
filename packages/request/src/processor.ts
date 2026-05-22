@@ -37,7 +37,7 @@ import {
   PORTAL_KNOWLEDGE_KEY,
   PORTAL_KNOWLEDGE_PROMPT_MAX_LINES,
 } from "@exaix/core";
-import { DEFAULT_AI_MODEL, DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
+import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
 import type {
   IApplicationContext,
   IPortalKnowledgeService,
@@ -47,7 +47,6 @@ import type {
 } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
-import { EventLogger } from "@exaix/core/logger";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
@@ -64,9 +63,9 @@ import type { IServiceContext } from "@exaix/core/types";
 import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
+import type { ILogEvent } from "@exaix/core";
 
 import type { AnalysisMode } from "@exaix/core/types";
-import { getValidatedEnvOverrides } from "@exaix/core/config";
 import { buildQualityGateConfig, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
 import { RequestQualityRecommendation } from "@exaix/schemas/request_quality_assessment.ts";
 import { ClarificationSessionStatus } from "@exaix/schemas/clarification_session.ts";
@@ -152,15 +151,7 @@ export class RequestProcessor {
       healthChecker,
     );
 
-    const InjectedLogger = EventLogger;
-    this.logger = processorConfig.logger ?? (ctx?.display &&
-        typeof (ctx.display as { child?: (..._args: Array<never>) => void }).child === "function"
-      ? (ctx.display as IEventLogger)
-      : null) ??
-      new InjectedLogger({
-        db: this.db,
-        defaultActor: "agent:request-processor",
-      });
+    this.logger = processorConfig.logger ?? wrapLogger(ctx?.display as IEventLogger | undefined) ?? createNoopLogger();
 
     this.plansDir = join(processorConfig.workspacePath, "Plans");
     this.planWriter = new PlanWriter({
@@ -588,24 +579,7 @@ export class RequestProcessor {
   }
 
   private getProviderSelectionConfig(): Config {
-    const envOverrides = getValidatedEnvOverrides();
-    if (!envOverrides.EXA_LLM_PROVIDER) {
-      return this.config;
-    }
-
-    return {
-      ...this.config,
-      ai: this.config.ai
-        ? {
-          ...this.config.ai,
-          provider: envOverrides.EXA_LLM_PROVIDER,
-        }
-        : {
-          provider: envOverrides.EXA_LLM_PROVIDER,
-          model: DEFAULT_AI_MODEL,
-          timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-        },
-    };
+    return this.config;
   }
 
   private async processAgentRequest(
@@ -1117,4 +1091,35 @@ export function buildPortalKnowledgeSummary(
   }
 
   return lines.slice(0, maxLines).join("\n");
+}
+
+/** Wrap an IDisplayService as IEventLogger, adding .child() if missing. */
+function wrapLogger(display?: IEventLogger): IEventLogger | undefined {
+  if (!display) return undefined;
+  if (typeof (display as { child?: (...args: Array<never>) => void }).child === "function") return display;
+  const makeChild = (overrides: Partial<ILogEvent>): IEventLogger => ({
+    log: (_event: ILogEvent) => Promise.resolve(),
+    info: (action, target, payload, traceId) => display.info(action, target, payload, traceId ?? overrides.traceId),
+    warn: (action, target, payload, traceId) => display.warn(action, target, payload, traceId ?? overrides.traceId),
+    error: (action, target, payload, traceId) => display.error(action, target, payload, traceId ?? overrides.traceId),
+    fatal: (action, target, payload, traceId) => display.fatal(action, target, payload, traceId ?? overrides.traceId),
+    debug: (action, target, payload, traceId) => display.debug(action, target, payload, traceId ?? overrides.traceId),
+    child: (nested) => makeChild({ ...overrides, ...nested }),
+  });
+  return makeChild({});
+}
+
+/** No-op IEventLogger used as fallback when no logger is provided. */
+function createNoopLogger(): IEventLogger {
+  const noop = async () => {};
+  const logger: IEventLogger = {
+    log: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
+    debug: noop,
+    child: () => logger,
+  };
+  return logger;
 }

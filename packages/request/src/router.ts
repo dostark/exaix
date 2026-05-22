@@ -12,7 +12,7 @@
  */
 
 import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } from "@exaix/execution";
-import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import { BlueprintLoader } from "@exaix/core/blueprint";
 import { type IWorkspaceExecutionContext, WorkspaceExecutionContextBuilder } from "@exaix/portal";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
@@ -112,7 +112,7 @@ export interface IRequestRouterConfig {
   flowRunner: IFlowRunner;
   agentRunner: IAgentRunner;
   flowValidator: IFlowValidator;
-  eventLogger: EventLogger;
+  eventLogger: IEventLogger;
   defaultAgentId: string;
   blueprintsPath: string;
   config: Config;
@@ -127,7 +127,7 @@ export class RequestRouter {
   private flowRunner: IFlowRunner;
   private agentRunner: IAgentRunner;
   private flowValidator: IFlowValidator;
-  private eventLogger: EventLogger;
+  private eventLogger: IEventLogger;
   private defaultAgentId: string;
   private blueprintsPath: string;
   private config: Config;

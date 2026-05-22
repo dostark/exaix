@@ -9,7 +9,7 @@ import { join } from "@std/path";
 import { RequestService } from "@exaix/request";
 import { RequestStatus } from "@exaix/core/status";
 import { RequestPriority, RequestSource } from "@exaix/core";
-import { createMockConfig, createStubConfig, createStubDisplay } from "@exaix/testing";
+import { createMockConfig, createStubDisplay } from "@exaix/testing";
 import { ANALYZER_VERSION } from "@exaix/core";
 import { saveAnalysis } from "@exaix/request";
 import { AnalysisMode } from "@exaix/core/types";
@@ -19,13 +19,11 @@ function createTestRequestService(root: string, overrides?: {
   userIdentity?: string;
 }) {
   const config = createMockConfig(root);
-  const configService = createStubConfig(config);
   const display = createStubDisplay();
   const userIdentity = overrides?.userIdentity ?? "tester";
 
   return new RequestService({
     config,
-    configService,
     display,
     userIdentityGetter: () => Promise.resolve(userIdentity),
   });
