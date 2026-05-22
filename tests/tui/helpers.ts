@@ -57,7 +57,7 @@ import {
   SkillStatus,
 } from "@exaix/core";
 import { MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
-import type { ITreeNode } from "../../src/tui/helpers/tree_view.ts";
+import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import type { PortalAnalysisMode } from "@exaix/core";
 
 export interface IPortalInfoOverrides {

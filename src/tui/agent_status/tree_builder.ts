@@ -6,7 +6,7 @@
  * @related-files [src/tui/agent_status_view.ts]
  */
 
-import { createGroupNode, createNode, type ITreeNode } from "../helpers/tree_view.ts";
+import { createGroupNode, createNode, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import type { IAgentStatusItem } from "@exaix/core/types";
 import { AGENT_STATUS_ORDER, AgentStatus, type AgentStatusType } from "@exaix/core/status";
 import {
@@ -16,7 +16,7 @@ import {
   TUI_NODE_TYPE_AGENT,
   TUI_NODE_TYPE_MODEL_GROUP,
   TUI_NODE_TYPE_STATUS_GROUP,
-} from "../helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 
 const AGENT_STATUS_ICONS: Record<string, string> = {
   [AgentStatus.ACTIVE]: TUI_AGENT_STATUS_ICONS.active,

@@ -1,9 +1,9 @@
 /**
  * @module Colors
- * @path src/tui/helpers/colors.ts
+ * @path packages/tui/src/helpers/colors.ts
  * @description TUI color theme system and ANSI styling utilities.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/tree_view.ts", "src/tui/helpers/status_bar.ts"]
+ * @related-files ["packages/tui/src/helpers/tree_view.ts", "packages/tui/src/helpers/status_bar.ts"]
  */
 
 // ===== Theme Interface =====

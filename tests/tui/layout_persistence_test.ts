@@ -14,7 +14,7 @@ import {
   saveLayout,
 } from "../../src/tui/tui_helpers/layout_persistence.ts";
 import type { IPane } from "../../src/tui/tui_dashboard.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "../../src/tui/helpers/constants.ts";
+import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH } from "@exaix/tui/helpers/constants.ts";
 
 import { makePane } from "./layout_test_utils.ts";
 async function withTempHome(fn: (home: string) => Promise<void> | void): Promise<void> {

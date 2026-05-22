@@ -6,8 +6,8 @@
  * @related-files ["packages/core/src/notification/notification.ts", src/tui/tui_dashboard.ts]
  */
 
-import { KEYS } from "../helpers/keyboard.ts";
-import { colorize, type ITuiTheme } from "../helpers/colors.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import { SECONDS_PER_HOUR } from "@exaix/core";
 import type { IDashboardViewState, IPane } from "../tui_dashboard.ts";
 import type { IMemoryNotification } from "@exaix/core/types";

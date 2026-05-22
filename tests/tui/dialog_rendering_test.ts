@@ -6,13 +6,13 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { noColorTheme } from "../../src/tui/helpers/colors.ts";
+import { noColorTheme } from "@exaix/tui/helpers/colors.ts";
 import {
   calculateDialogWidth,
   createDialogBorder,
   renderDialogButtons,
   renderInputField,
-} from "../../src/tui/helpers/dialog_rendering.ts";
+} from "@exaix/tui/helpers/dialog_rendering.ts";
 
 Deno.test("calculateDialogWidth: respects min/max bounds", () => {
   const w1 = calculateDialogWidth(["short"]);

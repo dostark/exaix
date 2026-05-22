@@ -6,8 +6,8 @@
  * @related-files [src/tui/base/base_tree_view.ts]
  */
 
-import type { DialogBase } from "../helpers/dialog_base.ts";
-import type { ITreeNode } from "../helpers/tree_view.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import { DEFAULT_REFRESH_INTERVAL_MS } from "@exaix/core";
 
 /**

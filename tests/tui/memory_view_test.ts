@@ -12,7 +12,7 @@ import { MemoryTuiScope } from "../../src/tui/memory_view/memory_scope.ts";
 import { MemoryView, MemoryViewTuiSession } from "../../src/tui/memory_view.ts";
 import type { IMemoryService } from "../../src/tui/memory_view/types.ts";
 import { MockMemoryService } from "../../src/tui/tui_dashboard_mocks.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 // ===== Test Setup =====
 

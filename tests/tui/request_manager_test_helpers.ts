@@ -5,8 +5,8 @@
  * of request lifecycles and interactive input dialogs.
  */
 
-import type { ConfirmDialog, InputDialog } from "../../src/tui/helpers/dialog_base.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import type { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { MessageType } from "@exaix/core";
 
 export interface IRequestManagerMockHandlers {

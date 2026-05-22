@@ -1183,8 +1183,11 @@ async function checkFile(path: string) {
           errorCount++;
         }
       }
-    } else if (!path.includes("/tests/tui/")) {
-      if (line.match(/import\b.*?\bfrom\s+["'].*?tui\/helpers\//)) {
+    } else if (
+      !path.includes("/tests/tui/") &&
+      !path.includes("/packages/tui/tests/")
+    ) {
+      if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+.*?tui\/helpers\//)) {
         console.log(
           `ERROR [core-boundary-tui-helpers] ${path}:${
             idx + 1

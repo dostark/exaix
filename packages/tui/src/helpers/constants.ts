@@ -1,9 +1,9 @@
 /**
  * @module Constants
- * @path src/tui/helpers/constants.ts
+ * @path packages/tui/src/helpers/constants.ts
  * @description Centralized constants for TUI display, layouts, icons, and system limits.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/tree_view.ts", "src/tui/helpers/colors.ts"]
+ * @related-files ["packages/tui/src/helpers/tree_view.ts", "packages/tui/src/helpers/colors.ts"]
  */
 export const TUI_TREE_PAGINATION_LIMIT = 20;
 export const TUI_TREE_RECENT_LIMIT = 10;

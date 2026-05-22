@@ -7,15 +7,15 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
-import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { ConfirmDialog, type InputDialog } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import { ConfirmDialog, type InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DaemonAction, DaemonStatus, DialogStatus, GeneralStatus, MessageType, SystemCommand } from "@exaix/core";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } from "./helpers/constants.ts";
-import { ANSI } from "./helpers/colors.ts";
-import { TUI_SECTION } from "./helpers/decorations.ts";
+import { TUI_DAEMON_STATUS_ICONS, TUI_LABEL_CANCEL, TUI_LAYOUT_MEDIUM_WIDTH } from "@exaix/tui/helpers/constants.ts";
+import { ANSI } from "@exaix/tui/helpers/colors.ts";
+import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import type { IDaemonService } from "@exaix/core/types";
 

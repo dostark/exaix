@@ -21,7 +21,7 @@ import {
   TUI_STATUS_MSG_PROMOTE_COMPLETED,
   TUI_STATUS_MSG_PROPOSAL_APPROVED,
   TUI_STATUS_MSG_PROPOSAL_REJECTED,
-} from "../helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import type { IMemoryService } from "./types.ts";
 
 export interface IDialogProcessorContext {

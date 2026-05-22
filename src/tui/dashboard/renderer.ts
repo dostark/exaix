@@ -7,15 +7,19 @@
  */
 
 import process from "node:process";
-import type { ITuiTheme } from "../helpers/colors.ts";
-import { TUI_MSG_DASHBOARD_HEADER, TUI_MSG_PRESS_CLOSE_HELP, TUI_STATUS_MSG_READY } from "../helpers/constants.ts";
+import type { ITuiTheme } from "@exaix/tui/helpers/colors.ts";
+import {
+  TUI_MSG_DASHBOARD_HEADER,
+  TUI_MSG_PRESS_CLOSE_HELP,
+  TUI_STATUS_MSG_READY,
+} from "@exaix/tui/helpers/constants.ts";
 import { type IPane, renderGlobalHelpOverlay, renderPaneTitleBar, renderViewIndicator } from "../tui_dashboard.ts";
 import { renderNotificationPanel } from "../tui_helpers/notifications.ts";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { INotificationService, IPortalService } from "@exaix/core/types";
 import type { IDashboardViewState } from "../tui_dashboard.ts";
 import { Table } from "@cliffy/table";
-import { KEYS } from "../helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 async function renderActivePaneContent(
   panes: IPane[],
   activePaneId: string,

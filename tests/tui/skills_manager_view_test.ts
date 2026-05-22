@@ -9,7 +9,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { AgentStatus } from "@exaix/core/status";
 import { RequestStatus } from "@exaix/core/status";
 import type { ISkillSummary } from "../../src/tui/skills_manager_view.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { createSkillsManagerTuiSession, sampleTestSkills, testSkillsSessionRender } from "./helpers.ts";
 import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { AgentStatusView, MinimalAgentServiceMock } from "../../src/tui/agent_status_view.ts";

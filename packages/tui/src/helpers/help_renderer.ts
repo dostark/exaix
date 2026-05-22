@@ -1,9 +1,9 @@
 /**
  * @module HelpRenderer
- * @path src/tui/helpers/help_renderer.ts
+ * @path packages/tui/src/helpers/help_renderer.ts
  * @description TUI help screen renderer providing consistent help displays and key binding summaries.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/keyboard.ts", "src/tui/helpers/dialog_base.ts"]
+ * @related-files ["packages/tui/src/helpers/keyboard.ts", "packages/tui/src/helpers/dialog_base.ts"]
  */
 
 import { KEYS } from "./keyboard.ts";

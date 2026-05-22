@@ -10,10 +10,10 @@ import type { IPortalDetails, IPortalInfo, IVerificationResult } from "@exaix/co
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IPortalService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
-import { ConfirmDialog, type DialogBase } from "./helpers/dialog_base.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import type { IKeyBinding } from "./helpers/keyboard.ts";
-import { KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { ConfirmDialog, type DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
+import { KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import {
   createGroupNode,
@@ -21,7 +21,7 @@ import {
   flattenTree,
   type ITreeNode,
   type TreeRenderOptions,
-} from "./helpers/tree_view.ts";
+} from "@exaix/tui/helpers/tree_view.ts";
 import { DialogStatus, type PortalAnalysisMode, type PortalExecutionStrategy, PortalStatus } from "@exaix/core";
 import { TuiIcon, TuiNodeType } from "@exaix/tui";
 import { formatKnowledge } from "@exaix/cli/formatters/portal_knowledge.ts";
@@ -31,7 +31,7 @@ import {
   TUI_LABEL_CANCEL,
   TUI_LAYOUT_NARROW_WIDTH,
   TUI_PORTAL_ICONS,
-} from "./helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 
 // ===== Portal View Extensions =====
 

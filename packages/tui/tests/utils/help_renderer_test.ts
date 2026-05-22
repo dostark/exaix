@@ -21,8 +21,8 @@ import {
   renderQuickHelp,
   scrollHelpDialog,
   toggleHelpDialog,
-} from "../../../src/tui/helpers/help_renderer.ts";
-import type { IKeyBinding } from "../../../src/tui/helpers/keyboard.ts";
+} from "@exaix/tui/helpers/help_renderer.ts";
+import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { ScrollDirection } from "@exaix/tui";
 
 // ===== renderHelpScreen tests =====

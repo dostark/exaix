@@ -6,10 +6,10 @@
  * @related-files ["packages/core/src/logger/structured_logger.ts", src/tui/monitor_view.ts]
  */
 
-import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import type { DialogBase } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 import type { ITreeViewState } from "./base/tree_view_state.ts";
 import type { ILogger, ILogService } from "@exaix/core/types";
@@ -21,7 +21,7 @@ import {
   TUI_LAYOUT_FULL_WIDTH,
   TUI_LIMIT_LOGS_DEFAULT,
   TUI_LIMIT_LOGS_MAX,
-} from "./helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 import { DialogStatus, LogLevel, MessageType } from "@exaix/core";
 import { LogGroupingMode, TuiColorName, TuiNodeType } from "@exaix/tui";

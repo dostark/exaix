@@ -27,7 +27,7 @@ import {
   renderTreeLine,
   toggleNode,
   TREE_ICONS,
-} from "../../../src/tui/helpers/tree_view.ts";
+} from "@exaix/tui/helpers/tree_view.ts";
 import { createTestTree } from "../helpers.ts";
 
 // ===== Tree Icons Tests =====

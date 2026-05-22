@@ -10,11 +10,11 @@ import { DialogStatus, MemoryBankSource, MemoryScope, MessageType, SkillStatus }
 import { GroupingField, SkillGroupingMode, TuiNodeType } from "@exaix/tui";
 import type { ISkillsService } from "@exaix/core/types";
 import { BaseTreeView } from "./base/base_tree_view.ts";
-import type { DialogBase } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
+import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
 import {
   TUI_ACTION_SEARCH,
   TUI_KEY_LABEL_ENTER,
@@ -25,7 +25,7 @@ import {
   TUI_SKILL_ICON,
   TUI_SOURCE_ICONS,
   TUI_STATUS_ICONS,
-} from "./helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { ISkillMatchRequest } from "@exaix/core/types";
 

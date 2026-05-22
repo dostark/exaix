@@ -11,8 +11,8 @@ import type { ILogger, ILogService } from "@exaix/core/types";
 import type { ILogContext, IStructuredLogEntry, LogQueryOptions } from "@exaix/core/types";
 import type { LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import { InputDialog } from "../../src/tui/helpers/dialog_base.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 
 class MockLogService implements ILogService {
   logs: IStructuredLogEntry[] = [];

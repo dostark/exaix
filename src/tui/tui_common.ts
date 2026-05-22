@@ -6,11 +6,17 @@
  * @related-files [src/tui/base/base_tree_view.ts, src/tui/tui_dashboard.ts]
  */
 
-import { getTheme, type ITuiTheme } from "./helpers/colors.ts";
-import { createSpinnerState, nextFrame, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
-import { createStatusBarState, type IStatusBarState, setStatusMessage } from "./helpers/status_bar.ts";
-import { KEYS } from "./helpers/keyboard.ts";
-import type { IKeyBinding, KeyHandler } from "./helpers/keyboard.ts";
+import { getTheme, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
+import {
+  createSpinnerState,
+  nextFrame,
+  type SpinnerState,
+  startSpinner,
+  stopSpinner,
+} from "@exaix/tui/helpers/spinner.ts";
+import { createStatusBarState, type IStatusBarState, setStatusMessage } from "@exaix/tui/helpers/status_bar.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import type { IKeyBinding, KeyHandler } from "@exaix/tui/helpers/keyboard.ts";
 import { MessageType } from "@exaix/core";
 
 // ===== View State Types =====

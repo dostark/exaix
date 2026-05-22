@@ -6,7 +6,7 @@
  * @related-files [src/tui/memory_view/memory_scope.ts]
  */
 
-import { renderSpinnerFrame } from "../helpers/spinner.ts";
+import { renderSpinnerFrame } from "@exaix/tui/helpers/spinner.ts";
 import { TuiIcon, TuiNodeType } from "@exaix/tui";
 import { MemoryTuiScope } from "./memory_scope.ts";
 import {
@@ -18,7 +18,7 @@ import {
   TUI_PREFIX_PROJECT,
   TUI_TREE_PAGINATION_LIMIT,
   TUI_TREE_RECENT_LIMIT,
-} from "../helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import type { IMemoryService, ITreeNode } from "./types.ts";
 import type { IExecutionMemory, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 

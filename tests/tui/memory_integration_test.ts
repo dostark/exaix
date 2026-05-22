@@ -37,8 +37,8 @@ import {
   renderSpinner,
   stripMarkdown,
   wrapText,
-} from "../../src/tui/helpers/markdown_renderer.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+} from "@exaix/tui/helpers/markdown_renderer.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== Mock Service with Full Data =====

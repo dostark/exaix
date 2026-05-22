@@ -6,7 +6,7 @@
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ExecutionStatus, MemoryType } from "@exaix/core";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
   createMockExecution,
   createMockGlobalMemory,

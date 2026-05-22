@@ -8,10 +8,10 @@
 
 import { BaseTreeView } from "./base/base_tree_view.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "./helpers/tree_view.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import type { DialogBase } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { createGroupNode, createNode, getFirstNodeId, type ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import { DialogStatus } from "@exaix/core";
 import { GroupingMode } from "@exaix/tui";
@@ -23,8 +23,8 @@ import {
   TUI_ELEMENT_ACTION_BUTTONS,
   TUI_KEY_LABEL_ENTER,
   TUI_LAYOUT_NARROW_WIDTH,
-} from "./helpers/constants.ts";
-import { TUI_SECTION } from "./helpers/decorations.ts";
+} from "@exaix/tui/helpers/constants.ts";
+import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
 
 export interface ILogEntry {
   id: string;

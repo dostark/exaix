@@ -12,7 +12,7 @@ import {
   TUI_LAYOUT_MEDIUM_WIDTH,
   TUI_LAYOUT_VALUE_WIDTH,
   TUI_MSG_PRESS_QUIT,
-} from "../helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import type { IRequest } from "@exaix/core/types";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 

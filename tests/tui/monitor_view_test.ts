@@ -24,8 +24,8 @@ import {
   sampleMonitorLogs,
   sampleSingleMonitorLog,
 } from "./helpers.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import type { DialogBase } from "../../src/tui/helpers/dialog_base.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 
 // Helper for creating a monitor session
 function createMonitorSession(logs: Array<ILogEntry | JSONObject> = []) {

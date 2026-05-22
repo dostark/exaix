@@ -6,7 +6,7 @@
  * @related-files [src/tui/memory_view/key_handlers.ts]
  */
 
-import { TUI_ACTION_SEARCH } from "../helpers/constants.ts";
+import { TUI_ACTION_SEARCH } from "@exaix/tui/helpers/constants.ts";
 import { GeneralStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 

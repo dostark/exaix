@@ -3,19 +3,19 @@
  * @path src/tui/dialogs/layout_dialogs.ts
  * @description Dialog components for management of TUI layouts, including split views, presets, and named layouts.
  * @architectural-layer TUI
- * @related-files ["src/tui/helpers/layout_manager.ts", "src/tui/tui_dashboard.ts"]
+ * @related-files ["packages/tui/src/helpers/layout_manager.ts", "src/tui/tui_dashboard.ts"]
  */
 
-import { KEYS } from "../helpers/keyboard.ts";
-import { colorize, type ITuiTheme } from "../helpers/colors.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import {
   TUI_DASHBOARD_ICONS,
   TUI_LAYOUT_PRESET_LIST_WIDTH,
   TUI_SEPARATOR_ROW,
   TUI_VIEW_PICKER_INNER_WIDTH,
-} from "../helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import { DialogPurpose, LayoutMode } from "@exaix/tui";
-import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "../helpers/layout_rendering.ts";
+import { type ILayoutPresetDisplay, renderLayoutPresetListLines } from "@exaix/tui/helpers/layout_rendering.ts";
 
 // ===== View Picker Dialog =====
 

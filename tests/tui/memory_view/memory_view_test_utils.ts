@@ -16,7 +16,7 @@ import {
   type MemoryType as _MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { KEYS } from "../../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import type {
   IExecutionMemory,
   IGlobalMemory,
@@ -26,7 +26,7 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryService } from "../../../src/tui/memory_view/types.ts";
 import { MemoryViewTuiSession } from "../../../src/tui/memory_view.ts";
-import type { DialogBase } from "../../../src/tui/helpers/dialog_base.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 // ===== Interfaces =====
 

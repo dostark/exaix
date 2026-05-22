@@ -18,10 +18,10 @@ import {
   renderButton,
   SelectDialog,
   wrapToWidth,
-} from "../../../src/tui/helpers/dialog_base.ts";
-import { getTheme } from "../../../src/tui/helpers/colors.ts";
+} from "@exaix/tui/helpers/dialog_base.ts";
+import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createMockDialogRenderOptions } from "../helpers.ts";
-import { KEYS } from "../../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 // ===== Box Characters Tests =====
 

@@ -14,7 +14,7 @@ import {
   TUI_STATUS_MSG_PROMOTE_COMPLETED,
   TUI_STATUS_MSG_PROPOSAL_APPROVED,
   TUI_STATUS_MSG_PROPOSAL_REJECTED,
-} from "../../../src/tui/helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import { DialogProcessor } from "../../../src/tui/memory_view/dialog_processor.ts";
 import { DialogStatus } from "@exaix/core";
 import type {

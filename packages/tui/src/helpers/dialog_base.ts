@@ -1,9 +1,9 @@
 /**
  * @module DialogBase
- * @path src/tui/helpers/dialog_base.ts
+ * @path packages/tui/src/helpers/dialog_base.ts
  * @description TUI Dialog Base Framework providing common classes and utilities for modal dialogs.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/dialog_rendering.ts", "src/tui/helpers/keyboard.ts"]
+ * @related-files ["packages/tui/src/helpers/dialog_rendering.ts", "packages/tui/src/helpers/keyboard.ts"]
  */
 
 import { ANSI, colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";

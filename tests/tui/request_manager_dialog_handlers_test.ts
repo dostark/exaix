@@ -6,8 +6,8 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfirmDialog, InputDialog } from "../../src/tui/helpers/dialog_base.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { processDialogCompletion } from "../../src/tui/request_manager/dialog_handlers.ts";
 import { confirmInputDialog, createMockHandlers } from "./request_manager_test_helpers.ts";
 import type { MessageType } from "@exaix/core";

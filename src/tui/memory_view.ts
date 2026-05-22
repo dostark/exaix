@@ -7,7 +7,7 @@
  */
 
 import { TuiSessionBase } from "./tui_common.ts";
-import { TUI_ELEMENT_ACTION_BUTTONS } from "./helpers/constants.ts";
+import { TUI_ELEMENT_ACTION_BUTTONS } from "@exaix/tui/helpers/constants.ts";
 import { TuiNodeType } from "@exaix/tui";
 // Redundant import removed
 import { MemoryFormatter } from "./memory_view/formatters.ts";
@@ -22,9 +22,9 @@ import {
   ConfirmRejectDialog,
   PromoteDialog,
 } from "./dialogs/memory_dialogs.ts";
-import type { DialogBase } from "./helpers/dialog_base.ts";
-import { renderSpinner } from "./helpers/markdown_renderer.ts";
-import { KEYS } from "./helpers/keyboard.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
+import { renderSpinner } from "@exaix/tui/helpers/markdown_renderer.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { coerceMemoryTuiScope, type IMemoryTuiScopeType, MemoryTuiScope } from "./memory_view/memory_scope.ts";
 import { MEMORY_STALE_MS } from "./tui.config.ts";
 

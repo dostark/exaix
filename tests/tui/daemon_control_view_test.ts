@@ -19,7 +19,7 @@ import {
   type IDaemonViewState,
   MinimalDaemonServiceMock,
 } from "../../src/tui/daemon_control_view.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 // ===== Mock CLI Daemon Service for testing (no real process spawn) =====
 

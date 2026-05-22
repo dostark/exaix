@@ -31,7 +31,7 @@ import {
   sampleTestRequests,
   sampleTwoRequests,
 } from "./helpers.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 Deno.test("RequestManagerView - renders request list correctly", async () => {
   const { service: _service, view } = createViewWithRequests([

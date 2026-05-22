@@ -27,10 +27,10 @@ import {
   setRightItems,
   setSpinner,
   setStatusMessage,
-} from "../../../src/tui/helpers/status_bar.ts";
-import { createSpinnerState, startSpinner } from "../../../src/tui/helpers/spinner.ts";
-import { getTheme } from "../../../src/tui/helpers/colors.ts";
-import { TUI_ICON_SUCCESS } from "../../../src/tui/helpers/constants.ts";
+} from "@exaix/tui/helpers/status_bar.ts";
+import { createSpinnerState, startSpinner } from "@exaix/tui/helpers/spinner.ts";
+import { getTheme } from "@exaix/tui/helpers/colors.ts";
+import { TUI_ICON_SUCCESS } from "@exaix/tui/helpers/constants.ts";
 
 Deno.test("createStatusBarState: creates initial state", () => {
   const state = createStatusBarState();

@@ -6,14 +6,21 @@
  * @related-files ["packages/request/src/service.ts", src/tui/tui_dashboard.ts]
  */
 
-import { KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 // --- Imports for Phase 13.6 ---
 import { TuiSessionBase } from "./tui_common.ts";
 import type { AnalysisMode } from "@exaix/core/types";
 import { isRequestStatus, type RequestStatusType } from "@exaix/core/status";
-import { createGroupNode, createNode, findNode, flattenTree, type ITreeNode, renderTree } from "./helpers/tree_view.ts";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import type { IKeyBinding } from "./helpers/keyboard.ts";
+import {
+  createGroupNode,
+  createNode,
+  findNode,
+  flattenTree,
+  type ITreeNode,
+  renderTree,
+} from "@exaix/tui/helpers/tree_view.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import type { IKeyBinding } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
 
 // --- Extracted utilities ---
@@ -31,7 +38,7 @@ import {
 import { MessageType, type NavDirection, RequestOperation, RequestPriority, RequestSource } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import { RequestDialogType, RequestGroupingMode, TuiNodeType } from "@exaix/tui";
-import { ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
+import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 
 import type {
   IRequestEntry as IRequest,
@@ -45,7 +52,7 @@ import {
   TUI_KEY_LABEL_ENTER,
   TUI_PRIORITY_ICONS,
   TUI_STATUS_ICONS,
-} from "./helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 
 /**

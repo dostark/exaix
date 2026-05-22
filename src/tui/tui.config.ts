@@ -7,7 +7,7 @@
  */
 
 import { TuiColorName } from "@exaix/tui";
-import { TUI_LOG_ICONS } from "./helpers/constants.ts";
+import { TUI_LOG_ICONS } from "@exaix/tui/helpers/constants.ts";
 
 export const LOG_ICONS: Record<string, string> = {
   "request_created": TUI_LOG_ICONS["request_created"],

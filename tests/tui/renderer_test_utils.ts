@@ -8,7 +8,7 @@
 
 import process from "node:process";
 import type { IDashboardViewState, IPane } from "../../src/tui/tui_dashboard.ts";
-import { noColorTheme } from "../../src/tui/helpers/colors.ts";
+import { noColorTheme } from "@exaix/tui/helpers/colors.ts";
 import { prodRender } from "../../src/tui/dashboard/renderer.ts";
 import type { INotificationService } from "@exaix/core/notification";
 import type { IMemoryNotification } from "@exaix/core/types";

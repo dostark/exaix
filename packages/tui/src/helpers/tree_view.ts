@@ -1,9 +1,9 @@
 /**
  * @module TreeView
- * @path src/tui/helpers/tree_view.ts
+ * @path packages/tui/src/helpers/tree_view.ts
  * @description TUI Tree View rendering utilities for hierarchical data.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/keyboard.ts", "src/tui/helpers/colors.ts"]
+ * @related-files ["packages/tui/src/helpers/keyboard.ts", "packages/tui/src/helpers/colors.ts"]
  */
 
 import { colorize, getTheme, padEnd, visibleLength } from "./colors.ts";

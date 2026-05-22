@@ -18,8 +18,8 @@ import {
   MessageType,
   SECONDS_PER_HOUR,
 } from "@exaix/core";
-import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "./helpers/spinner.ts";
-import type { ITreeNode } from "./helpers/tree_view.ts";
+import { createSpinnerState, type SpinnerState, startSpinner, stopSpinner } from "@exaix/tui/helpers/spinner.ts";
+import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 import {
   collapseAll,
   expandAll,
@@ -31,14 +31,14 @@ import {
   getPrevNodeId,
   renderTree,
   toggleNode,
-} from "./helpers/tree_view.ts";
+} from "@exaix/tui/helpers/tree_view.ts";
 import { AgentStatus, type AgentStatusType as _AgentStatusType } from "@exaix/core/status";
 import { TuiColorName, TuiGroupBy } from "@exaix/tui";
-import { type IHelpSection, renderHelpScreen } from "./helpers/help_renderer.ts";
-import { type ConfirmDialog, InputDialog } from "./helpers/dialog_base.ts";
-import { type IKeyBinding, KeyBindingCategory, KEYS } from "./helpers/keyboard.ts";
+import { type IHelpSection, renderHelpScreen } from "@exaix/tui/helpers/help_renderer.ts";
+import { type ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
+import { type IKeyBinding, KeyBindingCategory, KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { KeyBindingsBase } from "./base/key_bindings_base.ts";
-import { TUI_SECTION } from "./helpers/decorations.ts";
+import { TUI_SECTION } from "@exaix/tui/helpers/decorations.ts";
 import {
   TUI_AGENT_HEALTH_ICONS,
   TUI_AGENT_STATUS_ICONS,
@@ -46,7 +46,7 @@ import {
   TUI_LAYOUT_NARROW_WIDTH,
   TUI_LIMIT_MEDIUM,
   TUI_LOG_LEVEL_ICONS,
-} from "./helpers/constants.ts";
+} from "@exaix/tui/helpers/constants.ts";
 import { MONITOR_AUTO_REFRESH_INTERVAL_MS } from "./tui.config.ts";
 
 // Extracted utilities

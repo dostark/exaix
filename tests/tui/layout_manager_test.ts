@@ -18,7 +18,7 @@ import {
   renderLayoutPresetPicker,
   renderPaneBorder,
   renderResizeIndicator,
-} from "../../src/tui/helpers/layout_manager.ts";
+} from "@exaix/tui/helpers/layout_manager.ts";
 import {
   AVAILABLE_VIEWS,
   createLayoutPresetState,
@@ -35,7 +35,7 @@ import {
   renderSwapIndicator,
   renderViewPickerDialog,
 } from "../../src/tui/dialogs/layout_dialogs.ts";
-import { getTheme } from "../../src/tui/helpers/colors.ts";
+import { getTheme } from "@exaix/tui/helpers/colors.ts";
 import { createPanes, createTestPane, setupLayoutManager } from "./layout_test_helper.ts";
 const theme = getTheme(true);
 

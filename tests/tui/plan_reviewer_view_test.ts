@@ -8,7 +8,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { PlanStatus } from "@exaix/core/status";
 import { ExaPathDefaults } from "@exaix/core";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 import {
   DbLikePlanServiceAdapter,

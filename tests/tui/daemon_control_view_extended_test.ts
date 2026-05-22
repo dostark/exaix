@@ -13,7 +13,7 @@ import {
   LegacyDaemonControlTuiSession,
   MinimalDaemonServiceMock,
 } from "../../src/tui/daemon_control_view.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { setupDaemonTest } from "./daemon_test_utils.ts";
 
 // ===== MinimalDaemonServiceMock Tests =====

@@ -6,11 +6,11 @@
  * @related-files [src/tui/request_manager_view.ts]
  */
 
-import { KEYS } from "../helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { NavDirection } from "@exaix/core";
 import { type RequestGroupingMode as _RequestGroupingMode, TuiNodeType } from "@exaix/tui";
-import type { ITreeNode } from "../helpers/tree_view.ts";
-import { collapseAll, expandAll, findNode, flattenTree, toggleNode } from "../helpers/tree_view.ts";
+import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
+import { collapseAll, expandAll, findNode, flattenTree, toggleNode } from "@exaix/tui/helpers/tree_view.ts";
 
 /**
  * Navigation handler for tree navigation

@@ -41,7 +41,7 @@ import {
   STATUS_COLORS,
   STATUS_ICONS,
 } from "../../src/tui/request_manager_view.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 // ===== Test Data =====
 

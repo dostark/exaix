@@ -8,7 +8,7 @@
 
 import { MessageType } from "@exaix/core";
 import type { IPane, ITuiView } from "../tui_dashboard.ts";
-import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "../helpers/constants.ts";
+import { TUI_LAYOUT_DEFAULT_HEIGHT, TUI_LAYOUT_FULL_WIDTH, TUI_MAIN_PANE_ID } from "@exaix/tui/helpers/constants.ts";
 
 export const getLayoutFile = (): string => `${Deno.env.get("HOME")}/.exaix/tui_layout.json`;
 

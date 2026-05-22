@@ -6,7 +6,7 @@
  * @related-files [src/tui/agent_status_view.ts]
  */
 
-import { KEYS } from "../helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 
 // ===== Helper Functions =====
 

@@ -22,7 +22,7 @@ import { TEST_MODEL_OPENAI } from "@exaix/testing";
 import { AgentStatus } from "@exaix/core/status";
 import { AgentHealth, CritiqueSeverity, LogLevel } from "@exaix/core";
 import { TuiGroupBy } from "@exaix/tui";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { assertEquals, assertExists } from "@std/assert";
 
 // ===== Mock IAgentService for testing =====

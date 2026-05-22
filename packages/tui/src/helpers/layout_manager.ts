@@ -1,9 +1,9 @@
 /**
  * @module LayoutManager
- * @path src/tui/helpers/layout_manager.ts
+ * @path packages/tui/src/helpers/layout_manager.ts
  * @description Layout Manager for split-view TUI dashboards, providing presets, resizing, and named layout persistence.
  * @architectural-layer TUI Helpers
- * @related-files [src/tui/helpers/layout_rendering.ts]
+ * @related-files [packages/tui/src/helpers/layout_rendering.ts]
  */
 
 import { colorize, type ITuiTheme } from "./colors.ts";

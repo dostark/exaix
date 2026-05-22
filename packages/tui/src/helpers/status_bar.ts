@@ -1,9 +1,9 @@
 /**
  * @module StatusBar
- * @path src/tui/helpers/status_bar.ts
+ * @path packages/tui/src/helpers/status_bar.ts
  * @description TUI status bar rendering utilities with items, messages, and spinner support.
  * @architectural-layer Helpers
- * @related-files ["src/tui/helpers/colors.ts", "src/tui/helpers/spinner.ts"]
+ * @related-files ["packages/tui/src/helpers/colors.ts", "packages/tui/src/helpers/spinner.ts"]
  */
 
 import { colorize, getTheme, type ITuiTheme, padEnd, visibleLength } from "./colors.ts";

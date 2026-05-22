@@ -6,7 +6,7 @@
  * @related-files [src/tui/monitor_view.ts, src/tui/structured_log_viewer.ts]
  */
 
-import { ANSI, colorize, type ITuiTheme } from "./helpers/colors.ts";
+import { ANSI, colorize, type ITuiTheme } from "@exaix/tui/helpers/colors.ts";
 import type { IStructuredLogEntry } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import { TuiColorName } from "@exaix/tui";

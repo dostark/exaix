@@ -5,7 +5,7 @@
  * verifying panel coordinates in complex multi-view dashboards.
  */
 
-import { createLayoutManager, type ILayoutPane } from "../../src/tui/helpers/layout_manager.ts";
+import { createLayoutManager, type ILayoutPane } from "@exaix/tui/helpers/layout_manager.ts";
 
 export function setupLayoutManager(width = 80, height = 24): ReturnType<typeof createLayoutManager> {
   return createLayoutManager(width, height);

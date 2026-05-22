@@ -7,8 +7,8 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { DialogStatus } from "@exaix/core";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import type { DialogBase } from "../../src/tui/helpers/dialog_base.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import type { DialogBase } from "@exaix/tui/helpers/dialog_base.ts";
 import {
   AddLearningDialog,
   BulkApproveDialog,

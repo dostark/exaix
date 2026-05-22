@@ -4,5 +4,20 @@
   "version": "0.1.0",
   "exports": {
     ".": "./mod.ts"
+  },
+  "imports": {
+    "@exaix/core": "../../packages/core/mod.ts",
+    "@exaix/core/types": "../../packages/core/src/types/mod.ts",
+    "@exaix/schemas": "../../packages/schemas/mod.ts",
+    "@exaix/schemas/": "../../packages/schemas/src/",
+    "@exaix/tui": "./mod.ts",
+    "@exaix/tui/": "./src/"
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "deno.ns",
+      "deno.unstable"
+    ]
   }
 }

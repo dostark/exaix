@@ -6,7 +6,7 @@
  * @related-files [src/tui/request_manager_view.ts]
  */
 
-import { ConfirmDialog, InputDialog } from "../helpers/dialog_base.ts";
+import { ConfirmDialog, InputDialog } from "@exaix/tui/helpers/dialog_base.ts";
 import { DialogStatus, MessageType } from "@exaix/core";
 import { RequestDialogType } from "@exaix/tui";
 

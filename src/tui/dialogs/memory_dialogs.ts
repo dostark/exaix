@@ -3,11 +3,11 @@
  * @path src/tui/dialogs/memory_dialogs.ts
  * @description Specialized TUI dialogs for memory management (approving/rejecting proposals, adding/promoting learnings).
  * @architectural-layer TUI
- * @related-files ["src/tui/helpers/dialog_base.ts", src/tui/memory_view/dialog_processor.ts]
+ * @related-files ["@exaix/tui/helpers/dialog_base.ts", src/tui/memory_view/dialog_processor.ts]
  */
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import { TUI_DIALOG_INNER_PADDING, TUI_LAYOUT_DIALOG_WIDTH } from "../helpers/constants.ts";
-import { KEYS } from "../helpers/keyboard.ts";
+import { TUI_DIALOG_INNER_PADDING, TUI_LAYOUT_DIALOG_WIDTH } from "@exaix/tui/helpers/constants.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
   DialogBase,
   type IDialogRenderOptions,
@@ -17,7 +17,7 @@ import {
   renderDialogEnding,
   renderProposalInfo,
   setupDialogRender,
-} from "../helpers/dialog_base.ts";
+} from "@exaix/tui/helpers/dialog_base.ts";
 import { DialogStatus, MemoryScope } from "@exaix/core";
 import { DEFAULT_DESCRIPTION_PLACEHOLDER } from "@exaix/core";
 

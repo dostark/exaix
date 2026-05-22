@@ -7,8 +7,8 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { DialogPurpose, LayoutMode } from "@exaix/tui";
-import { getTheme } from "../../src/tui/helpers/colors.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { getTheme } from "@exaix/tui/helpers/colors.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import {
   AVAILABLE_VIEWS,
   createLayoutPresetState,

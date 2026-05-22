@@ -27,7 +27,7 @@ import {
   sampleTestSkills,
   testSkillsSessionRender,
 } from "./helpers.ts";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== Test Data =====

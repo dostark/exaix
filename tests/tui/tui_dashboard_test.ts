@@ -19,8 +19,8 @@ import { PortalStatus } from "@exaix/core";
 import { SplitDirection } from "@exaix/tui";
 
 import { assertEquals } from "@std/assert";
-import { KEYS } from "../../src/tui/helpers/keyboard.ts";
-import { getTheme } from "../../src/tui/helpers/colors.ts";
+import { KEYS } from "@exaix/tui/helpers/keyboard.ts";
+import { getTheme } from "@exaix/tui/helpers/colors.ts";
 
 type ISavedLayoutPane =
   & Pick<IPane, "id" | "x" | "y" | "width" | "height" | "focused" | "flexX" | "flexY" | "flexWidth" | "flexHeight">

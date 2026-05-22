@@ -19,8 +19,8 @@ import {
   TUI_MSG_PRESS_QUIT,
   TUI_PREFIX_EXECUTION,
   TUI_PREFIX_PROJECT,
-} from "../helpers/constants.ts";
-import { renderCategoryBadge, renderConfidence, renderMarkdown } from "../helpers/markdown_renderer.ts";
+} from "@exaix/tui/helpers/constants.ts";
+import { renderCategoryBadge, renderConfidence, renderMarkdown } from "@exaix/tui/helpers/markdown_renderer.ts";
 import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
 import { DEFAULT_NONE_VALUE } from "@exaix/core";
 import type { IMemoryService, ITreeNode } from "./types.ts";
