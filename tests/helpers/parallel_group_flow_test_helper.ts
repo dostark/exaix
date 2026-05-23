@@ -3,14 +3,14 @@
  * @path tests/helpers/parallel_group_flow_test_helper.ts
  * @description Shared flow builders and runner harnesses for parallel-group integration tests.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, tests/helpers/flow_namespace_test_helper.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, tests/helpers/flow_namespace_test_helper.ts]
  */
 
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlowInput } from "@exaix/schemas/flow.ts";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import {
   RecordingFlowLogger,
   ScriptedAgentExecutor,

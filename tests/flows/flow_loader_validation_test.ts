@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { FlowLoader } from "@exaix/flow-storage";
+import { FlowLoader } from "@exaix/flow";
 import { join } from "@std/path";
 import { FlowStepExecutionMode, ToolName } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";

@@ -8,9 +8,9 @@
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { ConditionEvaluator, type IConditionContext } from "../../src/flows/condition_evaluator.ts";
+import { ConditionEvaluator, type IConditionContext } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
-import type { IStepResult } from "../../src/flows/flow_runner.ts";
+import type { IStepResult } from "@exaix/flow";
 import type { JSONValue } from "@exaix/core/types";
 import { DEFAULT_FLOW_VERSION } from "@exaix/core";
 

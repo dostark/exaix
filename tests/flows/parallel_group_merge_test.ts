@@ -3,17 +3,12 @@
  * @path tests/flows/parallel_group_merge_test.ts
  * @description Covers FlowRunner fan-in merge summaries for downstream step requests.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import {
-  FlowRunner,
-  type IAgentExecutor,
-  type IFlowEventLogger,
-  type IFlowStepRequest,
-} from "../../src/flows/flow_runner.ts";
+import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import {

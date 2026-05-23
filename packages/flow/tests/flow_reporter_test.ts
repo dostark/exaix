@@ -8,7 +8,7 @@ import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
-import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResult } from "@exaix/flow-storage";
+import { FlowReporter, type IFlowReportConfig, type IFlowResult, type IStepResult } from "@exaix/flow";
 import { createMockConfig, initTestDbService, TEST_MODEL_OPENAI, TEST_PROVIDER_ID_OPENAI } from "@exaix/testing";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";

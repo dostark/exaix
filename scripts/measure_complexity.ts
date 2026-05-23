@@ -257,7 +257,14 @@ async function runComplexityCheck() {
     console.warn("⚠️  Could not load AST parser; falling back to heuristic per-function analysis.");
   }
 
-  for await (const entry of walk("src", { includeDirs: false, exts: [".ts", ".tsx", ".js", ".jsx"] })) {
+  const srcExists = await Deno.stat("src").then((s) => s.isDirectory).catch(() => false);
+  const srcDirs = srcExists ? ["src"] : ["packages", "apps"];
+
+  for await (const entry of walk(srcExists ? "src" : ".", {
+    includeDirs: false,
+    exts: [".ts", ".tsx", ".js", ".jsx"],
+    match: srcExists ? undefined : srcDirs.map((d) => new RegExp(`^${d}/[^/]+/src/`)),
+  })) {
     const content = await Deno.readTextFile(entry.path);
     let ast: Node | null = null;
 

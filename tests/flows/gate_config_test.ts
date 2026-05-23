@@ -7,7 +7,7 @@
 
 import { assertEquals } from "@std/assert";
 import { GateEvaluateSchema } from "@exaix/schemas/flow.ts";
-import { GateConfigSchema } from "../../src/flows/gate_evaluator.ts";
+import { GateConfigSchema } from "@exaix/flow";
 import { FlowGateOnFail } from "@exaix/core";
 
 const BASE_GATE_EVALUATE = {

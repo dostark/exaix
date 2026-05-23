@@ -21,7 +21,7 @@ import {
   type IAgentExecutor,
   type IFlowEventLogger,
   type IFlowStepRequest,
-} from "../../src/flows/flow_runner.ts";
+} from "@exaix/flow";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";

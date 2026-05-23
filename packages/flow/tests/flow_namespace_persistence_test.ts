@@ -7,7 +7,7 @@ import { assertEquals } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import { FlowNamespaceService } from "@exaix/flow-storage";
+import { FlowNamespaceService } from "@exaix/flow";
 import { getMemoryExecutionDir, initTestDbService } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService persists, reads, appends, and deletes trace-scoped namespace state", async () => {

@@ -5,7 +5,7 @@
 
 import { assertEquals } from "@std/assert";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import { FlowNamespaceService } from "@exaix/flow-storage";
+import { FlowNamespaceService } from "@exaix/flow";
 import { createMockConfig } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService renders markdown deterministically with sorted key order", async () => {

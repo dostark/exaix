@@ -3,14 +3,14 @@
  * @path tests/integration/39_flow_namespace_end_to_end_test.ts
  * @description End-to-end coverage for namespace artifact persistence and same-wave write serialization.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";

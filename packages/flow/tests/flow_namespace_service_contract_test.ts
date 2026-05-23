@@ -5,8 +5,8 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
-import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow-storage";
-import { NamespaceQuotaExceededError } from "@exaix/flow-storage";
+import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow";
+import { NamespaceQuotaExceededError } from "@exaix/flow";
 
 class StubFlowNamespaceService implements IFlowNamespaceService {
   getNamespacePath(traceId: string): string {

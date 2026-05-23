@@ -5,7 +5,7 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
-import { FlowNamespaceService, NamespaceQuotaExceededError } from "@exaix/flow-storage";
+import { FlowNamespaceService, NamespaceQuotaExceededError } from "@exaix/flow";
 import { DEFAULT_NAMESPACE_MAX_BYTES } from "@exaix/core";
 import { createMockConfig } from "@exaix/testing";
 

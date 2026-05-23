@@ -1,9 +1,9 @@
 /**
  * @module GateEvaluator
- * @path src/flows/gate_evaluator.ts
+ * @path packages/flow/src/gate_evaluator.ts
  * @description Implements quality gates for flow steps, orchestrating judge invocations and pass/fail/retry logic based on criteria.
  * @architectural-layer Flows
- * @related-files [src/flows/flow_runner.ts, packages/core/src/evaluation/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/core/src/evaluation/mod.ts]
  */
 
 import { z } from "zod";

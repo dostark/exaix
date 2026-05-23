@@ -6,7 +6,7 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { FlowInputSource } from "@exaix/core";
 
-import { DependencyResolver, FlowValidationError } from "@exaix/flow-storage";
+import { DependencyResolver, FlowValidationError } from "@exaix/flow";
 import type { IFlowStep, IFlowStepInput } from "@exaix/schemas/flow.ts";
 
 const defaultStepProps = {

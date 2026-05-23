@@ -7,13 +7,8 @@
 
 import { assertEquals } from "@std/assert";
 import { FlowGateOnFail, FlowInputSource, FlowOutputFormat, FlowStepType } from "@exaix/core";
-import {
-  FlowRunner,
-  type IAgentExecutor,
-  type IFlowEventLogger,
-  type IFlowStepRequest,
-} from "../../src/flows/flow_runner.ts";
-import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
+import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";

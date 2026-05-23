@@ -3,12 +3,12 @@
  * @path apps/exactl/src/commands/flow_commands.ts
  * @description Provides CLI commands for flow management and execution, including list, show, run, plan, history, and validation.
  * @architectural-layer CLI
- * @related-files [packages/flow-storage/mod.ts, "apps/daemon/main.ts"]
+ * @related-files [packages/flow/mod.ts, "apps/daemon/main.ts"]
  */
 
 import { Table } from "@cliffy/table";
 import { join } from "@std/path";
-import { FlowLoader } from "@exaix/flow-storage";
+import { FlowLoader } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DEFAULT_NONE_LABEL } from "@exaix/core";
 import { BaseCommand } from "@exaix/cli/base.ts";

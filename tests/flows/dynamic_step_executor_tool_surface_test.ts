@@ -13,11 +13,7 @@ import type { IMcpClient } from "@exaix/mcp";
 import { FlowStepExecutionMode } from "@exaix/core";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
-import {
-  DynamicStepExecutor,
-  type IActivityJournal,
-  type JournalEntry,
-} from "../../src/flows/dynamic_step_executor.ts";
+import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { JSONValue } from "@exaix/core";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";

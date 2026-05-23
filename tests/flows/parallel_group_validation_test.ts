@@ -3,7 +3,7 @@
  * @path tests/flows/parallel_group_validation_test.ts
  * @description Verifies Phase 65 cross-step parallel group validation in FlowRunner.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
+ * @related-files [packages/flow/src/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import { assertRejects, assertStringIncludes } from "@std/assert";
@@ -14,7 +14,7 @@ import {
   type IAgentExecutor,
   type IFlowEventLogger,
   type IFlowStepRequest,
-} from "../../src/flows/flow_runner.ts";
+} from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";

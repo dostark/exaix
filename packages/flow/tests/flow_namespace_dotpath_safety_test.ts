@@ -5,7 +5,7 @@
 
 import { assertEquals } from "@std/assert";
 import { assertSpyCalls, spy } from "@std/testing/mock";
-import { FlowNamespaceService } from "@exaix/flow-storage";
+import { FlowNamespaceService } from "@exaix/flow";
 import { createMockConfig } from "@exaix/testing";
 
 Deno.test("FlowNamespaceService rejects invalid keys, falls back on non-JSON dot-path reads, and caps extracted values", async () => {

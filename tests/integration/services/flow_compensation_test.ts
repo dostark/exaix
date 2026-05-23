@@ -3,13 +3,13 @@
  * @path tests/integration/services/flow_compensation_test.ts
  * @description Integration coverage for Step 63.4 compensating transactions.
  * @architectural-layer Test
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepOnErrorAction } from "@exaix/core";
 import { McpToolName } from "@exaix/mcp";
-import { FlowExecutionError, FlowRunner } from "../../../src/flows/flow_runner.ts";
+import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import type { JSONValue } from "@exaix/core/types";

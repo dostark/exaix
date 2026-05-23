@@ -3,14 +3,14 @@
  * @path tests/integration/services/flow_checkpoint_test.ts
  * @description Integration coverage for flow checkpoint save/load/resume lifecycle.
  * @architectural-layer Test
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowExecutionError, FlowRunner } from "../../../src/flows/flow_runner.ts";
+import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import { type IFlow, type IFlowInput, ZFlowCheckpoint } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,

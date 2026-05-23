@@ -13,11 +13,7 @@ import type { IToolManifestResolver } from "@exaix/core/types";
 import { FlowStepSchema } from "@exaix/schemas/flow.ts";
 import { BlueprintFrontmatterSchema } from "@exaix/schemas/blueprint.ts";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
-import {
-  DynamicStepExecutor,
-  type IActivityJournal,
-  type JournalEntry,
-} from "../../src/flows/dynamic_step_executor.ts";
+import { DynamicStepExecutor, type IActivityJournal, type JournalEntry } from "@exaix/flow";
 
 /**
  * Mock implementations for dependencies

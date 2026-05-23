@@ -21,14 +21,9 @@ import {
 } from "@exaix/core";
 import { assert, assertEquals, assertGreater, assertStringIncludes } from "@std/assert";
 import { FlowSchema, type IFlow } from "@exaix/schemas/flow.ts";
-import {
-  FlowRunner,
-  type IAgentExecutor,
-  type IFlowEventLogger,
-  type IFlowStepRequest,
-} from "../../src/flows/flow_runner.ts";
+import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import type { IGenerateResult } from "@exaix/ai/providers";
-import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import type {
   ICriteriaGeneratorService,
   IGateConfig as _GateConfig,

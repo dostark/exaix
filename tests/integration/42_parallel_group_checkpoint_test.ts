@@ -3,7 +3,7 @@
  * @path tests/integration/42_parallel_group_checkpoint_test.ts
  * @description Verifies checkpoint persistence and resume behavior for parallel group members.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

@@ -3,12 +3,12 @@
  * @path tests/flows/flow_runner_namespace_test.ts
  * @description Verifies namespace event payload fields emitted by FlowRunner.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,

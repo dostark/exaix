@@ -3,12 +3,12 @@
  * @path tests/flows/flow_runner_namespace_no_regression_test.ts
  * @description Guards unchanged FlowRunner behavior when namespace support is not configured.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";

@@ -23,11 +23,12 @@
     "./packages/tool-runtime",
     "./packages/execution",
     "./packages/request",
-    "./packages/flow-storage",
+    "./packages/flow",
     "./apps/daemon",
     "./apps/exactl",
     "./apps/mcp-server",
-    "./apps/tui"
+    "./apps/tui",
+    "./apps/agent-entrypoint"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -171,8 +172,8 @@
     "@exaix/execution": "./packages/execution/mod.ts",
     "@exaix/request": "./packages/request/mod.ts",
     "@exaix/request/": "./packages/request/src/",
-    "@exaix/flow-storage": "./packages/flow-storage/mod.ts",
-    "@exaix/flow-storage/": "./packages/flow-storage/src/"
+    "@exaix/flow": "./packages/flow/mod.ts",
+    "@exaix/flow/": "./packages/flow/src/"
   },
   "exclude": [
     "cov_profile",

@@ -1,9 +1,9 @@
 /**
  * @module FlowRunner
- * @path src/flows/flow_runner.ts
+ * @path packages/flow/src/flow_runner.ts
  * @description Core orchestrator for multi-agent flow execution.
  * @architectural-layer Flows
- * @related-files [packages/flow-storage/mod.ts, packages/request/src/router.ts]
+ * @related-files [packages/flow/mod.ts, packages/request/src/router.ts]
  */
 
 import type {
@@ -17,7 +17,7 @@ import type {
 } from "@exaix/schemas/flow.ts";
 import { join } from "@std/path";
 import { encodeHex } from "@std/encoding/hex";
-import { DependencyResolver } from "@exaix/flow-storage";
+import { DependencyResolver } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import { ConditionEvaluator } from "./condition_evaluator.ts";
 import { appendToRequest, extractSection, mergeAsContext, passthrough, templateFill } from "@exaix/core/func";
@@ -44,7 +44,7 @@ import {
   FlowNamespaceService,
   type IFlowCheckpointService,
   type IFlowNamespaceService,
-} from "@exaix/flow-storage";
+} from "@exaix/flow";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
 import {
   DEFAULT_COST_PRECISION_FACTOR,

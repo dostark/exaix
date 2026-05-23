@@ -3,10 +3,10 @@
  * @path tests/helpers/flow_namespace_test_helper.ts
  * @description Shared executor and logger helpers for flow namespace tests.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
-import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "../../src/flows/flow_runner.ts";
+import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 

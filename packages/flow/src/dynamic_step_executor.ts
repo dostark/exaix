@@ -1,11 +1,11 @@
 /**
  * @module DynamicStepExecutor
- * @path src/flows/dynamic_step_executor.ts
+ * @path packages/flow/src/dynamic_step_executor.ts
  * @description Executes a flow step in dynamic mode: the model receives the step
  * objective and iteratively selects tools from permitted_tools via a ReAct loop
  * until the objective is satisfied or max_iterations is reached.
  * @architectural-layer Flows
- * @related-files [src/flows/flow_runner.ts, "packages/schemas/src/flow.ts"]
+ * @related-files [packages/flow/src/flow_runner.ts, "packages/schemas/src/flow.ts"]
  */
 
 import type { IFlowStep } from "@exaix/schemas/flow.ts";

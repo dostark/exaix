@@ -3,14 +3,14 @@
  * @path tests/integration/38_flow_namespace_checkpoint_resume_test.ts
  * @description Verifies namespace persistence across checkpoint resume and guards failed-step non-writes.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowExecutionError, FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowExecutionError, FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION, FLOW_EVENT_NAMESPACE_READ } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";

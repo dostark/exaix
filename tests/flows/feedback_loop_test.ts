@@ -15,8 +15,8 @@ import {
   type ImprovementAgent,
   runSelfCorrectingAgent,
   SimpleImprovementAgent,
-} from "../../src/flows/feedback_loop.ts";
-import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+} from "@exaix/flow";
+import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import { CRITERIA } from "@exaix/core/evaluation";
 import type { JSONObject } from "@exaix/core/types";
 

@@ -1,6 +1,6 @@
 /**
  * @module JudgeEvaluator
- * @path src/flows/judge_evaluator.ts
+ * @path packages/flow/src/judge_evaluator.ts
  * @description Orchestrates judge agent invocation and result parsing for output quality evaluation, including JSON repair and heuristic recovery.
  * @architectural-layer Flows
  * @related-files [src/flows/gate_evaluator.ts, packages/core/src/evaluation/mod.ts]

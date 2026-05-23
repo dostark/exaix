@@ -7,10 +7,10 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { EvaluationCategory, FlowGateAction, FlowGateOnFail } from "@exaix/core";
-import { GateEvaluator, MockJudgeInvoker } from "../../src/flows/gate_evaluator.ts";
+import { GateEvaluator, MockJudgeInvoker } from "@exaix/flow";
 import type { IGateConfig } from "@exaix/core/types";
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/evaluation";
-import type { IStepResult } from "../../src/flows/flow_runner.ts";
+import type { IStepResult } from "@exaix/flow";
 
 const DEFAULT_CONFIG: IGateConfig = {
   identity: "judge-agent",

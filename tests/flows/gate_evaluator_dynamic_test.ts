@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { type GateConfig, GateEvaluator } from "../../src/flows/gate_evaluator.ts";
+import { type GateConfig, GateEvaluator } from "@exaix/flow";
 import type { IJudgeInvoker } from "@exaix/core/types";
 import { CriteriaGenerator } from "@exaix/core/skills";
 import { type IRequestAnalysis, RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";

@@ -6,8 +6,8 @@
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat, FlowStepExecutionMode, FlowStepType } from "@exaix/core";
-import { FlowValidatorImpl } from "@exaix/flow-storage";
-import { FlowLoader } from "@exaix/flow-storage";
+import { FlowValidatorImpl } from "@exaix/flow";
+import { FlowLoader } from "@exaix/flow";
 import type { IFlow, IFlowStep } from "@exaix/schemas/flow.ts";
 
 /**

@@ -3,12 +3,12 @@
  * @path tests/integration/41_parallel_fanin_merge_test.ts
  * @description Verifies downstream fan-in steps receive JSON-safe parallelGroupResults.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import { initTestDbService } from "../helpers/db.ts";

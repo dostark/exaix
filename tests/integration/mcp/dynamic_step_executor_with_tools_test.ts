@@ -10,7 +10,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
 import { McpClient } from "@exaix/mcp/server";
 import { ToolHandler } from "@exaix/mcp/server";
-import { FlowRunner, type IFlowEventLogger } from "../../../src/flows/flow_runner.ts";
+import { FlowRunner, type IFlowEventLogger } from "@exaix/flow";
 import { createStubContext } from "../../helpers/test_helpers.ts";
 import type { JSONValue } from "@exaix/core/types";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";

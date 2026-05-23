@@ -3,7 +3,7 @@
  * @path tests/integration/43_parallel_group_recovery_test.ts
  * @description Verifies failed parallel group member recovery does not corrupt sibling results.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts, packages/flow-storage/mod.ts]
+ * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

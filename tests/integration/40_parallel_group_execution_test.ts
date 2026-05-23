@@ -3,12 +3,12 @@
  * @path tests/integration/40_parallel_group_execution_test.ts
  * @description Verifies grouped wave execution completes before downstream fan-in steps run.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner } from "../../src/flows/flow_runner.ts";
+import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,

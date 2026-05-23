@@ -7,8 +7,8 @@
 
 import { assertEquals } from "@std/assert";
 
-import { FlowLoader } from "@exaix/flow-storage";
-import { FlowValidatorImpl } from "@exaix/flow-storage";
+import { FlowLoader } from "@exaix/flow";
+import { FlowValidatorImpl } from "@exaix/flow";
 
 // Utility: create isolated temp dir for each test
 async function setupTestDir() {

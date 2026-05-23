@@ -3,12 +3,12 @@
  * @path tests/flows/flow_runner_parallel_group_test.ts
  * @description Verifies wave-local parallel group execution and lifecycle events in FlowRunner.
  * @architectural-layer Tests
- * @related-files [src/flows/flow_runner.ts]
+ * @related-files [packages/flow/src/flow_runner.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
-import { FlowRunner, type IAgentExecutor, type IFlowStepRequest } from "../../src/flows/flow_runner.ts";
+import { FlowRunner, type IAgentExecutor, type IFlowStepRequest } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import {
