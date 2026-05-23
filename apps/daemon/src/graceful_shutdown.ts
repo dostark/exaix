@@ -1,9 +1,10 @@
 /**
  * @module GracefulShutdown
- * @path src/services/core/graceful_shutdown.ts
- * @description Module for GracefulShutdown.
- * @architectural-layer Services
- * @related-files [src/main.ts, "packages/core/src/logger/structured_logger.ts"]
+ * @path apps/daemon/src/graceful_shutdown.ts
+ * @description Handles SIGINT/SIGTERM signal registration and LIFO cleanup task execution
+ * for the daemon process. Owned by apps/daemon; not a shared package surface.
+ * @architectural-layer Application
+ * @related-files [apps/daemon/main.ts, "packages/core/src/logger/structured_logger.ts"]
  */
 
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";

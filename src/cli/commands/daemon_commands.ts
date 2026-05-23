@@ -3,7 +3,7 @@
  * @path src/cli/commands/daemon_commands.ts
  * @description Provides CLI commands for controlling the Exaix daemon lifecycle, including start, stop, restart, status, and log tailing.
  * @architectural-layer CLI
- * @related-files [src/main.ts, "src/main.ts"]
+ * @related-files ["apps/daemon/main.ts"]
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";
@@ -45,7 +45,8 @@ export class DaemonCommands extends BaseCommand {
 
       // Find daemon script relative to this command file
       const currentFile = fromFileUrl(import.meta.url);
-      const mainScript = Deno.env.get("EXA_DAEMON_SCRIPT") || join(dirname(currentFile), "..", "..", "main.ts");
+      const mainScript = Deno.env.get("EXA_DAEMON_SCRIPT") ||
+        join(dirname(currentFile), "..", "..", "..", "apps", "daemon", "main.ts");
 
       const status = await this.status();
       if (status.running) {

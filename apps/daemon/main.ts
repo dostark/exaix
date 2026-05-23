@@ -1,15 +1,15 @@
 /**
  * @module Daemon
- * @path src/main.ts
+ * @path apps/daemon/main.ts
  * @description Entry point for the Exaix daemon. Orchestrates system startup, service initialization,
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
- * @architectural-layer Core System
- * @related-files ["packages/execution/src/execution_loop.ts", "src/services/utils/watcher.ts", "src/cli/commands/daemon_commands.ts"]
+ * @architectural-layer Application
+ * @related-files ["packages/execution/src/execution_loop.ts", "../../src/services/utils/watcher.ts", "../../src/cli/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
-import { FileWatcher } from "./services/utils/watcher.ts";
+import { FileWatcher } from "../../src/services/utils/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
@@ -23,10 +23,10 @@ import {
   MemoryExtractorService,
 } from "@exaix/memory";
 import { NotificationService } from "@exaix/core/notification";
-import { MemoryBankAdapter } from "./services/adapters/memory_bank_adapter.ts";
+import { MemoryBankAdapter } from "../../src/services/adapters/memory_bank_adapter.ts";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
-import { GracefulShutdown } from "./services/core/graceful_shutdown.ts";
+import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import type { ILogOutput } from "@exaix/core/types";
@@ -34,7 +34,7 @@ import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import { bootstrapProviderRegistry } from "./ai/registry_bootstrap.ts";
+import { bootstrapProviderRegistry } from "../../src/ai/registry_bootstrap.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary

@@ -9,4 +9,3 @@
 export * from "./database_connection_pool.ts";
 export * from "./audit_logger.ts";
 export * from "./health_check_service.ts";
-export * from "./graceful_shutdown.ts";
