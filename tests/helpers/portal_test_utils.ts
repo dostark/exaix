@@ -109,7 +109,7 @@ export async function runExactl(
   cwd: string,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-  const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
+  const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
 
   const configPath = join(cwd, "exa.config.toml");
   const hasConfig = await Deno.stat(configPath).then(() => true).catch(() => false);

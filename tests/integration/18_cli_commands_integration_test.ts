@@ -65,7 +65,7 @@ timeout_ms = 30000
 // Helper to run exactl command in a given workspace
 async function runExactl(args: string[], cwd: string) {
   const repoRoot = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
-  const exactlPath = join(repoRoot, "src", "cli", "exactl.ts");
+  const exactlPath = join(repoRoot, "apps", "exactl", "main.ts");
 
   console.log(`Running CLI command: exactl ${args.join(" ")} in ${cwd}`);
 

@@ -127,7 +127,7 @@ async function main() {
       console.log(`Writing exactl shim to ${exactlBin}...`);
       await ensureDir(binPath);
       const shim =
-        `#!/bin/sh\nexport EXA_CONFIG_PATH="\${EXA_CONFIG_PATH:-${dest}/exa.config.toml}"\nexec deno run --allow-all --config "${dest}/deno.json" "${dest}/src/cli/exactl.ts" "$@"\n`;
+        `#!/bin/sh\nexport EXA_CONFIG_PATH="\${EXA_CONFIG_PATH:-${dest}/exa.config.toml}"\nexec deno run --allow-all --config "${dest}/deno.json" "${dest}/apps/exactl/main.ts" "$@"\n`;
       await Deno.writeTextFile(exactlBin, shim);
       await Deno.chmod(exactlBin, 0o755);
     } else {
@@ -142,7 +142,7 @@ async function main() {
         "deno.json",
         "-n",
         "exactl",
-        "src/cli/exactl.ts",
+        "apps/exactl/main.ts",
       ], { cwd: dest });
     }
   }

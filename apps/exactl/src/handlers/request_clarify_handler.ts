@@ -5,7 +5,7 @@
  * clarification questions, submits answers through the ClarificationEngine,
  * and manages proceed/cancel lifecycle transitions for REFINING requests.
  * @architectural-layer CLI
- * @related-files [src/cli/commands/request_commands.ts, src/services/adapters/clarification_adapter.ts]
+ * @related-files [apps/exactl/src/commands/request_commands.ts, src/services/adapters/clarification_adapter.ts]
  */
 
 import { join } from "@std/path";

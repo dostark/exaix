@@ -28,7 +28,7 @@ Key facts for agents reading this file under token constraints:
 - **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
 - **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `src/ai/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in the `Request Processing Flow` section before modifying any core flow
-- **Boundary rules**: TUI (`src/tui/`) and CLI (`src/cli/commands/`) must not import directly from `src/services/` — use interfaces in `src/shared/interfaces/`
+- **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from `src/services/` — use interfaces in `src/shared/interfaces/`
 - **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `src/mcp/handlers/`
 
 ## Package Workspace Status
@@ -1026,10 +1026,10 @@ The dashboard is an interactive terminal UI launched from the CLI, providing a u
 
 ### Overview
 
-- **Entry point:** `exactl dashboard` → `src/cli/dashboard_commands.ts` → `src/tui/tui_dashboard.ts`
+- **Entry point:** `exactl dashboard` → `apps/exactl/src/commands/dashboard_commands.ts` → `apps/tui/main.ts` (via subprocess)
 - **Multi-pane support:** Split views with independent focus management
 - **7 integrated views:** Portal Manager, Plan Reviewer, Monitor, Daemon Control, Agent Status, Request Manager, Memory View
-- **Test stability:** Mock services enable comprehensive testing (see `src/tui/tui_dashboard_mocks.ts`)
+- **Test stability:** Mock services enable comprehensive testing (see `apps/tui/src/tui_dashboard_mocks.ts`)
 
 ### Component Architecture
 
@@ -2192,7 +2192,7 @@ graph LR
 | **Portal Commands**           | Manage external project access                                                                                                                    | `src/cli/portal_commands.ts`                                          | 🟢 All   |
 | **Blueprint Commands**        | Manage agent templates                                                                                                                            | `src/cli/blueprint_commands.ts`                                       | 🟢 All   |
 | **Dashboard Commands**        | Launch terminal dashboard                                                                                                                         | `src/cli/dashboard_commands.ts`                                       | 🟢 All   |
-| **TUI Dashboard**             | Multi-view terminal UI (7-9 views)                                                                                                                | `src/tui/*.ts`                                                        | 🟢 All   |
+| **TUI Dashboard**             | Multi-view terminal UI (7-9 views)                                                                                                                | `apps/tui/src/*.ts`                                                   | 🟢 All   |
 | **Web UI**                    | Browser-based approval interface                                                                                                                  | `src/web/*`                                                           | 🔵 Team+ |
 | **Parsers**                   | Parse markdown + frontmatter                                                                                                                      | `src/parsers/*.ts`                                                    | 🟢 All   |
 | **Plan Parser**               | Shared structured plan parsing utility                                                                                                            | `src/services/structured_plan_parser.ts`                              | 🟢 All   |

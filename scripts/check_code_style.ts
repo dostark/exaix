@@ -1143,13 +1143,13 @@ async function checkFile(path: string) {
   }
 
   // TUI Boundary Isolation Checks - implemented during main loop for efficiency
-  const isTuiFile = path.includes("/src/tui/");
-  const isCliBoundaryFile = path.includes("/src/cli/commands/") ||
-    path.includes("/src/cli/handlers/") ||
-    path.includes("/src/cli/formatters/") ||
-    path.includes("/src/cli/command_builders/");
-  const isCliFile = path.includes("/src/cli/") || path.includes("/tests/cli/");
-  const tuiSegments = path.split("/src/tui/")[1]?.split("/").filter(Boolean) || [];
+  const isTuiFile = path.includes("/apps/tui/src/") || path.includes("/apps/tui/tests/");
+  const isCliBoundaryFile = path.includes("/apps/exactl/src/commands/") ||
+    path.includes("/apps/exactl/src/handlers/") ||
+    path.includes("/apps/exactl/src/command_builders/");
+  const isCliFile = path.includes("/apps/exactl/src/");
+  const tuiSegments = path.split("/apps/tui/src/")[1]?.split("/").filter(Boolean) ||
+    path.split("/apps/tui/tests/")[1]?.split("/").filter(Boolean) || [];
   const tuiDepth = tuiSegments.length - 1;
 
   for (let idx = 0; idx < lines.length; idx++) {
@@ -1157,7 +1157,7 @@ async function checkFile(path: string) {
     if (isTuiFile) {
       if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+cli\//)) {
         console.log(
-          `ERROR [tui-boundary-cli] ${path}:${idx + 1} – TUI modules must not import from 'src/cli/'.`,
+          `ERROR [tui-boundary-cli] ${path}:${idx + 1} – TUI modules must not import from 'apps/exactl/src/'.`,
         );
         errorCount++;
       }
@@ -1185,13 +1185,14 @@ async function checkFile(path: string) {
       }
     } else if (
       !path.includes("/tests/tui/") &&
+      !path.includes("/apps/tui/tests/") &&
       !path.includes("/packages/tui/tests/")
     ) {
       if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+.*?tui\/helpers\//)) {
         console.log(
           `ERROR [core-boundary-tui-helpers] ${path}:${
             idx + 1
-          } – Non-TUI modules must not import from 'src/tui/helpers/'.`,
+          } – Non-TUI modules must not import from 'apps/tui/src/helpers/'.`,
         );
         errorCount++;
       }
@@ -1218,11 +1219,11 @@ async function checkFile(path: string) {
     }
 
     if (!isCliFile) {
-      if (line.match(/import\b.*?\bfrom\s+["'].*?src\/cli\/helpers\//)) {
+      if (line.match(/import\b.*?\bfrom\s+["'].*?apps\/exactl\/src\/helpers\//)) {
         console.log(
           `ERROR [core-boundary-cli-helpers] ${path}:${
             idx + 1
-          } – Non-CLI modules must not import from 'src/cli/helpers/'.`,
+          } – Non-CLI modules must not import from 'apps/exactl/src/helpers/'.`,
         );
         errorCount++;
       }

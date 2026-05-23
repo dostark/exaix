@@ -6,7 +6,7 @@
  * for completed traces.
  * @architectural-layer CLI
  * @dependencies [src/api/sse_handler.ts, packages/core/src/observability/event_bus_service.ts]
- * @related-files [src/cli/commands/journal_commands.ts, src/api/sse_handler.ts]
+ * @related-files [apps/exactl/src/commands/journal_commands.ts, src/api/sse_handler.ts]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

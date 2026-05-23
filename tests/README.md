@@ -135,7 +135,7 @@ tests/
 - `src/shared/schemas/...` → `tests/schemas/...`
 - `src/shared/...` → `tests/shared/...`
 - `src/flows/...` → `tests/flows/...`
-- `src/cli/...` → `tests/cli/...`
+- `apps/exactl/src/...` → `apps/exactl/tests/...`
 - `src/ai/...` → `tests/ai/...`
 - `src/mcp/...` → `tests/mcp/...`
 - `src/errors/...` → `tests/errors/...`

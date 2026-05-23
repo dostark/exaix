@@ -94,8 +94,8 @@ checklists (pre‑commit, CI, etc.).
   `src/config/constants.ts` (the config service handles loading).
 - **Internal constants** belong in `src/constants.ts` or a module‑scoped
   `constants.ts` file. Use descriptive names and group related values.
-- **CLI/TUI defaults** go in `src/cli/cli.config.ts` or
-  `src/tui/tui.config.ts` respectively.
+- **CLI/TUI defaults** go in `apps/exactl/src/cli.config.ts` or
+  `packages/tui/src/config.ts` respectively.
 - **Test‑specific constants** belong in `tests/config/constants.ts` (e.g.
   prompts, mock keys, environment variable names).
 - **Enums.** Whenever a set of fixed strings is used (statuses, types,
@@ -427,14 +427,14 @@ runtime bugs.
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
 
-- **Strict TUI Isolation**: Code in `src/tui/` is prohibited from importing any modules from `src/cli/`, `src/services/`, or `src/config/`.
+- **Strict TUI Isolation**: Code in `apps/tui/src/` is prohibited from importing any modules from `apps/exactl/src/`, `src/services/`, or `src/config/`.
 - **Communication via Interfaces**: TUI components must interact with core functionality exclusively through service interfaces defined in `src/shared/interfaces/`.
 - **Allowed TUI Dependencies**:
-  - Other modules within `src/tui/` (using relative paths).
-  - Shared assets, enums, schemas, and types located in `src/shared/`.
+  - Other modules within `apps/tui/src/` (using relative paths).
+  - Shared assets, enums, schemas, types in `src/shared/`, and packages under `packages/`.
 - **No Direct Instantiation**: TUI code must never instantiate core service classes. Instead, services must be accessed through the `ITuiApplicationContext` or provided via dependency injection.
-- **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `src/tui/helpers/`. These are private to the TUI and must not be imported by Core modules.
-- **Core-to-TUI Direction**: The core system may only import from `src/tui/` to initialize and launch the dashboard interface.
+- **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `packages/tui/src/helpers/`. These are private to the TUI and must not be imported by Core modules.
+- **Core-to-TUI Direction**: External callers may only invoke the TUI entry point (`apps/tui/main.ts` via `Deno.Command` subprocess) to launch the dashboard interface.
 
 These rules are enforced by `scripts/check_code_style.ts` via:
 
@@ -453,15 +453,15 @@ Boundary checks run as part of the standard quality gates in pre-commit hooks an
 
 Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
 
-- **CLI boundary scope**: `src/cli/commands/`, `src/cli/handlers/`, `src/cli/formatters/`, and `src/cli/command_builders/`.
+- **CLI boundary scope**: `apps/exactl/src/commands/`, `apps/exactl/src/handlers/`, and `apps/exactl/src/command_builders/`.
 - **No direct core service imports**: Files in the CLI boundary scope must not import from `src/services/` except `src/services/adapters/`.
 - **No direct config service imports**: Files in the CLI boundary scope must not import `src/config/service.ts`.
 - **Allowed dependencies in CLI boundary scope**:
   - `src/shared/**` (interfaces, types, enums, constants, schemas, status)
-  - `src/cli/**` (context, base class, CLI-owned helpers)
+  - `packages/cli/**` (context, base class, CLI-owned helpers)
   - `src/parsers/markdown.ts` (cross-cutting parser utility)
   - `src/ai/types.ts` (`IModelProvider` interface only)
-- **CLI helpers ownership rule**: `src/cli/helpers/**` is CLI-owned; modules outside `src/cli/` must not import it.
+- **CLI helpers ownership rule**: `packages/cli/helpers/**` is CLI-owned; modules outside `apps/exactl/src/` must not import it.
 
 These rules are enforced by:
 

@@ -96,11 +96,11 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 | Tag                           | Severity | Rule | What it detects                                             |
 | ----------------------------- | -------- | ---- | ----------------------------------------------------------- |
-| `[tui-boundary-cli]`          | error    | §8   | TUI module importing from `src/cli/`                        |
+| `[tui-boundary-cli]`          | error    | §8   | TUI module importing from `apps/exactl/src/`                |
 | `[tui-boundary-services]`     | error    | §8   | TUI module importing from `src/services/` (except adapters) |
 | `[tui-boundary-config]`       | error    | §8   | TUI module importing from `src/config/`                     |
 | `[tui-boundary-helpers]`      | error    | §8   | TUI module importing from `src/helpers/`                    |
-| `[core-boundary-tui-helpers]` | error    | §8   | Non-TUI module importing from `src/tui/helpers/`            |
+| `[core-boundary-tui-helpers]` | error    | §8   | Non-TUI module importing from `apps/tui/src/helpers/`       |
 
 ---
 
@@ -110,7 +110,7 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 | ----------------------------- | -------- | ---- | --------------------------------------------------------------------------- |
 | `[cli-boundary-services]`     | error    | §9   | CLI command/handler/formatter importing from `src/services/` (not adapters) |
 | `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from `src/config/service.ts`        |
-| `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `src/cli/helpers/`                            |
+| `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `apps/exactl/src/helpers/`                    |
 
 ---
 

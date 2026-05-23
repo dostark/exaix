@@ -2,7 +2,7 @@
  * @module DisplayAdapter
  * @path src/services/adapters/display_adapter.ts
  * @description Adapter for EventLogger that satisfies the IDisplayService interface.
- * @architectural-layer Services/Adapters * @related-files [@exaix/core/types, src/tui/] */
+ * @architectural-layer Services/Adapters * @related-files [@exaix/core/types, apps/tui/src/tui_dashboard.ts] */
 
 import type { IDisplayService } from "@exaix/core/types";
 import type { EventLogger } from "@exaix/core/logger";

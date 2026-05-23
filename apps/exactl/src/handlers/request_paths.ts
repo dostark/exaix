@@ -3,7 +3,7 @@
  * @path apps/exactl/src/handlers/request_paths.ts
  * @description Provides utility functions for resolving workspace request directories used by CLI handlers.
  * @architectural-layer CLI
- * @related-files [src/cli/handlers/request_create_handler.ts]
+ * @related-files [apps/exactl/src/handlers/request_create_handler.ts]
  */
 
 import { DEFAULT_IDENTITY_ID } from "@exaix/core";

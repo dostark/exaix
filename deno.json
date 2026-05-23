@@ -25,7 +25,9 @@
     "./packages/request",
     "./packages/flow-storage",
     "./apps/daemon",
-    "./apps/exactl"
+    "./apps/exactl",
+    "./apps/mcp-server",
+    "./apps/tui"
   ],
   "lock": true,
   "exports": "./apps/daemon/main.ts",
@@ -40,7 +42,8 @@
     "check-version": "deno run -A scripts/check_version.ts",
     "check-commit-msg": "deno run -A scripts/check_commit_msg.ts",
     "bump": "deno run -A scripts/check_version.ts --force-patch",
-    "cli": "deno run --allow-all src/cli/exactl.ts",
+    "cli": "deno run --allow-all apps/exactl/main.ts",
+    "tui": "deno run --allow-all apps/tui/main.ts",
     "sandbox": "deno run -A scripts/setup_sandbox.ts",
     "scenario:test": "deno test --allow-all tests/scenario_framework/",
     "scenario:test:unit": "deno test --allow-all tests/scenario_framework/tests/unit/",
@@ -60,9 +63,9 @@
     "lint": "deno lint --rules-include=explicit-module-boundary-types --rules-exclude=no-import-prefix src/ tests/ packages/ apps/",
     "fmt": "deno fmt src/ tests/ docs/ packages/ apps/",
     "fmt:check": "deno fmt --check src/ tests/ docs/ packages/ apps/",
-    "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts",
+    "cache": "deno cache apps/daemon/main.ts apps/exactl/main.ts apps/mcp-server/main.ts apps/tui/main.ts",
     "hooks:install": "deno run --allow-read --allow-write scripts/setup_hooks.ts",
-    "check": "deno check apps/daemon/main.ts apps/exactl/main.ts",
+    "check": "deno check apps/daemon/main.ts apps/exactl/main.ts apps/mcp-server/main.ts apps/tui/main.ts",
     "check:style": "deno run -A scripts/check_code_style.ts",
     "check:test-placement": "deno run -A scripts/check_test_placement.ts --all",
     "check:docs": "deno run --allow-all scripts/verify_manifest_fresh.ts",
@@ -195,7 +198,8 @@
   "test": {
     "include": [
       "tests/",
-      "packages/"
+      "packages/",
+      "apps/"
     ]
   },
   "compilerOptions": {

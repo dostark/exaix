@@ -19,9 +19,9 @@ Deno.test("Regression: Portal Context Grounding - deeper file summary in prompt"
   try {
     // 1. Create a deep portal structure (3 levels)
     const portalPath = join(env.tempDir, "target-repo");
-    await Deno.mkdir(join(portalPath, "apps/exactl/src/commands"), { recursive: true });
-    await Deno.writeTextFile(join(portalPath, "apps/exactl/src/commands/init.ts"), "// init");
-    await Deno.writeTextFile(join(portalPath, "apps/exactl/src/commands/plan.ts"), "// plan");
+    await Deno.mkdir(join(portalPath, "src/commands"), { recursive: true });
+    await Deno.writeTextFile(join(portalPath, "src/commands/init.ts"), "// init");
+    await Deno.writeTextFile(join(portalPath, "src/commands/plan.ts"), "// plan");
     await Deno.writeTextFile(join(portalPath, "src/index.ts"), "// index");
 
     // 2. Register portal in environment config before constructing the processor.

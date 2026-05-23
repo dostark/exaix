@@ -1,0 +1,8 @@
+{
+  "name": "@exaix/app-tui",
+  "version": "0.1.0",
+  "exports": "./main.ts",
+  "tasks": {
+    "test": "deno test --allow-all --trace-ops --config ../../deno.json"
+  }
+}

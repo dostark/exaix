@@ -3,7 +3,7 @@
  * @path src/services/adapters/log_adapter.ts
  * @description Adapter implementing ILogService for TUI by wrapping StructuredLogger.
  * @architectural-layer Services
- * @related-files ["packages/core/src/logger/structured_logger.ts", src/tui/structured_log_service.ts]
+ * @related-files ["packages/core/src/logger/structured_logger.ts", apps/tui/src/structured_log_service.ts]
  */
 
 import type { ILogOutput, ILogService } from "@exaix/core/types";

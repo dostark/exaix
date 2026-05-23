@@ -150,7 +150,7 @@ async function generateBuilds(options: BuildOptions = {}): Promise<boolean> {
         target,
         "--output",
         output,
-        "src/main.ts",
+        "apps/daemon/main.ts",
       ],
       desc: `Compiling for ${target}`,
     };
@@ -558,7 +558,7 @@ const scenariosCommand = new Command()
 
     console.log(`📂 Prepared temp directory: ${tempDir}`);
 
-    const exactlPath = resolve("src/cli/exactl.ts");
+    const exactlPath = resolve("apps/exactl/main.ts");
     const shimPath = join(binDir, "exactl");
     const shimContent = `#!/bin/bash\ndeno run -A "${exactlPath}" "$@"\n`;
     await Deno.writeTextFile(shimPath, shimContent);

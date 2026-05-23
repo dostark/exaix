@@ -10,6 +10,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { CLI_DEFAULTS } from "@exaix/cli/config.ts";
+import { STDIO_INHERIT } from "./constants.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
 import { DAEMON_STOP_TIMEOUT_MS } from "@exaix/core";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
@@ -340,8 +341,8 @@ export class DaemonCommands extends BaseCommand {
 
       const cmd = new this.Command("tail", {
         args,
-        stdout: "inherit",
-        stderr: "inherit",
+        stdout: STDIO_INHERIT,
+        stderr: STDIO_INHERIT,
       });
 
       const process = cmd.spawn();

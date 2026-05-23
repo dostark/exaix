@@ -4,12 +4,22 @@
  * @description Provides shared fixture path helpers for tests, keeping fixture loading consistent across the suite.
  */
 
-import { basename, dirname, join } from "@std/path";
+import { dirname, join } from "@std/path";
 
 export function getFixtureRoot(importMetaUrl: string): string {
   let currentDir = dirname(new URL(importMetaUrl).pathname);
 
-  while (basename(currentDir) !== "tests") {
+  while (true) {
+    const candidate = join(currentDir, "tests", "fixtures");
+    try {
+      const info = Deno.statSync(candidate);
+      if (info.isDirectory) {
+        return candidate;
+      }
+    } catch {
+      // not found at this level
+    }
+
     const parentDir = dirname(currentDir);
     if (parentDir === currentDir) {
       throw new Error(
@@ -18,8 +28,6 @@ export function getFixtureRoot(importMetaUrl: string): string {
     }
     currentDir = parentDir;
   }
-
-  return join(currentDir, "fixtures");
 }
 
 export function getFixturePath(importMetaUrl: string, ...segments: string[]): string {

@@ -3,7 +3,7 @@
  * @path src/shared/status/agent_status.ts
  * @description Canonical, type-safe agent status values and utility functions for status coercion and validation.
  * @architectural-layer Shared
- * @related-files [src/tui/agent_status_view.ts]
+ * @related-files [apps/tui/src/agent_status_view.ts]
  */
 
 import { MessageType } from "@exaix/core";

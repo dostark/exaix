@@ -24,7 +24,7 @@ Deno.test("validateTestPlacement: accepts correctly placed service tests", () =>
 Deno.test("getTestPlacementIssue: rejects test files outside tests/", () => {
   const issue = getTestPlacementIssue("src/services/agent/agent_executor_test.ts");
 
-  assertEquals(issue?.message, "Test files must live under tests/ or packages/<package>/tests/.");
+  assertEquals(issue?.message, "Test files must live under tests/, packages/<package>/tests/, or apps/<app>/tests/.");
   assertEquals(issue?.suggestion, "tests/services/agent/");
 });
 

@@ -1,91 +1,48 @@
 /**
  * @module McpCommands
  * @path apps/exactl/src/commands/mcp_commands.ts
- * @description Provides CLI commands for starting and managing the Model Context Protocol (MCP) server, supporting both stdio and SSE transports.
+ * @description Provides CLI commands for starting the MCP server by delegating
+ * to the standalone apps/mcp-server/main.ts entry point.
  * @architectural-layer CLI
- * @related-files [packages/mcp/server/server.ts, "apps/daemon/main.ts"]
+ * @related-files ["apps/mcp-server/main.ts", "packages/mcp/server/server.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { MCPServer } from "@exaix/mcp/server";
-import { DEFAULT_MCP_HTTP_PORT, McpTransportType } from "@exaix/mcp";
-import type { JSONValue } from "@exaix/core";
-import { validateMCPToolResponse, validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
-
-interface JSONRPCRequest {
-  jsonrpc: string;
-  id: number | string;
-  method: string;
-  params: Record<string, JSONValue>;
-}
-
-export interface IMcpStdioServer {
-  start(): void;
-  handleRequest(request: JSONRPCRequest): Promise<unknown>;
-}
-
-export interface McpStdioIo {
-  stdin: ReadableStream<Uint8Array>;
-  writeStdout: (data: Uint8Array) => Promise<number> | number;
-  onError?: (message: string, error: Error | string | unknown) => void;
-}
-
-/**
- * Run the MCP JSON-RPC stdio loop.
- * Extracted for testability; `McpCommands.start()` wires this to Deno stdio.
- */
-export async function runMcpStdioLoop(server: IMcpStdioServer, io: McpStdioIo): Promise<void> {
-  server.start();
-
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-
-  for await (const chunk of io.stdin) {
-    const text = decoder.decode(chunk);
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-
-    for (const line of lines) {
-      try {
-        const request = JSON.parse(line) as JSONRPCRequest;
-        const response = await server.handleRequest(request);
-        if (response) {
-          const responseStr = JSON.stringify(response) + "\n";
-          await io.writeStdout(encoder.encode(responseStr));
-        }
-      } catch (error) {
-        if (io.onError) {
-          io.onError("Failed to process request:", error);
-        } else {
-          console.error("Failed to process request:", error);
-        }
-      }
-    }
-  }
-}
+import { STDIO_INHERIT } from "./constants.ts";
 
 export class McpCommands extends BaseCommand {
   constructor(context: ICommandContext) {
     super(context);
   }
 
-  async start(options: { sse?: boolean; port?: number }): Promise<void> {
-    const transport = options.sse ? McpTransportType.SSE : McpTransportType.STDIO;
-    const server = new MCPServer({
-      context: this.context,
-      transport,
-      resultValidator: {
-        validateEnvelope: validateToolResultEnvelope,
-        validateMCPResponse: validateMCPToolResponse,
-      },
+  protected async runDenoCommand(args: string[]): Promise<void> {
+    const cmd = new Deno.Command("deno", {
+      args,
+      stdin: STDIO_INHERIT,
+      stdout: STDIO_INHERIT,
+      stderr: STDIO_INHERIT,
     });
 
-    if (transport === McpTransportType.SSE) {
-      await server.startHTTPServer(options.port || DEFAULT_MCP_HTTP_PORT);
-    } else {
-      await runMcpStdioLoop(server, {
-        stdin: Deno.stdin.readable,
-        writeStdout: (data) => Deno.stdout.write(data),
-      });
+    const child = cmd.spawn();
+    const status = await child.status;
+
+    if (!status.success) {
+      throw new Error(`MCP server exited with code ${status.code}`);
     }
+  }
+
+  async start(options: { sse?: boolean; port?: number }): Promise<void> {
+    const args = ["run", "--allow-all", "apps/mcp-server/main.ts"];
+
+    if (options.sse) {
+      args.push("--transport", "sse");
+      if (options.port) {
+        args.push("--port", String(options.port));
+      }
+    } else {
+      args.push("--transport", "stdio");
+    }
+
+    await this.runDenoCommand(args);
   }
 }

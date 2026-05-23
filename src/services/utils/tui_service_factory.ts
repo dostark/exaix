@@ -4,7 +4,7 @@
  * @description Factory for creating service instances used by the TUI dashboard.
  * This module bridges the core services with the TUI interface layer.
  * @architectural-layer Services
- * @related-files [src/tui/dashboard/view_registry.ts, apps/exactl/src/commands/dashboard_commands.ts]
+ * @related-files [apps/tui/src/dashboard/view_registry.ts, apps/exactl/src/commands/dashboard_commands.ts]
  */
 
 import { join } from "@std/path";

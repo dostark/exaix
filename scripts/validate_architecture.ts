@@ -108,7 +108,7 @@ async function validate() {
     }
   }
 
-  // Also check for directory-level grounding like src/cli/*.ts or src/*.ts
+  // Also check for directory-level grounding like apps/exactl/src/*.ts or src/*.ts
   const explicitDirRegex = /src\/([a-zA-Z0-9_\-\/]+\/)?\*\.ts/g;
   while ((match = explicitDirRegex.exec(archContent)) !== null) {
     const dirPath = match[0].replace("/*.ts", "");

@@ -13,6 +13,7 @@ import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
 import { ProviderType } from "@exaix/core";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
+import { STDIO_INHERIT } from "./constants.ts";
 import { CommandUtils } from "@exaix/cli/helpers/command_utils.ts";
 import {
   BlueprintFrontmatterSchema,
@@ -856,9 +857,9 @@ ${systemPrompt}
       // Open file in editor
       const command = new Deno.Command(editor, {
         args: [blueprintPath],
-        stdin: "inherit",
-        stdout: "inherit",
-        stderr: "inherit",
+        stdin: STDIO_INHERIT,
+        stdout: STDIO_INHERIT,
+        stderr: STDIO_INHERIT,
       });
 
       const { code } = await command.output();
