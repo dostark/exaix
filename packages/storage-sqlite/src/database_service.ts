@@ -81,7 +81,7 @@ export type { IDatabaseService };
 export class DatabaseService implements IDatabaseService {
   private db: Database;
   private logQueue: LogEntry[] = [];
-  private flushTimer: number | null = null;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly FLUSH_INTERVAL_MS: number;
   private readonly MAX_BATCH_SIZE: number;
   private isClosing = false;

@@ -36,7 +36,7 @@ export class FileWatcher {
   private watchPath: string;
   private debounceMs: number;
   private stabilityCheck: boolean;
-  private debounceTimers: Map<string, number> = new Map();
+  private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private processingFiles: Set<string> = new Set();
   private onFileReady: (event: IFileReadyEvent) => void | Promise<void>;
   private abortController: AbortController | null = null;

@@ -403,7 +403,7 @@ export class AgentRunner implements IAgentRunner {
       contextBudgetChars: skillsConfig?.context_budget_chars,
     });
 
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<{ matches: ISkillMatch[]; totalAvailable: number }>((_, reject) =>
       timeoutId = setTimeout(() => reject(new Error("Skill matching timed out")), 500)
     );

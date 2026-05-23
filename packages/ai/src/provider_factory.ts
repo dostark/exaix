@@ -485,7 +485,7 @@ export async function validateProviderConnection(provider: IModelProvider): Prom
     };
 
     // Create a timeout promise with proper cleanup
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(
         () => reject(new Error("Health check timeout")),

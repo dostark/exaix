@@ -673,7 +673,7 @@ export class GitService implements IGitService {
     const maxRetries = retryOnLock ? DEFAULT_GIT_MAX_RETRIES : 0;
 
     while (attempt <= maxRetries) {
-      let timeoutId: number | undefined;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
       try {
         const controller = new AbortController();
         timeoutId = setTimeout(() => controller.abort(), timeoutMs);

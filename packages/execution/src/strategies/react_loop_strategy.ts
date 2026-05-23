@@ -213,7 +213,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     const stepName = context.plan;
     const loopStart = Date.now();
 
-    let heartbeatId: number | undefined;
+    let heartbeatId: ReturnType<typeof setInterval> | undefined;
     if (bus) {
       heartbeatId = setInterval(() => {
         const event: IStreamingEvent = {

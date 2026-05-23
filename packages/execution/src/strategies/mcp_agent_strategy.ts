@@ -146,7 +146,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
       try {
         await child.stderr.cancel();
       } catch { /* ignore */ }
-      let stderrTimerId: number | undefined;
+      let stderrTimerId: ReturnType<typeof setTimeout> | undefined;
       try {
         await Promise.race([
           stderrDone,
@@ -192,7 +192,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
   }
 
   private async waitForReady(reader: ReadableStreamDefaultReader<string>): Promise<void> {
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const handshakePromise = (async () => {
       const { value, done } = await reader.read();

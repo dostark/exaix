@@ -41,7 +41,7 @@ export class CostTracker implements ICostTracker {
   }
 
   private pendingRecords: Array<Omit<IProviderCostRecord, "id"> & { requests: number }> = [];
-  private batchTimeout: number | null = null;
+  private batchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private db: IDatabaseService, private config?: Config) {}
 
