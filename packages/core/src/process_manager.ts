@@ -3,7 +3,8 @@
  * @path packages/core/src/process_manager.ts
  * @description Service for managing subprocess lifecycles, ensuring cleanup of child PIDs on exit.
  * @architectural-layer Services
- * @related-files [src/services/agent/strategies/mcp_agent_strategy.ts]
+ * @ungrounded
+ * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts]
  */
 
 export class ProcessManager {

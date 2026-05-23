@@ -1,9 +1,10 @@
 /**
  * @module RequestProcessorQualityGateTest
- * @path tests/services/request/request_processor_quality_gate_test.ts
+ * @path packages/request/tests/request_processor_quality_gate_test.ts
+ * @architectural-layer Services
  * @description Verifies that RequestProcessor integrates with RequestQualityGate
  * to assess, enrich, and route requests before analysis and agent execution.
- * @related-files ["src/services/request/request_processor.ts", "packages/quality-gate/src/request_quality_gate.ts"]
+ * @related-files ["packages/request/src/processor.ts", "packages/quality-gate/src/request_quality_gate.ts"]
  */
 
 import { assertEquals } from "@std/assert";

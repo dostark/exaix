@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/decorations.ts
  * @description TUI decoration constants and drawing utilities for boxes, separators, and icons.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/daemon_control_view.ts, apps/tui/src/agent_status_view.ts, apps/tui/src/monitor_view.ts]
  */
 

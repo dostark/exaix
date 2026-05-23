@@ -1,6 +1,8 @@
 /**
  * @module PortalManagerViewTest
  * @path apps/tui/tests/portal_manager_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description TUI interaction tests for the PortalManagerView, verifying portal lifecycle actions
  * (open/close), status-based rendering, and cross-portal navigation within the terminal interface.
  */

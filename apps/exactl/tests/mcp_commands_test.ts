@@ -1,6 +1,8 @@
 /**
  * @module MCPCommandsTest
  * @path apps/exactl/tests/mcp_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI commands for managing the MCP lifecycle, delegating
  * to the standalone apps/mcp-server/main.ts entry point.
  */

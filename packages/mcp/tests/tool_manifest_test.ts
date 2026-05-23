@@ -1,6 +1,8 @@
 /**
  * @module ToolManifestTest
  * @path packages/mcp/tests/tool_manifest_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that the canonical tool manifest is complete, unique, and well-formed
  * for all live MCP tools and internal-only tools.
  */

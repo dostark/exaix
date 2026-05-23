@@ -1,4 +1,8 @@
-/** @module RoutingPolicyLoaderTest */
+/** @module RoutingPolicyLoaderTest
+ * @path packages/routing/tests/routing_policy_loader_test.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @description TODO: Add description */
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { createMockConfig } from "@exaix/testing";

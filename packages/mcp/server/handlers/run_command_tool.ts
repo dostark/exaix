@@ -3,7 +3,7 @@
  * @path packages/mcp/server/handlers/run_command_tool.ts
  * @description MCP tool handler for executing whitelisted commands in a portal.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, @exaix/tool-runtime]
+ * @related-files [packages/mcp/server/tool_handler.ts, packages/tool-runtime/src/tool_registry.ts]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { toolResultToMcpResponse } from "@exaix/mcp";

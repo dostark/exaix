@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_archive_service.ts
  * @description Interface for execution archive services.
  * @architectural-layer Shared
- * @related-files [src/services/adapters/archive_adapter.ts, apps/exactl/src/cli_context.ts]
+ * @related-files [apps/common/adapters/archive_adapter.ts, packages/cli/src/types/cli_context.ts]
  */
 
 import type { MemoryStatusType } from "@exaix/core/status";

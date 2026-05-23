@@ -10,7 +10,7 @@
  * - IActivity logging for retry attempts
  *
  * @architectural-layer Services
- * @related-files ["src/services/agent/agent_runner.ts", "packages/storage-sqlite/src/database_service.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "packages/storage-sqlite/src/database_service.ts"]
  */
 
 import { z } from "zod";

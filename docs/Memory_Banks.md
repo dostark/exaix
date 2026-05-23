@@ -67,7 +67,7 @@ Memory/
 
 Stores long-term knowledge about a specific portal (codebase).
 
-**Schema:** [`src/shared/schemas/memory_bank.ts::ProjectMemorySchema`](../src/shared/schemas/memory_bank.ts)
+**Schema:** [`packages/schemas/src/memory_bank.ts::ProjectMemorySchema`](../packages/schemas/src/memory_bank.ts)
 
 ```typescript
 interface ProjectMemory {
@@ -132,7 +132,7 @@ Adding real-time collaboration features using WebSockets.
 
 Records what was done during each agent execution.
 
-**Schema:** [`src/shared/schemas/memory_bank.ts::ExecutionMemorySchema`](../src/shared/schemas/memory_bank.ts)
+**Schema:** [`packages/schemas/src/memory_bank.ts::ExecutionMemorySchema`](../packages/schemas/src/memory_bank.ts)
 
 ```typescript
 interface ExecutionMemory {
@@ -210,7 +210,7 @@ Added JWT authentication middleware to the Express application.
 
 Stores cross-project learnings that apply universally.
 
-**Schema:** [`src/shared/schemas/memory_bank.ts::GlobalMemorySchema`](../src/shared/schemas/memory_bank.ts)
+**Schema:** [`packages/schemas/src/memory_bank.ts::GlobalMemorySchema`](../packages/schemas/src/memory_bank.ts)
 
 ```typescript
 interface GlobalMemory {
@@ -235,7 +235,7 @@ interface GlobalMemoryStats {
 
 Represents a single piece of learned knowledge.
 
-**Schema:** [`src/shared/schemas/memory_bank.ts::LearningSchema`](../src/shared/schemas/memory_bank.ts)
+**Schema:** [`packages/schemas/src/memory_bank.ts::LearningSchema`](../packages/schemas/src/memory_bank.ts)
 
 ```typescript
 interface Learning {
@@ -270,7 +270,7 @@ type LearningCategory =
 
 Represents a pending memory update awaiting approval.
 
-**Schema:** [`src/shared/schemas/memory_bank.ts::MemoryUpdateProposalSchema`](../src/shared/schemas/memory_bank.ts)
+**Schema:** [`packages/schemas/src/memory_bank.ts::MemoryUpdateProposalSchema`](../packages/schemas/src/memory_bank.ts)
 
 ```typescript
 interface MemoryUpdateProposal {
@@ -612,13 +612,13 @@ Memory Banks will be integrated into the TUI dashboard in a future phase:
 ## Related Documentation
 
 - **Implementation:** [Phase 12 Planning](../.copilot/planning/phase-12-obsidian-retirement.md)
-- **Schemas:** [src/shared/schemas/memory_bank.ts](../src/shared/schemas/memory_bank.ts)
+- **Schemas:** [packages/schemas/src/memory_bank.ts](../packages/schemas/src/memory_bank.ts)
 - **Migration:** [scripts/migrate_to_memory_banks.ts](../scripts/migrate_to_memory_banks.ts) (Phase 12.5)
 - **Services:**
-  - [src/services/memory_bank.ts](../src/services/memory_bank.ts) — Core memory operations
-  - [src/services/memory_extractor.ts](../src/services/memory_extractor.ts) — Learning extraction
-  - [src/services/memory_embedding.ts](../src/services/memory_embedding.ts) — Embedding generation
-- **CLI Commands:** [src/cli/memory_commands.ts](../src/cli/memory_commands.ts)
+  - [packages/core/src/services/memory_bank.ts](../packages/core/src/services/memory_bank.ts) — Core memory operations
+  - [packages/core/src/services/memory_extractor.ts](../packages/core/src/services/memory_extractor.ts) — Learning extraction
+  - [packages/core/src/services/memory_embedding.ts](../packages/core/src/services/memory_embedding.ts) — Embedding generation
+- **CLI Commands:** [apps/exactl/src/commands/memory_commands.ts](../apps/exactl/src/commands/memory_commands.ts)
 - **Integration Tests:** [tests/integration/memory_integration_test.ts](../tests/integration/memory_integration_test.ts)
 
 ---

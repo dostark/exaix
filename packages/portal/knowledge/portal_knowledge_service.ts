@@ -1,12 +1,12 @@
 /**
  * @module PortalKnowledgeService
- * @path packages/portal/src/knowledge/portal_knowledge_service.ts
+ * @path packages/portal/knowledge/portal_knowledge_service.ts
  * @description Orchestrator for all 6 portal analysis strategies: DirectoryAnalyzer,
  * ConfigParser, KeyFileIdentifier, PatternDetector, ArchitectureInferrer, and
  * SymbolExtractor. Implements IPortalKnowledgeService with quick/standard/deep
  * modes, in-memory staleness check, and async background re-analysis on stale cache.
  * @architectural-layer Services
- * @related-files [src/services/portal_knowledge/mod.ts, "packages/core/src/types/i_portal_knowledge_service.ts"]
+ * @related-files [packages/portal/knowledge/mod.ts, "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
 import { join } from "@std/path";

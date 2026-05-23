@@ -1,6 +1,8 @@
 /**
  * @module ToolManifestSchemaRegistrationParityTest
  * @path packages/mcp/tests/tool_manifest_schema_registration_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Parity tests verifying that every non-INTERNAL_ONLY tool in the canonical
  * manifest is registered by buildHandlers(), and every handler registered by buildHandlers()
  * has a corresponding manifest entry. Prevents tools from silently diverging between the

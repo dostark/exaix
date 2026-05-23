@@ -1,6 +1,8 @@
 /**
  * @module ICliApplicationContext
  * @path packages/core/src/types/i_cli_application_context.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description CLI-specific application context interface.
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module ArchitectureInferrerTest
- * @path tests/services/portal_knowledge/architecture_inferrer_test.ts
+ * @path packages/portal/knowledge/tests/architecture_inferrer_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the ArchitectureInferrer (Strategy 5): LLM-based
  * generation of a Markdown architecture overview from combined strategy outputs.
  * Uses mock IModelProvider and MockOutputValidator to avoid real LLM calls.

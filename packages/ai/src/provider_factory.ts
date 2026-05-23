@@ -4,7 +4,7 @@
  * @description Factory pattern implementation for instantiating LLM providers.
  * Handles configuration resolution, fallback chains, and provider initialization.
  * @architectural-layer AI Layer
- * @related-files [src/ai/registry_bootstrap.ts, packages/ai/src/provider_registry.ts]
+ * @related-files [packages/ai/src/provider_factory.ts, packages/ai/src/provider_registry.ts]
  */
 
 import * as DEFAULTS from "@exaix/ai/constants.ts";

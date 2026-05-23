@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/trace_analyzer.ts
  * @description Analyzes system traces to visualize the sequence of operations and identify bottlenecks or failures.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

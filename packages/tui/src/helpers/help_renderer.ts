@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/help_renderer.ts
  * @description TUI help screen renderer providing consistent help displays and key binding summaries.
  * @architectural-layer Helpers
+ * @ungrounded
  * @related-files ["packages/tui/src/helpers/keyboard.ts", "packages/tui/src/helpers/dialog_base.ts"]
  */
 

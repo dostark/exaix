@@ -3,6 +3,7 @@
  * @path apps/tui/src/request_manager/dialog_handlers.ts
  * @description Logic for processing and routing results from various dialogs within the Request Manager View.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/request_manager_view.ts]
  */
 

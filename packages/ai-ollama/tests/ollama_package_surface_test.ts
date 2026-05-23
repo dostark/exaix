@@ -1,6 +1,8 @@
 /**
  * @module OllamaPackageSurfaceTest
  * @path packages/ai-ollama/tests/ollama_package_surface_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the public @exaix/ai-ollama package surface.
  */
 

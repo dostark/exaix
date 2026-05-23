@@ -1,6 +1,8 @@
 /**
  * @module SkillsContextSchemaTest
  * @path packages/core/tests/skills_context_schema_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Tests for skills context Zod schemas.
  */
 import { assertEquals, assertThrows } from "@std/assert";

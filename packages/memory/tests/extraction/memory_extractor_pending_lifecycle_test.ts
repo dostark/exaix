@@ -1,6 +1,8 @@
 /**
  * @module MemoryExtractorLifecycleTest
  * @path packages/memory/tests/extraction/memory_extractor_pending_lifecycle_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Verifies the lifecycle management of pending memory proposals, ensuring secure
  * discovery, parsing, and retrieval of agent-suggested learnings from the filesystem.
  */

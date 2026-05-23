@@ -1,6 +1,8 @@
 /**
  * @module SessionMemoryTest
  * @path packages/core/tests/skills/session_memory_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the SessionMemoryService, ensuring short-term execution state is
  * correctly isolated, updated, and cleared across different agent sessions.
  */

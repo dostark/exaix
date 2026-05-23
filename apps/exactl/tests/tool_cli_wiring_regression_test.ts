@@ -1,6 +1,8 @@
 /**
  * @module ToolCliWiringRegressionTest
  * @path apps/exactl/tests/tool_cli_wiring_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression test to ensure tool confirmation commands are registered in the Cliffy tree.
  */
 

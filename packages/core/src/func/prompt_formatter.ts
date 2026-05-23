@@ -3,7 +3,7 @@
  * @path packages/core/src/func/prompt_formatter.ts
  * @description Helpers for formatting agent prompts with structured context (Phase 70).
  * @architectural-layer Services
- * @related-files [packages/core/src/func/agent_runner.ts]
+ * @related-files [packages/execution/src/agent_runner.ts]
  */
 
 import type { ISkillsContext } from "@exaix/core/types";

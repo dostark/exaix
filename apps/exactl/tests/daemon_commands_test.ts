@@ -1,6 +1,8 @@
 /**
  * @module DaemonCommandsTest
  * @path apps/exactl/tests/daemon_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI daemon control commands, ensuring correct start/stop/status
  * logic, PID file management, and background process orchestration.
  */

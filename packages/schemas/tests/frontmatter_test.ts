@@ -1,6 +1,8 @@
 /**
  * @module RequestSchemaTest
- * @path tests/schemas/frontmatter_test.ts
+ * @path packages/schemas/tests/frontmatter_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies RequestSchema validation behavior for request frontmatter data.
  */
 

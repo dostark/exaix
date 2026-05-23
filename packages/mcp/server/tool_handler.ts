@@ -1,9 +1,9 @@
 /**
  * @module ToolHandler
- * @path packages/mcp/server
+ * @path packages/mcp/server/tool_handler.ts
  * @description Base class for all MCP tool handlers, providing common validation, security, and logging.
  * @architectural-layer MCP
- * @related-files ["src/services/portal/portal_permissions.ts", packages/mcp/server/handlers/read_file_tool.ts, packages/mcp/server/handlers/write_file_tool.ts]
+ * @related-files ["packages/portal/src/portal_permissions.ts", packages/mcp/server/handlers/read_file_tool.ts, packages/mcp/server/handlers/write_file_tool.ts]
  */
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";

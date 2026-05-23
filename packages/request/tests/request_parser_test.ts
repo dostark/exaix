@@ -1,6 +1,8 @@
 /**
  * @module RequestParserTest
- * @path tests/services/request/request_parser_test.ts
+ * @path packages/request/tests/request_parser_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the RequestParser's ability to extract structured data from Markdown
  * request files, ensuring strict validation of frontmatter fields and trace identifiers.
  */

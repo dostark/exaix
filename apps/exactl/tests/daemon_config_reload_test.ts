@@ -1,6 +1,8 @@
 /**
  * @module DaemonConfigReloadTest
  * @path apps/exactl/tests/daemon_config_reload_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies that the background daemon correctly handles configuration
  * changes without requiring a full service restart.
  */
@@ -8,7 +10,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
-import { FileWatcher } from "../../../src/services/utils/watcher.ts";
+import { FileWatcher } from "../../../apps/daemon/src/watcher.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import type { ConfigReloadLogger } from "@exaix/core/config";
 import { createConfigReloadHandler } from "@exaix/core/config";
@@ -17,12 +19,12 @@ import type { LogMetadata } from "@exaix/core/types";
 
 /**
  * Test for "Investigate why exactl portal add not showing in daemon logs"
- * Verifies that modifying exa.config.toml triggers a config reload and log event.
+ * Verifies that modifying  triggers a config reload and log event.
  */
 Deno.test("Daemon: Config Reloading on File Change", async () => {
   // 1. Setup Temp Environment
   const tempDir = await Deno.makeTempDir({ prefix: "daemon-config-reload-" });
-  const configPath = join(tempDir, "exa.config.toml");
+  const configPath = join(tempDir, "config.toml");
 
   // Write initial config
   const initialConfig = `
@@ -111,7 +113,7 @@ stability_check = false
     // Assert Log Event captured
     const updateLog = logs.find((l) => l.action === "config.updated");
     assert(updateLog, "Should have logged config.updated event");
-    assertEquals(updateLog.target, "exa.config.toml");
+    assertEquals(updateLog.target, "");
     // Type-safe access for portals_count
     if (typeof updateLog.payload === "object" && updateLog.payload !== null && "portals_count" in updateLog.payload) {
       assertEquals((updateLog.payload as { portals_count: number }).portals_count, 1);

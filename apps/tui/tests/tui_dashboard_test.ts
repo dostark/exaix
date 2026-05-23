@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardTest
  * @path apps/tui/tests/tui_dashboard_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Comprehensive tests for the main TUI Dashboard, covering global event routing,
  * rapid keyboard navigation, notification overlays, and layout responsiveness.
  */

@@ -1,8 +1,10 @@
 /**
  * @module CLIConstants
  * @path packages/cli/src/constants.ts
+ * @related-files []
  * @description CLI layout and formatting constants used by the CLI and TUI modules.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 export const CLI_SEPARATOR_LENGTH = 50;

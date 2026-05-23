@@ -9,7 +9,7 @@
  * - Format results for terminal and web presentation
  *
  * @architectural-layer Services
- * @related-files ["src/services/agent/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";

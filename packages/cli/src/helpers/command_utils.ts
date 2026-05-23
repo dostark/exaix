@@ -1,8 +1,10 @@
 /**
  * @module CommandUtils
  * @path packages/cli/src/helpers/command_utils.ts
+ * @related-files []
  * @description Shared helper functions for CLI commands, including validation error formatting and UI prompts.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type { ValidationResult } from "../base/command.ts";

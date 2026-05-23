@@ -1,6 +1,9 @@
 /**
  * @module McpPackage
  * @path packages/mcp/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer MCP
  * @description Package entrypoint for @exaix/mcp. This package exports MCP-specific enums,
  * defaults, and the canonical tool manifest.
  */

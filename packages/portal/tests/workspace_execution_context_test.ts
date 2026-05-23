@@ -1,6 +1,8 @@
 /**
  * @module WorkspaceExecutionContextTest
- * @path tests/services/workspace/workspace_execution_context_test.ts
+ * @path packages/portal/tests/workspace_execution_context_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Verifies the core logic for the WorkspaceExecutionContext, ensuring that trace
  * identifiers, portal roots, and security credentials are correctly partitioned for each request.
  */

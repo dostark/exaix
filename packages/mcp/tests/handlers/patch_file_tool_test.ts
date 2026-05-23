@@ -1,6 +1,8 @@
 /**
  * @module PatchFileToolTest
  * @path packages/mcp/tests/handlers/patch_file_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the PatchFileTool MCP tool.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";

@@ -50,7 +50,7 @@ You MUST only reference files and packages that actually exist in the provided `
 
 ### Hallucination Prevention
 
-Do NOT invent directory structures, modules, or logic patterns that are not evidenced by the `File List` or the code you have read. If you see `src/services/`, do not assume `src/controllers/` exists unless listed.
+Do NOT invent directory structures, modules, or logic patterns that are not evidenced by the `File List` or the code you have read. If you see `packages/core/src/`, do not assume `packages/controllers/` exists unless listed.
 
 ### Evidence-Based Planning
 

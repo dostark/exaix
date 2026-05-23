@@ -1,6 +1,8 @@
 /**
  * @module RequestProcessorRegressionTest
- * @path tests/services/request/request_processor_regression_test.ts
+ * @path packages/request/tests/request_processor_regression_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Regression test for request processor provider selection issues.
  */
 

@@ -3,7 +3,7 @@
  * @path packages/ai-ollama/src/llama_provider.ts
  * @description Llama and CodeLlama provider implementation owned by the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @related-files [packages/ai-ollama/src/llama_factory.ts, packages/ai/src/providers/llama_provider.ts]
+ * @related-files [packages/ai-ollama/src/llama_factory.ts, packages/ai-ollama/src/llama_provider.ts]
  */
 
 import {

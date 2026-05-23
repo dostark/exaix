@@ -1,6 +1,8 @@
 /**
  * @module SecureRandom
  * @path packages/core/src/func/secure_random.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Cryptographically secure random number and string generation utilities.
  */
 

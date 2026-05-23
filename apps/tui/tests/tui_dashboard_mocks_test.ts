@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardMocksTest
  * @path apps/tui/tests/tui_dashboard_mocks_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies internal mock services used for TUI testing, ensuring stable
  * simulation of portals, plans, and activity logs.
  */

@@ -2,6 +2,8 @@
 /**
  * @module RequestActionsTest
  * @path apps/exactl/tests/request_actions_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI presentation logic for agent requests, ensuring detailed views
  * correctly include trace_id, agent assignments, and token usage statistics.
  */

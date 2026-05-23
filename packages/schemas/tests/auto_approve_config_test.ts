@@ -1,6 +1,8 @@
 /**
  * @module AutoApproveConfigTest
  * @path packages/schemas/tests/auto_approve_config_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Tests for the [memory.auto_approve] configuration schema and parsing logic.
  */
 

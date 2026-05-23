@@ -1,6 +1,8 @@
 /**
  * @module PortalPermissionsTest
- * @path tests/security/portal_permissions_test.ts
+ * @path packages/portal/tests/portal_permissions_path_resolver_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Verifies the security enforcement for portal access, ensuring that tools
  * are strictly confined to authorized portal root directories.
  */

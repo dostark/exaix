@@ -1,9 +1,9 @@
 /**
  * @module GitHeadResolver
- * @path packages/portal/src/knowledge/git_head_resolver.ts
+ * @path packages/portal/knowledge/git_head_resolver.ts
  * @description Helper for resolving git HEAD SHA and changed files since a cached commit.
  * @architectural-layer Services
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts]
+ * @related-files [packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
 import { SafeSubprocess } from "@exaix/core";

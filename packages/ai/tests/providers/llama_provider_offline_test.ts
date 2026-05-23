@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module LlamaProviderOfflineTest
- * @path tests/ai/llama_provider_offline_test.ts
+ * @path packages/ai/tests/providers/llama_provider_offline_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the offline parsing capabilities of the Llama provider,
  * ensuring robust extraction of structured JSON from LLM markdown responses.
  */

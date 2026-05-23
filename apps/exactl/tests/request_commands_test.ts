@@ -1,6 +1,8 @@
 /**
  * @module RequestCommandsTest
  * @path apps/exactl/tests/request_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Integration tests for CLI request management, covering the creation of prompt-based
  * requests, skill/agent targeting, and state tracking within the Workspace/Requests directory.
  */

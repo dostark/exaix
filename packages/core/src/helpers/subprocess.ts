@@ -1,6 +1,9 @@
 /**
  * @module Subprocess
  * @path packages/core/src/helpers/subprocess.ts
+ * @related-files []
+ * @architectural-layer Core
+ * @ungrounded
  * @description Safe subprocess execution utilities with timeout protection and error handling.
  */
 

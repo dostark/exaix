@@ -1,6 +1,8 @@
 /**
  * @module HandlerRegistryContractTest
  * @path packages/mcp/tests/handler_registry_contract_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that registry-delegating MCP handlers (run_command, search_files) use the canonical toolResultToMcpResponse conversion.
  */
 import { assertEquals } from "@std/assert";

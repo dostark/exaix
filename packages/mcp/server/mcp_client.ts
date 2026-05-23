@@ -3,7 +3,7 @@
  * @path packages/mcp/server/mcp_client.ts
  * @description Wrapper around existing MCP tool execution, providing the IMcpClient interface.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, src/flows/dynamic_step_executor.ts]
+ * @related-files [packages/mcp/server/tool_handler.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 import type { ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "../src/i_mcp_client.ts";

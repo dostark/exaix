@@ -1,6 +1,8 @@
 /**
  * @module TokenCounterTest
  * @path packages/core/tests/func/token_counter_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Tests for TokenCounter utility.
  */
 

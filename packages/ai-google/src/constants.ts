@@ -1,6 +1,7 @@
 /**
  * @module GooglePackageConstants
  * @path packages/ai-google/src/constants.ts
+ * @related-files []
  * @description Google-specific defaults and provider metadata owned by @exaix/ai-google.
  * @architectural-layer AI
  */

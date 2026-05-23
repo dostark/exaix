@@ -1,6 +1,8 @@
 /**
  * @module CLITestSetup
  * @path apps/exactl/tests/helpers/test_setup.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Provides common setup and teardown routines for CLI tests, including
  * temporary workspace creation and mock Git repository initialization.
  */
@@ -9,11 +11,11 @@ import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
 import { PortalCommands } from "../../src/commands/portal_commands.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
-import { ContextCardAdapter } from "../../../../src/services/adapters/context_card_adapter.ts";
+import { ContextCardAdapter } from "../../../../apps/common/adapters/context_card_adapter.ts";
 import { RequestService } from "@exaix/request";
-import { RequestAdapter } from "../../../../src/services/adapters/request_adapter.ts";
+import { RequestAdapter } from "../../../../apps/common/adapters/request_adapter.ts";
 import { PortalService } from "@exaix/portal";
-import { PortalAdapter } from "../../../../src/services/adapters/portal_adapter.ts";
+import { PortalAdapter } from "../../../../apps/common/adapters/portal_adapter.ts";
 import { initTestDbService } from "../../../../tests/helpers/db.ts";
 import { createMockConfig } from "../../../../tests/helpers/config.ts";
 import { getMemoryProjectsDir } from "../../../../tests/helpers/paths_helper.ts";
@@ -200,7 +202,7 @@ export async function createCliTestContext(options?: { createDirs?: string[] }):
     }
   }
 
-  const configPath = join(tempDir, "exa.config.toml");
+  const configPath = join(tempDir, "config.toml");
   const configService = new ConfigService(configPath);
   const contextCards = new ContextCardAdapter(new ContextCardGenerator(config));
   const display = createStubDisplay(db);

@@ -3,7 +3,7 @@
  * @path packages/core/src/request/request_frontmatter.ts
  * @description Shared request frontmatter and parsed request-file contracts.
  * @architectural-layer Shared
- * @related-files ["src/services/request_processing/types.ts", "packages/core/src/request/mod.ts"]
+ * @related-files ["packages/request/src/processing/parser.ts", "packages/core/src/request/mod.ts"]
  */
 
 import type { RequestStatusType } from "@exaix/core/status";

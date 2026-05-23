@@ -1,8 +1,9 @@
 /**
  * @module AgentStatusModule
- * @path src/shared/status/agent_status.ts
+ * @path packages/core/src/status/agent_status.ts
  * @description Canonical, type-safe agent status values and utility functions for status coercion and validation.
  * @architectural-layer Shared
+ * @ungrounded
  * @related-files [apps/tui/src/agent_status_view.ts]
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module ParsingPackageInvalidInputTest
  * @path packages/core/tests/parsing/invalid_input_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies invalid YAML and frontmatter handling inside @exaix/parsing.
  */
 import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";

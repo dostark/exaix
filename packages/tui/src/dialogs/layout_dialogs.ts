@@ -1,6 +1,9 @@
 /**
  * @module LayoutDialogs
  * @path packages/tui/src/dialogs/layout_dialogs.ts
+ * @related-files []
+ * @architectural-layer TUI
+ * @ungrounded
  * @description Package-owned dialog components for TUI layout management, view picking, and resize indicators.
  */
 

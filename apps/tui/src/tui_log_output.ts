@@ -3,6 +3,7 @@
  * @path apps/tui/src/tui_log_output.ts
  * @description Implementation of StructuredLogger output that feeds entries to the TUI service for real-time display.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

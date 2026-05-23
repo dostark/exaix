@@ -2,6 +2,9 @@
 /**
  * @module McpTestSetup
  * @path packages/mcp/testing/test_setup.ts
+ * @related-files []
+ * @architectural-layer MCP
+ * @ungrounded
  * @description Provides common setup routines for MCP server tests, coordinating
  * transport layer (SSE/Stdio) initialization and session creation.
  */

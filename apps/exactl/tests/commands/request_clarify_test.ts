@@ -1,6 +1,7 @@
 /**
  * @module RequestClarifyTest
  * @path apps/exactl/tests/commands/request_clarify_test.ts
+ * @architectural-layer CLI
  * @description Tests for the `exactl request clarify` CLI command (Step 13 of Phase 47).
  * Covers displaying pending questions, submitting answers, forcing proceed, and cancelling.
  * @related-files [apps/exactl/src/commands/request_commands.ts, apps/exactl/src/handlers/request_clarify_handler.ts]

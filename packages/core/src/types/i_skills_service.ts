@@ -1,6 +1,6 @@
 /**
  * @module IskillsService
- * @path src/shared/interfaces/i_skills_service.ts
+ * @path packages/core/src/types/i_skills_service.ts
  * @description Module for IskillsService.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

@@ -1,6 +1,7 @@
 /**
  * @module OpenAIPackageConstants
  * @path packages/ai-openai/src/constants.ts
+ * @related-files []
  * @description OpenAI-specific defaults and provider metadata owned by @exaix/ai-openai.
  * @architectural-layer AI
  */

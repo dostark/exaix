@@ -1,6 +1,8 @@
 /**
  * @module ToolRuntimeOutputContractTest
  * @path packages/mcp/tests/tool_runtime_output_contract_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that live MCP handlers return runtime payloads consistent with the manifest-declared output contract.
  */
 

@@ -1,12 +1,12 @@
 /**
  * @module EmbeddingProvider
- * @path src/ai/embeddings/embedding_provider.ts
+ * @path packages/ai/src/embeddings/embedding_provider.ts
  * @description Provider-agnostic interface for embedding text inputs into
  * vector representations. Concrete implementations wrap Ollama, OpenAI,
  * llama.cpp, or any other embedding backend.
  * @architectural-layer AI
  * @dependencies [src/shared/constants.ts]
- * @related-files [src/ai/providers/ollama_embedding_client.ts, src/ai/embeddings/embedding_provider_factory.ts]
+ * @related-files [packages/ai-ollama/src/ollama_embedding_client.ts, packages/ai/src/embeddings/embedding_provider_factory.ts]
  */
 
 /**

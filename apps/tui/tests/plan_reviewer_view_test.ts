@@ -1,6 +1,8 @@
 /**
  * @module PlanReviewerViewTest
  * @path apps/tui/tests/plan_reviewer_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Validates the PlanReviewerView's terminal interaction logic, covering diff visualization
  * for pending plans, keyboard-driven approval/rejection workflows, and real-time status updates.
  */
@@ -18,7 +20,7 @@ import {
   PlanReviewerView,
 } from "../src/plan_reviewer_view.ts";
 import { createPlanReviewerSession, sampleBasicPlans, samplePendingPlans, samplePlansWithStatuses } from "./helpers.ts";
-import { PlanAdapter } from "../../../src/services/adapters/plan_adapter.ts";
+import { PlanAdapter } from "../../../apps/common/adapters/plan_adapter.ts";
 import { PlanCommands } from "../../../apps/exactl/src/commands/plan_commands.ts";
 import type { IPlanDetails } from "@exaix/core/types";
 import type { JSONObject, JSONValue } from "@exaix/core/types";

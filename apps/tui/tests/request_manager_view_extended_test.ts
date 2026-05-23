@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerViewExtendedTest
  * @path apps/tui/tests/request_manager_view_extended_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for RequestManagerView metadata, ensuring comprehensive coverage of
  * status colors, keyboard bindings, and visual icons for request priorities.
  */
@@ -24,7 +26,7 @@ import {
   type IRequestShowResult,
 } from "@exaix/core/types";
 import type { IRequestService } from "@exaix/core/types";
-import { RequestAdapter } from "../../../src/services/adapters/request_adapter.ts";
+import { RequestAdapter } from "../../../apps/common/adapters/request_adapter.ts";
 import {
   createLegacyTuiSession,
   createLegacyTuiSessionWithErrors,

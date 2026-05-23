@@ -1,6 +1,8 @@
 /**
  * @module CodeParserTest
  * @path packages/core/tests/func/code_parser_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the code parsing logic.
  */
 

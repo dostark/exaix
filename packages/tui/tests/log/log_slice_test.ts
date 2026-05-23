@@ -1,6 +1,8 @@
 /**
  * @module LogSliceTest
  * @path packages/tui/tests/log/log_slice_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Regression tests for package-owned TUI log rendering and streaming helpers.
  */
 

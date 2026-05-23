@@ -12,7 +12,7 @@
  * - --allow-write, --allow-read (for log rotation)
  *
  * @architectural-layer Services
- * @related-files ["packages/core/src/logger/event_logger.ts", src/main.ts]
+ * @related-files ["packages/core/src/logger/event_logger.ts", apps/daemon/main.ts]
  */
 
 import { dirname, join } from "@std/path";

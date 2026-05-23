@@ -1,6 +1,8 @@
 /**
  * @module MemoryPendingPanelTest
  * @path apps/tui/tests/memory_pending_panel_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the UI presentation of pending memory proposals, ensuring correct
  * categorization and metadata display in the terminal review interface.
  */

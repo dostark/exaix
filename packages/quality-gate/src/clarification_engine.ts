@@ -6,7 +6,7 @@
  * IRequestSpecification objects. Supports up to `maxRounds` rounds before
  * finalizing with a best-effort specification.
  * @architectural-layer Domain
- * @related-files [packages/quality-gate/src/mod.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
+ * @related-files [packages/quality-gate/mod.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
 import { z } from "zod";

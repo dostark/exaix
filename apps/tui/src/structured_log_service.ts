@@ -3,6 +3,7 @@
  * @path apps/tui/src/structured_log_service.ts
  * @description Service layer for StructuredLogger TUI integration, enabling real-time log streaming, querying, and correlation tracking.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/core/src/logger/structured_logger.ts", apps/tui/src/structured_log_viewer.ts]
  */
 

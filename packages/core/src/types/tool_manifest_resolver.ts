@@ -6,7 +6,7 @@
  * executor can accept both in a single intersection type.
  * @architectural-layer Shared
  * @dependencies ["packages/core/src/types/enums.ts"]
- * @related-files [packages/mcp/server/mcp_client.ts, src/flows/dynamic_step_executor.ts]
+ * @related-files [packages/mcp/server/mcp_client.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
 import type { McpToolName } from "./enums.ts";

@@ -9,7 +9,7 @@
 import { exists } from "@std/fs";
 import { parse as parseYaml } from "@std/yaml";
 import { BaseCommand } from "@exaix/cli/base.ts";
-import { createRoutingPolicyService, loadRoutingPolicy } from "../../../../src/services/adapters/routing_adapter.ts";
+import { createRoutingPolicyService, loadRoutingPolicy } from "../../../../apps/common/adapters/routing_adapter.ts";
 import { ZRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IRoutingContext, IRoutingMatchCriteria, IRoutingPolicyDecision } from "@exaix/schemas/routing_policy.ts";

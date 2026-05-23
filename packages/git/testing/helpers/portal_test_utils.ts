@@ -1,6 +1,9 @@
 /**
  * @module GitTestingPortalUtils
  * @path packages/git/testing/helpers/portal_test_utils.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Shared portal Git repo setup helpers exported through @exaix/git/testing.
  */
 

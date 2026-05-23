@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/markdown_renderer.ts
  * @description TUI Markdown renderer for ANSI-styled terminal output with support for headers, code blocks, and badges.
  * @architectural-layer Helpers
+ * @ungrounded
  * @related-files ["packages/core/src/types/enums.ts", "packages/core/src/types/constants.ts"]
  */
 

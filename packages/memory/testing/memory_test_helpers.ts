@@ -1,6 +1,9 @@
 /**
  * @module MemoryServicesTestHelpers
  * @path packages/memory/testing/memory_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Memory
+ * @ungrounded
  * @description Provides helper functions for simulating agent learning records
  * and verifying memory persistence in the MemoryBankService.
  */

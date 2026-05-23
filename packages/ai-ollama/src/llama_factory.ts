@@ -3,7 +3,7 @@
  * @path packages/ai-ollama/src/llama_factory.ts
  * @description Factory for creating Llama provider instances from the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @related-files [packages/ai-ollama/src/llama_provider.ts, packages/ai/src/factories/llama_factory.ts]
+ * @related-files [packages/ai-ollama/src/llama_provider.ts, packages/ai-ollama/src/llama_factory.ts]
  */
 
 import { AbstractProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";

@@ -1,6 +1,8 @@
 /**
  * @module ToolResultSchemaTest
  * @path packages/schemas/tests/tool_result_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies ToolResultEnvelopeSchema and ToolResultValidationFailureSchema
  * correctly validate IToolResult envelopes and structured validation failures.
  */

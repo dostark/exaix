@@ -1,6 +1,8 @@
 /**
  * @module ReviewCommandsRegressionTest
  * @path apps/exactl/tests/review_commands_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression tests for review CLI commands, ensuring correct visual display
  * and context aggregation for pending agent plans awaiting review.
  */

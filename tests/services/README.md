@@ -226,11 +226,11 @@ What are you testing?
 
 ### Deterministic Mapping For Agents
 
-- `src/services/agent/...` → `tests/services/agent/...`
-- `src/services/flow/...` → `tests/services/flow/...`
-- `src/services/request/...` → `tests/services/request/...`
-- `src/services/portal/...` → `tests/services/portal/...`
-- `src/services/tool/...` → `tests/services/tool/...`
+- `packages/*/src/services/agent/...` → `tests/services/agent/...`
+- `packages/*/src/services/flow/...` → `tests/services/flow/...`
+- `packages/*/src/services/request/...` → `tests/services/request/...`
+- `packages/*/src/services/portal/...` → `tests/services/portal/...`
+- `packages/*/src/services/tool/...` → `tests/services/tool/...`
 
 #### Example 1: New Request Validator
 
@@ -329,9 +329,9 @@ import { createStubConfig } from "../../helpers/config.ts";
 // Import from tests/services/helpers/
 import { createTestMemoryBank } from "../helpers/memory_bank_test_helpers.ts";
 
-// Import from src/
-import { MyService } from "../../../src/services/my_service.ts";
-import { Config } from "../../../src/shared/schemas/config.ts";
+// Import from packages (prefer canonical package imports)
+import { MyService } from "@exaix/core";
+import type { Config } from "@exaix/schemas";
 ```
 
 ---

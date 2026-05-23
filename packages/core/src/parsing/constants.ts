@@ -1,6 +1,8 @@
 /**
  * @module CoreParsingPackageConstants
  * @path packages/core/src/parsing/constants.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Package-local constants used by @exaix/parsing.
  */
 

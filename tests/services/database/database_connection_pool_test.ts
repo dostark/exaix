@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertRejects } from "@std/assert";
-import { DatabaseConnectionPool } from "../../../src/services/core/database_connection_pool.ts";
+import { DatabaseConnectionPool } from "../../../packages/storage-sqlite/src/connection_pool.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 
 type IDatabasePoolOptions = ConstructorParameters<typeof DatabaseConnectionPool>[0];

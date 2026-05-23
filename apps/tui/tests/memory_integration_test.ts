@@ -1,6 +1,8 @@
 /**
  * @module MemoryTUIIntegrationTest
  * @path apps/tui/tests/memory_integration_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description End-to-end integration tests for the Memory TUI, verifying multi-step workflows
  * from knowledge discovery and search to interactive approval of pending proposals.
  */

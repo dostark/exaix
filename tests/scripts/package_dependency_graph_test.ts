@@ -322,7 +322,7 @@ Deno.test("buildBoundaryReport: direct src/ dep makes file not extractable", () 
 
   assertEquals(report.extractable, true);
   assertEquals(report.srcDepsCount, 0);
-  const srcGroup = report.directGroups.find((g) => g.packageName === "@exaix (src/)");
+  const srcGroup = report.directGroups.find((g) => g.packageName === "@exaix (retired src/)");
   assertEquals(srcGroup?.modules, ["packages/git/src/git_service.ts"]);
 });
 
@@ -361,8 +361,8 @@ Deno.test("buildBoundaryReport: transitive src/ dep is not extractable and split
   assertEquals(report.srcDepsCount, 1);
   const directNames = report.directGroups.map((g) => g.packageName);
   const transitiveNames = report.transitiveGroups.map((g) => g.packageName);
-  assertEquals(directNames, ["@exaix (src/)"]);
-  assertEquals(transitiveNames, ["@exaix (src/)"]);
+  assertEquals(directNames, ["@exaix (retired src/)"]);
+  assertEquals(transitiveNames, ["@exaix (retired src/)"]);
   assertEquals(report.directGroups[0]!.modules, ["packages/mcp/server/handlers/base.ts"]);
   assertEquals(report.transitiveGroups[0]!.modules, ["src/services/portal/portal_service.ts"]);
 });
@@ -435,7 +435,7 @@ Deno.test("renderBoundaryReport: non-extractable file shows src/ blockers", () =
   const report: BoundaryReport = {
     targetPath: "packages/mcp/server/handlers/run_command_tool.ts",
     directGroups: [
-      { packageName: "@exaix (src/)", modules: ["packages/git/src/git_service.ts"] },
+      { packageName: "@exaix (retired src/)", modules: ["packages/git/src/git_service.ts"] },
       { packageName: "@exaix/mcp", modules: ["packages/mcp/mod.ts"] },
     ],
     transitiveGroups: [],

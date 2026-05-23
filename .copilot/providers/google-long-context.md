@@ -15,7 +15,7 @@ Key points
 - **Saturation Strategy**: Load all relevant documentation and source code to provide a "complete picture" for reasoning.
 - **MEC (Maximum Effective Context)**: Aim for 50k-500k tokens for architectural work to maintain high instruction following.
 - **RAG-as-a-Filter**: Use semantic search to identify which _files_ to load in full, rather than just using chunks.
-- **Structural Delimiters**: Use clear headers (e.g., `# FILE: src/main.ts`) to help the agent navigate the large window.
+- **Structural Delimiters**: Use clear headers (e.g., `# FILE: apps/daemon/main.ts`) to help the agent navigate the large window.
 
 ## Long-Context Thinking Protocol
 
@@ -30,7 +30,7 @@ Canonical prompt (short):
 
 Examples
 
-- Example prompt: "I am refactoring the `EventLogger`. Analyze all services in `src/services/` to ensure the new logging interface satisfies all existing usage patterns."
+- Example prompt: "I am refactoring the `EventLogger`. Analyze all services in `packages/` to ensure the new logging interface satisfies all existing usage patterns."
 - Example prompt: "Read the entire `Implementation Plan` and all `agent/` docs. Identify any gaps in Step 11 coverage relative to the core architecture."
 
 Do / Don't

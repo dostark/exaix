@@ -1,6 +1,8 @@
 /**
  * @module CoreParsingPackageEnums
  * @path packages/core/src/parsing/enums.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Package-local enums used by @exaix/parsing.
  */
 

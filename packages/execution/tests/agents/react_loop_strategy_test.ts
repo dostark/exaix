@@ -1,6 +1,8 @@
 /**
  * @module ReActLoopStrategyTest
  * @path packages/execution/tests/agents/react_loop_strategy_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Unit tests for ReActLoopStrategy.
  */
 

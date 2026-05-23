@@ -15,16 +15,16 @@ links:
 
 ````bash
 # Basic scan of source and tests
-npx jscpd src/ tests/
+npx jscpd packages/ apps/ tests/
 
 # Generate JSON report for detailed analysis
-npx jscpd src/ tests/ --reporters json --output ./jscpd-report
+npx jscpd packages/ apps/ tests/ --reporters json --output ./jscpd-report
 
 # Scan specific directory
-npx jscpd src/tui/
+npx jscpd apps/tui/
 
 # With HTML report
-npx jscpd src/ tests/ --reporters html,json --output ./jscpd-report
+npx jscpd packages/ apps/ tests/ --reporters html,json --output ./jscpd-report
 ```text
 
 ## Command Options
@@ -135,7 +135,7 @@ assertSuccessResult(result, { dataLength: 3 });
 
 1. **Run jscpd** to identify duplicates
    ```bash
-   npx jscpd src/ tests/ --reporters json --output ./jscpd-report
+   npx jscpd packages/ apps/ tests/ --reporters json --output ./jscpd-report
    ```text
 
 1.
@@ -161,7 +161,7 @@ assertSuccessResult(result, { dataLength: 3 });
 
 1.
    ```bash
-   npx jscpd src/ tests/ --reporters json --output ./jscpd-report-after
+   npx jscpd packages/ apps/ tests/ --reporters json --output ./jscpd-report-after
    ```text
 
 ## Integration with CI
@@ -170,10 +170,10 @@ Add to pre-commit or CI pipeline:
 
 ```bash
 # Fail if duplication > 5%
-npx jscpd src/ tests/ --threshold 5
+npx jscpd packages/ apps/ tests/ --threshold 5
 
 # Or specific directories
-npx jscpd src/ai/ --threshold 3
+npx jscpd packages/ai/src/ --threshold 3
 ```text
 
 ## Exaix-Specific Patterns
@@ -217,4 +217,4 @@ See [phase-14-code-deduplication.md](../planning/phase-14-code-deduplication.md)
 
 ## Examples
 
-- Example prompt: "Analyze code duplication in src/tui/ and propose helper extractions."
+- Example prompt: "Analyze code duplication in apps/tui/ and propose helper extractions."

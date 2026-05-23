@@ -1,6 +1,8 @@
 /**
  * @module MemoryViewExtendedTest
  * @path apps/tui/tests/memory_view_extended_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for MemoryViewTuiSession, verifying internal state management,
  * color mode toggles, and UI spinner animation logic.
  */

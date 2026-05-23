@@ -3,6 +3,7 @@
  * @path packages/tui/src/base/base_tree_view.ts
  * @description Abstract base class for tree-based TUI views, implementing common state management, navigation, and rendering logic.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/tui/src/base/tui_session_base.ts", "packages/tui/src/base/tree_view_state.ts"]
  */
 

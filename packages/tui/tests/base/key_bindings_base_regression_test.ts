@@ -1,6 +1,8 @@
 /**
  * @module KeyBindingsBaseRegressionTest
  * @path packages/tui/tests/base/key_bindings_base_regression_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Regression tests for the package-owned TUI key-binding base class.
  */
 

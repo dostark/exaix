@@ -1,12 +1,12 @@
 /**
  * @module ConfigParser
- * @path packages/portal/src/knowledge/config_parser.ts
+ * @path packages/portal/knowledge/config_parser.ts
  * @description Strategy 2 of PortalKnowledgeService: reads and parses known
  * config files (package.json, deno.json, tsconfig.json, .gitignore) to extract
  * dependency information, tech stack details, and gitignore patterns.
  * Pure function module — zero LLM / network dependencies, sandboxed-safe.
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/directory_analyzer.ts, packages/portal/src/knowledge/key_file_identifier.ts]
+ * @related-files [packages/portal/knowledge/directory_analyzer.ts, packages/portal/knowledge/key_file_identifier.ts]
  */
 
 import { join } from "@std/path";

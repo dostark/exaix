@@ -3,6 +3,7 @@
  * @path packages/tui/src/config.ts
  * @description TUI configuration and constants, including icons, colors for log entries, and refresh intervals.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/tui/src/helpers/constants.ts"]
  */
 

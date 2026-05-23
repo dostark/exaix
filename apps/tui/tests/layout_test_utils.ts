@@ -1,6 +1,8 @@
 /**
  * @module TUILayoutTestUtils
  * @path apps/tui/tests/layout_test_utils.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Provides common utilities for verifying TUI layout stability, terminal
  * partitioning, and responsive view resizing.
  */

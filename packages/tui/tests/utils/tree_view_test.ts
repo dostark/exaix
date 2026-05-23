@@ -1,6 +1,8 @@
 /**
  * @module TUITreeViewTest
- * @path tests/tui/utils/tree_view_test.ts
+ * @path packages/tui/tests/utils/tree_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for hierarchical data presentation in the TUI,
  * ensuring correct node nesting, expansion states, and interactive navigation.
  */

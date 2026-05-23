@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module FreeProvidersTest
- * @path tests/ai/free_providers_test.ts
+ * @path packages/ai/tests/providers/free_providers_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the integration with free or local LLM providers, ensuring
  * correct model mapping and payload formatting for budget-conscious execution.
  */

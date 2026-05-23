@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/performance_analyzer.ts
  * @description Calculates performance statistics (latencies, error rates) from log entries to monitor system health.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

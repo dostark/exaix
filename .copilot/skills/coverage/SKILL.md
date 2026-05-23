@@ -32,7 +32,7 @@ re-measure until CI thresholds pass."
 
 Examples
 - "#coverage — overall suite is below 70% line coverage"
-- "#coverage src/services/vault_service.ts — missing error-path tests"
+- "#coverage packages/core/src/vault_service.ts — missing error-path tests"
 
 Do / Don't
 - ✅ Do run measure_coverage.ts first to get the baseline.

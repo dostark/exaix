@@ -1,6 +1,8 @@
 /**
  * @module TUISpinnerTest
- * @path tests/tui/utils/spinner_test.ts
+ * @path packages/tui/tests/utils/spinner_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for terminal loading animations, ensuring correct frame sequences
  * and consistent timing for various spinner styles.
  */

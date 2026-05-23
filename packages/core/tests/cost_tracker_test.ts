@@ -1,6 +1,8 @@
 /**
  * @module CostTrackerTest
- * @path tests/services/ai/cost_tracker_test.ts
+ * @path packages/core/tests/cost_tracker_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Validates the CostTracker's ability to monitor LLM usage, aggregate token metrics
  * across different pricing tiers, and persist usage statistics for budgetary oversight.
  */

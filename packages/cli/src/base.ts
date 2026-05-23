@@ -1,8 +1,10 @@
 /**
  * @module CLIBase
  * @path packages/cli/src/base.ts
+ * @related-files []
  * @description Provides the abstract base class for all CLI command handlers, offering shared utilities for configuration, database access, user identity, and YAML frontmatter processing.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type {

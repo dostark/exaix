@@ -1,6 +1,8 @@
 /**
  * @module BlueprintFrontmatterSchemaPermittedToolsTest
- * @path tests/shared/schemas/blueprint_frontmatter_permitted_tools_test.ts
+ * @path packages/schemas/tests/blueprint_frontmatter_permitted_tools_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies BlueprintFrontmatterSchema supports permitted_tools field for Phase 56 dynamic tool selection.
  */
 

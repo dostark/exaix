@@ -1,6 +1,8 @@
 /**
  * @module MemoryViewTestUtils
  * @path apps/tui/tests/memory_view/memory_view_test_utils.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Provides common utilities for mocking the Memory TUI state and
  * simulating keyboard-driven navigation in the knowledge tree.
  */

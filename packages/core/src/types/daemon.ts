@@ -1,6 +1,6 @@
 /**
  * @module Daemon
- * @path @exaix/core/types
+ * @path packages/core/src/types/daemon.ts
  * @description Module for Daemon.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

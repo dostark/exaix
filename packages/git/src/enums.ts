@@ -1,6 +1,8 @@
 /**
  * @module GitEnums
  * @path packages/git/src/enums.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Git-related enums exposed by the git package.
  */
 

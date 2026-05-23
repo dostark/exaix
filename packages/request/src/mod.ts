@@ -1,6 +1,8 @@
 /**
  * @module RequestSrc
  * @path packages/request/src/mod.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Barrel exports for @exaix/request internals: analysis, parsing,
  * routing, and processing services.
  */

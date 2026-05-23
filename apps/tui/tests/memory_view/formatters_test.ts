@@ -2,6 +2,8 @@
 /**
  * @module MemoryFormatterTest
  * @path apps/tui/tests/memory_view/formatters_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for formatting memory metadata in the TUI, ensuring correct
  * display of project-specific, global, and execution-linked knowledge details.
  */

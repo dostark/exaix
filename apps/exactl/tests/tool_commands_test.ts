@@ -1,6 +1,8 @@
 /**
  * @module ToolCommandsTest
  * @path apps/exactl/tests/tool_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Focused tests for the Phase 79 tool confirmation CLI commands.
  */
 

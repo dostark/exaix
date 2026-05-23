@@ -1,6 +1,8 @@
 /**
  * @module VersionTest
- * @path tests/services/ai/version_test.ts
+ * @path packages/core/tests/version/version_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Unit tests verifying that BINARY_VERSION and WORKSPACE_SCHEMA_VERSION
  * are non-empty valid SemVer strings.
  */

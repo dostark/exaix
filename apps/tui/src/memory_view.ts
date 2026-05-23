@@ -46,7 +46,7 @@ export interface IMemoryViewState {
   lastRefresh: number;
 }
 
-// Service Adapter moved to src/services/adapters/memory_adapter.ts
+// Service Adapter moved to apps/common/adapters/memory_adapter.ts
 
 // ===== TUI Session =====
 

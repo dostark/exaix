@@ -1,6 +1,8 @@
 /**
  * @module QualityGateInternalTypes
  * @path packages/quality-gate/src/internal_types.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Minimal output-validator contract consumed by quality-gate modules.
  * The concrete OutputValidator from src/services/tool/ satisfies this interface
  * structurally, allowing the quality-gate package to avoid importing from src/services/.

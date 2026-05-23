@@ -1,6 +1,8 @@
 /**
  * @module ToolDynamicClassificationParityTest
  * @path packages/mcp/tests/tool_dynamic_classification_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Parity tests verifying that buildDynamicHandlers() output, DYNAMIC_MODE_TOOLS,
  * DYNAMIC_MODE_APPROVAL_TOOLS, and manifest dynamic_mode_allowed entries all agree. Prevents
  * the three sources from drifting when new tools are added or classifications change.

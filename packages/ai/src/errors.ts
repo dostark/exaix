@@ -1,9 +1,9 @@
 /**
  * @module AiErrors
- * @path src/ai/errors.ts
+ * @path packages/ai/src/errors.ts
  * @description Specialized error classes for the AI layer, specifically for provider factory failures.
  * @architectural-layer AI
- * @related-files [src/ai/factories/abstract_provider_factory.ts]
+ * @related-files [packages/ai/src/providers/lazy_provider.ts, packages/ai/src/provider_api_key.ts]
  */
 export class ProviderFactoryError extends Error {
   constructor(message: string) {

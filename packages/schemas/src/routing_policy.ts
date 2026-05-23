@@ -1,9 +1,9 @@
 /**
  * @module RoutingPolicySchema
- * @path src/shared/schemas/routing_policy.ts
+ * @path packages/schemas/src/routing_policy.ts
  * @description Defines Zod schemas and inferred types for the routing policy layer.
  * @architectural-layer Shared
- * @related-files [src/services/routing/routing_policy_loader.ts]
+ * @related-files [packages/routing/src/routing_policy_loader.ts]
  */
 
 import type { IRequestAnalysis } from "./request_analysis.ts";

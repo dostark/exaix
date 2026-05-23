@@ -1,6 +1,8 @@
 /**
  * @module TUIStatusBarTest
- * @path tests/tui/utils/status_bar_test.ts
+ * @path packages/tui/tests/utils/status_bar_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the core drawing logic for the terminal status bar, ensuring
  * responsive layout of partitioned items and correct color application.
  */

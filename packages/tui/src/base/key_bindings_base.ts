@@ -3,6 +3,7 @@
  * @path packages/tui/src/base/key_bindings_base.ts
  * @description Base class for defining typed key binding collections, ensuring consistency across TUI components.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/tui/src/helpers/keyboard.ts"]
  */
 

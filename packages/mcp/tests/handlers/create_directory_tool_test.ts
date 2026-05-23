@@ -1,6 +1,8 @@
 /**
  * @module CreateDirectoryToolTest
  * @path packages/mcp/tests/handlers/create_directory_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the CreateDirectoryTool MCP tool.
  */
 import { assertEquals, assertRejects } from "@std/assert";

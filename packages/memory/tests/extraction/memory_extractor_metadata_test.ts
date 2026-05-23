@@ -1,6 +1,8 @@
 /**
  * @module MemoryExtractorMetadataTest
  * @path packages/memory/tests/extraction/memory_extractor_metadata_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Tests that MemoryExtractorService correctly attaches confidence, source, and extractedAt metadata.
  */
 

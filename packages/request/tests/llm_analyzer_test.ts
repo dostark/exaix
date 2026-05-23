@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module LlmAnalyzerTest
- * @path tests/services/request_analysis/llm_analyzer_test.ts
+ * @path packages/request/tests/llm_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Tests for the LLM-powered request analysis strategy.
  * Uses MockProvider to verify prompt construction, JSON parsing,
  * schema validation, and fallback behaviour.

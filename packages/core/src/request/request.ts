@@ -1,6 +1,8 @@
 /**
  * @module RequestTypes
  * @path packages/core/src/request/request.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Request analysis type definitions for @exaix/core consumers.
  */
 

@@ -1,4 +1,8 @@
-/** @module RoutingPolicyServiceRuleMatchTest */
+/** @module RoutingPolicyServiceRuleMatchTest
+ * @path packages/routing/tests/routing_policy_service_rule_match_test.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @description TODO: Add description */
 import { assertEquals } from "@std/assert";
 import type { IRoutingPolicy } from "@exaix/schemas/routing_policy.ts";
 import { createRoutingCandidate, createRoutingPolicyService } from "./routing_policy_test_helper.ts";

@@ -1,6 +1,9 @@
 /**
  * @module AIPackage
  * @path packages/ai/mod.ts
+ * @ungrounded
+ * @architectural-layer AI
+ * @related-files []
  * @description Package entrypoint for @exaix/ai. This package exports shared AI constants and facades for AI provider utilities.
  */
 

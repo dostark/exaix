@@ -24,7 +24,8 @@ triggers:
     - bugfix
     - refactor
   file_patterns:
-    - "src/**/*.ts"
+    - "packages/**/*.ts"
+    - "apps/**/*.ts"
     - "tests/**/*.ts"
   tags:
     - exaix
@@ -66,15 +67,21 @@ Follow these Exaix-specific patterns and conventions:
 ## 1. Project Structure
 
 ````text
-src/
-├── commands/        # CLI command implementations
-├── config/          # Configuration schemas and loading
-├── flows/           # Flow orchestration
-├── schemas/         # Zod schemas for all data types
-├── services/        # Core services (stateful)
-└── utils/           # Pure utility functions
+packages/
+├── core/src/        # Config, parsing, shared utilities
+├── schemas/src/     # Zod schemas for all data types
+├── ai/src/          # LLM provider implementations
+├── mcp/src/         # MCP protocol and tool handlers
+├── tui/src/         # TUI base components
+├── flow/src/        # Flow orchestration
+└── cli/src/         # CLI base utilities
 
-tests/               # Mirror of src/ structure
+apps/
+├── daemon/          # Main runtime entry point
+├── exactl/src/      # exactl CLI commands
+└── tui/src/         # Concrete TUI views
+
+tests/               # Mirror of packages/apps/ structure
 tests_infra/         # Test infrastructure helpers
 
 Blueprints/          # Agent and Flow definitions
@@ -93,7 +100,7 @@ Memory/              # Memory Banks
 Services are the core building blocks:
 
 ```typescript
-// src/services/example.ts
+// packages/core/src/services/example.ts
 
 import { z } from "zod";
 import type { Config } from "../config/schema.ts";
@@ -155,7 +162,7 @@ Use Deno.test with initTestDbService():
 
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 import { initTestDbService } from "../../tests_infra/db_test_utils.ts";
-import { ExampleService } from "../../src/services/example.ts";
+import { ExampleService } from "../../packages/core/src/services/example.ts";
 
 Deno.test("ExampleService", async (t) => {
   // Setup test database
@@ -184,7 +191,7 @@ Deno.test("ExampleService", async (t) => {
 Define schemas before implementation:
 
 ```typescript
-// src/schemas/example.ts
+// packages/schemas/src/example.ts
 
 import { z } from "zod";
 
@@ -237,7 +244,7 @@ Define flows in Blueprints/Flows/:
 ```typescript
 // Blueprints/Flows/example.flow.yaml
 
-import { defineFlow } from "../../src/flows/define_flow.ts";
+import { defineFlow } from "@exaix/flow";
 
 export default defineFlow({
   id: "example-flow",
@@ -290,8 +297,8 @@ import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert@1";
 import { z } from "zod";
 
 // Exaix internal
-import type { Config } from "../config/schema.ts";
-import type { DatabaseService } from "./db.ts";
+import type { Config } from "@exaix/core/config/schema.ts";
+import type { DatabaseService } from "@exaix/core";
 ```text
 
 ## 9. Error Handling

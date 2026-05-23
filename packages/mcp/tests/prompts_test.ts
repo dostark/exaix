@@ -1,6 +1,8 @@
 /**
  * @module MCPPromptsTest
  * @path packages/mcp/tests/prompts_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the MCP prompt registry, ensuring server-side prompts are correctly listed
  * with their arguments and successfully retrieved by clients with argument interpolation.
  */

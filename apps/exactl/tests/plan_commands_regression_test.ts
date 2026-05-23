@@ -1,6 +1,8 @@
 /**
  * @module PlanCommandsRegressionTest
  * @path apps/exactl/tests/plan_commands_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression tests for plan command logic, ensuring that plan files are
  * correctly discovered across Active, Rejected, and Pending directory hierarchies.
  */

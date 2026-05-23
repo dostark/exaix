@@ -9,7 +9,7 @@
 import { assertEquals } from "@std/assert";
 import { spy } from "@std/testing/mock";
 
-import { SkillsAdapter } from "../../../src/services/adapters/skills_adapter.ts";
+import { SkillsAdapter } from "../../../apps/common/adapters/skills_adapter.ts";
 import type { SkillsService } from "@exaix/core/skills";
 import { MemoryBankSource, MemoryScope, SkillStatus } from "@exaix/core";
 import type { ISkill, SkillDefinition } from "@exaix/schemas/memory_bank.ts";

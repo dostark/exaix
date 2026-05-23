@@ -1,6 +1,6 @@
 /**
  * @module InotificationService
- * @path src/shared/interfaces/i_notification_service.ts
+ * @path packages/core/src/types/i_notification_service.ts
  * @description Module for InotificationService.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

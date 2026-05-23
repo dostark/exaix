@@ -1,6 +1,8 @@
 /**
  * @module EventLoggerIdentityFieldsTest
- * @path tests/services/event/event_logger_identity_fields_test.ts
+ * @path packages/core/tests/event/event_logger_identity_fields_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies that EventLogger correctly forwards Actor/Agent/Identity separation fields to ActivityRepository.
  */
 

@@ -2,6 +2,8 @@
 /**
  * @module MemoryBankGlobalTest
  * @path packages/memory/tests/bank/memory_bank_global_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Verifies the LearningSchema and its application in global memory banks,
  * ensuring context-free knowledge and patterns are correctly validated and persisted.
  */

@@ -1,6 +1,8 @@
 /**
  * @module SkillsConfigDefaultsTest
  * @path packages/schemas/tests/skills_config_defaults_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Tests for skills-related configuration defaults.
  */
 import { assertEquals } from "@std/assert";

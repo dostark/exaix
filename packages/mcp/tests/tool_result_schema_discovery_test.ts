@@ -1,6 +1,8 @@
 /**
  * @module ToolResultSchemaDiscoveryTest
  * @path packages/mcp/tests/tool_result_schema_discovery_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Tests the exaix/tools/result_schema JSON-RPC method (Phase 78
  * Enforcement Point 5 / Option 2 discovery). Verifies that a client can request
  * the expected result schema for a tool and receive a ToolResultSchemaDescriptor.

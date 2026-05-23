@@ -1,6 +1,6 @@
 /**
  * @module IplanService
- * @path src/shared/interfaces/i_plan_service.ts
+ * @path packages/core/src/types/i_plan_service.ts
  * @description Module for IplanService.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

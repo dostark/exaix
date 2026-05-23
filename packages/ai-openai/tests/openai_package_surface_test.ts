@@ -1,6 +1,8 @@
 /**
  * @module OpenAIPackageSurfaceTest
  * @path packages/ai-openai/tests/openai_package_surface_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the public @exaix/ai-openai package surface.
  */
 

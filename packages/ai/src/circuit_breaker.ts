@@ -1,9 +1,10 @@
 /**
  * @module CircuitBreaker
- * @path src/ai/circuit_breaker.ts
+ * @path packages/ai/src/circuit_breaker.ts
  * @description Implementation of the circuit breaker pattern for LLM providers, preventing cascading failures during service outages.
  * @architectural-layer AI
- * @related-files [src/ai/providers.ts]
+ * @ungrounded
+ * @related-files [packages/ai/src/providers.ts]
  */
 
 import { CircuitState } from "@exaix/core";

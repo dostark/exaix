@@ -157,7 +157,7 @@ exactl flow run --file my_custom_flow.flow.yaml --request "Your request here..."
 - `"passthrough"` - Use data unchanged
 - `"extract_code"` - Extract code blocks from input
 - `"merge_as_context"` - Combine multiple inputs as context
-- Custom transforms can be defined in `src/flows/transforms.ts`
+- Custom transforms can be defined in `packages/flow/src/transforms.ts`
 
 ### Execution Settings
 
@@ -236,5 +236,5 @@ When adding new examples:
 ### Getting Help
 
 - Check the [Exaix Documentation](../../docs/) for detailed guides
-- Review [FlowRunner Implementation](../../src/flows/) for technical details
+- Review [FlowRunner Implementation](../../packages/flow/src/) for technical details
 - Examine [Test Cases](../../tests/flows/) for usage examples

@@ -3,7 +3,7 @@
  * @path packages/ai-google/src/google_factory.ts
  * @description Factory for creating Google provider instances from the @exaix/ai-google package.
  * @architectural-layer AI
- * @related-files [packages/ai-google/src/google_provider.ts, packages/ai/src/factories/google_factory.ts]
+ * @related-files [packages/ai-google/src/google_provider.ts, packages/ai-google/src/google_factory.ts]
  */
 
 import { AbstractKeyBasedProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";

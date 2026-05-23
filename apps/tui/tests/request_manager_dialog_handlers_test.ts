@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerDialogHandlersTest
  * @path apps/tui/tests/request_manager_dialog_handlers_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for handling interactive dialog completions in the RequestManager,
  * ensuring input validation and correct routing of create/approve/reject actions.
  */

@@ -1,6 +1,9 @@
 /**
  * @module AllowAllConfirmationInterceptor
  * @path packages/mcp/testing/allow_all_confirmation_interceptor.ts
+ * @related-files []
+ * @architectural-layer MCP
+ * @ungrounded
  * @description Test-only fixture that always approves any tool confirmation request.
  * Must never be imported from production runtime code.
  */

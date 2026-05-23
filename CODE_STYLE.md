@@ -90,16 +90,15 @@ checklists (pre‑commit, CI, etc.).
 - Never hardcode numeric literals or string constants in production or test code
   (timeouts, status values, provider names, etc.).
 - **User‑configurable values** belong in `exa.config.sample.toml` with a
-  comment, the matching Zod schema (`src/config/schema.ts`), and a default in
-  `src/config/constants.ts` (the config service handles loading).
-- **Internal constants** belong in `src/constants.ts` or a module‑scoped
-  `constants.ts` file. Use descriptive names and group related values.
+  comment, the matching Zod schema (`packages/core/src/config/schema.ts`), and a default in
+  `packages/core/src/config/constants.ts` (the config service handles loading).
+- **Internal constants** belong in a module‑scoped `constants.ts` file within the relevant package. Use descriptive names and group related values.
 - **CLI/TUI defaults** go in `apps/exactl/src/cli.config.ts` or
   `packages/tui/src/config.ts` respectively.
 - **Test‑specific constants** belong in `tests/config/constants.ts` (e.g.
   prompts, mock keys, environment variable names).
 - **Enums.** Whenever a set of fixed strings is used (statuses, types,
-  providers), define a TypeScript `enum` in `src/enums.ts` and reference it.
+  providers), define a TypeScript `enum` in the appropriate package (e.g. `packages/core/src/enums.ts`) and reference it.
   Compare against `RequestStatus.PENDING`, never the literal string.
 
 ### Automated Enforcement
@@ -127,7 +126,7 @@ pre-commit gates via `deno task check:magic` (or directly:
 
 - **Magic string unions.** Avoid inline string literal unions (e.g., `"a" | "b"`)
   directly in functional code. These are difficult to maintain and track.
-  Instead, define a TypeScript `enum` in `src/enums.ts` or a shared named type alias.
+  Instead, define a TypeScript `enum` in the appropriate package or a shared named type alias.
   This rule is enforced as an error in production code.
 
 **What is skipped (not counted):**
@@ -185,7 +184,7 @@ import { Baz } from "./qux.ts";
 export { Baz }; // ❌ Explicit re-export
 ```
 
-**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root `src/*` paths, or another package's source directories remains prohibited. This restriction is enforced as `[src-barrel-re-export]` for barrel files under `src/`.
+**Allowed exception:** package entrypoint files like `mod.ts` or `index.ts` may re-export public interfaces, types, or values defined in other modules within the same package to expose the package's public API. This is only allowed for same-package modules owned by that package root surface; re-exporting from external packages, repo root retired `src/*` paths, or another package's source directories remains prohibited. This restriction is enforced as `[src-barrel-re-export]` for barrel files under the retired `src/`.
 
 **Canonical subpackage boundary:** if the root import map exposes an exact canonical subpackage alias such as `@exaix/core/status` or `@exaix/ai/providers`, the parent package entrypoint must not promote that subpackage's exports through `@exaix/core` or `@exaix/ai`. Keep the boundary explicit: consumers import subpackage-owned symbols from the canonical subpackage barrel, not from the parent package barrel.
 
@@ -209,10 +208,10 @@ export { RetryPolicy } from "./src/request/retry_policy.ts"; // ❌ Import from 
 **Prohibited in package entrypoints:**
 
 ```ts
-export * from "../../src/shared/enums/ui.ts";
+export * from "../../apps/other_app/src/some_export.ts";
 ```
 
-Package entrypoints must only expose package-local source exports, not direct repository `src/*` imports.
+Package entrypoints must only expose package-local source exports, not direct imports from other packages' source trees.
 
 ### Multi-line Named Imports
 
@@ -280,7 +279,7 @@ import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 These rules are enforced in part by `scripts/check_code_style.ts` via the `[package-test-boundary]`, `[package-src-boundary]`, `[package-related-files-boundary]`, and `[package-testing-import]` error tags. The public testing-subpath import rule must be followed wherever a package exposes `@exaix/<package>/testing`.
 
-- Barrel re-export from packages in `src/` is reported as `[src-barrel-re-export]`.
+- Barrel re-export violations from source are reported as `[src-barrel-re-export]`.
 
 - Canonical package and subpackage barrel enforcement is reported as `[package-canonical-import]`.
 
@@ -333,7 +332,7 @@ import { IRequest } from "./request.ts";
 
 If a naming conflict occurs, it is better to refactor the local names or the conflicting modules than to alias the interfaces.
 
-**Exception:** Aliasing is permitted in `src/parsers/markdown.ts` when used for backward compatibility shims or interface compatibility bridges.
+**Exception:** Aliasing is permitted in `packages/core/src/parsing/markdown.ts` when used for backward compatibility shims or interface compatibility bridges.
 
 Good:
 
@@ -401,7 +400,7 @@ style guide:
 - **Production overrides** are limited to the `EXA_LLM_*` family:
   `PROVIDER`, `MODEL`, `BASE_URL`, and `TIMEOUT_MS`.
 - **All** env vars **must** be validated via the Zod schema in
-  `src/config/env_schema.ts` – use `getValidatedEnvOverrides()`, not
+  `packages/core/src/config/env_schema.ts` – use `getValidatedEnvOverrides()`, not
   `Deno.env.get()` directly.
 - **Test variables** use the `EXA_TEST_*` prefix and helpers such as
   `isTestMode()` and `isCIMode()` for detection.
@@ -427,11 +426,11 @@ runtime bugs.
 
 Exaix enforces a strict boundary between the Terminal User Interface (TUI) and the core system. This decoupling is essential for maintainability and independent evolution of the layers.
 
-- **Strict TUI Isolation**: Code in `apps/tui/src/` is prohibited from importing any modules from `apps/exactl/src/`, `src/services/`, or `src/config/`.
-- **Communication via Interfaces**: TUI components must interact with core functionality exclusively through service interfaces defined in `src/shared/interfaces/`.
+- **Strict TUI Isolation**: Code in `apps/tui/src/` is prohibited from importing any modules from `apps/exactl/src/`, or `packages/core/src/config/`.
+- **Communication via Interfaces**: TUI components must interact with core functionality exclusively through service interfaces defined in `packages/core/src/types/`.
 - **Allowed TUI Dependencies**:
   - Other modules within `apps/tui/src/` (using relative paths).
-  - Shared assets, enums, schemas, types in `src/shared/`, and packages under `packages/`.
+  - Shared assets, enums, schemas, types in `packages/schemas/` and `packages/core/`, and other packages under `packages/`.
 - **No Direct Instantiation**: TUI code must never instantiate core service classes. Instead, services must be accessed through the `ITuiApplicationContext` or provided via dependency injection.
 - **TUI-owned Helpers**: Utilities specifically for terminal rendering and interaction (e.g., keyboard handling, tree views, spinners) must reside in `packages/tui/src/helpers/`. These are private to the TUI and must not be imported by Core modules.
 - **Core-to-TUI Direction**: External callers may only invoke the TUI entry point (`apps/tui/main.ts` via `Deno.Command` subprocess) to launch the dashboard interface.
@@ -454,13 +453,13 @@ Boundary checks run as part of the standard quality gates in pre-commit hooks an
 Exaix enforces a strict boundary between the CLI command layer and core implementations to preserve interface-driven separation.
 
 - **CLI boundary scope**: `apps/exactl/src/commands/`, `apps/exactl/src/handlers/`, and `apps/exactl/src/command_builders/`.
-- **No direct core service imports**: Files in the CLI boundary scope must not import from `src/services/` except `src/services/adapters/`.
-- **No direct config service imports**: Files in the CLI boundary scope must not import `src/config/service.ts`.
+- **No direct core service imports**: Files in the CLI boundary scope must not import directly from package internals except through canonical `@exaix/*` aliases.
+- **No direct config service imports**: Files in the CLI boundary scope must not import `packages/core/src/config/service.ts` directly — use the `@exaix/core` alias.
 - **Allowed dependencies in CLI boundary scope**:
-  - `src/shared/**` (interfaces, types, enums, constants, schemas, status)
-  - `packages/cli/**` (context, base class, CLI-owned helpers)
-  - `src/parsers/markdown.ts` (cross-cutting parser utility)
-  - `src/ai/types.ts` (`IModelProvider` interface only)
+  - `@exaix/schemas` (interfaces, types, enums, constants, schemas, status)
+  - `@exaix/cli` (context, base class, CLI-owned helpers)
+  - `@exaix/core/parsing` (cross-cutting parser utility)
+  - `@exaix/ai` (`IModelProvider` interface only)
 - **CLI helpers ownership rule**: `packages/cli/helpers/**` is CLI-owned; modules outside `apps/exactl/src/` must not import it.
 
 These rules are enforced by:
@@ -581,7 +580,7 @@ protected readonly logger?: IEventLogger;
 
 Package source files must not call `getValidatedEnvOverrides()` or instantiate
 `ConfigService`. Both read runtime state (env vars, TOML files) that belongs
-exclusively to the `src/services/` or startup layer.
+exclusively to the app startup layer (e.g. `apps/daemon/`).
 
 - Receive config as a typed `Config` constructor parameter — the service layer
   reads the config file and injects the plain value object.

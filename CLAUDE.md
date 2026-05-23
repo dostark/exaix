@@ -42,9 +42,9 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 Before proposing or implementing changes:
 
 1. **Read frontmatter** of root `.md` files — the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document.
-2. **Use symbol-based links** (e.g., `src/file.ts:Symbol`) when referencing code locations — line numbers shift; symbols stay stable.
+2. **Use symbol-based links** (e.g., `packages/core/src/types.ts:Symbol`) when referencing code locations — line numbers shift; symbols stay stable.
 3. **Read `ARCHITECTURE.md`** before modifying any core flow — it contains an `AGENT_LOGIC` YAML block that describes expected behavior and invariants.
-4. **Run `deno task docs-sync-schemas`** after modifying MCP tool handlers in `src/mcp/handlers/` to keep `TOOLS.md` in sync.
+4. **Run `deno task docs-sync-schemas`** after modifying MCP tool handlers in `packages/mcp/src/handlers/` to keep `TOOLS.md` in sync.
 
 ---
 
@@ -146,7 +146,7 @@ deno run --allow-read scripts/check_complexity_breaches.ts
 deno run --allow-run --allow-read --allow-write scripts/measure_coverage.ts
 
 # Build verification
-deno check src/main.ts
+deno check packages/ apps/ tests/
 
 # Architecture validation
 deno task check:arch
@@ -200,17 +200,33 @@ A task is only complete when:
 ## Project Structure
 
 ```text
-src/
-├── ai/          # LLM provider implementations
-├── cli/         # CLI commands (exactl)
-├── config/      # Configuration schemas
-├── parsers/     # File parsers (frontmatter)
+packages/        # Library packages (@exaix/*)
+├── core/        # Core contracts, config, utilities
+├── ai/          # LLM provider contracts and shared utilities
+├── ai-*/        # Concrete provider packages (anthropic, openai, google, ollama)
+├── cli/         # Base CLI types, formatters, helpers
+├── tui/         # Base TUI components and layout
+├── mcp/         # MCP manifest, server runtime
+├── execution/   # Agent orchestration
+├── memory/      # Memory bank, extraction, embedding
+├── portal/      # Portal analysis, permissions, persistence
+├── request/     # Request parsing, routing, processing
+├── routing/     # Routing policy, capability matching
+├── flow/        # Flow persistence, checkpoint, validator
+├── git/         # Git service
 ├── schemas/     # Zod validation schemas
-├── services/    # Core business logic
-├── tui/         # Terminal UI components
-└── main.ts      # Entry point
+├── storage-sqlite/ # SQLite database implementation
+├── tool-runtime/   # ToolRegistry, OutputValidator, path security
+├── quality-gate/   # Quality evaluation, LLM assessment
+└── testing/     # Shared test helpers and fixtures
 
-tests/           # Mirror of src/ structure
+apps/            # Thin app entry points
+├── daemon/      # Daemon entry point (main.ts)
+├── exactl/      # CLI app (concrete commands, handlers)
+├── mcp-server/  # MCP server entry point
+└── tui/         # TUI app (concrete dashboards, views)
+
+tests/           # Integration and scenario tests
 .copilot/        # AI assistant guidance (see below)
 docs/            # User documentation (Architecture moved to /ARCHITECTURE.md)
 ARCHITECTURE.md  # System Architecture & Knowledge Base
@@ -342,7 +358,7 @@ These are **REQUIRED** for all code tasks:
 - **MUST** read matching `.copilot/` docs and cite them in your plan
 - **MUST** use established test helpers (`initTestDbService`, `createCliTestContext`, etc.)
 - **MUST** place new tests under the correct `tests/` domain folder; do not add new `*_test.ts` files outside `tests/`, and do not place service tests directly in `tests/services/`
-- **MUST** have no TypeScript errors (`deno check src/main.ts`) before completing
+- **MUST** have no TypeScript errors (`deno check packages/ apps/ tests/`) before completing
 - **MUST** run `deno task test` before committing
 - **MUST** verify all CI checks pass locally before claiming task completion (see CI Verification section)
 

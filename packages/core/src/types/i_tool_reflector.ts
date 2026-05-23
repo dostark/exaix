@@ -1,6 +1,8 @@
 /**
  * @module ToolReflectorTypes
  * @path packages/core/src/types/i_tool_reflector.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Tool reflection types and interface for tool-runtime extraction.
  */
 

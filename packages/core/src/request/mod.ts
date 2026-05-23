@@ -1,6 +1,8 @@
 /**
  * @module RequestExports
  * @path packages/core/src/request/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Shim module for request-related core exports.
  */
 

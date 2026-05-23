@@ -1,6 +1,8 @@
 /**
  * @module AnalysisPersistenceTest
- * @path tests/services/request_analysis/analysis_persistence_test.ts
+ * @path packages/request/tests/analysis_persistence_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Tests for `saveAnalysis` / `loadAnalysis` — the atomic
  * file-system persistence helpers that store `IRequestAnalysis` as a
  * `_analysis.json` sibling to the request `.md` file.

@@ -1,6 +1,9 @@
 /**
  * @module GitTestingPackage
  * @path packages/git/testing/mod.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Public test-support surface for git package helpers shared across workspace tests.
  */
 

@@ -1,13 +1,13 @@
 /**
  * @module DirectoryAnalyzer
- * @path packages/portal/src/knowledge/directory_analyzer.ts
+ * @path packages/portal/knowledge/directory_analyzer.ts
  * @description Strategy 1 of PortalKnowledgeService: walks the file tree of a
  * mounted portal, builds statistics (file counts, extension distribution),
  * detects architecture layers from directory naming conventions, identifies
  * the primary language, and detects monorepo vs. single-project structure.
  * Pure function module — zero LLM / network dependencies, sandboxed-safe.
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/config_parser.ts]
+ * @related-files [packages/portal/knowledge/config_parser.ts]
  */
 
 import { join } from "@std/path";

@@ -1,6 +1,8 @@
 /**
  * @module RequestAnalysisTestHelpers
- * @path tests/services/request_analysis/test_helpers.ts
+ * @path packages/request/tests/test_helpers.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Shared helper functions and constants for request analysis tests.
  */
 

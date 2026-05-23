@@ -17,7 +17,7 @@ import {
   initializeHealthChecks,
   LLMProviderHealthCheck,
   MemoryHealthCheck,
-} from "../../../src/services/core/health_check_service.ts";
+} from "../../../packages/core/src/health/health_check_service.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { initTestDbService } from "../../helpers/db.ts";
 

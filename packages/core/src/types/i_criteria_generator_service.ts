@@ -1,10 +1,10 @@
 /**
  * @module ICriteriaGeneratorService
- * @path src/shared/interfaces/i_criteria_generator_service.ts
+ * @path packages/core/src/types/i_criteria_generator_service.ts
  * @description Service interface for dynamically generating EvaluationCriterion
  * objects from a structured request analysis, enabling goal-aligned evaluation.
  * @architectural-layer Shared
- * @related-files [src/services/criteria_generator.ts, src/shared/interfaces/mod.ts]
+ * @related-files [packages/core/src/skills/criteria_generator.ts, packages/core/src/types/mod.ts]
  */
 
 import type { EvaluationCriterion } from "@exaix/core/types";

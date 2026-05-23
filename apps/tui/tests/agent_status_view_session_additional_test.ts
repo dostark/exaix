@@ -1,6 +1,8 @@
 /**
  * @module AgentStatusSessionAdditionalTest
  * @path apps/tui/tests/agent_status_view_session_additional_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for AgentStatusTuiSession, specifically focusing on session
  * initialization, dynamic grouping labels, and resilient detail rendering.
  */

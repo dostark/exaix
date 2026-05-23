@@ -2,7 +2,7 @@
 /**
  * @module MeasureComplexity
  * @path scripts/measure_complexity.ts
- * @description Analyzes code complexity across the src/ tree using AST-based or heuristic analysis.
+ * @description Analyzes code complexity across the packages/ and apps/ trees using AST-based or heuristic analysis.
  *
  * Usage:
  *   deno run --allow-run --allow-read scripts/measure_complexity.ts [options]
@@ -257,14 +257,15 @@ async function runComplexityCheck() {
     console.warn("⚠️  Could not load AST parser; falling back to heuristic per-function analysis.");
   }
 
-  const srcExists = await Deno.stat("src").then((s) => s.isDirectory).catch(() => false);
-  const srcDirs = srcExists ? ["src"] : ["packages", "apps"];
+  const srcDirs = ["packages", "apps"];
 
-  for await (const entry of walk(srcExists ? "src" : ".", {
-    includeDirs: false,
-    exts: [".ts", ".tsx", ".js", ".jsx"],
-    match: srcExists ? undefined : srcDirs.map((d) => new RegExp(`^${d}/[^/]+/src/`)),
-  })) {
+  for await (
+    const entry of walk(".", {
+      includeDirs: false,
+      exts: [".ts", ".tsx", ".js", ".jsx"],
+      match: srcDirs.map((d) => new RegExp(`^${d}/[^/]+/src/`)),
+    })
+  ) {
     const content = await Deno.readTextFile(entry.path);
     let ast: Node | null = null;
 

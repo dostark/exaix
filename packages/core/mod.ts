@@ -1,6 +1,8 @@
 /**
  * @module CorePackage
  * @path packages/core/mod.ts
+ * @architectural-layer Core
+ * @related-files []
  * @description Package entrypoint for @exaix/core. This package houses core contracts, types, and shared primitives.
  */
 

@@ -3,6 +3,7 @@
  * @path packages/tui/src/base/tree_view_state.ts
  * @description Common state interfaces and factory functions for tree-based TUI views.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/tui/src/base/base_tree_view.ts"]
  */
 

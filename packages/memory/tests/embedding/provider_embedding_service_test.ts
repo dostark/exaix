@@ -1,6 +1,8 @@
 /**
  * @module ProviderEmbeddingServiceTest
  * @path packages/memory/tests/embedding/provider_embedding_service_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Tests for ProviderEmbeddingService implementing
  * IMemoryEmbeddingService with a mock IEmbeddingProvider.
  */

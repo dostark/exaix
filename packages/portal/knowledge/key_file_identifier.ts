@@ -1,12 +1,12 @@
 /**
  * @module KeyFileIdentifier
- * @path packages/portal/src/knowledge/key_file_identifier.ts
+ * @path packages/portal/knowledge/key_file_identifier.ts
  * @description Strategy 3 of PortalKnowledgeService: identifies significant
  * files by name and path heuristics, assigns roles (entrypoint, config, schema,
  * test-helper, routing, types, migration, build), and returns them sorted by
  * significance. Pure function module — zero LLM / network dependencies.
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/config_parser.ts, packages/portal/src/knowledge/pattern_detector.ts]
+ * @related-files [packages/portal/knowledge/config_parser.ts, packages/portal/knowledge/pattern_detector.ts]
  */
 
 import { PORTAL_ENTRYPOINT_NAMES, PORTAL_KNOWLEDGE_CONFIG_EXTENSIONS } from "@exaix/core";

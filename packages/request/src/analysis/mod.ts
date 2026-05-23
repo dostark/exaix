@@ -1,6 +1,8 @@
 /**
  * @module RequestAnalysis
  * @path packages/request/src/analysis/mod.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Barrel exports for request analysis: heuristic analysis, LLM-based
  * analysis, persistence, and the composite RequestAnalyzer.
  */

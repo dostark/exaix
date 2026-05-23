@@ -1,6 +1,7 @@
 /**
  * @module PortalKnowledgeCliTest
  * @path apps/exactl/tests/commands/portal_knowledge_cli_test.ts
+ * @architectural-layer CLI
  * @description Tests for the `analyze` and `knowledge` CLI subcommands added to
  * PortalCommands (Step 15 of Phase 46). Covers analysis trigger, mode flag,
  * force re-analysis, formatted/JSON knowledge output, and graceful error handling.

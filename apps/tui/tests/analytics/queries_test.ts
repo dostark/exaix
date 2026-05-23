@@ -1,6 +1,8 @@
 /**
  * @module AnalyticsQueriesTest
  * @path apps/tui/tests/analytics/queries_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for trace and log retrieval in the TUI analytics layer,
  * ensuring correct filtering by correlation identifiers and agent IDs.
  */

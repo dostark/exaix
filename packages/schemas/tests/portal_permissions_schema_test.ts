@@ -1,6 +1,8 @@
 /**
  * @module PortalPermissionsSchemaTest
- * @path tests/schemas/portal_permissions_schema_test.ts
+ * @path packages/schemas/tests/portal_permissions_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies that the portal permissions schema uses production defaults and does not depend on test helpers.
  */
 

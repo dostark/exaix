@@ -1,9 +1,9 @@
 /**
  * @module ReviewSchema
- * @path src/shared/schemas/review.ts
+ * @path packages/schemas/src/review.ts
  * @description Defines the structure for code reviews created by agents, including branch metadata, commit SHAs, and rejection reasons.
  * @architectural-layer Schemas
- * @related-files [apps/exactl/src/review_commands.ts]
+ * @related-files [apps/exactl/src/commands/review_commands.ts]
  */
 
 import { z } from "zod";

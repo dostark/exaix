@@ -1,6 +1,8 @@
 /**
  * @module ToolResultSchemaDescriptorTest
  * @path packages/schemas/tests/tool_result_schema_descriptor_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies ToolResultSchemaDescriptorSchema correctly validates
  * the API discovery response structure for tool result schema introspection.
  */

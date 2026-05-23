@@ -1,6 +1,8 @@
 /**
  * @module DashboardCommandsTest
  * @path apps/exactl/tests/dashboard_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the CLI entry point for the TUI dashboard, ensuring correct
  * delegation to the dashboard launcher.
  */

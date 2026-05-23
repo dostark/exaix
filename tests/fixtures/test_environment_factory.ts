@@ -17,7 +17,7 @@ import {
   MemoryEmbeddingAdapter,
   MemoryExtractorAdapter,
   SkillsAdapter,
-} from "../../src/services/adapters/mod.ts";
+} from "../../apps/common/adapters/mod.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";

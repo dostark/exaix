@@ -1,9 +1,11 @@
 /**
  * @module FlowValidation
  * @path packages/cli/src/flow_validation.ts
+ * @related-files []
  * @description Provides CLI validation for flow dynamic step execution mode,
  * outputting errors for write tools and warnings for missing configurations.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import { READ_ONLY_TOOLS, WRITE_TOOLS } from "@exaix/mcp";

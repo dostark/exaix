@@ -5,8 +5,9 @@
  * Interceptor: ToolConfirmationRequest (the pause/ask payload) and
  * ToolConfirmationDecision (the human or timeout response).
  * @architectural-layer Shared
+ * @ungrounded
  * @dependencies ["zod"]
- * @related-files [packages/core/src/types/tool_confirmation_interceptor.ts, src/flows/dynamic_step_executor.ts]
+ * @related-files [packages/core/src/types/tool_confirmation_interceptor.ts, packages/flow/src/dynamic_step_executor.ts]
  */
 
 import { z } from "zod";

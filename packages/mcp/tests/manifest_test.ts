@@ -5,7 +5,7 @@
  * invariants, and DYNAMIC_MODE_TOOLS derivation. These are pure data tests that execute
  * without an MCPServer or filesystem, so they run fast and in isolation.
  * @architectural-layer MCP
- * @related-files [packages/mcp/src/manifest.ts, packages/mcp/src/enums.ts]
+ * @related-files [packages/mcp/src/manifest.ts, packages/core/src/types/enums.ts]
  */
 import { assert, assertEquals, assertExists } from "@std/assert";
 import {

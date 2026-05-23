@@ -3,7 +3,7 @@
  * @path packages/ai-ollama/src/ollama_provider.ts
  * @description Ollama inference provider implementation owned by the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @related-files [packages/ai-ollama/src/ollama_factory.ts, packages/ai/src/providers/ollama_provider.ts]
+ * @related-files [packages/ai-ollama/src/ollama_factory.ts, packages/ai-ollama/src/ollama_provider.ts]
  */
 
 import {

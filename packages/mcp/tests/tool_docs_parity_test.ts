@@ -1,6 +1,8 @@
 /**
  * @module ToolDocsParityTest
  * @path packages/mcp/tests/tool_docs_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Parity tests verifying that TOOLS.md AGENT_TOOLS table cells (category,
  * dynamic mark, approval mark) match the canonical manifest metadata for each tool.
  * Fails when sync_tool_schemas.ts generates inconsistent output or when TOOLS.md drifts

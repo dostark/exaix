@@ -10,7 +10,7 @@
  * - Diff generation and status checks
  *
  * @architectural-layer Services
- * @related-files ["src/services/plan/plan_executor.ts"]
+ * @related-files ["packages/core/src/planning/plan_executor.ts"]
  */
 
 import type { Config } from "@exaix/schemas";

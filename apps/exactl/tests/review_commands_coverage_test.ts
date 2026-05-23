@@ -2,6 +2,8 @@
 /**
  * @module ReviewCommandsCoverageTest
  * @path apps/exactl/tests/review_commands_coverage_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Targeted unit tests to improve coverage for ReviewCommands,
  * focusing on internal helper methods and edge cases in review management.
  */

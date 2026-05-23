@@ -3,7 +3,7 @@
  * @path packages/core/src/func/code_parser.ts
  * @description Parses LLM responses to extract file changes for plan execution, validating path safety.
  * @architectural-layer Services
- * @related-files ["packages/core/src/func/agent_runner.ts", "packages/core/src/func/execution_loop.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
  */
 
 import { join, normalize } from "@std/path";

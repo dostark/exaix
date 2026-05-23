@@ -1,6 +1,8 @@
 /**
  * @module PathSecurity
  * @path packages/tool-runtime/src/path_security.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Secure path resolution and validation utilities for @exaix/tool-runtime.
  */
 

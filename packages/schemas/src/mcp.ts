@@ -1,6 +1,6 @@
 /**
  * @module MCPSchema
- * @path src/shared/schemas/mcp.ts
+ * @path packages/schemas/src/mcp.ts
  * @description Provides Zod validation schemas for Model Context Protocol (MCP) types, including tool arguments, responses, resources, and prompts.
  * @architectural-layer Schemas
  * @related-files [packages/mcp/server/server.ts, packages/mcp/server/tool_handler.ts]

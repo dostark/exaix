@@ -1,6 +1,8 @@
 /**
  * @module ProcessManagerTest
  * @path packages/core/tests/process_manager_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Unit tests for ProcessManager.
  */
 

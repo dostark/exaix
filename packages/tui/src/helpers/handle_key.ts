@@ -1,6 +1,9 @@
 /**
  * @module TuiHandleKey
  * @path packages/tui/src/helpers/handle_key.ts
+ * @related-files []
+ * @architectural-layer TUI
+ * @ungrounded
  * @description Package-owned test-mode key routing for the TUI dashboard.
  */
 

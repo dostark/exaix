@@ -1,9 +1,10 @@
 /**
  * @module PortalKnowledgeDataPathTest
- * @path tests/services/portal/portal_knowledge_data_path_test.ts
+ * @path packages/portal/tests/portal_knowledge_data_path_test.ts
+ * @architectural-layer Portal
  * @description Tests for the PortalService.getKnowledge() method that loads
  * IPortalKnowledge from knowledge.json via the TUI/CLI data path.
- * @related-files ["src/services/portal/portal.ts", "packages/core/src/types/i_portal_service.ts", src/services/portal_knowledge/knowledge_persistence.ts]
+ * @related-files ["packages/portal/src/portal.ts", "packages/core/src/types/i_portal_service.ts", packages/portal/knowledge/knowledge_persistence.ts]
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";

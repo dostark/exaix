@@ -1,6 +1,6 @@
 /**
  * @module RequestParserStructuredTest
- * @path tests/services/request_processing/request_parser_structured_test.ts
+ * @path packages/request/tests/request_parser_structured_test.ts
  * @description Tests for structured frontmatter field extraction and runtime
  * guards (acceptance_criteria, expected_outcomes, scope) in RequestParser
  * (Phase 49, Step 9).

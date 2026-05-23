@@ -35,7 +35,7 @@ Workflow
 ────────
 Phase 1 — Baseline measurement
   1. Run each check in sequence and record all failures:
-       deno check src/main.ts                          → list type errors
+       deno check packages/ apps/ tests/                       → list type errors
        deno lint                                        → list lint violations
        deno fmt --check                                 → list formatting diffs
        deno task check:style                            → list style violations
@@ -46,11 +46,11 @@ Phase 1 — Baseline measurement
   3. Do NOT attempt all fixes at once — process one category per batch.
 
 Phase 2 — Type errors (highest priority)
-  4. Fix every error reported by `deno check src/main.ts`.
+  4. Fix every error reported by `deno check packages/ apps/ tests/`.
      - Remove `any` types; replace with specific interfaces or `unknown`.
      - Resolve missing module errors (TS2307) by creating stubs or fixing imports.
      - Never cast to `as any` to silence type errors.
-  5. Re-run `deno check src/main.ts` — must report 0 errors before continuing.
+  5. Re-run `deno check packages/ apps/ tests/` — must report 0 errors before continuing.
 
 Phase 3 — Lint
   6. Fix every violation reported by `deno lint`.
@@ -97,7 +97,7 @@ Phase 10 — Final full-suite validation
   20. Run tests to confirm all gates green:
         deno task test_parallel
      Or sequentially:
-        deno check src/main.ts && deno lint && deno fmt --check &&
+        deno check packages/ apps/ tests/ && deno lint && deno fmt --check &&
         deno task check:style && deno task check:arch && deno task check:magic &&
         deno task test
   21. All checks must report zero errors/warnings/violations before committing.
@@ -151,5 +151,5 @@ Workflow chain (typical):
 ## Examples
 
 - `#clean-codebase` — drive the full repo to CI-green from scratch
-- `#clean-codebase src/services/` — scope cleanup to the services layer only
+- `#clean-codebase packages/` — scope cleanup to the packages layer only
 - `#clean-codebase after merge — fix type errors and lint introduced by the merge`

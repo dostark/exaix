@@ -3,6 +3,7 @@
  * @path packages/mcp/src/tool_result_metadata.ts
  * @description Manifest-aware helpers for tool result schema discovery and remediation policy lookup.
  * @architectural-layer MCP
+ * @ungrounded
  * @related-files [packages/mcp/src/manifest.ts, packages/schemas/src/tool_result.ts, packages/mcp/server/server.ts]
  */
 

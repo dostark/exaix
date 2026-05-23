@@ -272,11 +272,11 @@ if [ -d "exaix-dev-docs/.git" ]; then
 fi
 
 # 3. Full Type Check (all source AND test files)
-#    The pre-commit hook only checks src/main.ts for speed.
-#    Pre-push must catch TS errors in every file that will be pushed.
-deno check src/ tests/
+#    The pre-push hook checks all packages, apps, and tests.
+#    This catches TS errors across the entire codebase.
+deno check packages/ apps/ tests/
 if [ $? -ne 0 ]; then
-  echo "❌ Error: Type checking failed (src/ or tests/)."
+  echo "❌ Error: Type checking failed."
   exit 1
 fi
 

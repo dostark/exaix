@@ -1,6 +1,8 @@
 /**
  * @module GitCommandsTest
  * @path apps/exactl/tests/git_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI-exposed Git utility commands, ensuring correct interaction with
  * local repositories, identity management, and automated branch cleanup via the GitService.
  */

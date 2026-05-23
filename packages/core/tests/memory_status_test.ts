@@ -1,6 +1,8 @@
 /**
  * @module MemoryStatusParsingTest
  * @path packages/core/tests/memory_status_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies memory status enums, ensuring correct validation and
  * resilient coercion of dynamic learning states.
  */

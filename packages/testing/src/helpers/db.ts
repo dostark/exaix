@@ -1,6 +1,9 @@
 /**
  * @module TestingPackageDbHelpers
  * @path packages/testing/src/helpers/db.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Shared DB-related test helpers for package-local tests.
  */
 import type { JSONValue } from "@exaix/core";

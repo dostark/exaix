@@ -1,9 +1,9 @@
 /**
  * @module PlanAmendmentSchema
- * @path src/shared/schemas/plan_amendment.ts
+ * @path packages/schemas/src/plan_amendment.ts
  * @description Zod schemas and TypeScript types for mid-execution plan amendments.
  * @architectural-layer Shared
- * @related-files [src/services/plan/plan_amendment_service.ts]
+ * @related-files [packages/core/src/planning/plan_amendment_service.ts]
  */
 
 import { z } from "zod";

@@ -48,7 +48,7 @@ Target: Minimum 70% branch coverage on new features. Request an implementation w
 
 ### Advanced Testing Patterns
 
-- **Refactoring & Duplication**: Use `npx jscpd src tests` to find duplicated test setup code. Extract helpers (e.g., `GitTestHelper`, `ToolRegistryTestHelper`) to keep tests DRY.
+- **Refactoring & Duplication**: Use `npx jscpd packages apps tests` to find duplicated test setup code. Extract helpers (e.g., `GitTestHelper`, `ToolRegistryTestHelper`) to keep tests DRY.
 - **Paranoid Security Testing**: Ask agents to write "paranoid" tests: path traversal, command injection, symlink escapes. Whitelists beat blacklists.
 - **Performance Testing**: Don't guess—measure. Ask agents to write benchmarks or load tests to verify async behavior (e.g., batched logging).
 
@@ -62,7 +62,7 @@ Target: Minimum 70% branch coverage on new features. Request an implementation w
 ### Mandatory Test Placement Rules
 
 - All new runtime test files matching `*_test.ts` must live under `tests/`.
-- Never add new `*_test.ts` files under `src/`, `scripts/`, `docs/`, or other non-`tests/` roots.
+- Never add new `*_test.ts` files under `scripts/`, `docs/`, or other non-`tests/` and non-`packages/` roots.
 - Service tests must live under `tests/services/<domain>/`, not directly under `tests/services/`.
 - Before creating a new test, search for an existing domain folder and place the file there.
 - If no suitable service domain folder exists yet, create `tests/services/<domain>/` first.
@@ -70,14 +70,13 @@ Target: Minimum 70% branch coverage on new features. Request an implementation w
 
 ### Deterministic Source-To-Test Mapping
 
-- `src/services/<domain>/...` → `tests/services/<domain>/...`
-- `src/shared/schemas/...` → `tests/schemas/...`
-- `src/shared/...` → `tests/shared/...`
-- `src/flows/...` → `tests/flows/...`
-- `src/cli/...` → `tests/cli/...`
-- `src/ai/...` → `tests/ai/...`
-- `src/mcp/...` → `tests/mcp/...`
-- `src/errors/...` → `tests/errors/...`
+Package-owned tests live under `packages/<package>/tests/`. Integration and scenario tests live under `tests/`.
+
+- `packages/<package>/src/...` → `packages/<package>/tests/...`
+- `apps/<app>/src/...` → `apps/<app>/tests/...` or `tests/integration/...`
+- `packages/schemas/...` → `packages/schemas/tests/...`
+- `packages/flow/...` → `packages/flow/tests/...`
+- `packages/mcp/...` → `packages/mcp/tests/...`
 - `scripts/...` → `tests/scripts/...`
 
 Deduplication checklist:
@@ -153,7 +152,7 @@ if (isCIMode() && !Deno.env.get("EXA_TEST_ENABLE_PAID_LLM")) {
   - Tests that assert provider selection should include a CI-guard branch (e.g., accept `mock-provider` or `CI-protected ...`).
 - Avoid requiring compiled binaries in tests.
   - If you need to run the CLI from a temp workspace, prefer:
-    - `new Deno.Command(Deno.execPath(), { args: ["run", "--allow-all", "--config", <repo>/deno.json, <repo>/src/cli/exactl.ts, ...] })`
+    - `new Deno.Command(Deno.execPath(), { args: ["run", "--allow-all", "--config", <repo>/deno.json, <repo>/apps/exactl/main.ts, ...] })`
   - This keeps behavior consistent between local runs and CI without extra build steps.
 
 ---

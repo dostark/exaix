@@ -3,7 +3,7 @@
  * @path packages/mcp/server/handlers/search_files_tool.ts
  * @description MCP tool handler for searching files using glob patterns in a portal.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/tool_handler.ts, "src/services/tool/tool_registry.ts"]
+ * @related-files [packages/mcp/server/tool_handler.ts, "packages/tool-runtime/src/tool_registry.ts"]
  */
 import { ToolHandler } from "../tool_handler.ts";
 import { toolResultToMcpResponse } from "@exaix/mcp";

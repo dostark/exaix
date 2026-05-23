@@ -1,6 +1,9 @@
 /**
  * @module MemoryPathsHelper
  * @path packages/memory/testing/paths.ts
+ * @related-files []
+ * @architectural-layer Memory
+ * @ungrounded
  * @description Memory-domain path utilities for resolving memory bank directory
  * paths from a root dir during tests.
  */

@@ -1,6 +1,7 @@
 /**
  * @module ILogEvent
  * @path packages/core/src/types/i_log_event.ts
+ * @related-files []
  * @description Shared structured log event contract used by EventLogger and related services.
  * @architectural-layer Shared
  */

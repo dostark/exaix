@@ -3,7 +3,7 @@
  * @path packages/ai-anthropic/src/anthropic_factory.ts
  * @description Factory for creating Anthropic provider instances from the @exaix/ai-anthropic package.
  * @architectural-layer AI
- * @related-files [packages/ai-anthropic/src/anthropic_provider.ts, packages/ai/src/factories/anthropic_factory.ts]
+ * @related-files [packages/ai-anthropic/src/anthropic_provider.ts, packages/ai-anthropic/src/anthropic_factory.ts]
  */
 
 import { AbstractKeyBasedProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";

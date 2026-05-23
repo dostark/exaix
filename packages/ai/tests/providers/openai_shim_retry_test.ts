@@ -1,6 +1,8 @@
 /**
  * @module OpenAIShimRetryTest
- * @path tests/ai/openai_shim_retry_test.ts
+ * @path packages/ai/tests/providers/openai_shim_retry_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the retry logic for OpenAI-compatible LLM endpoints,
  * ensuring robust recovery from transient 429 (Rate Limit) errors.
  */

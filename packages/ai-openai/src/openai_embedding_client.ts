@@ -3,7 +3,8 @@
  * @path packages/ai-openai/src/openai_embedding_client.ts
  * @description OpenAI embedding client owned by the @exaix/ai-openai package.
  * @architectural-layer AI
- * @related-files [packages/ai/src/providers/openai_embedding_client.ts]
+ * @ungrounded
+ * @related-files [packages/ai-openai/src/openai_embedding_client.ts]
  */
 
 import { EmbeddingError } from "@exaix/ai/embeddings/embedding_errors.ts";

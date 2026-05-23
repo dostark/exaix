@@ -1,6 +1,8 @@
 /**
  * @module LayoutDialogsTest
  * @path packages/tui/tests/dialogs/layout_dialogs_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies package-owned TUI layout dialogs and keyboard-driven state transitions.
  */
 

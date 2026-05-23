@@ -1,6 +1,8 @@
 /**
  * @module ToolRegistrationParityTest
  * @path packages/mcp/tests/tool_registration_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that every live MCP tool entry in the canonical manifest is actually
  * registered and returned by MCPServer tools/list, and vice versa.
  */

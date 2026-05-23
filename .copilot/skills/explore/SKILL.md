@@ -29,13 +29,13 @@ Map dependencies, data flow, and ownership layer."
 
 Exaix navigation toolkit
   # Find a symbol across the codebase
-  rg "symbolName" src/
+  rg "symbolName" packages/ apps/
 
   # List exported symbols of a module
-  deno doc src/<module>.ts
+  deno doc packages/<package>/src/<module>.ts
 
   # Find files by name
-  fd <pattern> src/
+  fd <pattern> packages/ apps/
 
   # Check which layer a file belongs to
   deno task check:arch   # lists GROUNDED + layer for every file
@@ -44,14 +44,16 @@ Exaix navigation toolkit
   cat .copilot/manifest.json | jq '.[] | {title, short_summary, path}'
 
 Project layer map (from check:arch)
-  CLI            →  src/cli/
-  Services       →  src/services/
-  AI providers   →  src/ai/
-  Schemas        →  src/schemas/
-  Parsers        →  src/parsers/
-  Config         →  @exaix/core/config/
-  Entry point    →  src/main.ts
-  TUI            →  src/tui/
+  CLI base       →  packages/cli/src/
+  CLI app        →  apps/exactl/src/
+  Services       →  packages/*/src/
+  AI providers   →  packages/ai/src/, packages/ai-*/src/
+  Schemas        →  packages/schemas/src/
+  Parsers        →  packages/core/src/parsing/
+  Config         →  packages/core/src/config/
+  Entry point    →  apps/daemon/main.ts
+  TUI base       →  packages/tui/src/
+  TUI app        →  apps/tui/src/
 
 Key architectural invariants (from ARCHITECTURE.md)
   - File system IS the database: Workspace/Active, Workspace/Requests, Workspace/Plans

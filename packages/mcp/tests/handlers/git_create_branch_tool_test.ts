@@ -1,6 +1,8 @@
 /**
  * @module GitCreateBranchToolTest
  * @path packages/mcp/tests/handlers/git_create_branch_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the GitCreateBranchTool MCP tool.
  */
 import { assertEquals, assertStringIncludes } from "@std/assert";

@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerViewTest
  * @path apps/tui/tests/request_manager_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the RequestManagerView TUI component, ensuring correct rendering
  * of the request list, content preview, and interactive status management.
  */

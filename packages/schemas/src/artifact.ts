@@ -1,9 +1,10 @@
 /**
  * @module ArtifactSchema
- * @path src/shared/schemas/artifact.ts
+ * @path packages/schemas/src/artifact.ts
  * @description Defines schemas for analysis artifacts produced by read-only agents, stored as markdown files with YAML frontmatter.
  * @architectural-layer Schemas
- * @related-files [src/services/artifact_registry.ts, apps/exactl/src/review_commands.ts]
+ * @ungrounded
+ * @related-files [packages/core/src/artifact/artifact_registry.ts, apps/exactl/src/commands/review_commands.ts]
  */
 
 import { z } from "zod";

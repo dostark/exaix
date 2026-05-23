@@ -7,7 +7,7 @@
  * ToolRegistry.
  * @architectural-layer Schemas
  * @dependencies ["packages/schemas/src/tool_result.ts", "packages/schemas/src/mcp.ts"]
- * @related-files ["packages/mcp/server/server.ts", "src/services/tool/tool_registry.ts", "packages/schemas/src/tool_result.ts"]
+ * @related-files ["packages/mcp/server/server.ts", "packages/tool-runtime/src/tool_registry.ts", "packages/schemas/src/tool_result.ts"]
  */
 
 import type { JSONValue } from "@exaix/core";

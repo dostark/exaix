@@ -1,6 +1,8 @@
 /**
  * @module SearchFilesToolTest
  * @path packages/mcp/tests/handlers/search_files_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the SearchFilesTool MCP tool.
  */
 import { assertEquals } from "@std/assert";

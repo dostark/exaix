@@ -2,6 +2,8 @@
 /**
  * @module TUIDashboardRendererTest
  * @path apps/tui/tests/dashboard/renderer_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the core rendering logic for the TUI Dashboard, ensuring resilient
  * handling of terminal size variations, help overlays, and notification panels.
  */

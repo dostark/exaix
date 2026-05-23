@@ -1,9 +1,9 @@
 /**
  * @module IFlowValidatorService
- * @path src/shared/interfaces/i_flow_validator_service.ts
+ * @path packages/core/src/types/i_flow_validator_service.ts
  * @description Interface for flow validation services.
  * @architectural-layer Shared
- * @related-files [src/services/adapters/flow_validator_adapter.ts, apps/exactl/src/cli_context.ts]
+ * @related-files [apps/common/adapters/flow_validator_adapter.ts, packages/cli/src/types/cli_context.ts]
  */
 
 import type { IFlow } from "@exaix/schemas";

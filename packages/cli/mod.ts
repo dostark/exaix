@@ -1,6 +1,9 @@
 /**
  * @module CLIPackage
  * @path packages/cli/mod.ts
+ * @ungrounded
+ * @architectural-layer CLI
+ * @related-files []
  * @description Package entrypoint for @exaix/cli.
  */
 

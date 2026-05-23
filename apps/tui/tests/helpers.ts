@@ -2,6 +2,8 @@
 /**
  * @module TUIAllHelpers
  * @path apps/tui/tests/helpers.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description The primary helper repository for TUI tests, providing unified mock data factories,
  * session simulators, and assertion utilities for all terminal views.
  */

@@ -1,6 +1,8 @@
 /**
  * @module TuiSessionBaseTest
  * @path packages/tui/tests/base/tui_session_base_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies package-owned TUI session utilities, refresh configuration, and scrolling helpers.
  */
 

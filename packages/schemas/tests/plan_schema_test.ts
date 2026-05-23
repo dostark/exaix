@@ -1,6 +1,8 @@
 /**
  * @module PlanSchemaTest
- * @path tests/schemas/plan_schema_test.ts
+ * @path packages/schemas/tests/plan_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies the Zod schemas for execution plans, ensuring robust
  * validation of step definitions, tool arguments, and human-review state.
  */

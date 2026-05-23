@@ -7,7 +7,6 @@ This directory contains **blueprints** - predefined templates and configurations
 - **Agents/**: Agent configuration blueprints defining personas, capabilities, and behaviors
 - **Flows/**: Flow orchestration blueprints defining multi-step processes and workflows
 - **Skills/**: Skill capability blueprints defining procedural knowledge and expertise
-- **src/**: Implementation code for flows and shared utilities
 
 ## Purpose
 

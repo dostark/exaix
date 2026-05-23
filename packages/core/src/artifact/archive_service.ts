@@ -3,7 +3,7 @@
  * @path packages/core/src/artifact/archive_service.ts
  * @description Manages persistence of execution plans and metadata for long-term storage.
  * @architectural-layer Services
- * @related-files ["src/services/agent/execution_loop.ts", "packages/core/src/types/enums.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "packages/core/src/types/enums.ts"]
  */
 import { join } from "@std/path";
 import { exists } from "@std/fs";

@@ -1,6 +1,8 @@
 /**
  * @module SkillsManagerViewTest
  * @path apps/tui/tests/skills_manager_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the SkillsManagerView TUI component, ensuring keyboard-driven
  * navigation of agent capabilities, dynamic grouping (Source/Status), and detailed skill inspection.
  */

@@ -1,6 +1,8 @@
 /**
  * @module TokenUsageRegressionTest
- * @path tests/services/token/token_usage_tracking_regression_test.ts
+ * @path packages/ai/tests/token_usage_tracking_regression_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Regression tests for the LLM token usage tracking system, ensuring correct
  * mapping of provider-specific usage metrics and estimated cost calculations.
  */

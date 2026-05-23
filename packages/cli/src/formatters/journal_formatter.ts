@@ -1,8 +1,10 @@
 /**
  * @module JournalFormatter
  * @path packages/cli/src/formatters/journal_formatter.ts
+ * @related-files []
  * @description Provides formatting and rendering logic for IActivity Journal records in the CLI, supporting table, text, and JSON outputs.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import { Table } from "@cliffy/table";

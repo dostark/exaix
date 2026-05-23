@@ -1,6 +1,8 @@
 /**
  * @module PathSecurityTest
  * @path packages/tool-runtime/tests/path_security_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the package-owned path security implementation.
  */
 

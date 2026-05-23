@@ -1,6 +1,8 @@
 /**
  * @module GitCommitToolTest
  * @path packages/mcp/tests/handlers/git_commit_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the GitCommitTool MCP tool.
  */
 import { assertEquals, assertMatch } from "@std/assert";

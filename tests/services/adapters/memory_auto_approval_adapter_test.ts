@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { describe, it } from "@std/testing/bdd";
-import { MemoryAutoApprovalAdapter } from "../../../src/services/adapters/memory_auto_approval_adapter.ts";
+import { MemoryAutoApprovalAdapter } from "../../../apps/common/adapters/memory_auto_approval_adapter.ts";
 import {
   ConfidenceAssessmentLevel,
   LearningCategory,

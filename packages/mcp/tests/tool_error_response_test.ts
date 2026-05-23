@@ -1,6 +1,8 @@
 /**
  * @module ToolErrorResponseTest
  * @path packages/mcp/tests/tool_error_response_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies MCP tool handlers return isError:true structured responses instead of throwing for tool-logic errors.
  */
 import { assertEquals } from "@std/assert";

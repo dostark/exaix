@@ -1,8 +1,10 @@
 /**
  * @module SubjectGenerator
  * @path packages/cli/src/helpers/subject_generator.ts
+ * @related-files []
  * @description Utilities for generating and validating entity subjects (mnemonic names).
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type { JSONValue } from "@exaix/core";

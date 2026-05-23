@@ -1,6 +1,8 @@
 /**
  * @module McpClientTest
  * @path packages/mcp/tests/mcp_client_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for McpClient tool routing and canonical Map-based construction.
  */
 import { assertEquals, assertExists, assertRejects } from "@std/assert";

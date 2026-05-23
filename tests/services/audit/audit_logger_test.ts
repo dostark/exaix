@@ -9,7 +9,7 @@ import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
 
 import { assertSpyCalls, spy, stub } from "@std/testing/mock";
 import { initTestDbService } from "../../helpers/db.ts";
-import { AuditLogger } from "../../../src/services/core/audit_logger.ts";
+import { AuditLogger } from "@exaix/core/logger";
 import { SecurityEventResult, SecurityEventType, SecuritySeverity } from "@exaix/core";
 import { join } from "@std/path";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";

@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_display_service.ts
  * @description Interface for CLI/TUI display services (wrapping EventLogger).
  * @architectural-layer Shared
- * @related-files [src/services/adapters/display_adapter.ts, apps/exactl/src/cli_context.ts, apps/exactl/src/commands/blueprint_commands.ts]
+ * @related-files [apps/common/adapters/display_adapter.ts, packages/cli/src/types/cli_context.ts, apps/exactl/src/commands/blueprint_commands.ts]
  */
 
 import type { LogMetadata } from "@exaix/core";

@@ -1,6 +1,8 @@
 /**
  * @module AIServiceStubs
  * @path packages/ai/tests/helpers/service_stubs.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Stub implementations for services needed by AI tests.
  */
 

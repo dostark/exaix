@@ -1,6 +1,8 @@
 /**
  * @module DeprecatedEnvVarsTest
- * @path tests/ai/phase2_deprecated_env_vars_test.ts
+ * @path packages/ai/tests/phase2_deprecated_env_vars_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies that deprecated environment variables (EXA_OLLAMA_RETRY_*)
  * are correctly ignored in favor of the unified retry policy.
  */

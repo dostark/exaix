@@ -1,6 +1,8 @@
 /**
  * @module PortalCommandsTest
  * @path apps/exactl/tests/portal_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI commands for portal repository management, including portal
  * addition/removal, alias validation, and connection testing.
  */

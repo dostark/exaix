@@ -1,6 +1,8 @@
 /**
  * @module ExaCtlFallbackTest
  * @path apps/exactl/tests/exactl_fallback_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the CLI's resilience during initialization failures, ensuring safe
  * fallbacks for database and configuration modules to prevent terminal crashes.
  */

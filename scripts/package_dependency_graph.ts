@@ -5,18 +5,22 @@
  * @description Builds a package-level dependency graph from `deno info --json` and
  * explains file-level package boundaries.
  *
+ * @deprecated The migration from `src/` to `packages/` is complete.
+ * This tool is retired and retained only for historical analysis of the old
+ * composition layer. See the `packages/` directory for the current structure.
+ *
  * Usage:
  *
  *   Default — full package dependency graph from an entrypoint:
  *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts
  *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
- *       --entrypoint src/main.ts --format dot
+ *       --entrypoint apps/daemon/main.ts --format dot
  *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
  *       --candidate-package @exaix/mcp
  *
  *   --explain-boundary — fan-out analysis for a single file:
  *     deno run --allow-run --allow-read scripts/package_dependency_graph.ts \
- *       --explain-boundary src/mcp/handlers/run_command_tool.ts
+ *       --explain-boundary apps/daemon/main.ts
  *
  *     Runs `deno info` on the target file directly, walks its full transitive
  *     dependency graph, and groups every dependency by owning package.
@@ -24,9 +28,9 @@
  *     NOT extractable when one or more deps still live in the src/ composition
  *     layer and would need to move first.
  *
- *     Use this to confirm why a file intentionally stays in src/ (its deps span
- *     root services) or to verify that a packages/ file has no improper src/
- *     leakage.
+ *     Now retired — use this for historical analysis to confirm why a file
+ *     intentionally stayed in src/ (its deps spanned root services) or to
+ *     verify that a packages/ file had no improper src/ leakage.
  */
 
 import { parse } from "@std/flags";
@@ -86,7 +90,7 @@ export interface IPackageDiscovery {
 }
 
 export interface BoundaryGroup {
-  /** Display name of the owning package (e.g. "@exaix/mcp", "@exaix (src/)"). */
+  /** Display name of the owning package (e.g. "@exaix/mcp", "@exaix (retired src/)"). */
   packageName: string;
   /** Repo-relative paths of modules in this group. */
   modules: string[];
@@ -103,15 +107,15 @@ export interface BoundaryReport {
   externalDirect: string[];
   /**
    * True when every dependency (direct and transitive) is either package-owned
-   * or external — no src/ composition-layer modules appear in the fan-out.
+   * or external — no retired src/ composition-layer modules appear in the fan-out.
    */
   extractable: boolean;
-  /** Total count of src/ modules in the full transitive fan-out. */
+  /** Total count of retired src/ modules in the full transitive fan-out. */
   srcDepsCount: number;
 }
 
 const ROOT = Deno.cwd();
-const DEFAULT_ENTRYPOINT = "src/main.ts";
+const DEFAULT_ENTRYPOINT = "apps/daemon/main.ts";
 const DEFAULT_FORMAT: PackageDependencyFormat = "text";
 
 export async function main() {
@@ -187,10 +191,10 @@ function printUsage() {
   console.log(`Usage: deno run -A scripts/package_dependency_graph.ts [options]
 
 Options:
-  --entrypoint <path>         Entry point to analyze (default: src/main.ts)
+  --entrypoint <path>         Entry point to analyze (default: apps/daemon/main.ts)
   --format <text|json|dot>    Output format (default: text)
-  --candidate-package <pkg>   Report src/ modules that should move into this package
-  --explain-boundary <path>   Fan-out analysis: show why a file stays in src/ or is
+  --candidate-package <pkg>   Report retired src/ modules that should move into this package
+  --explain-boundary <path>   Fan-out analysis: show why a file stayed in retired src/ or is
                               extractable; groups all transitive deps by owning package
                               and emits an EXTRACTABLE / NOT extractable verdict
   --help                      Show this help message
@@ -451,7 +455,7 @@ export function findCandidateSrcModules(
 }
 
 const SRC_ROOT = "src";
-const SRC_DISPLAY_NAME = "@exaix (src/)";
+const SRC_DISPLAY_NAME = "@exaix (retired src/)";
 
 export function buildBoundaryReport(
   info: DenoInfoJson,
@@ -705,14 +709,14 @@ export function renderTextReport(entrypoint: string, graph: PackageGraph): strin
   }
 
   if (graph.candidateReport) {
-    lines.push(`Candidate src modules for '${graph.candidateReport.targetPackage}':`);
+    lines.push(`Candidate retired src modules for '${graph.candidateReport.targetPackage}':`);
     lines.push(
       `- direct imports by ${graph.candidateReport.targetPackage}: ${graph.candidateReport.directSrcModules.length}`,
     );
     for (const module of graph.candidateReport.directSrcModules) {
       lines.push(`  - ${module}`);
     }
-    lines.push(`- transitive src dependencies: ${graph.candidateReport.transitiveSrcModules.length}`);
+    lines.push(`- transitive retired src dependencies: ${graph.candidateReport.transitiveSrcModules.length}`);
     for (const module of graph.candidateReport.transitiveSrcModules) {
       lines.push(`  - ${module}`);
     }
@@ -769,14 +773,14 @@ export function renderBoundaryReport(report: BoundaryReport): string {
     lines.push("  This file is a candidate for migration into a dedicated package.");
   } else {
     lines.push(
-      `Verdict: NOT extractable — ${report.srcDepsCount} src/ module(s) keep this file in the composition layer.`,
+      `Verdict: NOT extractable — ${report.srcDepsCount} retired src/ module(s) kept this file in the composition layer.`,
     );
     const srcGroups = [
       ...report.directGroups.filter((g) => g.packageName === SRC_DISPLAY_NAME),
       ...report.transitiveGroups.filter((g) => g.packageName === SRC_DISPLAY_NAME),
     ];
     if (srcGroups.length > 0) {
-      lines.push("  src/ blockers:");
+      lines.push("  retired src/ blockers:");
       for (const group of srcGroups) {
         for (const mod of group.modules) lines.push(`    - ${mod}`);
       }

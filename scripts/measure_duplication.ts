@@ -120,7 +120,7 @@ function logTotals(label: string, totals: IDuplicationTotals, threshold: number)
 async function runDuplicationCheck() {
   const sourceTotals = await runJscpdScan(
     "Source",
-    ["src/", "packages/"],
+    ["packages/", "apps/"],
     SOURCE_THRESHOLD,
     ".duplication_report_src",
     ["**/*.d.ts", "**/tests/**"],
@@ -151,7 +151,7 @@ async function runDuplicationCheck() {
   console.log(
     `📦 Combined Duplication Snapshot: ${
       sourceTotals.duplicatedLines + testsTotals.duplicatedLines + integrationTestsTotals.duplicatedLines
-    } duplicated lines across src/, tests/, and integration/scenario tests`,
+    } duplicated lines across packages/, apps/, tests/, and integration/scenario tests`,
   );
 
   if (!sourcePassed || !testsPassed || !integrationTestsPassed) {

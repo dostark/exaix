@@ -1,6 +1,8 @@
 /**
  * @module CoreTypes
  * @path packages/core/src/types/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Core shared types exports.
  */
 

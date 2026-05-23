@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/dialog_rendering.ts
  * @description Shared dialog rendering utilities providing common patterns for dialog buttons, titles, and lines.
  * @architectural-layer Helpers
+ * @ungrounded
  * @related-files ["packages/tui/src/helpers/dialog_base.ts"]
  */
 

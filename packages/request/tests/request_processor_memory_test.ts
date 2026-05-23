@@ -1,6 +1,7 @@
 /**
  * @module RequestProcessorMemoryTest
- * @path tests/services/request/request_processor_memory_test.ts
+ * @path packages/request/tests/request_processor_memory_test.ts
+ * @related-files []
  * @description Tests for SessionMemoryService injection into RequestProcessor.
  * Verifies that enhanceRequest() is called before analysis and that the result
  * is passed to the analyzer.

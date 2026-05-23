@@ -22,7 +22,7 @@ import type { IArtifact, IArtifactFilters, IArtifactWithContent } from "@exaix/s
 import type { IGitService } from "@exaix/core/types";
 import { type ArtifactSubtype, ReviewType, ReviewTypeFilter as ReviewFilterEnum } from "@exaix/core";
 import { GitBranchName } from "@exaix/git";
-import { createGitService } from "../../../../src/services/adapters/git_adapter.ts";
+import { createGitService } from "../../../../apps/common/adapters/git_adapter.ts";
 import { GIT_CMD_BRANCH, GIT_CMD_LIST, GIT_CMD_REV_PARSE, GIT_CMD_WORKTREE } from "@exaix/git";
 
 export interface IReviewMetadata {

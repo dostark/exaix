@@ -1,9 +1,9 @@
 /**
  * @module SharedSchemas
- * @path src/shared/schemas/mod.ts
+ * @path packages/schemas/src/mod.ts
  * @description Barrel export for shared schema modules.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/*.ts]
+ * @related-files [packages/schemas/src/*.ts]
  */
 
 import * as PortalPermissionsSchemas from "./portal_permissions.ts";

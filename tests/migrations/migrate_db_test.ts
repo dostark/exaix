@@ -24,6 +24,8 @@ async function runMigrate(
   const cmd = new Deno.Command("deno", {
     args: [
       "run",
+      "--config",
+      join(REPO_ROOT, "deno.json"),
       "--allow-read",
       "--allow-write",
       "--allow-env",

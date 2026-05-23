@@ -1,6 +1,8 @@
 /**
  * @module MCPServerPromptsTest
  * @path packages/mcp/tests/server_prompts_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the MCP server's prompt handling logic, ensuring correct
  * listing of available templates and successful fulfillment of 'prompts/get' requests.
  */

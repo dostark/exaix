@@ -1,6 +1,8 @@
 /**
  * @module QualityGateTestHelpers
  * @path packages/quality-gate/tests/test_helpers.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Test helpers for quality-gate tests. Provides factory functions
  * that create minimal implementations of interfaces consumed by quality-gate
  * modules, avoiding imports from root src/services/.

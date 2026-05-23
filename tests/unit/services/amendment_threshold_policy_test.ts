@@ -2,7 +2,7 @@
  * @module AmendmentThresholdPolicyTest
  * @path tests/unit/services/amendment_threshold_policy_test.ts
  * @description Unit tests for amendment threshold policy and config-driven trigger behavior.
- * @related-files [@exaix/core/planning, "packages/schemas/src/config.ts"]
+ * @related-files ["packages/core/src/planning/mod.ts", "packages/schemas/src/config.ts"]
  */
 
 import { assertEquals } from "@std/assert";
@@ -14,15 +14,47 @@ import { DEFAULT_AMENDMENT_THRESHOLD } from "@exaix/core";
 import { createMockConfig } from "../../helpers/config.ts";
 import { castAny as castTo } from "../../helpers/test_helpers.ts";
 
+function createService(threshold: number): PlanAmendmentService {
+  const config = createMockConfig("/tmp/test");
+  config.amendment = { enabled: true, threshold, expiryMs: 86_400_000 };
+  const mockLlm = castTo<IModelProvider>({});
+  return new PlanAmendmentService(config, mockLlm);
+}
+
 Deno.test("DEFAULT_AMENDMENT_THRESHOLD is 60", () => {
   assertEquals(DEFAULT_AMENDMENT_THRESHOLD, 60);
 });
 
 Deno.test("shouldAmend uses config threshold when confidence score is below", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 40, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = createService(40);
+
+  const trigger: IPlanAmendmentTrigger = {
+    source: "low_confidence",
+    reason: "Score below custom threshold",
+    stepId: "1",
+    confidenceScore: 30,
+  };
+
+  const result = await service.shouldAmend(trigger);
+  assertEquals(result, true);
+});
+
+Deno.test("shouldAmend uses config threshold when confidence score is above", async () => {
+  const service = createService(40);
+
+  const trigger: IPlanAmendmentTrigger = {
+    source: "low_confidence",
+    reason: "Score above custom threshold",
+    stepId: "1",
+    confidenceScore: 50,
+  };
+
+  const result = await service.shouldAmend(trigger);
+  assertEquals(result, false);
+});
+
+Deno.test("shouldAmend handles boundary confidence scores", async () => {
+  const service = createService(60);
 
   const trigger: IPlanAmendmentTrigger = {
     source: "low_confidence",
@@ -115,10 +147,7 @@ Deno.test("shouldAmend handles boundary confidence scores", async () => {
 });
 
 Deno.test("shouldAmend tool_error triggers regardless of threshold", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 10, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = createService(10);
 
   const trigger: IPlanAmendmentTrigger = {
     source: "tool_error",
@@ -131,10 +160,7 @@ Deno.test("shouldAmend tool_error triggers regardless of threshold", async () =>
 });
 
 Deno.test("shouldAmend manual_request triggers regardless of threshold", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 10, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = createService(10);
 
   const trigger: IPlanAmendmentTrigger = {
     source: "manual_request",
@@ -147,10 +173,7 @@ Deno.test("shouldAmend manual_request triggers regardless of threshold", async (
 });
 
 Deno.test("shouldAmend context_mismatch does not trigger without explicit handling", async () => {
-  const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
-  const mockLlm = castTo<IModelProvider>({});
-  const service = new PlanAmendmentService(config, mockLlm);
+  const service = createService(60);
 
   const trigger: IPlanAmendmentTrigger = {
     source: "context_mismatch",

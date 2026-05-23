@@ -1,6 +1,8 @@
 /**
  * @module IMcpClient
  * @path packages/mcp/src/i_mcp_client.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description MCP client interface for tool execution.
  */
 

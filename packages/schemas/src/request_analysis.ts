@@ -1,13 +1,13 @@
 /**
  * @module RequestAnalysisSchema
- * @path src/shared/schemas/request_analysis.ts
+ * @path packages/schemas/src/request_analysis.ts
  * @description Defines Zod validation schemas and inferred TypeScript types for
  * structured request intent analysis output produced by the RequestAnalyzer
  * service (Phase 45). Captures goals, requirements, constraints, acceptance
  * criteria, ambiguities, and actionability metadata extracted from raw request
  * text.
  * @architectural-layer Shared
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/schemas/mod.ts]
+ * @related-files [packages/request/src/analysis/analyzer.ts, packages/schemas/src/mod.ts]
  */
 
 import { z } from "zod";

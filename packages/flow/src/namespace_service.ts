@@ -1,6 +1,8 @@
 /**
  * @module FlowNamespaceService
- * @path packages/flow-storage/src/namespace_service.ts
+ * @path packages/flow/src/namespace_service.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Runtime contract surface for flow namespace persistence and shared blackboard coordination.
  */
 

@@ -9,7 +9,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { dirname, join } from "@std/path";
 
-import { createRoutingPolicyService } from "../../src/services/adapters/routing_adapter.ts";
+import { createRoutingPolicyService } from "../../apps/common/adapters/routing_adapter.ts";
 import { createRouterTestContext, sampleRouterRequest } from "../services/helpers.ts";
 import { RequestKind } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";

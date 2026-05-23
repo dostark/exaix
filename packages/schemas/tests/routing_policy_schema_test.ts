@@ -1,6 +1,8 @@
 /**
  * @module RoutingPolicySchemaTest
- * @path tests/schemas/routing_policy_schema_test.ts
+ * @path packages/schemas/tests/routing_policy_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Unit tests for the routing policy Zod schema.
  */
 

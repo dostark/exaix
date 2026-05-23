@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_tool_registry.ts
  * @description Defines the interface for the ToolRegistry service.
  * @architectural-layer Interfaces
- * @related-files ["src/services/tool/tool_registry.ts"]
+ * @related-files ["packages/tool-runtime/src/tool_registry.ts"]
  */
 import type { JSONValue } from "@exaix/core";
 

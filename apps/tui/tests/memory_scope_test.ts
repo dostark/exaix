@@ -1,6 +1,8 @@
 /**
  * @module MemoryTUIScopeTest
  * @path apps/tui/tests/memory_scope_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for handling memory scopes (Project vs Global) within the TUI,
  * ensuring correct coercion and validation of user-selected viewing contexts.
  */

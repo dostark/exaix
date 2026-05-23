@@ -1,6 +1,8 @@
 /**
  * @module DefineFlow
  * @path packages/core/src/func/define_flow.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Helper utility to construct Flow objects with sensible defaults and schema validation.
  */
 

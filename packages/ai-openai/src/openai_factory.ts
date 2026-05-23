@@ -3,7 +3,7 @@
  * @path packages/ai-openai/src/openai_factory.ts
  * @description Factory for creating OpenAI provider instances from the @exaix/ai-openai package.
  * @architectural-layer AI
- * @related-files [packages/ai-openai/src/openai_provider.ts, packages/ai/src/factories/openai_factory.ts]
+ * @related-files [packages/ai-openai/src/openai_provider.ts, packages/ai-openai/src/openai_factory.ts]
  */
 
 import { AbstractKeyBasedProviderFactory } from "@exaix/ai/factories/abstract_provider_factory.ts";

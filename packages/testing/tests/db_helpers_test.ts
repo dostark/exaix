@@ -1,6 +1,8 @@
 /**
  * @module TestingPackageDbHelpersTest
  * @path packages/testing/tests/db_helpers_test.ts
+ * @related-files []
+ * @architectural-layer Testing
  * @description Verifies shared test DB helpers in @exaix/testing.
  */
 import { assertEquals } from "@std/assert";

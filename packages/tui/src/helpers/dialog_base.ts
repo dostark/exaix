@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/dialog_base.ts
  * @description TUI Dialog Base Framework providing common classes and utilities for modal dialogs.
  * @architectural-layer Helpers
+ * @ungrounded
  * @related-files ["packages/tui/src/helpers/dialog_rendering.ts", "packages/tui/src/helpers/keyboard.ts"]
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module ConfigRequestAnalysisSchemaTest
- * @path tests/schemas/config_request_analysis_test.ts
+ * @path packages/schemas/tests/config_request_analysis_test.ts
  * @description Tests for the request_analysis section of ConfigSchema,
  * covering defaults, valid values, and invalid value rejection.
  * @architectural-layer Config

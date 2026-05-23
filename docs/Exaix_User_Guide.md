@@ -101,7 +101,7 @@ From the repository root run the included script to create a user workspace (def
 **What the deploy script does:**
 
 - Creates the standard runtime folders (`System`, `Memory`, `Workspace`, `Portals`).
-- Copies runtime artifacts (`deno.json`, `import_map.json`, `scripts/`, `migrations/`, `src/`) into the target workspace.
+- Copies runtime artifacts (`deno.json`, `import_map.json`, `scripts/`, `migrations/`, `packages/`, `apps/`) into the target workspace.
 - Runs `deno task cache` and `deno task setup` to initialize the database.
 - Installs `exactl` CLI globally to `~/.deno/bin/`.
 
@@ -431,10 +431,10 @@ If you need to reinstall or the automatic installation failed:
 cd ~/Exaix
 
 # Install globally with config (required for import map resolution)
-deno install --global --allow-all --config deno.json -n exactl src/cli/exactl.ts
+deno install --global --allow-all --config deno.json -n exactl apps/exactl/main.ts
 
 # For Deno 1.x (older versions)
-# deno install --allow-all --config deno.json -n exactl src/cli/exactl.ts
+# deno install --allow-all --config deno.json -n exactl apps/exactl/main.ts
 ```
 
 **Alternative: Use via task runner (no global install):**
@@ -1805,21 +1805,21 @@ Implement user authentication for the API...
 
 **Request Files** (`Workspace/Requests/request-*.md`):
 
-| Field                 | Type     | Required | Example                                               |
-| --------------------- | -------- | -------- | ----------------------------------------------------- |
-| `trace_id`            | string   | ✓        | `"550e8400-e29b-41d4-a716-446655440000"`              |
-| `created`             | datetime | ✓        | `2025-11-28T10:30:00.000Z`                            |
-| `status`              | string   | ✓        | `pending`, `processing`, `completed`                  |
-| `priority`            | string   | ✓        | `low`, `normal`, `high`, `critical`                   |
-| `agent`               | string   | ✓        | `default`, `senior_coder`, `architect`                |
-| `source`              | string   | ✓        | `cli`, `file`, `interactive`                          |
-| `created_by`          | string   | ✓        | `user@example.com`                                    |
-| `portal`              | string   |          | `MyProject` (optional project context)                |
-| `target_branch`       | string   |          | `main` (review base branch for portal work)           |
-| `acceptance_criteria` | array    |          | `[`"All tests pass"`,`"Endpoint returns 200"`]`       |
-| `expected_outcomes`   | array    |          | `[`"API docs updated"`]`                              |
-| `scope`               | object   |          | `{ include: ["src/api/"], exclude: ["src/legacy/"] }` |
-| `tags`                | array    |          | `[feature, api]` (optional tags)                      |
+| Field                 | Type     | Required | Example                                                                     |
+| --------------------- | -------- | -------- | --------------------------------------------------------------------------- |
+| `trace_id`            | string   | ✓        | `"550e8400-e29b-41d4-a716-446655440000"`                                    |
+| `created`             | datetime | ✓        | `2025-11-28T10:30:00.000Z`                                                  |
+| `status`              | string   | ✓        | `pending`, `processing`, `completed`                                        |
+| `priority`            | string   | ✓        | `low`, `normal`, `high`, `critical`                                         |
+| `agent`               | string   | ✓        | `default`, `senior_coder`, `architect`                                      |
+| `source`              | string   | ✓        | `cli`, `file`, `interactive`                                                |
+| `created_by`          | string   | ✓        | `user@example.com`                                                          |
+| `portal`              | string   |          | `MyProject` (optional project context)                                      |
+| `target_branch`       | string   |          | `main` (review base branch for portal work)                                 |
+| `acceptance_criteria` | array    |          | `[`"All tests pass"`,`"Endpoint returns 200"`]`                             |
+| `expected_outcomes`   | array    |          | `[`"API docs updated"`]`                                                    |
+| `scope`               | object   |          | `{ include: ["packages/api/src/"], exclude: ["packages/api/src/legacy/"] }` |
+| `tags`                | array    |          | `[feature, api]` (optional tags)                                            |
 
 #### Structured Request Quality Fields
 
@@ -1840,8 +1840,8 @@ acceptance_criteria:
 expected_outcomes:
   - Upload endpoint available at /api/v2/upload
 scope:
-  include: ["src/api/", "tests/api/"]
-  exclude: ["src/legacy/"]
+  include: ["packages/api/src/", "tests/api/"]
+  exclude: ["packages/api/src/legacy/"]
 ---
 ```
 
@@ -1897,8 +1897,8 @@ acceptance_criteria:
 
 # Nested objects
 scope:
-  include: [src/api/, tests/api/]
-  exclude: [src/legacy/]
+  include: [packages/api/src/, tests/api/]
+  exclude: [packages/api/src/legacy/]
 
 # Booleans
 approved: true
@@ -2034,7 +2034,7 @@ cat CHANGELOG.md
 deno task migrate
 
 # 6. Clear Deno cache (forces re-compilation)
-deno cache --reload src/main.ts
+deno cache --reload apps/daemon/main.ts
 
 # 7. Restart daemon
 deno task start
@@ -2742,7 +2742,7 @@ proceed = 70    # at or above → proceed immediately
 
 **Best Practices:**
 
-1. **Never modify `src/shared/constants.ts` directly** - All magic values are defined in `exa.config.toml`
+1. **Never modify `packages/core/src/constants.ts` directly** - All magic values are defined in `exa.config.toml`
 
 1.
 

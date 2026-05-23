@@ -239,7 +239,7 @@ export const DASHBOARD_ICONS = {
 } as const;
 
 // style-exclude:RUNTIME_REGISTRY - Dynamic import is required at runtime to avoid circular dependency and load TUI service factory only when the dashboard is initialized.
-const tuiServiceFactoryModule = import("../../../src/services/utils/tui_service_factory.ts");
+const tuiServiceFactoryModule = import("./services/tui_service_factory.ts");
 
 // ===== Dashboard Key Bindings =====
 

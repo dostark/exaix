@@ -1,6 +1,6 @@
 /**
  * @module IportalService
- * @path src/shared/interfaces/i_portal_service.ts
+ * @path packages/core/src/types/i_portal_service.ts
  * @description Module for IportalService.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

@@ -1,6 +1,8 @@
 /**
  * @module RetryPolicyTest
- * @path tests/services/ai/retry_policy_test.ts
+ * @path packages/core/tests/request/retry_policy_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the resilience logic for AI provider calls, ensuring correct
  * exponential backoff, retryable error classification, and maximum attempt enforcement.
  */

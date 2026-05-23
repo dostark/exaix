@@ -1,6 +1,8 @@
 /**
  * @module ReviewCommandsTest
  * @path apps/exactl/tests/review_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI review operations for execution artifacts, including status listing,
  * detailed review viewing, and approval/rejection of code branches and artifacts.
  */

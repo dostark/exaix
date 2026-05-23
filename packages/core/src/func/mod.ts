@@ -1,6 +1,8 @@
 /**
  * @module CoreFunc
  * @path packages/core/src/func/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Barrel for pure-function utilities extracted from src/services/.
  */
 

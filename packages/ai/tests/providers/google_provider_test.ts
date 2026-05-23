@@ -1,6 +1,8 @@
 /**
  * @module GoogleProviderTest
- * @path tests/ai/google_provider_test.ts
+ * @path packages/ai/tests/providers/google_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the Google LLM provider implementation, ensuring correct
  * API endpoint construction and response parsing for Gemini models.
  */

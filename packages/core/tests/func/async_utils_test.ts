@@ -1,6 +1,8 @@
 /**
  * @module AsyncUtilsTest
  * @path packages/core/tests/func/async_utils_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the async utility helpers exposed through @exaix/core/func.
  */
 

@@ -3,6 +3,8 @@
  * @path packages/cli/src/errors/error_strategy.ts
  * @description Defines the default error handling strategy for CLI commands, ensuring consistent error reporting and exit codes.
  * @architectural-layer CLI
+ * @ungrounded
+ * @related-files [packages/cli/tests/errors/error_strategy_test.ts]
  */
 
 export type ErrorPayload = Error | string | object | null | undefined;

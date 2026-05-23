@@ -2,6 +2,8 @@
 /**
  * @module MCPToolsTest
  * @path packages/mcp/tests/tools_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Validates the exposure of internal Exaix tools via the MCP protocol, ensuring
  * correct parameter mapping, IActivity Journal logging, and robust error propagation to clients.
  */

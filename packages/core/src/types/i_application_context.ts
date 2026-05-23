@@ -1,6 +1,6 @@
 /**
  * @module IApplicationContext
- * @path src/shared/interfaces/i_application_context.ts
+ * @path packages/core/src/types/i_application_context.ts
  * @description Defines the core application context for dependency injection across the system.
  * This is a generic interface that can be used by CLI, TUI, and core services.
  * @architectural-layer Shared/Interfaces

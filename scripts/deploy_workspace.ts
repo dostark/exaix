@@ -99,10 +99,6 @@ async function main() {
     await copy(migrationsSource, join(dest, "migrations"), copyOpts);
   }
 
-  // Copy src
-  console.log("Copying src/...");
-  await copy(join(repoRoot, "src"), join(dest, "src"), copyOpts);
-
   // Copy runtime scripts
   const scriptFiles = ["setup_db.ts", "migrate_db.ts", "scaffold.ts", "deploy_workspace.ts"];
   await ensureDir(join(dest, "scripts"));

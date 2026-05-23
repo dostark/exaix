@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_cost_tracker.ts
  * @description Interface for LLM cost tracking and budgeting.
  * @architectural-layer Shared/Interfaces
- * @related-files [src/services/cost/cost_tracker.ts, packages/storage-sqlite/src/database_service.ts]
+ * @related-files [packages/core/src/cost/cost_tracker.ts, packages/storage-sqlite/src/database_service.ts]
  */
 
 import type { ICostFilter, IProviderCostRecord } from "@exaix/core/types";

@@ -1,6 +1,8 @@
 /**
  * @module AnthropicProviderTest
- * @path tests/ai/anthropic_provider_test.ts
+ * @path packages/ai/tests/providers/anthropic_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the Anthropic LLM provider implementation, ensuring correct
  * message formatting, tool call handling, and token usage tracking for Claude models.
  */

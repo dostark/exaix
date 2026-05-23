@@ -1,6 +1,8 @@
 /**
  * @module MCPToolsPermissionsTest
  * @path packages/mcp/tests/tools_permissions_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the capability-based security model for MCP tools, ensuring strict
  * enforcement of read/write permissions at the tool level before execution.
  */

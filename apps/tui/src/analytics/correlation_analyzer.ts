@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/correlation_analyzer.ts
  * @description Analyzes correlation across multiple log entries to identify related operations and system flows.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

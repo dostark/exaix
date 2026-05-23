@@ -1,6 +1,8 @@
 /**
  * @module LayoutManagerTest
  * @path packages/tui/tests/layout/layout_manager_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the core LayoutManager service, ensuring flexible terminal partitioning,
  * dynamic resizing, and stable frame coordination for multi-view dashboards.
  */

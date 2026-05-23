@@ -8,22 +8,22 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { PortalAdapter } from "../../../src/services/adapters/portal_adapter.ts";
+import { PortalAdapter } from "../../../apps/common/adapters/portal_adapter.ts";
 import type { IPortalDetails, IPortalInfo } from "@exaix/core/types";
 import { DEFAULT_SKILL_INDEX_VERSION } from "@exaix/core";
 import { ArchiveStatus, DaemonStatus, PortalExecutionStrategy, PortalStatus, VerificationStatus } from "@exaix/core";
 import type { PortalService } from "@exaix/portal";
-import { MemoryServiceAdapter } from "../../../src/services/adapters/memory_adapter.ts";
+import { MemoryServiceAdapter } from "../../../apps/common/adapters/memory_adapter.ts";
 import type { MemoryBankService } from "@exaix/memory";
 import type { MemoryExtractorService } from "@exaix/memory";
-import { ArchiveAdapter } from "../../../src/services/adapters/archive_adapter.ts";
+import { ArchiveAdapter } from "../../../apps/common/adapters/archive_adapter.ts";
 import type { ArchiveEntry, ArchiveService } from "@exaix/core/artifact";
-import { FlowValidatorAdapter } from "../../../src/services/adapters/flow_validator_adapter.ts";
-import type { FlowValidatorImpl } from "@exaix/flow-storage";
+import { FlowValidatorAdapter } from "../../../apps/common/adapters/flow_validator_adapter.ts";
+import type { FlowValidatorImpl } from "@exaix/flow";
 import type { IFlow } from "@exaix/schemas/flow.ts";
-import { DaemonServiceAdapter } from "../../../src/services/adapters/daemon_adapter.ts";
+import { DaemonServiceAdapter } from "../../../apps/common/adapters/daemon_adapter.ts";
 import type { DaemonCommands } from "../../../apps/exactl/src/commands/daemon_commands.ts";
-import type { ConfigAdapter as _ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts";
+import type { ConfigAdapter as _ConfigAdapter } from "../../../apps/common/adapters/config_adapter.ts";
 import type { ConfigService as _ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
 

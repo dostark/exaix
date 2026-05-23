@@ -1,6 +1,8 @@
 /**
  * @module MCPServerResourcesTest
  * @path packages/mcp/tests/server_resources_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the MCP server's resource discovery logic, ensuring correctly
  * partitioned access to portal files via the 'exa://' URI scheme.
  */

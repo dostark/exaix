@@ -1,6 +1,8 @@
 /**
  * @module MemoryViewTest
  * @path apps/tui/tests/memory_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the core MemoryView terminal session, ensuring correct initialization
  * of the knowledge tree, node selection, and pending proposal counts.
  */

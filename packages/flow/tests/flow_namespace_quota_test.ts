@@ -1,6 +1,9 @@
 /**
  * @module FlowNamespaceQuotaTest
- * @path packages/flow-storage/tests/flow_namespace_quota_test.ts
+ * @path packages/flow/tests/flow_namespace_quota_test.ts
+ * @related-files []
+ * @architectural-layer Flow
+ * @description TODO: Add description
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

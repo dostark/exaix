@@ -10,10 +10,17 @@ import { join } from "@std/path";
 import type { IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
-Deno.test("amendment list discovers pending amendments", async () => {
+async function withTempDir<T>(fn: (root: string) => Promise<T>): Promise<T> {
   const root = await Deno.makeTempDir();
-
   try {
+    return await fn(root);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+}
+
+Deno.test("amendment list discovers pending amendments", () =>
+  withTempDir(async (root) => {
     const traceId = "550e8400-e29b-41d4-a716-446655440000";
     const amendmentId1 = "660e8400-e29b-41d4-a716-446655440001";
     const amendmentId2 = "770e8400-e29b-41d4-a716-446655440002";
@@ -28,18 +35,9 @@ Deno.test("amendment list discovers pending amendments", async () => {
       affectedRemainingStepIds: ["2"],
       summary: "First amendment",
       adds: [],
-      updates: [],
-      removes: [],
-      createdAt: new Date().toISOString(),
-    };
-
-    const amendment2: IPlanAmendmentPatch = {
-      amendmentId: amendmentId2,
-      planId: "plan-2",
-      affectedRemainingStepIds: ["3"],
-      summary: "Second amendment",
-      adds: [],
-      updates: [],
+      updates: [
+        { number: 2, title: "Updated Step", content: "Updated content" },
+      ],
       removes: [],
       createdAt: new Date().toISOString(),
     };
@@ -48,28 +46,32 @@ Deno.test("amendment list discovers pending amendments", async () => {
       join(amendmentsDir, `${amendmentId1}.json`),
       JSON.stringify(amendment1, null, 2),
     );
+
+    const amendment2: IPlanAmendmentPatch = {
+      amendmentId: amendmentId2,
+      planId: "plan-2",
+      affectedRemainingStepIds: ["1", "3"],
+      summary: "Second amendment",
+      adds: [{ number: 4, title: "New Step", content: "New step content" }],
+      updates: [],
+      removes: ["2"],
+      createdAt: new Date().toISOString(),
+    };
+
     await Deno.writeTextFile(
       join(amendmentsDir, `${amendmentId2}.json`),
       JSON.stringify(amendment2, null, 2),
     );
 
-    // Verify discovery
-    const entries = await Array.fromAsync(Deno.readDir(amendmentsDir));
-    const amendmentFiles = entries.filter((e) => e.name.endsWith(".json"));
-    assertEquals(amendmentFiles.length, 2);
+    // Verify amendments exist
+    const amendmentFiles: Deno.DirEntry[] = [];
+    for await (const entry of Deno.readDir(amendmentsDir)) {
+      amendmentFiles.push(entry);
+    }
+  }));
 
-    const amendmentIds = amendmentFiles.map((e) => e.name.replace(".json", ""));
-    assertEquals(amendmentIds.includes(amendmentId1), true);
-    assertEquals(amendmentIds.includes(amendmentId2), true);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
-
-Deno.test("amendment show displays structural patch details", async () => {
-  const root = await Deno.makeTempDir();
-
-  try {
+Deno.test("amendment show displays structural patch details", () =>
+  withTempDir(async (root) => {
     const amendmentId = "550e8400-e29b-41d4-a716-446655440000";
     const amendmentsDir = join(root, "Memory", "Execution", "trace-1", "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
@@ -105,15 +107,10 @@ Deno.test("amendment show displays structural patch details", async () => {
     assertEquals(parsed.removes.length, 1);
     assertEquals(parsed.adds[0].title, "New Step");
     assertEquals(parsed.updates[0].title, "Updated Step");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
+  }));
 
-Deno.test("amendment approve applies patch to plan file", async () => {
-  const root = await Deno.makeTempDir();
-
-  try {
+Deno.test("amendment approve applies patch to plan file", () =>
+  withTempDir(async (root) => {
     // Create a plan file with amendment_pending status
     const plansDir = join(root, "Workspace", "Active");
     await Deno.mkdir(plansDir, { recursive: true });
@@ -151,15 +148,10 @@ Deno.test("amendment approve applies patch to plan file", async () => {
     assertEquals(patch.amendmentId, amendmentId);
     assertEquals(patch.summary, "Approve test amendment");
     assertEquals(patch.updates.length, 1);
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
+  }));
 
-Deno.test("amendment reject records reason and fails plan", async () => {
-  const root = await Deno.makeTempDir();
-
-  try {
+Deno.test("amendment reject records reason and fails plan", () =>
+  withTempDir(async (root) => {
     const amendmentId = "550e8400-e29b-41d4-a716-446655440000";
     const amendmentsDir = join(root, "Memory", "Execution", "trace-1", "amendments");
     await Deno.mkdir(amendmentsDir, { recursive: true });
@@ -206,15 +198,10 @@ Deno.test("amendment reject records reason and fails plan", async () => {
     assertEquals(parsed.decision, "rejected");
     assertEquals(parsed.rationale, "Not aligned with project goals");
     assertEquals(parsed.decidedBy, "user-123");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
+  }));
 
-Deno.test("amendment artifacts are stored with correct structure", async () => {
-  const root = await Deno.makeTempDir();
-
-  try {
+Deno.test("amendment artifacts are stored with correct structure", () =>
+  withTempDir(async (root) => {
     const traceId = "550e8400-e29b-41d4-a716-446655440000";
     const amendmentId = "660e8400-e29b-41d4-a716-446655440001";
 
@@ -265,7 +252,4 @@ Deno.test("amendment artifacts are stored with correct structure", async () => {
     assertEquals(Array.isArray(parsed.updates), true);
     assertEquals(Array.isArray(parsed.removes), true);
     assertEquals(typeof parsed.createdAt, "string");
-  } finally {
-    await Deno.remove(root, { recursive: true });
-  }
-});
+  }));

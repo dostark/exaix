@@ -40,10 +40,10 @@ Before submitting a PR, verify you haven't introduced magic values:
 
 ```bash
 # Search for potential magic numbers (excluding 0, 1, -1)
-grep -rEn --include='*.ts' '([^a-zA-Z_]|^)([2-9][0-9]*|[1-9][0-9]{2,})' src/
+grep -rEn --include='*.ts' '([^a-zA-Z_]|^)([2-9][0-9]*|[1-9][0-9]{2,})' packages/ apps/
 
 # Search for potential magic strings (common keywords)
-grep -rEn --include='*.ts' '"(ollama|anthropic|openai|pending|active|timeout)"' src/
+grep -rEn --include='*.ts' '"(ollama|anthropic|openai|pending|active|timeout)"' packages/ apps/
 ```
 
 ## 3. Migration Guide
@@ -99,17 +99,17 @@ deno task hooks:install
 This writes hooks to `.git/hooks/` from `scripts/setup_hooks.ts`. The hooks
 are:
 
-| Hook                      | Purpose                                                                                                                          |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                  |
-| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                                                      |
-| `pre-push`                | Regenerate `.copilot/manifest.json`, full type-check (src/ + tests/), focused tests for changed files, security regression tests |
-| `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                         |
+| Hook                      | Purpose                                                                                                                                       |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                               |
+| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                                                                   |
+| `pre-push`                | Regenerate `.copilot/manifest.json`, full type-check (packages/ + apps/ + tests/), focused tests for changed files, security regression tests |
+| `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                                      |
 
 The `pre-push` hook is the last gate before code leaves your machine. It regenerates
 `.copilot/manifest.json` before pushing, stages the updated manifest, and amends the
 current commit so the regenerated manifest is included in the push. It also runs
-`deno check src/ tests/` to catch type errors in ALL files (not just `src/main.ts`),
+`deno check packages/ apps/ tests/` to catch type errors in ALL files (not just `apps/daemon/main.ts`),
 runs the test files that correspond to your changes, and always runs security
 regression tests. If any of these fail, the push is blocked.
 
@@ -249,7 +249,7 @@ Authoritative guidance:
 - [ ] **(AI Agents)** Consulted relevant `.copilot/` documentation and cited in implementation plan.
 - [ ] No new magic numbers or strings introduced.
 - [ ] New configuration options added to `exa.config.sample.toml`.
-- [ ] Zod schema updated in `src/config/schema.ts`.
+- [ ] Zod schema updated in `packages/core/src/config/schema.ts`.
 - [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `CODE_STYLE.md` §1).
 - [ ] **Dependency Injection:** Injectable services expose an `IFoo` interface; constructors accept `IFoo`, not `Foo`; test mocks implement the full interface (see `CODE_STYLE.md` §5).
 - [ ] **Environment Variables:** If using `EXA_LLM_*` vars, validated via `getValidatedEnvOverrides()` (no direct `Deno.env.get()`).

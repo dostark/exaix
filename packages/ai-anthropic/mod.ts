@@ -1,6 +1,9 @@
 /**
  * @module AIAnthropicPackage
  * @path packages/ai-anthropic/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer AI
  * @description Package entrypoint for @exaix/ai-anthropic.
  */
 

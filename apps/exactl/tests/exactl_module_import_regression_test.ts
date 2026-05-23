@@ -1,6 +1,8 @@
 /**
  * @module ExaCtlModuleImportRegressionTest
  * @path apps/exactl/tests/exactl_module_import_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression test ensuring apps/exactl/src/exactl.ts can be imported as a module
  * without auto-running the CLI parser and terminating the test process.
  */
@@ -45,7 +47,7 @@ Deno.test("[regression] importing exactl module does not auto-run CLI entrypoint
   const env = { ...Deno.env.toObject() };
   delete env.EXA_TEST_MODE;
   delete env.EXA_TEST_CLI_MODE;
-  env.EXA_CONFIG_PATH = join(tempDir, "exa.config.toml");
+  env.EXA_CONFIG_PATH = join(tempDir, "config.toml");
 
   await Deno.writeTextFile(env.EXA_CONFIG_PATH, buildMinimalConfig(tempDir));
 

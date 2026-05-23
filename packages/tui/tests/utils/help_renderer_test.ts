@@ -1,6 +1,8 @@
 /**
  * @module TUIHelpRendererTest
- * @path tests/tui/utils/help_renderer_test.ts
+ * @path packages/tui/tests/utils/help_renderer_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for rendering help screens in the terminal, ensuring
  * that key bindings and action categories are clearly presented.
  */

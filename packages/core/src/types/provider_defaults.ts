@@ -1,6 +1,8 @@
 /**
  * @module ProviderDefaults
  * @path packages/core/src/types/provider_defaults.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Interface and registry for provider-owned default values. Enables dependency
  * inversion so @exaix/core does not import from concrete provider packages. Provider packages
  * implement IProviderDefaults and register at bootstrap time.

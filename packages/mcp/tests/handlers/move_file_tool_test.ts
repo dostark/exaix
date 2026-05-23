@@ -1,6 +1,8 @@
 /**
  * @module MoveFileToolTest
  * @path packages/mcp/tests/handlers/move_file_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the MoveFileTool MCP tool.
  */
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";

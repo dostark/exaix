@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module CommandUtilsTest
- * @path tests/cli/helpers/command_utils_test.ts
+ * @path packages/cli/tests/helpers/command_utils_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Tests for CommandUtils helper functions: formatValidationErrors, printMetadata.
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module DaemonControlViewTest
  * @path apps/tui/tests/daemon_control_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the DaemonControlView TUI component, ensuring interactive control
  * over the Exaix daemon, including lifecycle actions and real-time log streaming.
  */

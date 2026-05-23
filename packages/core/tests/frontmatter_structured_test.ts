@@ -1,6 +1,6 @@
 /**
  * @module FrontmatterStructuredTest
- * @path tests/services/request_processing/frontmatter_structured_test.ts
+ * @path packages/core/tests/frontmatter_structured_test.ts
  * @description Tests for structured expectation fields (acceptance_criteria,
  * expected_outcomes, scope) added to IRequestFrontmatter (Phase 49, Step 8).
  * @architectural-layer Tests

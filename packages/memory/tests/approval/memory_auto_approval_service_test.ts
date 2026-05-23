@@ -1,6 +1,8 @@
 /**
  * @module MemoryAutoApprovalServiceTest
  * @path packages/memory/tests/approval/memory_auto_approval_service_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description TDD tests for MemoryAutoApprovalService.
  */
 

@@ -2,6 +2,8 @@
 /**
  * @module MCPStdioLoopTest
  * @path apps/mcp-server/tests/stdio_loop_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the MCP Stdio execution loop, ensuring robust low-level
  * JSON-RPC transport and correct error reporting for malformed messages.
  */

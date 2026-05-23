@@ -1,6 +1,8 @@
 /**
  * @module TraceAnalyzerTest
  * @path apps/tui/tests/analytics/trace_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for multi-step trace analysis, ensuring complex agent
  * execution paths are correctly reconstructed and validated from flat log entries.
  */

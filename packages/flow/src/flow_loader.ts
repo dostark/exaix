@@ -1,6 +1,7 @@
 /**
  * @module FlowLoader
- * @path packages/flow-storage/src/flow_loader.ts
+ * @path packages/flow/src/flow_loader.ts
+ * @related-files []
  * @description Handles loading and managing flow definitions from the file system, including dynamic import and import rewriting for blueprint execution.
  * @architectural-layer FlowStorage
  */

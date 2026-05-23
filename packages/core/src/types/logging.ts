@@ -1,6 +1,6 @@
 /**
  * @module Logging
- * @path @exaix/core/types
+ * @path packages/core/src/types/logging.ts
  * @description Module for Logging.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

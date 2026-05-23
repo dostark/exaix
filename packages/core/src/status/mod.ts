@@ -1,6 +1,9 @@
 /**
  * @module CoreStatus
  * @path packages/core/src/status/mod.ts
+ * @related-files []
+ * @architectural-layer Core
+ * @ungrounded
  * @description Core shared status exports.
  */
 

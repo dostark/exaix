@@ -5,6 +5,7 @@
  * gate lifecycle — determines when to skip quality assessment for already-processed
  * or in-clarification requests, and checks the assessed_at bypass flag.
  * @architectural-layer Domain
+ * @ungrounded
  * @related-files [packages/quality-gate/tests/clarification_re_entry_test.ts]
  */
 import { RequestStatus } from "@exaix/core/status";

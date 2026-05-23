@@ -1,6 +1,8 @@
 /**
  * @module PortalPackage
  * @path packages/portal/mod.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Package entrypoint for @exaix/portal. This package houses portal
  * analysis, context, permissions, and persistence logic.
  */

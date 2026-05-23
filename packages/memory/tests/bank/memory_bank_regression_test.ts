@@ -1,6 +1,8 @@
 /**
  * @module MemoryBankRegressionTest
  * @path packages/memory/tests/bank/memory_bank_regression_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Regression tests for the MemoryBankService, verifying long-term stability
  * of advanced keyword and tag-based search combinations.
  */

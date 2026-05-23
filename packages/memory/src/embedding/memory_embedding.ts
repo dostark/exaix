@@ -3,7 +3,7 @@
  * @path packages/memory/src/embedding/memory_embedding.ts
  * @description Generates and searches semantic embeddings for memories using deterministic hash-based mock vectors for lightweight RAG support.
  * @architectural-layer Services
- * @related-files ["src/services/memory/session_memory.ts", "src/services/memory/memory_bank.ts"]
+ * @related-files ["packages/memory/src/session/session_memory.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
 
 import { join } from "@std/path";

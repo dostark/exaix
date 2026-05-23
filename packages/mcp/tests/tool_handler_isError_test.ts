@@ -1,6 +1,8 @@
 /**
  * @module ToolHandlerIsErrorTest
  * @path packages/mcp/tests/tool_handler_isError_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that every MCP tool handler returns a structured isError:true response
  * for tool-logic errors instead of throwing a protocol exception. Guards criterion 10 of the
  * Phase 77 success metrics: "0 tool-logic errors thrown as protocol exceptions".

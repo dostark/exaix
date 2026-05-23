@@ -1,6 +1,8 @@
 /**
  * @module MemoryBankTest
  * @path packages/memory/tests/bank/memory_bank_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Comprehensive test suite for the MemoryBank service, validating the full lifecycle of project
  * and global memories, execution record persistence, and index-based retrieval.
  */

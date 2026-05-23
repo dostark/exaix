@@ -1,10 +1,10 @@
 /**
  * @module ClarificationSessionSchemaTest
- * @path tests/schemas/clarification_session_test.ts
+ * @path packages/schemas/tests/clarification_session_test.ts
  * @description Tests for the ClarificationSessionSchema and sub-schemas,
  * verifying validation of the multi-turn clarification Q&A loop data model.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/clarification_session.ts]
+ * @related-files [packages/schemas/src/clarification_session.ts]
  */
 
 import { assertEquals } from "@std/assert";

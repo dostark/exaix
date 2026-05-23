@@ -1,9 +1,9 @@
 /**
  * @module SharedPlanSchema
- * @path src/shared/schemas/plan_schema.ts
+ * @path packages/schemas/src/plan_schema.ts
  * @description Defines shared Zod validation schemas for structured plans.
  * @architectural-layer Shared
- * @related-files ["src/services/request/request_processor.ts", src/shared/schemas/memory_bank.ts]
+ * @related-files ["packages/request/src/processor.ts", packages/schemas/src/memory_bank.ts]
  */
 
 import { z } from "zod";

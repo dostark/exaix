@@ -1,6 +1,7 @@
 /**
  * @module EvaluationCriteria
  * @path packages/core/src/evaluation/evaluation_criteria.ts
+ * @related-files []
  * @description defines built-in and custom criteria for LLM-as-a-Judge evaluations, supporting weighted scoring and quality gates.
  * @architectural-layer Core
  */

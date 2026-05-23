@@ -1,6 +1,8 @@
 /**
  * @module ConfigParserTest
- * @path tests/services/portal_knowledge/config_parser_test.ts
+ * @path packages/portal/knowledge/tests/config_parser_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the ConfigParser (Strategy 2): parsing known config
  * files to extract dependencies, tech stack, and .gitignore patterns.
  * Uses real temporary directories to exercise actual filesystem behaviour.

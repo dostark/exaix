@@ -1,6 +1,8 @@
 /**
  * @module PlanActionsTest
  * @path apps/exactl/tests/plan_actions_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the logic for CLI plan presentation, covering metadata listing,
  * diff colorization, and status truncation for terminal display.
  */

@@ -1,6 +1,8 @@
 /**
  * @module TUIPackage
  * @path packages/tui/mod.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Public entrypoint for @exaix/tui.
  */
 

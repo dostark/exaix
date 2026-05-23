@@ -3,7 +3,7 @@
  * @path packages/ai-openai/src/openai_provider.ts
  * @description OpenAI GPT provider implementation owned by the @exaix/ai-openai package.
  * @architectural-layer AI
- * @related-files [packages/ai-openai/src/openai_factory.ts, packages/ai/src/providers/openai_provider.ts]
+ * @related-files [packages/ai-openai/src/openai_factory.ts, packages/ai-openai/src/openai_provider.ts]
  */
 
 import {

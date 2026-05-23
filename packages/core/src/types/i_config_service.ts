@@ -1,6 +1,6 @@
 /**
  * @module IconfigService
- * @path src/shared/interfaces/i_config_service.ts
+ * @path packages/core/src/types/i_config_service.ts
  * @description Module for IconfigService.
  * @architectural-layer Shared
  * @related-files ["packages/schemas/src/config.ts"]

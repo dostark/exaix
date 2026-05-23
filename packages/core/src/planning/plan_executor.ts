@@ -4,7 +4,7 @@
  * @description Orchestrates the Step-by-Step execution of approved plans.
  * Managing the ReAct loop: prompting LLM for actions, executing tools, and committing results.
  * @architectural-layer Services
- * @related-files ["packages/tool-runtime/src/tool_registry.ts", "src/services/agent/execution_loop.ts"]
+ * @related-files ["packages/tool-runtime/src/tool_registry.ts", "packages/execution/src/execution_loop.ts"]
  */
 
 import { join } from "@std/path";

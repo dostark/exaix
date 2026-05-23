@@ -1,6 +1,8 @@
 /**
  * @module RoutingCommandsTest
  * @path apps/exactl/tests/commands/routing_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Validates CLI routing inspection and policy validation helpers.
  */
 

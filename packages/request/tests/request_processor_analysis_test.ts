@@ -1,10 +1,11 @@
 /**
  * @module RequestProcessorAnalysisTest
- * @path tests/services/request/request_processor_analysis_test.ts
+ * @path packages/request/tests/request_processor_analysis_test.ts
+ * @architectural-layer Services
  * @description Verifies that RequestProcessor integrates with RequestAnalyzer to
  * produce structured IRequestAnalysis, enriches IParsedRequest fields, persists
  * analysis as a sibling JSON file, and handles analyzer failures gracefully.
- * @related-files [src/services/request/request_processor.ts, src/services/request/request_common.ts, src/services/request_analysis/mod.ts, "packages/schemas/src/request_analysis.ts"]
+ * @related-files [packages/request/src/processor.ts, packages/request/src/common.ts, packages/request/src/analysis/mod.ts, "packages/schemas/src/request_analysis.ts"]
  */
 
 import { assertEquals, assertExists } from "@std/assert";

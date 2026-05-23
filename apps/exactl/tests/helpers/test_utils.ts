@@ -2,6 +2,8 @@
 /**
  * @module CliTestUtils
  * @path apps/exactl/tests/helpers/test_utils.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Test utilities for CLI command testing.
  */
 
@@ -34,7 +36,7 @@ export async function withTestMod<T>(
   let ctx: ExaCtlTestContext | undefined;
   const tempDir: string = await Deno.makeTempDir({ prefix: "exa-test-" });
   await ensureDir(tempDir);
-  const configPath: string = join(tempDir, "exa.config.toml");
+  const configPath: string = join(tempDir, "config.toml");
   const configContent = `
 [system]
 root = "./"

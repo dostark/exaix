@@ -1,6 +1,8 @@
 /**
  * @module BlueprintLoaderTest
  * @path packages/core/tests/blueprint/blueprint_loader_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the BlueprintLoader's ability to parse agent definitions from YAML
  * frontmatter, ensuring correct schema validation and default value application.
  */

@@ -1,6 +1,8 @@
 /**
  * @module MemoryTestHelpers
  * @path apps/tui/tests/memory_view/memory_test_helpers.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Provides helper functions for simulating memory update proposals and
  * verifying execution context state within TUI memory tests.
  */

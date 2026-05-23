@@ -1,6 +1,8 @@
 /**
  * @module LlamaProviderUnitTest
- * @path tests/ai/llama_provider_unit_test.ts
+ * @path packages/ai/tests/providers/llama_provider_unit_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Unit tests for Llama LLM provider.
  */
 

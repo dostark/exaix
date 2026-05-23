@@ -1,6 +1,8 @@
 /**
  * @module AIProviderTestHelper
- * @path tests/ai/helpers/provider_test_helper.ts
+ * @path packages/ai/tests/helpers/provider_test_helper.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Provides a reusable test harness for AI providers, verifying standard
  * request/response patterns and error handling across varied LLM backends.
  */

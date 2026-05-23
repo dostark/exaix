@@ -2,6 +2,8 @@
 /**
  * @module TUIRendererTestUtils
  * @path apps/tui/tests/renderer_test_utils.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Common utilities for TUI rendering tests, providing shared visual
  * primitives and ANSI-aware line matching logic.
  */

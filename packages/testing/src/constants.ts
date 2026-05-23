@@ -1,6 +1,9 @@
 /**
  * @module TestingPackageConstants
  * @path packages/testing/src/constants.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Shared test fixtures and helper constants used by package-local tests.
  * Incorporates test-specific constants (prompts, mock data, test environment variables, etc.).
  */

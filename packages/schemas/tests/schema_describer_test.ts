@@ -1,6 +1,8 @@
 /**
  * @module SchemaDescriberTest
- * @path tests/schemas/schema_describer_test.ts
+ * @path packages/schemas/tests/schema_describer_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies the utility for generating human-readable descriptions of
  * Zod schemas, ensuring accurate representation of tool parameters for agents.
  */

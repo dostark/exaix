@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardRawModeTest
  * @path apps/tui/tests/tui_dashboard_rawmode_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for entering terminal raw mode, ensuring correct behavior
  * in both interactive and non-interactive environments.
  */

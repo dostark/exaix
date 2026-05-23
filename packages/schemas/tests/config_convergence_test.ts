@@ -1,6 +1,6 @@
 /**
  * @module ConfigConvergenceSchemaTest
- * @path tests/schemas/config_convergence_test.ts
+ * @path packages/schemas/tests/config_convergence_test.ts
  * @description Tests for the agents.convergence section of ConfigSchema,
  * covering defaults, valid values, and invalid value rejection.
  * @architectural-layer Config

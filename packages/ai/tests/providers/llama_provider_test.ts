@@ -1,6 +1,8 @@
 /**
  * @module LlamaProviderTest
- * @path tests/ai/llama_provider_test.ts
+ * @path packages/ai/tests/providers/llama_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the Llama (local) LLM provider, ensuring correct integration
  * with local inference endpoints and stable request/response handling.
  */

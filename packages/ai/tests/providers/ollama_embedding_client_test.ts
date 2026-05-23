@@ -1,6 +1,8 @@
 /**
  * @module OllamaEmbeddingClientTest
- * @path tests/ai/providers/ollama_embedding_client_test.ts
+ * @path packages/ai/tests/providers/ollama_embedding_client_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Tests for the Ollama embedding client that calls /api/embed
  * with localhost-only SSRF validation, response validation, and batching.
  */

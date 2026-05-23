@@ -46,8 +46,8 @@ export interface VersionMeta {
 import { join } from "@std/path";
 
 const REPO_ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
-const VERSION_FILE = join(REPO_ROOT, "src", "shared", "version.ts");
-const META_FILE = join(REPO_ROOT, "src", "shared", ".version_meta.json");
+const VERSION_FILE = join(REPO_ROOT, "packages", "core", "src", "version.ts");
+const META_FILE = join(REPO_ROOT, "packages", "core", "src", ".version_meta.json");
 
 // ---------------------------------------------------------------------------
 // Minor-bump trigger file patterns
@@ -168,7 +168,7 @@ export async function getCiFiles(): Promise<string[]> {
 
 async function stageVersionFiles(): Promise<void> {
   const cmd = new Deno.Command("git", {
-    args: ["add", "src/shared/version.ts", "src/shared/.version_meta.json"],
+    args: ["add", "packages/core/src/version.ts", "packages/core/src/.version_meta.json"],
     stdout: "inherit",
     stderr: "inherit",
   });

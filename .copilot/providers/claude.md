@@ -98,7 +98,7 @@ Plan:
 ```xml
 <antml_function_calls>
 <antml_invoke name="read_file">
-<antml_parameter name="filePath">src/services/plan_writer.ts</antml_parameter>
+<antml_parameter name="filePath">packages/flow/src/plan_writer.ts</antml_parameter>
 </antml_invoke>
 <antml_invoke name="read_file">
 <antml_parameter name="filePath">tests/plan_writer_test.ts</antml_parameter>
@@ -230,7 +230,7 @@ new Deno.Command("deno", { args: ["test"] }).output();
 
 ❌ **Bad:** Manually parse YAML without schema validation
 
-✅ **Good:** Use Zod schemas from `src/schemas/` for all YAML frontmatter
+✅ **Good:** Use Zod schemas from `packages/schemas/src/` for all YAML frontmatter
 
 ## Agent Communication Standards
 

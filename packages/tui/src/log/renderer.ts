@@ -1,6 +1,9 @@
 /**
  * @module LogRenderer
  * @path packages/tui/src/log/renderer.ts
+ * @related-files []
+ * @architectural-layer TUI
+ * @ungrounded
  * @description Package-owned TUI log rendering helpers for formatted single-line, detailed, and summary views.
  */
 

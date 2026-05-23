@@ -1,6 +1,8 @@
 /**
  * @module LlamaFactoryTest
- * @path tests/ai/llama_factory_test.ts
+ * @path packages/ai/tests/llama_factory_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the Llama (local) provider factory, ensuring correct
  * wiring of base URLs and model identifiers for local LLM execution.
  */

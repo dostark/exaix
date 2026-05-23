@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module CLIErrorStrategyTest
- * @path tests/cli/error_strategy_test.ts
+ * @path packages/cli/tests/errors/error_strategy_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI error handling strategies, ensuring stable FailFast vs. Silent
  * behaviors and consistent exit code mapping for terminal users.
  */

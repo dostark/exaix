@@ -3,7 +3,7 @@
  * @path packages/core/src/status/review_status.ts
  * @description Type definitions and utility functions for Review outcome states.
  * @architectural-layer Shared
- * @related-files ["src/services/artifact/review_registry.ts", "packages/schemas/src/review.ts"]
+ * @related-files ["packages/core/src/artifact/review_registry.ts", "packages/schemas/src/review.ts"]
  */
 
 import { GeneralStatus } from "@exaix/core";

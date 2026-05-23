@@ -1,6 +1,8 @@
 /**
  * @module ToolRuntimeTypes
  * @path packages/tool-runtime/src/types.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Shared types for @exaix/tool-runtime.
  */
 

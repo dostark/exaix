@@ -1,6 +1,8 @@
 /**
  * @module ToolDescriptionQualityTest
  * @path packages/mcp/tests/tool_description_quality_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Validates that every live MCP tool description in the canonical manifest
  * meets the agent-quality bar: descriptive enough to allow an LLM to select the right
  * tool, includes guidance on when to prefer it, and describes what it returns.

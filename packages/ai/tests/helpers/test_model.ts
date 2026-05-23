@@ -1,6 +1,8 @@
 /**
  * @module AIProviderTestModel
- * @path tests/ai/helpers/test_model.ts
+ * @path packages/ai/tests/helpers/test_model.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Provides a strongly-typed mock model identifier for provider tests,
  * ensuring consistent identification across varied LLM backends.
  */

@@ -1,6 +1,7 @@
 /**
  * @module QualityGatePackage
  * @path packages/quality-gate/mod.ts
+ * @architectural-layer Services
  * @description Package entrypoint for @exaix/quality-gate. Provides request quality
  * assessment, enrichment, and clarification orchestration.
  * @related-files [packages/core/src/types/i_request_quality_gate_service.ts]

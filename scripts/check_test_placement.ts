@@ -5,9 +5,10 @@
  * @description Enforces repository test-file placement conventions for Exaix.
  *
  * Rules:
- * - Test files matching `*_test.ts(x)` must live under `tests/`.
- * - Service tests must live under `tests/services/<domain>/`, not directly
- *   under `tests/services/`.
+ * - Test files matching `*_test.ts(x)` must live under `tests/`,
+ *   `packages/<name>/tests/`, or `apps/<name>/tests/`.
+ * - Tests for packages must live under `packages/<name>/tests/`, not
+ *   directly under `tests/`.
  *
  * Usage:
  *   deno run -A scripts/check_test_placement.ts          # inspect staged files
@@ -55,44 +56,11 @@ export function isTestFilePath(path: string): boolean {
 export function recommendTestDirectoryForSource(path: string): string | null {
   const normalized = normalizePath(path);
 
-  if (normalized.startsWith("src/services/")) {
-    const [, , domain] = normalized.split("/");
-    return domain ? `tests/services/${domain}/` : "tests/services/";
-  }
-
   if (normalized.startsWith("packages/")) {
     const parts = normalized.split("/");
     if (parts.length >= 3 && parts[2] === "src") {
       return `packages/${parts[1]}/tests/`;
     }
-  }
-
-  if (normalized.startsWith("src/shared/schemas/") || normalized.startsWith("@exaix/schemas/")) {
-    return "tests/schemas/";
-  }
-
-  if (normalized.startsWith("src/shared/")) {
-    return "tests/shared/";
-  }
-
-  if (normalized.startsWith("src/flows/")) {
-    return "tests/flows/";
-  }
-
-  if (normalized.startsWith("apps/exactl/src/")) {
-    return "apps/exactl/tests/";
-  }
-
-  if (normalized.startsWith("src/ai/")) {
-    return "tests/ai/";
-  }
-
-  if (normalized.startsWith("src/mcp/")) {
-    return "tests/mcp/";
-  }
-
-  if (normalized.startsWith("src/errors/")) {
-    return "tests/errors/";
   }
 
   if (normalized.startsWith("scripts/")) {

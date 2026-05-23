@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardMemoryNotifTest
  * @path apps/tui/tests/tui_dashboard_memory_notif_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the TUI Dashboard's integration with memory update notifications,
  * ensuring real-time alerts when new agent knowledge is discovered.
  */

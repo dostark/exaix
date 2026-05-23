@@ -1,6 +1,7 @@
 /**
  * @module CliContext
  * @path packages/cli/src/types/cli_context.ts
+ * @related-files []
  * @description Defines the ICliApplicationContext interface used by CLI commands.
  * @architectural-layer CLI
  */

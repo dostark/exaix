@@ -2,7 +2,8 @@
  * @module LayoutPersistence
  * @path packages/tui/src/layout/persistence.ts
  * @description Utilities for saving, restoring, and resetting TUI dashboard layouts to/from local storage.
- * @architectural-layer TUI Layout
+ * @architectural-layer TUI
+ * @ungrounded Layout
  * @related-files ["packages/tui/src/helpers/constants.ts"]
  */
 

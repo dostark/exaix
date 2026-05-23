@@ -1,6 +1,8 @@
 /**
  * @module AIProviderTestConfig
- * @path tests/ai/helpers/test_config.ts
+ * @path packages/ai/tests/helpers/test_config.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Provides a baseline AI configuration for provider tests, ensuring
  * consistent model names and base URLs for Mock/Live backend testing.
  */

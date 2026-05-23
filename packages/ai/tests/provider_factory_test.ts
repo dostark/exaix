@@ -1,6 +1,8 @@
 /**
  * @module AIProviderFactoryTest
- * @path tests/ai/provider_factory_test.ts
+ * @path packages/ai/tests/provider_factory_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the AI Provider Factory, ensuring robust parsing of
  * provider-specific configuration and stable initialization of model instances.
  */

@@ -1,11 +1,12 @@
 /**
  * @module RequestProcessorKnowledgeTest
- * @path tests/services/request/request_processor_knowledge_test.ts
+ * @path packages/request/tests/request_processor_knowledge_test.ts
+ * @architectural-layer Services
  * @description Tests for RequestProcessor integration with IPortalKnowledgeService:
  * resolves portal knowledge pre-execution, injects a capped Markdown summary into
  * IParsedRequest.context via PORTAL_KNOWLEDGE_KEY, passes knowledge to both agent
  * and flow processing paths, and degrades gracefully on failure.
- * @related-files ["src/services/request/request_processor.ts", "packages/core/src/types/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
+ * @related-files ["packages/request/src/processor.ts", "packages/core/src/types/constants.ts", "packages/core/src/types/i_portal_knowledge_service.ts"]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";

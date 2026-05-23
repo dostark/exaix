@@ -1,6 +1,8 @@
 /**
  * @module MemoryCommandsCoverageTest
  * @path apps/exactl/tests/memory_commands_coverage_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Extended coverage for CLI memory commands, verifying RAG-based search with embeddings,
  * tag-based filtering, and alternative output formats (Markdown/JSON).
  */

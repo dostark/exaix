@@ -5,12 +5,13 @@
  * clarification questions, submits answers through the ClarificationEngine,
  * and manages proceed/cancel lifecycle transitions for REFINING requests.
  * @architectural-layer CLI
- * @related-files [apps/exactl/src/commands/request_commands.ts, src/services/adapters/clarification_adapter.ts]
+ * @ungrounded
+ * @related-files [apps/exactl/src/commands/request_commands.ts, apps/common/adapters/clarification_adapter.ts]
  */
 
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { ClarificationAdapter } from "../../../../src/services/adapters/clarification_adapter.ts";
+import { ClarificationAdapter } from "../../../../apps/common/adapters/clarification_adapter.ts";
 import {
   ClarificationSessionStatus,
   type IClarificationQuestion,

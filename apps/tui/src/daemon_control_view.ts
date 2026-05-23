@@ -59,7 +59,7 @@ const CLI_CMD_DAEMON = "daemon";
 const UI_CLOSE_LOGS = "[ESC] Close logs";
 const UI_CLOSE_CONFIG = "[ESC] Close config";
 const UI_STATUS_PANEL_KEYS = "  [s] Start  [k] Stop  [r] Restart  [l] Logs  [R] Refresh";
-const UI_CONFIG_FILE = "exa.config.toml";
+const UI_CONFIG_FILE = "";
 const UI_CONFIG_COMING_SOON = "(Configuration viewer coming soon)";
 
 /** Help text constants */

@@ -1,6 +1,8 @@
 /**
  * @module CoreRequestFrontmatterTypeTest
  * @path packages/core/tests/request_frontmatter_type_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Compile-time verification for request frontmatter types owned by @exaix/core.
  *
  * This file contains no runtime tests.

@@ -1,6 +1,8 @@
 /**
  * @module FlowValidator
- * @path packages/flow-storage/src/validator.ts
+ * @path packages/flow/src/validator.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Validates flow definitions, including structure, dependencies, and agent references.
  */
 

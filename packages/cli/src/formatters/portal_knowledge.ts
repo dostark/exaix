@@ -1,8 +1,9 @@
 /**
  * @module KnowledgeFormatter
- * @path src/shared/formatters/portal_knowledge.ts
+ * @path packages/cli/src/formatters/portal_knowledge.ts
  * @description Provides logic for formatting IPortalKnowledge objects into human-readable text.
  * @architectural-layer Shared
+ * @ungrounded
  * @related-files ["packages/schemas/src/portal_knowledge.ts", apps/exactl/src/commands/portal_commands.ts]
  */
 

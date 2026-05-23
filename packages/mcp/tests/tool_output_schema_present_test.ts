@@ -1,6 +1,8 @@
 /**
  * @module ToolOutputSchemaPresentTest
  * @path packages/mcp/tests/tool_output_schema_present_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that every live MCP tool in the canonical manifest has a populated
  * output_schema and error_types field. These fields allow agents and callers to understand
  * what to expect from each tool without reading source code.

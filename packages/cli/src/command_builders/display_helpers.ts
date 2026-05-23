@@ -1,8 +1,10 @@
 /**
  * @module DisplayHelpers
  * @path packages/cli/src/command_builders/display_helpers.ts
+ * @related-files []
  * @description Shared display helper utilities for plan and request CLI action builders.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type { JSONObject } from "@exaix/core/types";

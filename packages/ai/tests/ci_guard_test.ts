@@ -1,6 +1,8 @@
 /**
  * @module CIGuardTest
- * @path tests/ai/ci_guard_test.ts
+ * @path packages/ai/tests/ci_guard_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the logic for protecting live LLM endpoints in CI environments,
  * ensuring automatic fallback to mock providers unless explicitly overridden.
  */

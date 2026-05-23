@@ -1,6 +1,8 @@
 /**
  * @module ArtifactModule
  * @path packages/core/src/artifact/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Artifact services for @exaix/core.
  */
 

@@ -19,7 +19,7 @@ qwen_skill: doc
 ```text
 Key points
 - Write for the intended audience: user-facing docs in docs/, agent guidance in .copilot/
-- After modifying MCP tool handlers in src/mcp/handlers/, always run
+- After modifying MCP tool handlers in packages/mcp/src/handlers/, always run
   deno task docs-sync-schemas to keep TOOLS.md in sync
 - exaix-dev-docs is a git submodule — follow .copilot/skills/submodule-workflow/SKILL.md
   for any changes that span the parent repo and the submodule
@@ -40,7 +40,7 @@ Doc target map
   Submodule docs               →  exaix-dev-docs/ (see submodule-workflow skill)
 
 Special sync commands
-  # After changing MCP handler schemas in src/mcp/handlers/
+  # After changing MCP handler schemas in packages/mcp/src/handlers/
   deno task docs-sync-schemas
 
   # After adding/changing .copilot/ files

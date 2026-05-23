@@ -3,7 +3,7 @@
  * @path packages/core/src/types/json.ts
  * @description Centralized JSON-related types and utilities shared between Core and TUI.
  * @architectural-layer Shared
- * @related-files [packages/core/src/types/constants.ts, packages/core/src/schemas/*.ts]
+ * @related-files [packages/core/src/types/constants.ts, packages/schemas/src/*.ts]
  */
 import { z } from "zod";
 

@@ -1,6 +1,8 @@
 /**
  * @module PatternDetectorTest
- * @path tests/services/portal_knowledge/pattern_detector_test.ts
+ * @path packages/portal/knowledge/tests/pattern_detector_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the PatternDetector (Strategy 4): heuristic detection
  * of code conventions and naming patterns from file structure and optional
  * file contents. Covers naming, layout, test conventions, barrel exports,

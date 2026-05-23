@@ -1,6 +1,8 @@
 /**
  * @module KeyFileIdentifierTest
- * @path tests/services/portal_knowledge/key_file_identifier_test.ts
+ * @path packages/portal/knowledge/tests/key_file_identifier_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the KeyFileIdentifier (Strategy 3): heuristic-based
  * identification of significant files by name/path patterns, with role
  * assignment and significance sorting.

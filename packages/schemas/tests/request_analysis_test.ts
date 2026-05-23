@@ -1,6 +1,8 @@
 /**
  * @module RequestAnalysisSchemaTest
- * @path tests/schemas/request_analysis_test.ts
+ * @path packages/schemas/tests/request_analysis_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Tests for the IRequestAnalysis Zod schema and inferred types,
  * ensuring robust validation of request intent analysis output.
  */

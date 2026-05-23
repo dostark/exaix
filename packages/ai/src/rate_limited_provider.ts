@@ -1,9 +1,9 @@
 /**
  * @module RateLimitedProvider
- * @path src/ai/rate_limited_provider.ts
+ * @path packages/ai/src/rate_limited_provider.ts
  * @description Resiliency wrapper for AI providers that enforces rate limits (calls/tokens/cost) to prevent cost exhaustion attacks.
  * @architectural-layer AI
- * @related-files [src/ai/providers.ts, "src/services/cost/cost_tracker.ts"]
+ * @related-files [packages/ai/src/providers.ts, "packages/core/src/cost/cost_tracker.ts"]
  */
 
 import type { IModelProvider } from "./types.ts";

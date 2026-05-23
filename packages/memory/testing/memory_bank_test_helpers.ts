@@ -1,6 +1,9 @@
 /**
  * @module MemoryBankTestHelpers
  * @path packages/memory/testing/memory_bank_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Memory
+ * @ungrounded
  * @description Provides high-level harness for MemoryBankService tests,
  * coordinating database setup and vector similarity mock data.
  */

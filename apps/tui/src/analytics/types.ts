@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/types.ts
  * @description Core type definitions for the TUI analytics system, including trace analysis and performance metrics.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/analytics/correlation_analyzer.ts, apps/tui/src/analytics/trace_analyzer.ts]
  */
 

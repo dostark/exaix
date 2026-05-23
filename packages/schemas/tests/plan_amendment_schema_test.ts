@@ -1,6 +1,8 @@
 /**
  * @module PlanAmendmentSchemaTest
- * @path tests/schemas/plan_amendment_schema_test.ts
+ * @path packages/schemas/tests/plan_amendment_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Unit tests for plan amendment Zod schemas and type validation.
  */
 

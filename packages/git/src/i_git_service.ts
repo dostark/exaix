@@ -1,6 +1,9 @@
 /**
  * @module IGitService
  * @path packages/git/src/i_git_service.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Git service interface definitions for @exaix/git.
  */
 

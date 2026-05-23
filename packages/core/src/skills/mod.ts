@@ -1,6 +1,8 @@
 /**
  * @module Skills
  * @path packages/core/src/skills/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Skills — merged into @exaix/core as a sub-domain.
  */
 

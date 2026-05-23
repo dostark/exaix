@@ -1,8 +1,9 @@
 /**
  * @module Routing
  * @path packages/routing/mod.ts
+ * @architectural-layer Services
  * @description Routing policy: capability matching, experiment splitting, performance-based identity selection.
- * @related-files ["packages/schemas/src/routing_policy.ts", "src/services/routing/"]
+ * @related-files ["packages/schemas/src/routing_policy.ts", "packages/routing/src/"]
  */
 
 export { CandidateDiscovery } from "./src/candidate_discovery.ts";

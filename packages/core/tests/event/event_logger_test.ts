@@ -1,6 +1,8 @@
 /**
  * @module EventLoggerTest
  * @path packages/core/tests/event/event_logger_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the EventLogger service, ensuring that high-level system
  * lifecycle events are correctly captured and routed to the persistent journal.
  */
@@ -114,7 +116,7 @@ Deno.test("EventLogger: should persist token and cost metrics to IActivity Journ
 
 Deno.test("EventLogger: should print formatted message to console", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
-    await logger.info("config.loaded", "exa.config.toml", { checksum: "abc123" });
+    await logger.info("config.loaded", "", { checksum: "abc123" });
 
     // Restore console.log to check output
     restoreConsole();
@@ -336,7 +338,7 @@ Deno.test("EventLogger: should allow custom icons in log events", async () => {
   await withEventLoggerTest(async ({ logger, logs, restoreConsole }) => {
     await logger.log({
       action: "config.loaded",
-      target: "exa.config.toml",
+      target: "",
       payload: {},
       icon: "rocket",
       level: LogLevel.INFO,
@@ -364,7 +366,7 @@ Deno.test("EventLogger: full integration with database and console", async () =>
 
     // Log multiple events
     await serviceLogger.info("daemon.starting", "main", { mode: "development" });
-    await serviceLogger.info("config.loaded", "exa.config.toml", { checksum: "abc123" });
+    await serviceLogger.info("config.loaded", "", { checksum: "abc123" });
     await serviceLogger.warn("context.truncated", "loader", { files_skipped: 3 });
     await serviceLogger.error("provider.failed", "anthropic", { error: "rate_limited" });
 

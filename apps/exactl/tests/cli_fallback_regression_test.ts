@@ -1,6 +1,8 @@
 /**
  * @module CLIFallbackRegressionTest
  * @path apps/exactl/tests/cli_fallback_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression tests for CLI argument parsing, ensuring that the system
  * correctly falls back to interactive modes when required parameters are missing.
  */

@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardHelper
  * @path apps/tui/tests/dashboard_helper.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Provides shared setup and assertion logic for the main TUI Dashboard,
  * coordinating mock services and keyboard event routing.
  */

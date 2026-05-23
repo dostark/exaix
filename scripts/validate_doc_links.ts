@@ -53,8 +53,8 @@ async function main() {
     const content = await Deno.readTextFile(join(cwd, docFile));
 
     // Match:
-    // 1. [text](src/file.ts:Symbol)
-    // 2. "src/file.ts:Symbol"
+    // 1. [text](packages/<name>/src/file.ts:Symbol)
+    // 2. "packages/<name>/src/file.ts:Symbol"
     const patterns = [
       /\[.*?\]\(((?:src|tests|docs|scripts)\/.*?\.ts)(?::(.*?))?\)/g,
       /["']((?:src|tests|docs|scripts)\/.*?\.ts)(?::(.*?))?["']/g,

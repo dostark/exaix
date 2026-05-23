@@ -1,6 +1,8 @@
 /**
  * @module AuditLoggerTypes
  * @path packages/core/src/types/audit_logger.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Interfaces for audit logging.
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module ErrorAnalyzerTest
  * @path apps/tui/tests/error_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for pattern-based error analysis in the TUI, ensuring
  * frequent failure modes are correctly grouped and surfaced for debugging.
  */

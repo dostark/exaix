@@ -1,6 +1,9 @@
 /**
  * @module McpTestingPackage
  * @path packages/mcp/testing/mod.ts
+ * @related-files []
+ * @architectural-layer MCP
+ * @ungrounded
  * @description Public test-support surface for MCP package helpers shared across workspace tests.
  */
 

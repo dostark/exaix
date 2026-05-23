@@ -1,6 +1,8 @@
 /**
  * @module FlowTransforms
  * @path packages/core/src/func/transforms.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Transform functions for flow execution pipeline — pure string/JSON utilities.
  */
 

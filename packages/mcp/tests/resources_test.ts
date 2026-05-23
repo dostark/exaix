@@ -1,6 +1,8 @@
 /**
  * @module MCPResourcesTest
  * @path packages/mcp/tests/resources_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies URI-based resource discovery in the MCP server, validating
  * 'exa://' scheme parsing, nested path resolution, and portal context isolation.
  */

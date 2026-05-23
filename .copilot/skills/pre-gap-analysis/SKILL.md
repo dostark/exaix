@@ -45,7 +45,7 @@ risk before we start coding. Write the gaps into the document."
 Examples
 - "#pre-gap-analysis .copilot/planning/phase-65-flow-scheduler.md"
 - "#pre-gap-analysis .copilot/planning/phase-48-acceptance-criteria-propagation.md
-   Additional context: ARCHITECTURE.md, src/flows/flow_runner.ts"
+   Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
 - ✅ Do read every source file cited in the planning document — never trust
@@ -77,7 +77,7 @@ Do / Don't
 - ❌ Don't assume tests cover a path — verify the plan's Planned Tests section
   explicitly names them.
 - ❌ Don't accept hardcoded threshold or timeout literals — they must be named
-  constants in `src/shared/constants.ts` or config-schema fields.
+  constants in `packages/core/src/types/constants.ts` or config-schema fields.
 - ❌ Don't skip event payload typing — untyped events block audit chain
   verification and make integration tests fragile.
 
@@ -151,7 +151,7 @@ document provided. Your output has two parts:
 1. **Audit algorithm completeness.**
    If the plan merges, caps, sorts, or deduplicates collections, verify:
    - The algorithm is fully specified (sort key, similarity definition, cap value).
-   - Every threshold or limit is a named constant in `src/shared/constants.ts`,
+   - Every threshold or limit is a named constant in `packages/core/src/types/constants.ts`,
      not a hardcoded literal.
 
 1. **Verify cross-component ownership.**
@@ -192,7 +192,7 @@ document provided. Your output has two parts:
 
 1. **Identify missing constants.**
    Flag every literal string or number in the plan (threshold, mode name, file
-   name, timeout) that belongs in `src/shared/constants.ts`.
+   name, timeout) that belongs in `packages/core/src/types/constants.ts`.
 
 ---
 

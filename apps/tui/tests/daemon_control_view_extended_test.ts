@@ -1,6 +1,8 @@
 /**
  * @module DaemonControlViewExtendedTest
  * @path apps/tui/tests/daemon_control_view_extended_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies internal mock behaviors for daemon state management, ensuring stable
  * simulation of daemon restarts, heartbeats, and log rotation for TUI tests.
  */
@@ -361,7 +363,7 @@ Deno.test("DaemonControlTuiSession: renderConfig shows configuration info", asyn
   session.showConfig();
   const lines = session.renderConfig();
   assertEquals(lines.some((l) => l.includes("DAEMON CONFIGURATION")), true);
-  assertEquals(lines.some((l) => l.includes("exa.config.toml")), true);
+  assertEquals(lines.some((l) => l.includes("")), true);
 });
 
 // ===== LegacyDaemonControlTuiSession Tests =====

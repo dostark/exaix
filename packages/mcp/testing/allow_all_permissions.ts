@@ -1,6 +1,9 @@
 /**
  * @module AllowAllPermissionsService
  * @path packages/mcp/testing/allow_all_permissions.ts
+ * @related-files []
+ * @architectural-layer MCP
+ * @ungrounded
  * @description Test-only portal permissions fixture that explicitly permits all portal operations.
  * Implements IPortalPermissionsChecker without importing from root src/ — safe for package tests.
  * Must never be imported from production runtime code.

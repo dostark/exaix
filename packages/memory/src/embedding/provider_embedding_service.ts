@@ -5,6 +5,7 @@
  * IEmbeddingProvider. Stores embedding vectors as JSON files alongside
  * an LRU cache for duplicate input deduplication.
  * @architectural-layer Services
+ * @ungrounded
  * @related-files [packages/memory/src/embedding/memory_embedding.ts, packages/core/src/types/i_memory_embedding_service.ts]
  */
 

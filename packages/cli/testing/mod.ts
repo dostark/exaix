@@ -1,6 +1,9 @@
 /**
  * @module CLITesting
  * @path packages/cli/testing/mod.ts
+ * @architectural-layer CLI
+ * @ungrounded
+ * @related-files []
  * @description Exports stub factories and test utilities for @exaix/cli consumers.
  * This is a published support API surface — never import from packages/cli/tests/.
  */

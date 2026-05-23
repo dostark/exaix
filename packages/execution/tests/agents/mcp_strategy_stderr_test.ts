@@ -1,6 +1,8 @@
 /**
  * @module McpStrategyStderrTest
  * @path packages/execution/tests/agents/mcp_strategy_stderr_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Step 61.8 (G5): Verifies stderr stream failures are logged via
  * AgentExecutor.logAgentOutput without aborting McpAgentStrategy stderr piping.
  */

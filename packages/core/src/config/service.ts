@@ -4,7 +4,7 @@
  * @description Central service for managing system configuration, loading from TOML files,
  * and providing validated access to settings for all components.
  * @architectural-layer Core System
- * @related-files ["packages/schemas/src/config.ts", src/main.ts]
+ * @related-files ["packages/schemas/src/config.ts", "apps/daemon/main.ts"]
  */
 import { parse } from "@std/toml";
 import { dirname, isAbsolute, join } from "@std/path";

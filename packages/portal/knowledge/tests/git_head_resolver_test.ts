@@ -1,6 +1,8 @@
 /**
  * @module GitHeadResolverTest
- * @path tests/services/portal_knowledge/git_head_resolver_test.ts
+ * @path packages/portal/knowledge/tests/git_head_resolver_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Unit tests for GitHeadResolver to ensure git SHA resolution and changed-file detection.
  */
 

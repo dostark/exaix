@@ -1,9 +1,9 @@
 /**
  * @module LazyProvider
- * @path src/ai/providers/lazy_provider.ts
+ * @path packages/ai/src/providers/lazy_provider.ts
  * @description Defers provider initialization until first use to optimize startup time and avoid unnecessary early API/auth checks.
  * @architectural-layer AI
- * @related-files [src/ai/provider_registry.ts]
+ * @related-files [packages/ai/src/provider_registry.ts]
  */
 import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "../types.ts";
 import type { IGenerateResult } from "./common.ts";

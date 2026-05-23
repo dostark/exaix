@@ -9,7 +9,7 @@
  * 3. Provide structured error reporting for validation failures
  *
  * @architectural-layer Services
- * @related-files ["src/services/plan/plan_writer.ts", "packages/tool-runtime/src/output_validator.ts"]
+ * @related-files ["packages/core/src/planning/plan_writer.ts", "packages/tool-runtime/src/output_validator.ts"]
  */
 
 import { type Plan, PlanSchema } from "@exaix/schemas/plan_schema.ts";

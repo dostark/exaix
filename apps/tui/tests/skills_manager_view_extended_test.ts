@@ -1,6 +1,8 @@
 /**
  * @module SkillsManagerViewExtendedTest
  * @path apps/tui/tests/skills_manager_view_extended_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for SkillsManagerView metadata, ensuring robust coverage of
  * skill source icons, status indicators, and keyboard registration.
  */

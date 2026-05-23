@@ -1,6 +1,8 @@
 /**
  * @module AIProviderSelectorTest
- * @path tests/ai/provider_selector_test.ts
+ * @path packages/ai/tests/provider_selector_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Validates the AI selection logic, ensuring optimal provider choice based on
  * requested capabilities, cost tier constraints, and fallback availability during degradation.
  */

@@ -1,6 +1,6 @@
 /**
  * @module ConfigQualityGateSchemaTest
- * @path tests/schemas/config_quality_gate_test.ts
+ * @path packages/schemas/tests/config_quality_gate_test.ts
  * @description Tests for the quality_gate section of ConfigSchema (Phase 47).
  * Covers defaults, valid values, nested thresholds, and invalid value rejection.
  * @architectural-layer Config

@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestAnalyzerTest
- * @path tests/services/request_analysis/request_analyzer_test.ts
+ * @path packages/request/tests/request_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Tests for the RequestAnalyzer orchestrator service.
  * Covers heuristic mode, LLM mode, hybrid mode logic, metadata timing,
  * activity logging, and graceful fallback on LLM failure.

@@ -4,7 +4,7 @@
  * @description Unified service for loading and validating agent blueprints.
  * Handles YAML frontmatter parsing, schema validation, and blueprint resolution.
  * @architectural-layer Core
- * @related-files ["packages/execution/src/agent_runner.ts", "src/services/request/request_processor.ts"]
+ * @related-files ["packages/execution/src/agent_runner.ts", "packages/request/src/processor.ts"]
  */
 
 import { basename, join } from "@std/path";

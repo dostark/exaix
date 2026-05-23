@@ -1,6 +1,6 @@
 /**
  * @module EmbeddingProviderFactory
- * @path src/ai/embeddings/embedding_provider_factory.ts
+ * @path packages/ai/src/embeddings/embedding_provider_factory.ts
  * @description Factory function that creates IEmbeddingProvider instances
  * from a discriminated config union. Routes to the correct concrete
  * provider (Ollama, OpenAI, llama.cpp) based on the provider field.

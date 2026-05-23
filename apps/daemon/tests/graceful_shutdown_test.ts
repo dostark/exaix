@@ -1,6 +1,8 @@
 /**
  * @module GracefulShutdownTest
  * @path apps/daemon/tests/graceful_shutdown_test.ts
+ * @related-files []
+ * @architectural-layer Daemon
  * @description Verifies the process termination logic, ensuring registered cleanup tasks
  * are executed in correct LIFO order to prevent resource leaks and database corruption.
  */

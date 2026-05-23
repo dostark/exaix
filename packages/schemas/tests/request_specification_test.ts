@@ -1,11 +1,11 @@
 /**
  * @module RequestSpecificationSchemaTest
- * @path tests/schemas/request_specification_test.ts
+ * @path packages/schemas/tests/request_specification_test.ts
  * @description Tests for the RequestSpecificationSchema, verifying validation
  * of structured request specification output produced by the clarification
  * Q&A loop engine.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/request_specification.ts]
+ * @related-files [packages/schemas/src/request_specification.ts]
  */
 
 import { assertEquals } from "@std/assert";

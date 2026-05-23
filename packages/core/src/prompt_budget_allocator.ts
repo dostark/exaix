@@ -1,6 +1,8 @@
 /**
  * @module PromptBudgetAllocator
  * @path packages/core/src/prompt_budget_allocator.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Dynamic prompt budget allocator with waterfall reallocation logic.
  */
 

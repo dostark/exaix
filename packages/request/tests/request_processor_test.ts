@@ -1,6 +1,8 @@
 /**
  * @module RequestProcessorTest
- * @path tests/services/request/request_processor_test.ts
+ * @path packages/request/tests/request_processor_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the RequestProcessor, validating request parsing,
  * plan generation via LLM providers, and robust orchestration of flow-based requests.
  */

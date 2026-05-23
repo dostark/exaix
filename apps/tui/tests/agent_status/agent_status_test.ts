@@ -1,6 +1,8 @@
 /**
  * @module AgentStatusStateTest
  * @path apps/tui/tests/agent_status/agent_status_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for handling agent status states (Active, Inactive, Error)
  * within the TUI, ensuring correct coercion and validation of dynamic status updates.
  */

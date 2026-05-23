@@ -1,6 +1,8 @@
 /**
  * @module AgentStatusViewTest
  * @path apps/tui/tests/agent_status_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the AgentStatusView TUI component, ensuring real-time monitoring of
  * agent readiness, active tasks, and resource utilization metrics.
  */

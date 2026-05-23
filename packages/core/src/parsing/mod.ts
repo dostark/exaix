@@ -1,6 +1,8 @@
 /**
  * @module CoreParsing
  * @path packages/core/src/parsing/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Parsing utilities consolidated into @exaix/core/parsing.
  */
 

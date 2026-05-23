@@ -1,5 +1,9 @@
 /**
- * Test utilities for @exaix/tui helpers tests.
+ * @module TuiTestHelpers
+ * @path packages/tui/tests/helpers.ts
+ * @description Test utilities for @exaix/tui helpers tests.
+ * @architectural-layer TUI
+ * @related-files []
  */
 import type { ITreeNode } from "@exaix/tui/helpers/tree_view.ts";
 

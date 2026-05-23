@@ -1,6 +1,8 @@
 /**
  * @module TUIDialogBaseTest
- * @path tests/tui/utils/dialog_base_test.ts
+ * @path packages/tui/tests/utils/dialog_base_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the core drawing logic for TUI dialog boxes, ensuring correct
  * rendering of borders, titles, and dynamic layouts within the terminal grid.
  */

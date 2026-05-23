@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerArchivedTest
  * @path apps/tui/tests/request_manager_archived_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the RequestManagerView TUI component's ability to toggle and display archived requests.
  */
 import { assertEquals } from "@std/assert";

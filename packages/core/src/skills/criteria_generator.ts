@@ -1,6 +1,8 @@
 /**
  * @module CriteriaGenerator
  * @path packages/core/src/skills/criteria_generator.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Converts structured RequestAnalysis output (goals and acceptance
  * criteria) into EvaluationCriterion arrays suitable for quality gate evaluation.
  * Implements ICriteriaGeneratorService for dependency injection.

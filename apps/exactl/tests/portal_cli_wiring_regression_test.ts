@@ -1,6 +1,8 @@
 /**
  * @module PortalCliWiringRegressionTest
  * @path apps/exactl/tests/portal_cli_wiring_regression_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Regression test to ensure portal analyze and portal knowledge
  * commands are correctly wired in the Cliffy command tree.
  */

@@ -5,7 +5,7 @@
  */
 
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { IActivityJournal, JournalEntry } from "../../../../src/flows/dynamic_step_executor.ts";
+import type { IActivityJournal, JournalEntry } from "@exaix/flow";
 
 export class MockActivityJournal implements IActivityJournal {
   private entries: JournalEntry[] = [];

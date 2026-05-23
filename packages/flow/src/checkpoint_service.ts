@@ -1,6 +1,8 @@
 /**
  * @module FlowCheckpointService
- * @path packages/flow-storage/src/checkpoint_service.ts
+ * @path packages/flow/src/checkpoint_service.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Persistence service for FlowRunner step checkpoints under Memory/Execution/{traceId}/checkpoint.json.
  */
 

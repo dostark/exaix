@@ -1,6 +1,8 @@
 /**
  * @module MonitorViewSessionAdditionalTest
  * @path apps/tui/tests/monitor_view_session_additional_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for the MonitorTuiSession, specifically focusing on log grouping
  * cycles, bookmarking logic, and dynamic populating of the log detail panel.
  */

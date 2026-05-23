@@ -1,11 +1,11 @@
 /**
  * @module IRequestAnalyzerService
- * @path src/shared/interfaces/i_request_analyzer_service.ts
+ * @path packages/core/src/types/i_request_analyzer_service.ts
  * @description Service interface and configuration type for the RequestAnalyzer,
  * which extracts structured intent, requirements, and constraints from raw
  * request text before agent execution.
  * @architectural-layer Shared
- * @related-files [src/services/request_analysis/request_analyzer.ts, src/shared/interfaces/mod.ts]
+ * @related-files [packages/request/src/analysis/analyzer.ts, packages/core/src/types/mod.ts]
  */
 
 import type { IRequestAnalysis } from "@exaix/schemas";

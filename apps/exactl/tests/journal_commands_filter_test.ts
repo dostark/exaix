@@ -1,6 +1,8 @@
 /**
  * @module JournalCommandsFilterTest
  * @path apps/exactl/tests/journal_commands_filter_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Validates the mapping of CLI filter strings (e.g., trace_id=xyz) into structured
  * DatabaseService queries for activity journal introspection.
  */

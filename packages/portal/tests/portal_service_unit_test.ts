@@ -1,6 +1,8 @@
 /**
  * @module PortalServiceUnitTest
- * @path tests/services/portal/portal_service_unit_test.ts
+ * @path packages/portal/tests/portal_service_unit_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Unit tests for the core PortalService (src/services/portal.ts).
  */
 

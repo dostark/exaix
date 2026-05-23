@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module ProviderUsageMappingTest
- * @path tests/ai/providers/provider_usage_mapping_test.ts
+ * @path packages/ai/tests/providers/provider_usage_mapping_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Unit tests verifying that provider.generate() returns IGenerateResult with usage and cost fields.
  */
 

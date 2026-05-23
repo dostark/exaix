@@ -3,6 +3,7 @@
  * @path packages/core/src/errors/safe_error.ts
  * @description Safe error wrapper that prevents information leakage by providing user-safe messages while securely logging internal details.
  * @architectural-layer Core
+ * @ungrounded
  * @related-files ["packages/core/src/errors/safe_error.ts", "packages/core/src/logger/event_logger.ts"]
  */
 

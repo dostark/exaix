@@ -1,6 +1,8 @@
 /**
  * @module AnthropicPackageSurfaceTest
  * @path packages/ai-anthropic/tests/anthropic_package_surface_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the public @exaix/ai-anthropic package surface.
  */
 

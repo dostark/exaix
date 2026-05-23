@@ -1,6 +1,8 @@
 /**
  * @module AgentRunnerTest
  * @path packages/execution/tests/agents/agent_runner_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the AgentRunner service, ensuring correct initialization of
  * agent state, prompt assembly, and graceful handling of model provider errors.
  */

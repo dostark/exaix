@@ -4,7 +4,7 @@
  * @description Unified logging service that writes to both console and IActivity Journal.
  * Supports child loggers, structured payloads, and consistent log levels across the system.
  * @architectural-layer Services
- * @related-files ["packages/core/src/logger/event_logger.ts", "packages/core/src/repositories/activity_repository.ts", "src/services/common/types.ts"]
+ * @related-files ["packages/core/src/logger/event_logger.ts", "packages/core/src/repositories/activity_repository.ts", "packages/core/src/types/service_context.ts"]
  */
 
 import type { IDatabaseService, JSONValue } from "@exaix/core";
@@ -95,7 +95,7 @@ let cachedUserIdentity: string | null = null;
  * const logger = new EventLogger({ db: dbService, prefix: "[Exaix]" });
  *
  * // Basic usage
- * logger.info("config.loaded", "exa.config.toml", { checksum: "abc123" });
+ * logger.info("config.loaded", "", { checksum: "abc123" });
  *
  * // Create child logger for a service
  * const serviceLogger = logger.child({ actor: "system", traceId });

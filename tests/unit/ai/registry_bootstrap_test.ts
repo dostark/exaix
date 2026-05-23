@@ -6,7 +6,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { ProviderRegistry } from "@exaix/ai";
-import { bootstrapProviderRegistry } from "../../../src/ai/registry_bootstrap.ts";
+import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
 Deno.test("bootstrapProviderRegistry registers root concrete providers and is idempotent", () => {
   ProviderRegistry.clear();

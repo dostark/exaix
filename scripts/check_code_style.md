@@ -21,7 +21,7 @@ Run the checker:
 
 ```bash
 deno run -A scripts/check_code_style.ts          # scan whole repo
-deno run -A scripts/check_code_style.ts src/      # scan a subtree
+deno run -A scripts/check_code_style.ts packages/ # scan a subtree
 deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 ```
 
@@ -50,15 +50,15 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## Import Rules
 
-| Tag                                      | Severity | Rule | What it detects                                                    |
-| ---------------------------------------- | -------- | ---- | ------------------------------------------------------------------ |
-| `[import-inside-statement]`              | error    | §3   | `import(...)` nested inside a function, condition, or loop         |
-| `[dynamic-import]`                       | warn     | §3   | `import(...)` without a rationale comment above it                 |
-| `[inline-type-import]`                   | error    | §3   | `import("./foo").IFoo` inside a type annotation                    |
-| `[re-export-imported]`                   | error    | §3   | Re-exporting an imported entity outside `mod.ts` / `index.ts`      |
-| `[package-entrypoint-root-src-reexport]` | error    | §3   | Package entrypoint (`mod.ts`) re-exporting from repo `src/*` paths |
-| `[no-interface-rename-on-import]`        | error    | §3   | Aliasing an `I`-prefixed interface on import (e.g., `IFoo as Foo`) |
-| `[import-placement]`                     | error    | §7   | Import declared after an interface/type or after functional code   |
+| Tag                                      | Severity | Rule | What it detects                                                            |
+| ---------------------------------------- | -------- | ---- | -------------------------------------------------------------------------- |
+| `[import-inside-statement]`              | error    | §3   | `import(...)` nested inside a function, condition, or loop                 |
+| `[dynamic-import]`                       | warn     | §3   | `import(...)` without a rationale comment above it                         |
+| `[inline-type-import]`                   | error    | §3   | `import("./foo").IFoo` inside a type annotation                            |
+| `[re-export-imported]`                   | error    | §3   | Re-exporting an imported entity outside `mod.ts` / `index.ts`              |
+| `[package-entrypoint-root-src-reexport]` | error    | §3   | Package entrypoint (`mod.ts`) re-exporting from retired root `src/*` paths |
+| `[no-interface-rename-on-import]`        | error    | §3   | Aliasing an `I`-prefixed interface on import (e.g., `IFoo as Foo`)         |
+| `[import-placement]`                     | error    | §7   | Import declared after an interface/type or after functional code           |
 
 ---
 
@@ -94,23 +94,23 @@ deno run -A scripts/check_code_style.ts --convert-warnings-to-errors
 
 ## TUI Boundary
 
-| Tag                           | Severity | Rule | What it detects                                             |
-| ----------------------------- | -------- | ---- | ----------------------------------------------------------- |
-| `[tui-boundary-cli]`          | error    | §8   | TUI module importing from `apps/exactl/src/`                |
-| `[tui-boundary-services]`     | error    | §8   | TUI module importing from `src/services/` (except adapters) |
-| `[tui-boundary-config]`       | error    | §8   | TUI module importing from `src/config/`                     |
-| `[tui-boundary-helpers]`      | error    | §8   | TUI module importing from `src/helpers/`                    |
-| `[core-boundary-tui-helpers]` | error    | §8   | Non-TUI module importing from `apps/tui/src/helpers/`       |
+| Tag                           | Severity | Rule | What it detects                                                     |
+| ----------------------------- | -------- | ---- | ------------------------------------------------------------------- |
+| `[tui-boundary-cli]`          | error    | §8   | TUI module importing from `apps/exactl/src/`                        |
+| `[tui-boundary-services]`     | error    | §8   | TUI module importing from retired `src/services/` (except adapters) |
+| `[tui-boundary-config]`       | error    | §8   | TUI module importing from retired `src/config/`                     |
+| `[tui-boundary-helpers]`      | error    | §8   | TUI module importing from retired `src/helpers/`                    |
+| `[core-boundary-tui-helpers]` | error    | §8   | Non-TUI module importing from `apps/tui/src/helpers/`               |
 
 ---
 
 ## CLI Boundary
 
-| Tag                           | Severity | Rule | What it detects                                                             |
-| ----------------------------- | -------- | ---- | --------------------------------------------------------------------------- |
-| `[cli-boundary-services]`     | error    | §9   | CLI command/handler/formatter importing from `src/services/` (not adapters) |
-| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from `src/config/service.ts`        |
-| `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `apps/exactl/src/helpers/`                    |
+| Tag                           | Severity | Rule | What it detects                                                                     |
+| ----------------------------- | -------- | ---- | ----------------------------------------------------------------------------------- |
+| `[cli-boundary-services]`     | error    | §9   | CLI command/handler/formatter importing from retired `src/services/` (not adapters) |
+| `[cli-boundary-config]`       | error    | §9   | CLI command/handler/formatter importing from retired `src/config/service.ts`        |
+| `[core-boundary-cli-helpers]` | error    | §9   | Non-CLI module importing from `apps/exactl/src/helpers/`                            |
 
 ---
 
@@ -121,17 +121,17 @@ See [CODE_STYLE.md §4](../CODE_STYLE.md#package-test-boundaries) for the test
 boundary rules and [§13](../CODE_STYLE.md#package-module-purity) for the
 module purity rules.
 
-| Tag                                   | Severity | What it detects                                                                                |
-| ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `[package-boundary]`                  | error    | Package file importing from `src/`, `tests/`, or another package via relative path             |
-| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path (e.g., `src/services/core/db.ts`)    |
-| `[package-related-files-boundary]`    | error    | Package module `@related-files` header pointing at a retired root path                         |
-| `[package-subpath-promotion]`         | error    | Parent package entrypoint (`mod.ts`) re-exporting a canonical subpackage surface               |
-| `[package-testing-import]`            | error    | Test file deep-importing from `packages/<name>/tests/` when `@exaix/<name>/testing` exists     |
-| `[package-canonical-import]`          | error    | File importing a package path that should use a declared `@exaix/...` alias instead            |
-| `[package-instantiates-event-logger]` | error    | Package `src/` file calling `new EventLogger(` (see §13 — package module purity)               |
-| `[package-concrete-logger-type]`      | warn     | Package `src/` file importing concrete `EventLogger` class instead of `IEventLogger` (see §13) |
-| `[package-uses-config-reader]`        | warn     | Package `src/` file calling `getValidatedEnvOverrides()` or `new ConfigService(` (see §13)     |
+| Tag                                   | Severity | What it detects                                                                                    |
+| ------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- |
+| `[package-boundary]`                  | error    | Package file importing from `src/`, `tests/`, or another package via relative path                 |
+| `[package-src-boundary]`              | error    | Package file importing a retired root implementation path (e.g., legacy `src/services/core/db.ts`) |
+| `[package-related-files-boundary]`    | error    | Package module `@related-files` header pointing at a retired root path                             |
+| `[package-subpath-promotion]`         | error    | Parent package entrypoint (`mod.ts`) re-exporting a canonical subpackage surface                   |
+| `[package-testing-import]`            | error    | Test file deep-importing from `packages/<name>/tests/` when `@exaix/<name>/testing` exists         |
+| `[package-canonical-import]`          | error    | File importing a package path that should use a declared `@exaix/...` alias instead                |
+| `[package-instantiates-event-logger]` | error    | Package `src/` file calling `new EventLogger(` (see §13 — package module purity)                   |
+| `[package-concrete-logger-type]`      | warn     | Package `src/` file importing concrete `EventLogger` class instead of `IEventLogger` (see §13)     |
+| `[package-uses-config-reader]`        | warn     | Package `src/` file calling `getValidatedEnvOverrides()` or `new ConfigService(` (see §13)         |
 
 ---
 
@@ -159,5 +159,5 @@ The following locations are permanently exempt from specific package boundary ru
 | ------------------------- | ---------------------------------------------------------------------------------------------- |
 | `packages/core/`          | Defines the runtime entities (`EventLogger`, `ConfigService`) that other packages must not use |
 | `packages/mcp/server/`    | Declared bridge zone — concrete runtime wiring between package contracts and the MCP server    |
-| `src/services/core/db.ts` | Legacy compatibility shim — exempt from `re-export-imported` rule                              |
+| `packages/core/src/db.ts` | Legacy compatibility shim — exempt from `re-export-imported` rule                              |
 | `tests/helpers/`          | Root testing compatibility shims — exempt from `re-export-imported` rule                       |

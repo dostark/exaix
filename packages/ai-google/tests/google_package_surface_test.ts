@@ -1,6 +1,8 @@
 /**
  * @module GooglePackageSurfaceTest
  * @path packages/ai-google/tests/google_package_surface_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the public @exaix/ai-google package surface.
  */
 

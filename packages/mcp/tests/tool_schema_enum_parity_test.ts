@@ -1,6 +1,8 @@
 /**
  * @module ToolSchemaEnumParityTest
  * @path packages/mcp/tests/tool_schema_enum_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies bidirectional parity between the McpToolName enum and live MCP entries
  * in the canonical tool manifest. Every McpToolName value must have a manifest entry and vice
  * versa. Step 77.2 normalization tests.

@@ -1,6 +1,8 @@
 /**
  * @module SchemasDependencyBoundariesTest
  * @path packages/schemas/tests/dependency_boundaries_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies that @exaix/schemas does not import higher-level workspace packages.
  */
 

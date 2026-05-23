@@ -45,9 +45,9 @@ Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", asy
 
   // Verify key components have stable links
   assertEquals(
-    content.includes("src/services/request_processor.ts:RequestProcessor"),
+    content.includes("packages/request/src/processor.ts"),
     true,
     "RequestProcessor link missing.",
   );
-  assertEquals(content.includes("src/main.ts:Daemon"), true, "Daemon entry missing.");
+  assertEquals(content.includes("apps/daemon/main.ts"), true, "Daemon entry missing.");
 });

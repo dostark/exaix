@@ -6,6 +6,7 @@
  * uses the write-to-temp-then-rename pattern to ensure crash-safe writes.
  * Validates loaded JSON against `RequestAnalysisSchema` before returning.
  * @architectural-layer Services
+ * @ungrounded
  * @related-files [packages/request/src/analysis/analyzer.ts]
  */
 

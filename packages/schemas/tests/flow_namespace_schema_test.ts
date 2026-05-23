@@ -1,6 +1,8 @@
 /**
  * @module FlowNamespaceSchemaTest
- * @path tests/schemas/flow_namespace_schema_test.ts
+ * @path packages/schemas/tests/flow_namespace_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies Phase 64 namespace schema parsing, defaults, and backward compatibility.
  */
 

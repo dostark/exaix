@@ -1,6 +1,8 @@
 /**
  * @module McpFixturesTest
  * @path packages/mcp/tests/fixtures_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Tests for Phase 79 confirmation interceptor test fixtures:
  * AllowAllConfirmationInterceptor and DenyAllConfirmationInterceptor.
  */

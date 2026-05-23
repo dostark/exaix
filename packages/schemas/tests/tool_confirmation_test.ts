@@ -1,6 +1,8 @@
 /**
  * @module ToolConfirmationSchemaTest
- * @path tests/schemas/tool_confirmation_test.ts
+ * @path packages/schemas/tests/tool_confirmation_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Tests for ToolConfirmationRequestSchema and ToolConfirmationDecisionSchema
  * defined in packages/schemas/src/tool_confirmation.ts (Step 79.1).
  */

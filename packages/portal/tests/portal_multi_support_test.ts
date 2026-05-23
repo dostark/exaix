@@ -1,6 +1,8 @@
 /**
  * @module PortalMultiSupportTest
  * @path packages/portal/tests/portal_multi_support_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Verifies multi-portal Git repository validation, ensuring correct detection
  * of repository roots and resilient handling of malformed portal targets.
  */

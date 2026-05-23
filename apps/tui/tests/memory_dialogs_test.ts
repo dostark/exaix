@@ -1,6 +1,8 @@
 /**
  * @module MemoryDialogsTest
  * @path apps/tui/tests/memory_dialogs_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the interactive memory approval and rejection dialogs, ensuring robust
  * capture of human rationale and dynamic propagation of memory update proposals.
  */

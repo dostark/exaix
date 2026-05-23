@@ -1,6 +1,8 @@
 /**
  * @module TUILayoutTestHelper
  * @path packages/tui/tests/layout/layout_test_helper.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Provides helper functions for simulating terminal layout transitions and
  * verifying panel coordinates in complex multi-view dashboards.
  */

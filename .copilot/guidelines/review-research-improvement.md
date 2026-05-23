@@ -317,7 +317,7 @@ Before completing the pattern:
 
 **Process:**
 
-1. **Review:** Read `Blueprints/Flows/`, `src/flows/`, examples, templates
+1. **Review:** Read `Blueprints/Flows/`, `packages/flow/src/`, examples, templates
 
 1.
    - Identified 8 weaknesses (dead fields, no quality gates, etc.)

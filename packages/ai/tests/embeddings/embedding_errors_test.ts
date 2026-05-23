@@ -1,6 +1,8 @@
 /**
  * @module EmbeddingErrorsTest
- * @path tests/ai/embeddings/embedding_errors_test.ts
+ * @path packages/ai/tests/embeddings/embedding_errors_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Tests for the EmbeddingError class and error codes used
  * across the embedding provider layer.
  */

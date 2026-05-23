@@ -1,6 +1,8 @@
 /**
  * @module HandlerRegistryResultValidationTest
  * @path packages/mcp/tests/handler_registry_result_validation_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Tests that MCPServer invokes an injected IToolResultValidator when
  * processing tool call results, and that the resultValidator optional field in
  * MCPServerOptions defaults to no-op pass-through for backward compatibility.

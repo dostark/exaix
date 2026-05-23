@@ -1,6 +1,8 @@
 /**
  * @module CostCommandsTest
  * @path apps/exactl/tests/cost_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Unit tests for CostCommands to improve CLI coverage and verify output formatting.
  */
 

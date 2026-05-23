@@ -1,6 +1,8 @@
 /**
  * @module PortalKnowledgeConstantsTest
- * @path tests/services/portal_knowledge/portal_knowledge_constants_test.ts
+ * @path packages/portal/knowledge/tests/portal_knowledge_constants_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Validates that all portal knowledge constants are exported from
  * src/shared/constants.ts with correct types and sensible default values.
  */

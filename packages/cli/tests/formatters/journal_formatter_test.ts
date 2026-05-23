@@ -1,6 +1,8 @@
 /**
  * @module JournalFormatterTest
  * @path packages/cli/tests/formatters/journal_formatter_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI output formatting for the activity journal, covering JSON,
  * tabulated text, and truncated summaries for high-volume log streams.
  */

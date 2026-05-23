@@ -1,8 +1,10 @@
 /**
  * @module CLICommandInterface
  * @path packages/cli/src/base/command.ts
+ * @related-files []
  * @description Defines the standard interfaces and abstract classes for CLI commands, following the Command pattern.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type { JSONValue } from "@exaix/core";

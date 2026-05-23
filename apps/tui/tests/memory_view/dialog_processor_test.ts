@@ -1,6 +1,8 @@
 /**
  * @module MemoryDialogProcessorTest
  * @path apps/tui/tests/memory_view/dialog_processor_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for bulk memory approval and rejection dialogs,
  * ensuring correct progress reporting and resilient handling of cancel/error states.
  */

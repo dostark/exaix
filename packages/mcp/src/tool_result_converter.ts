@@ -3,6 +3,7 @@
  * @path packages/mcp/src/tool_result_converter.ts
  * @description Canonical IToolResult → MCPToolResponse conversion for registry-delegating MCP handlers.
  * @architectural-layer MCP
+ * @ungrounded
  * @package @exaix/mcp
  * @dependencies [@exaix/schemas/mcp.ts, @exaix/core/types]
  * @related-files [packages/mcp/src/tool_result_metadata.ts, packages/mcp/server/tool_handler.ts, packages/mcp/server/handlers/run_command_tool.ts, packages/mcp/server/handlers/search_files_tool.ts]

@@ -1,6 +1,8 @@
 /**
  * @module KeyRoutingHelpersTest
  * @path packages/tui/tests/helpers/key_routing_helpers_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Regression tests for package-owned TUI pane management and key-routing helpers.
  */
 

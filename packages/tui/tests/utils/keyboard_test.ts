@@ -1,6 +1,8 @@
 /**
  * @module TUIKeyboardTest
- * @path tests/tui/utils/keyboard_test.ts
+ * @path packages/tui/tests/utils/keyboard_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for keyboard event handling in the TUI, ensuring robust
  * mapping of escape sequences to internal navigation and action keys.
  */

@@ -1,6 +1,8 @@
 /**
  * @module TUIDashboardSQLiteNotifTest
  * @path apps/tui/tests/tui_dashboard_sqlite_notif_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the integration between the TUI Dashboard and the SQLite-backed
  * notification service, ensuring events are correctly polled and displayed.
  */

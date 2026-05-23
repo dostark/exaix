@@ -1,6 +1,8 @@
 /**
  * @module SetTestModeHelper
  * @path apps/exactl/tests/helpers/set_test_mode.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Provides utilities for injecting 'test mode' state into CLI command
  * execution, ensuring isolation and predictable behavior for automated tests.
  */

@@ -1,6 +1,8 @@
 /**
  * @module MemoryPanelsTest
  * @path apps/tui/tests/memory_panels_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Targeted tests for MemoryView rendering components, ensuring correct visual
  * representation of project-specific and global learned knowledge within the terminal.
  */

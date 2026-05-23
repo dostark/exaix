@@ -1,6 +1,8 @@
 /**
  * @module EmbeddingProviderFactoryTest
- * @path tests/ai/embeddings/embedding_provider_factory_test.ts
+ * @path packages/ai/tests/embeddings/embedding_provider_factory_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Tests for the embedding provider factory that creates
  * IEmbeddingProvider instances from discriminated config.
  */

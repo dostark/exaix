@@ -1,6 +1,8 @@
 /**
  * @module ConfigSchema
  * @path packages/core/src/config/config_schema.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Core-owned configuration schema used by ConfigService.
  */
 

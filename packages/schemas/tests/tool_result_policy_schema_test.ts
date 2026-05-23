@@ -1,6 +1,8 @@
 /**
  * @module ToolResultPolicySchemaTest
  * @path packages/schemas/tests/tool_result_policy_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies ToolResultRemediationPolicySchema enforces policy modes,
  * default values, and retry bounds using the TOOL_RESULT_VALIDATION_MAX_RETRIES constant.
  */

@@ -1,9 +1,9 @@
 /**
  * @module PortalPermissionsSchema
- * @path src/shared/schemas/portal_permissions.ts
+ * @path packages/schemas/src/portal_permissions.ts
  * @description Defines security modes, permission controls, and RBAC models for portal access.
  * @architectural-layer Schemas
- * @related-files ["src/services/request/request_processor.ts", apps/exactl/src/portal_commands.ts]
+ * @related-files ["packages/request/src/processor.ts", apps/exactl/src/commands/portal_commands.ts]
  */
 
 import { z } from "zod";

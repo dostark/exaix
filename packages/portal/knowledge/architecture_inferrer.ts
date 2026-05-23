@@ -1,13 +1,13 @@
 /**
  * @module ArchitectureInferrer
- * @path packages/portal/src/knowledge/architecture_inferrer.ts
+ * @path packages/portal/knowledge/architecture_inferrer.ts
  * @description Strategy 5 of PortalKnowledgeService: uses an LLM to produce a
  * Markdown architecture overview from combined strategy outputs (directory tree,
  * key files, detected conventions, config summary, dependency summary).
  * Falls back to empty string on any LLM or validation failure.
  * Only runs in `standard` and `deep` analysis modes — never in `quick`.
  * @architectural-layer Services
- * @related-files [src/services/portal_knowledge/pattern_detector.ts, src/services/portal_knowledge/key_file_identifier.ts]
+ * @related-files [packages/portal/knowledge/pattern_detector.ts, packages/portal/knowledge/key_file_identifier.ts]
  */
 
 import { z, type ZodType, type ZodTypeDef } from "zod";

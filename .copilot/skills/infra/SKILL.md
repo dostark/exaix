@@ -21,7 +21,7 @@ Key points
 - Config lives in exa.config.toml; sections map to Zod schemas in @exaix/core/config/
 - Always validate new env vars via Zod: use getValidatedEnvOverrides() for EXA_LLM_* overrides
 - All new file paths MUST go through PathResolver / PathSecurity.resolveAndValidate() — never raw concatenation
-- Run deno check src/main.ts after any config-schema change to catch type propagation errors early
+- Run deno check packages/ apps/ tests/ after any config-schema change to catch type propagation errors early
 - Have an explicit rollback path before applying any change to shared config
 
 Canonical prompt (short):
@@ -51,7 +51,7 @@ Exaix config patterns
   # Test/CI env vars use EXA_TEST_* prefix; use isTestMode() / isCIMode() helpers
 
 Validation checklist
-  [ ] deno check src/main.ts              — no type errors from schema changes
+  [ ] deno check packages/ apps/ tests/   — no type errors from schema changes
   [ ] deno lint                           — no lint issues
   [ ] deno task check:style               — no style violations
   [ ] deno test --allow-all <test-file>   — config tests pass

@@ -1,6 +1,6 @@
 /**
  * @module SymbolExtractor
- * @path packages/portal/src/knowledge/symbol_extractor.ts
+ * @path packages/portal/knowledge/symbol_extractor.ts
  * @description Strategy 6 of PortalKnowledgeService: runs `deno doc --json` on
  * detected entrypoints to extract an accurate symbol index for TypeScript/Deno
  * portals. For non-TypeScript portals returns an empty array with no subprocess
@@ -8,7 +8,7 @@
  * and caps output at DEFAULT_SYMBOL_MAP_LIMIT.
  * Falls back to empty array on subprocess failure or timeout.
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/architecture_inferrer.ts, packages/portal/src/knowledge/key_file_identifier.ts]
+ * @related-files [packages/portal/knowledge/architecture_inferrer.ts, packages/portal/knowledge/key_file_identifier.ts]
  */
 
 import type { ISymbolEntry } from "@exaix/schemas";

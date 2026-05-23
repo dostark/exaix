@@ -2,6 +2,8 @@
 /**
  * @module PlanCommandsSkillsTest
  * @path apps/exactl/tests/plan_commands_skills_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Specialized tests for dynamic skills injection during the plan approval phase,
  * ensuring additional capabilities can be appended to plans before execution.
  */

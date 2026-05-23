@@ -1,6 +1,8 @@
 /**
  * @module MCPServerPermissionsWiringTest
  * @path packages/mcp/tests/server_permissions_wiring_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that live MCP server tool handlers receive explicit portal permissions services.
  */
 

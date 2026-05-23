@@ -1,11 +1,12 @@
 /**
  * @module LlamaCppEmbeddingClient
- * @path src/ai/providers/llamacpp_embedding_client.ts
+ * @path packages/ai/src/providers/llamacpp_embedding_client.ts
  * @description IEmbeddingProvider stub for llama.cpp /embedding endpoint.
  * To be fully implemented in Step 68.6.
  * @architectural-layer AI
- * @dependencies [src/ai/embeddings/embedding_provider.ts, src/ai/embeddings/embedding_errors.ts]
- * @related-files [src/ai/embeddings/embedding_provider_factory.ts]
+ * @ungrounded
+ * @dependencies [packages/ai/src/embeddings/embedding_provider.ts, packages/ai/src/embeddings/embedding_errors.ts]
+ * @related-files [packages/ai/src/embeddings/embedding_provider_factory.ts]
  */
 
 import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";

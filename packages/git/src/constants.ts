@@ -1,6 +1,9 @@
 /**
  * @module GitConstants
  * @path packages/git/src/constants.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Git-related constants for repository operations and validation.
  */
 

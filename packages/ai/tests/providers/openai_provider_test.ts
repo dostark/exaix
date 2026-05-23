@@ -1,6 +1,8 @@
 /**
  * @module OpenAIProviderTest
- * @path tests/ai/openai_provider_test.ts
+ * @path packages/ai/tests/providers/openai_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the OpenAI LLM provider implementation, ensuring correct
  * message formatting, tool call handling, and token usage tracking for GPT models.
  */

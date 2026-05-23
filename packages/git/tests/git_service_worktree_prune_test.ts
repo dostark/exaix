@@ -1,6 +1,8 @@
 /**
  * @module GitServiceWorktreePruneTest
  * @path packages/git/tests/git_service_worktree_prune_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Targeted tests for GitService worktree management, verifying correct
  * identification and cleanup of stale worktrees to prevent storage bloat.
  */

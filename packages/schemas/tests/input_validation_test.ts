@@ -1,6 +1,8 @@
 /**
  * @module InputValidationSchemaTest
- * @path tests/schemas/input_validation_test.ts
+ * @path packages/schemas/tests/input_validation_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies core primitive schemas, ensuring robust validation of
  * blueprint names, portal identifiers, and agent slugs.
  */

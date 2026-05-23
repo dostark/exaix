@@ -1,6 +1,8 @@
 /**
  * @module DirectoryAnalyzerTest
- * @path tests/services/portal_knowledge/directory_analyzer_test.ts
+ * @path packages/portal/knowledge/tests/directory_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the DirectoryAnalyzer (Strategy 1): directory-tree
  * walking, statistics, architecture layer detection, and monorepo detection.
  * Uses real temporary directories to exercise actual filesystem behaviour.

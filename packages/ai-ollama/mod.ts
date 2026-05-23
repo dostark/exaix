@@ -1,6 +1,9 @@
 /**
  * @module AIOllamaPackage
  * @path packages/ai-ollama/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer AI
  * @description Package entrypoint for @exaix/ai-ollama.
  */
 

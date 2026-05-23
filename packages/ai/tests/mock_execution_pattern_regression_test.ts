@@ -1,6 +1,8 @@
 /**
  * @module MockExecutionPatternRegressionTest
- * @path tests/services/mock/mock_execution_pattern_regression_test.ts
+ * @path packages/ai/tests/mock_execution_pattern_regression_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Regression tests for the MockLLMProvider, ensuring consistent generation
  * of planning and execution responses based on structured prompt patterns.
  */

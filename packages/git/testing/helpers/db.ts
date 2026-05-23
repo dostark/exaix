@@ -1,6 +1,9 @@
 /**
  * @module GitTestingDb
  * @path packages/git/testing/helpers/db.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Minimal database helpers for git test support.
  */
 

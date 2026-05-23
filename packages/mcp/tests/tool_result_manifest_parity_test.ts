@@ -1,6 +1,8 @@
 /**
  * @module ToolResultManifestParityTest
  * @path packages/mcp/tests/tool_result_manifest_parity_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that every TOOL_MANIFEST entry declares a valid
  * remediationPolicyRef, and that tools with non-null output_schema have a
  * corresponding entry in the TOOL_RESULT_SCHEMA_REGISTRY.

@@ -1,6 +1,8 @@
 /**
  * @module AIPackageBarrelExportsRegressionTest
  * @path packages/ai/tests/barrel_exports_regression_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Guards the public @exaix/ai surfaces so provider contracts and
  * helpers remain available to downstream packages via their canonical aliases.
  * Provider contracts live in @exaix/ai/providers; shared utilities in @exaix/ai.

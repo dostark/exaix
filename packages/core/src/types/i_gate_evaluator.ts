@@ -1,9 +1,9 @@
 /**
  * @module IGateEvaluator
- * @path src/shared/interfaces/i_gate_evaluator.ts
+ * @path packages/core/src/types/i_gate_evaluator.ts
  * @description Interface for Flow Gate Evaluation service.
  * @architectural-layer Shared/Interfaces
- * @related-files [src/flows/gate_evaluator.ts, src/flows/evaluation_criteria.ts, src/shared/interfaces/i_application_context.ts]
+ * @related-files [packages/flow/src/gate_evaluator.ts, packages/core/src/evaluation/evaluation_criteria.ts, packages/core/src/types/i_application_context.ts]
  */
 
 import type { EvaluationCriterion, EvaluationResult } from "@exaix/core/types";

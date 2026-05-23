@@ -51,7 +51,7 @@ Process:
 1. Per batch: pick 1–3 high-impact literals with a clear refactor path. Implement
    targeted changes, re-run `deno task check:magic`, and report delta.
 1. Refactor by:
-   - Reusing existing constants/enums from `src/shared/constants.ts` and `src/shared/enums.ts`
+   - Reusing existing constants/enums from `packages/core/src/types/constants.ts` and package-owned enums
    - Introducing new shared constants/enums only when justified by multi-file reuse
    - Replacing hardcoded fallbacks (e.g., status/actor/scope labels) with canonical symbols
 1. Stop when further changes are mostly noise or would require policy-level checker changes.
@@ -99,7 +99,7 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 
 ## Notes for Exaix Conventions
 
-- Prefer symbols from `src/shared/constants.ts` and `src/shared/enums.ts`.
+- Prefer symbols from `packages/core/src/types/constants.ts` and package-owned enums.
 - Keep imports top-level and type-safe.
 - Avoid introducing magic numbers/strings in new code.
 - Maintain strict TypeScript compatibility and existing architecture patterns.
@@ -128,5 +128,5 @@ If any test fails after a refactor batch, revert the batch and narrow scope befo
 ## Examples
 
 - `#refactor-check-magic` — address all current check:magic violations
-- `#refactor-check-magic src/services/plan_service.ts` — fix magic values in one file
+- `#refactor-check-magic packages/request/src/plan_service.ts` — fix magic values in one file
 - `#refactor-check-magic — top 10 highest-score literals only`

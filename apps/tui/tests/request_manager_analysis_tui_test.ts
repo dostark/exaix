@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerAnalysisTuiTest
  * @path apps/tui/tests/request_manager_analysis_tui_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description TDD test for Phase 45 Step 13: TUI Analysis Display.
  */
 

@@ -20,7 +20,7 @@ Key points
 - Always check security (Phase 3b) for any change touching external input,
   file paths, auth, secrets, or network calls.
 - Test coverage is mandatory: every new code path needs a named test.
-- Architecture grounding: every new src/ file must have a module-header
+- Architecture grounding: every new source file must have a module-header
   JSDoc and pass deno task check:arch.
 - Report findings as categorised, actionable items — not vague suggestions.
 - When reviewing more than ~20 files, work in batches of 5–10: read a batch, record findings, then continue.
@@ -30,7 +30,7 @@ Canonical prompt (short):
 Exaix architecture compliance. Report findings as Critical / Major / Minor."
 
 Examples
-- "#review src/services/vault_service.ts and tests/services/vault_service_test.ts"
+- "#review packages/core/src/vault_service.ts and packages/core/tests/vault_service_test.ts"
 - "#review — review all staged changes before merging to main"
 
 Do / Don't
@@ -39,7 +39,7 @@ Do / Don't
 - ✅ Do apply Phase 3b security checks for any input/FS/auth/secrets/network change.
 - ✅ Do verify all new interfaces are exported from index/barrel files.
 - ✅ Do check for magic strings/numbers that belong in constants.
-- ✅ Do check that module-header JSDoc is present in every new src/ file.
+- ✅ Do check that module-header JSDoc is present in every new source file.
 - ✅ Do verify constructor DI matches the established Exaix service pattern.
 - ✅ Do categorise every finding: 🔴 Critical / 🔒 Security / 🟡 Major / 🟠 Testing / 🔵 Minor.
 - ✅ When reviewing your own output, prioritize edge cases and error paths you may have under-specified — not just correctness of what you wrote.
@@ -110,7 +110,7 @@ Check every new or modified source file:
 - **Architectural layer** — Is the layer (`@architectural-layer`) correct for the file location?
 - **DI pattern** — Constructor-based injection; no service instantiation inside constructors.
 - **Interface naming** — Exported interfaces start with `I`; no bare `Foo` interfaces.
-- **Magic values** — No hardcoded strings or numbers that belong in `src/shared/constants.ts`.
+- **Magic values** — No hardcoded strings or numbers that belong in `packages/core/src/types/constants.ts`.
 - **Record types** — No `Record<string, unknown>`; define a specific interface instead.
 - **EventLogger** — Every state transition emits a typed event with a named payload interface.
 - **Exports** — Every new interface/type is exported from the appropriate index file.
@@ -148,10 +148,10 @@ Flag missing doc updates as 🟡 Major.
 
 Build a findings table:
 
-| # | File      | Line/Symbol    | Severity    | Finding       |
-| - | --------- | -------------- | ----------- | ------------- |
-| 1 | `src/...` | `functionName` | 🔴 Critical | <description> |
-| 2 | `src/...` | `fieldName`    | 🔒 Security | <description> |
+| # | File                                 | Line/Symbol    | Severity    | Finding       |
+| - | ------------------------------------ | -------------- | ----------- | ------------- |
+| 1 | `packages/<package>/src/<module>.ts` | `functionName` | 🔴 Critical | <description> |
+| 2 | `packages/<package>/src/<module>.ts` | `fieldName`    | 🔒 Security | <description> |
 
 Severity scale:
 

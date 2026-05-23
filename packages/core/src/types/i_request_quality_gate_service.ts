@@ -1,11 +1,11 @@
 /**
  * @module IRequestQualityGateService
- * @path src/shared/interfaces/i_request_quality_gate_service.ts
+ * @path packages/core/src/types/i_request_quality_gate_service.ts
  * @description Service interface and configuration type for RequestQualityGate,
  * which evaluates incoming request quality, auto-enriches underspecified
  * requests, and manages the multi-turn clarification Q&A loop (Phase 47).
  * @architectural-layer Shared
- * @related-files [src/services/quality_gate/request_quality_gate.ts, src/shared/interfaces/mod.ts]
+ * @related-files [packages/quality-gate/src/request_quality_gate.ts, packages/core/src/types/mod.ts]
  */
 
 import type { IClarificationSession, IRequestQualityAssessment, IRequestQualityIssue } from "@exaix/schemas";

@@ -3,6 +3,7 @@
  * @path apps/tui/src/request_manager/key_handlers.ts
  * @description Keyboard interaction logic for the Request Manager View, including tree navigation, filtering, and action routing.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/request_manager_view.ts]
  */
 

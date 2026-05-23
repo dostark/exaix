@@ -1,6 +1,8 @@
 /**
  * @module ExaCtlCoverageTest
  * @path apps/exactl/tests/exactl_coverage_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Negative testing and coverage verification for the exactl CLI, ensuring
  * graceful failure messages for invalid inputs across all primary subcommands.
  */

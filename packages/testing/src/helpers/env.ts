@@ -1,6 +1,9 @@
 /**
  * @module EnvTestHelpers
- * @path tests/helpers/env.ts
+ * @path packages/testing/src/helpers/env.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for manipulating environment variables
  * during tests, ensuring clean restoration of system state.
  */

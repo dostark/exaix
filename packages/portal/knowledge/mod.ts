@@ -1,6 +1,8 @@
 /**
  * @module PortalKnowledgeSubpackage
  * @path packages/portal/knowledge/mod.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Barrel for @exaix/portal/knowledge subpackage — portal analysis,
  * inference, persistence, and knowledge service.
  */

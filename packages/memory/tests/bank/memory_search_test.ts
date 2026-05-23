@@ -1,6 +1,8 @@
 /**
  * @module MemorySearchTest
  * @path packages/memory/tests/bank/memory_search_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Verifies the logic for tag-based memory retrieval, ensuring correctly scoped
  * access to project-specific and global learned patterns via the MemoryBankService.
  */

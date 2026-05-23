@@ -1,6 +1,6 @@
 /**
  * @module MockLLMProvider
- * @path src/ai/providers/mock_llm_provider.ts
+ * @path packages/ai/src/providers/mock_llm_provider.ts
  * @description Deterministic LLM provider for testing, supporting multiple strategies:
  * - "recorded": Replay real LLM responses.
  * - "scripted": Fixed sequence of responses.
@@ -8,7 +8,7 @@
  * - "failing": Simulate API failures.
  * - "slow": Simulate network latency.
  * @architectural-layer AI
- * @related-files [src/ai/factories/mock_factory.ts, tests/ai/mock_llm_provider_test.ts]
+ * @related-files [packages/ai/src/factories/mock_factory.ts, packages/ai/tests/providers/mock_llm_provider_test.ts]
  */
 
 import { MockStrategy, ProviderType } from "@exaix/core";

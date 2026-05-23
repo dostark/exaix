@@ -1,10 +1,11 @@
 /**
  * @module ExaixVersion
- * @path src/shared/version.ts
+ * @path packages/core/src/version.ts
  * @description Canonical SemVer constants for Exaix binary and workspace schema.
  * Any MINOR or MAJOR bump to WORKSPACE_SCHEMA_VERSION requires workspace migration
  * before the new binary can run against an existing deployed workspace.
  * @architectural-layer Shared
+ * @ungrounded
  * @related-files ["scripts/check_version.ts", "packages/schemas/src/config.ts"]
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module IPortalKnowledgeServiceInterfaceTest
- * @path tests/services/portal_knowledge/portal_knowledge_service_interface_test.ts
+ * @path packages/portal/knowledge/tests/portal_knowledge_service_interface_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Type-level and structural tests for IPortalKnowledgeService and
  * IPortalKnowledgeConfig. Verifies that the interface contract is complete,
  * that a conforming mock implementation satisfies the TypeScript compiler, and

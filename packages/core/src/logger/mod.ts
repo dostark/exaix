@@ -8,4 +8,5 @@
 
 export * from "./structured_logger.ts";
 export * from "./event_logger.ts";
+export * from "./audit_logger.ts";
 export { LogMethod } from "./decorator.ts";

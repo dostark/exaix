@@ -1,13 +1,13 @@
 /**
  * @module ClarificationSessionSchema
- * @path src/shared/schemas/clarification_session.ts
+ * @path packages/schemas/src/clarification_session.ts
  * @description Defines Zod schemas and inferred TypeScript types for the
  * clarification Q&A loop data model used by the RequestQualityGate service
  * (Phase 47). Captures multi-round conversation state between the planning
  * agent and the user, including questions, answers, refined body, and quality
  * score progression.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/mod.ts, src/shared/schemas/request_specification.ts, src/services/quality_gate/clarification_engine.ts]
+ * @related-files [packages/schemas/src/mod.ts, packages/schemas/src/request_specification.ts, packages/quality-gate/src/clarification_engine.ts]
  */
 
 import { z } from "zod";

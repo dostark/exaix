@@ -40,7 +40,7 @@ Phase 1 — Audit
      - BREAKING: API removals, renamed symbols, changed behavior
      - DEPRECATION: still works but marked for removal
      - COMPATIBLE: new features, bug fixes (low risk)
-  4. For BREAKING changes: identify every call site in src/ and tests/ that is affected.
+  4. For BREAKING changes: identify every call site in packages/, apps/, and tests/ that is affected.
 
 Phase 2 — Regression net
   5. For each breaking call site, write (or verify existing) tests that assert the
@@ -52,7 +52,7 @@ Phase 3 — Apply upgrade
   7. Update the version in deno.json (or import map / package.json as applicable).
   8. Run `deno cache --reload <affected-imports>` to pull the new version.
   9. Fix all compile errors:
-       deno check src/main.ts
+       deno check packages/ apps/ tests/
      Resolve BREAKING changes following migration guide; prefer minimal call-site changes.
  10. Fix any renamed/removed symbols — do NOT use `as any` workarounds.
 

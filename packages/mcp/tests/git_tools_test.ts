@@ -2,6 +2,8 @@
 /**
  * @module MCPGitToolsTest
  * @path packages/mcp/tests/git_tools_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies Git-operation tools exposed via MCP, ensuring stable
  * branch creation and repository state management within portal boundaries.
  */

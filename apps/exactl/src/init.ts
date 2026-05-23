@@ -11,7 +11,7 @@ import { ConfigService } from "@exaix/core/config";
 import { GitService } from "@exaix/git";
 import { EventLogger } from "@exaix/core/logger";
 import { ProviderFactory } from "@exaix/ai";
-import { FlowLoader } from "@exaix/flow-storage";
+import { FlowLoader } from "@exaix/flow";
 import { ActivityActor, ExaPathDefaults } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
@@ -25,14 +25,14 @@ import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers
 import { MemoryBankService, MemoryEmbeddingService, MemoryExtractorService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import { ArchiveService } from "@exaix/core/artifact";
-import { FlowValidatorImpl } from "@exaix/flow-storage";
+import { FlowValidatorImpl } from "@exaix/flow";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import { RequestService } from "@exaix/request";
 import { PlanService } from "@exaix/core/planning";
 import { PlanAmendmentService } from "@exaix/core/planning";
-import { bootstrapProviderRegistry } from "../../../src/ai/registry_bootstrap.ts";
+import { bootstrapProviderRegistry } from "../../../apps/common/registry_bootstrap.ts";
 
 // Adapters
 import {
@@ -49,7 +49,7 @@ import {
   PortalAdapter,
   RequestAdapter,
   SkillsAdapter,
-} from "../../../src/services/adapters/mod.ts";
+} from "../../../apps/common/adapters/mod.ts";
 
 export interface IServiceContext extends ICliApplicationContext {
   success: boolean;

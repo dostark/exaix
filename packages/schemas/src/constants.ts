@@ -1,6 +1,9 @@
 /**
  * @module SchemasConstants
  * @path packages/schemas/src/constants.ts
+ * @related-files []
+ * @architectural-layer Schemas
+ * @ungrounded
  * @description Package-local schema constants for @exaix/schemas.
  */
 

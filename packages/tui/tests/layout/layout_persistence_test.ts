@@ -1,6 +1,8 @@
 /**
  * @module LayoutPersistenceTest
  * @path packages/tui/tests/layout/layout_persistence_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for saving and restoring TUI layout configurations,
  * ensuring stable filesystem persistence and graceful handling of missing or malformed data.
  */

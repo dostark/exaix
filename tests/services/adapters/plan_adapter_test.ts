@@ -1,11 +1,11 @@
 /**
  * @module PlanAdapterTest
  * @path tests/services/adapters/plan_adapter_test.ts
- * @description Unit tests for the PlanAdapter in src/services/adapters/
+ * @description Unit tests for the PlanAdapter in apps/common/adapters/
  */
 
 import { assertEquals } from "@std/assert";
-import { PlanAdapter } from "../../../src/services/adapters/plan_adapter.ts";
+import { PlanAdapter } from "../../../apps/common/adapters/plan_adapter.ts";
 import { PlanStatus } from "@exaix/core/status";
 import type { IPlanDetails, IPlanMetadata } from "@exaix/core/types";
 

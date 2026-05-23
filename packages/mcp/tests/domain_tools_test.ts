@@ -1,6 +1,8 @@
 /**
  * @module MCPDomainToolsTest
  * @path packages/mcp/tests/domain_tools_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Tests for MCP domain tools including plan approval, request creation, and journal querying.
  */
 

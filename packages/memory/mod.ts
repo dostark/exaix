@@ -1,6 +1,8 @@
 /**
  * @module MemoryPackage
  * @path packages/memory/mod.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Package entrypoint for @exaix/memory — memory bank services,
  * embedding/search, extraction, session memory, and auto-approval.
  */

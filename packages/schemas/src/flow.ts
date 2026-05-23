@@ -1,9 +1,9 @@
 /**
  * @module FlowSchema
- * @path src/shared/schemas/flow.ts
+ * @path packages/schemas/src/flow.ts
  * @description Defines Zod validation schemas for flow definitions, including steps, gates, feedback loops, and branch logic.
  * @architectural-layer Schemas
- * @related-files [src/flows/flow_loader.ts, src/flows/condition_evaluator.ts]
+ * @related-files [packages/flow/src/flow_loader.ts, packages/flow/src/condition_evaluator.ts]
  */
 
 import { z } from "zod";

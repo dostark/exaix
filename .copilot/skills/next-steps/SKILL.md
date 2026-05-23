@@ -57,9 +57,9 @@ RED phase
   5. Confirm RED: run `deno test --allow-all <test-file>` and verify it errors.
 
 GREEN phase
-  6. Create the source file at src/... with the minimum implementation needed to
-     pass all tests (include a module-header with @module, @path, @description,
-     @architectural-layer, @dependencies, @related-files).
+  6. Create the source file at the appropriate `packages/<package>/src/...` or `apps/<app>/src/...`
+     path with the minimum implementation needed to pass all tests (include a module-header
+     with @module, @path, @description, @architectural-layer, @dependencies, @related-files).
   7. Run `deno test --allow-all <test-file>` — all tests must pass.
   8. Fix any test failures; do not skip tests.
 
@@ -80,7 +80,7 @@ Planning doc update
      criterion now met.
  18. Change each planned-test bullet `- \`...\`` → `- ✅ \`...\``
  19. Add a line immediately after the test list:
-       **✅ IMPLEMENTED** — `<src/path>`, N/N tests passing
+       **✅ IMPLEMENTED** — `<packages/.../src/path>`, N/N tests passing
 
 Commit
  20. Stage: src file, test file, planning doc.

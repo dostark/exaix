@@ -4,7 +4,8 @@
  * @description Daemon maintenance helper that schedules memory auto-approval
  * and emits pending memory digest notifications.
  * @architectural-layer Services
- * @related-files [src/main.ts, src/services/memory/memory_auto_approval_service.ts, src/services/notification/notification.ts]
+ * @ungrounded
+ * @related-files [apps/daemon/main.ts, packages/memory/src/approval/memory_auto_approval_service.ts, packages/core/src/notification/notification.ts]
  */
 import type { IEventLogger } from "@exaix/core/logger";
 import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.ts";

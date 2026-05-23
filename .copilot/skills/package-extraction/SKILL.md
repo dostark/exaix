@@ -13,18 +13,20 @@ tools:
   - git_commit
 scope: dev
 title: "Package Extraction Skill (#package-extraction)"
-description: Extract the next package-owned slice from src/ into packages/, rewire imports to canonical package paths, and retire the legacy src modules
-short_summary: "Guided workflow for selecting and extracting the next package-owned slice from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement."
+description: Extracted package-owned slices from src/ into packages/, rewired imports to canonical package paths, and retired the legacy src modules
+short_summary: "Retired skill describing the guided workflow that selected and extracted package-owned slices from src/ into packages/ using Exaix package-boundary rules, canonical package imports, and mandatory src retirement."
 version: "2.0"
 topics: ["packages", "migration", "refactor", "tdd", "architecture", "workspace"]
 qwen_skill: package-extraction
 ---
 
+> **⚠️ RETIRED:** The `src/` migration to packages is complete. This skill is retained for historical reference only.
+
 ```text
 Key points
-- Use this skill when the goal is to extract the next package-owned slice from src/ into packages/
-- The package name is input-specific; this skill must remain generic and must not assume one fixed package
-- Read ARCHITECTURE.md "Packages vs. Services — Placement Model" FIRST to determine whether a candidate module belongs in a package or must stay in src/services/; the placement model defines the one-question test, dependency signals, and concrete examples that settle ambiguous cases before any files are moved
+- Used this skill when the goal was to extract the next package-owned slice from src/ into packages/
+- The package name was input-specific; this skill remained generic and did not assume one fixed package
+- Read ARCHITECTURE.md "Packages vs. Services — Placement Model" FIRST to determine whether a candidate module belonged in a package or had to stay under src/ (now retired); the placement model defined the one-question test, dependency signals, and concrete examples that settled ambiguous cases before any files were moved
 - Consult exaix-dev-docs/dev/Exaix_Packages.md for current ownership and target package boundaries
 - Consult exaix-dev-docs/dev/Exaix_Package_Migration_Plan.md for strategic sequencing and ambiguous-module rules
 - Consult exaix-dev-docs/planning/phase-76-package-migration.md for the live backlog and current branch state
@@ -42,21 +44,21 @@ Key points
 - Preserve a clear architectural layout inside the target package by placing migrated modules into correspondent subfolders that communicate intent and functionality
 - When practical, keep the old `src/` folder tree shape as the starting layout inside `packages/<package>/src/`, but only if that tree still reflects a clean package-internal architecture
 - When a legacy module mixes multiple responsibilities because the old root implementation was not cleanly separated, consider splitting it into smaller sub-modules during extraction instead of copying the mixed design into the package
-- After package-owned source-of-truth files exist, migrate every reachable call site — including all test files — to canonical package imports and retire all legacy src/ modules in the same extraction. Extraction is not complete until every old src/ module for the moved slice is deleted and zero consumers import from legacy paths.
-- Do not create or preserve src/ shim layers that simply route to package modules; they hide incomplete migration and mask clean package boundaries
+- After package-owned source-of-truth files existed, the workflow migrated every reachable call site — including all test files — to canonical package imports and retired all legacy src/ modules in the same extraction. Extraction was not complete until every old src/ module for the moved slice was deleted and zero consumers imported from legacy paths.
+- Did not create or preserve src/ shim layers that simply routed to package modules; they hid incomplete migration and masked clean package boundaries
 - If a temporary boundary or migration-regression test is introduced only to protect a transition, remove it before the extraction is considered complete once the legacy src/ module is deleted and callers are rewired
 - Do not move executable wrappers or runtime wiring into low-level packages prematurely
 
 Canonical prompt (short):
-"Extract the next package-owned slice from src/ into packages/ following Exaix package boundaries, TDD-first validation, canonical package imports, and mandatory retirement of the old src modules."
+"Extracted the next package-owned slice from src/ into packages/ following Exaix package boundaries, TDD-first validation, canonical package imports, and mandatory retirement of the old src modules."
 
 Workflow
 1. Confirm the target ownership slice
-   - Read ARCHITECTURE.md §"Packages vs. Services — Placement Model" to apply the canonical placement test: if an external consumer cannot use the module without knowing the Exaix daemon exists, it belongs in src/services/, not in a package — stop here and do not extract it
+   - Read ARCHITECTURE.md §"Packages vs. Services — Placement Model" to apply the canonical placement test: if an external consumer could not use the module without knowing the Exaix daemon exists, it belonged under src/ (now retired), not in a package — stop and do not extract it
    - Read Exaix_Packages.md to verify that the requested source files belong in a package and are not runtime-only or transport-only concerns
    - Read Exaix_Package_Migration_Plan.md to verify that the extraction fits the current strategic phase
    - Read phase-76-package-migration.md to confirm the extraction is not contradictory to the live backlog
-   - Run `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package <package>` when you need an evidence-based list of src/ modules currently coupled to the target package
+   - Ran `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package <package>` when an evidence-based list of src/ modules coupled to the target package was needed
 
 2. Choose the smallest viable extraction slice
    - Prefer leaf ownership first: schemas, parsing, shared test helpers, low-level shared contracts, constants, enums, or already package-aligned tests
@@ -91,7 +93,7 @@ Workflow
      * Do not drag runtime dependencies into the package just to keep a test file whole — that leaks the very coupling the extraction is meant to sever
    - When the source code under extraction depends on runtime entities (daemon services, global config, filesystem paths, database, or other concrete infrastructure), refactor it during extraction to accept those dependencies via constructor DI or function parameters. Use injectable interfaces in the package; wire concrete implementations only at the composition root. This keeps the extracted module unit-testable without importing runtime infrastructure.
    - Move the module into a package-local folder that preserves clear architectural intent, for example `types/`, `status/`, `config/`, `handlers/`, `registry/`, or another functionally coherent subfolder
-   - Preserve or improve the old `src/` tree shape when it already provides a clear intent-based structure; do not copy confusing root runtime structure into a package mechanically
+   - Preserved or improved the old `src/` tree shape when it already provided a clear intent-based structure; did not copy confusing root runtime structure into a package mechanically
    - If the legacy module mixes concerns, split it into smaller files with clear intent during extraction instead of copying mixed design into the package
    - Update the migrated module frontmatter or file-level metadata immediately after the move so `@module`, `@path`, ownership notes, and other location-sensitive metadata do not drift
    - Rewire every reachable import — including all test files — to canonical package aliases or approved package subpath barrels as part of the extraction; do not leave any dependency on legacy src/ paths behind
@@ -112,7 +114,7 @@ Preferred invocation order
 - Test-only migration into an existing package
    - Use when moving tests from `tests/` into `packages/<package>/tests/` without changing source ownership
    - 1. Inspect package coupling only if needed:
-      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package @exaix/<package>`
+      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package @exaix/<package>`
    - 2. Move the test files manually and adjust imports locally
    - 3. If test imports now point at direct package file paths, normalize them:
       `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`
@@ -131,9 +133,9 @@ Preferred invocation order
 - Source extraction from `src/` into an existing package
    - Use when the package already exists and the slice has a clear destination under `packages/<package>/src/`
    - 1. Identify candidate src modules and direct importers:
-      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package @exaix/<package>`
+      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package @exaix/<package>`
       Example for MCP ownership work:
-      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package @exaix/mcp`
+      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package @exaix/mcp`
    - 2. Choose a package-internal destination folder that expresses intent, optionally mirroring the old `src/` subtree when that shape is still architecturally clean
    - 3. If the old module mixes concerns, split it into coherent sub-modules before or during the move so the package layout improves rather than inherits the ambiguity
    - 4. Move the source-of-truth files into `packages/<package>/src/...`
@@ -147,7 +149,7 @@ Preferred invocation order
 - Package-to-package ownership shift
    - Use when code already lives under `packages/` but belongs in a different package
    - 1. Verify package coupling if the blast radius is unclear:
-      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package @exaix/<target-package>`
+      `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package @exaix/<target-package>`
    - 2. Move the files into the target package
    - 3. Rewrite imports using package or package-path arguments:
       `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit @exaix/<old-package> @exaix/<target-package>`
@@ -158,12 +160,12 @@ Preferred invocation order
 Preferred arguments
 - For `scripts/package_dependency_graph.ts`
    - Prefer canonical package aliases for `--candidate-package`, for example `@exaix/core`, `@exaix/testing`, `@exaix/git`
-   - Prefer `--entrypoint src/main.ts` unless you are intentionally analyzing a narrower runtime path
+   - Prefer `--entrypoint apps/daemon/main.ts` unless you are intentionally analyzing a narrower runtime path
 - For `scripts/package_import_migration.ts`
-   - Prefer path arguments when migrating from `src/` into `packages/`, for example:
-      `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/shared/interfaces ./packages/core/src/types`
-   - MCP example for moving a transport-owned slice out of `src/` once the destination files exist:
-      `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/mcp ./packages/mcp/src`
+   - Migration example (completed): moved shared interfaces from `./src/shared/interfaces` to `./packages/core/src/types`:
+     `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/shared/interfaces ./packages/core/src/types`
+   - Migration example (completed): moved MCP transport-owned slice from `./src/mcp` to `./packages/mcp/src`:
+     `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/mcp ./packages/mcp/src`
    - Prefer package alias arguments when shifting ownership between existing packages, for example:
       `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit @exaix/core @exaix/tui`
    - Do not run this script before the destination files exist; it is a rewrite step, not a planner
@@ -175,10 +177,10 @@ Preferred arguments
 Script toolkit
 - `scripts/package_dependency_graph.ts`
   - Purpose: map package-level dependencies and list candidate src/ modules for a target package
-  - Typical usage: `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint src/main.ts --candidate-package @exaix/core`
+  - Typical usage: `deno run --allow-run --allow-read scripts/package_dependency_graph.ts --entrypoint apps/daemon/main.ts --candidate-package @exaix/core`
 - `scripts/package_import_migration.ts`
-  - Purpose: rewrite imports from old ownership paths or packages to new package-owned locations
-  - Typical usage: `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/shared/interfaces ./packages/core/src/types`
+  - Purpose: rewrote imports from old ownership paths or packages to new package-owned locations
+  - Typical usage (completed migration): `deno run --allow-read --allow-write scripts/package_import_migration.ts --edit ./src/shared/interfaces ./packages/core/src/types`
 - `scripts/package_import_canonize.ts`
   - Purpose: convert direct package file imports inside packages/ to canonical package or subfolder barrel imports
   - Typical usage: `deno run --allow-read --allow-write scripts/package_import_canonize.ts --edit`
@@ -187,12 +189,12 @@ Script toolkit
    - Update phase-76-package-migration.md when package state, completed milestones, or next steps change
    - Update Exaix_Packages.md only when ownership definitions or package taxonomy change
    - Update Exaix_Package_Migration_Plan.md only when strategic sequencing or target mapping changes
-   - Update src/services/README.md whenever a directory under src/services/ is migrated or deleted:
-     - Remove the directory entry from the "Directory Structure" tree
-     - Remove its row from the appropriate "Folder Responsibilities" table
-     - Add a row to the "Migrated to packages" table (old path → package → import alias)
-     - Update the "Common Import Migrations" table with the new canonical import path
-     - Update any "Choose the Right Location" guidance that mentioned the removed directory
+- Updated `src/services/README.md` whenever a directory under `src/services/` was migrated or deleted (now retired alongside the old `src/` tree):
+  - Removed the directory entry from the "Directory Structure" tree
+  - Removed its row from the appropriate "Folder Responsibilities" table
+  - Added a row to the "Migrated to packages" table (old path → package → import alias)
+  - Updated the "Common Import Migrations" table with the new canonical import path
+  - Updated any "Choose the Right Location" guidance that mentioned the removed directory
 
 Decision rules
 - Good extraction targets:
@@ -222,7 +224,7 @@ Decision rules
 - If source code was extracted without refactoring concrete runtime dependencies into injectable interfaces, the extraction is incomplete — package code must not hardcode daemon-coupled constructors or global service accessors that prevent consumers from testing the module without the full Exaix runtime
 
 Do / Don't
-- ✅ Do update src/services/README.md whenever a src/services/ directory is migrated or deleted: remove the tree entry, remove the folder-responsibilities row, and add a row to the "Migrated to packages" table
+- ✅ Did update `src/services/README.md` whenever a `src/services/` directory was migrated or deleted: removed the tree entry, removed the folder-responsibilities row, and added a row to the "Migrated to packages" table
 - ✅ Do preserve root behavior and quality gates during the extraction
 - ✅ Do put ALL test files (`*_test.ts`) exclusively in `packages/<package>/tests/` — this is the only valid test folder in a package
 - ✅ Do create a package-owned testing subpath (`packages/<package>/testing/`) when package-specific test support must be shared with tests outside the package — this is a published support API, not a test folder

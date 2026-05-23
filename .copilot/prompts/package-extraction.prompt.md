@@ -1,7 +1,9 @@
 ---
 name: package-extraction
-description: "Extract the next package-owned slice from src/ into packages/, rewrite imports to canonical package paths, and retire the old src modules"
+description: "Extracted package-owned slices from src/ into packages/, rewrote imports to canonical package paths, and retired the old src modules — RETIRED"
 ---
+
+> **⚠️ RETIRED:** The `src/` migration to packages is complete. This prompt is retained for historical reference only.
 
 # ⚠️ THIN WRAPPER — Chat Routing Prompt
 

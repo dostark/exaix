@@ -1,6 +1,8 @@
 /**
  * @module BlueprintCommandsTest
  * @path apps/exactl/tests/blueprint_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI commands for agent blueprint management, including template-based
  * generation, schema validation, and storage within the Blueprints directory.
  */

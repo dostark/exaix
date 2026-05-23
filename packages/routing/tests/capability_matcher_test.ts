@@ -1,4 +1,8 @@
-/** @module CapabilityMatcherTest */
+/** @module CapabilityMatcherTest
+ * @path packages/routing/tests/capability_matcher_test.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @description TODO: Add description */
 import { assertEquals, assertExists } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { CapabilityMatcher } from "@exaix/routing";

@@ -89,8 +89,8 @@ exaix/
 ├── Blueprints/     # Agent personas/templates
 ├── Memory/         # Persistent memory banks
 ├── docs/           # User guides & specs
-├── packages/       # Deno workspace packages for extracted shared modules
-├── src/            # Core runtime
+├── packages/       # Shared library packages (schemas, core, ai, mcp, tui, …)
+├── apps/           # App entry points (daemon, exactl, tui)
 ├── scripts/        # Deploy, CI helpers
 ├── tests/          # Unit/integration
 └── templates/      # Workspace skeletons

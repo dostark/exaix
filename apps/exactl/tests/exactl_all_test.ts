@@ -2,6 +2,8 @@
 /**
  * @module ExaCtlAllTest
  * @path apps/exactl/tests/exactl_all_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Comprehensive orchestration tests for the exactl CLI, verifying the integration
  * between global command routing, test-mode context injection, and primary subcommands (plan, review, daemon).
  */

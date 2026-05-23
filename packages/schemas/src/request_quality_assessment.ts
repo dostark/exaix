@@ -1,12 +1,12 @@
 /**
  * @module RequestQualityAssessmentSchema
- * @path src/shared/schemas/request_quality_assessment.ts
+ * @path packages/schemas/src/request_quality_assessment.ts
  * @description Defines Zod validation schemas and inferred TypeScript types for
  * the request quality assessment output produced by the RequestQualityGate
  * service (Phase 47). Captures quality score, issue categories, enrichment
  * suggestions, and assessment metadata.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/mod.ts, src/services/quality_gate/request_quality_gate.ts]
+ * @related-files [packages/schemas/src/mod.ts, packages/quality-gate/src/request_quality_gate.ts]
  */
 
 import { z } from "zod";
@@ -58,7 +58,7 @@ export enum RequestQualityRecommendation {
   REJECT = "reject",
 }
 
-// QualityGateMode (heuristic/llm/hybrid) is defined in src/shared/enums.ts
+// QualityGateMode (heuristic/llm/hybrid) is defined in packages/core/src/enums.ts
 // and used via z.nativeEnum(QualityGateMode) — no re-export needed here.
 
 // ============================================================================

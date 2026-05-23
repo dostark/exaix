@@ -44,15 +44,16 @@ Examples section
 
 ### Project Structure
 
-- `src/ai/` — AI/LLM provider implementations
-- `src/cli/` — CLI command implementations
-- `@exaix/core/config/` — Configuration schemas and loaders
-- `src/parsers/` — File parsers (frontmatter, etc.)
-- `src/schemas/` — Zod validation schemas
-- `src/services/` — Core business logic services
-- `src/services/request_analysis/` — Request intent analysis (Phase 45)
-- `src/services/portal_knowledge/` — Portal codebase analysis (Phase 46)
-- `src/services/quality_gate/` — Request quality gate & clarification protocol (Phase 47):
+- `packages/ai/` — AI/LLM provider contracts and shared utilities
+- `packages/ai-*/` — Concrete LLM provider implementations (anthropic, openai, google, ollama)
+- `apps/exactl/src/` — CLI concrete command implementations
+- `packages/cli/` — Base CLI types, formatters, and helpers
+- `packages/core/src/config/` — Configuration schemas and loaders
+- `packages/core/src/parsing/` — File parsers (frontmatter, etc.)
+- `packages/schemas/` — Zod validation schemas
+- `packages/request/src/analysis/` — Request intent analysis
+- `packages/portal/src/` — Portal codebase analysis and knowledge gathering
+- `packages/quality-gate/` — Request quality gate & clarification protocol:
   - `heuristic_assessor.ts` — zero-cost text-signal scoring
   - `llm_assessor.ts` — LLM assessment with heuristic fallback
   - `request_enricher_llm.ts` — LLM body rewriter
@@ -60,7 +61,7 @@ Examples section
   - `clarification_engine.ts` — multi-turn Q&A loop producing `IRequestSpecification`
   - `clarification_persistence.ts` — atomic `_clarification.json` read/write
   - `mod.ts` — barrel export
-- `src/main.ts` — Application entry point
+- `apps/daemon/main.ts` — Application entry point
 
 ### Module Documentation
 
@@ -108,13 +109,13 @@ const git = GitService.getInstance();
   - **Hybrid**: Read-only access to specific "Portal" paths.
   - **Note**: Always use `PathResolver` to validate paths before access.
 - **MCP Enforcement**: In Hybrid mode, agents can read files directly but MUST use MCP tools for writes (to ensure auditability).
-- **Intent Analysis**: Requests can trigger the `RequestAnalyzer` via the `--analyze` flag. This layer extracts goals, constraints, requirements, and complexity to a `req_analysis.json` artifact. In the current pipeline, `RequestProcessor` can pass `SessionMemory` context into analysis, and structured frontmatter (`acceptance_criteria`, `expected_outcomes`, `scope`) is treated as explicit high-confidence input. Use the centralized `AnalysisMode` / `AnalyzerEngine` types from `src/types/request.ts` (Phase 45).
-- **Request Quality Gate** (Phase 47): `RequestQualityGate` (`src/services/quality_gate/`) runs on every request _before_ agent/flow routing. Assessment modes: `heuristic` (zero-cost), `llm`, `hybrid` (heuristic-first, LLM for borderline scores). Results in one of four outcomes: `proceed`, `auto-enrich`, `needs-clarification` (Q&A loop → `REFINING` status), or `reject` (`FAILED` status). Config wired via `buildQualityGateConfig(config.quality_gate ?? {})` in `RequestProcessor` constructor. CLI: `exactl request clarify <id> [--interactive|--answer|--proceed|--cancel]`. Key interfaces/schemas: `IRequestQualityGateService`, `IRequestQualityAssessment`, `IClarificationSession`, `IRequestSpecification`. New statuses: `REFINING`, `NEEDS_CLARIFICATION`, `ENRICHING`.
-- **Portal Knowledge Gathering** (Phase 46): `PortalKnowledgeService` (`src/services/portal_knowledge/`) builds a structured analysis snapshot of every portal codebase — file census, key files, config parsing, pattern detection, architecture inference, and (deep mode) symbol extraction via `deno doc`. Results persist to `Memory/Projects/{alias}/knowledge.json` (validated by `PortalKnowledgeSchema` in `src/shared/schemas/portal_knowledge.ts`). Always use `PortalKnowledgeService.getOrAnalyze()` rather than raw file reads when agents need codebase context. Modes: `quick` (fast, no LLM), `standard` (all non-LLM strategies), `deep` (full, includes `SymbolExtractor`). Configured via `[portal_knowledge]` TOML section. CLI: `exactl portal analyze <alias>`, `exactl portal knowledge <alias>`.
-  - Directory: `src/services/portal_knowledge/` — `directory_analyzer.ts`, `config_parser.ts`, `key_file_identifier.ts`, `pattern_detector.ts`, `architecture_inferrer.ts`, `symbol_extractor.ts`, `portal_knowledge_service.ts`, `knowledge_persistence.ts`
-  - Interface: `IPortalKnowledgeService` in `src/services/portal_knowledge/interfaces.ts`
+- **Intent Analysis**: Requests can trigger the `RequestAnalyzer` via the `--analyze` flag. This layer extracts goals, constraints, requirements, and complexity to a `req_analysis.json` artifact. In the current pipeline, `RequestProcessor` can pass `SessionMemory` context into analysis, and structured frontmatter (`acceptance_criteria`, `expected_outcomes`, `scope`) is treated as explicit high-confidence input. Use the centralized `AnalysisMode` / `AnalyzerEngine` types from `@exaix/schemas` (Phase 45).
+- **Request Quality Gate** (Phase 47): `RequestQualityGate` (`packages/quality-gate/`) runs on every request _before_ agent/flow routing. Assessment modes: `heuristic` (zero-cost), `llm`, `hybrid` (heuristic-first, LLM for borderline scores). Results in one of four outcomes: `proceed`, `auto-enrich`, `needs-clarification` (Q&A loop → `REFINING` status), or `reject` (`FAILED` status). Config wired via `buildQualityGateConfig(config.quality_gate ?? {})` in `RequestProcessor` constructor. CLI: `exactl request clarify <id> [--interactive|--answer|--proceed|--cancel]`. Key interfaces/schemas: `IRequestQualityGateService`, `IRequestQualityAssessment`, `IClarificationSession`, `IRequestSpecification`. New statuses: `REFINING`, `NEEDS_CLARIFICATION`, `ENRICHING`.
+- **Portal Knowledge Gathering** (Phase 46): `PortalKnowledgeService` (`packages/portal/src/`) builds a structured analysis snapshot of every portal codebase — file census, key files, config parsing, pattern detection, architecture inference, and (deep mode) symbol extraction via `deno doc`. Results persist to `Memory/Projects/{alias}/knowledge.json` (validated by `PortalKnowledgeSchema` in `packages/schemas/src/portal_knowledge.ts`). Always use `PortalKnowledgeService.getOrAnalyze()` rather than raw file reads when agents need codebase context. Modes: `quick` (fast, no LLM), `standard` (all non-LLM strategies), `deep` (full, includes `SymbolExtractor`). Configured via `[portal_knowledge]` TOML section. CLI: `exactl portal analyze <alias>`, `exactl portal knowledge <alias>`.
+  - Directory: `packages/portal/src/` — `directory_analyzer.ts`, `config_parser.ts`, `key_file_identifier.ts`, `pattern_detector.ts`, `architecture_inferrer.ts`, `symbol_extractor.ts`, `portal_knowledge_service.ts`, `knowledge_persistence.ts`
+  - Interface: `IPortalKnowledgeService` in `packages/portal/src/interfaces.ts`
   - Config interface: `IPortalKnowledgeConfig` — fields: `defaultMode`, `quickScanLimit`, `maxFilesToRead`, `staleness` (hours), `useLlmInference`, `ignorePatterns`, `autoAnalyzeOnMount`
-- **Acceptance Criteria Propagation** (Phases 48–49): `CriteriaGenerator` (`src/services/criteria_generator.ts`) converts `IRequestAnalysis` (Phase 45 output) into `EvaluationCriterion[]` for use by quality gates. Goals become `goal_*` criteria; acceptance criteria become `ac_*` criteria. Set `includeRequestCriteria: true` on a gate step (or on `flow.settings`) to enable. `GateEvaluator` merges dynamic criteria with static gate criteria (static wins on name collision). `ReflexiveAgent.run()` accepts an optional third `requestAnalysis?` parameter; when provided, the critique prompt includes a structured requirements block, capped by `MAX_CRITIQUE_REQUIREMENTS`, and the critique output carries `requirementsFulfillment[]` (MET/PARTIAL/MISSING per requirement). `ConfidenceScorer.assess()` accepts an optional fourth `critique?` parameter; when `critique.requirementsFulfillment` is non-empty, goal alignment is factored into the confidence score: `finalScore = rawScore × 0.7 + goalAlignmentScore × 100 × 0.3`. Request complexity selection is now multi-signal: analysis-derived complexity first, then content heuristics, then agent fallback. Key constants in `src/shared/constants.ts`: `MAX_DYNAMIC_CRITERIA`, `DEFAULT_GOAL_WEIGHT`, `PRIORITY_1_GOAL_WEIGHT`, `ACCEPTANCE_CRITERION_WEIGHT`, `GOAL_ALIGNMENT_CONFIDENCE_WEIGHT`, `EXISTING_SCORE_CONFIDENCE_WEIGHT`.
+- **Acceptance Criteria Propagation** (Phases 48–49): `CriteriaGenerator` (`packages/core/src/skills/criteria_generator.ts`) converts `IRequestAnalysis` (Phase 45 output) into `EvaluationCriterion[]` for use by quality gates. Goals become `goal_*` criteria; acceptance criteria become `ac_*` criteria. Set `includeRequestCriteria: true` on a gate step (or on `flow.settings`) to enable. `GateEvaluator` merges dynamic criteria with static gate criteria (static wins on name collision). `ReflexiveAgent.run()` accepts an optional third `requestAnalysis?` parameter; when provided, the critique prompt includes a structured requirements block, capped by `MAX_CRITIQUE_REQUIREMENTS`, and the critique output carries `requirementsFulfillment[]` (MET/PARTIAL/MISSING per requirement). `ConfidenceScorer.assess()` accepts an optional fourth `critique?` parameter; when `critique.requirementsFulfillment` is non-empty, goal alignment is factored into the confidence score: `finalScore = rawScore × 0.7 + goalAlignmentScore × 100 × 0.3`. Request complexity selection is now multi-signal: analysis-derived complexity first, then content heuristics, then agent fallback. Key constants in `packages/core/src/types/constants.ts`: `MAX_DYNAMIC_CRITERIA`, `DEFAULT_GOAL_WEIGHT`, `PRIORITY_1_GOAL_WEIGHT`, `ACCEPTANCE_CRITERION_WEIGHT`, `GOAL_ALIGNMENT_CONFIDENCE_WEIGHT`, `EXISTING_SCORE_CONFIDENCE_WEIGHT`.
 
 ### Configuration Constants & Magic Numbers
 
@@ -563,10 +564,10 @@ I want to work on Flow parameter validation (Phase 8, Step 8.3).
 2. UNDERSTAND:   Action: Add Zod schema for Flow parameter validation
                  Success Criteria: schema validates required/optional params, types,
                  invalid cases, user-friendly errors
-3. IMPLEMENT:    Write failing tests first; create Zod schema in src/schemas/flow.ts;
-                 implement validation in Flow executor; verify tests pass
+3. IMPLEMENT:    Write failing tests first; create Zod schema in packages/schemas/src/flow.ts;
+                  implement validation in Flow executor; verify tests pass
 4. VERIFY:       Run: deno test tests/flows/flow_validation_test.ts, coverage maintained
-5. MARK DONE:    Update [x] on all criteria; note: Schema follows pattern from src/schemas/
+5. MARK DONE:    Update [x] on all criteria; note: Schema follows pattern from packages/schemas/src/
 
 Phase: 8 | Step: 8.3 | Feature: Flow parameter validation
 ```

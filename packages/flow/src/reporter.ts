@@ -1,6 +1,8 @@
 /**
  * @module FlowReporter
- * @path packages/flow-storage/src/reporter.ts
+ * @path packages/flow/src/reporter.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Generates comprehensive reports for flow executions, analyzing multi-agent orchestration results.
  */
 

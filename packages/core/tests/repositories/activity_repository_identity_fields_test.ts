@@ -1,6 +1,8 @@
 /**
  * @module ActivityRepositoryIdentityFieldsTest
  * @path packages/core/tests/repositories/activity_repository_identity_fields_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Integration tests verifying ActivityRepository persists and reads back Actor/Agent/Identity separation fields.
  */
 

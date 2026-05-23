@@ -1,6 +1,9 @@
 /**
  * @module DenyAllConfirmationInterceptor
  * @path packages/mcp/testing/deny_all_confirmation_interceptor.ts
+ * @related-files []
+ * @architectural-layer MCP
+ * @ungrounded
  * @description Test-only fixture that always denies any tool confirmation request.
  * Must never be imported from production runtime code.
  */

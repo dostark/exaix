@@ -1,6 +1,9 @@
 /**
  * @module McpServerPackage
  * @path packages/mcp/server/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer MCP
  * @description Public server/runtime entrypoint for @exaix/mcp/server.
  */
 
@@ -11,6 +14,7 @@ export * from "./resources.ts";
 export * from "./server.ts";
 export * from "./tool_handler.ts";
 export * from "./tools.ts";
+export { SseHandler } from "./sse_handler.ts";
 
 export * from "./handlers/create_directory_tool.ts";
 export * from "./handlers/delete_file_tool.ts";

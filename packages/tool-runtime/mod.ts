@@ -1,6 +1,8 @@
 /**
  * @module ToolRuntime
  * @path packages/tool-runtime/mod.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Barrel for @exaix/tool-runtime.
  */
 

@@ -1,6 +1,9 @@
 /**
  * @module TuiProdHandleKey
  * @path packages/tui/src/helpers/prod_handle_key.ts
+ * @related-files []
+ * @architectural-layer TUI
+ * @ungrounded
  * @description Package-owned production key routing for the TUI dashboard.
  */
 

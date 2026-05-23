@@ -40,7 +40,7 @@ Phase 1 — REVIEW (Analyze Current State)
      - List: stated purpose/goals, documented features, TODOs/FIXMEs, acknowledged gaps.
   2. Implementation analysis:
      - Use semantic_search or grep_search for relevant code patterns.
-     - Read key service files end-to-end (src/ and tests/).
+     - Read key service files end-to-end (packages/, apps/, and tests/).
      - Check test coverage — tests document behavior.
      - Note inconsistencies between docs and implementation.
      - Key questions: Does implementation match docs? Dead code paths? Data flow?

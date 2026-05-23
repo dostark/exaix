@@ -1,6 +1,8 @@
 /**
  * @module MemoryFormatterTest
- * @path tests/cli/memory_formatter_test.ts
+ * @path packages/cli/tests/formatters/memory_formatter_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI output formatting for complex memory structures, ensuring
  * tabular views for project patterns, decision logs, and execution summaries remain legible.
  */

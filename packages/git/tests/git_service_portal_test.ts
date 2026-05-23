@@ -1,6 +1,8 @@
 /**
  * @module GitServicePortalTest
  * @path packages/git/tests/git_service_portal_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies GitService operations within the context of multiple portals,
  * ensuring correct isolation and repository discovery for partitioned datasets.
  */

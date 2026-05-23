@@ -89,7 +89,7 @@ For every step, verify:
 
 - **Event Logging**: Every state transition must have a named `EventLogger` event (e.g., `vault.secret.rotated`).
 - **Typing**: Event payloads must use named interfaces, never `Record<string, unknown>`.
-- **Config**: Timeouts, thresholds, and feature toggles must be in `exa.config.toml` or `src/shared/constants.ts`.
+- **Config**: Timeouts, thresholds, and feature toggles must be in `exa.config.toml` or `packages/core/src/types/constants.ts`.
 
 #### C. Durability & Atomic Changes
 

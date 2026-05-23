@@ -1,6 +1,8 @@
 /**
  * @module HeuristicAnalyzerTest
- * @path tests/services/request_analysis/heuristic_analyzer_test.ts
+ * @path packages/request/tests/heuristic_analyzer_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Tests for the heuristic (zero-cost) request analysis strategy.
  * Covers file reference detection, keyword extraction, complexity classification,
  * ambiguity signal detection, task type classification, and edge cases.

@@ -1,6 +1,6 @@
 /**
  * @module IrequestService
- * @path src/shared/interfaces/i_request_service.ts
+ * @path packages/core/src/types/i_request_service.ts
  * @description Module for IrequestService.
  * @architectural-layer Shared
  * @related-files [@exaix/core/types]

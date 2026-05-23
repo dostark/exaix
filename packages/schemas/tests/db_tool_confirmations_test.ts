@@ -1,6 +1,8 @@
 /**
  * @module DatabaseToolConfirmationsTest
- * @path tests/services/core/db_tool_confirmations_test.ts
+ * @path packages/schemas/tests/db_tool_confirmations_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Round-trip tests for pending tool confirmation persistence.
  */
 

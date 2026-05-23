@@ -1,6 +1,9 @@
 /**
  * @module LogStream
  * @path packages/tui/src/log/stream.ts
+ * @related-files []
+ * @architectural-layer TUI
+ * @ungrounded
  * @description Package-owned TUI log streaming helpers for buffering, delivery, websocket fallback, and polling.
  */
 

@@ -1,6 +1,8 @@
 /**
  * @module MemoryBankSchemaTest
- * @path tests/schemas/memory_bank_test.ts
+ * @path packages/schemas/tests/memory_bank_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies the data schemas for project and global memories, ensuring
  * strict enforcement of metadata structure and keyword collections.
  */

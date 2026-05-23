@@ -1,6 +1,8 @@
 /**
  * @module AnalyzerMemoryTest
- * @path tests/services/request_analysis/analyzer_memory_test.ts
+ * @path packages/request/tests/analyzer_memory_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Tests for Step 6: memory context passed to RequestAnalyzer
  * and injected into LLM prompt / heuristic signals.
  */

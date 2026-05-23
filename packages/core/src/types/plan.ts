@@ -1,6 +1,6 @@
 /**
  * @module Plan
- * @path @exaix/core/types
+ * @path packages/core/src/types/plan.ts
  * @description Module for Plan.
  * @architectural-layer Shared
  * @related-files ["packages/core/src/types/i_plan_service.ts"]

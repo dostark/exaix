@@ -1,6 +1,9 @@
 /**
  * @module FlowReporterTest
- * @path packages/flow-storage/tests/flow_reporter_test.ts
+ * @path packages/flow/tests/flow_reporter_test.ts
+ * @related-files []
+ * @architectural-layer Flow
+ * @description TODO: Add description
  */
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";

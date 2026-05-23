@@ -1,6 +1,8 @@
 /**
  * @module ParsingPackageConstantsTest
  * @path packages/core/tests/parsing/constants_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies @exaix/parsing package-local constants and enums are exported and behave as expected.
  */
 import { assertEquals, assertMatch } from "@std/assert";

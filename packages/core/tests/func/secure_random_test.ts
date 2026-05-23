@@ -1,6 +1,8 @@
 /**
  * @module SecureRandomTest
  * @path packages/core/tests/func/secure_random_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies secure random utilities exposed through @exaix/core/func.
  */
 

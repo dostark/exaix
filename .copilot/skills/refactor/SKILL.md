@@ -23,7 +23,7 @@ Key points
 - Follow Interface-first + constructor DI: every class Foo → export interface IFoo;
   consumers depend on IFoo, never on Foo
 - Extract numeric/string literals to named constants in the right location:
-    Production code → @exaix/core/config (or src/shared/constants.ts)
+    Production code → @exaix/core/config
     Test code       → tests/config/constants.ts (TEST_ prefix)
 - PathResolver must wrap all file path operations — never raw string concatenation
 

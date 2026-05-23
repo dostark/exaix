@@ -1,6 +1,8 @@
 /**
  * @module CoreContext
  * @path packages/core/src/context/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Context service classes consolidated into @exaix/core/context.
  */
 

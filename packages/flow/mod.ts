@@ -1,6 +1,8 @@
 /**
  * @module Flow
  * @path packages/flow/mod.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Flow orchestration, storage, reporting, validation, and dependency resolution.
  */
 

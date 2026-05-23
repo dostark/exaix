@@ -1,6 +1,8 @@
 /**
  * @module KnowledgeInvalidationStrategyTest
- * @path tests/services/portal_knowledge/knowledge_invalidation_strategy_test.ts
+ * @path packages/portal/knowledge/tests/knowledge_invalidation_strategy_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Unit tests for portal knowledge invalidation strategy.
  */
 

@@ -1,9 +1,9 @@
 /**
  * @module AiTypes
- * @path src/ai/types.ts
+ * @path packages/ai/src/types.ts
  * @description Core type definitions for the AI layer, including model options, provider interfaces, and result structures.
  * @architectural-layer AI
- * @related-files [src/ai/providers.ts, src/ai/provider_registry.ts]
+ * @related-files [packages/ai/src/providers.ts, packages/ai/src/provider_registry.ts]
  */
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";

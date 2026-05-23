@@ -1,6 +1,8 @@
 /**
  * @module DaemonTestUtils
  * @path apps/tui/tests/daemon_test_utils.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Common utilities for TUI daemon tests, providing mock services for
  * simulating daemon state, lifecycle operations, and activity logs.
  */

@@ -1,6 +1,8 @@
 /**
  * @module AIProviderRegistryBootstrapTest
  * @path packages/ai/tests/provider_registry_bootstrap_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies that the package-local registry initializer only registers providers owned by @exaix/ai.
  */
 

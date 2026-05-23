@@ -10,7 +10,7 @@ import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_PROJECTS_MEMORY_PATH } from "@ex
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { MemoryAutoApprovalAdapter } from "../../../../src/services/adapters/memory_auto_approval_adapter.ts";
+import { MemoryAutoApprovalAdapter } from "../../../../apps/common/adapters/memory_auto_approval_adapter.ts";
 import { MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import type { SkillDefinition } from "@exaix/schemas/memory_bank.ts";

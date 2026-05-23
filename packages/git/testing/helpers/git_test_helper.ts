@@ -1,6 +1,9 @@
 /**
  * @module GitTestingHelper
  * @path packages/git/testing/helpers/git_test_helper.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Shared Git test helpers exported through @exaix/git/testing.
  */
 

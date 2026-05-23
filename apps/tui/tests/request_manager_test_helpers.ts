@@ -1,6 +1,8 @@
 /**
  * @module RequestManagerTestHelpers
  * @path apps/tui/tests/request_manager_test_helpers.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Common utilities for RequestManager TUI tests, ensuring stable simulation
  * of request lifecycles and interactive input dialogs.
  */

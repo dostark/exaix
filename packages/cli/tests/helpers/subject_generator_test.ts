@@ -1,6 +1,8 @@
 /**
  * @module SubjectGeneratorUnitTest
- * @path tests/cli/helpers/subject_generator_unit_test.ts
+ * @path packages/cli/tests/helpers/subject_generator_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Unit tests for subject_generator utilities.
  */
 

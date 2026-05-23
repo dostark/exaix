@@ -1,6 +1,8 @@
 /**
  * @module DeleteFileToolTest
  * @path packages/mcp/tests/handlers/delete_file_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the DeleteFileTool MCP tool.
  */
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";

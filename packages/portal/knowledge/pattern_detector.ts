@@ -1,13 +1,13 @@
 /**
  * @module PatternDetector
- * @path packages/portal/src/knowledge/pattern_detector.ts
+ * @path packages/portal/knowledge/pattern_detector.ts
  * @description Strategy 4 of PortalKnowledgeService: detects code conventions
  * and naming patterns from file structure and optionally from file contents.
  * Heuristic-only mode requires no I/O; content-based mode reads a sample of
  * key files to detect import styles and DI patterns.
  * Pure function module — zero LLM dependencies, sandboxed-safe.
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/key_file_identifier.ts, packages/portal/src/knowledge/config_parser.ts]
+ * @related-files [packages/portal/knowledge/key_file_identifier.ts, packages/portal/knowledge/config_parser.ts]
  */
 
 import { basename, extname } from "@std/path";

@@ -1,6 +1,9 @@
 /**
  * @module GitPackage
  * @path packages/git/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer Services
  * @description Package entrypoint for @exaix/git. This package exports shared Git constants, enums, and core Git modules.
  */
 

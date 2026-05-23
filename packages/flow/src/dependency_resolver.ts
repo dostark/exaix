@@ -1,6 +1,8 @@
 /**
  * @module DependencyResolver
- * @path packages/flow-storage/src/dependency_resolver.ts
+ * @path packages/flow/src/dependency_resolver.ts
+ * @related-files []
+ * @architectural-layer Flow
  * @description Resolves dependencies in flow steps, detects cycles, and organizes execution waves for parallel processing.
  */
 

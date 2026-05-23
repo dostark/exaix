@@ -170,7 +170,7 @@ export class McpAgentStrategy implements IExecutionStrategy {
     }
 
     // Path to entry point
-    const entrypoint = Deno.env.get("EXAIX_AGENT_ENTRYPOINT") || "src/services/agent/agent_entrypoint.ts";
+    const entrypoint = Deno.env.get("EXAIX_AGENT_ENTRYPOINT") || "apps/agent-entrypoint/main.ts";
     args.push(entrypoint);
 
     // Agent command flags

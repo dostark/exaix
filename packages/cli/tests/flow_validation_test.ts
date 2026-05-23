@@ -1,6 +1,6 @@
 /**
  * @module FlowValidateDynamicTest
- * @path tests/cli/flow_validate_dynamic_test.ts
+ * @path packages/cli/tests/flow_validation_test.ts
  * @description Tests for CLI flow validation of dynamic step execution mode,
  * ensuring proper errors for write tools and warnings for missing configurations.
  * @architectural-layer Tests

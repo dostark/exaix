@@ -1,6 +1,8 @@
 /**
  * @module LogEventFieldsTypeTest
- * @path tests/types/log_event_fields_type_test.ts
+ * @path packages/core/tests/types/log_event_fields_type_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Compile-time type contract verification for ILogEvent and IServiceContext Actor/Agent/Identity fields.
  *
  * This file contains no runtime tests.

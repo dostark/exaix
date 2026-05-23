@@ -1,6 +1,8 @@
 /**
  * @module ExecutionTypes
  * @path packages/execution/src/types.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Shared types for the @exaix/execution package.
  */
 

@@ -1,4 +1,4 @@
-Analyze the CLI command structure in Exaix. Examine src/cli/ and src/cli/commands/ to understand:
+Analyze the CLI command structure in Exaix. Examine packages/cli/src/ and apps/exactl/src/commands/ to understand:
 
 - Command hierarchy and organization
 - Common patterns across command implementations

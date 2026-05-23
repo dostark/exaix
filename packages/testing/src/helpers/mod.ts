@@ -1,6 +1,9 @@
 /**
  * @module TestingHelpers
  * @path packages/testing/src/helpers/mod.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Barrel exports for shared testing helper modules.
  */
 

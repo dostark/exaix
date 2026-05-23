@@ -1,6 +1,8 @@
 /**
  * @module LogCorrelationTest
  * @path apps/tui/tests/log_correlation_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for trace and correlation analysis in the TUI, ensuring
  * related activity logs are correctly grouped across asynchronous agent execution boundaries.
  */

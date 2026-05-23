@@ -1,6 +1,8 @@
 /**
  * @module EventBusServiceTest
- * @path tests/services/observability/event_bus_service_test.ts
+ * @path packages/core/tests/observability/event_bus_service_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the EventBusService pub/sub foundation for live execution streaming.
  */
 

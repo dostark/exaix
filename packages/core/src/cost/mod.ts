@@ -1,6 +1,9 @@
 /**
  * @module CostTracking
  * @path packages/core/src/cost/mod.ts
+ * @related-files []
+ * @architectural-layer Core
+ * @ungrounded
  * @description Cost tracking — merged into @exaix/core as a sub-domain.
  */
 

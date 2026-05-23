@@ -1,4 +1,8 @@
-/** @module CandidateDiscoveryTest */
+/** @module CandidateDiscoveryTest
+ * @path packages/routing/tests/candidate_discovery_test.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @description TODO: Add description */
 import { assertEquals } from "@std/assert";
 import type { JSONValue } from "@exaix/core";
 import { CandidateDiscovery } from "@exaix/routing";

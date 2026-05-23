@@ -1,13 +1,13 @@
 /**
  * @module KnowledgePersistence
- * @path packages/portal/src/knowledge/knowledge_persistence.ts
+ * @path packages/portal/knowledge/knowledge_persistence.ts
  * @description Persistence layer for IPortalKnowledge. Writes knowledge.json
  * atomically (write to .tmp then rename) under Memory/Projects/{portalAlias}/.
  * Conditionally updates overview.md and patterns.md via IMemoryBankService
  * when the <!-- mission-reported --> sentinel is absent. Never writes
  * references.md or decisions.md (ownership preserved for MissionReporter).
  * @architectural-layer Services
- * @related-files [packages/portal/src/knowledge/portal_knowledge_service.ts]
+ * @related-files [packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
 import { join } from "@std/path";

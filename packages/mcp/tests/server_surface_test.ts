@@ -1,6 +1,8 @@
 /**
  * @module McpServerSurfaceTest
  * @path packages/mcp/tests/server_surface_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the public @exaix/mcp/server subpath exposes the canonical MCP server/runtime surface.
  */
 

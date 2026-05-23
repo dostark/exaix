@@ -1,8 +1,10 @@
 /**
  * @module MemoryFormatter
  * @path packages/cli/src/formatters/memory_formatter.ts
+ * @related-files []
  * @description Handles formatting of Memory Bank data for CLI output, supporting tables and markdown for projects, executions, learnings, and skills.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import { MEMORY_COMMAND_DEFAULTS } from "../config.ts";

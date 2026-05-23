@@ -12,7 +12,6 @@ import { join, relative, resolve } from "@std/path";
 import { walk } from "@std/fs";
 
 const ROOT = Deno.cwd();
-const SRC_DIR = join(ROOT, "src");
 const TESTS_DIR = join(ROOT, "tests");
 const PACKAGES_DIR = join(ROOT, "packages");
 const SCRIPTS_DIR = join(ROOT, "scripts");
@@ -30,6 +29,7 @@ interface ModuleInfo {
   dependenciesProvided: boolean;
   relatedFilesProvided: boolean;
   isGrounded: boolean;
+  ungrounded?: boolean;
 }
 
 async function validate() {
@@ -42,14 +42,18 @@ async function validate() {
   const testFiles = new Set<string>();
   const packageFiles = new Set<string>();
 
-  // 1. Gather all .ts files in src/
-  for await (const entry of walk(SRC_DIR, { includeDirs: false })) {
-    if (!entry.path.endsWith(".ts")) continue;
-    const relPath = relative(ROOT, entry.path);
-    if (relPath.endsWith(".test.ts") || relPath.endsWith("_test.ts")) {
-      testFiles.add(relPath);
-    } else {
-      srcFiles.add(relPath);
+  // 1. Gather all .ts files in packages/ and apps/ (no top-level src/ anymore)
+  for (const dir of [PACKAGES_DIR, APPS_DIR]) {
+    if (await Deno.stat(dir).then((s) => s.isDirectory).catch(() => false)) {
+      for await (const entry of walk(dir, { includeDirs: false })) {
+        if (!entry.path.endsWith(".ts")) continue;
+        const relPath = relative(ROOT, entry.path);
+        if (relPath.endsWith(".test.ts") || relPath.endsWith("_test.ts")) {
+          testFiles.add(relPath);
+        } else {
+          srcFiles.add(relPath);
+        }
+      }
     }
   }
 
@@ -99,7 +103,9 @@ async function validate() {
 
   // 2. Parse ARCHITECTURE.md for explicit grounding
   const archContent = await Deno.readTextFile(ARCH_DOC);
-  const explicitPathRegex = /src\/[a-zA-Z0-9_\-\/]+\.ts/g;
+  // Match packages/<name>/src/..., packages/<name>/mod.ts, apps/<name>/src/..., apps/<name>/main.ts
+  const explicitPathRegex =
+    /(?:packages\/[a-zA-Z0-9_\-]+(?:\/src\/[a-zA-Z0-9_\/\-]+\.ts|\/mod\.ts)|apps\/[a-zA-Z0-9_\-]+(?:\/src\/[a-zA-Z0-9_\/\-]+\.ts|\/main\.ts))/g;
   let match;
   while ((match = explicitPathRegex.exec(archContent)) !== null) {
     const foundPath = match[0];
@@ -108,14 +114,24 @@ async function validate() {
     }
   }
 
-  // Also check for directory-level grounding like apps/exactl/src/*.ts or src/*.ts
-  const explicitDirRegex = /src\/([a-zA-Z0-9_\-\/]+\/)?\*\.ts/g;
+  // Also check for directory-level grounding like packages/core/src/config/*.ts
+  const explicitDirRegex =
+    /(?:packages\/[a-zA-Z0-9_\-]+(?:\/src|)\/|apps\/[a-zA-Z0-9_\-]+\/src\/)[a-zA-Z0-9_\/\-]+\/\*\.ts/g;
   while ((match = explicitDirRegex.exec(archContent)) !== null) {
     const dirPath = match[0].replace("/*.ts", "");
     for (const file of srcFiles) {
       if (file.startsWith(dirPath)) {
         groundedFiles.add(file);
       }
+    }
+  }
+
+  // Also match legacy src/ patterns for backward compatibility (retired paths)
+  const legacyPathRegex = /src\/[a-zA-Z0-9_\-\/]+\.ts/g;
+  while ((match = legacyPathRegex.exec(archContent)) !== null) {
+    const foundPath = match[0];
+    if (srcFiles.has(foundPath)) {
+      groundedFiles.add(foundPath);
     }
   }
 
@@ -227,17 +243,27 @@ async function validate() {
   }
 
   // 5. Report results
-  const ungrounded = Array.from(srcFiles).filter((f) => !fullyGrounded.has(f));
+  const ungroundedCandidates = Array.from(srcFiles).filter((f) => !fullyGrounded.has(f));
+  const exempted = ungroundedCandidates.filter((f) => moduleMap.get(f)?.ungrounded || f.includes("/tests/"));
+  const ungrounded = ungroundedCandidates.filter((f) => !(moduleMap.get(f)?.ungrounded || f.includes("/tests/")));
 
   console.log("\n--- Validation Summary ---");
-  console.log(`Total Source Files: ${srcFiles.size}`);
-  console.log(`Total Test Files:   ${testFiles.size}`);
-  console.log(`Header Validation:  ${allModules.size - headerFailures} PASS, ${headerFailures} FAIL`);
-  console.log(`Grounding Status:   ${fullyGrounded.size} GROUNDED, ${ungrounded.length} UNGROUNDED`);
+  console.log(`Total Source Files:  ${srcFiles.size}`);
+  console.log(`Total Test Files:    ${testFiles.size}`);
+  console.log(`Header Validation:   ${allModules.size - headerFailures} PASS, ${headerFailures} FAIL`);
+  console.log(`Grounding Status:    ${fullyGrounded.size} GROUNDED, ${ungrounded.length} UNGROUNDED`);
+  if (exempted.length > 0) {
+    console.log(`Exempted (@ungrounded): ${exempted.length} files`);
+  }
 
   if (ungrounded.length > 0) {
     console.log("\n❌ Ungrounded Modules (Dead Documentation Zones):");
     ungrounded.sort().forEach((f) => console.log(`  - ${f}`));
+  }
+
+  if (exempted.length > 0) {
+    console.log("\n⚪ Exempted (tagged @ungrounded):");
+    exempted.sort().forEach((f) => console.log(`  - ${f}`));
   }
 
   if (headerFailures > 0 || ungrounded.length > 0) {
@@ -271,6 +297,9 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
     if (architecturalLayer) info.layer = architecturalLayer[1].trim();
     if (description) info.description = description[1].trim();
 
+    const ungrounded = header.match(/@ungrounded\b/);
+    if (ungrounded) info.ungrounded = true;
+
     // Parse array @related-files
     const relatedMatch = header.match(/@related-files\s+\[([\s\S]*?)\]/);
     if (relatedMatch) {
@@ -295,8 +324,11 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
   let match;
   while ((match = importRegex.exec(content)) !== null) {
     const importPath = match[1];
-    // Only care about relative imports, alias imports, or src subpaths
-    if (importPath.startsWith(".") || importPath.startsWith("@/") || importPath.startsWith("src/")) {
+    // src/ kept for backward compatibility with retired paths
+    if (
+      importPath.startsWith(".") || importPath.startsWith("@/") || importPath.startsWith("src/") ||
+      importPath.startsWith("packages/") || importPath.startsWith("apps/")
+    ) {
       info.dependencies.push(importPath);
     }
   }
@@ -415,7 +447,10 @@ async function resolveReference(
     }
   }
 
-  if (link.startsWith("src/") || link.startsWith("tests/") || link.startsWith("packages/")) {
+  // src/ kept for backward compatibility with retired paths
+  if (
+    link.startsWith("src/") || link.startsWith("tests/") || link.startsWith("packages/") || link.startsWith("apps/")
+  ) {
     const normalized = link.replace(/^\/+/, "");
     if (allKnownFiles.has(normalized)) {
       return normalized;

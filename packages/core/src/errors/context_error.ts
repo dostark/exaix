@@ -3,6 +3,7 @@
  * @path packages/core/src/errors/context_error.ts
  * @description Enhanced error class with structured context preservation and cause chaining, addressing security audit requirements for traceable errors.
  * @architectural-layer Errors
+ * @ungrounded
  * @related-files ["packages/core/src/errors/context_error.ts", "packages/core/src/logger/event_logger.ts"]
  */
 

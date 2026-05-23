@@ -1,6 +1,8 @@
 /**
  * @module WatchCommandTest
  * @path apps/exactl/tests/watch_command_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Tests for the `exactl watch <trace_id>` CLI command that tails
  * live execution SSE streams and falls back to historical DB queries.
  */
@@ -68,7 +70,7 @@ Deno.test("WatchCommand: watch should display historical events for completed tr
     await db.logActivity(
       ActivityActor.SYSTEM,
       "config.loaded",
-      "exa.config.toml",
+      "",
       { checksum: "abc123" },
       VALID_TRACE_ID,
     );

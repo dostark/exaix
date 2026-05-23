@@ -1,6 +1,8 @@
 /**
  * @module AIProviderRegistryTest
- * @path tests/ai/provider_registry_test.ts
+ * @path packages/ai/tests/provider_registry_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the AI ProviderRegistry, ensuring stable registration of LLM
  * factories, dynamic model selection, and resilient fallback when primary providers are unavailable.
  */

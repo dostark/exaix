@@ -10,7 +10,7 @@
  * - Handle agent feedback loops
  *
  * @architectural-layer Services
- * @related-files ["packages/execution/src/request_processor.ts", "packages/execution/src/blueprint_loader.ts"]
+ * @related-files ["packages/request/src/processor.ts", "packages/core/src/blueprint/blueprint_loader.ts"]
  */
 
 import type { IModelProvider } from "@exaix/ai/types.ts";

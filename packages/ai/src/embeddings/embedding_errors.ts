@@ -1,10 +1,11 @@
 /**
  * @module EmbeddingErrors
- * @path src/ai/embeddings/embedding_errors.ts
+ * @path packages/ai/src/embeddings/embedding_errors.ts
  * @description Typed error class for embedding provider operations with
  * structured error codes for downstream handling.
  * @architectural-layer AI
- * @related-files [src/ai/embeddings/embedding_provider_factory.ts, src/ai/providers/ollama_embedding_client.ts]
+ * @ungrounded
+ * @related-files [packages/ai/src/embeddings/embedding_provider_factory.ts, packages/ai-ollama/src/ollama_embedding_client.ts]
  */
 
 /**

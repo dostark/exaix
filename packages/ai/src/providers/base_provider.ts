@@ -1,9 +1,9 @@
 /**
  * @module BaseProvider
- * @path src/ai/providers/base_provider.ts
+ * @path packages/ai/src/providers/base_provider.ts
  * @description Module for BaseProvider.
  * @architectural-layer AI
- * @related-files [src/ai/providers.ts, src/ai/providers/openai_provider.ts]
+ * @related-files [packages/ai/src/providers.ts, packages/ai-openai/src/openai_provider.ts]
  */
 
 import type { IEventLogger } from "@exaix/core/logger";

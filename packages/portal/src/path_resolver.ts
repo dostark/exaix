@@ -4,7 +4,7 @@
  * @description Resolves portal alias paths (e.g., @Blueprints/) to absolute system paths,
  * enforcing security boundaries to prevent path traversal.
  * @architectural-layer Services
- * @related-files ["src/services/request/request_processor.ts", packages/core/src/config/service.ts]
+ * @related-files ["packages/request/src/processor.ts", packages/core/src/config/service.ts]
  */
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";

@@ -1,6 +1,9 @@
 /**
  * @module FlowDependencyResolverTest
- * @path packages/flow-storage/tests/dependency_resolver_test.ts
+ * @path packages/flow/tests/dependency_resolver_test.ts
+ * @related-files []
+ * @architectural-layer Flow
+ * @description TODO: Add description
  */
 
 import { assertEquals, assertThrows } from "@std/assert";

@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/queries.ts
  * @description Collection of query functions for filtering and grouping logs by correlation, trace, and agent IDs.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

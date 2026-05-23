@@ -1,6 +1,8 @@
 /**
  * @module McpEnums
  * @path packages/mcp/src/enums.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description MCP enums re-exported from @exaix/core.
  */
 

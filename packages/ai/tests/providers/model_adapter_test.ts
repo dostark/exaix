@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module ModelAdapterTest
- * @path tests/ai/model_adapter_test.ts
+ * @path packages/ai/tests/providers/model_adapter_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the ModelAdapter logic, ensuring it correctly wraps various
  * LLM providers and handles response configuration overrides.
  */

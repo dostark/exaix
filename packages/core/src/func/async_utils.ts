@@ -1,6 +1,8 @@
 /**
  * @module AsyncUtils
  * @path packages/core/src/func/async_utils.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Asynchronous utilities for non-blocking operations and delays.
  */
 

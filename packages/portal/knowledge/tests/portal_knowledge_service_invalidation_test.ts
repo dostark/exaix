@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module PortalKnowledgeServiceInvalidationTest
- * @path tests/services/portal_knowledge/portal_knowledge_service_invalidation_test.ts
+ * @path packages/portal/knowledge/tests/portal_knowledge_service_invalidation_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Integration tests for PortalKnowledgeService invalidation wiring.
  */
 

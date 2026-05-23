@@ -1,6 +1,7 @@
 /**
  * @module TuiEnums
- * @path src/types/enums.ts
+ * @path packages/tui/src/types/enums.ts
+ * @related-files []
  * @description UI-specific enum definitions exported by @exaix/tui.
  * @architectural-layer TUI
  */

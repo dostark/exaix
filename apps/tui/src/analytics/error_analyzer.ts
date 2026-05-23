@@ -3,6 +3,7 @@
  * @path apps/tui/src/analytics/error_analyzer.ts
  * @description Detects and classifies error patterns in logs to aid in troubleshooting and failure analysis.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files [apps/tui/src/structured_log_viewer.ts]
  */
 

@@ -15,7 +15,7 @@ import { JsonRpcErrorCode } from "@exaix/core";
 import { McpTransportType } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import { EventBusService } from "@exaix/core/observability";
-import { SseHandler } from "../../../src/api/sse_handler.ts";
+import { SseHandler } from "./sse_handler.ts";
 import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";

@@ -1,6 +1,8 @@
 /**
  * @module MemoryCommandsGlobalTest
  * @path apps/exactl/tests/memory_commands_global_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI operations for global (context-free) memory banks, ensuring correct
  * initialization, listing, and cross-project pattern retrieval.
  */

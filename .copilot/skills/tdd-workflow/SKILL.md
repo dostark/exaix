@@ -42,7 +42,7 @@ CONTEXT phase
      - LLM/AI behavior: use MockLLMProvider (never real API calls in tests)
      - Full integration workspace: use TestEnvironment.create()
   2. Read existing tests for the component to understand patterns already in use.
-  3. Determine the test file path (must mirror src/ path under tests/).
+  3. Determine the test file path: package-owned code → `packages/<package>/tests/`; integration tests → `tests/`.
 
 RED phase
   4. Write the failing test(s) that define the desired behavior:
@@ -56,8 +56,8 @@ RED phase
      never skip this step.
 
 GREEN phase
-  6. Create or modify the source file at src/... with the minimum implementation
-     needed to pass all tests (no over-engineering).
+  6. Create or modify the source file at the appropriate `packages/<package>/src/...` or `apps/<app>/src/...`
+     path with the minimum implementation needed to pass all tests (no over-engineering).
      - New files must include module-header with @module, @path, @description,
        @architectural-layer, @dependencies, @related-files.
   7. Run `deno test --allow-all <test-file>` — all tests must pass.

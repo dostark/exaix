@@ -1,6 +1,8 @@
 /**
  * @module StructuredLoggerTest
- * @path tests/services/structured/structured_logger_test.ts
+ * @path packages/core/tests/structured/structured_logger_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the core StructuredLogger service, ensuring correct log level filtering,
  * asynchronous context propagation, and multi-sink (Console/File) dispatch logic.
  */

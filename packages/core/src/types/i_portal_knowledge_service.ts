@@ -1,11 +1,11 @@
 /**
  * @module IPortalKnowledgeService
- * @path src/shared/interfaces/i_portal_knowledge_service.ts
+ * @path packages/core/src/types/i_portal_knowledge_service.ts
  * @description Service interface and configuration type for PortalKnowledgeService
  * (Phase 46), which performs deep codebase analysis of mounted portals and
  * persists structured knowledge in Memory/Projects/{portal}/.
  * @architectural-layer Shared
- * @related-files [src/services/portal_knowledge/portal_knowledge_service.ts, src/shared/interfaces/mod.ts]
+ * @related-files [packages/portal/knowledge/portal_knowledge_service.ts, packages/core/src/types/mod.ts]
  */
 
 import type { IPortalKnowledge } from "@exaix/schemas";

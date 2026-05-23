@@ -2,6 +2,8 @@
 /**
  * @module MemoryAutoApprovalDaemonTest
  * @path packages/memory/tests/approval/memory_auto_approval_daemon_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Verifies the memory auto-approval daemon maintenance helper.
  */
 import { assertEquals } from "@std/assert";

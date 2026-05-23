@@ -1,6 +1,6 @@
 /**
  * @module RequestSchema
- * @path src/shared/schemas/request.ts
+ * @path packages/schemas/src/request.ts
  * @description Defines Zod validation schema for agent request frontmatter (YAML), supporting trace IDs, status, priority, and skill overrides.
  * @architectural-layer Schemas
  * @related-files [apps/exactl/src/handlers/request_create_handler.ts]

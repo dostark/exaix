@@ -2,6 +2,8 @@
 /**
  * @module GitServiceTest
  * @path packages/git/tests/git_service_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the Git service wrapper, ensuring stable execution of
  * version control operations and correct parsing of git status and diff outputs.
  */

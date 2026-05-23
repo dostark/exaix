@@ -1,10 +1,11 @@
 /**
  * @module RequestProcessorComplexityTest
- * @path tests/services/request/request_processor_complexity_test.ts
+ * @path packages/request/tests/request_processor_complexity_test.ts
+ * @architectural-layer Services
  * @description Verifies that RequestProcessor's classifyTaskComplexity method
  * uses structured analysis (Phase 45), content heuristics, and agent-ID fallbacks
  * correctly to categorize task complexity.
- * @related-files [src/services/request/request_processor.ts, "packages/schemas/src/request_analysis.ts", "packages/core/src/types/enums.ts"]
+ * @related-files [packages/request/src/processor.ts, "packages/schemas/src/request_analysis.ts", "packages/core/src/types/enums.ts"]
  */
 
 import { assertEquals } from "@std/assert";

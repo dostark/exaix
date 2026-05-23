@@ -1,9 +1,10 @@
 /**
  * @module AgentExecutorSchema
- * @path src/shared/schemas/agent_executor.ts
+ * @path packages/schemas/src/agent_executor.ts
  * @description Defines Zod validation schemas for agent execution context, options, and results, used for type-safe agent orchestration.
  * @architectural-layer Schemas
- * @related-files ["src/services/agent/agent_executor.ts"]
+ * @ungrounded
+ * @related-files ["packages/execution/src/agent_executor.ts"]
  */
 
 import { z } from "zod";

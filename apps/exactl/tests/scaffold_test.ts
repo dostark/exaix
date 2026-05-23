@@ -1,6 +1,8 @@
 /**
  * @module ProjectScaffoldTest
  * @path apps/exactl/tests/scaffold_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the logic of the project initialization script, ensuring correct
  * creation of the required directory structure, config templates, and baseline assets.
  */

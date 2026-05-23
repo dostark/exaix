@@ -7,11 +7,11 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
-import { RequestAdapter } from "../../../src/services/adapters/request_adapter.ts";
-import { DisplayAdapter } from "../../../src/services/adapters/display_adapter.ts";
-import { JournalServiceAdapter } from "../../../src/services/adapters/journal_adapter.ts";
-import { AgentServiceAdapter } from "../../../src/services/adapters/agent_adapter.ts";
-import { LogServiceAdapter } from "../../../src/services/adapters/log_adapter.ts";
+import { RequestAdapter } from "../../../apps/common/adapters/request_adapter.ts";
+import { DisplayAdapter } from "../../../apps/common/adapters/display_adapter.ts";
+import { JournalServiceAdapter } from "../../../apps/common/adapters/journal_adapter.ts";
+import { AgentServiceAdapter } from "../../../apps/common/adapters/agent_adapter.ts";
+import { LogServiceAdapter } from "../../../apps/common/adapters/log_adapter.ts";
 import { LogLevel, RequestPriority, RequestSource, TaskComplexity, TaskType } from "@exaix/core";
 import { RequestStatus } from "@exaix/core/status";
 import type { IDatabaseService } from "@exaix/core/types";

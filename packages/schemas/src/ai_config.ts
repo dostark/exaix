@@ -1,10 +1,10 @@
 /**
  * @module AIConfig
- * @path src/shared/schemas/ai_config.ts
+ * @path packages/schemas/src/ai_config.ts
  * @description AI provider configuration schemas and validation. Defines Zod schemas for
  * validating provider settings, retry policies, timeouts, and model configurations.
  * @architectural-layer Configuration
- * @related-files [packages/core/src/config/service.ts, src/ai/provider_factory.ts, exa.config.toml]
+ * @related-files [packages/core/src/config/service.ts, packages/ai/src/provider_factory.ts]
  */
 import { z } from "zod";
 import {
@@ -62,7 +62,7 @@ export const MockConfigSchema = z.object({
 export type MockConfig = z.infer<typeof MockConfigSchema>;
 
 /**
- * AI configuration schema for [ai] section in exa.config.toml
+ * AI configuration schema for [ai] section in
  */
 export const AiConfigSchema = z.object({
   /** Provider type: mock, ollama, anthropic, openai */
@@ -128,7 +128,7 @@ function buildProviderRecord<T>(mapper: (providerType: string) => T): Record<str
  * @path packages/schemas/src/ai_config.ts
  * @description Defines the Zod schema for AI provider configuration, including model selection, retry strategies, and mock provider settings.
  * @architectural-layer Config
- * @related-files ["packages/schemas/src/config.ts", "src/ai/provider_factory.ts"]
+ * @related-files ["packages/schemas/src/config.ts"]
  */
 
 /**

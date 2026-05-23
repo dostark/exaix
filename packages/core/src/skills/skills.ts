@@ -1,6 +1,8 @@
 /**
  * @module SkillsService
  * @path packages/core/src/skills/skills.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Manages procedural memory (skills).
  *
  * Skills encode domain expertise, procedures, and best practices as reusable

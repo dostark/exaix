@@ -1,6 +1,8 @@
 /**
  * @module ToolClassificationTest
  * @path packages/mcp/tests/tool_classification_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies that McpToolName enum contains only live MCP tool names (no dead entries)
  * and that READ_ONLY_TOOLS / WRITE_TOOLS classification is derived from live manifest
  * entries only. Step 77.2 normalization tests.

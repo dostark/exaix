@@ -1,6 +1,9 @@
 /**
  * @module MemoryTestingConstants
  * @path packages/memory/testing/constants.ts
+ * @related-files []
+ * @architectural-layer Memory
+ * @ungrounded
  * @description Canonical test constants for @exaix/memory testing utilities.
  */
 

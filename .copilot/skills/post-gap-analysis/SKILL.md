@@ -49,7 +49,7 @@ document with remediation steps."
 Examples
 - "#post-gap-analysis .copilot/planning/phase-63-flow-error-recovery.md"
 - "#post-gap-analysis .copilot/planning/phase-64-flow-namespace-blackboard.md
-   Additional context: ARCHITECTURE.md, src/flows/flow_runner.ts"
+   Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
 - ✅ Do read the actual source files — never trust the plan's description alone.
@@ -78,7 +78,7 @@ Do / Don't
 - ❌ Don't renumber existing steps — new steps continue from the last existing
   step number.
 - ❌ Don't accept hardcoded threshold or timeout literals — they must be named
-  constants in `src/shared/constants.ts` or config-schema fields.
+  constants in `packages/core/src/types/constants.ts` or config-schema fields.
 - ❌ Don't skip event payload typing — untyped events block audit chain
   verification and make integration tests fragile.
 

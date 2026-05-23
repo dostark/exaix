@@ -1,6 +1,9 @@
 /**
  * @module GitTestingConfig
  * @path packages/git/testing/helpers/config.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @ungrounded
  * @description Minimal config helpers for git package test support.
  */
 

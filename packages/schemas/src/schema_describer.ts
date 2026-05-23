@@ -1,9 +1,10 @@
 /**
  * @module SchemaDescriber
- * @path src/shared/schemas/schema_describer.ts
+ * @path packages/schemas/src/schema_describer.ts
  * @description Provides a utility function to generate human-readable descriptions from Zod schemas, aiding LLMs in resolving validation errors.
  * @architectural-layer Schemas
- * @related-files ["src/services/request/request_processor.ts"]
+ * @ungrounded
+ * @related-files ["packages/request/src/processor.ts"]
  */
 
 import type { ZodType, ZodTypeDef } from "zod";

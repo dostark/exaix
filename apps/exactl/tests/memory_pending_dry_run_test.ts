@@ -1,6 +1,8 @@
 /**
  * @module MemoryPendingDryRunTest
  * @path apps/exactl/tests/memory_pending_dry_run_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Tests memory pending dry-run behavior for the CLI pending approve flow.
  */
 import "./helpers/set_test_mode.ts";

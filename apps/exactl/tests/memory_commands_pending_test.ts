@@ -1,6 +1,8 @@
 /**
  * @module MemoryCommandsPendingTest
  * @path apps/exactl/tests/memory_commands_pending_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI control for pending memory proposals, ensuring users can list,
  * review, and approve agent-suggested learnings before permanent archival.
  */

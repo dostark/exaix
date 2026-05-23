@@ -1,6 +1,9 @@
 /**
  * @module Execution
  * @path packages/execution/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer Services
  * @description Barrel for @exaix/execution.
  */
 

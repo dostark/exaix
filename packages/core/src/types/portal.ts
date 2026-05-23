@@ -1,6 +1,6 @@
 /**
  * @module Portal
- * @path @exaix/core/types
+ * @path packages/core/src/types/portal.ts
  * @description Module for Portal.
  * @architectural-layer Shared
  * @related-files ["packages/core/src/types/i_portal_service.ts"]

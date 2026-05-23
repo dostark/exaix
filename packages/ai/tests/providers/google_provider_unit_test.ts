@@ -1,6 +1,8 @@
 /**
  * @module GoogleProviderUnitTest
- * @path tests/ai/google_provider_unit_test.ts
+ * @path packages/ai/tests/providers/google_provider_unit_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Unit tests for Google Gemini provider.
  */
 

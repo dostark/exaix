@@ -1,6 +1,8 @@
 /**
  * @module LlmClientTest
- * @path tests/ai/llm_client_test.ts
+ * @path packages/ai/tests/llm_client_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Unit tests for ReAct reasoning logic in LlmClient.
  */
 import { assertEquals, assertRejects } from "@std/assert";

@@ -1,6 +1,8 @@
 /**
  * @module KnowledgePersistenceTest
- * @path tests/services/portal_knowledge/knowledge_persistence_test.ts
+ * @path packages/portal/knowledge/tests/knowledge_persistence_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Unit tests for knowledge_persistence: saveKnowledge writes
  * knowledge.json atomically and conditionally updates MemoryBankService Markdown
  * files; loadKnowledge reads and validates knowledge.json.

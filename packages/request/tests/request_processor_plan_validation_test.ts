@@ -1,6 +1,8 @@
 /**
  * @module PlanValidationRequestTest
- * @path tests/services/request/request_processor_plan_validation_test.ts
+ * @path packages/request/tests/request_processor_plan_validation_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the RequestProcessor's resilience when handling invalid plans,
  * ensuring rejected content is captured for debugging without breaking the execution loop.
  */

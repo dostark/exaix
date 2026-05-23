@@ -1,6 +1,8 @@
 /**
  * @module McpConstants
  * @path packages/mcp/src/constants.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description MCP defaults plus manifest-derived live tool classification exports.
  */
 

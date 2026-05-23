@@ -1,6 +1,8 @@
 /**
  * @module SafeErrorTest
  * @path packages/core/tests/errors/safe_error_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies 'SafeError' logic, ensuring internal error details are
  * correctly redacted when serialized for external reporting.
  */

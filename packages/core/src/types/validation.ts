@@ -1,6 +1,8 @@
 /**
  * @module ValidationTypes
  * @path packages/core/src/types/validation.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Shared validation result types.
  */
 

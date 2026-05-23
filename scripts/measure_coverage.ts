@@ -244,8 +244,8 @@ async function runCoverageCheck() {
     console.log(`\nℹ️  Coverage excludes: ${COVERAGE_EXCLUDE_PATTERNS.join(", ")}`);
 
     printLowestCovered(rows, {
-      label: "src/",
-      filter: (r) => r.file.startsWith("src/"),
+      label: "apps/ + packages/",
+      filter: (r) => r.file.startsWith("apps/") || r.file.startsWith("packages/"),
       limit: listLimit,
     });
   }

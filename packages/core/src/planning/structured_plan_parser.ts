@@ -4,7 +4,7 @@
  * @description Shared utility for detecting and parsing structured plans from markdown content,
  * specifically extracting execution steps and metadata.
  * @architectural-layer Services
- * @related-files ["src/services/agent/execution_loop.ts", "src/services/plan/plan_writer.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "packages/core/src/planning/plan_writer.ts"]
  */
 
 export interface IStructuredPlanFrontmatter {

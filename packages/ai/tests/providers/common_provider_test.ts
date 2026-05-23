@@ -1,6 +1,8 @@
 /**
  * @module AICommonProviderTest
- * @path tests/ai/common_provider_test.ts
+ * @path packages/ai/tests/providers/common_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies shared LLM provider utilities, including robust retry logic,
  * exponential backoff, and identification of transient vs. terminal errors.
  */

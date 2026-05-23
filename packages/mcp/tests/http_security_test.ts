@@ -1,6 +1,8 @@
 /**
  * @module MCPHTTPSecurityTest
  * @path packages/mcp/tests/http_security_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Verifies the HTTP security posture of the MCP SSE transport, ensuring
  * mandatory headers (CSP, HSTS) are applied and prevent cross-site scripting (XSS).
  */

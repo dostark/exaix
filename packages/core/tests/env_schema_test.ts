@@ -1,6 +1,8 @@
 /**
  * @module EnvSchemaValidationTest
  * @path packages/core/tests/env_schema_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the validation logic for environment variables, ensuring
  * correct override behaviors for AI providers and system configuration.
  */

@@ -1,6 +1,8 @@
 /**
  * @module PortalMountKnowledgeTest
  * @path apps/exactl/tests/commands/portal_mount_knowledge_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Integration tests for the post-mount knowledge analysis trigger
  * in PortalCommands.add(). Verifies that IPortalKnowledgeService.analyze() is
  * called when autoAnalyzeOnMount is enabled, skipped when disabled, and that

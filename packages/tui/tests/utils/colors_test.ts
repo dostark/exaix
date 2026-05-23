@@ -1,6 +1,8 @@
 /**
  * @module TUIColorsTest
- * @path tests/tui/utils/colors_test.ts
+ * @path packages/tui/tests/utils/colors_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Verifies the logic for ANSI color and style code management in the TUI,
  * ensuring correct visual feedback across different terminal environments.
  */

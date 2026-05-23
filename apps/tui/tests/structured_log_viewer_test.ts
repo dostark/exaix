@@ -1,6 +1,8 @@
 /**
  * @module StructuredLogViewerTest
  * @path apps/tui/tests/structured_log_viewer_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Suite for the StructuredLogViewer TUI, verifying tree-based navigation of trace logs,
  * grouping toggle functionality, and efficient rendering of nested activity hierarchies.
  */

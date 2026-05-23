@@ -3,7 +3,8 @@
  * @path packages/ai-ollama/src/ollama_embedding_client.ts
  * @description Ollama embedding client owned by the @exaix/ai-ollama package.
  * @architectural-layer AI
- * @related-files [packages/ai/src/providers/ollama_embedding_client.ts]
+ * @ungrounded
+ * @related-files [packages/ai-ollama/src/ollama_embedding_client.ts]
  */
 
 import { DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_EMBED_CHUNK_SIZE, DEFAULT_OLLAMA_TIMEOUT_MS } from "./constants.ts";

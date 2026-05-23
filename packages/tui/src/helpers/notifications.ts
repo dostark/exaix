@@ -3,6 +3,7 @@
  * @path packages/tui/src/helpers/notifications.ts
  * @description Helper functions for rendering and managing TUI notifications, including time formatting and interaction logic.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/core/src/notification/notification.ts"]
  */
 

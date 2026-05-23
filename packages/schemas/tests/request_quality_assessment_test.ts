@@ -1,11 +1,11 @@
 /**
  * @module RequestQualityAssessmentSchemaTest
- * @path tests/schemas/request_quality_assessment_test.ts
+ * @path packages/schemas/tests/request_quality_assessment_test.ts
  * @description Tests for the RequestQualityAssessmentSchema and
  * RequestQualityIssueSchema, verifying validation of quality scores,
  * enum values, and metadata fields.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/request_quality_assessment.ts]
+ * @related-files [packages/schemas/src/request_quality_assessment.ts]
  */
 
 import { assertEquals } from "@std/assert";

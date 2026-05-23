@@ -1,9 +1,9 @@
 /**
  * @module ImemoryBankService
- * @path src/shared/interfaces/i_memory_bank_service.ts
+ * @path packages/core/src/types/i_memory_bank_service.ts
  * @description Module for ImemoryBankService.
  * @architectural-layer Shared
- * @related-files [src/shared/schemas/memory_bank.ts]
+ * @related-files [packages/schemas/src/memory_bank.ts]
  */
 
 import type { MemoryType } from "@exaix/core";

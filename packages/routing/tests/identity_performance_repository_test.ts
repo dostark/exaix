@@ -1,4 +1,8 @@
-/** @module IdentityPerformanceRepositoryTest */
+/** @module IdentityPerformanceRepositoryTest
+ * @path packages/routing/tests/identity_performance_repository_test.ts
+ * @related-files []
+ * @architectural-layer Services
+ * @description TODO: Add description */
 import { assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";

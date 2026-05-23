@@ -1,8 +1,10 @@
 /**
  * @module ValidationChain
  * @path packages/cli/src/validation/validation_chain.ts
+ * @related-files []
  * @description Provides a chainable validation utility for CLI command arguments, allowing multiple rules and error aggregation.
  * @architectural-layer CLI
+ * @ungrounded
  */
 
 import type { ValidationResult } from "../base/command.ts";

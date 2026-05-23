@@ -1,6 +1,8 @@
 /**
  * @module FlowStepSchemaExecutionModeTest
- * @path tests/shared/schemas/flow_step_execution_mode_test.ts
+ * @path packages/schemas/tests/flow_step_execution_mode_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies FlowStepSchema supports execution_mode and permitted_tools fields for Phase 56 dynamic tool selection.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module RequestCommonStructuredTest
- * @path tests/services/request/request_common_structured_test.ts
+ * @path packages/request/tests/request_common_structured_test.ts
  * @description Tests for structured expectations (acceptance_criteria,
  * expected_outcomes, scope) propagation in buildParsedRequest().
  * Phase 49, Step 10.

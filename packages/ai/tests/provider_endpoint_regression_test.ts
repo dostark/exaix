@@ -1,7 +1,9 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module ProviderEndpointRegressionTest
- * @path tests/ai/provider_endpoint_regression_test.ts
+ * @path packages/ai/tests/provider_endpoint_regression_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Regression tests for LLM provider endpoints, ensuring stable
  * delivery of prompts for Gemini, OpenAI, and Anthropic backends.
  */

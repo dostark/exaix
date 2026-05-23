@@ -1,6 +1,7 @@
 /**
  * @module AnthropicPackageConstants
  * @path packages/ai-anthropic/src/constants.ts
+ * @related-files []
  * @description Anthropic-specific defaults and provider metadata owned by @exaix/ai-anthropic.
  * @architectural-layer AI
  */

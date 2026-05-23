@@ -1,9 +1,9 @@
 /**
  * @module SharedMemoryBankSchema
- * @path src/shared/schemas/memory_bank.ts
+ * @path packages/schemas/src/memory_bank.ts
  * @description Defines shared Zod validation schemas for Memory Bank data structures.
  * @architectural-layer Shared
- * @related-files ["src/services/memory/memory_bank.ts", "packages/schemas/src/plan_schema.ts"]
+ * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/schemas/src/plan_schema.ts"]
  */
 
 import { z } from "zod";

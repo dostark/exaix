@@ -1,6 +1,8 @@
 /**
  * @module RequestServiceTest
- * @path tests/services/request/request_service_test.ts
+ * @path packages/request/tests/request_service_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Unit tests for the core RequestService (src/services/request.ts).
  */
 

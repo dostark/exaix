@@ -3,7 +3,7 @@
  * @path packages/ai-anthropic/src/anthropic_provider.ts
  * @description Anthropic Claude provider implementation owned by the @exaix/ai-anthropic package.
  * @architectural-layer AI
- * @related-files [packages/ai-anthropic/src/anthropic_factory.ts, packages/ai/src/providers/anthropic_provider.ts]
+ * @related-files [packages/ai-anthropic/src/anthropic_factory.ts, packages/ai-anthropic/src/anthropic_provider.ts]
  */
 
 import {

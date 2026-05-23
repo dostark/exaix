@@ -1,6 +1,8 @@
 /**
  * @module ParsingPackageFrontmatterTest
  * @path packages/core/tests/parsing/frontmatter_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies @exaix/parsing frontmatter parsing behavior, including validation and activity logging.
  */
 import { assertEquals, assertThrows } from "@std/assert";

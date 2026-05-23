@@ -6,9 +6,9 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts";
-import { MemoryBankAdapter } from "../../../src/services/adapters/memory_bank_adapter.ts";
-import { MemoryExtractorAdapter } from "../../../src/services/adapters/memory_extractor_adapter.ts";
+import { ConfigAdapter } from "../../../apps/common/adapters/config_adapter.ts";
+import { MemoryBankAdapter } from "../../../apps/common/adapters/memory_bank_adapter.ts";
+import { MemoryExtractorAdapter } from "../../../apps/common/adapters/memory_extractor_adapter.ts";
 import { ConfigService } from "@exaix/core/config";
 import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";

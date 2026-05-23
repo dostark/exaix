@@ -7,7 +7,7 @@
 
 import { assert, assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
-import { FileWatcher } from "../../../src/services/utils/watcher.ts";
+import { FileWatcher } from "../../../apps/daemon/src/watcher.ts";
 import { createMockConfig } from "../../helpers/config.ts";
 import { initTestDbService } from "../../helpers/db.ts";
 import { createWatcherTestContext } from "../../helpers/watcher_test_helper.ts";

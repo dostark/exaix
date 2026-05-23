@@ -131,14 +131,14 @@ tests/
 
 ### Deterministic Source-To-Test Mapping
 
-- `src/services/<domain>/...` → `tests/services/<domain>/...`
-- `src/shared/schemas/...` → `tests/schemas/...`
-- `src/shared/...` → `tests/shared/...`
-- `src/flows/...` → `tests/flows/...`
+- `packages/*/src/services/<domain>/...` → `tests/services/<domain>/...`
+- `packages/schemas/src/...` → `tests/schemas/...`
+- `packages/core/src/shared/...` → `tests/shared/...`
+- `packages/flow/src/...` → `tests/flows/...`
 - `apps/exactl/src/...` → `apps/exactl/tests/...`
-- `src/ai/...` → `tests/ai/...`
-- `src/mcp/...` → `tests/mcp/...`
-- `src/errors/...` → `tests/errors/...`
+- `packages/ai/src/...` → `tests/ai/...`
+- `packages/mcp/src/...` → `tests/mcp/...`
+- `packages/core/src/errors/...` → `tests/errors/...`
 - `scripts/...` → `tests/scripts/...`
 
 ### 2. Follow Naming Conventions
@@ -212,7 +212,7 @@ Deno.test("MyService: handles edge case", async () => {
 // tests/types/my_feature_type_test.ts
 // This file has NO runtime tests - it's for compile-time verification only
 
-import type { MyInterface } from "../../src/my_module.ts";
+import type { MyInterface } from "@exaix/core";
 
 // This must compile successfully
 const _valid: MyInterface = {

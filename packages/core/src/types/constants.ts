@@ -1,6 +1,6 @@
 /**
  * @module SharedConstants
- * @path src/shared/constants.ts
+ * @path packages/core/src/types/constants.ts
  * @description Centralized registry of system-wide constants shared between Core and TUI.
  * @architectural-layer Shared
  * @related-files ["packages/core/src/types/enums.ts", "packages/schemas/src/config.ts"]

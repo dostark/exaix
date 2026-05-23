@@ -2,6 +2,8 @@
 /**
  * @module CLIBaseTest
  * @path packages/cli/tests/base_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies pure BaseCommand utilities (frontmatter, timestamps, truncation,
  * user identity) without requiring runtime context (no daemon, no filesystem, no database).
  */

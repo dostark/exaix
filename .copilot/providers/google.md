@@ -29,7 +29,7 @@ If the current `.copilot/` instructions are insufficient for the task, patch the
 
 ### TDD Workflow (Global View)
 
-"You are an SDET for Exaix. Analyze the entire `src/` and `tests/` structure to ensure new tests match existing patterns. Propose 3-5 failing tests with explicit assertions, covering happy paths and edge cases."
+"You are an SDET for Exaix. Analyze the entire `packages/`, `apps/`, and `tests/` structure to ensure new tests match existing patterns. Propose 3-5 failing tests with explicit assertions, covering happy paths and edge cases."
 
 ### Refactoring (Systemic Impact)
 
@@ -41,7 +41,7 @@ Canonical prompt (short):
 Examples
 
 - Example prompt: "Using the full provided context, identify all modules that use `initTestDbService()` and refactor them to use the new `DatabaseService` singleton pattern."
-- Example prompt: "Perform a security audit of the entire `src/services/` directory, looking specifically for direct file system access that bypasses `PathResolver`."
+- Example prompt: "Perform a security audit of the entire `packages/` directory, looking specifically for direct file system access that bypasses `PathResolver`."
 
 Do / Don't
 
@@ -67,7 +67,7 @@ of [TASK] and propose a minimal, high-integrity implementation plan."
 
 Examples:
 
-- "Review all services in `src/services/`. Design a global error reporting pattern and show how 2 representative services implement it."
+- "Review all services in `packages/`. Design a global error reporting pattern and show how 2 representative services implement it."
 - "Check the entire Implementation Plan and all current source files. Identify modules missing tests for Step 10.7."
 
 ### TDD Workflow (Gemini)

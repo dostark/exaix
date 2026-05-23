@@ -3,7 +3,7 @@
  * @path packages/ai-google/src/google_provider.ts
  * @description Google Gemini provider implementation owned by the @exaix/ai-google package.
  * @architectural-layer AI
- * @related-files [packages/ai-google/src/google_factory.ts, packages/ai/src/providers/google_provider.ts]
+ * @related-files [packages/ai-google/src/google_factory.ts, packages/ai-google/src/google_provider.ts]
  */
 
 import {

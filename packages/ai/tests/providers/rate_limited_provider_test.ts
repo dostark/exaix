@@ -1,6 +1,8 @@
 /**
  * @module RateLimitedProviderTest
- * @path tests/ai/rate_limited_provider_test.ts
+ * @path packages/ai/tests/providers/rate_limited_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the RateLimitedProvider wrapper, ensuring strict adherence to API quotas
  * (RPM/TPM), token usage estimation, and graceful queuing of overrun requests.
  */

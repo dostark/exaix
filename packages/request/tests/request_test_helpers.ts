@@ -1,6 +1,8 @@
 /**
  * @module RequestTestHelpers
- * @path tests/services/request/request_test_helpers.ts
+ * @path packages/request/tests/request_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Common utilities and factory functions for Request migration and processor tests.
  */
 

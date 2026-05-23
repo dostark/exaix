@@ -466,7 +466,7 @@ const rules: Rule[] = [
     name: "package-entrypoint-root-src-reexport",
     regex: /from\s+['"](?:src\/|(\.\.\/)+src\/)/,
     message:
-      "Package entrypoints must not re-export entities directly from repo 'src/*' paths. Use package-local public exports instead.",
+      "Package entrypoints must not re-export entities directly from repo retired 'src/*' paths. Use package-local public exports instead.",
     severity: "error" as const,
     pathFilter: (path: string) =>
       path.startsWith("packages/") && (path.endsWith("/mod.ts") || path.endsWith("/index.ts")),
@@ -479,7 +479,7 @@ const rules: Rule[] = [
     // recommended solution, not a violation)
     regex: /^(?!\s*type\s+).*"\w+"\s*\|\s*"\w+"/,
     message:
-      "Avoid magic string unions (e.g., '\"a\" | \"b\"'). Define a TypeScript 'enum' in src/enums.ts or use a shared named union type instead.",
+      "Avoid magic string unions (e.g., '\"a\" | \"b\"'). Define a TypeScript 'enum' in packages/core/src/types/enums.ts or use a shared named union type instead.",
     severity: "error" as const,
     pathFilter: (path: string) => !path.includes("/tests/") && !path.endsWith(".test.ts") && !path.endsWith("_test.ts"),
   },
@@ -699,7 +699,7 @@ async function checkFile(path: string) {
             namedMatch[1].replace(/}.*/, "").split(",").forEach((n) => {
               const parts = n.trim().split(/\s+as\s+/);
               const name = parts.pop()?.trim();
-              const isCompatShim = path.endsWith("/src/parsers/markdown.ts");
+              const isCompatShim = path.endsWith("/packages/core/src/parsing/markdown.ts");
               if (!isCompatShim && parts.length > 0 && /^I[A-Z]/.test(parts[0].trim())) {
                 console.log(
                   `ERROR [no-interface-rename-on-import] ${path}:${idx + 1} – Renaming interface '${
@@ -747,7 +747,7 @@ async function checkFile(path: string) {
               console.log(
                 `ERROR [package-boundary] ${relativePath}:${
                   idx + 1
-                } – ${label} must not import from the root src/ directory: '${importPath}'. Use @exaix/ package aliases instead.`,
+                } – ${label} must not import from the retired root src/ directory: '${importPath}'. Use @exaix/ package aliases instead.`,
               );
               errorCount++;
             }
@@ -777,21 +777,6 @@ async function checkFile(path: string) {
       const importMatch = line.match(/from\s+["']([^"']+)["']/) || line.match(/^\s*import\s+["']([^"']+)["']/);
       const importPath = importMatch?.[1];
       if (importPath) {
-        // Barrel files in src/ must not re-export from packages or other src/ paths
-        if (
-          /^\s*export\b/.test(line) &&
-          (relativePath.endsWith("/mod.ts") || relativePath.endsWith("/index.ts")) &&
-          relativePath.startsWith("src/") &&
-          importPath.startsWith("@exaix/")
-        ) {
-          console.log(
-            `ERROR [src-barrel-re-export] ${relativePath}:${
-              idx + 1
-            } – src/ barrel files must not re-export from packages. Import '${importPath}' directly in consumer files instead of through a src/ barrel.`,
-          );
-          errorCount++;
-        }
-
         const normalizedImport = resolveRepoImportPath(relativePath, importPath);
         if (normalizedImport) {
           if (/^\s*export\b/.test(line) && isPackageRootEntrypoint(relativePath)) {
@@ -1163,13 +1148,17 @@ async function checkFile(path: string) {
       }
       if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+services\/(?!adapters\/|tui_service_factory\.ts)/)) {
         console.log(
-          `ERROR [tui-boundary-services] ${path}:${idx + 1} – TUI modules must not import from 'src/services/'.`,
+          `ERROR [tui-boundary-services] ${path}:${
+            idx + 1
+          } – TUI modules must not import from retired 'src/services/' (now 'packages/core/src/services/').`,
         );
         errorCount++;
       }
       if (line.match(/import\b.*?\bfrom\s+["'](?:\.\.\/)+config\//)) {
         console.log(
-          `ERROR [tui-boundary-config] ${path}:${idx + 1} – TUI modules must not import from 'src/config/'.`,
+          `ERROR [tui-boundary-config] ${path}:${
+            idx + 1
+          } – TUI modules must not import from retired 'src/config/' (now 'packages/core/src/config/').`,
         );
         errorCount++;
       }
@@ -1178,7 +1167,9 @@ async function checkFile(path: string) {
         const dotCount = (helperMatch[1].match(/\.\.\//g) || []).length;
         if (dotCount > tuiDepth) {
           console.log(
-            `ERROR [tui-boundary-helpers] ${path}:${idx + 1} – TUI modules must not import from 'src/helpers/'.`,
+            `ERROR [tui-boundary-helpers] ${path}:${
+              idx + 1
+            } – TUI modules must not import from retired 'src/helpers/' (now 'packages/tui/src/helpers/').`,
           );
           errorCount++;
         }
@@ -1203,7 +1194,7 @@ async function checkFile(path: string) {
         console.log(
           `ERROR [cli-boundary-services] ${path}:${
             idx + 1
-          } – CLI command/handler/formatter/builder modules must not import from 'src/services/' except 'src/services/adapters/'.`,
+          } – CLI command/handler/formatter/builder modules must not import from retired 'src/services/' (now 'packages/core/src/services/') except retired 'src/services/adapters/' (now 'packages/core/src/services/adapters/').`,
         );
         errorCount++;
       }
@@ -1212,7 +1203,7 @@ async function checkFile(path: string) {
         console.log(
           `ERROR [cli-boundary-config] ${path}:${
             idx + 1
-          } – CLI command/handler/formatter/builder modules must not import from 'src/config/service.ts'.`,
+          } – CLI command/handler/formatter/builder modules must not import from retired 'src/config/service.ts' (now 'packages/core/src/config/service.ts').`,
         );
         errorCount++;
       }

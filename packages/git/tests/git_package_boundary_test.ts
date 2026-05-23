@@ -1,6 +1,8 @@
 /**
  * @module GitPackageBoundaryTest
  * @path packages/git/tests/git_package_boundary_test.ts
+ * @related-files []
+ * @architectural-layer Services
  * @description Verifies the git package remains the canonical ownership surface for git runtime files.
  */
 

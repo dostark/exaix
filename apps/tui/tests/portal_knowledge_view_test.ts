@@ -1,6 +1,7 @@
 /**
  * @module PortalKnowledgeViewTest
  * @path apps/tui/tests/portal_knowledge_view_test.ts
+ * @architectural-layer TUI
  * @description Tests for portal knowledge rendering functions in PortalManagerTuiSession:
  * displays architecture overview, key files, conventions, dependencies, and
  * the no-analysis fallback message. Also verifies the 'a' keybinding triggers

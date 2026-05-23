@@ -1,9 +1,9 @@
 /**
  * @module AiCommon
- * @path src/ai/providers/common.ts
+ * @path packages/ai/src/providers/common.ts
  * @description Common error classes, retry logic, and result interfaces shared across LLM providers.
  * @architectural-layer AI
- * @related-files [src/ai/providers/base_provider.ts, src/ai/provider_common_utils.ts]
+ * @related-files [packages/ai/src/providers/base_provider.ts, packages/ai/src/provider_common_utils.ts]
  */
 
 /**

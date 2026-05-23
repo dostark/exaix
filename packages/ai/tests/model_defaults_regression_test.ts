@@ -1,6 +1,8 @@
 /**
  * @module ModelDefaultsRegressionTest
  * @path packages/ai/tests/model_defaults_regression_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Regression tests for LLM provider defaults, ensuring that latest
  * production models (GPT, Claude, Gemini) are correctly mapped as system defaults.
  */

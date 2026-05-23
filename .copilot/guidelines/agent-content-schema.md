@@ -362,7 +362,7 @@ Choose the appropriate template based on your agent type:
 
 ## Zod Validation
 
-All JSON responses are validated against `PlanSchema` from `src/schemas/plan_schema.ts`:
+All JSON responses are validated against `PlanSchema` from `packages/schemas/src/plan_schema.ts`:
 
 ```typescript
 import { PlanSchema } from "../schemas/plan_schema.ts";
@@ -453,9 +453,9 @@ When migrating from markdown to JSON format:
 
 ## Reference
 
-- **Schema Implementation**: `src/schemas/plan_schema.ts`
+- **Schema Implementation**: `packages/schemas/src/plan_schema.ts`
 - **Zod Validation**: `PlanSchema.parse(jsonContent)`
-- **Tool Definitions**: `src/enums.ts` (McpToolName)
+- **Tool Definitions**: `packages/core/src/types/enums.ts` (McpToolName)
 - **Migration Guide**: `.copilot/planning/phase-31-agent-blueprint-json-migration.md`
 
 ## Canonical Prompt (Short)

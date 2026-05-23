@@ -1,6 +1,8 @@
 /**
  * @module ConsoleUtilsTest
  * @path apps/exactl/tests/helpers/console_utils.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies CLI console utilities, ensuring correct ANSI color mapping,
  * progress bar synchronization, and multi-line message wrapping.
  */

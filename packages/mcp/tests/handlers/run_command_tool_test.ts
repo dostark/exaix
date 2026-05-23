@@ -1,6 +1,8 @@
 /**
  * @module RunCommandToolTest
  * @path packages/mcp/tests/handlers/run_command_tool_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Unit tests for the RunCommandTool MCP tool.
  */
 import { assertEquals } from "@std/assert";

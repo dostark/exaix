@@ -5,11 +5,11 @@
  * and component lifecycle management. Handles configuration loading, database connection,
  * and signal handling for graceful shutdown.
  * @architectural-layer Application
- * @related-files ["packages/execution/src/execution_loop.ts", "../../src/services/utils/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
+ * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
-import { FileWatcher } from "../../src/services/utils/watcher.ts";
+import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
@@ -23,7 +23,7 @@ import {
   MemoryExtractorService,
 } from "@exaix/memory";
 import { NotificationService } from "@exaix/core/notification";
-import { MemoryBankAdapter } from "../../src/services/adapters/memory_bank_adapter.ts";
+import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -34,7 +34,7 @@ import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
-import { bootstrapProviderRegistry } from "../../src/ai/registry_bootstrap.ts";
+import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 
 if (import.meta.main) {
   // Simple argument handling for the compiled binary
@@ -110,7 +110,7 @@ if (import.meta.main) {
       }) as LogMetadata,
     );
 
-    await logger.info("config.loaded", "exa.config.toml", {
+    await logger.info("config.loaded", "", {
       checksum: checksum.slice(0, 8),
       root: config.system.root,
       log_level: config.system.log_level,
@@ -267,7 +267,7 @@ if (import.meta.main) {
     );
 
     // Dynamic Config Reloading (Task: Investigate missing portal logs)
-    // Watch for changes to exa.config.toml to reload config and log changes
+    // Watch for changes to  to reload config and log changes
     const configWatcher = new FileWatcher(
       config,
       createConfigReloadHandler(configService, logger),

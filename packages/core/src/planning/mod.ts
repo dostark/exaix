@@ -1,6 +1,8 @@
 /**
  * @module PlanningModule
  * @path packages/core/src/planning/mod.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Planning services for @exaix/core.
  */
 

@@ -1,9 +1,9 @@
 /**
  * @module ProviderSelector
- * @path src/ai/provider_selector.ts
+ * @path packages/ai/src/provider_selector.ts
  * @description Intelligent provider selection strategy that chooses the optimal LLM provider based on cost, complexity, budget, and health.
  * @architectural-layer AI
- * @related-files [src/ai/provider_registry.ts]
+ * @related-files [packages/ai/src/provider_registry.ts]
  */
 
 import type { IProviderMetadata, ProviderRegistry } from "./provider_registry.ts";

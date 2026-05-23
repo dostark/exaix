@@ -1,6 +1,8 @@
 /**
  * @module MonitorViewTest
  * @path apps/tui/tests/monitor_view_test.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Tests the MonitorView TUI component, ensuring correct ANSI color mapping for logs,
  * resilient rendering of high-volume activity streams, and status bar interactivity.
  */

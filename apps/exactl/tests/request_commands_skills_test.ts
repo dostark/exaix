@@ -1,6 +1,8 @@
 /**
  * @module RequestCommandsSkillsTest
  * @path apps/exactl/tests/request_commands_skills_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the CLI implementation of dynamic skills injection during request creation,
  * ensuring additional capabilities are correctly persisted in the request frontmatter.
  */

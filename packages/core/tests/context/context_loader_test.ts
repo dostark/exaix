@@ -1,6 +1,8 @@
 /**
  * @module ContextLoaderTest
  * @path packages/core/tests/context/context_loader_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies the core context assembly logic, ensuring that relevant files,
  * memory, and portal data are correctly injected into the agent prompt.
  */

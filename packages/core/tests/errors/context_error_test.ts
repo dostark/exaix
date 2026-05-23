@@ -1,6 +1,8 @@
 /**
  * @module ContextErrorTest
  * @path packages/core/tests/errors/context_error_test.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Verifies 'ContextError', ensuring stable capture of execution
  * metadata and preservation of underlying cause traces.
  */

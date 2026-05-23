@@ -1,6 +1,8 @@
 /**
  * @module LazyProviderTest
- * @path tests/ai/lazy_provider_test.ts
+ * @path packages/ai/tests/providers/lazy_provider_test.ts
+ * @related-files []
+ * @architectural-layer AI
  * @description Verifies the LazyProvider wrapper, ensuring that heavy provider backends
  * are only initialized upon first use to optimize startup performance.
  */

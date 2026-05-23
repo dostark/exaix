@@ -1,8 +1,10 @@
 /**
  * @module AIConstants
- * @path src/ai/constants.ts
+ * @path packages/ai/src/constants.ts
+ * @related-files []
  * @description AI provider defaults, retry settings, and metadata used by the AI layer.
  * @architectural-layer AI
+ * @ungrounded
  */
 
 import { MockStrategy, ProviderCostTier, ProviderType } from "@exaix/core";

@@ -3,6 +3,7 @@
  * @path packages/tui/src/base/tui_session_base.ts
  * @description Shared TUI session utilities, base classes, and state management patterns used across TUI views.
  * @architectural-layer TUI
+ * @ungrounded
  * @related-files ["packages/tui/src/base/base_tree_view.ts"]
  */
 

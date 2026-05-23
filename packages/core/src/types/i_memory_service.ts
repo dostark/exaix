@@ -3,7 +3,7 @@
  * @path packages/core/src/types/i_memory_service.ts
  * @description Formal service interface for High-level Memory operations consumed by the TUI.
  * @architectural-layer Shared
- * @related-files [src/services/adapters/memory_adapter.ts, src/shared/schemas/memory_bank.ts]
+ * @related-files [apps/common/adapters/memory_adapter.ts, packages/schemas/src/memory_bank.ts]
  */
 
 import type {

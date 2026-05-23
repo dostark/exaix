@@ -1,6 +1,8 @@
 /**
  * @module PlanCommandsTest
  * @path apps/exactl/tests/plan_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Unit and integration tests for CLI plan operations, verifying plan listing,
  * detailed diff visualization, approval workflows, and status synchronization with the Workspace.
  */

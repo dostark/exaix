@@ -1,6 +1,8 @@
 /**
  * @module VendoredTextUtils
  * @path packages/core/src/skills/text_utils.ts
+ * @related-files []
+ * @architectural-layer Core
  * @description Minimal vendored text utilities for skill keyword extraction.
  */
 

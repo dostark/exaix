@@ -1,6 +1,8 @@
 /**
  * @module SymbolExtractorTest
- * @path tests/services/portal_knowledge/symbol_extractor_test.ts
+ * @path packages/portal/knowledge/tests/symbol_extractor_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Tests for the SymbolExtractor (Strategy 6): runs deno doc --json
  * on detected entrypoints to produce an ISymbolEntry[]. Mock IDocCommandRunner
  * is used to avoid real subprocess calls in tests.

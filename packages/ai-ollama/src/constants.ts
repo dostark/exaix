@@ -1,6 +1,7 @@
 /**
  * @module OllamaPackageConstants
  * @path packages/ai-ollama/src/constants.ts
+ * @related-files []
  * @description Ollama- and Llama-specific defaults and provider metadata owned by @exaix/ai-ollama.
  * @architectural-layer AI
  */

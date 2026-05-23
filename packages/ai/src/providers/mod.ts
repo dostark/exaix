@@ -1,6 +1,9 @@
 /**
  * @module ProvidersBarrel
  * @path packages/ai/src/providers/mod.ts
+ * @related-files []
+ * @architectural-layer AI
+ * @ungrounded
  * @description Barrel re-export for all AI provider implementations and shared provider contracts.
  */
 export * from "./common.ts";

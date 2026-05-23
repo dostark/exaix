@@ -1,6 +1,9 @@
 /**
  * @module FlowNamespaceServiceContractTest
- * @path packages/flow-storage/tests/flow_namespace_service_contract_test.ts
+ * @path packages/flow/tests/flow_namespace_service_contract_test.ts
+ * @related-files []
+ * @architectural-layer Flow
+ * @description TODO: Add description
  */
 
 import { assertEquals, assertRejects } from "@std/assert";

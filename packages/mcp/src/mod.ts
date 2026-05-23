@@ -1,6 +1,9 @@
 /**
  * @module McpPackageSourceBarrel
  * @path packages/mcp/src/mod.ts
+ * @ungrounded
+ * @related-files []
+ * @architectural-layer MCP
  * @description Barrel export for internal MCP source modules.
  */
 

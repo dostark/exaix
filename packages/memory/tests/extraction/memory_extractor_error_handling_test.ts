@@ -1,6 +1,8 @@
 /**
  * @module MemoryExtractorErrorHandlingTest
  * @path packages/memory/tests/extraction/memory_extractor_error_handling_test.ts
+ * @related-files []
+ * @architectural-layer Memory
  * @description Verifies the resilience of the MemoryExtractorService, ensuring that failures
  * in peripheral activity logging do not disrupt the core agent execution loop.
  */

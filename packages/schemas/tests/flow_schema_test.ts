@@ -1,6 +1,8 @@
 /**
  * @module FlowSchemaTest
- * @path tests/schemas/flow_schema_test.ts
+ * @path packages/schemas/tests/flow_schema_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Verifies the Zod schemas for agentic workflows, ensuring strict
  * validation of steps, inputs, and output formats.
  */

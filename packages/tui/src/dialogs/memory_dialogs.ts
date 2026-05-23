@@ -1,6 +1,8 @@
 /**
  * @module MemoryDialogs
  * @path packages/tui/src/dialogs/memory_dialogs.ts
+ * @related-files []
+ * @architectural-layer TUI
  * @description Package-owned TUI dialogs for approving, rejecting, adding, and promoting memory learnings.
  */
 

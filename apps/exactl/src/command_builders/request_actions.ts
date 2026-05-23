@@ -3,6 +3,7 @@
  * @path apps/exactl/src/command_builders/request_actions.ts
  * @description Provides builders and helper functions for defining request-related CLI actions and subcommands.
  * @architectural-layer CLI
+ * @ungrounded
  * @related-files [apps/exactl/src/exactl.ts, "apps/exactl/src/commands/request_commands.ts"]
  */
 

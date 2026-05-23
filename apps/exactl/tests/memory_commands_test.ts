@@ -1,6 +1,8 @@
 /**
  * @module MemoryCommandsTest
  * @path apps/exactl/tests/memory_commands_test.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Tests for CLI memory introspection, validating project/global memory listing,
  * JSON format exports, and pattern/decision retrieval across different memory scopes.
  */

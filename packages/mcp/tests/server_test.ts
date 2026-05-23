@@ -1,6 +1,8 @@
 /**
  * @module MCPServerTest
  * @path packages/mcp/tests/server_test.ts
+ * @related-files []
+ * @architectural-layer MCP
  * @description Suite for the Exaix Model Context Protocol (MCP) server, verifying
  * initialization routines, transport layer integrity (Stdio/SSE), and core session management.
  */

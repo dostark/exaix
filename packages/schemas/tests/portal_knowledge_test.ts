@@ -1,6 +1,8 @@
 /**
  * @module PortalKnowledgeSchemaTest
- * @path tests/schemas/portal_knowledge_test.ts
+ * @path packages/schemas/tests/portal_knowledge_test.ts
+ * @related-files []
+ * @architectural-layer Schemas
  * @description Tests for the IPortalKnowledge Zod schema and inferred types,
  * ensuring robust validation of portal codebase knowledge output.
  */

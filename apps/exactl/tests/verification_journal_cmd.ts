@@ -1,6 +1,8 @@
 /**
  * @module JournalVerificationTest
  * @path apps/exactl/tests/verification_journal_cmd.ts
+ * @related-files []
+ * @architectural-layer CLI
  * @description Verifies the journal verification command, ensuring correct aggregation
  * and validation of past activities recorded in the persistent journal.
  */

@@ -31,7 +31,7 @@ Canonical prompt (short):
 checklist, classify all findings, and write remediation steps."
 
 Examples
-- "#security src/services/vault_service.ts — new encrypted storage service"
+- "#security packages/core/src/vault_service.ts — new encrypted storage service"
 - "#security — audit all changes in the current PR for security gaps"
 
 Do / Don't

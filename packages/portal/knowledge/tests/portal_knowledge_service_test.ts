@@ -1,6 +1,8 @@
 /**
  * @module PortalKnowledgeServiceTest
- * @path tests/services/portal_knowledge/portal_knowledge_service_test.ts
+ * @path packages/portal/knowledge/tests/portal_knowledge_service_test.ts
+ * @related-files []
+ * @architectural-layer Portal
  * @description Integration tests for PortalKnowledgeService: the orchestrator
  * that combines all 6 analysis strategies (DirectoryAnalyzer, ConfigParser,
  * KeyFileIdentifier, PatternDetector, ArchitectureInferrer, SymbolExtractor)

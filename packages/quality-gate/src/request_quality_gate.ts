@@ -6,7 +6,7 @@
  * gate pipeline, delegating to HeuristicAssessor, LlmQualityAssessor,
  * and RequestEnricherLlm based on configuration and score thresholds.
  * @architectural-layer Domain
- * @related-files [packages/quality-gate/src/mod.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
+ * @related-files [packages/quality-gate/mod.ts, "packages/core/src/types/i_request_quality_gate_service.ts"]
  */
 
 import type { IModelProvider } from "@exaix/ai/types.ts";
