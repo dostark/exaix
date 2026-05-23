@@ -12,7 +12,7 @@ import { createStubDb } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
-import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
+import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 
 const AGENT_ID_YAML = "yaml-agent";

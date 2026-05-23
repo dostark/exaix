@@ -4,13 +4,13 @@
  * @description Factory for creating service instances used by the TUI dashboard.
  * This module bridges the core services with the TUI interface layer.
  * @architectural-layer Services
- * @related-files [src/tui/dashboard/view_registry.ts, src/cli/commands/dashboard_commands.ts]
+ * @related-files [src/tui/dashboard/view_registry.ts, apps/exactl/src/commands/dashboard_commands.ts]
  */
 
 import { join } from "@std/path";
-import { PlanCommands } from "../../cli/commands/plan_commands.ts";
-import { RequestCommands } from "../../cli/commands/request_commands.ts";
-import { DaemonCommands } from "../../cli/commands/daemon_commands.ts";
+import { PlanCommands } from "../../../apps/exactl/src/commands/plan_commands.ts";
+import { RequestCommands } from "../../../apps/exactl/src/commands/request_commands.ts";
+import { DaemonCommands } from "../../../apps/exactl/src/commands/daemon_commands.ts";
 import { PortalAdapter } from "../adapters/portal_adapter.ts";
 import { PlanAdapter } from "../adapters/plan_adapter.ts";
 import { RequestAdapter } from "../adapters/request_adapter.ts";

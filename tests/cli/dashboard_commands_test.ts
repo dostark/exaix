@@ -6,7 +6,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { DashboardCommands } from "../../src/cli/commands/dashboard_commands.ts";
+import { DashboardCommands } from "../../apps/exactl/src/commands/dashboard_commands.ts";
 import type { launchTuiDashboard } from "../../src/tui/tui_dashboard.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 

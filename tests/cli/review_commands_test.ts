@@ -11,7 +11,7 @@ import { ReviewStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { ReviewCommands } from "../../src/cli/commands/review_commands.ts";
+import { ReviewCommands } from "../../apps/exactl/src/commands/review_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ArtifactRegistry } from "@exaix/core/artifact";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";

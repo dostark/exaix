@@ -21,7 +21,7 @@ import { join } from "@std/path";
 import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";
-import { MemoryCommands } from "../../src/cli/commands/memory_commands.ts";
+import { MemoryCommands } from "../../apps/exactl/src/commands/memory_commands.ts";
 import { MemoryBankAdapter, MemoryEmbeddingAdapter, MemoryExtractorAdapter } from "../../src/services/adapters/mod.ts";
 import { initTestDbService } from "../helpers/db.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";

@@ -25,12 +25,15 @@ import {
 import { MemoryStatus } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs, withTestMod } from "./helpers/test_utils.ts";
-import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
+import type { FlowCommands } from "../../apps/exactl/src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import type { PlanStatusType } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
-import type { BlueprintCreateOptions, BlueprintRemoveOptions } from "../../src/cli/commands/blueprint_commands.ts";
+import type {
+  BlueprintCreateOptions,
+  BlueprintRemoveOptions,
+} from "../../apps/exactl/src/commands/blueprint_commands.ts";
 
 /*
   Note: This test file exercises the top-level CLI parsing and command
@@ -530,7 +533,7 @@ Deno.test("dashboard show calls dashboardCommands.show", async () => {
 if (Deno.env.get("RUN_EXACTL_TEST")) {
   Deno.test("exactl: --version prints version and exits", async () => {
     const cmd = new Deno.Command(Deno.execPath(), {
-      args: ["run", "--no-check", "--quiet", "src/cli/exactl.ts", "--version"],
+      args: ["run", "--no-check", "--quiet", "apps/exactl/src/exactl.ts", "--version"],
       stdout: "piped",
       stderr: "piped",
     });
@@ -732,7 +735,7 @@ Deno.test("blueprint create successful prints created message", async () => {
   });
 });
 
-// ---- Additional focused tests to improve coverage for src/cli/exactl.ts ----
+// ---- Additional focused tests to improve coverage for apps/exactl/src/exactl.ts ----
 
 Deno.test("exactl: --version prints version and exits (in-process)", async () => {
   await withTestMod(async (mod, _ctx) => {

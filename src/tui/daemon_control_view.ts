@@ -3,7 +3,7 @@
  * @path src/tui/daemon_control_view.ts
  * @description Interactive TUI view for managing the Exaix daemon, featuring status visualization, log tailing, and configuration viewing.
  * @architectural-layer TUI
- * @related-files ["@exaix/core/types", "src/cli/commands/daemon_commands.ts"]
+ * @related-files ["@exaix/core/types", "apps/exactl/src/commands/daemon_commands.ts"]
  */
 
 import { TuiSessionBase } from "@exaix/tui/base/tui_session_base.ts";
@@ -180,7 +180,7 @@ export const DAEMON_KEY_BINDINGS = new DaemonKeyBindings().KEY_BINDINGS;
  * CLI-backed implementation of DaemonService.
  */
 export class CLIDaemonService implements IDaemonService {
-  #cliScript = new URL("../../src/cli/exactl.ts", import.meta.url).pathname;
+  #cliScript = new URL("../../apps/exactl/src/exactl.ts", import.meta.url).pathname;
 
   async start(): Promise<void> {
     await this.#runDaemonCmd([CLI_CMD_START]);

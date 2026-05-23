@@ -27,7 +27,7 @@ import { RequestStatus } from "@exaix/core/status";
 import { ReviewStatus } from "@exaix/core/status";
 import { GitService } from "@exaix/git";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
-import type { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
+import type { FlowCommands } from "../../apps/exactl/src/commands/flow_commands.ts";
 import type { IRequestOptions } from "@exaix/core/types";
 import type { RequestStatusType } from "@exaix/core/status";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";

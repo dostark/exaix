@@ -3,7 +3,7 @@
  * @path src/shared/schemas/blueprint.ts
  * @description Defines Zod validation schemas for agent blueprint files, including frontmatter and creation results.
  * @architectural-layer Schemas
- * @related-files [src/cli/blueprint_commands.ts]
+ * @related-files [apps/exactl/src/blueprint_commands.ts]
  */
 
 import { z } from "zod";

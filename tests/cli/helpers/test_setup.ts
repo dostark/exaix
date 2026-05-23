@@ -7,7 +7,7 @@
 
 import { join } from "@std/path";
 import { ConfigService } from "@exaix/core/config";
-import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
+import { PortalCommands } from "../../../apps/exactl/src/commands/portal_commands.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { ContextCardAdapter } from "../../../src/services/adapters/context_card_adapter.ts";
 import { RequestService } from "@exaix/request";

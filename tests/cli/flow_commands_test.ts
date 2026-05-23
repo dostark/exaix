@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { FlowCommands } from "../../src/cli/commands/flow_commands.ts";
+import { FlowCommands } from "../../apps/exactl/src/commands/flow_commands.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
 import { createCliTestContext } from "./helpers/test_setup.ts";

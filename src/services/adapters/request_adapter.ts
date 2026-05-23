@@ -3,7 +3,7 @@
  * @path src/services/adapters/request_adapter.ts
  * @description Module for RequestAdapter.
  * @architectural-layer Services
- * @related-files [src/cli/commands/request_commands.ts, "packages/core/src/types/i_request_service.ts"]
+ * @related-files [apps/exactl/src/commands/request_commands.ts, "packages/core/src/types/i_request_service.ts"]
  */
 
 import type { IRequestService } from "@exaix/core/types";

@@ -13,8 +13,8 @@ import {
   handleRequestCreate,
   handleRequestShow,
   type IRequestActionContext,
-} from "../../src/cli/command_builders/request_actions.ts";
-import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
+} from "../../apps/exactl/src/command_builders/request_actions.ts";
+import { RequestCommands } from "../../apps/exactl/src/commands/request_commands.ts";
 import { EventLogger, type IEventLoggerConfig } from "@exaix/core/logger";
 
 import { LogLevel } from "@exaix/core";

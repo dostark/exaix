@@ -10,7 +10,7 @@ import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { DaemonCommands } from "../../src/cli/commands/daemon_commands.ts";
+import { DaemonCommands } from "../../apps/exactl/src/commands/daemon_commands.ts";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";

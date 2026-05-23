@@ -6,7 +6,7 @@
 
 import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import { ToolCommands } from "../../src/cli/commands/tool_commands.ts";
+import { ToolCommands } from "../../apps/exactl/src/commands/tool_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { captureConsoleOutput } from "./helpers/console_utils.ts";
 import { createStubGit } from "../helpers/test_helpers.ts";

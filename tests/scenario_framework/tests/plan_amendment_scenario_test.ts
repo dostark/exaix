@@ -27,7 +27,7 @@ Deno.test({
       // Pre-test cleanup: ensure no leftover daemon interferes
       try {
         const stopDaemon = new Deno.Command(Deno.execPath(), {
-          args: ["run", "-A", join(Deno.cwd(), "src/cli/exactl.ts"), "daemon", "stop"],
+          args: ["run", "-A", join(Deno.cwd(), "apps/exactl/src/exactl.ts"), "daemon", "stop"],
           stdout: "null",
           stderr: "null",
         });

@@ -4,12 +4,12 @@
  * @description Tests for the `analyze` and `knowledge` CLI subcommands added to
  * PortalCommands (Step 15 of Phase 46). Covers analysis trigger, mode flag,
  * force re-analysis, formatted/JSON knowledge output, and graceful error handling.
- * @related-files [src/cli/commands/portal_commands.ts, packages/portal/knowledge/knowledge_persistence.ts]
+ * @related-files [apps/exactl/src/commands/portal_commands.ts, packages/portal/knowledge/knowledge_persistence.ts]
  */
 
 import { assert, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
+import { PortalCommands } from "../../../apps/exactl/src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { ExaPathDefaults, PortalAnalysisMode, SystemCommand } from "@exaix/core";

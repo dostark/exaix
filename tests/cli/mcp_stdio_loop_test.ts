@@ -7,7 +7,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { type IMcpStdioServer, runMcpStdioLoop } from "../../src/cli/commands/mcp_commands.ts";
+import { type IMcpStdioServer, runMcpStdioLoop } from "../../apps/exactl/src/commands/mcp_commands.ts";
 
 function streamFromText(text: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();

@@ -8,7 +8,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { initTestDbService } from "../helpers/db.ts";
 // JournalCommands module not found - skipping test
-// import { JournalCommands } from "../../src/cli/commands/journal.ts";
+// import { JournalCommands } from "../../apps/exactl/src/commands/journal.ts";
 
 // Mock console.log to capture output
 let output: string[] = [];

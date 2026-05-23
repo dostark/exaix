@@ -11,7 +11,7 @@ import { RequestStatus } from "@exaix/core/status";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
-import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
+import { RequestCommands } from "../../apps/exactl/src/commands/request_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { createMockConfig } from "../helpers/config.ts";

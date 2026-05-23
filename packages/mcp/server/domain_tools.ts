@@ -3,7 +3,7 @@
  * @path packages/mcp/server/domain_tools.ts
  * @description Exposes domain-specific Exaix operations (requests, plans, journal) as strictly typed MCP tools.
  * @architectural-layer MCP
- * @related-files [packages/mcp/server/server.ts, "src/cli/commands/request_commands.ts", "src/cli/commands/plan_commands.ts"]
+ * @related-files [packages/mcp/server/server.ts, "apps/exactl/src/commands/request_commands.ts", "apps/exactl/src/commands/plan_commands.ts"]
  */
 import {
   ApprovePlanToolArgsSchema,
@@ -13,8 +13,8 @@ import {
   QueryJournalToolArgsSchema,
 } from "@exaix/schemas/mcp.ts";
 import { ToolHandler } from "./tool_handler.ts";
-import { RequestCommands } from "../../../src/cli/commands/request_commands.ts";
-import { PlanCommands } from "../../../src/cli/commands/plan_commands.ts";
+import { RequestCommands } from "../../../apps/exactl/src/commands/request_commands.ts";
+import { PlanCommands } from "../../../apps/exactl/src/commands/plan_commands.ts";
 import { type JSONValue, MCP_CONTENT_TYPE_STRUCTURED_DATA, RequestSource, ToolErrorCode } from "@exaix/core";
 import { PlanStatus, type PlanStatusType } from "@exaix/core/status";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";

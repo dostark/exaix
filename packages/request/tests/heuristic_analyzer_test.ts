@@ -27,10 +27,10 @@ Deno.test("[HeuristicAnalyzer] detects file references in request text", () => {
 });
 
 Deno.test("[HeuristicAnalyzer] detects unquoted file paths with extensions", () => {
-  const text = "Update src/cli/main.ts to add new command and write tests/cli/main_test.ts.";
+  const text = "Update apps/exactl/src/main.ts to add new command and write tests/cli/main_test.ts.";
   const result = analyzeHeuristic(text);
   assertExists(result.referencedFiles);
-  assertEquals(result.referencedFiles!.some((f: string) => f.includes("src/cli/main.ts")), true);
+  assertEquals(result.referencedFiles!.some((f: string) => f.includes("apps/exactl/src/main.ts")), true);
 });
 
 Deno.test("[HeuristicAnalyzer] returns empty referencedFiles when none present", () => {

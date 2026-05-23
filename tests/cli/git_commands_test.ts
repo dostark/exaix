@@ -9,7 +9,7 @@ import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes
 import { MemoryOperation } from "@exaix/core";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { GitCommands } from "../../src/cli/commands/git_commands.ts";
+import { GitCommands } from "../../apps/exactl/src/commands/git_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 

@@ -4,7 +4,7 @@
  * @description Adapter for clarification session persistence, exposing
  * loadClarification and saveClarification for CLI layer consumption.
  * @architectural-layer Services
- * @related-files ["packages/quality-gate/src/clarification_persistence.ts", "src/cli/handlers/request_clarify_handler.ts"]
+ * @related-files ["packages/quality-gate/src/clarification_persistence.ts", "apps/exactl/src/handlers/request_clarify_handler.ts"]
  */
 
 import { loadClarification, saveClarification } from "@exaix/quality-gate";

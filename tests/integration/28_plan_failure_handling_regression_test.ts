@@ -10,7 +10,7 @@ import { TestEnvironment } from "./helpers/test_environment.ts";
 import { join } from "@std/path";
 import { getWorkspaceRejectedDir } from "../helpers/paths_helper.ts";
 import { ExecutionStatus } from "@exaix/core";
-import { RequestListHandler } from "../../src/cli/handlers/request_list_handler.ts";
+import { RequestListHandler } from "../../apps/exactl/src/handlers/request_list_handler.ts";
 
 Deno.test("Integration: Plan Failure Handling - moves to Rejected and updates Request", async () => {
   const env = await TestEnvironment.create({ initGit: true });

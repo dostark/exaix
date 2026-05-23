@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { __test_command } from "../../src/cli/exactl.ts";
+import { __test_command } from "../../apps/exactl/src/exactl.ts";
 
 Deno.test("[regression] CLI wiring: tool confirmation commands are registered", () => {
   const toolCmd = __test_command.getCommand("tool");

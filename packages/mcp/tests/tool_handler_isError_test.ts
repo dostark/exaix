@@ -19,8 +19,8 @@ import { GitStatusTool } from "@exaix/mcp/server";
 import { GitCreateBranchTool } from "@exaix/mcp/server";
 import { GitCommitTool } from "@exaix/mcp/server";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "@exaix/mcp/server";
-import { PlanCommands } from "../../../src/cli/commands/plan_commands.ts";
-import { RequestCommands } from "../../../src/cli/commands/request_commands.ts";
+import { PlanCommands } from "../../../apps/exactl/src/commands/plan_commands.ts";
+import { RequestCommands } from "../../../apps/exactl/src/commands/request_commands.ts";
 import { createStubContext, createStubDb } from "@exaix/testing";
 import {
   createBaseToolContext,

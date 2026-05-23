@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { join } from "@std/path";
-import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
+import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import type { ICommandContext } from "@exaix/cli/base.ts";
 import { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";

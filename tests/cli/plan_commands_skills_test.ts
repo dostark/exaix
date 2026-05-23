@@ -9,7 +9,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { parse as parseYaml } from "@std/yaml";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { PlanStatus } from "@exaix/core/status";
 

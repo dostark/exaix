@@ -13,7 +13,7 @@ import { createStubConfig } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { LogLevel } from "@exaix/core";
 

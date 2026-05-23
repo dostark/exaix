@@ -6,7 +6,7 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import { MemoryCommands } from "../../src/cli/commands/memory_commands.ts";
+import { MemoryCommands } from "../../apps/exactl/src/commands/memory_commands.ts";
 import { MemoryBankService } from "@exaix/memory";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";

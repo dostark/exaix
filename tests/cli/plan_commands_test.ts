@@ -12,7 +12,7 @@ import { RequestStatus } from "@exaix/core/status";
 
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import {

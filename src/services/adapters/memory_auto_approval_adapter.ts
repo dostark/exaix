@@ -3,7 +3,7 @@
  * @path src/services/adapters/memory_auto_approval_adapter.ts
  * @description Adapter for MemoryAutoApprovalService to expose CLI-safe methods.
  * @architectural-layer Services/Adapters
- * @related-files [packages/memory/src/approval/memory_auto_approval_service.ts, src/cli/commands/memory_commands.ts]
+ * @related-files [packages/memory/src/approval/memory_auto_approval_service.ts, apps/exactl/src/commands/memory_commands.ts]
  */
 
 import type { Config } from "@exaix/schemas/config.ts";

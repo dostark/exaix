@@ -5,9 +5,9 @@
  * @description Test utilities for CLI command testing.
  */
 
-import type { ExaCtlTestContext } from "../../../src/cli/exactl.ts";
-import type * as ExaCtlModule from "../../../src/cli/exactl.ts";
-import * as exactlModule from "../../../src/cli/exactl.ts";
+import type { ExaCtlTestContext } from "../../../apps/exactl/src/exactl.ts";
+import type * as ExaCtlModule from "../../../apps/exactl/src/exactl.ts";
+import * as exactlModule from "../../../apps/exactl/src/exactl.ts";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import {
@@ -19,9 +19,9 @@ import {
 // Static import avoids a runtime dynamic import statement inside a function,
 // which is prohibited by the test style checker.
 // style-exclude:REQUIRED_FOR_TEST - This is a type-only typeof import for deferred CLI module typing, not an actual runtime dynamic import.
-const exactlModulePromise: Promise<typeof import("../../../src/cli/exactl.ts")> = Promise.resolve(exactlModule);
+const exactlModulePromise: Promise<typeof import("../../../apps/exactl/src/exactl.ts")> = Promise.resolve(exactlModule);
 
-function loadExaCtlModule(): Promise<typeof import("../../../src/cli/exactl.ts")> {
+function loadExaCtlModule(): Promise<typeof import("../../../apps/exactl/src/exactl.ts")> {
   return exactlModulePromise;
 }
 

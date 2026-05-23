@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { __test_initializeServices } from "../../src/cli/exactl.ts";
+import { __test_initializeServices } from "../../apps/exactl/src/exactl.ts";
 
 /**
  * Regression test for "exactl journal crash when config missing"

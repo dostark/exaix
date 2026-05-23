@@ -22,7 +22,7 @@ import { FlowValidatorAdapter } from "../../../src/services/adapters/flow_valida
 import type { FlowValidatorImpl } from "@exaix/flow-storage";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { DaemonServiceAdapter } from "../../../src/services/adapters/daemon_adapter.ts";
-import type { DaemonCommands } from "../../../src/cli/commands/daemon_commands.ts";
+import type { DaemonCommands } from "../../../apps/exactl/src/commands/daemon_commands.ts";
 import type { ConfigAdapter as _ConfigAdapter } from "../../../src/services/adapters/config_adapter.ts";
 import type { ConfigService as _ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";

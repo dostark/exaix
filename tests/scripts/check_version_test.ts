@@ -136,8 +136,8 @@ describe("classifyChanges", () => {
     assert(requiresMinor);
   });
 
-  it("does NOT trigger minor on src/cli/exactl.ts", () => {
-    const { requiresMinor } = classifyChanges(["src/cli/exactl.ts"]);
+  it("does NOT trigger minor on apps/exactl/src/exactl.ts", () => {
+    const { requiresMinor } = classifyChanges(["apps/exactl/src/exactl.ts"]);
     assertEquals(requiresMinor, false);
   });
 
@@ -147,7 +147,7 @@ describe("classifyChanges", () => {
 
   it("triggers minor if at least one file matches the trigger list", () => {
     const { requiresMinor } = classifyChanges([
-      "src/cli/exactl.ts",
+      "apps/exactl/src/exactl.ts",
       "migrations/002_add_table.sql",
     ]);
     assert(requiresMinor);

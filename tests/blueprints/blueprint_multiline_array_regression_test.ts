@@ -10,7 +10,7 @@ import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
 import { ExaPathDefaults } from "@exaix/core";
-import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
+import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
 
 const AGENT_ID = "multiline-test";

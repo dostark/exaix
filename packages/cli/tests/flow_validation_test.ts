@@ -4,7 +4,7 @@
  * @description Tests for CLI flow validation of dynamic step execution mode,
  * ensuring proper errors for write tools and warnings for missing configurations.
  * @architectural-layer Tests
- * @related-files [src/cli/commands/flow_commands.ts, "packages/core/src/types/constants.ts"]
+ * @related-files [apps/exactl/src/commands/flow_commands.ts, "packages/core/src/types/constants.ts"]
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";

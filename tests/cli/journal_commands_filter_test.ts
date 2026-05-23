@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { JournalCommands } from "../../src/cli/commands/journal_commands.ts";
+import { JournalCommands } from "../../apps/exactl/src/commands/journal_commands.ts";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { UIOutputFormat } from "@exaix/tui";
 import { initTestDbService } from "../helpers/db.ts";

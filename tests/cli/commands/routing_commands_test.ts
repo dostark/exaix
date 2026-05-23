@@ -7,7 +7,7 @@
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { createCliTestContext } from "../helpers/test_setup.ts";
-import { RoutingCommands } from "../../../src/cli/commands/routing_commands.ts";
+import { RoutingCommands } from "../../../apps/exactl/src/commands/routing_commands.ts";
 import { readFixtureTextSync } from "../../helpers/fixtures.ts";
 
 Deno.test("RoutingCommands: validatePolicy rejects invalid routing policy YAML", async () => {

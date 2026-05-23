@@ -6,7 +6,7 @@
  * Validates traceId against z.string().uuid() before subscribing.
  * @architectural-layer API
  * @dependencies [packages/core/src/observability/event_bus_service.ts, src/shared/schemas/streaming_event.ts]
- * @related-files [packages/core/src/logger/event_logger.ts, src/cli/commands/watch.ts]
+ * @related-files [packages/core/src/logger/event_logger.ts, apps/exactl/src/commands/watch.ts]
  */
 
 import type { IEventBusService } from "@exaix/core/observability";

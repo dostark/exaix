@@ -11,10 +11,10 @@ import { createStubConfig, createStubContext, createStubDb } from "../helpers/te
 import { createMockConfig } from "../helpers/config.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { ExaPathDefaults } from "@exaix/core";
-import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
-import { RequestCommands } from "../../src/cli/commands/request_commands.ts";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
-import { __test_initializeServices } from "../../src/cli/exactl.ts";
+import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
+import { RequestCommands } from "../../apps/exactl/src/commands/request_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
+import { __test_initializeServices } from "../../apps/exactl/src/exactl.ts";
 
 const TEST_ACTION = "test.action";
 const TEST_WARNING = "test.warning";

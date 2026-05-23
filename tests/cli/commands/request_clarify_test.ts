@@ -3,12 +3,12 @@
  * @path tests/cli/commands/request_clarify_test.ts
  * @description Tests for the `exactl request clarify` CLI command (Step 13 of Phase 47).
  * Covers displaying pending questions, submitting answers, forcing proceed, and cancelling.
- * @related-files [src/cli/commands/request_commands.ts, src/cli/handlers/request_clarify_handler.ts]
+ * @related-files [apps/exactl/src/commands/request_commands.ts, apps/exactl/src/handlers/request_clarify_handler.ts]
  */
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { RequestCommands } from "../../../src/cli/commands/request_commands.ts";
+import { RequestCommands } from "../../../apps/exactl/src/commands/request_commands.ts";
 import {
   ClarificationQuestionCategory,
   ClarificationSessionStatus,

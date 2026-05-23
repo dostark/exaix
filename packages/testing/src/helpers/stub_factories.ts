@@ -4,7 +4,7 @@
  * @description Shared factory functions for creating stub implementations of
  * core services used in CLI initialization and testing.
  * @architectural-layer CLI
- * @related-files [src/cli/init.ts, "src/services/utils/tui_service_factory.ts", "tests/helpers/test_helpers.ts"]
+ * @related-files [apps/exactl/src/init.ts, "src/services/utils/tui_service_factory.ts", "tests/helpers/test_helpers.ts"]
  */
 
 import type { IGitService } from "@exaix/core/types";

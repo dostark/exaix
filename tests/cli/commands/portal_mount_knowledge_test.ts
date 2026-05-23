@@ -9,7 +9,7 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
-import { PortalCommands } from "../../../src/cli/commands/portal_commands.ts";
+import { PortalCommands } from "../../../apps/exactl/src/commands/portal_commands.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { ExaPathDefaults, PortalAnalysisMode } from "@exaix/core";

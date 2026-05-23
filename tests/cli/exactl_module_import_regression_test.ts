@@ -1,7 +1,7 @@
 /**
  * @module ExaCtlModuleImportRegressionTest
  * @path tests/cli/exactl_module_import_regression_test.ts
- * @description Regression test ensuring src/cli/exactl.ts can be imported as a module
+ * @description Regression test ensuring apps/exactl/src/exactl.ts can be imported as a module
  * without auto-running the CLI parser and terminating the test process.
  */
 
@@ -41,7 +41,7 @@ memoryGlobal = ${JSON.stringify(ExaPathDefaults.memoryGlobal)}
 
 Deno.test("[regression] importing exactl module does not auto-run CLI entrypoint", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "exactl-import-" });
-  const cliModuleUrl = toFileUrl(join(Deno.cwd(), "src/cli/exactl.ts")).href;
+  const cliModuleUrl = toFileUrl(join(Deno.cwd(), "apps/exactl/src/exactl.ts")).href;
   const env = { ...Deno.env.toObject() };
   delete env.EXA_TEST_MODE;
   delete env.EXA_TEST_CLI_MODE;

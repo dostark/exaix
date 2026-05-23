@@ -19,7 +19,7 @@ import {
 } from "../../src/tui/plan_reviewer_view.ts";
 import { createPlanReviewerSession, sampleBasicPlans, samplePendingPlans, samplePlansWithStatuses } from "./helpers.ts";
 import { PlanAdapter } from "../../src/services/adapters/plan_adapter.ts";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import type { IPlanDetails } from "@exaix/core/types";
 import type { JSONObject, JSONValue } from "@exaix/core/types";
 import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";

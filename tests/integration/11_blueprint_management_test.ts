@@ -9,7 +9,7 @@ import { assert, assertEquals, assertExists, assertRejects, assertStringIncludes
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { BlueprintCommands } from "../../src/cli/commands/blueprint_commands.ts";
+import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import { readFixtureTextSync } from "../helpers/fixtures.ts";
 import type { IBlueprintMetadata } from "@exaix/schemas/blueprint.ts";
 

@@ -2,13 +2,13 @@
  * @module ExoctlPlanAmendmentTest
  * @path tests/cli/exoctl_plan_amendment_test.ts
  * @description CLI tests for plan amendment management commands (list, show, approve, reject).
- * @related-files [src/cli/commands/plan_commands.ts, @exaix/core/planning]
+ * @related-files [apps/exactl/src/commands/plan_commands.ts, @exaix/core/planning]
  */
 
 import { assertEquals } from "@std/assert";
 import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import {

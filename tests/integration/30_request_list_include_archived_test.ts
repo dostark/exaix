@@ -7,7 +7,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { RequestListHandler } from "../../src/cli/handlers/request_list_handler.ts";
+import { RequestListHandler } from "../../apps/exactl/src/handlers/request_list_handler.ts";
 
 Deno.test("Integration: Request List - includes archived when requested", async () => {
   const env = await TestEnvironment.create({ initGit: true });

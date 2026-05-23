@@ -21,8 +21,8 @@ import {
   handlePlanRevise,
   handlePlanShow,
   type IPlanActionContext,
-} from "../../src/cli/command_builders/plan_actions.ts";
-import { PlanCommands } from "../../src/cli/commands/plan_commands.ts";
+} from "../../apps/exactl/src/command_builders/plan_actions.ts";
+import { PlanCommands } from "../../apps/exactl/src/commands/plan_commands.ts";
 import { stub } from "@std/testing/mock";
 import { EventLogger } from "@exaix/core/logger";
 import { LogLevel } from "@exaix/core";
