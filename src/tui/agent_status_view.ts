@@ -395,7 +395,7 @@ export class AgentStatusTuiSession extends TuiSessionBase {
   private readonly agentView: AgentStatusView;
   private state: IAgentViewState;
   private localSpinnerState: SpinnerState;
-  private autoRefreshTimer: number | null = null;
+  private autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
   private agents: IAgentStatusItem[] = [];
 
   constructor(agentView: AgentStatusView, useColors = true) {

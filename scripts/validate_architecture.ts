@@ -16,6 +16,7 @@ const SRC_DIR = join(ROOT, "src");
 const TESTS_DIR = join(ROOT, "tests");
 const PACKAGES_DIR = join(ROOT, "packages");
 const SCRIPTS_DIR = join(ROOT, "scripts");
+const APPS_DIR = join(ROOT, "apps");
 const COPILOT_DIR = join(ROOT, ".copilot");
 const ARCH_DOC = join(ROOT, "ARCHITECTURE.md");
 
@@ -72,6 +73,14 @@ async function validate() {
   // 1.3 Gather all .ts files in scripts/
   if (await Deno.stat(SCRIPTS_DIR).then((s) => s.isDirectory).catch(() => false)) {
     for await (const entry of walk(SCRIPTS_DIR, { includeDirs: false })) {
+      if (!entry.path.endsWith(".ts")) continue;
+      packageFiles.add(relative(ROOT, entry.path));
+    }
+  }
+
+  // 1.3b Gather all .ts files in apps/
+  if (await Deno.stat(APPS_DIR).then((s) => s.isDirectory).catch(() => false)) {
+    for await (const entry of walk(APPS_DIR, { includeDirs: false })) {
       if (!entry.path.endsWith(".ts")) continue;
       packageFiles.add(relative(ROOT, entry.path));
     }

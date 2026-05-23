@@ -31,8 +31,8 @@ export interface ILogStreamSource {
 export class LogStreamManager {
   private buffer: IStructuredLogEntry[] = [];
   private subscribers: Array<(entries: IStructuredLogEntry[]) => void> = [];
-  private updateTimer?: number;
-  private cleanupTimer?: number;
+  private updateTimer?: ReturnType<typeof setInterval>;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
   private unsubscribeSource?: () => void;
   private state: ILogStreamState;
 
@@ -134,7 +134,7 @@ export function createLogStreamManager(service: ILogStreamSource): LogStreamMana
 
 export class WebSocketLogStream {
   private ws?: WebSocket;
-  private reconnectTimer?: number;
+  private reconnectTimer?: ReturnType<typeof setTimeout>;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
@@ -198,7 +198,7 @@ export class WebSocketLogStream {
 }
 
 export class PollingLogStream {
-  private timer?: number;
+  private timer?: ReturnType<typeof setInterval>;
   private lastTimestamp?: string;
 
   constructor(

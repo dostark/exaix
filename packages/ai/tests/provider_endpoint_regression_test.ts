@@ -44,7 +44,7 @@ Deno.test({
       model: DEFAULT_GOOGLE_MODEL, // gemini-flash-latest
     });
 
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(
@@ -82,7 +82,7 @@ Deno.test({
       model: DEFAULT_OPENAI_MODEL,
     });
 
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(
@@ -120,7 +120,7 @@ Deno.test({
       model: DEFAULT_ANTHROPIC_MODEL,
     });
 
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(

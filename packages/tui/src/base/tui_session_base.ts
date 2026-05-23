@@ -70,7 +70,7 @@ export class TuiSessionBase {
   protected useColors = true;
   protected viewState: ITuiViewState;
   protected refreshConfig: IRefreshConfig | null = null;
-  protected refreshTimer: number | null = null;
+  protected refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(useColors = true) {
     this.useColors = useColors;

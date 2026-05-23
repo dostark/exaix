@@ -324,7 +324,7 @@ export class DaemonControlTuiSession extends TuiSessionBase {
   private readonly daemonView: DaemonControlView;
   private state: IDaemonViewState;
   private localSpinnerState: SpinnerState;
-  private autoRefreshTimer: number | null = null;
+  private autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(daemonView: DaemonControlView, useColors = true) {
     super(useColors);

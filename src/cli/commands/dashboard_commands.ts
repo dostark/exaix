@@ -3,7 +3,7 @@
  * @path src/cli/commands/dashboard_commands.ts
  * @description Provides CLI commands for launching the Terminal User Interface (TUI) dashboard.
  * @architectural-layer CLI
- * @related-files [src/tui/tui_dashboard.ts, "src/main.ts"]
+ * @related-files [src/tui/tui_dashboard.ts, "apps/daemon/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

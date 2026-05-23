@@ -3,7 +3,7 @@
  * @path src/cli/commands/archive_commands.ts
  * @description Provides CLI commands for interacting with the execution archive, including listing, showing details, and searching by date or agent.
  * @architectural-layer CLI
- * @related-files [@exaix/core/artifact, "src/main.ts"]
+ * @related-files [@exaix/core/artifact, "apps/daemon/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

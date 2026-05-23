@@ -3,7 +3,7 @@
  * @path src/cli/commands/flow_commands.ts
  * @description Provides CLI commands for flow management and execution, including list, show, run, plan, history, and validation.
  * @architectural-layer CLI
- * @related-files [packages/flow-storage/mod.ts, "src/main.ts"]
+ * @related-files [packages/flow-storage/mod.ts, "apps/daemon/main.ts"]
  */
 
 import { Table } from "@cliffy/table";

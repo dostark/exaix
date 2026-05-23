@@ -4,7 +4,7 @@
  * @description Orchestrates system-wide health checks, including database connectivity,
  * LLM provider availability, disk space, and memory usage.
  * @architectural-layer Services
- * @related-files [src/main.ts, "packages/storage-sqlite/src/database_service.ts"]
+ * @related-files ["apps/daemon/main.ts", "packages/storage-sqlite/src/database_service.ts"]
  */
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -131,7 +131,7 @@ export class HealthCheckService {
   }
 
   private async runWithTimeout<T>(op: () => Promise<T>, errorMessage: string): Promise<T> {
-    let timer: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const p = op();
       const timeoutP = new Promise<never>((_, reject) => {

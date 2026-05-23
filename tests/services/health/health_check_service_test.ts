@@ -98,7 +98,7 @@ Deno.test("HealthCheckService: handles check timeouts", async () => {
   const config = createMockConfig("/tmp");
   config.health.check_timeout_ms = 50; // Short timeout for test
   const service = new HealthCheckService(DEFAULT_MCP_VERSION, config);
-  let timeoutId: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   const slowCheck: IHealthCheck = {
     name: "slow",

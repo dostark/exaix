@@ -3,7 +3,7 @@
  * @path src/cli/commands/journal_commands.ts
  * @description Provides CLI access to the IActivity Journal, allowing users to query, filter, and display system activities and agent logs.
  * @architectural-layer CLI
- * @related-files ["packages/storage-sqlite/src/database_service.ts", "src/main.ts"]
+ * @related-files ["packages/storage-sqlite/src/database_service.ts", "apps/daemon/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";

@@ -269,7 +269,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   private logService: ILogService;
   private structuredLogger: ILogger;
   private unsubscribeRealTime?: () => void;
-  private refreshInterval?: number;
+  private refreshInterval?: ReturnType<typeof setInterval>;
   private pendingDialogType: "search" | "filter-level" | "export" | null = null;
 
   constructor(
@@ -1043,7 +1043,7 @@ export class StructuredLogViewer extends BaseTreeView<IStructuredLogEntry> {
   }
 
   /** Exposed for testing to check refresh interval */
-  getRefreshInterval(): number | undefined {
+  getRefreshInterval(): ReturnType<typeof setInterval> | undefined {
     return this.refreshInterval;
   }
 

@@ -40,7 +40,8 @@ export class SQLiteConnection implements IDatabaseConnection {
 export class DatabaseConnectionPool {
   private pool: IDatabaseConnection[] = [];
   private available: IDatabaseConnection[] = [];
-  private waiting: Array<{ resolve: (conn: IDatabaseConnection) => void; timeoutId: number }> = [];
+  private waiting: Array<{ resolve: (conn: IDatabaseConnection) => void; timeoutId: ReturnType<typeof setTimeout> }> =
+    [];
   private destroyed = false;
 
   constructor(

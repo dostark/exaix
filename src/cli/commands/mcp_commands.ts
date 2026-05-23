@@ -3,7 +3,7 @@
  * @path src/cli/commands/mcp_commands.ts
  * @description Provides CLI commands for starting and managing the Model Context Protocol (MCP) server, supporting both stdio and SSE transports.
  * @architectural-layer CLI
- * @related-files [packages/mcp/server/server.ts, "src/main.ts"]
+ * @related-files [packages/mcp/server/server.ts, "apps/daemon/main.ts"]
  */
 
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
