@@ -37,6 +37,12 @@ const ROOT_TESTS_PREFIX = "tests/";
 const PACKAGE_TEST_PATTERN = /^packages\/[^/]+(?:\/[^/]+)?\/tests\//;
 const APP_TEST_PATTERN = /^apps\/[^/]+\/tests\//;
 const DIRECT_SERVICE_TEST_PATTERN = /^tests\/services\/[^/]+_test\.(ts|tsx|js|jsx)$/;
+const RETIRED_DIR_PATTERNS: RegExp[] = [
+  /^tests\/services\//,
+  /^tests\/tools\//,
+  /^tests\/unit\//,
+  /^tests\/shared\//,
+];
 
 const SKIP_PATH_PATTERNS: RegExp[] = [
   /(^|\/)\.git(\/|$)/,
@@ -92,6 +98,15 @@ export function getTestPlacementIssue(path: string): ITestPlacementIssue | null 
       message: "Test files must live under tests/, packages/<package>/tests/, or apps/<app>/tests/.",
       suggestion: recommendTestDirectoryForSource(normalized) ??
         "Move this file under tests/ or a package/app tests folder.",
+    };
+  }
+
+  if (RETIRED_DIR_PATTERNS.some((p) => p.test(normalized))) {
+    return {
+      path: normalized,
+      message:
+        "The tests/services/, tests/tools/, tests/unit/, and tests/shared/ directories are retired. Place new tests in packages/<name>/tests/, apps/<app>/tests/, or the appropriate tests/ subdirectory.",
+      suggestion: "Move this file under packages/<name>/tests/, apps/<app>/tests/, or a remaining tests/ subdirectory.",
     };
   }
 

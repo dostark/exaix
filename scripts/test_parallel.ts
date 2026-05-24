@@ -23,7 +23,7 @@ export interface IDotReporterState {
 }
 
 const REPO_ROOT = join(fromFileUrl(import.meta.url), "..", "..");
-const SUPPORTED_REPORTERS = ["pretty", "dot"] as const;
+const SUPPORTED_REPORTERS = ["pretty", "dot", "tap"] as const;
 export const DOT_REPORTER_LEGEND = "dot legend: .=passed ,=ignored !=failed";
 
 type TestReporter = typeof SUPPORTED_REPORTERS[number];
@@ -37,8 +37,8 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/18_cli_commands_integration_test.ts",
   "tests/integration/24_portal_e2e_workflow_test.ts",
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",
-  "tests/services/deploy/deploy_workspace_test.ts",
-  "tests/services/agent/agent_executor_test.ts",
+  "apps/daemon/tests/deploy_workspace_test.ts",
+  "packages/execution/tests/agent_executor_test.ts",
   "apps/exactl/tests/review_commands_test.ts",
   "apps/exactl/tests/exactl_all_test.ts",
   "packages/ai/tests/providers/free_providers_test.ts",
@@ -86,7 +86,7 @@ export function resolveReporter(args: string[]): TestReporter {
   return "pretty";
 }
 
-export function buildDenoTestArgs(extraArgs: string[], reporter: TestReporter): string[] {
+export function buildDenoTestArgs(extraArgs: string[], reporter: string): string[] {
   return ["test", "--allow-all", "--reporter", reporter, ...extraArgs];
 }
 
@@ -114,6 +114,82 @@ export function createDotReporterState(wrapWidth = DEFAULT_DOT_WRAP_WIDTH): IDot
     partialLine: "",
     wrapWidth,
   };
+}
+
+// ---------------------------------------------------------------------------
+// TAP reporter support
+// ---------------------------------------------------------------------------
+
+interface ITapFailure {
+  name: string;
+  message: string;
+}
+
+/**
+ * Parse TAP output to count passed/failed/ignored tests.
+ * TAP format: "ok N - testname" or "not ok N - testname"
+ * Last line: "1..N"
+ */
+export function parseTapOutput(output: string, durationSec: number): TestCounts {
+  const clean = stripAnsi(output);
+  const lines = clean.split("\n");
+  let passed = 0;
+  let failed = 0;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("ok ") && !trimmed.startsWith("ok #")) {
+      passed++;
+    } else if (trimmed.startsWith("not ok ")) {
+      failed++;
+    }
+  }
+
+  return { passed, failed, ignored: 0, durationSec };
+}
+
+/**
+ * Extract failure names and messages from TAP output.
+ * TAP failure format:
+ *   not ok N - testname
+ *   ---
+ *   {"message":"error text",...}
+ *   ...
+ */
+export function extractTapFailures(output: string): ITapFailure[] {
+  const clean = stripAnsi(output);
+  const lines = clean.split("\n");
+  const failures: ITapFailure[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith("not ok ")) {
+      const name = trimmed.replace(/^not ok \d+ - /, "").trim();
+      let message = "";
+      // Next line(s) may be a YAML block with {"message":"..."}
+      if (i + 1 < lines.length && lines[i + 1].trim() === "---") {
+        for (let j = i + 2; j < lines.length; j++) {
+          const yamlLine = lines[j].trim();
+          if (yamlLine === "..." || yamlLine.startsWith("ok ") || yamlLine.startsWith("not ok ") || yamlLine.startsWith("1..")) {
+            break;
+          }
+          // Try to parse JSON from YAML block
+          try {
+            const parsed = JSON.parse(yamlLine);
+            if (parsed.message) {
+              // Strip ANSI from error message
+              message = stripAnsi(parsed.message);
+            }
+          } catch {
+            // Not JSON, skip
+          }
+        }
+      }
+      failures.push({ name, message: message || "(no details)" });
+    }
+  }
+
+  return failures;
 }
 
 function takeWrappedSymbolLines(state: IDotReporterState, newlineToken: string): string {
@@ -184,6 +260,32 @@ export function flushDotReporterState(state: IDotReporterState): string {
   return output;
 }
 
+/**
+ * Convert TAP output lines to compact dot-like symbols for terminal display.
+ * - "ok N - name" → "."
+ * - "not ok N - name" → "!"
+ * - "ok N # SKIP name" → ","
+ * - YAML blocks, TAP version, plan lines → suppressed
+ */
+export function compactTapReporterChunk(text: string, state: IDotReporterState): string {
+  const lines = text.split(/\r?\n/);
+  let output = "";
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("not ok ")) {
+      state.pendingDots += "!";
+    } else if (trimmed.startsWith("ok ") && trimmed.includes("#")) {
+      state.pendingDots += ",";
+    } else if (trimmed.startsWith("ok ") && !trimmed.startsWith("ok ---")) {
+      state.pendingDots += ".";
+    }
+  }
+
+  output += takeWrappedSymbolLines(state, "\n");
+  return output;
+}
+
 function validateReporter(value: string): TestReporter {
   if (value === "pretty" || value === "dot") {
     return value;
@@ -197,7 +299,7 @@ function validateReporter(value: string): TestReporter {
 /** Strip ANSI escape codes so the regex can match plain text. */
 function stripAnsi(s: string): string {
   // deno-lint-ignore no-control-regex
-  return s.replace(/\x1b\[[0-9;]*m/g, "");
+  return s.replace(/\u001b\[[0-9;]*m/g, "");
 }
 
 function getTerminalWidth(_dest: typeof Deno.stdout): number {
@@ -273,7 +375,7 @@ async function runAndCapture(
   extraArgs: string[],
   label: string,
   env: Record<string, string>,
-  reporter: TestReporter,
+  reporter: string,
   compactHeader = false,
 ): Promise<TestStats> {
   const header = formatRunHeader(label, compactHeader);
@@ -302,6 +404,7 @@ async function runAndCapture(
     dest: typeof Deno.stdout,
   ) => {
     const dotReporterState = reporter === "dot" ? createDotReporterState(getTerminalWidth(dest)) : undefined;
+    const tapState = reporter === "tap" ? createDotReporterState(getTerminalWidth(dest)) : undefined;
 
     return (
       src
@@ -312,6 +415,12 @@ async function runAndCapture(
               try {
                 if (dotReporterState) {
                   const formatted = compactDotReporterChunk(new TextDecoder().decode(chunk), dotReporterState);
+                  if (formatted.length > 0) {
+                    dest.writeSync(new TextEncoder().encode(formatted));
+                  }
+                } else if (tapState) {
+                  const text = new TextDecoder().decode(chunk);
+                  const formatted = compactTapReporterChunk(text, tapState);
                   if (formatted.length > 0) {
                     dest.writeSync(new TextEncoder().encode(formatted));
                   }
@@ -327,6 +436,16 @@ async function runAndCapture(
         .then(() => {
           if (dotReporterState) {
             const flushed = flushDotReporterState(dotReporterState);
+            if (flushed.length > 0) {
+              try {
+                dest.writeSync(new TextEncoder().encode(flushed));
+              } catch {
+                // terminal fd gone — ignore
+              }
+            }
+          }
+          if (tapState) {
+            const flushed = flushDotReporterState(tapState);
             if (flushed.length > 0) {
               try {
                 dest.writeSync(new TextEncoder().encode(flushed));
@@ -353,11 +472,46 @@ async function runAndCapture(
 
   const parsedSummary = parseSummaryLine(allText);
   const durationSec = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-  const counts = reporter === "dot" && parsedSummary.passed === 0 && parsedSummary.failed === 0
-    ? parseDotReporterCounts(allText, durationSec)
-    : parsedSummary;
+  let counts: TestCounts;
+  let failures: ITapFailure[] = [];
 
-  return { label, exitCode: status.code, ...counts };
+  if ((reporter as string) === "tap") {
+    // Parse TAP output for test counts and failure details.
+    const tapResult = parseTapOutput(allText, durationSec);
+    counts = tapResult;
+    failures = extractTapFailures(allText);
+    if (failures.length > 0) {
+      const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
+      let msg = `\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}`;
+      for (const f of failures) {
+        msg += `\n  ${f.name}\n  ${f.message}`;
+      }
+      msg += `\n${"═".repeat(60)}\n`;
+      allFailures.push(msg);
+    }
+  } else {
+    counts = reporter === "dot" && parsedSummary.passed === 0 && parsedSummary.failed === 0
+      ? parseDotReporterCounts(allText, durationSec)
+      : parsedSummary;
+
+    // If there were test failures, collect error details for final display.
+    if (counts.failed > 0) {
+      const clean = stripAnsi(allText);
+      const errorsMatch = clean.match(/\n\s*ERRORS\s*\n([\s\S]*?)(?:\n\s*FAILURES\s|\n\s*═|$)/);
+      if (errorsMatch) {
+        const body = errorsMatch[1].trim();
+        if (body) {
+          const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
+          allFailures.push(`\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}\n${body}\n${"═".repeat(60)}\n`);
+        }
+      } else if (reporter === "dot") {
+        allFailures.push(`(${counts.failed} test(s) failed in "${label}". Use dot legend '!' for location.)\n`);
+      }
+    }
+  }
+
+  const effectiveExitCode = (reporter as string) === "tap" ? (counts.failed > 0 ? 1 : 0) : status.code;
+  return { label, exitCode: effectiveExitCode, ...counts };
 }
 
 // ---------------------------------------------------------------------------
@@ -375,6 +529,9 @@ function formatDur(sec: number): string {
   if (sec <= 0) return "--";
   return sec >= 60 ? `${Math.floor(sec / 60)}m${String(sec % 60).padStart(2, "0")}s` : `${sec}s`;
 }
+
+// Shared accumulator for failure messages displayed at the end.
+const allFailures: string[] = [];
 
 function row(
   label: string,
@@ -408,16 +565,16 @@ export async function main(args: string[]): Promise<number> {
   }
 
   // ---------------------------------------------------------------------------
-  // Batch 1: full test suite in parallel
+  // Batch 1: full test suite in parallel (use TAP reporter for error capture)
   // ---------------------------------------------------------------------------
   const batch1Env: Record<string, string> = { ...Deno.env.toObject(), DENO_JOBS: "8" };
   const batch1IgnoreArg = `--ignore=${SEQUENTIAL_FILES.join(",")}`;
 
   const batch1Stats = await runAndCapture(
-    ["--parallel", batch1IgnoreArg, ...forwardedArgs],
+    ["--parallel", batch1IgnoreArg, "tests/", "packages/", "apps/", ...forwardedArgs],
     "Batch 1 – Parallel suite",
     batch1Env,
-    reporter,
+    "tap" as unknown as TestReporter,
   );
 
   // ---------------------------------------------------------------------------
@@ -497,11 +654,17 @@ export async function main(args: string[]): Promise<number> {
 
   if (anyFailed) {
     console.error("❌  One or more batches failed.\n");
-    return 1;
+  } else {
+    console.log("🎉  All batches passed.\n");
   }
 
-  console.log("🎉  All batches passed.\n");
-  return 0;
+  if (allFailures.length > 0) {
+    for (const msg of allFailures) {
+      console.error(msg);
+    }
+  }
+
+  return anyFailed ? 1 : 0;
 }
 
 if (import.meta.main) {
