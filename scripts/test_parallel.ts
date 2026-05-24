@@ -170,7 +170,10 @@ export function extractTapFailures(output: string): ITapFailure[] {
       if (i + 1 < lines.length && lines[i + 1].trim() === "---") {
         for (let j = i + 2; j < lines.length; j++) {
           const yamlLine = lines[j].trim();
-          if (yamlLine === "..." || yamlLine.startsWith("ok ") || yamlLine.startsWith("not ok ") || yamlLine.startsWith("1..")) {
+          if (
+            yamlLine === "..." || yamlLine.startsWith("ok ") || yamlLine.startsWith("not ok ") ||
+            yamlLine.startsWith("1..")
+          ) {
             break;
           }
           // Try to parse JSON from YAML block
@@ -502,7 +505,11 @@ async function runAndCapture(
         const body = errorsMatch[1].trim();
         if (body) {
           const batchTag = label.startsWith("Batch 1") ? "PARALLEL BATCH" : "SEQUENTIAL BATCH";
-          allFailures.push(`\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}\n${body}\n${"═".repeat(60)}\n`);
+          allFailures.push(
+            `\n${"═".repeat(60)}\n ${batchTag}: FAILURES (${counts.failed} total)\n${"═".repeat(60)}\n${body}\n${
+              "═".repeat(60)
+            }\n`,
+          );
         }
       } else if (reporter === "dot") {
         allFailures.push(`(${counts.failed} test(s) failed in "${label}". Use dot legend '!' for location.)\n`);
@@ -574,7 +581,7 @@ export async function main(args: string[]): Promise<number> {
     ["--parallel", batch1IgnoreArg, "tests/", "packages/", "apps/", ...forwardedArgs],
     "Batch 1 – Parallel suite",
     batch1Env,
-    "tap" as unknown as TestReporter,
+    "tap",
   );
 
   // ---------------------------------------------------------------------------

@@ -15,6 +15,49 @@
 
 import { z } from "zod";
 
+export interface IRetryContext {
+  attempt: number;
+  elapsedMs: number;
+  error: Error;
+  delayMs: number;
+}
+
+export interface IRetryableOperationOptions {
+  baseTemperature?: number;
+  maxRetries?: number;
+  signal?: AbortSignal;
+}
+
+export type RetryAttempt = {
+  attempt: number;
+  error: string;
+  errorType: string;
+  delayMs: number;
+  temperature: number;
+  timestamp: string;
+};
+
+export interface IRetryResult<T> {
+  success: boolean;
+  value?: T;
+  error?: Error;
+  totalAttempts: number;
+  totalTimeMs: number;
+  retryHistory: RetryAttempt[];
+}
+
+export type RetryEventCallback = (context: IRetryContext) => void;
+
+export interface IRetryPolicy {
+  execute<T>(
+    operation: (context: { temperature: number; attempt: number }) => Promise<T>,
+    options?: IRetryableOperationOptions,
+  ): Promise<IRetryResult<T>>;
+  calculateDelay(attempt: number): number;
+  isRetryable(error: Error): boolean;
+  setOnRetry(callback: RetryEventCallback): this;
+}
+
 /** Error types that should trigger a retry. */
 export const RETRYABLE_ERROR_TYPES: string[] = [
   "NetworkError",
@@ -48,80 +91,6 @@ export const RETRYABLE_MESSAGE_PATTERNS: string[] = [
   "service unavailable",
   "gateway timeout",
 ];
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Context passed to retry callbacks
- */
-export interface IRetryContext {
-  /** Current attempt number (1 = first retry, not initial attempt) */
-  attempt: number;
-
-  /** Total elapsed time in milliseconds */
-  elapsedMs: number;
-
-  /** The error that triggered this retry */
-  error: Error;
-
-  /** Calculated delay before this retry */
-  delayMs: number;
-
-  /** Adjusted temperature for this retry */
-  temperature: number;
-}
-
-/**
- * Options for a single operation execution
- */
-export interface IRetryableOperationOptions {
-  /** Base temperature (will be adjusted on retries) */
-  baseTemperature?: number;
-
-  /** Optional: Override max retries for this operation */
-  maxRetries?: number;
-
-  /** Optional: Abort signal for cancellation */
-  signal?: AbortSignal;
-}
-
-/**
- * Result of a retried operation
- */
-export interface IRetryResult<T> {
-  /** Whether the operation eventually succeeded */
-  success: boolean;
-
-  /** The result (if success) */
-  value?: T;
-
-  /** The final error (if failed after all retries) */
-  error?: Error;
-
-  /** Total attempts made (initial + retries) */
-  totalAttempts: number;
-
-  /** Total time spent in milliseconds */
-  totalTimeMs: number;
-
-  /** Details of each retry attempt */
-  retryHistory: RetryAttempt[];
-}
-
-/**
- * Interface for RetryPolicy service
- */
-export interface IRetryPolicy {
-  execute<T>(
-    operation: (context: { temperature: number; attempt: number }) => Promise<T>,
-    options?: IRetryableOperationOptions,
-  ): Promise<IRetryResult<T>>;
-  calculateDelay(attempt: number): number;
-  isRetryable(error: Error): boolean;
-  setOnRetry(callback: RetryEventCallback): this;
-}
 
 // ============================================================================
 // Configuration Schema
@@ -159,38 +128,6 @@ export const RetryPolicyConfigSchema = z.object({
 });
 
 export type IRetryPolicyConfig = z.infer<typeof RetryPolicyConfigSchema>;
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Record of a single retry attempt
- */
-export type RetryAttempt = {
-  /** Attempt number (0 = initial, 1+ = retries) */
-  attempt: number;
-
-  /** Error that occurred */
-  error: string;
-
-  /** Error type/class name */
-  errorType: string;
-
-  /** Delay before this attempt (0 for initial) */
-  delayMs: number;
-
-  /** Temperature used for this attempt */
-  temperature: number;
-
-  /** Timestamp when attempt was made */
-  timestamp: string;
-};
-
-/**
- * Callback for retry events (useful for logging)
- */
-export type RetryEventCallback = (context: IRetryContext) => void;
 
 // ============================================================================
 // RetryPolicy Class

@@ -12,6 +12,7 @@ import { getDefaultPaths } from "@exaix/core/config";
 import { SqliteJournalMode } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { TEST_PORTAL_ALIAS } from "./constants.ts";
 
 /**
  * Creates a mock configuration for testing.
@@ -30,7 +31,7 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
 
   // Create default workspace portal for tests that need it
   const defaultPortals = overrides.portals ?? [{
-    alias: "workspace",
+    alias: TEST_PORTAL_ALIAS,
     target_path: root,
     default_branch: TEST_DEFAULT_BRANCH,
     identities_allowed: ["*"],

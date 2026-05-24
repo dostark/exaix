@@ -21,6 +21,14 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import {
+  TEST_ID,
+  TEST_IDENTITY_ID,
+  TEST_PORTAL_NAME,
+  TEST_PROJECT_NAME,
+  TEST_SAMPLE_PREFIX,
+  TEST_TIMESTAMP,
+} from "../constants.ts";
 
 /**
  * Creates a test setup with MemoryBankService and a pre-created project memory
@@ -35,7 +43,7 @@ export function createTestMemoryBankWithProject(
   return createTestMemoryBankBase(async (service) => {
     // Create project memory
     const projectMemory = createMinimalProjectMemory({
-      portal: "my-app",
+      portal: TEST_PROJECT_NAME,
       overview: "Test project",
       ...projectOverrides,
     });
@@ -61,13 +69,13 @@ export async function createTestMemoryBankWithGlobal(
     if (Object.keys(globalOverrides).length > 0) {
       const defaultLearning = createSampleLearning({
         id: "550e8400-e29b-41d4-a716-446655440000",
-        created_at: "2026-01-04T12:00:00Z",
+        created_at: TEST_TIMESTAMP,
         source: MemoryBankSource.USER,
         scope: MemoryScope.GLOBAL,
         title: "Test IPattern",
         description: "A test pattern for global memory",
         category: LearningCategory.PATTERN,
-        tags: ["test"],
+        tags: [TEST_ID],
         confidence: ConfidenceAssessmentLevel.HIGH,
         status: MemoryStatus.APPROVED,
         ...globalOverrides,
@@ -122,7 +130,7 @@ async function createTestMemoryBankBase(
  */
 export function createMinimalProjectMemory(overrides: Partial<IProjectMemory> = {}): IProjectMemory {
   return {
-    portal: overrides.portal ?? "test-portal",
+    portal: overrides.portal ?? TEST_PORTAL_NAME,
     overview: overrides.overview ?? "Test project overview",
     patterns: overrides.patterns ?? [],
     decisions: overrides.decisions ?? [],
@@ -136,7 +144,7 @@ export function createMinimalProjectMemory(overrides: Partial<IProjectMemory> = 
  */
 export function createSampleProjectMemory(overrides: Partial<IProjectMemory> = {}): IProjectMemory {
   return {
-    portal: overrides.portal ?? "test-portal",
+    portal: overrides.portal ?? TEST_PORTAL_NAME,
     overview: overrides.overview ?? "A comprehensive test project with various memory components",
     patterns: overrides.patterns ?? [
       createSamplePattern(),
@@ -165,8 +173,8 @@ export function createMinimalExecutionMemory(overrides: Partial<IExecutionMemory
     started_at: overrides.started_at ?? "2026-01-04T10:00:00Z",
     completed_at: overrides.completed_at ?? "2026-01-04T10:30:00Z",
     status: overrides.status ?? ExecutionStatus.COMPLETED,
-    portal: overrides.portal ?? "test-portal",
-    identity_id: overrides.identity_id ?? "test-agent",
+    portal: overrides.portal ?? TEST_PORTAL_NAME,
+    identity_id: overrides.identity_id ?? TEST_IDENTITY_ID,
     summary: overrides.summary ?? "Test execution summary",
     context_files: overrides.context_files ?? [],
     context_portals: overrides.context_portals ?? [],
@@ -185,16 +193,16 @@ export function createMinimalExecutionMemory(overrides: Partial<IExecutionMemory
 export function createSampleLearning(overrides: Partial<ILearning> = {}): ILearning {
   return {
     id: overrides.id ?? "learning-123",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     source: overrides.source ?? MemoryBankSource.EXECUTION,
     source_id: overrides.source_id ?? "trace-123",
     scope: overrides.scope ?? MemoryScope.PROJECT,
-    project: overrides.project ?? "test-portal",
+    project: overrides.project ?? TEST_PORTAL_NAME,
     title: overrides.title ?? "Sample ILearning",
     description: overrides.description ?? "A sample learning entry",
 
     category: overrides.category ?? LearningCategory.PATTERN,
-    tags: overrides.tags ?? ["sample"],
+    tags: overrides.tags ?? [TEST_SAMPLE_PREFIX],
     confidence: overrides.confidence ?? ConfidenceAssessmentLevel.MEDIUM,
     references: overrides.references ?? [],
     status: overrides.status ?? MemoryStatus.APPROVED,
@@ -210,7 +218,7 @@ export function createSamplePattern(overrides: Partial<IPattern> = {}): IPattern
     name: overrides.name ?? "Sample IPattern",
     description: overrides.description ?? "A sample pattern",
     examples: overrides.examples ?? [],
-    tags: overrides.tags ?? ["sample"],
+    tags: overrides.tags ?? [TEST_SAMPLE_PREFIX],
     ...overrides,
   };
 }
@@ -224,7 +232,7 @@ export function createSampleDecision(overrides: Partial<IDecision> = {}): IDecis
     decision: overrides.decision ?? "Sample IDecision",
     rationale: overrides.rationale ?? "Sample rationale",
     alternatives: overrides.alternatives ?? ["Option A", "Option B"],
-    tags: overrides.tags ?? ["sample"],
+    tags: overrides.tags ?? [TEST_SAMPLE_PREFIX],
     ...overrides,
   };
 }

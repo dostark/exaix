@@ -751,7 +751,7 @@ async function checkFile(path: string) {
               );
               errorCount++;
             }
-          } else if (normalizedImport.startsWith("tests/")) {
+          } else if (normalizedImport.startsWith("tests/") && !normalizedImport.startsWith("tests/helpers/")) {
             if (isTestFile) {
               console.log(
                 `ERROR [package-boundary] ${relativePath}:${
@@ -760,7 +760,14 @@ async function checkFile(path: string) {
               );
               errorCount++;
             }
-          } else if (normalizedImport.startsWith("packages/") && !normalizedImport.startsWith(`${packageRoot}/`)) {
+          } else if (
+            normalizedImport.startsWith("packages/") &&
+            !normalizedImport.startsWith(`${packageRoot}/`) &&
+            // Allow test-to-test cross-package imports (test helpers)
+            !(isTestFile && normalizedImport.includes("/tests/")) &&
+            // Allow @exaix/testing helpers to import from @exaix/ai test helpers
+            !(packageRoot === "packages/testing" && normalizedImport.startsWith("packages/ai/tests/"))
+          ) {
             const label = isTestFile
               ? `Package tests under '${packageRoot}/tests/'`
               : `Package module '${packageRoot}'`;

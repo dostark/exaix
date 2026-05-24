@@ -16,6 +16,7 @@ import {
   MemoryScope,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import { TEST_AGENT_NAME, TEST_ID, TEST_PROJECT_NAME, TEST_TIMESTAMP } from "../constants.ts";
 
 /**
  * Creates test environment for notification tests
@@ -53,25 +54,25 @@ export function createNotificationTestProposal(
   return {
     id: overrides.id || crypto.randomUUID(),
     // ...
-    created_at: "2026-01-04T12:00:00Z",
+    created_at: TEST_TIMESTAMP,
     operation: MemoryOperation.ADD,
     target_scope: MemoryScope.PROJECT,
-    target_project: "my-app",
+    target_project: TEST_PROJECT_NAME,
     learning: {
       id: crypto.randomUUID(),
-      created_at: "2026-01-04T12:00:00Z",
+      created_at: TEST_TIMESTAMP,
       source: MemoryBankSource.EXECUTION,
       scope: MemoryScope.PROJECT,
-      project: "my-app",
+      project: TEST_PROJECT_NAME,
       title: "Test IPattern",
       description: "A test pattern for notifications",
       category: LearningCategory.PATTERN,
-      tags: ["test"],
+      tags: [TEST_ID],
       confidence: ConfidenceAssessmentLevel.MEDIUM,
       ...overrides.learning,
     },
     reason: "Extracted from execution",
-    identity_id: "senior-coder",
+    identity_id: TEST_AGENT_NAME,
     execution_id: "trace-123",
     status: MemoryStatus.PENDING,
     ...overrides,

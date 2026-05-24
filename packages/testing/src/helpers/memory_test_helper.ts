@@ -21,6 +21,7 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryType } from "@exaix/core";
 import { MemoryReferenceType } from "@exaix/core";
+import { TEST_IDENTITY_ID } from "./constants.ts";
 
 /**
  * Base no-op stub for IMemoryBankService.
@@ -184,7 +185,7 @@ export async function createTestExecution(
 ): Promise<void> {
   const builder = new ExecutionMemoryBuilder(portal, traceId);
 
-  builder.withIdentity(opts.identity || "test-agent");
+  builder.withIdentity(opts.identity || TEST_IDENTITY_ID);
   builder.withSummary(opts.summary || `Test execution for ${portal}`);
   builder.addContextFile("src/main.ts");
   builder.withChanges({

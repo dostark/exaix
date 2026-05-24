@@ -16,7 +16,8 @@ import type { EventLogger, IEventLogger } from "@exaix/core/logger";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
-import { createTestConfig } from "../../../../../packages/ai/tests/helpers/test_config.ts";
+import { createTestConfig } from "@exaix/ai/tests/helpers/test_config.ts";
+import { TEST_AGENT_NAME, TEST_DEFAULT_AGENT, TEST_ID } from "../constants.ts";
 
 type IMockFlowRunner = IFlowRunner & {
   executedFlows: Array<{ flow: IFlow; request: { userPrompt: string; traceId?: string; requestId?: string } }>;
@@ -186,7 +187,7 @@ export function createTestRequestRouter(
     flowValidator,
     logger,
     routingPolicyService,
-    defaultAgent = "default-agent",
+    defaultAgent = TEST_DEFAULT_AGENT,
     blueprintsPath = "/tmp/blueprints",
     config = createTestConfig(),
   }: {
@@ -214,8 +215,8 @@ export function createTestRequestRouter(
         config,
         routingPolicyService,
       });
-      this.mockBlueprints.set("senior-coder", { identityId: "senior-coder", systemPrompt: "Senior Coder" });
-      this.mockBlueprints.set("default-agent", { identityId: "default-agent", systemPrompt: "Default Agent" });
+      this.mockBlueprints.set(TEST_AGENT_NAME, { identityId: TEST_AGENT_NAME, systemPrompt: "Senior Coder" });
+      this.mockBlueprints.set(TEST_DEFAULT_AGENT, { identityId: TEST_DEFAULT_AGENT, systemPrompt: "Default Agent" });
     }
 
     protected override loadBlueprint(identityId: string): Promise<IBlueprint | null> {
@@ -240,7 +241,7 @@ export function sampleRouterRequest(overrides: {
       created: new Date().toISOString(),
       status: "pending",
       priority: "normal",
-      source: "test",
+      source: TEST_ID,
       created_by: "tester",
       ...(overrides.frontmatter ?? {}),
     } as IRequestFrontmatter,
@@ -268,7 +269,7 @@ export function createRouterTestContext(overrides: {
     flowValidator: mockFlowValidator,
     logger: mockLogger,
     routingPolicyService: overrides.routingPolicyService,
-    defaultAgent: overrides.defaultAgent ?? "default-agent",
+    defaultAgent: overrides.defaultAgent ?? TEST_DEFAULT_AGENT,
     blueprintsPath: overrides.blueprintsPath ?? "/tmp/blueprints",
     config: overrides.config,
   });

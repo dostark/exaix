@@ -18,6 +18,14 @@ import { MemoryStatus } from "@exaix/core/status";
 import type { IExecutionMemory, ILearning, IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { MemoryExtractorService } from "@exaix/memory";
 import type { JSONObject } from "@exaix/core/types";
+import {
+  TEST_AGENT_NAME,
+  TEST_ID,
+  TEST_IDENTITY_ID,
+  TEST_PROJECT_NAME,
+  TEST_TIMESTAMP,
+  TEST_TOPIC_LABEL,
+} from "../constants.ts";
 
 export function createSuccessfulExecutionMemory(portal: string, traceId: string): IExecutionMemory {
   return {
@@ -27,7 +35,7 @@ export function createSuccessfulExecutionMemory(portal: string, traceId: string)
     completed_at: "2026-01-04T10:30:00Z",
     status: ExecutionStatus.COMPLETED,
     portal,
-    identity_id: "senior-coder",
+    identity_id: TEST_AGENT_NAME,
     summary:
       "Implemented repository pattern for database access. Created UserRepository with CRUD operations. Added proper error handling with typed exceptions.",
     context_files: ["src/services/user.ts", "src/types/errors.ts"],
@@ -52,7 +60,7 @@ export function createFailedExecutionMemory(portal: string, traceId: string): IE
     completed_at: "2026-01-04T11:15:00Z",
     status: ExecutionStatus.FAILED,
     portal,
-    identity_id: "senior-coder",
+    identity_id: TEST_AGENT_NAME,
     summary: "Failed to implement feature due to missing dependency configuration.",
     context_files: ["src/config.ts"],
     context_portals: [portal],
@@ -73,7 +81,7 @@ export function createFailedExecutionMemory(portal: string, traceId: string): IE
  */
 export async function createTestProposal(
   extractor: MemoryExtractorService,
-  portal: string = "my-app",
+  portal: string = TEST_PROJECT_NAME,
   traceId?: string,
 ): Promise<string | null> {
   // Use a unique trace ID if not provided
@@ -88,7 +96,7 @@ export async function createTestProposal(
     return null;
   }
 
-  return await extractor.createProposal(learnings[0], execution, "senior-coder");
+  return await extractor.createProposal(learnings[0], execution, TEST_AGENT_NAME);
 }
 
 /**
@@ -99,11 +107,11 @@ export function createBaseLearning(
 ): IMemoryUpdateProposal["learning"] {
   return {
     id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440001",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     source: overrides.source ?? MemoryBankSource.EXECUTION,
     source_id: overrides.source_id ?? "trace-123",
     scope: overrides.scope ?? MemoryScope.PROJECT,
-    project: overrides.project ?? "my-app",
+    project: overrides.project ?? TEST_PROJECT_NAME,
     title: overrides.title ?? "Use repository pattern",
     description: overrides.description ?? "Database access should go through repositories",
     category: overrides.category ?? LearningCategory.PATTERN,
@@ -131,7 +139,7 @@ export function createMinimalProposal(overrides: Partial<IMemoryUpdateProposal> 
   return createBaseProposal({
     learning: createBaseLearning(overrides.learning),
     reason: overrides.reason ?? "Extracted from successful execution",
-    identity_id: overrides.identity_id ?? "senior-coder",
+    identity_id: overrides.identity_id ?? TEST_AGENT_NAME,
     ...overrides,
   });
 }
@@ -142,7 +150,7 @@ export function createMinimalProposal(overrides: Partial<IMemoryUpdateProposal> 
 export function createGlobalProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMemoryUpdateProposal {
   return {
     id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440002",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     operation: overrides.operation ?? MemoryOperation.PROMOTE,
     target_scope: overrides.target_scope ?? MemoryScope.GLOBAL,
     learning: createBaseLearning({
@@ -172,10 +180,10 @@ export function createGlobalProposal(overrides: Partial<IMemoryUpdateProposal> =
 export function createApprovedProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMemoryUpdateProposal {
   return {
     id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440004",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     operation: overrides.operation ?? MemoryOperation.ADD,
     target_scope: overrides.target_scope ?? MemoryScope.PROJECT,
-    target_project: overrides.target_project ?? "my-app",
+    target_project: overrides.target_project ?? TEST_PROJECT_NAME,
     learning: createBaseLearning({
       id: "550e8400-e29b-41d4-a716-446655440005",
       source: MemoryBankSource.USER,
@@ -203,8 +211,8 @@ export function createInvalidProposal(overrides: Partial<IMemoryUpdateProposal> 
     id: "550e8400-e29b-41d4-a716-446655440006",
     operation: MemoryOperation.ADD, // placeholder
     learning: createInvalidLearning(overrides.learning),
-    reason: "Test",
-    identity_id: "test",
+    reason: TEST_TOPIC_LABEL,
+    identity_id: TEST_ID,
     status: MemoryStatus.PENDING,
   });
 
@@ -223,8 +231,8 @@ export function createInvalidStatusProposal(overrides: Partial<IMemoryUpdateProp
     id: "550e8400-e29b-41d4-a716-446655440008",
     operation: MemoryOperation.ADD,
     learning: createInvalidLearning(overrides.learning),
-    reason: "Test",
-    identity_id: "test",
+    reason: TEST_TOPIC_LABEL,
+    identity_id: TEST_ID,
     status: MemoryStatus.PENDING,
   });
 
@@ -243,11 +251,11 @@ function createInvalidLearning(
 ): IMemoryUpdateProposal["learning"] {
   return {
     id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440007",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     source: overrides.source ?? MemoryBankSource.USER,
     scope: overrides.scope ?? MemoryScope.PROJECT,
-    title: overrides.title ?? "Test",
-    description: overrides.description ?? "Test",
+    title: overrides.title ?? TEST_TOPIC_LABEL,
+    description: overrides.description ?? TEST_TOPIC_LABEL,
     category: overrides.category ?? LearningCategory.PATTERN,
     tags: overrides.tags ?? [],
     confidence: overrides.confidence ?? ConfidenceAssessmentLevel.LOW,
@@ -261,13 +269,13 @@ function createInvalidLearning(
 function createBaseProposal(overrides: Partial<IMemoryUpdateProposal> = {}): IMemoryUpdateProposal {
   return {
     id: overrides.id ?? "550e8400-e29b-41d4-a716-446655440000",
-    created_at: overrides.created_at ?? "2026-01-04T12:00:00Z",
+    created_at: overrides.created_at ?? TEST_TIMESTAMP,
     operation: overrides.operation ?? MemoryOperation.ADD,
     target_scope: overrides.target_scope ?? MemoryScope.PROJECT,
-    target_project: overrides.target_project ?? "my-app",
+    target_project: overrides.target_project ?? TEST_PROJECT_NAME,
     learning: overrides.learning ?? createBaseLearning(),
     reason: overrides.reason ?? "Test proposal",
-    identity_id: overrides.identity_id ?? "test-agent",
+    identity_id: overrides.identity_id ?? TEST_IDENTITY_ID,
     execution_id: overrides.execution_id ?? "trace-123",
     status: overrides.status ?? MemoryStatus.PENDING,
     ...overrides,

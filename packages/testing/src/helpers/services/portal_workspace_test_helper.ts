@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import { PortalOperation } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+import { TEST_BLUEPRINTS_DIR, TEST_PORTAL_ALIAS, TEST_PORTAL_NAME } from "../constants.ts";
 
 export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{
   portalDir: string;
@@ -17,15 +18,15 @@ export async function setupPortalWorkspaceTestDirs(tempDir: string): Promise<{
   portalConfig: IPortalPermissions;
 }> {
   const portalDir = join(tempDir, "portal");
-  const workspaceDir = join(tempDir, "workspace");
+  const workspaceDir = join(tempDir, TEST_PORTAL_ALIAS);
 
   // Create directories with git repos
   await ensureDir(join(portalDir, ".git"));
   await ensureDir(join(workspaceDir, ".git"));
-  await ensureDir(join(portalDir, "Blueprints", "Identities"));
+  await ensureDir(join(portalDir, TEST_BLUEPRINTS_DIR, "Identities"));
 
   const portalConfig: IPortalPermissions = {
-    alias: "test-portal",
+    alias: TEST_PORTAL_NAME,
     target_path: portalDir,
     default_branch: TEST_DEFAULT_BRANCH,
     operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
