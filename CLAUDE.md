@@ -110,6 +110,13 @@ DI, environment variables, and related topics.
 
 #### Quick CI Verification
 
+When running `deno task test_parallel`, always redirect stdout+stderr to a temp file to capture full output without truncation, then search for failures with `rg FAILED\|failed\|error /tmp/test_output.txt`:
+
+```bash
+deno task test_parallel > /tmp/test_output.txt 2>&1
+rg "FAILED|failed|error" /tmp/test_output.txt
+```
+
 Run the unified CI script to verify all checks:
 
 ```bash
