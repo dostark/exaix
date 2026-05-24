@@ -23,11 +23,11 @@ import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryEmbeddingService } from "@exaix/memory";
 import { MemoryCommands } from "../../apps/exactl/src/commands/memory_commands.ts";
 import { MemoryBankAdapter, MemoryEmbeddingAdapter, MemoryExtractorAdapter } from "../../apps/common/adapters/mod.ts";
-import { initTestDbService } from "../helpers/db.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IExecutionMemory, ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
-import { getMemoryGlobalDir } from "../helpers/paths_helper.ts";
+import { getMemoryGlobalDir } from "@exaix/testing";
 
 // ===== Full Workflow Tests =====
 

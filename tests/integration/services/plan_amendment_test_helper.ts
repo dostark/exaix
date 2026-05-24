@@ -12,8 +12,8 @@ import { PlanAmendmentService } from "@exaix/core/planning";
 import { PlanExecutor } from "@exaix/core/planning";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import type { ConfidenceScorer } from "@exaix/execution";
-import { createMockConfig } from "../../helpers/config.ts";
-import { castAny as castTo, createStubDb } from "../../helpers/test_helpers.ts";
+import { createMockConfig } from "@exaix/testing";
+import { castAny as castTo, createStubDb } from "@exaix/testing";
 
 interface IPlanStepInput {
   number: number;

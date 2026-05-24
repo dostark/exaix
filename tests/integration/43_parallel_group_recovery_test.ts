@@ -9,7 +9,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { FLOW_EVENT_PARALLEL_GROUP_COMPLETED } from "@exaix/core";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import { createParallelGroupFlow, createScriptedFlowRunner } from "../helpers/parallel_group_flow_test_helper.ts";
 
 Deno.test("[Step65.4] FlowRunner recovery preserves successful sibling results when a group member fails", async () => {

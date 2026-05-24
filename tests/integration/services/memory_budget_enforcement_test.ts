@@ -13,8 +13,8 @@ import { SessionMemoryService } from "@exaix/memory";
 import { SkillsService } from "@exaix/core/skills";
 import type { IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION, MemoryBankSource, MemoryScope, MemoryType, SkillStatus } from "@exaix/core";
-import { initTestDbService } from "../../helpers/db.ts";
-import { NullEmbeddingStub, NullMemoryBankStub } from "../../helpers/memory_test_helper.ts";
+import { initTestDbService } from "@exaix/testing";
+import { NullEmbeddingStub, NullMemoryBankStub } from "@exaix/testing";
 
 class BudgetMemoryBankMock extends NullMemoryBankStub {
   constructor(private readonly searchResults: IMemorySearchResult[]) {

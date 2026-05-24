@@ -9,8 +9,8 @@ import { join } from "@std/path";
 import { AgentExecutor } from "@exaix/execution";
 
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { createStubConfig, createStubDb, createStubDisplay } from "../helpers/test_helpers.ts";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { createStubConfig, createStubDb, createStubDisplay } from "@exaix/testing";
+import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("AgentExecutor Blueprint Loading - Mock Identity resolution", async () => {
   const tempDir = await Deno.makeTempDir();

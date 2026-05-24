@@ -24,9 +24,9 @@ import { GIT_EMPTY_SHA } from "@exaix/git";
 import { AgentExecutionErrorType, ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import type { IAgentExecutionOptions, IChangesetResult, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import type { LogMetadata } from "@exaix/core/types";
-import { createMockConfig } from "../helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 
 interface IErrorCapture {
   action: string;

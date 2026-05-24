@@ -14,11 +14,11 @@ import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ModelFactory } from "@exaix/ai/providers.ts";
 import { RequestProcessor } from "@exaix/request";
 import { getTestModel } from "../../packages/ai/tests/helpers/test_model.ts";
-import { getWorkspaceDir, getWorkspaceRequestsDir } from "../helpers/paths_helper.ts";
+import { getWorkspaceDir, getWorkspaceRequestsDir } from "@exaix/testing";
 import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai-openai";
 import type { IApplicationContext } from "@exaix/core/types";
-import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
+import { readFixtureTextSync } from "@exaix/testing";
 
 const _enabled = Deno.env.get("EXA_TEST_ENABLE_PAID_LLM");
 Deno.test(

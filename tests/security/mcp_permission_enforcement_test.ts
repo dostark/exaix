@@ -10,9 +10,9 @@ import { PortalOperation } from "@exaix/core";
 
 import { MCPServer } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
-import { createMockConfig } from "../helpers/config.ts";
-import { initTestDbService } from "../helpers/db.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { createMockConfig } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createToolCallRequest } from "@exaix/mcp/testing";
 
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";

@@ -21,8 +21,8 @@ import {
   FLOW_EVENT_CHECKPOINT_SAVED,
   FLOW_EVENT_CHECKPOINT_STALE,
 } from "@exaix/core";
-import { initTestDbService } from "../../helpers/db.ts";
-import { getMemoryExecutionDir } from "../../helpers/paths_helper.ts";
+import { initTestDbService } from "@exaix/testing";
+import { getMemoryExecutionDir } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../../helpers/flow_namespace_test_helper.ts";
 
 function createCheckpointFlow(

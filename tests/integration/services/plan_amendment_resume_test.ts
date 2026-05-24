@@ -6,12 +6,12 @@
  */
 
 import { assertEquals, assertThrows } from "@std/assert";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
-import { readFixtureTextSync } from "../../helpers/fixtures.ts";
-import { castAny as castTo } from "../../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "@exaix/testing";
+import { castAny as castTo } from "@exaix/testing";
 import { createPlanAmendmentServiceForTest } from "./plan_amendment_test_helper.ts";
 
 Deno.test("applyApprovedAmendment preserves original plan structure", async () => {

@@ -14,7 +14,7 @@ import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/cor
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 
 Deno.test("AgentExecutor integration: logs usage.tokens and usage.cost_usd_estimate", async () => {
   const { db, tempDir, cleanup } = await initTestDbService();

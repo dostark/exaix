@@ -18,9 +18,9 @@ import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "@exaix/mcp/server";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { initTestDbService } from "../helpers/db.ts";
-import { createMockConfig } from "../helpers/config.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createMockConfig } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMCPRequest } from "@exaix/mcp/testing";
 
 const SECRET_MARKER = "SUPER_SECRET_TOKEN_abc123xyz";

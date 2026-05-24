@@ -13,7 +13,7 @@ import { defineFlow } from "@exaix/core/func";
 import { FlowRunner } from "@exaix/flow";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { DEFAULT_FLOW_VERSION, EvaluationCategory, FlowInputSource, FlowOutputFormat, MockStrategy } from "@exaix/core";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";

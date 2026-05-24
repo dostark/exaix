@@ -93,7 +93,7 @@ console.log(TEST_DEFAULT_BRANCH);
   }
 });
 
-Deno.test("check_code_style flags root shim imports when the package testing subpath is the canonical path", async () => {
+Deno.test("check_code_style allows root import of testing shims (rule removed)", async () => {
   const filePath = join(REPO_ROOT, "tests", "scripts", "__temp_package_testing_shim_import.ts");
   await Deno.writeTextFile(
     filePath,
@@ -111,10 +111,8 @@ console.log(TEST_DEFAULT_BRANCH);
 
   try {
     const result = await runCheckCodeStyle(filePath);
-
-    assertEquals(result.code, 1, result.output);
-    assertStringIncludes(result.output, "[package-testing-import]");
-    assertStringIncludes(result.output, "@exaix/git/testing");
+    // [package-testing-import] rule was removed; style check now passes.
+    assertEquals(result.code, 0, result.output);
   } finally {
     await Deno.remove(filePath);
   }

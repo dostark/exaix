@@ -15,11 +15,11 @@ import type { IRecordedResponse } from "@exaix/ai/providers";
  */
 
 import { dirname, fromFileUrl, join } from "@std/path";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { copySync, ensureDir, exists } from "@std/fs";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 import { MockLLMProvider } from "@exaix/ai/providers";
 import { FlowStepType, MemoryOperation, MockStrategy, PortalOperation } from "@exaix/core";
@@ -44,7 +44,7 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRejectedDir,
   getWorkspaceRequestsDir,
-} from "../../helpers/paths_helper.ts";
+} from "@exaix/testing";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 

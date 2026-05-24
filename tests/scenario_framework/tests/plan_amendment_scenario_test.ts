@@ -6,7 +6,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { withRepoRoot } from "../../helpers/repo_root.ts";
+import { withRepoRoot } from "@exaix/testing";
 
 // This test is flaky in CI due to race conditions with other tests and
 // environmental differences (timing, resource constraints, daemon lifecycle).

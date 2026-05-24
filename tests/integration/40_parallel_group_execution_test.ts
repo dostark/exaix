@@ -16,7 +16,7 @@ import {
   FLOW_EVENT_PARALLEL_GROUP_COMPLETED,
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
 } from "@exaix/core";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 
 Deno.test("[Step65.2] FlowRunner logs grouped wave lifecycle before downstream join execution", async () => {

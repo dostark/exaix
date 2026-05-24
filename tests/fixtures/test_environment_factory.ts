@@ -18,8 +18,8 @@ import {
   MemoryExtractorAdapter,
   SkillsAdapter,
 } from "../../apps/common/adapters/mod.ts";
-import { initTestDbService } from "../helpers/db.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import {
   getMemoryDir,
@@ -30,7 +30,7 @@ import {
   getMemoryProjectsDir,
   getMemorySkillsDir,
   getMemoryTasksDir,
-} from "../helpers/paths_helper.ts";
+} from "@exaix/testing";
 
 export interface IMemoryTestEnvironment {
   tempRoot: string;

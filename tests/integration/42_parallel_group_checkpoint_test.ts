@@ -11,7 +11,7 @@ import { exists } from "@std/fs";
 import { join } from "@std/path";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { FLOW_EVENT_CHECKPOINT_LOADED } from "@exaix/core";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import { createParallelGroupFlow, createScriptedFlowRunner } from "../helpers/parallel_group_flow_test_helper.ts";
 
 Deno.test("[Step65.4] FlowRunner checkpoint captures individual parallel group members and resumes without re-running", async () => {

@@ -9,7 +9,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { exists } from "@std/fs";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { Database } from "@db/sqlite";
-import { getRuntimeDir } from "../helpers/paths_helper.ts";
+import { getRuntimeDir } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));

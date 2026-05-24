@@ -15,7 +15,7 @@ import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.
 import { validateToolResultEnvelope } from "@exaix/schemas/tool_result_validator.ts";
 import type { IToolResultRemediationPolicy, IToolResultValidationFailure } from "@exaix/schemas/tool_result.ts";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "../../helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 
 interface IMockAmendmentService {
   service: IPlanAmendmentService;

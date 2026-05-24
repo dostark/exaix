@@ -11,8 +11,8 @@ import { OllamaProvider } from "@exaix/ai-ollama";
 import { AgentRunner } from "@exaix/execution";
 import { type IRequestMetadata as IRequestMetadata, PlanWriter } from "@exaix/core/planning";
 import { PlanAdapter } from "@exaix/core/planning";
-import { initTestDbService } from "../helpers/db.ts";
-import { getWorkspacePlansDir } from "../helpers/paths_helper.ts";
+import { initTestDbService } from "@exaix/testing";
+import { getWorkspacePlansDir } from "@exaix/testing";
 
 // ============================================================================
 // Test Configuration

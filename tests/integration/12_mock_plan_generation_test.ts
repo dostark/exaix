@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("Integration: RequestProcessor with MockLLMProvider", async (t) => {
   const env = await TestEnvironment.create();

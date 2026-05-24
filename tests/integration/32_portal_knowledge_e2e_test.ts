@@ -17,8 +17,8 @@ import { MemoryBankService } from "@exaix/memory";
 import { RequestProcessor } from "@exaix/request";
 import type { IApplicationContext, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { MockLLMProvider } from "@exaix/ai/providers";
-import { initTestDbService } from "../helpers/db.ts";
-import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 
 // ---------------------------------------------------------------------------

@@ -16,9 +16,9 @@ import { McpTransportType } from "@exaix/mcp";
 import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "@exaix/mcp/server";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { initTestDbService } from "../../helpers/db.ts";
-import { createMockConfig } from "../../helpers/config.ts";
-import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "../../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createMockConfig } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMCPRequest } from "@exaix/mcp/testing";
 
 Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed validation writes event to journal", async () => {

@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { join } from "@std/path";
-import { getWorkspaceArchiveDir } from "../helpers/paths_helper.ts";
+import { getWorkspaceArchiveDir } from "@exaix/testing";
 import { ExecutionStatus } from "@exaix/core";
 
 Deno.test("Integration: Request Archiving - moves to Archive on success", async () => {

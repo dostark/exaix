@@ -8,7 +8,7 @@ import { assertEquals } from "@std/assert";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ConfidenceScorer } from "@exaix/execution";
-import { castAny as castTo } from "../../helpers/test_helpers.ts";
+import { castAny as castTo } from "@exaix/testing";
 import { withPlanAmendmentPendingScenario } from "./plan_amendment_test_helper.ts";
 
 Deno.test("PlanExecutor triggers amendment on low confidence result", async () => {

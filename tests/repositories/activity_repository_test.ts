@@ -11,7 +11,7 @@ import { assertSpyCalls, spy } from "@std/testing/mock";
 import { DatabaseActivityRepository } from "@exaix/core/repositories";
 import type { ActivityRepository } from "@exaix/core/repositories";
 import type { DatabaseService } from "@exaix/storage-sqlite";
-import { createStubDb } from "../helpers/test_helpers.ts";
+import { createStubDb } from "@exaix/testing";
 
 // Mock IActivity entity for testing
 interface IActivity {

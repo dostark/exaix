@@ -25,8 +25,8 @@ import { MockStrategy, QualityGateMode } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { createMockProvider } from "../helpers/mock_provider.ts";
-import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
+import { createMockProvider } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 
 // ---------------------------------------------------------------------------
 // Helpers

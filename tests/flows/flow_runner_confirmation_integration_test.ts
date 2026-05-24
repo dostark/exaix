@@ -22,8 +22,8 @@ import type { IModelProvider } from "../../packages/ai/src/types.ts";
 import { ModelFactory } from "../../packages/ai/src/providers.ts";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import { ToolHandler } from "@exaix/mcp/server";
-import { initTestDbService } from "../helpers/db.ts";
-import { createStubConfig, createStubContext } from "../helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubContext } from "@exaix/testing";
 import type { JSONValue } from "@exaix/core/types";
 
 type IToolDefinition = ReturnType<ToolHandler["getToolDefinition"]>;

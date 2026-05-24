@@ -10,8 +10,8 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 
 import { inject } from "../../scripts/inject_agent_context.ts";
-import { REPO_ROOT, withRepoRoot } from "../helpers/repo_root.ts";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { REPO_ROOT, withRepoRoot } from "@exaix/testing";
+import { readFixtureTextSync } from "@exaix/testing";
 
 // Helper to create temporary markdown files under .copilot/providers
 async function writeAgentMarkdown(filename: string, content: string) {

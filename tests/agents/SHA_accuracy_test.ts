@@ -19,8 +19,8 @@ import { StrategyRegistry } from "@exaix/execution";
 import type { IChangesetResult } from "@exaix/schemas/agent_executor.ts";
 import { ExecutionStrategyName, PortalOperation } from "@exaix/core";
 import { GIT_EMPTY_SHA } from "@exaix/git";
-import { initTestDbService } from "../helpers/db.ts";
-import { createMockConfig } from "../helpers/config.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createMockConfig } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 
 Deno.test({

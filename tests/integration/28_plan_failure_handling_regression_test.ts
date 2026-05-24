@@ -8,7 +8,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironment } from "./helpers/test_environment.ts";
 import { join } from "@std/path";
-import { getWorkspaceRejectedDir } from "../helpers/paths_helper.ts";
+import { getWorkspaceRejectedDir } from "@exaix/testing";
 import { ExecutionStatus } from "@exaix/core";
 import { RequestListHandler } from "../../apps/exactl/src/handlers/request_list_handler.ts";
 

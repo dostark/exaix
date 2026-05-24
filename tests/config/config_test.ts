@@ -14,7 +14,7 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { initializeGlobalLogger, resetGlobalLogger } from "@exaix/core/logger";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExaPathDefaults } from "@exaix/core";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("ConfigSchema accepts valid minimal config", () => {
   const validConfig = {

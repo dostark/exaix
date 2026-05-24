@@ -11,7 +11,7 @@ import { FlowInputSource, FlowOutputFormat } from "@exaix/core";
 import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
-import { initTestDbService } from "../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
 
 Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downstream fan-in steps", async () => {

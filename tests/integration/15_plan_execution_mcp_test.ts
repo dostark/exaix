@@ -17,10 +17,10 @@ import { EventLogger } from "@exaix/core/logger";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import type { JSONValue } from "@exaix/core/types";
 import { parse as parseYaml } from "@std/yaml";
-import { initTestDbService } from "../helpers/db.ts";
-import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
+import { initTestDbService } from "@exaix/testing";
+import { getWorkspaceActiveDir } from "@exaix/testing";
 import type { ActivityRecord } from "@exaix/storage-sqlite";
-import { readFixtureTextSync } from "../helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 interface IPlanFrontmatter {
   trace_id?: string;

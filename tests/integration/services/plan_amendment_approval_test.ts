@@ -6,14 +6,14 @@
  */
 
 import { assertEquals } from "@std/assert";
-import { initTestDbService } from "../../helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPlanAmendmentDecision, IPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { ZPlanAmendmentDecision } from "@exaix/schemas/plan_amendment.ts";
 import type { ConfidenceScorer } from "@exaix/execution";
 import type { JSONObject } from "@exaix/core/types";
-import { readFixtureTextSync } from "../../helpers/fixtures.ts";
-import { castAny as castTo, makeGenerateResult as makeResult } from "../../helpers/test_helpers.ts";
+import { readFixtureTextSync } from "@exaix/testing";
+import { castAny as castTo, makeGenerateResult as makeResult } from "@exaix/testing";
 import { createPlanAmendmentServiceForTest, withPlanAmendmentPendingScenario } from "./plan_amendment_test_helper.ts";
 import {
   PLAN_AMENDMENT_EVENT_APPROVED,

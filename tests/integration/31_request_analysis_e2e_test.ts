@@ -17,7 +17,7 @@ import type { IApplicationContext } from "@exaix/core/types";
 import { RequestAnalysisSchema } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { createStubConfig, createStubDisplay, createStubGit } from "../helpers/test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 
 // ---------------------------------------------------------------------------
 // Test 1: Heuristic-only analysis path

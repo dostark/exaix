@@ -37,7 +37,7 @@ import { AnalysisMode } from "@exaix/core/types";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai/types.ts";
-import { createMockProvider } from "../helpers/mock_provider.ts";
+import { createMockProvider } from "@exaix/testing";
 import { CriteriaGenerator } from "@exaix/core/skills";
 
 // ============================================================

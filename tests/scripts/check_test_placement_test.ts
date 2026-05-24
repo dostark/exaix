@@ -13,7 +13,7 @@ import {
 
 Deno.test("validateTestPlacement: accepts correctly placed service tests", () => {
   const result = validateTestPlacement([
-    "tests/services/agent/agent_executor_test.ts",
+    "packages/execution/tests/agent_executor_test.ts",
     "tests/schemas/flow_schema_test.ts",
   ]);
 
@@ -28,14 +28,17 @@ Deno.test("getTestPlacementIssue: rejects test files outside tests/", () => {
   assertEquals(issue?.suggestion, "Move this file under tests/ or a package/app tests folder.");
 });
 
-Deno.test("getTestPlacementIssue: rejects direct tests/services root files", () => {
+Deno.test("getTestPlacementIssue: rejects retired directories", () => {
   const issue = getTestPlacementIssue("tests/services/agent_executor_test.ts");
 
   assertEquals(
     issue?.message,
-    "Service tests must live under tests/services/<domain>/, not directly under tests/services/.",
+    "The tests/services/, tests/tools/, tests/unit/, and tests/shared/ directories are retired. Place new tests in packages/<name>/tests/, apps/<app>/tests/, or the appropriate tests/ subdirectory.",
   );
-  assertEquals(issue?.suggestion, "Move this file into the appropriate domain folder under tests/services/.");
+  assertEquals(
+    issue?.suggestion,
+    "Move this file under packages/<name>/tests/, apps/<app>/tests/, or a remaining tests/ subdirectory.",
+  );
 });
 
 Deno.test("recommendTestDirectoryForSource: maps common source folders to test folders", () => {
@@ -46,7 +49,7 @@ Deno.test("recommendTestDirectoryForSource: maps common source folders to test f
 Deno.test("validateTestPlacement: ignores non-test files in mixed input", () => {
   const result = validateTestPlacement([
     "src/services/agent/agent_executor.ts",
-    "tests/services/agent/agent_executor_test.ts",
+    "packages/execution/tests/agent_executor_test.ts",
   ]);
 
   assertEquals(result.success, true);

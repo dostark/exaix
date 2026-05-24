@@ -8,7 +8,7 @@
 import { assert } from "@std/assert";
 import { join } from "@std/path";
 import { generateManifestObject } from "../../scripts/build_agents_index.ts";
-import { REPO_ROOT, withRepoRoot } from "../helpers/repo_root.ts";
+import { REPO_ROOT, withRepoRoot } from "@exaix/testing";
 
 interface IManifestDoc {
   path?: string;

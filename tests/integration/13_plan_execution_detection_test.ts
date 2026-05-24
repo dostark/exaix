@@ -12,7 +12,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { MemoryStatus } from "@exaix/core/status";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { getWorkspaceActiveDir } from "../helpers/paths_helper.ts";
+import { getWorkspaceActiveDir } from "@exaix/testing";
 
 interface Frontmatter {
   trace_id?: string;

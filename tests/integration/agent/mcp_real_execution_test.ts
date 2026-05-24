@@ -15,9 +15,9 @@ import { EventLogger } from "@exaix/core/logger";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import { SecurityMode } from "@exaix/core";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import { ToolRegistryTestHelper } from "../../helpers/tool_registry_test_helper.ts";
+import { ToolRegistryTestHelper } from "../../../packages/tool-runtime/tests/helpers/tool_registry_test_helper.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { readFixtureTextSync } from "../../helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("AgentExecutor Integration - Real MCP Execution & Audit", async () => {
   const helper = await ToolRegistryTestHelper.create("mcp-real-exec");

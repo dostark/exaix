@@ -12,7 +12,7 @@ import { type IPlanContext, PlanExecutor } from "@exaix/core/planning";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { GitService } from "@exaix/git";
 import { ExecutionLoop } from "@exaix/execution";
-import { getFixturePath, readFixtureTextSync } from "../helpers/fixtures.ts";
+import { getFixturePath, readFixtureTextSync } from "@exaix/testing";
 
 Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");

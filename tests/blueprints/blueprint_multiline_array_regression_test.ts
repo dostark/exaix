@@ -8,7 +8,7 @@
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { createStubConfig, createStubContext, createStubDb } from "../helpers/test_helpers.ts";
+import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
 import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../../apps/exactl/src/commands/blueprint_commands.ts";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
