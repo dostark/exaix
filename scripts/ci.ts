@@ -253,7 +253,7 @@ async function verifyCoverage(): Promise<boolean> {
 
     const testStart = Date.now();
     const testCmd = new Deno.Command("deno", {
-      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, "tests/", "packages/"],
+      args: ["test", "--allow-all", `--coverage=${COVERAGE_DIR}`, "tests/", "packages/", "apps/"],
       stdout: "inherit",
       stderr: "piped",
     });

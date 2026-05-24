@@ -145,6 +145,8 @@ async function runCoverageCheck() {
       `--coverage=${COVERAGE_DIR}`,
       ...(flags["with-llama"] ? [] : ["--ignore=tests/llama_provider_test.ts"]),
       "tests/",
+      "packages/",
+      "apps/",
     ],
     stdout: "inherit",
     // Capture stderr so we can filter known noisy, non-fatal coverage warnings.

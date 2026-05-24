@@ -99,14 +99,22 @@ Phase 9 — Code complexity (if threshold breached)
       single-responsibility functions. Keep behavioral changes to zero.
   21. Re-run `deno task check:complexity` — must exit 0 with "Complexity matches expectations."
 
-Phase 10 — Agent docs validation
-  22. Validate all `.copilot/` documentation meets schema requirements:
-        deno run -A scripts/validate_agents_docs.ts
-      This checks every `.copilot/` Markdown file for required frontmatter keys,
-      'Canonical prompt', and 'Examples' sections. Fix any reported violations
-      before proceeding.
+Phase 10 — Tool result parity
+  22. Run `deno task check:tool-result-parity` — verifies that TOOL_MANIFEST metadata
+      is consistent with the actual tool handler schemas, ensuring tool documentation
+      and result contracts stay in sync.
 
-Phase 11 — Final full-suite validation
+Phase 11 — Agent docs validation
+  23. Validate all `.copilot/` documentation meets schema requirements:
+        deno task docs-agent-validate
+      This runs a comprehensive check covering:
+      - Markdown formatting of `*.md` files
+      - Internal and external link validity
+      - Cross-reference consistency
+      - Required frontmatter keys, 'Canonical prompt', and 'Examples' sections
+      - Manifest freshness (`deno task check:docs`)
+
+Phase 12 — Final full-suite validation
   23. Run tests to confirm all gates green:
          deno task test_parallel
       Or sequentially:
