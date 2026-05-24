@@ -9,6 +9,8 @@ topics: ["tests", "tdd", "helpers"]
 
 Key points
 
+- See [tests/README.md](../../tests/README.md) for the full test directory structure, package-local test mapping, and writing-new-tests guide
+- See [packages/testing/README.md](../../packages/testing/README.md) for the shared testing surface (`@exaix/testing`) and its consolidation targets
 - Use `initTestDbService()` and `createCliTestContext()` to centralize db+tempdir setup
 - Use `withEnv()` for temporary env var changes in tests
 - **Mocking**: Use `MockLLMProvider` for deterministic agent testing (avoid real API calls).

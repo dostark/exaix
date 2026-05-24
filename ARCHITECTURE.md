@@ -2893,6 +2893,8 @@ All constants are defined in `packages/core/src/types/constants.ts` and imported
 - **[Technical Spec](Exaix_Technical_Spec.md)** - Deep technical details
 - **[White Paper](Exaix_White_paper.md)** - Vision and philosophy
 - **[Building with AI Agents](Building_with_AI_Agents.md)** - Development patterns
+- **[Test Directory Guide](tests/README.md)** - Test structure and package-local test mapping
+- **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 
 ---
 

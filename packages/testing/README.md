@@ -52,3 +52,9 @@ This avoids deep imports from root `tests/` into package-local tests.
   (e.g., `@exaix/git/testing`, `@exaix/mcp/testing`, `@exaix/memory/testing`).
 - Package-owned testing subpaths may depend on the owning package API plus
   `@exaix/testing` for shared helpers, but should not depend on unrelated runtime packages.
+
+## See Also
+
+- [`tests/README.md`](../../tests/README.md) — Full test directory structure, package-local test mapping, and writing-new-tests guide
+- [`dev/Exaix_Testing_and_CI_Strategy.md`](../../exaix-dev-docs/dev/Exaix_Testing_and_CI_Strategy.md) — Full testing strategy document
+- [`dev/Exaix_Packages.md`](../../exaix-dev-docs/dev/Exaix_Packages.md#test-migration-plan) — Test migration plan with per-folder migration map

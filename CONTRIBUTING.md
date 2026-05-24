@@ -27,6 +27,9 @@ code.
 
 ## 2. Testing
 
+For the full test layout and writing-new-tests guide, see [tests/README.md](./tests/README.md).
+For shared test helpers (`@exaix/testing`), see [packages/testing/README.md](./packages/testing/README.md).
+
 ### 2.1 Configuration Testing
 
 When adding new configuration options:
