@@ -11,20 +11,22 @@ links:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-## Exaix — Auditable Agent Orchestration Platform
+## Exaix — CI/CD for AI Agent Tasks
 
 [![Deno](https://img.shields.io/badge/runtime-Deno-green.svg)](https://deno.land/)
 [![SQLite](https://img.shields.io/badge/storage-SQLite-blue.svg)](https://www.sqlite.org/)
 [![CI](https://img.shields.io/github/actions/workflow/status/dostark/exaix/ci.yml)](https://github.com/dostark/exaix/actions)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
-Exaix enables secure, auditable multi-agent workflows with human-in-the-loop supervision — unlike LangChain or CrewAI, it guarantees full reproducibility via persistent SQLite journals and filesystem-based APIs.
+Exaix processes work requests asynchronously through a gated pipeline: **file → plan → approve → execute → review → merge**. Unlike chat-based agent tools, Exaix is designed for autonomous, auditable, multi-agent workflows where humans set gates and review outputs.
 
 ## Why Exaix
 
+- **Asynchronous by design**: Requests are markdown files. No session, no chat — submit and walk away.
 - **Permanent audit trail**: Every agent action (plan, tool call, file change) is journaled immutably.
-- **Human oversight**: Agents propose structured Plans requiring explicit approval before execution.
-- **Files-as-API**: Workspaces use disk files (Requests, Plans, Changesets) for easy CI/integration.
+- **Explicit approval gates**: Agents propose structured Plans requiring human approval before execution.
+- **Files-as-API**: Workspace uses disk files (Requests, Plans) for easy CI/GitHub integration.
+- **Multi-agent DAGs**: Flow system pipelines multiple agents with judges, parallel groups, and feedback loops.
 - **Local-first security**: Deno permissions + optional cloud LLMs keep data on your machine by default.
 
 ## Key Concepts
@@ -63,43 +65,38 @@ graph TD
 ## Quick Start
 
 ```bash
-# 1. Clone & deploy workspace
+# 1. Clone & build
 git clone https://github.com/dostark/exaix.git
 cd exaix
-./scripts/deploy_workspace.sh ~/MyExaixWorkspace
+deno task compile  # or use `deno task start` to run without compiling
 
-# 2. Configure LLM (edit ~/MyExaixWorkspace/exa.config.toml)
+# 2. Configure LLM (edit exa.config.toml)
 # See LLM Configuration below
 
 # 3. Start daemon + submit example request
-cd ~/MyExaixWorkspace
 deno task start &
-exactl request "Refactor src/cli.ts to use new JournalService"
+exactl request "Refactor src to use new patterns"
 
-# 4. Review & approve in dashboard
-exactl dashboard
+# 4. Review generated plan
+exactl plan list
+exactl plan approve <id>
 ```
-
-**Full CLI install**: `deno install -A --unstable https://deno.land/x/exactl@latest`
 
 ## Repo Structure
 
 ```text
 exaix/
-├── Blueprints/     # Agent personas/templates
-├── Memory/         # Persistent memory banks
-├── docs/           # User guides & specs
-├── packages/       # Shared library packages (schemas, core, ai, mcp, tui, …)
-├── apps/           # App entry points (daemon, exactl, tui)
-├── scripts/        # Deploy, CI helpers
-├── tests/          # Unit/integration
-└── templates/      # Workspace skeletons
+├── packages/       # 21 shared library packages (core, ai, schemas, memory, flow, …)
+├── apps/           # 6 app entry points (daemon, exactl, tui, mcp-server, common, agent-entrypoint)
+├── scripts/        # Deploy, CI helpers, migration tools
+├── tests/          # Integration, scenario, and cross-cutting tests
+└── docs/           # User guides (moved to exaix-dev-docs/)
 ```
 
-Deployed workspace adds `Workspace/`, `Portals/`, `.exa/` (runtime state).
+Deployed workspace adds `Workspace/`, `Portals/`, `Memory/`, `.exa/` (runtime state).
 
-The current workspace package set includes `@exaix/schemas`, `@exaix/parsing`, `@exaix/core`, `@exaix/ai`,
-`@exaix/tui`, `@exaix/mcp`, `@exaix/git`, `@exaix/cli`, `@exaix/testing`, and `@exaix/memory`.
+The current workspace package set includes all 21 packages and 6 app wrappers in `deno.json`.
+See `exaix-dev-docs/dev/Exaix_Packages.md` for the full package catalog.
 
 ## LLM Configuration
 
@@ -137,8 +134,9 @@ Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDE
 
 ## Operator Features
 
-- **TUI Dashboard**: `exactl dashboard` — monitor, review Plans, approve Changesets.
-- **CLI Commands**: `exactl request`, `exactl list`, `exactl apply`, `exactl journal`.
+- **CLI Commands**: `exactl request`, `exactl plan`, `exactl review`, `exactl journal`.
+- **TUI Dashboard**: `exactl dashboard` — monitor, review, approve in terminal.
+- **Daemon**: Background service processes requests via file watcher.
 - **Least-privilege**: Deno sandbox per agent task.
 
 ## Tool result schemas
@@ -153,19 +151,19 @@ Integrators can inspect expected tool result schemas before calling a tool by us
 ## Testing & Contributing
 
 ```bash
-deno task test      # Unit tests
-deno task ci        # Full CI: fmt, lint, test, coverage
+deno task test_parallel   # Full test suite (parallel + sequential batches)
+deno task test            # Run all tests
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md). Regression tests mandatory (`[regression]` prefix).
+See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md), [AGENTS.md](AGENTS.md).
 
 ## Documentation
 
-- **Quick Tools**: [TOOLS.md](./TOOLS.md)
-- **User Guide**: [docs/Exaix_User_Guide.md](./docs/Exaix_User_Guide.md)
+- **Tools**: [TOOLS.md](./TOOLS.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **Package Migration**: [docs/dev/package-migration-plan.md](./docs/dev/package-migration-plan.md)
-- **Developer Setup**: [docs/dev/Exaix_Developer_Setup.md](./docs/dev/Exaix_Developer_Setup.md)
+- **Developer Setup**: [exaix-dev-docs/dev/Exaix_Developer_Setup.md](./exaix-dev-docs/dev/Exaix_Developer_Setup.md)
+- **Package Reference**: [exaix-dev-docs/dev/Exaix_Packages.md](./exaix-dev-docs/dev/Exaix_Packages.md)
+- **White Paper**: [exaix-dev-docs/dev/Exaix_White_Paper.md](./exaix-dev-docs/dev/Exaix_White_Paper.md)
 
 ## License
 

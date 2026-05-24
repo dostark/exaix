@@ -65,13 +65,13 @@ Before proposing or implementing changes:
 
 ## Project Overview
 
-**Exaix** is an AI agent orchestration framework built with **Deno** and **TypeScript**.
+**Exaix** is an asynchronous, file-based AI agent task automation engine built with **Deno** and **TypeScript**. It processes work requests through a gated pipeline (file → plan → approve → execute → review → merge) rather than interactive chat sessions. This makes it suitable for CI/CD-like workflows where humans set gates and review outputs rather than steering each conversation turn.
 
 ### Runtime & Tooling
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs `fmt:check`, `lint`, `check:docs`
+- **Pre-commit:** Auto-runs gates 1-12 covering format, lint, style, magic, docs, complexity, tool parity, architecture, and more.
 
 ### Key Commands
 

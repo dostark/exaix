@@ -104,9 +104,20 @@ Phase 78 adds a documented contract around tool result payloads before they cros
 
 ---
 
-This document provides a comprehensive architectural overview of Exaix components using Mermaid diagrams. Exaix is available in **three editions** (Solo, Team, Enterprise) with components differentiated by availability.
+This document provides a comprehensive architectural overview of Exaix components using Mermaid diagrams.
 
-> **Edition Legend:** Components marked with 🟢 are available in all editions. Components marked with 🔵 require **Team+** edition. Components marked with 🟣 require **Enterprise** edition.
+## Positioning
+
+Exaix is an **asynchronous, file-based agent task automation engine** — conceptually closer to GitHub Actions for AI agents than to a chat or IDE tool. Unlike session-oriented tools (OpenCode, Claude Code, Cursor) where conversation *is* the state, Exaix models work as discrete, auditable artifacts:
+
+- **Requests** are markdown files in `Workspace/Requests/`
+- **Plans** are generated artifacts in `Workspace/Plans/`
+- **Execution** produces Git branches for human review
+- **Every step** is journaled to SQLite for a permanent audit trail
+
+The pipeline is designed for **autonomous, multi-agent orchestration with explicit gates** — plan approval, amendment approval, review/merge — not for interactive back-and-forth. This makes it suitable for CI/CD-like workflows where humans set policies and review outputs rather than steering each conversation turn.
+
+Exaix is available in **three editions** (Solo, Team, Enterprise) with components differentiated by availability. See [Edition Model](#section-edition-model) for details.
 
 ---
 
@@ -316,6 +327,8 @@ graph TB
 ---
 
 ## Edition Model Overview
+
+> **Current Status (May 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions describe aspirational features (Web UI, PostgreSQL, immudb, SSO/SAML, governance dashboard) that are planned but not yet present in the codebase. See `exaix-dev-docs/dev/Exaix_White_Paper.md` for the full product vision.
 
 Exaix follows a **three-tier edition model** to serve different organizational needs:
 
