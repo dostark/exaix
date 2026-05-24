@@ -23,14 +23,14 @@ import {
   getWorkspacePlansDir,
   getWorkspaceRejectedDir,
   getWorkspaceRequestsDir,
-} from "../../../tests/helpers/paths_helper.ts";
+} from "@exaix/testing";
 import {
   PLAN_REVIEW_COMMENT_PREFIX,
   PLAN_REVIEW_COMMENTS_HEADER,
   REQUEST_REVISION_COMMENT_PREFIX,
   REQUEST_REVISION_COMMENTS_HEADER,
 } from "@exaix/core";
-import { readFixtureTextSync } from "../../../tests/helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 describe("PlanCommands", () => {
   let tempDir: string;

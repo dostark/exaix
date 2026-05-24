@@ -11,7 +11,7 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { ExecutionStatus } from "@exaix/core";
 import { UIOutputFormat } from "@exaix/tui";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
-import { createTestExecution, createTestProject } from "../../../tests/helpers/memory_test_helper.ts";
+import { createTestExecution, createTestProject } from "@exaix/testing";
 
 // ===== Memory List Tests =====
 

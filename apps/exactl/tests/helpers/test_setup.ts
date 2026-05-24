@@ -16,16 +16,11 @@ import { RequestService } from "@exaix/request";
 import { RequestAdapter } from "../../../../apps/common/adapters/request_adapter.ts";
 import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../../../apps/common/adapters/portal_adapter.ts";
-import { initTestDbService } from "../../../../tests/helpers/db.ts";
-import { createMockConfig } from "../../../../tests/helpers/config.ts";
-import { getMemoryProjectsDir } from "../../../../tests/helpers/paths_helper.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createMockConfig } from "@exaix/testing";
+import { getMemoryProjectsDir } from "@exaix/testing";
 import { GitTestHelper, setupGitRepo } from "@exaix/git/testing";
-import {
-  createStubConfig,
-  createStubDisplay,
-  createStubGit,
-  createStubProvider,
-} from "../../../../tests/helpers/test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMockKnowledgeService, DEFAULT_KNOWLEDGE_CONFIG } from "../../../../tests/helpers/portal_test_helper.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";

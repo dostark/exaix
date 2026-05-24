@@ -8,7 +8,7 @@
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { initTestDbService } from "../../../tests/helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 // JournalCommands module not found - skipping test
 // import { JournalCommands } from "../src/commands/journal.ts";
 

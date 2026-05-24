@@ -17,12 +17,7 @@ import { ReviewCommands } from "../src/commands/review_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ArtifactRegistry } from "@exaix/core/artifact";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
-import {
-  createStubConfig,
-  createStubDisplay,
-  createStubGit,
-  createStubProvider,
-} from "../../../tests/helpers/test_helpers.ts";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";

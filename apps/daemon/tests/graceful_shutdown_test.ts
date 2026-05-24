@@ -10,7 +10,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { assertSpyCalls, spy, stub } from "@std/testing/mock";
 import { GracefulShutdown } from "../src/graceful_shutdown.ts";
-import { createMockLogger } from "../../../tests/services/helpers/graceful_shutdown_test_helpers.ts";
+import { createMockLogger } from "@exaix/testing";
 import {
   LOG_MSG_ERROR_HANDLERS_REGISTERED,
   LOG_MSG_SIGNAL_HANDLERS_REGISTERED,

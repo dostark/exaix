@@ -11,8 +11,8 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { JournalCommands } from "../src/commands/journal_commands.ts";
 import type { IJournalFilterOptions } from "@exaix/core/types";
 import { UIOutputFormat } from "@exaix/tui";
-import { initTestDbService } from "../../../tests/helpers/db.ts";
-import { createStubConfig, createStubContext } from "../../../tests/helpers/test_helpers.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createStubConfig, createStubContext } from "@exaix/testing";
 import { captureAllOutputs, captureConsoleOutput } from "./helpers/console_utils.ts";
 import { expectExitWithLogs } from "./helpers/test_utils.ts";
 import {

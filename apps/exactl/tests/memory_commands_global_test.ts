@@ -12,7 +12,7 @@ import { UIOutputFormat } from "@exaix/tui";
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
 import { LearningBuilder } from "../../../tests/fixtures/memory_builder.ts";
-import { createTestProject } from "../../../tests/helpers/memory_test_helper.ts";
+import { createTestProject } from "@exaix/testing";
 
 // ===== Global Show Tests =====
 

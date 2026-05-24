@@ -7,6 +7,8 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/planning": "../core/src/planning/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/testing": "../testing/mod.ts",

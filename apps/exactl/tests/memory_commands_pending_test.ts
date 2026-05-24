@@ -13,7 +13,7 @@ import { MemoryStatus } from "@exaix/core/status";
 
 import { TestEnvironmentFactory } from "../../../tests/fixtures/test_environment_factory.ts";
 import { ExecutionMemoryBuilder } from "../../../tests/fixtures/memory_builder.ts";
-import { createTestProject } from "../../../tests/helpers/memory_test_helper.ts";
+import { createTestProject } from "@exaix/testing";
 
 /**
  * Helper to create a test environment with a pending proposal

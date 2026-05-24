@@ -9,8 +9,8 @@
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { EventLogger } from "@exaix/core/logger";
-import { createStubConfig, createStubContext, createStubDb } from "../../../tests/helpers/test_helpers.ts";
-import { createMockConfig } from "../../../tests/helpers/config.ts";
+import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
+import { createMockConfig } from "@exaix/testing";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { ExaPathDefaults } from "@exaix/core";
 import { BlueprintCommands } from "../src/commands/blueprint_commands.ts";

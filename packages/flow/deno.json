@@ -14,6 +14,7 @@
     "@exaix/core/blueprint": "../core/src/blueprint/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",
     "@exaix/core/skills": "../core/src/skills/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/schemas": "../schemas/mod.ts",
     "@exaix/schemas/": "../schemas/src/",
     "@exaix/request": "../request/mod.ts",

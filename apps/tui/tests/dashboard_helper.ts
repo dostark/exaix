@@ -9,7 +9,7 @@
 
 import { launchTuiDashboard } from "../src/tui_dashboard.ts";
 import { NotificationService } from "@exaix/core/notification";
-import { initTestDbService } from "../../../tests/helpers/db.ts";
+import { initTestDbService } from "@exaix/testing";
 
 import type { ITuiDashboard } from "../src/tui_dashboard.ts";
 import type { IDatabaseService } from "@exaix/storage-sqlite";

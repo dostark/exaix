@@ -11,7 +11,7 @@ import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.t
 import { ToolCommands } from "../src/commands/tool_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 import { captureConsoleOutput } from "./helpers/console_utils.ts";
-import { createStubGit } from "../../../tests/helpers/test_helpers.ts";
+import { createStubGit } from "@exaix/testing";
 
 function createRequest(id: string): ToolConfirmationRequest {
   return {

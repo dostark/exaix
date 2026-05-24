@@ -9,6 +9,7 @@
     "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/artifact": "../core/src/artifact/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
     "@exaix/ai/providers": "../ai/src/providers/mod.ts",

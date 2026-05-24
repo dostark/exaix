@@ -16,13 +16,13 @@ import { DaemonCommands } from "../src/commands/daemon_commands.ts";
 import { isProcessAlive } from "@exaix/cli/process_utils.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { getRuntimeDir } from "../../../tests/helpers/paths_helper.ts";
+import { getRuntimeDir } from "@exaix/testing";
 import type { IDisplayService } from "@exaix/core/types";
 import { EventLogger } from "@exaix/core/logger";
-import { createStubContext, createStubDb } from "../../../tests/helpers/test_helpers.ts";
+import { createStubContext, createStubDb } from "@exaix/testing";
 import type { JSONObject } from "@exaix/core/types";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
-import { readFixtureTextSync } from "../../../tests/helpers/fixtures.ts";
+import { readFixtureTextSync } from "@exaix/testing";
 
 /**
  * Helper class to expose and mock protected methods of DaemonCommands

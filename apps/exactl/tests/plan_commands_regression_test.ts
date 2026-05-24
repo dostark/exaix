@@ -10,8 +10,8 @@
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { createStubContext, createStubDb } from "../../../tests/helpers/test_helpers.ts";
-import { createStubConfig } from "../../../tests/helpers/test_helpers.ts";
+import { createStubContext, createStubDb } from "@exaix/testing";
+import { createStubConfig } from "@exaix/testing";
 import { ExaPathDefaults } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import type { IPlanMetadata } from "@exaix/core/types";

@@ -16,14 +16,9 @@ import { ensureDir, exists } from "@std/fs";
 import { RequestCommands } from "../src/commands/request_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { createMockConfig } from "../../../tests/helpers/config.ts";
-import { getWorkspaceRequestsDir } from "../../../tests/helpers/paths_helper.ts";
-import {
-  createStubConfig,
-  createStubDisplay,
-  createStubGit,
-  createStubProvider,
-} from "../../../tests/helpers/test_helpers.ts";
+import { createMockConfig } from "@exaix/testing";
+import { getWorkspaceRequestsDir } from "@exaix/testing";
+import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { AnalysisMode, type IRequestOptions } from "@exaix/core/types";
 

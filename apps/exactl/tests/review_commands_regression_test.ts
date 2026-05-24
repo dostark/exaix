@@ -10,11 +10,11 @@
 import { assertEquals } from "@std/assert";
 import { ensureDir } from "@std/fs";
 import { join } from "@std/path";
-import { createStubConfig, createStubContext, createStubDb } from "../../../tests/helpers/test_helpers.ts";
+import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
 import { type IReviewMetadata, ReviewCommands } from "../src/commands/review_commands.ts";
 import { PlanStatus } from "@exaix/core/status";
 import { ReviewStatus } from "@exaix/core/status";
-import { createMockConfig } from "../../../tests/helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 import type { IGitService } from "@exaix/core/types";
 const TEST_REQUEST_ID = "request-test123";
 const TEST_TRACE_ID = "test-trace-123";

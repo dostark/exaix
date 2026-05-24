@@ -14,7 +14,40 @@
  */
 
 import { z } from "zod";
-import { RETRYABLE_ERROR_TYPES, RETRYABLE_HTTP_STATUS_CODES, RETRYABLE_MESSAGE_PATTERNS } from "@exaix/core";
+
+/** Error types that should trigger a retry. */
+export const RETRYABLE_ERROR_TYPES: string[] = [
+  "NetworkError",
+  "TimeoutError",
+  "RateLimitError",
+  "InternalServerError",
+  "ServiceUnavailableError",
+  "GatewayTimeoutError",
+];
+
+/** HTTP status codes that should trigger a retry. */
+export const RETRYABLE_HTTP_STATUS_CODES: string[] = [
+  "429",
+  "500",
+  "502",
+  "503",
+  "504",
+];
+
+/** Error message patterns that should trigger a retry. */
+export const RETRYABLE_MESSAGE_PATTERNS: string[] = [
+  "rate limit",
+  "timeout",
+  "network",
+  "connection reset",
+  "socket hang up",
+  "try again",
+  "temporarily unavailable",
+  "server error",
+  "bad gateway",
+  "service unavailable",
+  "gateway timeout",
+];
 
 // ============================================================================
 // Types

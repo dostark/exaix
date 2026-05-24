@@ -7,8 +7,8 @@
  * @related-files [apps/tui/src/agent_status_view.ts]
  */
 
-import { MessageType } from "@exaix/core";
-import type { JSONValue } from "@exaix/core";
+import { MessageType } from "../types/enums.ts";
+import type { JSONValue } from "../types/mod.ts";
 
 export const AgentStatus = {
   ACTIVE: "active",

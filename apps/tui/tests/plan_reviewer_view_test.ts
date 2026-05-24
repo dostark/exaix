@@ -24,7 +24,7 @@ import { PlanAdapter } from "../../../apps/common/adapters/plan_adapter.ts";
 import { PlanCommands } from "../../../apps/exactl/src/commands/plan_commands.ts";
 import type { IPlanDetails } from "@exaix/core/types";
 import type { JSONObject, JSONValue } from "@exaix/core/types";
-import { createStubConfig, createStubContext, createStubDb } from "../../../tests/helpers/test_helpers.ts";
+import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
 
 function yamlFrontmatter(obj: Record<string, string>): string {
   const lines = ["---"];

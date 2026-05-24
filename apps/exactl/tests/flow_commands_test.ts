@@ -12,7 +12,7 @@ import { FlowCommands } from "../src/commands/flow_commands.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { join } from "@std/path";
 import { createCliTestContext } from "./helpers/test_setup.ts";
-import { createMockProvider } from "../../../tests/helpers/mock_provider.ts";
+import { createMockProvider } from "@exaix/testing";
 
 async function createMockContext(
   exit?: (code?: number) => never,

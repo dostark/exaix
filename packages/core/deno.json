@@ -24,6 +24,7 @@
     "@exaix/core/parsing": "./src/parsing/mod.ts",
     "@exaix/core/context": "./src/context/mod.ts",
     "@exaix/core/notification": "./src/notification/mod.ts",
+    "@exaix/core/planning": "./src/planning/mod.ts",
     "@exaix/core/evaluation": "./src/evaluation/mod.ts",
     "@exaix/core/blueprint": "./src/blueprint/mod.ts",
     "@exaix/core/errors": "./src/errors/mod.ts",
