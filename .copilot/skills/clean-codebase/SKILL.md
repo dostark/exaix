@@ -41,8 +41,10 @@ Phase 1 — Baseline measurement
        deno task check:style                            → list style violations
        deno task check:arch                             → list UNGROUNDED files
        deno task check:magic                            → count magic violations
-       deno run -A scripts/measure_duplication.ts       → duplication %
-  2. Tally totals: N type errors, N lint, N fmt, N style, N UNGROUNDED, N magic, duplication X%.
+       deno run -A scripts/measure_duplication.ts       → duplication % per category
+       deno task check:complexity                       → list functions above threshold
+  2. Tally totals: N type errors, N lint, N fmt, N style, N UNGROUNDED,
+     N magic, duplication X/Y/Z%, complexity breaches.
   3. Do NOT attempt all fixes at once — process one category per batch.
 
 Phase 2 — Type errors (highest priority)
@@ -81,38 +83,53 @@ Phase 7 — Magic values
  15. Re-run `deno task check:magic` — confirm reduction (target: minimize, ideally 0).
 
 Phase 8 — Duplication (if threshold breached)
- 16. If `measure_duplication.ts` reports > 2%, identify the top duplication clusters.
- 17. Extract common code into shared utilities. Do NOT over-abstract — only extract
-     when the duplication is identical behavior, not just similar-looking code.
- 18. Re-run `measure_duplication.ts` — below 2% threshold.
+  16. Run `deno run -A scripts/measure_duplication.ts` — checks three categories:
+      - Source: threshold 2%
+      - Tests: threshold 3%
+      - Integration tests: threshold 3%
+  17. If any category exceeds threshold, identify the top duplication clusters and
+      extract common code into shared utilities. Do NOT over-abstract — only extract
+      when the duplication is identical behavior, not just similar-looking code.
+  18. Re-run `measure_duplication.ts` — all three categories must pass.
 
-Phase 9 — Agent docs validation
- 19. Validate all `.copilot/` documentation meets schema requirements:
-       deno run -A scripts/validate_agents_docs.ts
-     This checks every `.copilot/` Markdown file for required frontmatter keys,
-     'Canonical prompt', and 'Examples' sections. Fix any reported violations
-     before proceeding.
+Phase 9 — Code complexity (if threshold breached)
+  19. Run `deno task check:complexity` — verifies no function exceeds cyclomatic
+      complexity of 15 (--threshold 15 --fail).
+  20. If violations found, refactor over-complex functions by splitting into smaller
+      single-responsibility functions. Keep behavioral changes to zero.
+  21. Re-run `deno task check:complexity` — must exit 0 with "Complexity matches expectations."
 
-Phase 10 — Final full-suite validation
-  20. Run tests to confirm all gates green:
-        deno task test_parallel
-     Or sequentially:
-        deno check packages/ apps/ tests/ && deno lint && deno fmt --check &&
-        deno task check:style && deno task check:arch && deno task check:magic &&
-        deno task test
-  21. All checks must report zero errors/warnings/violations before committing.
+Phase 10 — Agent docs validation
+  22. Validate all `.copilot/` documentation meets schema requirements:
+        deno run -A scripts/validate_agents_docs.ts
+      This checks every `.copilot/` Markdown file for required frontmatter keys,
+      'Canonical prompt', and 'Examples' sections. Fix any reported violations
+      before proceeding.
+
+Phase 11 — Final full-suite validation
+  23. Run tests to confirm all gates green:
+         deno task test_parallel
+      Or sequentially:
+         deno check packages/ apps/ tests/ && deno lint && deno fmt --check &&
+         deno task check:style && deno task check:arch && deno task check:magic &&
+         deno run -A scripts/measure_duplication.ts &&
+         deno task check:complexity &&
+         deno task test
+  24. All checks must report zero errors/warnings/violations before committing.
 
 Commit
- 22. Use #commit for the structured commit body. Subject example:
-       chore: drive codebase to fully green CI (N violations fixed)
+  25. Use #commit for the structured commit body. Subject example:
+        chore: drive codebase to fully green CI (N violations fixed)
 
-       what: fixed N type errors, N lint, N style, N UNGROUNDED files, magic reduced
-       rationale: CI must be green before next feature phase
-       tests: full suite N/N passing, coverage line X% branch Y%
-       who: <agent identity>
-        impact: repository-wide cleanup, no behavior changes
+        what: fixed N type errors, N lint, N style, N UNGROUNDED files, magic reduced,
+              duplication below threshold, complexity matches expectations
+        rationale: CI must be green before next feature phase
+        tests: full suite N/N passing, coverage line X% branch Y%
+        who: <agent identity>
+         impact: repository-wide cleanup, no behavior changes
 
-        CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED, magic OK
+         CI gates: lint OK, type-check OK, style 0 errors, arch N GROUNDED,
+                   magic OK, duplication X%, complexity OK
 
 Do / Don't
 - ✅ Do fix in dependency order (type errors first — they cascade into other failures)
@@ -142,7 +159,7 @@ Workflow chain (typical):
 
 ## Output format
 
-1. Baseline tallies (type errors, lint, fmt, style, arch, magic, duplication).
+1. Baseline tallies (type errors, lint, fmt, style, arch, magic, duplication per category, complexity breaches).
 1. Fix log: per-phase — what was fixed, file/line.
 1. Intermediate check results after each phase (0 errors confirmed).
 1. Final `deno task test_parallel` output: all gates green.
