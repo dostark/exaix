@@ -16,7 +16,7 @@ import { EventLogger } from "@exaix/core/logger";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import type { TestEnvironment } from "../integration/helpers/test_environment.ts";
 import { type IReviewStatus, ReviewStatus } from "@exaix/core/status";
-import { createMockConfig } from "./config.ts";
+import { createMockConfig } from "@exaix/testing";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { withCliProcessMutex } from "./cli_process_mutex.ts";
 

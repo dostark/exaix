@@ -7,9 +7,9 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { MemoryBankSource } from "@exaix/core";
 
-import { initActivityTableSchema, initTestDbService } from "../helpers/db.ts";
+import { initActivityTableSchema, initTestDbService } from "@exaix/testing";
 import { DatabaseService } from "@exaix/storage-sqlite";
-import { createMockConfig } from "../helpers/config.ts";
+import { createMockConfig } from "@exaix/testing";
 
 /**
  * Tests for DatabaseService (Activity Journal Storage)

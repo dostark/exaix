@@ -7,7 +7,7 @@
 
 import { dirname, fromFileUrl } from "@std/path";
 
-export const REPO_ROOT = dirname(dirname(dirname(fromFileUrl(import.meta.url))));
+export const REPO_ROOT = dirname(dirname(dirname(dirname(dirname(fromFileUrl(import.meta.url))))));
 
 export async function withRepoRoot<T>(fn: () => Promise<T> | T): Promise<T> {
   let previousCwd: string | null = null;

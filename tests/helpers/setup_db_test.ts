@@ -7,7 +7,7 @@
 
 import { assert } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
-import { getRuntimeDir } from "../helpers/paths_helper.ts";
+import { getRuntimeDir } from "@exaix/testing";
 
 // Resolve repository root (two levels up from this test file)
 const __dirname = dirname(fromFileUrl(import.meta.url));

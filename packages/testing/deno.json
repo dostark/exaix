@@ -11,8 +11,25 @@
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/core/status": "../core/src/status/mod.ts",
+    "@exaix/core/config": "../core/src/config/mod.ts",
+    "@exaix/core/request": "../core/src/request/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/repositories": "../core/src/repositories/mod.ts",
+    "@exaix/core/observability": "../core/src/observability/mod.ts",
+    "@exaix/core/errors": "../core/src/errors/mod.ts",
+    "@exaix/core/notification": "../core/src/notification/mod.ts",
+    "@exaix/core/cost": "../core/src/cost/mod.ts",
+    "@exaix/core/skills": "../core/src/skills/mod.ts",
+    "@exaix/core/artifact": "../core/src/artifact/mod.ts",
+    "@exaix/core/planning": "../core/src/planning/mod.ts",
+    "@exaix/core/func": "../core/src/func/mod.ts",
+    "@exaix/core/evaluation": "../core/src/evaluation/mod.ts",
+    "@exaix/core/parsing": "../core/src/parsing/mod.ts",
+    "@exaix/core/context": "../core/src/context/mod.ts",
     "@exaix/git": "../git/mod.ts",
-    "@exaix/git/": "../git/src/"
+    "@exaix/git/": "../git/src/",
+    "@exaix/git/testing": "../git/testing/mod.ts"
   },
   "exports": {
     ".": "./mod.ts"

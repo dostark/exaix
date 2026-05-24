@@ -7,19 +7,19 @@
 
 import { join } from "@std/path";
 import { PortalCommands } from "../../apps/exactl/src/commands/portal_commands.ts";
-import { initTestDbService } from "./db.ts";
-import { createTestConfigService } from "./config.ts";
+import { initTestDbService } from "@exaix/testing";
+import { createTestConfigService } from "@exaix/testing";
 import type { ConfigService } from "@exaix/core/config";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { ContextCardAdapter } from "../../apps/common/adapters/context_card_adapter.ts";
-import { createStubDisplay, createStubGit, createStubProvider } from "../helpers/test_helpers.ts";
+import { createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { PortalService } from "@exaix/portal";
 import { PortalAdapter } from "../../apps/common/adapters/portal_adapter.ts";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import { PortalAnalysisMode } from "@exaix/core";
-import { getPortalsDir } from "./paths_helper.ts";
+import { getPortalsDir } from "@exaix/testing";
 
 /**
  * Helper class for config-based portal tests

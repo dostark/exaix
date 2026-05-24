@@ -7,8 +7,8 @@
 
 import { assertEquals, assertRejects } from "@std/assert";
 import { ToolRegistry } from "@exaix/tool-runtime";
-import { createMockConfig } from "./config.ts";
-import { initTestDbService } from "./db.ts";
+import { createMockConfig } from "@exaix/testing";
+import { initTestDbService } from "@exaix/testing";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import type { JSONValue } from "@exaix/core/types";

@@ -8,8 +8,8 @@
 import { join } from "@std/path";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
-import { createMockConfig } from "./config.ts";
-import { getWorkspaceRequestsDir } from "./paths_helper.ts";
+import { createMockConfig } from "@exaix/testing";
+import { getWorkspaceRequestsDir } from "@exaix/testing";
 
 /**
  * Test helper for FileWatcher tests

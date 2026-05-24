@@ -5,7 +5,7 @@
  * and shared learned patterns across project boundaries.
  */
 
-import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../fixtures/memory_builder.ts";
+import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../../../../tests/fixtures/memory_builder.ts";
 import type { MemoryBankService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
