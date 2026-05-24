@@ -119,6 +119,62 @@ The pipeline is designed for **autonomous, multi-agent orchestration with explic
 
 Exaix is available in **three editions** (Solo, Team, Enterprise) with components differentiated by availability. See [Edition Model](#section-edition-model) for details.
 
+## Composability with Session-Oriented Tools
+
+Exaix is designed to **orchestrate rather than replace** session-oriented agent tools (OpenCode, Claude Code, Cursor). These tools excel at interactive refinement — clarifying intent, iterating on plans, or pair-programming code changes — while Exaix provides the governance, audit trail, and multi-agent orchestration that session tools lack.
+
+The embedding points for session tools are the **pipeline gates** where human judgment adds most value:
+
+```
+  Request (file)
+       │
+       ▼
+  [Refinement] ◄──── Optional: launch session tool for interactive Q&A
+       │                    to clarify intent, refine request body.
+       │                    Returns enriched request file.
+       ▼
+  Plan Generation
+       │
+       ▼
+  [Plan Review] ◄──── Optional: launch session tool to review, edit,
+       │                    or iterate on the generated plan with the user.
+       │                    Returns approved or modified plan.
+       ▼
+  Execution
+       │
+  ┌────┴────┐
+  │  Code   │◄──── Optional: launch session tool for interactive
+  │ Changes │       coding within the portal workspace. Agent and
+  └────┬────┘       user collaborate on changes. Returns committed
+       │            changes.
+       ▼
+  Review & Merge
+```
+
+### Integration Model
+
+Session tools are treated as **external delegates** — launched via a configurable tool call, not embedded in the Exaix process:
+
+- **Launch**: Exaix invokes the session tool via `ToolRegistry` (e.g., `delegate:open-code`), passing the workspace context (portal path, request file, current plan).
+- **Work**: The session tool operates on the shared file system (the portal workspace). Exaix streams events via `EventBusService` for visibility.
+- **Return**: The session tool writes results back to the workspace directory and signals completion. Exaix detects the signal and resumes the pipeline.
+
+The launch is optional and configured per request, portal, or blueprint:
+
+```toml
+[request.default.session_delegate]
+enabled = false      # default: no delegate
+
+[portal.my-app.session_delegate]
+enabled = true
+tool = "open-code"   # any tool registered in ToolRegistry
+stages = ["refinement", "code_changes"]  # which pipeline stages use it
+```
+
+### Architectural Invariant
+
+Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.
+
 ---
 
 ## System Architecture Overview

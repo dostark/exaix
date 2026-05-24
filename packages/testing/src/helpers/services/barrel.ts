@@ -16,7 +16,7 @@ import type { EventLogger, IEventLogger } from "@exaix/core/logger";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
-import { createTestConfig } from "@exaix/ai/tests/helpers/test_config.ts";
+import { createTestConfig } from "../../../../ai/tests/helpers/test_config.ts";
 import { TEST_AGENT_NAME, TEST_DEFAULT_AGENT, TEST_ID } from "../constants.ts";
 
 type IMockFlowRunner = IFlowRunner & {

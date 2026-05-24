@@ -20,6 +20,7 @@ export interface IRetryContext {
   elapsedMs: number;
   error: Error;
   delayMs: number;
+  temperature: number;
 }
 
 export interface IRetryableOperationOptions {
