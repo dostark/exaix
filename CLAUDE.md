@@ -65,9 +65,17 @@ links:
 | Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                 |
 | All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                     |
 
-## Project Overview
+## Agent Quick Facts
 
-**Exaix** is an asynchronous, file-based AI agent task automation engine built with **Deno** and **TypeScript**. It processes work requests through a gated pipeline (file → plan → approve → execute → review → merge) rather than interactive chat sessions. This makes it suitable for CI/CD-like workflows where humans set gates and review outputs rather than steering each conversation turn.
+Key facts about the Exaix system:
+
+- **Entry point**: `apps/daemon/main.ts` — starts the daemon, wires all services
+- **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
+- **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
+- **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
+- **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
+- **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
+- **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `packages/mcp/src/handlers/`
 
 ### Runtime & Tooling
 
@@ -315,6 +323,30 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 - **Hybrid:** Read-only access to Portal paths
 - Workspace paths are file-system paths under `Workspace/` such as `Workspace/Active`, `Workspace/Requests`, `Workspace/Plans`, and their subdirectories.
 - All production code and test helpers that construct or accept workspace paths must validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they do not access workspace paths.
+
+### Package vs App Placement
+
+**The placement test — one question:** _Can an external consumer use this module without knowing the Exaix daemon exists?_
+
+- **Yes** → it belongs in a package under `packages/`.
+- **No** → it belongs in `apps/` (runtime wiring).
+
+An `apps/` or runtime-wiring module orchestrates the running Exaix process. It coordinates multiple packages and runtime concerns: `Config`, `DatabaseService`, `EventLogger`, file-system state, process lifecycle. It wires packages together into coherent business flows, bootstrapped in `apps/daemon/main.ts` and `apps/exactl/src/init.ts`.
+
+**Common tells that a module belongs in a package:**
+
+- It has no `Config`, `DatabaseService`, or `EventLogger` in its constructor.
+- Its tests use only in-memory stubs or temp directories — no `initTestDbService()`.
+- Another package already imports it (or would need to, for type correctness).
+- Its domain logic would be equally valid in a different application.
+
+**Common tells that a module belongs in `apps/` (runtime wiring):**
+
+- It instantiates or receives a `DatabaseService` to persist state.
+- It emits events via `EventLogger` as part of its contract.
+- It reads from `Config` to determine runtime behaviour (paths, thresholds, feature flags).
+- It coordinates two or more packages — it is glue, not logic.
+- Removing it would break daemon startup or the request-processing pipeline directly.
 
 ### TUI Tests
 

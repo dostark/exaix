@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T16:59:24.904Z",
+  "generated_at": "2026-05-25T20:03:25.841Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1082,8 +1082,8 @@
     {
       "path": "ARCHITECTURE.md",
       "title": "ARCHITECTURE.md",
-      "short_summary": "Complete Exaix execution model and component map",
-      "version": 2.2,
+      "short_summary": "Exaix system architecture — component boundaries, dependency invariants, and design rationale",
+      "version": 3,
       "chunks": [
         ".copilot/chunks/ARCHITECTURE.md.chunk0.txt",
         ".copilot/chunks/ARCHITECTURE.md.chunk1.txt",
