@@ -1,6 +1,6 @@
 /**
  * @module ToolResultRemediationPolicyTest
- * @path tests/services/tool/tool_result_remediation_policy_test.ts
+ * @path packages/tool-runtime/tests/tool_result_remediation_policy_test.ts
  * @description Tests for remediation policy lookup and non-retry remediation modes
  * (fail_closed, escalate_only, normalize_then_validate) implemented in
  * packages/schemas/src/tool_result_remediation.ts (Phase 78 Step 78.3).

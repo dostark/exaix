@@ -109,7 +109,7 @@ export class CreateRequestTool extends ToolHandler {
     return {
       name: "exaix_create_request",
       description:
-        "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79. Returns the created request record with its assigned ID.",
+        "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation before execution. Returns the created request record with its assigned ID.",
       inputSchema: {
         type: "object",
         properties: {
@@ -268,7 +268,7 @@ export class ApprovePlanTool extends ToolHandler {
     return {
       name: "exaix_approve_plan",
       description:
-        "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation in Phase 79. Returns the updated plan record.",
+        "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation before execution. Returns the updated plan record.",
       inputSchema: {
         type: "object",
         properties: {

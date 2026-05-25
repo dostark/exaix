@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerGateDispatchTest
- * @path tests/flows/flow_runner_gate_dispatch_test.ts
+ * @path packages/flow/tests/flow_runner_gate_dispatch_test.ts
  * @description Tests for FlowRunner gate-step dispatch and requestAnalysis
  * forwarding through IFlowStepRequest (Phase 48 Step 6).
  */

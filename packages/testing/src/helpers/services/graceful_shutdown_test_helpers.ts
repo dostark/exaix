@@ -1,6 +1,9 @@
 /**
  * @module GracefulShutdownTestHelpers
- * @path tests/services/helpers/graceful_shutdown_test_helpers.ts
+ * @path packages/testing/src/helpers/services/graceful_shutdown_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for verifying process termination logic,
  * coordinating mock signal emission and LIFO task execution checks.
  */

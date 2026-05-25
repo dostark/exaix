@@ -81,7 +81,7 @@ export class SearchFilesTool extends ToolHandler {
     return {
       name: McpToolName.SEARCH_FILES,
       description:
-        "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search. Returns an array of matching relative file paths.",
+        "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use run_command with grep or rg. Returns an array of matching relative file paths.",
       inputSchema: {
         type: "object",
         properties: {

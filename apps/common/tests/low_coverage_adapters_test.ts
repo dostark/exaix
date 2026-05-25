@@ -1,6 +1,6 @@
 /**
  * @module LowCoverageAdaptersTest
- * @path tests/services/adapters/low_coverage_adapters_test.ts
+ * @path apps/common/tests/low_coverage_adapters_test.ts
  * @description Focused unit tests for low-coverage service adapters.
  */
 

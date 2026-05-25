@@ -1,6 +1,6 @@
 /**
  * @module AmendmentThresholdPolicyTest
- * @path tests/unit/services/amendment_threshold_policy_test.ts
+ * @path packages/core/tests/amendment_threshold_policy_test.ts
  * @description Unit tests for amendment threshold policy and config-driven trigger behavior.
  * @related-files ["packages/core/src/planning/mod.ts", "packages/schemas/src/config.ts"]
  */

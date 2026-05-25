@@ -85,7 +85,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages/mcp/server/handlers/read_file_tool.ts",
     description:
-      "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
+      "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use run_command with grep or rg; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
     output_schema: {
       type: "string",
       description: "Raw text content of the file.",
@@ -165,7 +165,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages/mcp/server/handlers/move_file_tool.ts",
     description:
-      "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
+      "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying. Returns a success confirmation message.",
     output_schema: {
       type: "string",
       description: "Success confirmation message.",
@@ -226,7 +226,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages/mcp/server/handlers/search_files_tool.ts",
     description:
-      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use grep_search. Returns an array of matching relative file paths.",
+      "Search for files matching a name or glob pattern inside a portal. Use to locate files when you don't know the exact path. For content search within files use run_command with grep or rg. Returns an array of matching relative file paths.",
     output_schema: {
       type: JsonSchemaType.ARRAY,
       description: "Array of relative file paths matching the search pattern.",
@@ -336,7 +336,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages/mcp/server/domain_tools.ts",
     description:
-      "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation in Phase 79. Returns the created request record with its assigned ID.",
+      "Create a new Exaix request record (a work item to be planned and executed by an agent). Use when a user describes a task that needs agent execution. Mutating — requires human confirmation before execution. Returns the created request record with its assigned ID.",
     output_schema: {
       type: "object",
       description: "Created request record with id, title, and status fields.",
@@ -389,7 +389,7 @@ export const TOOL_MANIFEST: IToolManifestEntry[] = [
     docs_visible: true,
     source_ref: "packages/mcp/server/domain_tools.ts",
     description:
-      "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation in Phase 79. Returns the updated plan record.",
+      "Approve or reject an execution plan, advancing it to the next state in the Exaix workflow. Use when a human has reviewed a plan and wants to authorize or cancel agent execution. Mutating — requires human confirmation before execution. Returns the updated plan record.",
     output_schema: {
       type: "object",
       description: "Updated plan record with new approval status.",

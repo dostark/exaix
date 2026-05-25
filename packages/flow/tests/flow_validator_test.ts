@@ -1,6 +1,6 @@
 /**
  * @module FlowValidatorTest
- * @path tests/flows/flow_validator_test.ts
+ * @path packages/flow/tests/flow_validator_test.ts
  * @description Comprehensive validation tests for the Flow YAML schema, ensuring structural
  * integrity, mandatory field presence, and early detection of malformed workflow definitions.
  */

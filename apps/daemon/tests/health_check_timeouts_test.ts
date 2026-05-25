@@ -1,6 +1,6 @@
 /**
  * @module HealthCheckTimeoutsTest
- * @path tests/services/health/health_check_timeouts_test.ts
+ * @path apps/daemon/tests/health_check_timeouts_test.ts
  * @description Verifies the resilience of the health check system, ensuring that
  * slow agent responses are correctly timed out without hanging the main service.
  */

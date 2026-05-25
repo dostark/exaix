@@ -112,7 +112,7 @@ export class MoveFileTool extends ToolHandler {
     return {
       name: McpToolName.MOVE_FILE,
       description:
-        "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying (use copy_file for that). Returns a success confirmation message.",
+        "Move or rename a file within a portal. The source path is removed after the move. Use for file reorganization or renaming; not for copying. Returns a success confirmation message.",
       inputSchema: {
         type: "object",
         properties: {

@@ -1,6 +1,6 @@
 /**
  * @module AuditLoggerTest
- * @path tests/services/audit/audit_logger_test.ts
+ * @path packages/execution/tests/audit_logger_test.ts
  * @description Verifies the AuditLogger service, ensuring that internal system
  * events and security violations are correctly logged for traceability.
  */

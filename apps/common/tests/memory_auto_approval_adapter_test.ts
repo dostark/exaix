@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module MemoryAutoApprovalAdapterTest
- * @path tests/services/adapters/memory_auto_approval_adapter_test.ts
+ * @path apps/common/tests/memory_auto_approval_adapter_test.ts
  * @description Unit tests for the memory auto-approval adapter to increase coverage on adapter delegation.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module ReActLoopStrategyHeartbeatTest
- * @path tests/services/agent/strategies/react_loop_strategy_heartbeat_test.ts
+ * @path packages/execution/tests/react_loop_strategy_heartbeat_test.ts
  * @description Verifies that ReActLoopStrategy emits heartbeat events during
  * long-running LLM calls and clears the timer on success, failure, and cancellation.
  */

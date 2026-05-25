@@ -1,6 +1,6 @@
 /**
  * @module FlowDefinitionTest
- * @path tests/flows/define_flow_test.ts
+ * @path packages/flow/tests/define_flow_test.ts
  * @description Verifies the programmatic flow definition API, ensuring that
  * complex multi-agent workflows can be correctly constructed and validated.
  */

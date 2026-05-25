@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerExecutionModeTest
- * @path tests/flows/flow_runner_execution_mode_test.ts
+ * @path packages/flow/tests/flow_runner_execution_mode_test.ts
  * @description Verifies FlowRunner dispatches dynamic vs declared steps correctly for Phase 56.
  */
 

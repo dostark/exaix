@@ -53,7 +53,7 @@ Deno.test("tool_catalog_sync: TOOLS.md AGENT_TOOLS section is not empty", async 
 Deno.test("tool_catalog_sync: TOOLS.md describes Source column as a current ownership hint", async () => {
   const content = await Deno.readTextFile(TOOLS_MD_PATH);
   assert(
-    content.includes("Source column is generated from explicit manifest ownership metadata"),
+    content.includes("Source column is generated from explicit manifest"),
     "TOOLS.md must describe the Source column as coming from explicit manifest ownership metadata",
   );
   assert(

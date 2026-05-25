@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module LoggingDecoratorTest
- * @path tests/services/ai/logging_decorator_test.ts
+ * @path packages/ai/tests/logging_decorator_test.ts
  * @description Verifies the AOP-style logging decorators, ensuring method execution, arguments,
  * and return values are transparently captured by the StructuredLogger.
  */

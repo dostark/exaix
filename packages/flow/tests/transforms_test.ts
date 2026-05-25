@@ -1,6 +1,6 @@
 /**
  * @module FlowTransformsTest
- * @path tests/flows/transforms_test.ts
+ * @path packages/flow/tests/transforms_test.ts
  * @description Verifies the core data transformation functions for flows, including
  * section extraction, context merging, and JSON-to-text mapping.
  */

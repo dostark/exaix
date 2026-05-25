@@ -1,6 +1,9 @@
 /**
  * @module ToolRegistryTestHelper
- * @path tests/helpers/tool_registry_test_helper.ts
+ * @path packages/tool-runtime/tests/helpers/tool_registry_test_helper.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for ToolRegistry tests, ensuring stable
  * registration of mock tools and validation of JSON argument schemas.
  */

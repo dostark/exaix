@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T17:45:57.326Z",
+  "generated_at": "2026-05-25T16:59:24.904Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1059,6 +1059,123 @@
         ".copilot/chunks/openai.md.chunk5.txt",
         ".copilot/chunks/openai.md.chunk6.txt",
         ".copilot/chunks/openai.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "LLM_GUIDE.md",
+      "title": "LLM Behavioral Guidelines",
+      "short_summary": "Four universal rules for any LLM agent: think before coding, simplicity first, surgical changes, goal-driven execution.",
+      "version": "1.0",
+      "topics": [
+        "guidelines",
+        "behavior",
+        "discipline",
+        "coding-standards"
+      ],
+      "chunks": [
+        ".copilot/chunks/LLM_GUIDE.md.chunk0.txt",
+        ".copilot/chunks/LLM_GUIDE.md.chunk1.txt",
+        ".copilot/chunks/LLM_GUIDE.md.chunk2.txt",
+        ".copilot/chunks/LLM_GUIDE.md.chunk3.txt"
+      ]
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "title": "ARCHITECTURE.md",
+      "short_summary": "Complete Exaix execution model and component map",
+      "version": 2.2,
+      "chunks": [
+        ".copilot/chunks/ARCHITECTURE.md.chunk0.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk1.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk2.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk3.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk4.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk5.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk6.txt",
+        ".copilot/chunks/ARCHITECTURE.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "CLAUDE.md",
+      "title": "Agent Instructions",
+      "short_summary": "Agent coordination and task-specific guidance index",
+      "version": 1.1,
+      "chunks": [
+        ".copilot/chunks/CLAUDE.md.chunk0.txt",
+        ".copilot/chunks/CLAUDE.md.chunk1.txt",
+        ".copilot/chunks/CLAUDE.md.chunk2.txt",
+        ".copilot/chunks/CLAUDE.md.chunk3.txt",
+        ".copilot/chunks/CLAUDE.md.chunk4.txt",
+        ".copilot/chunks/CLAUDE.md.chunk5.txt",
+        ".copilot/chunks/CLAUDE.md.chunk6.txt",
+        ".copilot/chunks/CLAUDE.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "README.md",
+      "title": "Exaix Overview & Quickstart",
+      "short_summary": "Exaix Orchestration Platform - Overview and Quickstart",
+      "version": 2.1,
+      "chunks": [
+        ".copilot/chunks/README.md.chunk0.txt",
+        ".copilot/chunks/README.md.chunk1.txt",
+        ".copilot/chunks/README.md.chunk2.txt",
+        ".copilot/chunks/README.md.chunk3.txt",
+        ".copilot/chunks/README.md.chunk4.txt",
+        ".copilot/chunks/README.md.chunk5.txt",
+        ".copilot/chunks/README.md.chunk6.txt",
+        ".copilot/chunks/README.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "TOOLS.md",
+      "title": "MCP Agent Tool Index",
+      "short_summary": "Full MCP agent tool index with descriptions, categories, dynamic/approval flags, and source refs. Auto-generated from the canonical manifest.",
+      "version": 1.3,
+      "topics": [
+        "mcp",
+        "tools",
+        "tool-selection",
+        "agent-tools",
+        "tool-use"
+      ],
+      "chunks": [
+        ".copilot/chunks/TOOLS.md.chunk0.txt",
+        ".copilot/chunks/TOOLS.md.chunk1.txt",
+        ".copilot/chunks/TOOLS.md.chunk2.txt",
+        ".copilot/chunks/TOOLS.md.chunk3.txt"
+      ]
+    },
+    {
+      "path": "CODE_STYLE.md",
+      "title": "Code Style & Standards",
+      "short_summary": "Coding standards and stylistic requirements for Exaix",
+      "version": 1.2,
+      "chunks": [
+        ".copilot/chunks/CODE_STYLE.md.chunk0.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk1.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk2.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk3.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk4.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk5.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk6.txt",
+        ".copilot/chunks/CODE_STYLE.md.chunk7.txt"
+      ]
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "title": "CONTRIBUTING.md",
+      "short_summary": "Development workflow and contribution guidelines",
+      "version": 1.2,
+      "chunks": [
+        ".copilot/chunks/CONTRIBUTING.md.chunk0.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk1.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk2.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk3.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk4.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk5.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk6.txt",
+        ".copilot/chunks/CONTRIBUTING.md.chunk7.txt"
       ]
     }
   ]

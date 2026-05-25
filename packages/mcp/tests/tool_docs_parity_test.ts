@@ -109,8 +109,8 @@ Deno.test("docs_parity: approval marks in TOOLS.md match manifest requires_human
       mismatches.push(`${tool.name}: row not found`);
       continue;
     }
-    if (!toolRow.includes("⚠ Phase 79")) {
-      mismatches.push(`${tool.name}: missing '⚠ Phase 79' approval mark`);
+    if (!toolRow.includes("⚠ Requires human approval")) {
+      mismatches.push(`${tool.name}: missing '⚠ Requires human approval' approval mark`);
     }
   }
 

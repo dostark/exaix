@@ -1,6 +1,6 @@
 /**
  * @module AgentExecutorJournalTest
- * @path tests/services/agent/agent_executor_journal_test.ts
+ * @path packages/execution/tests/agent_executor_journal_test.ts
  * @description Verifies AgentExecutor journal calls use correct Actor/Agent/Identity field separation.
  */
 

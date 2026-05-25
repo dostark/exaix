@@ -1,6 +1,6 @@
 /**
  * @module CliConfirmationInterceptorTest
- * @path tests/services/tool/cli_confirmation_interceptor_test.ts
+ * @path packages/tool-runtime/tests/cli_confirmation_interceptor_test.ts
  * @description Focused tests for the synchronous Phase 79 CLI confirmation adapter.
  */
 

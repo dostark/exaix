@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentServiceContractTest
- * @path tests/unit/services/plan_amendment_service_contract_test.ts
+ * @path packages/core/tests/plan_amendment_service_contract_test.ts
  * @description Contract tests for PlanAmendmentService ensuring interface compliance and lifecycle behavior.
  * @related-files [@exaix/core/planning, "packages/core/src/types/i_plan_amendment_service.ts"]
  */

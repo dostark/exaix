@@ -1,6 +1,6 @@
 /**
  * @module AgentCapabilityTest
- * @path tests/services/agent/agent_capability_test.ts
+ * @path packages/execution/tests/agent_capability_test.ts
  * @description Verifies the logic for mapping agent blueprints to runtime capabilities,
  * ensuring tools and context are correctly injected based on agent definitions.
  */

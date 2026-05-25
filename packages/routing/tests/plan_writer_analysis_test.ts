@@ -1,6 +1,6 @@
 /**
  * @module PlanWriterAnalysisTest
- * @path tests/services/plan/plan_writer_analysis_test.ts
+ * @path packages/routing/tests/plan_writer_analysis_test.ts
  * @description Verifies that PlanWriter correctly includes structured request analysis
  * metadata in generated plan files.
  * @related-files [@exaix/core/planning, "packages/schemas/src/plan_schema.ts", "packages/schemas/src/request_analysis.ts"]

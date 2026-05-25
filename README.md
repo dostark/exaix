@@ -1,5 +1,5 @@
 ---
-title: "Agent Instructions"
+title: "Exaix Overview & Quickstart"
 description: Exaix Orchestration Platform - Overview and Quickstart
 agent_priority: critical
 copilot_knowledge_base: true
@@ -138,15 +138,6 @@ Env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Override: `EXA_LLM_PROVIDE
 - **TUI Dashboard**: `exactl dashboard` — monitor, review, approve in terminal.
 - **Daemon**: Background service processes requests via file watcher.
 - **Least-privilege**: Deno sandbox per agent task.
-
-## Tool result schemas
-
-Integrators can inspect expected tool result schemas before calling a tool by using `exaix/tools/result_schema`.
-
-- The discovery method returns the same schema contract enforced at runtime for structured tool results.
-- Validation failures are reported as tool-contract errors, not transport errors.
-- In MCP responses, `isError` indicates the returned payload failed the declared tool-result contract after any allowed remediation path was attempted.
-- Read-only tools may be normalized or retried when policy allows it, but validation failures are reported as tool-contract errors when remediation does not succeed.
 
 ## Testing & Contributing
 

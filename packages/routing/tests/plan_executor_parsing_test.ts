@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorParsingTest
- * @path tests/services/plan/plan_executor_parsing_test.ts
+ * @path packages/routing/tests/plan_executor_parsing_test.ts
  * @description Verifies the parsing logic for agent execution plans, ensuring correct
  * extraction of tool sequences and argument structures.
  */

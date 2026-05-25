@@ -1,6 +1,6 @@
 /**
  * @module FlowValidatorExtendedTest
- * @path tests/flows/flow_validator_extended_test.ts
+ * @path packages/flow/tests/flow_validator_extended_test.ts
  * @description Targeted tests for Flow validation, ensuring robust enforcement of
  * required output configurations and wave-based execution constraints.
  */

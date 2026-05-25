@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryDescriptionQualityTest
- * @path tests/services/tool/tool_registry_description_quality_test.ts
+ * @path packages/tool-runtime/tests/tool_registry_description_quality_test.ts
  * @description Validates that every tool registered in ToolRegistry meets the same
  * agent-quality bar enforced for MCP manifest tools: minimum length, disambiguation
  * guidance ("Use"), and output description ("Returns"/"return"). Prevents regressions

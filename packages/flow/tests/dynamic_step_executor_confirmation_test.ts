@@ -1,6 +1,6 @@
 /**
  * @module DynamicStepExecutorConfirmationTest
- * @path tests/flows/dynamic_step_executor_confirmation_test.ts
+ * @path packages/flow/tests/dynamic_step_executor_confirmation_test.ts
  * @description Regression tests for Phase 79 confirmation gating inside
  * DynamicStepExecutor. Covers approval, denial, no-interceptor fallback,
  * and the defensive approval-required branch.

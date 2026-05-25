@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module SkillsAdapterTest
- * @path tests/services/adapters/skills_adapter_test.ts
+ * @path apps/common/tests/skills_adapter_test.ts
  * @description Unit tests for SkillsAdapter, verifying delegation to SkillsService
  * and filter normalization logic.
  */

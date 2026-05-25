@@ -1,6 +1,6 @@
 /**
  * @module ReflexiveAgentCriteriaTest
- * @path tests/services/reflexive/reflexive_agent_criteria_test.ts
+ * @path packages/execution/tests/reflexive_agent_criteria_test.ts
  * @description Verifies that ReflexiveAgent injects structured requirements into
  * the critique prompt when IRequestAnalysis is available, and that CritiqueSchema
  * includes the requirementsFulfillment field.

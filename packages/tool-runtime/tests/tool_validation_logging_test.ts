@@ -1,6 +1,6 @@
 /**
  * @module ToolValidationLoggingTest
- * @path tests/services/tool/tool_validation_logging_test.ts
+ * @path packages/tool-runtime/tests/tool_validation_logging_test.ts
  * @description Unit tests for tool validation failure logging and plan amendment
  * integration in src/services/tool/tool_validation_reporter.ts (Phase 78 Step 78.4).
  */

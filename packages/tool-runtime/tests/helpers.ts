@@ -1,6 +1,9 @@
 /**
  * @module ToolTestHelpers
- * @path tests/tools/helpers.ts
+ * @path packages/tool-runtime/tests/helpers.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Shared setup helpers for tool registry tests.
  */
 

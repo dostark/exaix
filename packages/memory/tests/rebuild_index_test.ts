@@ -1,6 +1,6 @@
 /**
  * @module MemoryIndexRebuildTest
- * @path tests/services/rebuild/rebuild_index_test.ts
+ * @path packages/memory/tests/rebuild_index_test.ts
  * @description Verifies the batch re-indexing of memory banks, ensuring correct regeneration of
  * keyword indices and embedding vectors across project and global scopes.
  */

@@ -1,6 +1,9 @@
 /**
  * @module PortalWorkspaceTestHelper
- * @path tests/services/helpers/portal_workspace_test_helper.ts
+ * @path packages/testing/src/helpers/services/portal_workspace_test_helper.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides a reusable test harness for partitioned portal repositories,
  * ensuring stable discovery of portal-bound files and metadata.
  */

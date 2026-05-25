@@ -1,6 +1,9 @@
 /**
  * @module PathsTestHelper
- * @path tests/helpers/paths_helper.ts
+ * @path packages/testing/src/helpers/paths_helper.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for resolving system paths during tests,
  * ensuring consistent identification of 'Blueprints', 'Requests', and 'Plans' roots.
  */

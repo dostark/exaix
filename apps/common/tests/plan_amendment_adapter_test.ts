@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentAdapterTest
- * @path tests/services/adapters/plan_amendment_adapter_test.ts
+ * @path apps/common/tests/plan_amendment_adapter_test.ts
  * @description Unit tests for the PlanAmendmentAdapter to verify delegation to the underlying service.
  */
 

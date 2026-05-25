@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module ToolReflectorSchemaTest
- * @path tests/services/tool/tool_reflector_test.ts
+ * @path packages/tool-runtime/tests/tool_reflector_test.ts
  * @description Validates the data schema for agent-led tool reflection, ensuring structured
  * capture of technical debt, suggested improvements, and tool execution confidence.
  */

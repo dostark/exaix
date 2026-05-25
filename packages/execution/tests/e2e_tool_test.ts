@@ -1,6 +1,6 @@
 /**
  * @module E2EToolTest
- * @path tests/tools/e2e_tool_test.ts
+ * @path packages/execution/tests/e2e_tool_test.ts
  * @description Verifies the specialized E2E workflow tools, ensuring correct
  * coordination between agent actions and multi-step verification triggers.
  */

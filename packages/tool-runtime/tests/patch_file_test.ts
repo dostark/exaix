@@ -1,6 +1,6 @@
 /**
  * @module PatchFileToolTest
- * @path tests/tools/patch_file_test.ts
+ * @path packages/tool-runtime/tests/patch_file_test.ts
  * @description Verifies the 'patch_file' tool, ensuring that targeted source code
  * modifications follow strict contextual matching rules.
  */

@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerConfirmationWiringTest
- * @path tests/flows/flow_runner_confirmation_wiring_test.ts
+ * @path packages/flow/tests/flow_runner_confirmation_wiring_test.ts
  * @description Verifies FlowRunner wires a real tool confirmation interceptor into DynamicStepExecutor.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module EnumsIdentitySeparationTest
- * @path tests/shared/enums_identity_separation_test.ts
+ * @path packages/core/tests/enums_identity_separation_test.ts
  * @description Verifies enum values for Actor/Agent/Identity separation are correct and legacy AGENT members are removed.
  */
 

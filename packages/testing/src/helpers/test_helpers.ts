@@ -1,6 +1,9 @@
 /**
  * @module TestHelpersSelfTest
- * @path tests/helpers/test_helpers.ts
+ * @path packages/testing/src/helpers/test_helpers.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Self-tests for the primary test helper repository, ensuring stable delivery
  * of mock files, request factories, and common visual primitives.
  */

@@ -1,6 +1,6 @@
 /**
  * @module NotificationQueueConfirmationInterceptorTest
- * @path tests/services/tool/notification_queue_confirmation_interceptor_test.ts
+ * @path packages/tool-runtime/tests/notification_queue_confirmation_interceptor_test.ts
  * @description Tests the async DB-backed confirmation queue adapter for Phase 79.
  */
 

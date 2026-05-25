@@ -1,6 +1,6 @@
 /**
  * @module NotificationCoverageTest
- * @path tests/services/notification/notification_coverage_test.ts
+ * @path packages/core/tests/notification_coverage_test.ts
  * @description Negative testing and state edge-case coverage for the NotificationService,
  * ensuring graceful handling of uninitialized states and missing database records.
  */

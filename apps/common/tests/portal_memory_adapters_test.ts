@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module PortalMemoryAdaptersTest
- * @path tests/services/adapters/portal_memory_adapters_test.ts
+ * @path apps/common/tests/portal_memory_adapters_test.ts
  * @description Focused unit tests for low-coverage service adapters:
  *   PortalAdapter, MemoryServiceAdapter, ArchiveAdapter,
  *   FlowValidatorAdapter, DaemonServiceAdapter.

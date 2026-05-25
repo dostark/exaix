@@ -1,6 +1,6 @@
 /**
  * @module ReflexiveAgentEnhancedPromptTest
- * @path tests/services/reflexive/reflexive_agent_enhanced_prompt_test.ts
+ * @path packages/execution/tests/reflexive_agent_enhanced_prompt_test.ts
  * @description Tests for buildEnhancedCritiquePrompt() extraction and the
  * MAX_CRITIQUE_REQUIREMENTS cap (Phase 49, Step 2).
  * Tests complementary to reflexive_agent_criteria_test.ts — covers only

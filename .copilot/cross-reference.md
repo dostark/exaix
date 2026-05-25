@@ -49,14 +49,23 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Google Gemini Provider Adaptation Guide | [providers/google.md](providers/google.md) | |
 | Gemini Long-Context Reasoning Guide | [providers/google-long-context.md](providers/google-long-context.md) | |
 | OpenAI adaptation notes | [providers/openai.md](providers/openai.md) | |
+| LLM Behavioral Guidelines | [../LLM_GUIDE.md](../LLM_GUIDE.md) | |
+| ARCHITECTURE.md | [../ARCHITECTURE.md](../ARCHITECTURE.md) | |
+| Agent Instructions | [../CLAUDE.md](../CLAUDE.md) | |
+| Exaix Overview & Quickstart | [../README.md](../README.md) | |
+| MCP Agent Tool Index | [../TOOLS.md](../TOOLS.md) | |
+| Code Style & Standards | [../CODE_STYLE.md](../CODE_STYLE.md) | |
+| CONTRIBUTING.md | [../CONTRIBUTING.md](../CONTRIBUTING.md) | |
 
 ## Search by Topic
 
+- **`agent-tools`** → [../TOOLS.md](../TOOLS.md)
 - **`agents`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
+- **`behavior`** → [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`best-practices`** → [guidelines/README.md](guidelines/README.md), [skills/commit/SKILL.md](skills/commit/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md)
 - **`blueprints`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
 - **`bug-fix`** → [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md)
@@ -65,6 +74,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`cleanup`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`code-quality`** → [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`code-review`** → [skills/review/SKILL.md](skills/review/SKILL.md)
+- **`coding-standards`** → [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`commit`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`commits`** → [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
 - **`configurability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
@@ -77,6 +87,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`dependencies`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`deployment`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`development`** → [guidelines/exaix-development.md](guidelines/exaix-development.md)
+- **`discipline`** → [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`discovery`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
 - **`docs`** → [guidelines/documentation.md](guidelines/documentation.md), [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`documentation`** → [skills/doc/SKILL.md](skills/doc/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
@@ -86,7 +97,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`gemini`** → [providers/google-long-context.md](providers/google-long-context.md)
 - **`git`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`governance`** → [guidelines/process-README.md](guidelines/process-README.md)
-- **`guidelines`** → [guidelines/README.md](guidelines/README.md)
+- **`guidelines`** → [guidelines/README.md](guidelines/README.md), [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`helpers`** → [guidelines/testing.md](guidelines/testing.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
 - **`improvement-planning`** → [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`infrastructure`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
@@ -98,6 +109,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`long-context`** → [providers/google.md](providers/google.md), [providers/google-long-context.md](providers/google-long-context.md)
 - **`magic-values`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
 - **`maintenance`** → [guidelines/self-improvement.md](guidelines/self-improvement.md), [skills/refactor/SKILL.md](skills/refactor/SKILL.md), [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
+- **`mcp`** → [../TOOLS.md](../TOOLS.md)
 - **`methodology`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/README.md](guidelines/README.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`migration`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`navigation`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
@@ -143,9 +155,10 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`tests`** → [guidelines/testing.md](guidelines/testing.md)
 - **`thinking-protocol`** → [providers/openai.md](providers/openai.md)
 - **`thought-structure`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md)
-- **`tool-use`** → [providers/claude.md](providers/claude.md)
+- **`tool-selection`** → [../TOOLS.md](../TOOLS.md)
+- **`tool-use`** → [providers/claude.md](providers/claude.md), [../TOOLS.md](../TOOLS.md)
 - **`tooling`** → [providers/openai.md](providers/openai.md)
-- **`tools`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md)
+- **`tools`** → [guidelines/jscpd-guide.md](guidelines/jscpd-guide.md), [../TOOLS.md](../TOOLS.md)
 - **`traceability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`upgrade`** → [skills/upgrade/SKILL.md](skills/upgrade/SKILL.md)
 - **`validation`** → [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)

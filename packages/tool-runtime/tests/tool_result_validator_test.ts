@@ -1,6 +1,6 @@
 /**
  * @module ToolResultValidatorTest
- * @path tests/services/tool/tool_result_validator_test.ts
+ * @path packages/tool-runtime/tests/tool_result_validator_test.ts
  * @description Tests for stateless tool result validation functions exported from
  * packages/schemas/src/tool_result_validator.ts. Validates envelope and MCP response
  * validation at registry and adapter boundaries (Phase 78 Enforcement Points 1 and 2).

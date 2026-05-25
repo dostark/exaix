@@ -1,6 +1,6 @@
 /**
  * @module NotificationServiceTest
- * @path tests/services/notification/notification_test.ts
+ * @path packages/core/tests/notification_test.ts
  * @description Verifies the notification dispatch system, ensuring updates to memory banks
  * and long-running operations are correctly relayed to users via the DatabaseService.
  */

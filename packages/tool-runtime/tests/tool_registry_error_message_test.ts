@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryErrorMessageTest
- * @path tests/services/tool/tool_registry_error_message_test.ts
+ * @path packages/tool-runtime/tests/tool_registry_error_message_test.ts
  * @description Verifies the ToolRegistry's error reporting logic, ensuring that security
  * denials include helpful context about allowed directory roots and portal boundaries.
  */

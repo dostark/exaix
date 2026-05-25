@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryPortalAccessTest
- * @path tests/services/tool/tool_registry_portal_access_test.ts
+ * @path packages/tool-runtime/tests/tool_registry_portal_access_test.ts
  * @description Verifies the ToolRegistry's security model for portal-bound execution,
  * ensuring tools can safely access and manipulate files within approved portal targets.
  */

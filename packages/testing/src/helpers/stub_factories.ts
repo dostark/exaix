@@ -5,7 +5,7 @@
  * core services used in CLI initialization and testing.
  * @architectural-layer CLI
  * @ungrounded
- * @related-files [apps/exactl/src/init.ts, "apps/tui/src/services/tui_service_factory.ts", "tests/helpers/test_helpers.ts"]
+ * @related-files [apps/exactl/src/init.ts, "apps/tui/src/services/tui_service_factory.ts", "packages/testing/src/helpers/test_helpers.ts"]
  */
 
 import type { IGitService } from "@exaix/core/types";

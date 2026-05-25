@@ -1,6 +1,6 @@
 /**
  * @module ConfidenceScorerSchemaTest
- * @path tests/services/confidence/confidence_scorer_test.ts
+ * @path packages/quality-gate/tests/confidence_scorer_test.ts
  * @description Validates the data schema for agent confidence scoring, ensuring structured
  * reporting of self-assessment levels and numeric certainty scores.
  */

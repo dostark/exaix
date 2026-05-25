@@ -1,6 +1,6 @@
 /**
  * @module PlanExecutorTest
- * @path tests/services/plan/plan_executor_test.ts
+ * @path packages/routing/tests/plan_executor_test.ts
  * @description Verifies the core PlanExecutor service, ensuring sequential tool execution,
  * robust failure recovery, and correct propagation of step results.
  */

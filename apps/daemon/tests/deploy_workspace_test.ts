@@ -1,6 +1,6 @@
 /**
  * @module WorkspaceDeployTest
- * @path tests/services/deploy/deploy_workspace_test.ts
+ * @path apps/daemon/tests/deploy_workspace_test.ts
  * @description Verifies workspace-level deployment logic, ensuring that cross-portal
  * dependencies and global configuration are correctly handled during deployment.
  */

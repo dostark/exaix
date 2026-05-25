@@ -1,6 +1,6 @@
 /**
  * @module InterStepTransformTest
- * @path tests/flows/inter_step_test.ts
+ * @path packages/flow/tests/inter_step_test.ts
  * @description Verifies the logic for data transformation and context passing
  * between sequential steps in an agentic workflow.
  */

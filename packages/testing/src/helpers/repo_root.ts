@@ -1,6 +1,9 @@
 /**
  * @module RepoRootTestHelper
- * @path tests/helpers/repo_root.ts
+ * @path packages/testing/src/helpers/repo_root.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides utilities for identifying the repository root, ensuring
  * stable path resolution across varied local and CI test environments.
  */

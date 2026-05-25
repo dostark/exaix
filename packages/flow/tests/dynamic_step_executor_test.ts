@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module DynamicStepExecutorTest
- * @path tests/flows/dynamic_step_executor_test.ts
+ * @path packages/flow/tests/dynamic_step_executor_test.ts
  * @description Verifies DynamicStepExecutor ReAct-style dynamic tool selection for Phase 56.
  */
 

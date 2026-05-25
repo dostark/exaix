@@ -1,6 +1,6 @@
 /**
  * @module DenoTaskToolTest
- * @path tests/tools/deno_task_test.ts
+ * @path packages/execution/tests/deno_task_test.ts
  * @description Verifies the 'deno_task' tool implementation, ensuring safe execution
  * of project tasks defined in deno.json.
  */

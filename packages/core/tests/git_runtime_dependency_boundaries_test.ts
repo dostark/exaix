@@ -1,6 +1,6 @@
 /**
  * @module GitRuntimeDependencyBoundariesTest
- * @path tests/shared/git_runtime_dependency_boundaries_test.ts
+ * @path packages/core/tests/git_runtime_dependency_boundaries_test.ts
  * @description Verifies that git package source files do not add runtime imports to workspace packages beyond @exaix/core.
  */
 

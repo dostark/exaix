@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module SubjectPropagationTest
- * @path tests/services/subject/subject_propagation_test.ts
+ * @path packages/core/tests/subject_propagation_test.ts
  * @description Integration tests for subject propagation from Request to Plan.
  */
 

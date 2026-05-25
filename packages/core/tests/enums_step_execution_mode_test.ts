@@ -1,6 +1,6 @@
 /**
  * @module FlowStepExecutionModeTest
- * @path tests/shared/enums_step_execution_mode_test.ts
+ * @path packages/core/tests/enums_step_execution_mode_test.ts
  * @description Verifies stable FlowStepExecutionMode enum behavior and backward-compatible MCP tool classification invariants.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module HealthCheckServiceTest
- * @path tests/services/health/health_check_service_targeted_test.ts
+ * @path apps/daemon/tests/health_check_service_targeted_test.ts
  * @description Targeted tests for HealthCheckService, verifying multi-provider health aggregation,
  * status caching, and configurable alerting thresholds for degraded services.
  */

@@ -1,6 +1,6 @@
 /**
  * @module RootRegistryBootstrapTest
- * @path tests/unit/ai/registry_bootstrap_test.ts
+ * @path packages/ai/tests/registry_bootstrap_test.ts
  * @description Verifies that the root composition bootstrap registers extracted concrete AI providers.
  */
 

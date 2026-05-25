@@ -24,7 +24,7 @@ Content is organized by **role**, not by provider.
 ├── skills/         # Multi-step autonomous workflows (one SKILL.md per skill)
 ├── guidelines/     # Reference guidelines and process documents
 ├── providers/      # Provider-specific adaptation notes
-├── planning/       # Phase planning documents (.copilot/planning/phase-NN-*.md)
+├── planning/       # Reserved — active phase docs live in exaix-dev-docs/planning/
 ├── cross-reference.md  # Task → document quick reference (start here)
 ├── manifest.json   # Auto-generated index of all agent docs
 └── chunks/         # Auto-generated pre-chunked text for RAG retrieval
@@ -42,24 +42,37 @@ Content is organized by **role**, not by provider.
 ## Quick Navigation
 
 - **Find the right doc for a task**: [cross-reference.md](cross-reference.md)
-- **Skills**: [skills/](skills/) — 20 skills covering commit, plan, package extraction, fix-bug, review, security, coverage, and more
+- **Skills**: [skills/](skills/) — commit, plan, review, fix-bug, clean-codebase, coverage, security, package-extraction, and more
 - **Prompts**: [prompts/](prompts/) — thin routing wrappers, one per skill (also at `.github/prompts/`)
 - **Guidelines**: [guidelines/](guidelines/) — exaix-development, testing, documentation, security-review, self-improvement, etc.
 - **Providers**: [providers/claude.md](providers/claude.md), [providers/openai.md](providers/openai.md), [providers/google.md](providers/google.md)
 
 ## Qwen Integration
 
-`.qwen/skills/` contains thin routing wrappers that point to `.copilot/skills/<name>/SKILL.md`.
+`.qwen/skills/` contains thin routing wrappers that point to `.copilot/skills/<name>/SKILL.md`. The `Enabled` column reflects whether the skill's `SKILL.md` has a `qwen_skill: <name>` frontmatter key. To enable a new skill, add that key and run `deno run -A scripts/build_agents_index.ts`.
 
-| Qwen Skill                           | Canonical Source                                |
-| ------------------------------------ | ----------------------------------------------- |
-| `.qwen/skills/commit/`               | `.copilot/skills/commit/SKILL.md`               |
-| `.qwen/skills/package-extraction/`   | `.copilot/skills/package-extraction/SKILL.md`   |
-| `.qwen/skills/plan/`                 | `.copilot/skills/plan/SKILL.md`                 |
-| `.qwen/skills/next-steps/`           | `.copilot/skills/next-steps/SKILL.md`           |
-| `.qwen/skills/pre-gap-analysis/`     | `.copilot/skills/pre-gap-analysis/SKILL.md`     |
-| `.qwen/skills/post-gap-analysis/`    | `.copilot/skills/post-gap-analysis/SKILL.md`    |
-| `.qwen/skills/refactor-check-magic/` | `.copilot/skills/refactor-check-magic/SKILL.md` |
+| Qwen Skill                           | Enabled | Canonical Source                                |
+| ------------------------------------ | ------- | ----------------------------------------------- |
+| `.qwen/skills/clean-codebase/`       | ✓       | `.copilot/skills/clean-codebase/SKILL.md`       |
+| `.qwen/skills/commit/`               | ✓       | `.copilot/skills/commit/SKILL.md`               |
+| `.qwen/skills/coverage/`             | ✓       | `.copilot/skills/coverage/SKILL.md`             |
+| `.qwen/skills/doc/`                  | ✓       | `.copilot/skills/doc/SKILL.md`                  |
+| `.qwen/skills/explore/`              | ✓       | `.copilot/skills/explore/SKILL.md`              |
+| `.qwen/skills/fix-bug/`              | ✓       | `.copilot/skills/fix-bug/SKILL.md`              |
+| `.qwen/skills/infra/`                | ✓       | `.copilot/skills/infra/SKILL.md`                |
+| `.qwen/skills/next-steps/`           | ✓       | `.copilot/skills/next-steps/SKILL.md`           |
+| `.qwen/skills/package-extraction/`   | ✓       | `.copilot/skills/package-extraction/SKILL.md`   |
+| `.qwen/skills/plan/`                 | ✓       | `.copilot/skills/plan/SKILL.md`                 |
+| `.qwen/skills/post-gap-analysis/`    | ✓       | `.copilot/skills/post-gap-analysis/SKILL.md`    |
+| `.qwen/skills/pre-gap-analysis/`     | ✓       | `.copilot/skills/pre-gap-analysis/SKILL.md`     |
+| `.qwen/skills/refactor/`             | ✓       | `.copilot/skills/refactor/SKILL.md`             |
+| `.qwen/skills/refactor-check-magic/` | ✓       | `.copilot/skills/refactor-check-magic/SKILL.md` |
+| `.qwen/skills/review/`               | ✓       | `.copilot/skills/review/SKILL.md`               |
+| `.qwen/skills/review-research/`      | ✓       | `.copilot/skills/review-research/SKILL.md`      |
+| `.qwen/skills/security/`             | ✓       | `.copilot/skills/security/SKILL.md`             |
+| `.qwen/skills/submodule-workflow/`   | ✓       | `.copilot/skills/submodule-workflow/SKILL.md`   |
+| `.qwen/skills/tdd-workflow/`         | ✓       | `.copilot/skills/tdd-workflow/SKILL.md`         |
+| `.qwen/skills/upgrade/`              | ✓       | `.copilot/skills/upgrade/SKILL.md`              |
 
 ## GitHub Copilot Integration
 
@@ -91,17 +104,18 @@ deno run --allow-read scripts/validate_agents_docs.ts
 ```yaml
 ---
 agent: general
-identity: general
 scope: dev
 title: "Your Title"
-short_summary: "Brief summary for RAG injection (<=200 chars)"
+description: One-line description for slash command menus  # required for prompts/
+short_summary: "Brief summary for RAG injection (≤200 chars)"
 version: "0.1"
+topics: ["keyword1", "keyword2"]
 ---
 ```
 
 ### 3. Include Required Sections
 
-- Most non-template docs should include `Key points`, `Canonical prompt`, `Examples`, and `Do / Don't`.
+- Skill and prompt files should include `Key points`, `Canonical prompt`, `Examples`, and `Do / Don't`. Guidelines files use their own domain-appropriate headings.
 - Prompt templates should still carry frontmatter and a concrete reusable template body.
 
 ### 4. Regenerate Manifest
@@ -110,10 +124,12 @@ version: "0.1"
 deno run --allow-read --allow-write scripts/build_agents_index.ts
 ```
 
+> **Note:** Gate 6 (pre-commit hook) auto-runs this script and stages the result whenever `.copilot/` sources are staged — the manual command above is only needed to preview changes before committing.
+
 ### 5. Validate
 
 ```bash
-deno run --allow-read scripts/validate_agents_docs.ts
+deno task docs-agent-validate
 ```
 
 ### 6. Test Retrieval
@@ -128,17 +144,20 @@ deno run --allow-read scripts/inject_agent_context.ts openai "your topic" 4
 - Skipping manifest/chunk regeneration after adding docs.
 - Adding provider-specific prompt text without a reusable prompt template in `prompts/`.
 - Breaking references to legacy compatibility paths like `workflows/`, `process/`, or `prompts/` while tests still enforce them.
+- Editing Secondary Docs in `cross-reference.md` by hand: the `updateCrossReference()` function in `build_agents_index.ts` regenerates the task table and topic list from scratch on every build, silently wiping all manually added secondary doc links. Re-add curated links after each rebuild, or store relationships in skill frontmatter so the builder can pick them up automatically.
 
 ## Frontmatter Schema
 
-Every agent doc MUST include:
+### Files inside `.copilot/`
+
+Every file inside `.copilot/` MUST include:
 
 ```yaml
 ---
-agent: general       # or: claude, openai, google, senior-coder
+agent: general       # or: claude, openai, google
 scope: dev           # or: ci, docs, test
 title: "Your Title"
-description: One-line description for slash command menus  # required for commands/
+description: One-line description for slash command menus  # required for prompts/
 short_summary: "Brief summary for RAG injection (≤200 chars)"
 version: "0.1"
 topics: ["keyword1", "keyword2"]
@@ -146,3 +165,22 @@ topics: ["keyword1", "keyword2"]
 ```
 
 The `description:` field is mandatory for files in `prompts/` — it powers slash command menu display.
+
+### Root-level `.md` files
+
+Root-level files (README.md, TOOLS.md, CLAUDE.md, CONTRIBUTING.md, etc.) use a different set of fields. To include a root-level file in the agent knowledge base, add `copilot_knowledge_base: true` — the build script uses this as the inclusion filter:
+
+```yaml
+---
+title: "Your Title"
+description: "One-line description"
+agent_priority: high   # critical | high | medium | low
+copilot_knowledge_base: true
+capabilities: [cap1, cap2]
+short_summary: "Brief summary for RAG injection (≤200 chars)"
+version: 1.0
+topics: ["keyword1", "keyword2"]
+---
+```
+
+Do **not** use `agent:`, `scope:`, or `identity:` in root-level files — those are `.copilot/`-internal fields.

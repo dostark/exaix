@@ -1,6 +1,9 @@
 /**
  * @module ServicesTestHelpers
- * @path tests/services/helpers.ts
+ * @path packages/testing/src/helpers/services/barrel.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides shared mock factories and context simulators for validating
  * core service logic in isolation.
  */

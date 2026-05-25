@@ -78,7 +78,7 @@ export class ReadFileTool extends ToolHandler {
     return {
       name: McpToolName.READ_FILE,
       description:
-        "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use grep_search; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
+        "Return the full text content of a file inside a portal. Use when you need to read or analyze file contents. For searching within files use run_command with grep or rg; for checking whether a file exists use list_directory. Returns the raw file text as a string.",
       inputSchema: {
         type: "object",
         properties: {

@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanWriterTest
- * @path tests/services/plan/plan_writer_test.ts
+ * @path packages/routing/tests/plan_writer_test.ts
  * @description Verifies the PlanWriter service, ensuring that agent-generated task
  * descriptions are correctly persisted with stable frontmatter and sequential identifiers.
  */

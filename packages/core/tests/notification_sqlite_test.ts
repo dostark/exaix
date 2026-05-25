@@ -1,6 +1,6 @@
 /**
  * @module NotificationSQLiteTest
- * @path tests/services/notification/notification_sqlite_test.ts
+ * @path packages/core/tests/notification_sqlite_test.ts
  * @description Verifies the SQLite database schema and migrations for the notification system,
  * ensuring persistent storage of event alerts within the activity journal.
  */

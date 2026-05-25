@@ -76,6 +76,7 @@ Related
 - #refactor-check-magic — targeted magic-value reduction workflow
 - #clean-codebase       — full CI-green sweep including style + arch
 - #tdd-workflow         — when refactor requires adding tests first
+- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - CODE_STYLE.md         — authoritative naming, type, import, and constants rules
 ```
 

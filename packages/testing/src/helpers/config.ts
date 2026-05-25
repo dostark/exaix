@@ -1,6 +1,9 @@
 /**
  * @module ConfigTestHelpers
- * @path tests/helpers/config.ts
+ * @path packages/testing/src/helpers/config.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for mocking system configuration,
  * ensuring stable behavior across AI, database, and infrastructure tests.
  */

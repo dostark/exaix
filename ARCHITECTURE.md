@@ -108,7 +108,7 @@ This document provides a comprehensive architectural overview of Exaix component
 
 ## Positioning
 
-Exaix is an **asynchronous, file-based agent task automation engine** — conceptually closer to GitHub Actions for AI agents than to a chat or IDE tool. Unlike session-oriented tools (OpenCode, Claude Code, Cursor) where conversation *is* the state, Exaix models work as discrete, auditable artifacts:
+Exaix is an **asynchronous, file-based agent task automation engine** — conceptually closer to GitHub Actions for AI agents than to a chat or IDE tool. Unlike session-oriented tools (OpenCode, Claude Code, Cursor) where conversation _is_ the state, Exaix models work as discrete, auditable artifacts:
 
 - **Requests** are markdown files in `Workspace/Requests/`
 - **Plans** are generated artifacts in `Workspace/Plans/`
@@ -126,29 +126,29 @@ Exaix is designed to **orchestrate rather than replace** session-oriented agent 
 The embedding points for session tools are the **pipeline gates** where human judgment adds most value:
 
 ```
-  Request (file)
-       │
-       ▼
-  [Refinement] ◄──── Optional: launch session tool for interactive Q&A
-       │                    to clarify intent, refine request body.
-       │                    Returns enriched request file.
-       ▼
-  Plan Generation
-       │
-       ▼
-  [Plan Review] ◄──── Optional: launch session tool to review, edit,
-       │                    or iterate on the generated plan with the user.
-       │                    Returns approved or modified plan.
-       ▼
-  Execution
-       │
-  ┌────┴────┐
-  │  Code   │◄──── Optional: launch session tool for interactive
-  │ Changes │       coding within the portal workspace. Agent and
-  └────┬────┘       user collaborate on changes. Returns committed
-       │            changes.
-       ▼
-  Review & Merge
+Request (file)
+     │
+     ▼
+[Refinement] ◄──── Optional: launch session tool for interactive Q&A
+     │                    to clarify intent, refine request body.
+     │                    Returns enriched request file.
+     ▼
+Plan Generation
+     │
+     ▼
+[Plan Review] ◄──── Optional: launch session tool to review, edit,
+     │                    or iterate on the generated plan with the user.
+     │                    Returns approved or modified plan.
+     ▼
+Execution
+     │
+┌────┴────┐
+│  Code   │◄──── Optional: launch session tool for interactive
+│ Changes │       coding within the portal workspace. Agent and
+└────┬────┘       user collaborate on changes. Returns committed
+     │            changes.
+     ▼
+Review & Merge
 ```
 
 ### Integration Model

@@ -1,6 +1,9 @@
 /**
  * @module TestConstants
- * @path tests/helpers/constants.ts
+ * @path packages/testing/src/helpers/constants.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Centralized constants used across test suites to avoid magic strings.
  */
 

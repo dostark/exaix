@@ -1,6 +1,9 @@
 /**
  * @module GlobalMemoryTestHelpers
- * @path tests/helpers/memory_test_helper.ts
+ * @path packages/testing/src/helpers/memory_test_helper.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for validating global knowledge banks
  * and shared learned patterns across project boundaries.
  */

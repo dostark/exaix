@@ -1,6 +1,6 @@
 /**
  * @module DeployCommandTest
- * @path tests/services/deploy/deploy_test.ts
+ * @path apps/daemon/tests/deploy_test.ts
  * @description Verifies the logic for project deployment, ensuring correct staging
  * of assets and execution of post-deployment verification hooks.
  */

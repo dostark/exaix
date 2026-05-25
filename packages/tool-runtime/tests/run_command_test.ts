@@ -1,6 +1,6 @@
 /**
  * @module RunCommandToolTest
- * @path tests/tools/run_command_test.ts
+ * @path packages/tool-runtime/tests/run_command_test.ts
  * @description Verifies the 'run_command' tool, ensuring secure shell execution
  * with strict command and argument whitelisting.
  */

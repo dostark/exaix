@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerNamespaceTest
- * @path tests/flows/flow_runner_namespace_test.ts
+ * @path packages/flow/tests/flow_runner_namespace_test.ts
  * @description Verifies namespace event payload fields emitted by FlowRunner.
  * @architectural-layer Tests
  * @related-files [packages/flow/src/flow_runner.ts, packages/flow/mod.ts]

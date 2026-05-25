@@ -1,6 +1,6 @@
 /**
  * @module ToolResultRetryPolicyTest
- * @path tests/services/tool/tool_result_retry_policy_test.ts
+ * @path packages/tool-runtime/tests/tool_result_retry_policy_test.ts
  * @description Tests for retry-mode remediation policies (retry_once, retry_with_backoff)
  * including idempotency and side-effect guards, implemented in
  * packages/schemas/src/tool_result_remediation.ts (Phase 78 Step 78.3).

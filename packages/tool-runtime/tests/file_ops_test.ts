@@ -1,6 +1,6 @@
 /**
  * @module FileOpsToolTest
- * @path tests/tools/file_ops_test.ts
+ * @path packages/tool-runtime/tests/file_ops_test.ts
  * @description Verifies the core file manipulation tools, including safe reading,
  * writing, and listing of project assets.
  */

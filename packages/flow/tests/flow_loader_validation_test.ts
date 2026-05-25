@@ -1,6 +1,6 @@
 /**
  * @module FlowLoaderValidationTest
- * @path tests/flows/flow_loader_validation_test.ts
+ * @path packages/flow/tests/flow_loader_validation_test.ts
  * @description Verifies FlowLoader validation for Phase 56 dynamic step tool permissions.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentActionsTest
- * @path tests/unit/cli/plan_amendment_actions_test.ts
+ * @path apps/exactl/tests/plan_amendment_actions_test.ts
  * @description Unit tests for CLI plan amendment actions (list, show, approve, reject).
  * @related-files [apps/exactl/src/commands/plan_commands.ts, @exaix/core/planning]
  */

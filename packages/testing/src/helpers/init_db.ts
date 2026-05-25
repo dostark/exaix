@@ -1,6 +1,9 @@
 /**
  * @module DatabaseTestHelper
- * @path tests/helpers/db.ts
+ * @path packages/testing/src/helpers/init_db.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Test helper utilities for database setup and testing.
  */
 

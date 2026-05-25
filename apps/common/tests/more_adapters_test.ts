@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module MoreAdaptersTest
- * @path tests/services/adapters/more_adapters_test.ts
+ * @path apps/common/tests/more_adapters_test.ts
  * @description Unit tests for ConfigAdapter, MemoryBankAdapter, and MemoryExtractorAdapter.
  */
 

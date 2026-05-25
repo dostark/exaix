@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module PlanExecutorDetectionTest
- * @path tests/services/plan/plan_executor_detection_test.ts
+ * @path packages/routing/tests/plan_executor_detection_test.ts
  * @description Verifies the logic for detecting executable plans, ensuring that the system
  * correctly identifies structured task blocks within larger agent responses.
  */

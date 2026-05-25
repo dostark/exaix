@@ -1,6 +1,6 @@
 /**
  * @module DynamicStepExecutorToolSurfaceTest
- * @path tests/flows/dynamic_step_executor_tool_surface_test.ts
+ * @path packages/flow/tests/dynamic_step_executor_tool_surface_test.ts
  * @description Verifies that DynamicStepExecutor resolves its permitted tool surface from
  * the canonical manifest (DYNAMIC_MODE_TOOLS) rather than the READ_ONLY_TOOLS constant,
  * ensuring domain tools with requires_human_approval are correctly excluded.

@@ -1,6 +1,6 @@
 /**
  * @module RefactorToolTest
- * @path tests/tools/refactor_tool_test.ts
+ * @path packages/tool-runtime/tests/refactor_tool_test.ts
  * @description Verifies specialized refactoring tools, ensuring stable execution
  * of complex symbol renaming and structural code changes.
  */

@@ -1,6 +1,9 @@
 /**
  * @module TestFixtures
- * @path tests/helpers/fixtures.ts
+ * @path packages/testing/src/helpers/fixtures.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides shared fixture path helpers for tests, keeping fixture loading consistent across the suite.
  */
 

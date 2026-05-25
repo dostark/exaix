@@ -1,6 +1,6 @@
 /**
  * @module StatusManagerTest
- * @path tests/services/status/status_manager_test.ts
+ * @path packages/core/tests/status_manager_test.ts
  * @description Verifies the logic for atomic status updates in file frontmatter, ensuring
  * correct state transitions for agents, plans, and requests without corrupting files.
  */

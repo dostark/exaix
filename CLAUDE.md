@@ -8,13 +8,15 @@ capabilities: [task_routing, cross_reference, process_validation]
 links:
   - ".copilot/manifest.json"
   - ".copilot/cross-reference.md"
-copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-## 🤖 CLAUDE.md — REQUIRED READING FOR ALL AI AGENTS
+## 🤖 Agent Instructions — Required Reading for All AI Agents
 
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
-> _Note: `.copilot/` is the canonical directory. Symlinks like `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`._
+> _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/skills/` contains auto-generated routing wrappers that redirect to the canonical skills in `.copilot/skills/`._
+> Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
+>
+> **Conflict reporting format:** State the conflict explicitly in your response in the form: `CONFLICT: "<file-a>" says X, "<file-b>" says Y — cannot proceed without resolution.` Do not attempt to resolve the conflict yourself.
 >
 > **Violation of these guidelines will result in rejected or incorrect implementations.**
 
@@ -25,43 +27,43 @@ copilot_instructions: .copilot/blueprints/senior-coder.md
 **Before beginning ANY code modification task, you MUST:**
 
 - [ ] Read this `CLAUDE.md` file completely
-- [ ] Check `.copilot/cross-reference.md` for task-specific guidance
-- [ ] Read at least one relevant `.copilot/` document matching your task type
+- [ ] Read `LLM_GUIDE.md` — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+- [ ] Use `.copilot/cross-reference.md` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
+- [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/guidelines/exaix-development.md` and note that fallback in your implementation plan
+- [ ] If a required document listed in `.copilot/cross-reference.md` is missing on disk, stop and report the missing path instead of inferring its contents
+- [ ] Read frontmatter of root `.md` files when relevant; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
+- [ ] Read `ARCHITECTURE.md` before modifying any core flow
+- [ ] Use symbol-based links (for example `packages/core/src/types.ts:MyServiceConfig`) when referencing code locations
+- [ ] Identify your LLM provider and read the matching file in `.copilot/providers/` before starting (available: `claude.md`, `openai.md`, `google.md`, `google-long-context.md`). If no file exists for your provider, skip this step.
 - [ ] **Acknowledge** which `.copilot/` docs guided your approach in your implementation plan
 
 **Example acknowledgment format:**
 
-> "I consulted `.copilot/tests/testing.md` for test patterns and `.copilot/source/exaix.md` for service architecture before implementing this feature."
+> "I consulted `.copilot/guidelines/testing.md` for test patterns and `.copilot/guidelines/exaix-development.md` for source architecture before implementing this feature."
 
 **Failure to consult `.copilot/` documentation is considered a violation of project standards.**
 
 ---
 
-## 🔍 Context Discovery — Before Making Changes
-
-Before proposing or implementing changes:
-
-1. **Read frontmatter** of root `.md` files — the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document.
-2. **Use symbol-based links** (e.g., `packages/core/src/types.ts:Symbol`) when referencing code locations — line numbers shift; symbols stay stable.
-3. **Read `ARCHITECTURE.md`** before modifying any core flow — it contains an `AGENT_LOGIC` YAML block that describes expected behavior and invariants.
-4. **Run `deno task docs-sync-schemas`** after modifying MCP tool handlers in `packages/mcp/src/handlers/` to keep `TOOLS.md` in sync.
-
----
-
 ## Quick Reference
 
-| Need                 | Location                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| Task → Doc mapping   | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
-| Source patterns      | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
-| Testing patterns     | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
-| Documentation guide  | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
-| Commit skill         | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
-| Plan skill           | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
-| Next-steps skill     | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
-| Slash commands       | [.copilot/prompts/](.copilot/prompts/)                                               |
-| Planning documents   | [.copilot/planning/](.copilot/planning/)                                             |
-| All agent docs index | [.copilot/manifest.json](.copilot/manifest.json)                                     |
+| Need                      | Location                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| Behavioral guidelines     | [LLM_GUIDE.md](./LLM_GUIDE.md)                                                       |
+| Task → Doc mapping        | [.copilot/cross-reference.md](.copilot/cross-reference.md)                           |
+| Source patterns           | [.copilot/guidelines/exaix-development.md](.copilot/guidelines/exaix-development.md) |
+| Testing patterns          | [.copilot/guidelines/testing.md](.copilot/guidelines/testing.md)                     |
+| Documentation guide       | [.copilot/guidelines/documentation.md](.copilot/guidelines/documentation.md)         |
+| Coding standards          | [CODE_STYLE.md](./CODE_STYLE.md)                                                     |
+| Magic numbers / constants | [CODE_STYLE.md](./CODE_STYLE.md) §2                                                  |
+| MCP tool index            | [TOOLS.md](./TOOLS.md)                                                               |
+| Provider-specific notes   | [.copilot/providers/](.copilot/providers/)                                           |
+| Commit skill              | [.copilot/skills/commit/SKILL.md](.copilot/skills/commit/SKILL.md)                   |
+| Plan skill                | [.copilot/skills/plan/SKILL.md](.copilot/skills/plan/SKILL.md)                       |
+| Next-steps skill          | [.copilot/skills/next-steps/SKILL.md](.copilot/skills/next-steps/SKILL.md)           |
+| Slash commands            | [.copilot/prompts/](.copilot/prompts/)                                               |
+| Planning documents        | [exaix-dev-docs/planning/](exaix-dev-docs/planning/)                                 |
+| All agent docs index      | [.copilot/manifest.json](.copilot/manifest.json)                                     |
 
 ## Project Overview
 
@@ -71,7 +73,22 @@ Before proposing or implementing changes:
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 1-12 covering format, lint, style, magic, docs, complexity, tool parity, architecture, and more.
+- **Pre-commit:** Auto-runs gates 0-12. Gate 0 blocks direct commits to `main`. Gates 1-12:
+
+  | Gate | Check               | Task                                           |
+  | ---- | ------------------- | ---------------------------------------------- |
+  | 1    | Format              | `deno task fmt:check`                          |
+  | 2    | Lint                | `deno task lint`                               |
+  | 3    | Style / boundaries  | `deno task check:style`                        |
+  | 4    | Test placement      | `deno task check:test-placement`               |
+  | 5    | Magic values        | `deno task check:magic`                        |
+  | 6    | Manifest auto-sync  | `scripts/build_agents_index.ts` + `check:docs` |
+  | 7    | Markdown lint       | `scripts/markdown_lint.ts` (staged `.md` only) |
+  | 8    | Complexity          | `deno task check:complexity`                   |
+  | 9    | Tool-result parity  | `deno task check:tool-result-parity`           |
+  | 10   | Architecture        | `deno task check:arch`                         |
+  | 11   | Docs nervous system | `deno task docs-agent-validate`                |
+  | 12   | Hallucination bench | `deno task docs-bench`                         |
 
 ### Key Commands
 
@@ -85,7 +102,11 @@ deno task docs-sync-schemas   # Sync MCP tool schemas to TOOLS.md
 
 ## Development Workflow
 
-### TDD-First (MANDATORY)
+### TDD-First For Behavior Changes (MANDATORY)
+
+A **behavior change** is any edit that affects runtime output, observable state, or what an existing test asserts — as opposed to comments, documentation, formatting, or config-only changes that alter no executed code path.
+
+For changes that modify behavior:
 
 1. Write failing tests first
 2. Run the test and confirm it fails
@@ -100,21 +121,43 @@ DI, environment variables, and related topics.
 
 ### Before Committing
 
-- Run `deno task test` — all tests must pass
-- Run `deno task fmt` — code must be formatted
-- Pre-commit hooks enforce: `fmt:check`, `lint`, `check:docs`
+Use the **Task Checklist** below before claiming the task is complete or creating a commit.
+
+## Task Checklist
+
+Use this as the single canonical checklist for code tasks:
+
+1. DURING: For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
+2. DURING: Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
+3. DURING: Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
+4. DURING: Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
+5. DURING: Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
+6. DONE: Ensure `deno check packages/ apps/ tests/` is clean before finishing.
+7. DONE: Complete the CI Verification section below before claiming the task is complete.
+8. DONE: Do not use raw SQL table creation in tests when project helpers already cover the setup.
+9. DONE: Do not bypass failing checks or ignore pre-commit failures.
+10. DONE: Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
+11. DONE: Do not place imports anywhere other than the top of the file.
+12. DONE: If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
 
 ### CI Verification (MANDATORY)
 
 **Before claiming any task is complete, you MUST verify all CI checks pass locally.**
 
+This section expands Task Checklist item 7. Follow these steps in order:
+
+1. After each discrete implementation step, run the quick verification command below.
+2. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
+3. If `deno run -A scripts/ci.ts all` fails without a clear cause, use the Manual CI Workflow Verification steps below.
+4. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified.
+
 #### Quick CI Verification
 
-When running `deno task test_parallel`, always redirect stdout+stderr to a temp file to capture full output without truncation, then search for failures with `rg FAILED\|failed\|error /tmp/test_output.txt`:
+When running `deno task test_parallel`, always redirect stdout+stderr to a temp file to capture full output without truncation, then search for failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:
 
 ```bash
 deno task test_parallel > /tmp/test_output.txt 2>&1
-rg "FAILED|failed|error" /tmp/test_output.txt
+rg "FAILED|failed|error" /tmp/test_output.txt   # or: grep -E "FAILED|failed|error" /tmp/test_output.txt
 ```
 
 Run the unified CI script to verify all checks:
@@ -162,9 +205,9 @@ deno task check:arch
 **2. PR Validation** (`.github/workflows/pr-validation.yml`):
 
 ```bash
-# Configure git identity (if needed)
-git config user.email "dev@example.com"
-git config user.name "Developer"
+# Configure git identity (if needed — use --local to avoid mutating global config)
+git config --local user.email "dev@example.com"
+git config --local user.name "Developer"
 
 # Run checks
 deno run -A scripts/ci.ts check
@@ -190,19 +233,6 @@ deno run -A scripts/ci.ts test --quick
 - **Coverage drops**: Add tests for uncovered code paths
 - **Lint errors**: Fix code style issues
 - **Type errors**: Resolve TypeScript compilation errors
-
-#### CI Success Criteria
-
-A task is only complete when:
-
-- ✅ All tests pass (`deno test --allow-all`)
-- ✅ No complexity breaches (threshold: 15)
-- ✅ Code duplication < 2%
-- ✅ Coverage thresholds met (Line: 60%, Branch: 50%)
-- ✅ No lint errors
-- ✅ No type errors
-- ✅ Architecture validation passes
-- ✅ Pre-commit hooks pass
 
 ## Project Structure
 
@@ -235,7 +265,7 @@ apps/            # Thin app entry points
 
 tests/           # Integration and scenario tests
 .copilot/        # AI assistant guidance (see below)
-docs/            # User documentation (Architecture moved to /ARCHITECTURE.md)
+docs/            # User documentation
 ARCHITECTURE.md  # System Architecture & Knowledge Base
 ```
 
@@ -253,22 +283,18 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 ├── skills/             # Multi-step autonomous skills (SKILL.md per skill)
 ├── guidelines/         # Reference guidelines and process documents
 ├── providers/          # Provider-specific guidance (Claude, OpenAI, Google)
-├── planning/           # Phase planning documents
+├── planning/           # (reserved — active phase docs live in exaix-dev-docs/planning/)
 └── chunks/             # Pre-chunked docs for RAG (auto-generated)
 ```
 
 ### When to Consult .copilot/
 
-| Task                  | Consult                                                   |
-| --------------------- | --------------------------------------------------------- |
-| Writing tests         | `.copilot/guidelines/testing.md`                          |
-| Adding features       | `.copilot/guidelines/exaix-development.md`                |
-| Refactoring           | `.copilot/guidelines/exaix-development.md`                |
-| Documentation         | `.copilot/guidelines/documentation.md`                    |
-| Commit message        | `.copilot/skills/commit/SKILL.md`                         |
-| Planning/roadmap      | `.copilot/skills/plan/SKILL.md`, `.copilot/planning/*.md` |
-| Slash commands        | `.copilot/prompts/`                                       |
-| Finding the right doc | `.copilot/cross-reference.md`                             |
+> For the full task→doc map, use the **Quick Reference** table at the top of this file. The rows below cover `.copilot/`-specific lookups not listed there.
+
+| Task              | Consult                                                 |
+| ----------------- | ------------------------------------------------------- |
+| Security audit    | `.copilot/skills/security/SKILL.md`                     |
+| Provider-specific | `.copilot/providers/` (claude.md, openai.md, google.md) |
 
 ## Key Patterns & Constraints
 
@@ -287,13 +313,16 @@ The `.copilot/` folder contains **machine-readable guidance** for AI assistants:
 
 - **Sandboxed:** No network, no file access (default)
 - **Hybrid:** Read-only access to Portal paths
-- Always use `PathResolver` to validate paths
+- Workspace paths are file-system paths under `Workspace/` such as `Workspace/Active`, `Workspace/Requests`, `Workspace/Plans`, and their subdirectories.
+- All production code and test helpers that construct or accept workspace paths must validate them through `PathResolver`; standalone utilities under `scripts/` are exempt only when they do not access workspace paths.
 
-### TUI Tests (Important)
+### TUI Tests
 
-- Use `sanitizeOps: false, sanitizeResources: false` for timer-based tests
-- Skip `setTimeout` in test mode to avoid timer leaks
-- Pattern: `if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)`
+> For general test placement and helper conventions see `.copilot/guidelines/testing.md`. The rules below are TUI-specific additions to that guideline.
+
+- Place TUI tests in the owning package or app test directory (`packages/tui/tests/`, `apps/tui/tests/`), not next to source files.
+- Use `sanitizeOps: false, sanitizeResources: false` for timer-based tests.
+- Skip `setTimeout` in test mode to avoid timer leaks — pattern: `if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)`
 
 ## Test Helpers
 
@@ -313,79 +342,14 @@ await withEnv({ MY_VAR: "value" }, async () => { ... });
 
 ## Current Project Status
 
-> Last updated: 2026-05-01. Check `.copilot/planning/` for the authoritative current state.
-
-### Completed Phases
-
-- **Phase 12:** Obsidian Retirement, Memory Banks v2
-- **Phase 13:** TUI Enhancement & Unification (656 tests)
-  - All 7 TUI views enhanced with consistent patterns
-  - Split view system with layout presets
-  - Comprehensive keyboard shortcuts
-
-### Planning Documents
-
-Check `.copilot/planning/` for:
-
-- `phase-12-obsidian-retirement.md`
-- `phase-12.5-memory-bank-enhanced.md`
-- `phase-13-tui-enhancement.md` ✅ COMPLETED
+Do not rely on inline status in this file. Active phase planning documents live in the `exaix-dev-docs/` submodule at `exaix-dev-docs/planning/`. Read that directory for current project state and completion status before starting work. If the submodule is not checked out or the directory is empty, there are no active phases in progress.
 
 ## Common Workflows
 
-### "Add a new feature"
-
-1. Check `.copilot/planning/` for relevant phase
-2. Consult `.copilot/guidelines/exaix-development.md` for patterns
-3. Write failing tests first, then implement
-4. Run `deno run -A scripts/ci.ts all` before marking complete
-
-### "Fix a bug"
-
-1. Write a failing test that reproduces the bug
-2. Fix the root cause (not just the symptom)
-3. Confirm the test now passes and no regressions exist
-
-### "Update agent docs"
-
-After adding/changing files in `.copilot/`:
+For all task types, complete the pre-task checklist first and finish by satisfying the Task Checklist. After adding or changing files in `.copilot/`, you can preview the manifest update before staging:
 
 ```bash
 deno run --allow-read --allow-write scripts/build_agents_index.ts
 ```
 
-## Mandatory Requirements & Violations
-
-### ⚠️ MANDATORY Requirements
-
-These are **REQUIRED** for all code tasks:
-
-- **MUST** follow TDD (tests first, always)
-- **MUST** consult `.copilot/cross-reference.md` to find relevant docs before implementation
-- **MUST** read matching `.copilot/` docs and cite them in your plan
-- **MUST** use established test helpers (`initTestDbService`, `createCliTestContext`, etc.)
-- **MUST** place new tests under the correct `tests/` domain folder; do not add new `*_test.ts` files outside `tests/`, and do not place service tests directly in `tests/services/`
-- **MUST** have no TypeScript errors (`deno check packages/ apps/ tests/`) before completing
-- **MUST** run `deno task test` before committing
-- **MUST** verify all CI checks pass locally before claiming task completion (see CI Verification section)
-
-### 🚫 Violations (Will Result in Rejection)
-
-These actions are **PROHIBITED**:
-
-- ❌ **Skipping tests** — All code must have tests
-- ❌ **Proceeding without consulting `.copilot/` docs** — This is a standards violation
-- ❌ **Using raw SQL table creation** — Use test helpers
-- ❌ **Ignoring pre-commit hook failures** — All checks must pass
-- ❌ **Guessing at patterns** — Always check `.copilot/` docs first
-- ❌ **Introducing magic numbers/strings** — See `CONTRIBUTING.md`
-- ❌ **Placing imports anywhere other than the top of the file** — All imports must be at the top level
-
----
-
-## Footer — Agent Knowledge Base
-
-- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
-- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
-- **Planning**: [.copilot/planning/](./.copilot/planning/)
-- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)
+> Note: Gate 6 auto-runs this script and stages the result on every commit when `.copilot/` sources are staged — so the manual run above is only needed to preview changes before committing.

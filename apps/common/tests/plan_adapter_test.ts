@@ -1,6 +1,6 @@
 /**
  * @module PlanAdapterTest
- * @path tests/services/adapters/plan_adapter_test.ts
+ * @path apps/common/tests/plan_adapter_test.ts
  * @description Unit tests for the PlanAdapter in apps/common/adapters/
  */
 

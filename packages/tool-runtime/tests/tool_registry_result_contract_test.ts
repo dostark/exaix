@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryResultContractTest
- * @path tests/services/tool/tool_registry_result_contract_test.ts
+ * @path packages/tool-runtime/tests/tool_registry_result_contract_test.ts
  * @description Verifies registry-backed tools produce structured IToolResult shapes consumable by toolResultToMcpResponse,
  * and that resultValidator is applied at the registry execution boundary (Enforcement Point 2).
  */

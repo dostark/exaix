@@ -1,6 +1,9 @@
 /**
  * @module ToolResultPolicyTestHelpers
- * @path tests/services/tool/helpers/tool_result_policy_test_helpers.ts
+ * @path packages/tool-runtime/tests/helpers/tool_result_policy_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Shared fixtures for tool result remediation and retry policy tests.
  */
 

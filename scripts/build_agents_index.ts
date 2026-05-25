@@ -84,6 +84,37 @@ export async function generateManifestObject(includeSubmodule = false) {
     }
   }
 
+  // Include root-level markdown files that are marked as copilot knowledge base.
+  // maxDepth: 1 limits the walk to the root directory only (no subdirectory recursion).
+  for await (const entry of walk(".", { exts: [".md"], maxDepth: 1 })) {
+    if (!entry.isFile) continue;
+    const md = await Deno.readTextFile(entry.path);
+    const fmRaw = extractFrontmatter(md);
+    if (!fmRaw) continue;
+    const fm = parse(fmRaw) as JSONObject;
+    if (!fm["copilot_knowledge_base"]) continue;
+    const short_summary = String(fm["short_summary"] ?? fm["description"] ?? "");
+    const chunks = chunkText(md.replace(/^---[\s\S]*?---/, ""));
+    const chunkPaths: string[] = [];
+    chunks.slice(0, 8).forEach((c, idx) => {
+      const p = `${CHUNKS_DIR}/${entry.name}.chunk${idx}.txt`;
+      Deno.writeTextFileSync(p, c);
+      chunkPaths.push(p);
+    });
+
+    docs.push({
+      path: entry.path,
+      agent: fm["agent"],
+      scope: fm["scope"],
+      title: fm["title"],
+      short_summary,
+      version: fm["version"],
+      topics: fm["topics"],
+      qwen_skill: fm["qwen_skill"],
+      chunks: chunkPaths,
+    });
+  }
+
   return { generated_at: new Date().toISOString(), docs };
 }
 
@@ -100,7 +131,9 @@ export async function updateCrossReference(docs: JSONObject[]) {
       ? rawPath.replace(".copilot/", "")
       : rawPath.startsWith("exaix-dev-docs/")
       ? `../${rawPath}`
-      : rawPath;
+      : rawPath.startsWith("./")
+      ? `../${rawPath.slice(2)}`
+      : `../${rawPath}`;
     const title = String(doc.title);
     taskTable += `| ${title} | [${relPath}](${relPath}) | |\n`;
   }
@@ -114,7 +147,9 @@ export async function updateCrossReference(docs: JSONObject[]) {
       ? rawPath.replace(".copilot/", "")
       : rawPath.startsWith("exaix-dev-docs/")
       ? `../${rawPath}`
-      : rawPath;
+      : rawPath.startsWith("./")
+      ? `../${rawPath.slice(2)}`
+      : `../${rawPath}`;
     for (const topic of doc.topics) {
       if (!topicMap[String(topic)]) topicMap[String(topic)] = [];
       topicMap[String(topic)].push(`[${relPath}](${relPath})`);

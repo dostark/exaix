@@ -1,6 +1,6 @@
 /**
  * @module ToolRegistryRelativeAccessTest
- * @path tests/services/tool/tool_registry_relative_access_test.ts
+ * @path packages/tool-runtime/tests/tool_registry_relative_access_test.ts
  * @description Verifies the ToolRegistry's ability to resolve and secure relative path
  * access based on dynamic portal root directories.
  */

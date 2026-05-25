@@ -1,6 +1,9 @@
 /**
  * @module ConfirmationTestHelpers
- * @path tests/services/tool/helpers/confirmation_test_helpers.ts
+ * @path packages/tool-runtime/tests/helpers/confirmation_test_helpers.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Shared test helpers for tool confirmation interceptor tests.
  */
 

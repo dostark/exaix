@@ -1,6 +1,6 @@
 /**
  * @module MissionReporterAmendmentSummaryTest
- * @path tests/unit/services/mission_reporter_amendment_summary_test.ts
+ * @path packages/execution/tests/mission_reporter_amendment_summary_test.ts
  * @description Unit tests for MissionReporter's handling of amendment lifecycle events in reports.
  * @related-files [@exaix/core/artifact, "packages/schemas/src/plan_amendment.ts"]
  */

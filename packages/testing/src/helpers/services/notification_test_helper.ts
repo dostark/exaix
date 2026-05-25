@@ -1,6 +1,9 @@
 /**
  * @module NotificationTestHelper
- * @path tests/services/helpers/notification_test_helper.ts
+ * @path packages/testing/src/helpers/services/notification_test_helper.ts
+ * @related-files []
+ * @architectural-layer Testing
+ * @ungrounded
  * @description Provides common utilities for verifying TUI notification events,
  * simulating alert emission and history synchronization.
  */

@@ -1,6 +1,6 @@
 /**
  * @module PlanAmendmentServiceTest
- * @path tests/unit/services/plan_amendment_service_test.ts
+ * @path packages/core/tests/plan_amendment_service_test.ts
  * @description Unit tests for PlanAmendmentService, validating patch application logic.
  */
 

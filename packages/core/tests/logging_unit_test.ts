@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module LoggingDecoratorUnitTest
- * @path tests/services/decorators/logging_unit_test.ts
+ * @path packages/core/tests/logging_unit_test.ts
  * @description Unit tests for LogMethod decorator.
  */
 

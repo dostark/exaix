@@ -66,7 +66,7 @@ async function main() {
     }
     const cat = categoryLabel(tool.category);
     const dynamicMark = tool.dynamic_mode_allowed && !tool.requires_human_approval ? "✓" : "—";
-    const approvalMark = tool.requires_human_approval ? "⚠ Phase 79" : "";
+    const approvalMark = tool.requires_human_approval ? "⚠ Requires human approval" : "";
     tableRows +=
       `| \`${tool.name}\` | ${tool.description} | \`${cat}\` | ${dynamicMark} | ${approvalMark} | [\`${sourcePath}\`](${sourcePath}) |\n`;
   }
@@ -77,10 +77,16 @@ These tools are available to AI agents via the MCP protocol. They are validated,
 and logged. The table is generated from the canonical tool manifest in \`packages/mcp/src/manifest.ts\`.
 Run \`deno task docs-sync-schemas\` to regenerate after manifest changes.
 
-> **Migration note**: The Source column is generated from explicit manifest ownership metadata.
-> It is a current ownership hint, not a promise that the file path is permanent across package migration.
-> Update manifest \`source_ref\` values when handlers move; root \`tests/\` retains integration and
-> server-wiring coverage while package-owned tests migrate with their implementations.
+**Column guide:**
+
+- **Dynamic** (\`✓\`): Read-only; safe for automatic calls without per-call human review.
+- **Dynamic** (\`—\`): Mutating or stateful; not auto-selected in dynamic execution mode.
+- **Approval** (\`⚠ Requires human approval\`): Tool call must pause for human confirmation before executing.
+
+> **Developer note:** The Source column is generated from explicit manifest \`source_ref\` metadata —
+> a current ownership hint, not a permanence guarantee. Update \`source_ref\` values when handlers move;
+> root \`tests/\` retains integration and server-wiring coverage while package-owned tests migrate with
+> their implementations.
 
 | Tool | Description | Category | Dynamic | Approval | Source |
 |------|-------------|----------|---------|----------|--------|

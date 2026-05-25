@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerTest
- * @path tests/flows/flow_runner_test.ts
+ * @path packages/flow/tests/flow_runner_test.ts
  * @description Core execution tests for the FlowRunner, verifying wave-based parallel step execution,
  * state propagation between steps, and fail-fast behavior during workflow interruptions.
  */

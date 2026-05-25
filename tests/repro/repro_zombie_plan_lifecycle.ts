@@ -1,6 +1,6 @@
 /**
  * @module ZombiePlanLifecycleReproTest
- * @path tests/services/repro/repro_zombie_plan_lifecycle.ts
+ * @path tests/repro/repro_zombie_plan_lifecycle.ts
  * @description Reproduction test for zombie plan lifecycle issue in manual execution mode.
  */
 

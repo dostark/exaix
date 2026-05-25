@@ -127,6 +127,10 @@ coverage:
 
 ---
 
+## Related
+
+- [LLM_GUIDE.md](../../../LLM_GUIDE.md) — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
+
 ## Output format
 
 1. Brief chat summary of the architectural approach and key identified risks.

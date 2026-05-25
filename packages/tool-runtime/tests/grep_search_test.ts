@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module GrepSearchToolTest
- * @path tests/tools/grep_search_test.ts
+ * @path packages/tool-runtime/tests/grep_search_test.ts
  * @description Verifies the 'grep_search' tool, ensuring efficient and accurate
  * pattern matching across the project workspace.
  */

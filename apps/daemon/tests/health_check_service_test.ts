@@ -1,6 +1,6 @@
 /**
  * @module HealthCheckServiceTest
- * @path tests/services/health/health_check_service_test.ts
+ * @path apps/daemon/tests/health_check_service_test.ts
  * @description Verifies the core HealthCheckService logic, ensuring correct registration
  * of subsystem dependency checks and aggregate health computation.
  */

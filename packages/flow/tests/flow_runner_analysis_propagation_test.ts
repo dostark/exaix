@@ -1,6 +1,6 @@
 /**
  * @module FlowRunnerAnalysisPropagationTest
- * @path tests/flows/flow_runner_analysis_propagation_test.ts
+ * @path packages/flow/tests/flow_runner_analysis_propagation_test.ts
  * @description Tests that IRequestAnalysis (extracted from PlanFrontmatter by a
  * caller) is correctly propagated through FlowRunner.execute() to gate evaluators
  * (Phase 48, Step 10).

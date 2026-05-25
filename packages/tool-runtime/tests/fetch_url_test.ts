@@ -1,6 +1,6 @@
 /**
  * @module FetchUrlToolTest
- * @path tests/tools/fetch_url_test.ts
+ * @path packages/tool-runtime/tests/fetch_url_test.ts
  * @description Verifies the 'fetch_url' tool, ensuring secure retrieval of external
  * content for agent knowledge grounding.
  */

@@ -1,6 +1,6 @@
 /**
  * @module GitInfoToolTest
- * @path tests/tools/git_info_test.ts
+ * @path packages/tool-runtime/tests/git_info_test.ts
  * @description Verifies the 'git_info' tool, ensuring that agents can correctly
  * introspect repository state, status, and history.
  */

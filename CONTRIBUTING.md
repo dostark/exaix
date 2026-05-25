@@ -3,15 +3,12 @@ title: CONTRIBUTING.md
 description: Development workflow and contribution guidelines
 agent_priority: medium
 copilot_knowledge_base: true
-version: 1.1
+version: 1.2
 capabilities: [pr_workflow, workspace_deployment, regression_testing]
 links:
   - "scripts/deploy_workspace.ts"
   - "scripts/ci.ts"
-copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
-
-# Contributing to Exaix
 
 Thank you for your interest in contributing to Exaix! This guide details the development standards, patterns, and workflows to ensure a high-quality, maintainable codebase.
 
@@ -39,47 +36,27 @@ When adding new configuration options:
 
 ### 2.2 Validation
 
-Before submitting a PR, verify you haven't introduced magic values:
+Before submitting a PR, drive the codebase to a fully green state:
 
-```bash
-# Search for potential magic numbers (excluding 0, 1, -1)
-grep -rEn --include='*.ts' '([^a-zA-Z_]|^)([2-9][0-9]*|[1-9][0-9]{2,})' packages/ apps/
+1. **Run the `clean-codebase` skill** to fix all lint, format, style, magic value, complexity, and architecture violations:
 
-# Search for potential magic strings (common keywords)
-grep -rEn --include='*.ts' '"(ollama|anthropic|openai|pending|active|timeout)"' packages/ apps/
-```
+   Canonical source: [`.copilot/skills/clean-codebase/SKILL.md`](.copilot/skills/clean-codebase/SKILL.md)
+
+   _Claude Code shorthand: `/clean-codebase`_
+
+2. **Run the full test suite** to confirm nothing is broken:
+
+   ```bash
+   deno task test_parallel
+   ```
 
 ## 3. Migration Guide
 
 If you are updating legacy code, refer to `CODE_STYLE.md` §2 (No Magic Numbers or Strings) for the authoritative rules on replacing hardcoded values with the new configuration system.
 
-## 4. AI Agent Development Workflow
+## 4. Safe Git Workflow
 
-### 4.1 Mandatory Pre-Task Steps
-
-**If you are an AI agent (Claude, Copilot, etc.), you MUST:**
-
-1. **Read [`CLAUDE.md`](CLAUDE.md)** for project orientation and quick reference
-2. **Read relevant `.copilot/` docs** for your task type:
-   - `.copilot/workflows/exaix-development.md` — Source code patterns
-   - `.copilot/workflows/testing.md` — Test patterns and helpers
-   - `.copilot/workflows/documentation.md` — Documentation guidelines
-   - `.copilot/planning/*.md` — Phase planning documents
-3. **Cite** which docs guided your approach in your implementation plan
-
-**Example citation:**
-
-> "I consulted `.copilot/workflows/testing.md` for test helpers and `.copilot/workflows/exaix-development.md` for service architecture patterns."
-
-### 4.2 Agent Documentation Index
-
-All available agent documentation is indexed in `.copilot/manifest.json`. Use the quick reference tables in `CLAUDE.md` to find relevant docs for your task.
-
-**Failure to consult `.copilot/` documentation is considered a project standards violation.**
-
-## 5. Safe Git Workflow
-
-### 5.1 Golden Rule: Feature Branches Only
+### 4.1 Golden Rule: Feature Branches Only
 
 **Never commit directly to `main`.** A pre-commit hook (Gate 0) blocks direct
 commits on `main` to protect branch history. Always work on a feature branch:
@@ -91,7 +68,7 @@ git checkout -b phase-XX-short-description
 
 Bypass (only if intentional): `HOOK_BYPASS_MAIN=1 git commit -m "..."`
 
-### 5.2 Hooks
+### 4.2 Hooks
 
 All hooks are installed by running:
 
@@ -105,7 +82,7 @@ are:
 | Hook                      | Purpose                                                                                                                                       |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pre-commit` (Gate 0)     | Blocks direct commits on `main`                                                                                                               |
-| `pre-commit` (Gates 1-11) | Format, lint, style, docs, complexity, arch                                                                                                   |
+| `pre-commit` (Gates 1-12) | Format, lint, style, docs, complexity, arch, tool-result parity, hallucination bench                                                          |
 | `pre-push`                | Regenerate `.copilot/manifest.json`, full type-check (packages/ + apps/ + tests/), focused tests for changed files, security regression tests |
 | `pre-merge-commit`        | Regenerate `.copilot/manifest.json` before merge commits                                                                                      |
 
@@ -124,7 +101,7 @@ regression tests. If any of these fail, the push is blocked.
 The `pre-rebase` hook prevents data loss by blocking `git rebase` when the
 working tree is dirty. Bypass: `HOOK_BYPASS_REBASE=1 git rebase <target>`
 
-### 5.3 WIP Commits Before Dangerous Operations
+### 4.3 WIP Commits Before Dangerous Operations
 
 Before running `git rebase`, `git pull --rebase`, or `git checkout`:
 
@@ -133,7 +110,7 @@ git add -A && git commit -m "WIP: save work before rebase"
 git rebase origin/main
 ```
 
-### 5.4 Agent Git State Check
+### 4.4 Agent Git State Check
 
 AI agents **MUST** verify git state before multi-step operations:
 
@@ -145,7 +122,7 @@ git status --porcelain && git rev-parse --abbrev-ref HEAD
 - If a rebase is in progress: complete or abort it before starting new work
 - If on `main`: create a feature branch first
 
-### 5.5 CI Bug Fix Workflow
+### 4.5 CI Bug Fix Workflow
 
 When CI fails on a PR branch or on `main`:
 
@@ -182,7 +159,7 @@ git add -A && HOOK_BYPASS_MAIN=1 git commit -m "fix: emergency CI hotfix for X"
 git push origin main
 ```
 
-### 5.6 Squash Before Merging
+### 4.6 Squash Before Merging
 
 Clean up WIP commits before merging to main:
 
@@ -190,67 +167,68 @@ Clean up WIP commits before merging to main:
 git rebase -i origin/main
 ```
 
-## 6. Pull Request Checklist
+## 5. Pull Request Checklist
 
-### 6.1 Commit Message Guidelines
+### 5.1 Commit Message Guidelines
 
-Use Conventional Commits for all changes:
+All commits must use the Exaix structured format. The `commit-msg` hook (`deno task check-commit-msg`) validates every commit automatically.
 
-- Format: `<type>(<scope>): <subject>`
-- Subject in imperative mood and ≤72 characters
-- Include a body for non-trivial changes (what/why, wrapped at 72 chars)
-- Reference issues and breaking changes in footer when applicable
-- Do not chain multiple `-m` flags; use one multiline commit message (editor or heredoc)
-
-Preferred detailed body format for medium/large changes:
+**Mandatory schema:**
 
 ```text
 <type>(<scope>): <subject>
 
-Context:
-Why this change is necessary.
-
-Changes:
-- Key implementation/test/doc change 1
-- Key implementation/test/doc change 2
-
-Validation:
-- deno check
-- deno lint
-
-References:
-- Optional issue/plan step/breaking change note
+what: <detailed explanation of what this commit does>
+rationale: <why this change was made>
+tests: <which tests were run and their outcome>
+who: <agent or developer name>
+impact: <ComponentName from ARCHITECTURE.md>: <details>
 ```
 
-Preferred CLI commit invocation:
+**Optional fields:** `conversation_id:`, `links:`, `prompt:`, `tool_audit:`, `model:`
+
+**Rules:**
+
+- Subject line: imperative mood, ≤72 characters
+- Wrap all body text at 72 characters
+- The component word before `:` in `impact:` must appear verbatim (case-insensitive) in `what:` — write `what:` first
+- Use semicolons in `impact:` only to separate multiple `Component: detail` entries, never to append plain-text clauses
+
+**Example:**
+
+```text
+feat(mcp): add tool result parity check
+
+what: Added check-tool-result-parity script to MCP package that validates
+  handler output schemas match TOOL_MANIFEST entries.
+rationale: Prevents silent schema drift between handler implementations
+  and the manifest causing runtime type mismatches.
+tests: deno task test_parallel — 142/142 passed
+who: Claude
+impact: MCP: added parity validation script
+```
+
+**Preferred CLI invocation** (heredoc keeps the full body intact):
 
 ```bash
-git commit -F - <<'COMMIT_MSG'
+git commit -F - <<'EOF'
 <type>(<scope>): <subject>
 
-Context:
-Why this change is necessary.
-
-Changes:
-- Key implementation/test/doc change 1
-- Key implementation/test/doc change 2
-
-Validation:
-- deno check
-- deno lint
-
-References:
-- Optional issue/plan step/breaking change note
-COMMIT_MSG
+what: ...
+rationale: ...
+tests: ...
+who: ...
+impact: ...: ...
+EOF
 ```
 
-Authoritative guidance:
+For full guidance — batching rules, branch safety, and validator trap details — read the commit skill:
 
-- [`.copilot/workflows/commit.md`](.copilot/workflows/commit.md)
-- [`Blueprints/Skills/commit-message.skill.md`](Blueprints/Skills/commit-message.skill.md)
+Canonical source: [`.copilot/skills/commit/SKILL.md`](.copilot/skills/commit/SKILL.md)
 
-- [ ] **(AI Agents)** Consulted relevant `.copilot/` documentation and cited in implementation plan.
-- [ ] No new magic numbers or strings introduced.
+_Claude Code shorthand: `/commit`_
+
+- [ ] All items in the [AGENTS.md Task Checklist](AGENTS.md#task-checklist) are satisfied.
 - [ ] New configuration options added to `exa.config.sample.toml`.
 - [ ] Zod schema updated in `packages/core/src/config/schema.ts`.
 - [ ] **Type Safety:** No `any`, no `unknown` as stored type, no `as any` casting (see `CODE_STYLE.md` §1).
@@ -259,18 +237,7 @@ Authoritative guidance:
 - [ ] **Test Variables:** Test-related env vars use `EXA_TEST_*` prefix and helper functions (`isTestMode()`, `isCIMode()`).
 - [ ] Tests added for new configuration options.
 - [ ] Documentation updated if behavior changes.
-- [ ] All tests pass (`deno task test`).
-- [ ] Code formatted (`deno task fmt`).
 
-## 7. Architecture
+## 6. Architecture
 
 For a comprehensive overview of the system architecture, component interactions, and code organization, please refer to [ARCHITECTURE.md](./ARCHITECTURE.md) in the project root. This document is the ground truth for understanding how Exaix works.
-
----
-
-**Footer — Agent Knowledge Base**
-
-- **Copilot Rules**: [.copilot/rules.md](./.copilot/rules.md)
-- **Blueprints**: [.copilot/blueprints/](./.copilot/blueprints/)
-- **Planning**: [.copilot/planning/](./.copilot/planning/)
-- **Manifest**: [.copilot/manifest.json](./.copilot/manifest.json)

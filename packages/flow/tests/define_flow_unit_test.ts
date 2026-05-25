@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
 /**
  * @module DefineFlowUnitTest
- * @path tests/flows/define_flow_unit_test.ts
+ * @path packages/flow/tests/define_flow_unit_test.ts
  * @description Unit tests for defineFlow utility.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @module CoreRuntimeDependencyBoundariesTest
- * @path tests/shared/core_runtime_dependency_boundaries_test.ts
+ * @path packages/core/tests/core_runtime_dependency_boundaries_test.ts
  * @description Verifies that core source files do not use runtime imports from ai or schemas packages.
  */
 
