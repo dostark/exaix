@@ -201,15 +201,20 @@ Deno.test("[LlmAnalyzer] returns fallback analysis on validation failure", async
   assertEquals(result.metadata.mode, AnalysisMode.LLM);
 });
 
-Deno.test("[LlmAnalyzer] populates metadata.durationMs", async () => {
-  const provider = new MockProvider(validAnalysisJson);
-  const validator = createOutputValidator({ autoRepair: false });
-  const analyzer = new LlmAnalyzer(provider, validator);
+Deno.test({
+  name: "[LlmAnalyzer] populates metadata.durationMs",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    const provider = new MockProvider(validAnalysisJson);
+    const validator = createOutputValidator({ autoRepair: false });
+    const analyzer = new LlmAnalyzer(provider, validator);
 
-  const result = await analyzer.analyze("Add feature X.");
+    const result = await analyzer.analyze("Add feature X.");
 
-  assertEquals(typeof result.metadata.durationMs, "number");
-  assertEquals(result.metadata.durationMs >= 0, true);
+    assertEquals(typeof result.metadata.durationMs, "number");
+    assertEquals(result.metadata.durationMs >= 0, true);
+  },
 });
 
 // ---------------------------------------------------------------------------

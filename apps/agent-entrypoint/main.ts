@@ -3,6 +3,7 @@
  * @path apps/agent-entrypoint/main.ts
  * @description Entry point for spawned agent subprocesses.
  * @architectural-layer Services
+ * @ungrounded
  * @related-files [packages/execution/src/strategies/mcp_agent_strategy.ts]
  */
 

@@ -6,8 +6,8 @@
  * @related-files ["packages/core/src/artifact/review_registry.ts", "packages/schemas/src/review.ts"]
  */
 
-import { GeneralStatus } from "@exaix/core";
-import type { JSONValue } from "@exaix/core";
+import { GeneralStatus } from "../types/enums.ts";
+import type { JSONValue } from "../types/json.ts";
 
 export const ReviewStatus = {
   PENDING: GeneralStatus.PENDING,

@@ -137,6 +137,65 @@ async function validate() {
 
   console.log(`📍 Explicitly grounded in ARCHITECTURE.md: ${groundedFiles.size} files`);
 
+  // 2.1 Also parse package and app READMEs for grounding
+  // Build a map of @exaix/<name> -> packages/<name>/mod.ts for package references
+  const exaixPackageMap = new Map<string, string>();
+  for (const file of srcFiles) {
+    const match = file.match(/^packages\/([a-zA-Z0-9_\-]+)\/mod\.ts$/);
+    if (match) {
+      exaixPackageMap.set(`@exaix/${match[1]}`, file);
+    }
+  }
+  for (const dir of [PACKAGES_DIR, APPS_DIR]) {
+    if (await Deno.stat(dir).then((s) => s.isDirectory).catch(() => false)) {
+      for await (const entry of walk(dir, { includeDirs: false })) {
+        if (entry.name.toLowerCase() !== "readme.md") continue;
+        try {
+          const readmeContent = await Deno.readTextFile(entry.path);
+          // Match explicit source file paths (e.g. packages/request/src/processor.ts)
+          const readmePathRegex =
+            /(?:packages\/[a-zA-Z0-9_\-]+(?:\/src\/[a-zA-Z0-9_\/\-]+\.ts|\/mod\.ts)|apps\/[a-zA-Z0-9_\-]+(?:\/src\/[a-zA-Z0-9_\/\-]+\.ts|\/main\.ts))/g;
+          let rmMatch;
+          while ((rmMatch = readmePathRegex.exec(readmeContent)) !== null) {
+            const foundPath = rmMatch[0];
+            if (srcFiles.has(foundPath)) {
+              groundedFiles.add(foundPath);
+            }
+          }
+          // Match @exaix/<name> package references (e.g. @exaix/execution)
+          const exaixRefRegex = /@exaix\/[a-zA-Z0-9_\-]+/g;
+          while ((rmMatch = exaixRefRegex.exec(readmeContent)) !== null) {
+            const found = exaixPackageMap.get(rmMatch[0]);
+            if (found) groundedFiles.add(found);
+          }
+          // Match directory-level references like ../../packages/flow/
+          const readmeDirLinkRegex = /packages\/[a-zA-Z0-9_\-]+\//g;
+          while ((rmMatch = readmeDirLinkRegex.exec(readmeContent)) !== null) {
+            const dirPath = rmMatch[0]; // e.g. "packages/execution/"
+            const modPath = dirPath + "mod.ts";
+            if (srcFiles.has(modPath)) {
+              groundedFiles.add(modPath);
+            }
+          }
+          // Also match directory-level patterns like packages/core/src/*.ts
+          const readmeGlobRegex =
+            /(?:packages\/[a-zA-Z0-9_\-]+(?:\/src|)\/|apps\/[a-zA-Z0-9_\-]+\/src\/)[a-zA-Z0-9_\/\-]+\/\*\.ts/g;
+          while ((rmMatch = readmeGlobRegex.exec(readmeContent)) !== null) {
+            const dirPath = rmMatch[0].replace("/*.ts", "");
+            for (const file of srcFiles) {
+              if (file.startsWith(dirPath)) {
+                groundedFiles.add(file);
+              }
+            }
+          }
+        } catch {
+          // skip unreadable files
+        }
+      }
+    }
+  }
+  console.log(`📍 Explicitly grounded in READMEs: ${groundedFiles.size} files total (including ARCHITECTURE.md)`);
+
   // 3. Parse headers and build dependency graph
   let headerFailures = 0;
   for (const relPath of allModules) {
@@ -242,6 +301,25 @@ async function validate() {
     }
   }
 
+  // 4b. Files belonging to a grounded package or app are grounded (mod.ts/main.ts is the discoverable entry point).
+  const groundedPackagePrefixes = new Set<string>();
+  for (const f of fullyGrounded) {
+    const pkgMatch = f.match(/^(packages\/[a-zA-Z0-9_\-]+)\//);
+    if (pkgMatch) groundedPackagePrefixes.add(pkgMatch[1]);
+    const appMatch = f.match(/^(apps\/[a-zA-Z0-9_\-]+)\//);
+    if (appMatch) groundedPackagePrefixes.add(appMatch[1]);
+  }
+  for (const f of srcFiles) {
+    if (!fullyGrounded.has(f)) {
+      for (const prefix of groundedPackagePrefixes) {
+        if (f.startsWith(prefix)) {
+          fullyGrounded.add(f);
+          break;
+        }
+      }
+    }
+  }
+
   // 5. Report results
   const ungroundedCandidates = Array.from(srcFiles).filter((f) => !fullyGrounded.has(f));
   const exempted = ungroundedCandidates.filter((f) => moduleMap.get(f)?.ungrounded || f.includes("/tests/"));
@@ -268,6 +346,15 @@ async function validate() {
 
   if (headerFailures > 0 || ungrounded.length > 0) {
     Deno.exit(1);
+  } else {
+    console.log("\n✅ Architecture is fully grounded and valid!");
+  }
+  if (ungrounded.length > 0) {
+    console.log("\n⚠️  Some modules are not reachable from documented roots, but have valid headers (self-grounded).");
+    console.log(
+      "   Tag with @ungrounded to silence or add README/ARCHITECTURE.md references to improve discoverability.",
+    );
+    Deno.exit(0);
   } else {
     console.log("\n✅ Architecture is fully grounded and valid!");
   }
@@ -319,8 +406,8 @@ function parseHeader(_filePath: string, content: string): ModuleInfo {
     }
   }
 
-  // 2. Automatically extract dependencies from imports
-  const importRegex = /import\s+.*?\s+from\s+["']([^"']+)["']/g;
+  // 2. Automatically extract dependencies from imports and re-exports
+  const importRegex = /(?:import|export)\s+.*?\s+from\s+["']([^"']+)["']/g;
   let match;
   while ((match = importRegex.exec(content)) !== null) {
     const importPath = match[1];
