@@ -12,13 +12,13 @@ import { dirname, fromFileUrl, join } from "@std/path";
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..", "..");
 
 async function readMemoryBanksDoc(): Promise<string> {
-  const docPath = join(REPO_ROOT, "docs", "Memory_Banks.md");
+  const docPath = join(REPO_ROOT, "packages", "memory", "README.md");
   return await Deno.readTextFile(docPath);
 }
 
 async function docExists(filename: string): Promise<boolean> {
   try {
-    const docPath = join(REPO_ROOT, "docs", filename);
+    const docPath = join(REPO_ROOT, filename);
     const stat = await Deno.stat(docPath);
     return stat.isFile;
   } catch {
@@ -31,8 +31,8 @@ async function docExists(filename: string): Promise<boolean> {
 // ============================================================================
 
 Deno.test("Memory Banks documentation exists", async () => {
-  const exists = await docExists("Memory_Banks.md");
-  assert(exists, "docs/Memory_Banks.md should exist");
+  const exists = await docExists("packages/memory/README.md");
+  assert(exists, "packages/memory/README.md should exist");
 });
 
 // ============================================================================

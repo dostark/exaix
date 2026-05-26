@@ -576,7 +576,7 @@ Exaix TUI includes accessibility support:
 - **Layout not saving:** Verify write permissions to `~/.exaix/` directory.
 - **Colors look wrong:** Try toggling high contrast mode or check `$TERM` environment variable.
 
-For complete keyboard shortcuts, see [TUI Keyboard Reference](./TUI_Keyboard_Reference.md).
+For complete keyboard shortcuts, see [TUI Keyboard Reference](../apps/tui/README.md#keyboard-shortcuts).
 
 For technical details, see the [Implementation Plan](./Exaix_Implementation_Plan.md#step-95-tui-cockpit-implementation-plan).
 

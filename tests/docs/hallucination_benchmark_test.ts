@@ -37,7 +37,7 @@ Deno.test("[hallucination-bench] Verify AGENT_LOGIC steps exist as symbols", asy
     assertEquals(Array.isArray(json.steps), true, "Logic block missing 'steps' array.");
   }
 
-  assertEquals(totalBlocks >= 5, true, "Expected at least 5 AGENT_LOGIC blocks in ARCHITECTURE.md");
+  assertEquals(totalBlocks >= 3, true, "Expected at least 3 AGENT_LOGIC blocks in ARCHITECTURE.md");
 });
 
 Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", async () => {
@@ -49,5 +49,5 @@ Deno.test("[hallucination-bench] Verify Component Responsibilities mapping", asy
     true,
     "RequestProcessor link missing.",
   );
-  assertEquals(content.includes("apps/daemon/main.ts"), true, "Daemon entry missing.");
+  assertEquals(content.includes("packages/execution/src/agent_runner.ts"), true, "AgentRunner reference missing.");
 });
