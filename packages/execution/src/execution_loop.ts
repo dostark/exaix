@@ -1173,45 +1173,51 @@ export class ExecutionLoop {
 
                 switch (onTimeout) {
                   case "reject": {
-                    console.log(`[ExecutionLoop] Amendment for ${requestId} timed out. Rejecting.`);
+                    this.logActivity(PLAN_AMENDMENT_EVENT_REJECTED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment rejected due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
                     const content = await Deno.readTextFile(planPath);
                     const updated = content.replace(
                       /status: "?amendment_pending"?/,
                       `status: ${PlanStatus.REJECTED}`,
                     );
                     await Deno.writeTextFile(planPath, updated);
-                    this.logActivity(PLAN_AMENDMENT_EVENT_REJECTED, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
-                    });
                     break;
                   }
                   case "approve": {
-                    console.log(`[ExecutionLoop] Amendment for ${requestId} timed out. Auto-approving.`);
+                    this.logActivity(PLAN_AMENDMENT_EVENT_APPROVED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment approved due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
                     const content = await Deno.readTextFile(planPath);
                     const updated = content.replace(
                       /status: "?amendment_pending"?/,
                       `status: ${PlanStatus.APPROVED}`,
                     );
                     await Deno.writeTextFile(planPath, updated);
-                    this.logActivity(PLAN_AMENDMENT_EVENT_APPROVED, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
-                    });
                     break;
                   }
                   default: {
-                    console.log(`[ExecutionLoop] Amendment for ${requestId} expired. Aborting plan.`);
+                    this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment expired due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
                     await this.handleFailure(
                       planPath,
                       traceId,
                       requestId,
                       "Plan amendment request expired (timeout).",
                     );
-                    this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, traceId, {
-                      request_id: requestId,
-                      amendment_id: amendmentId,
-                    });
                   }
                 }
               }

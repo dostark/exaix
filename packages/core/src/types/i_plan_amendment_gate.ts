@@ -22,5 +22,5 @@ export interface IPlanAmendmentGate {
     sharedContext?: LogMetadata;
   }): Promise<IPlanAmendmentDecision>;
 
-  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): string;
+  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): Promise<string>;
 }

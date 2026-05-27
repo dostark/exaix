@@ -265,6 +265,7 @@ export interface IFlowEventPayloadMap {
     groupId: string;
     stepIds: string[];
     startedAt: number;
+    isoStartedAt: string;
   };
   "flow.parallel_group.completed": IFlowEventRequestContext & {
     flowRunId: string;
@@ -1117,6 +1118,7 @@ export class FlowRunner implements IFlowRunner {
       groupId: unit.groupId,
       stepIds: unit.stepIds,
       startedAt: groupStartedAt,
+      isoStartedAt: new Date().toISOString(),
       traceId: request.traceId,
       requestId: request.requestId,
     });

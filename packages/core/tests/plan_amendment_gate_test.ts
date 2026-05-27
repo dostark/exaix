@@ -4,7 +4,7 @@
  * @description Tests for PlanAmendmentGate: auto-approve, HITL adapter
  * decision, timeout actions, event emission, and delegation.
  */
-import { assertEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertObjectMatch } from "@std/assert";
 import type { IEventLogger } from "../src/logger/event_logger.ts";
 import type { IPlanAmendmentService } from "../src/types/i_plan_amendment_service.ts";
 import type { IPlanAmendmentPatch, IPlanAmendmentTrigger } from "@exaix/schemas/plan_amendment.ts";
@@ -12,7 +12,11 @@ import type { IAmendmentApprovalAdapter } from "../src/planning/plan_amendment_s
 import type { Config } from "@exaix/schemas/config.ts";
 import type { LogMetadata } from "../src/types/json.ts";
 import { PlanAmendmentGate } from "../src/planning/plan_amendment_gate.ts";
-import { PLAN_AMENDMENT_EVENT_APPROVED, PLAN_AMENDMENT_EVENT_PROPOSED } from "../src/types/constants.ts";
+import {
+  PLAN_AMENDMENT_EVENT_APPLIED,
+  PLAN_AMENDMENT_EVENT_APPROVED,
+  PLAN_AMENDMENT_EVENT_PROPOSED,
+} from "../src/types/constants.ts";
 
 const makeTrigger = (overrides?: Partial<IPlanAmendmentTrigger>): IPlanAmendmentTrigger => ({
   source: "manual_request",
@@ -166,7 +170,7 @@ Deno.test("processAmendment timeout triggers on_timeout action", async () => {
   assertEquals(decision.decision, "rejected");
 });
 
-Deno.test("applyApprovedAmendment delegates to service", () => {
+Deno.test("applyApprovedAmendment delegates to service", async () => {
   const planContent = "---\nstatus: proposed\n---\n\n## Step 1: title 1\n\ncontent 1";
   const patch = makePatch();
   const expected = "---\nstatus: approved\n---\n\n## Step 1: title 1\n\ncontent 1";
@@ -182,6 +186,84 @@ Deno.test("applyApprovedAmendment delegates to service", () => {
     amendmentService,
   );
 
-  const result = gate.applyApprovedAmendment(planContent, patch);
+  const result = await gate.applyApprovedAmendment(planContent, patch);
   assertEquals(result, expected);
+});
+
+Deno.test("full audit trail - PROPOSED -> APPROVED -> APPLIED with structured payloads", async () => {
+  const events: Array<{ action: string; target: string | null; payload?: LogMetadata }> = [];
+  const logger: IEventLogger = {
+    info(action: string, target: string | null, payload?: LogMetadata) {
+      events.push({ action, target, payload });
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    child: () => logger,
+  };
+
+  const amendmentService = {
+    proposeAmendment: () =>
+      Promise.resolve(makePatch({
+        amendmentId: "audit-001",
+        planId: "plan-audit",
+      })),
+    applyApprovedAmendment: (_planContent: string, _patch: IPlanAmendmentPatch) => "updated-plan",
+    shouldAmend: () => Promise.resolve(true),
+  } as IPlanAmendmentService;
+
+  const gate = new PlanAmendmentGate(
+    makeConfig(),
+    amendmentService,
+    undefined,
+    logger,
+  );
+
+  // Step 1: process amendment -> PROPOSED + APPROVED
+  const _decision = await gate.processAmendment({
+    planId: "plan-audit",
+    stepLabel: "1",
+    trigger: makeTrigger(),
+  });
+
+  // Step 2: apply approved amendment -> APPLIED
+  await gate.applyApprovedAmendment(
+    "original-plan",
+    makePatch({
+      amendmentId: "audit-001",
+      planId: "plan-audit",
+    }),
+  );
+
+  // Assert: 3 events total
+  assertEquals(events.length, 3, "Should emit PROPOSED + APPROVED + APPLIED");
+
+  // Assert PROPOSED payload
+  assertEquals(events[0].action, PLAN_AMENDMENT_EVENT_PROPOSED);
+  assertObjectMatch(events[0].payload ?? {}, {
+    amendmentId: "audit-001",
+    planId: "plan-audit",
+  });
+
+  // Assert APPROVED payload with structured metadata
+  assertEquals(events[1].action, PLAN_AMENDMENT_EVENT_APPROVED);
+  assertObjectMatch(events[1].payload ?? {}, {
+    amendmentId: "audit-001",
+    planId: "plan-audit",
+    decision: "approved",
+    decidedBy: "auto",
+    rationale: "Auto-approved (no HITL adapter configured)",
+  });
+  assertExists(events[1].payload?.timestamp);
+
+  // Assert APPLIED payload
+  assertEquals(events[2].action, PLAN_AMENDMENT_EVENT_APPLIED);
+  assertObjectMatch(events[2].payload ?? {}, {
+    amendmentId: "audit-001",
+    planId: "plan-audit",
+  });
+  assertExists(events[2].payload?.timestamp);
 });

@@ -17,6 +17,7 @@ import type { IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/type
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
 
 const EMBEDDING_CACHE_MAX_ENTRIES = 512;
@@ -60,7 +61,7 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
 
   constructor(
     private config: Config,
-    private provider: IEmbeddingProvider | null = null,
+    private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
     private costRouter?: IMemoryCostRouter,
   ) {
     this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");

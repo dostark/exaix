@@ -18,6 +18,7 @@ import type {
 } from "@exaix/schemas/plan_amendment.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
+  PLAN_AMENDMENT_EVENT_APPLIED,
   PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_EXPIRED,
   PLAN_AMENDMENT_EVENT_PROPOSED,
@@ -28,6 +29,7 @@ import { AmendmentTimeoutAction } from "../types/enums.ts";
 const AMENDMENT_DECISION_APPROVED = "approved";
 const AMENDMENT_DECISION_REJECTED = "rejected";
 const AMENDMENT_DECISION_EXPIRED = "expired";
+const AMENDMENT_DECIDED_BY_TIMEOUT = "timeout";
 
 export class PlanAmendmentGate implements IPlanAmendmentGate {
   constructor(
@@ -100,14 +102,21 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
       decision: decision.decision,
       decidedBy: decision.decidedBy,
       rationale: decision.rationale,
+      timestamp: new Date().toISOString(),
     });
 
     // 5. Return decision
     return decision;
   }
 
-  applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): string {
-    return this.amendmentService.applyApprovedAmendment(planContent, patch);
+  async applyApprovedAmendment(planContent: string, patch: IPlanAmendmentPatch): Promise<string> {
+    const result = this.amendmentService.applyApprovedAmendment(planContent, patch);
+    await this.emitAmendmentEvent(PLAN_AMENDMENT_EVENT_APPLIED, patch.planId, {
+      amendmentId: patch.amendmentId,
+      planId: patch.planId,
+      timestamp: new Date().toISOString(),
+    });
+    return result;
   }
 
   private raceAdapterWithTimeout(
@@ -124,7 +133,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
             amendmentId: patch.amendmentId,
             decision: AMENDMENT_DECISION_APPROVED,
             decidedAt: now,
-            decidedBy: "timeout",
+            decidedBy: AMENDMENT_DECIDED_BY_TIMEOUT,
             rationale: "Auto-approved due to HITL timeout",
           });
         } else if (onTimeout === AmendmentTimeoutAction.REJECT) {
@@ -132,7 +141,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
             amendmentId: patch.amendmentId,
             decision: AMENDMENT_DECISION_REJECTED,
             decidedAt: now,
-            decidedBy: "timeout",
+            decidedBy: AMENDMENT_DECIDED_BY_TIMEOUT,
             rationale: "Auto-rejected due to HITL timeout",
           });
         } else {
@@ -140,7 +149,7 @@ export class PlanAmendmentGate implements IPlanAmendmentGate {
             amendmentId: patch.amendmentId,
             decision: AMENDMENT_DECISION_EXPIRED,
             decidedAt: now,
-            decidedBy: "timeout",
+            decidedBy: AMENDMENT_DECIDED_BY_TIMEOUT,
             rationale: "Amendment expired due to HITL timeout",
           });
         }
