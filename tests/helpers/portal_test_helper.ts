@@ -8,8 +8,8 @@
 import { join } from "@std/path";
 import { PortalCommands } from "../../apps/exactl/src/commands/portal_commands.ts";
 import { initTestDbService } from "@exaix/testing";
-import { createTestConfigService } from "@exaix/testing";
-import type { ConfigService } from "@exaix/core/config";
+import { writeTestConfigFile } from "@exaix/testing";
+import { ConfigService } from "@exaix/core/config";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { ContextCardAdapter } from "../../apps/common/adapters/context_card_adapter.ts";
@@ -109,7 +109,8 @@ export class PortalConfigTestHelper {
     const targetDir = await Deno.makeTempDir({ prefix: "portal-target-" });
     const { db, cleanup: dbCleanup } = await initTestDbService();
 
-    const configService = await createTestConfigService(tempRoot);
+    const configPath = await writeTestConfigFile(tempRoot);
+    const configService = new ConfigService(configPath);
 
     // Create portal symlink directory (Portals/) for mounted projects
     // and portal context store (Memory/Portals/) for portal context cards (Markdown)

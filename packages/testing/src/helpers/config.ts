@@ -9,7 +9,6 @@
  */
 
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
-import { ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
 import { getDefaultPaths } from "@exaix/core/config";
 import { SqliteJournalMode } from "@exaix/core";
@@ -100,9 +99,10 @@ export function createMockConfig(root: string, overrides: Partial<Config> = {}):
 }
 
 /**
- * Creates a test config file and ConfigService for testing
+ * Creates a test config file for testing.
+ * Returns the path to the written config file.
  */
-export async function createTestConfigService(root: string): Promise<ConfigService> {
+export async function writeTestConfigFile(root: string): Promise<string> {
   const configPath = join(root, "exa.config.toml");
 
   const configContent = `[system]
@@ -189,9 +189,5 @@ allowed_prefixes = ["feat", "fix", "docs", "chore", "refactor", "test"]
 `;
 
   await Deno.writeTextFile(configPath, configContent);
-
-  // Create service with absolute path
-  const service = new ConfigService(configPath);
-
-  return service;
+  return configPath;
 }

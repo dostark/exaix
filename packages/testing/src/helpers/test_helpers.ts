@@ -11,17 +11,32 @@
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type { ActivityRepository } from "@exaix/core/repositories";
 import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
-import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
-import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
-import type { IModelProvider } from "@exaix/ai/types.ts";
-import type { IGenerateResult } from "@exaix/ai/providers";
-import type { IConfigService, IDisplayService, IGitService, IPortalConfigEntry } from "@exaix/core/types";
+import type { IDisplayService, IGitService, IPortalConfigEntry, PortalExecutionStrategy } from "@exaix/core/types";
 import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
-import type { PortalExecutionStrategy } from "@exaix/core";
 import type { JSONObject, JSONValue, LogMetadata } from "@exaix/core/types";
+import type { ToolConfirmationDecision, ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import type { IGenerateResult } from "@exaix/ai/providers";
+import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import { ExaPathDefaults, LogLevel, PortalOperation } from "@exaix/core";
 import { createGitServiceStub } from "@exaix/testing/helpers/mod.ts";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
+
+/** Local interface matching IConfigService shape for use in testing package. */
+interface ILocalConfigService {
+  get(): Config;
+  getAll(): Config;
+  getConfigPath(): string;
+  reload(): Config;
+  addPortal(alias: string, targetPath: string, options?: {
+    defaultBranch?: string;
+    executionStrategy?: PortalExecutionStrategy;
+  }): Promise<void>;
+  removePortal(alias: string): Promise<void>;
+  getPortals(): IPortalConfigEntry[];
+  getPortal(alias: string): IPortalConfigEntry | undefined;
+  getSchemaVersion(): string;
+}
 
 /**
  * Create a fully-typed stub implementation of the DatabaseService used in tests.
@@ -92,7 +107,7 @@ export function createMockRepo(overrides: Partial<ActivityRepository> = {}): Act
 /**
  * Create a stub IConfigService for tests.
  */
-export function createStubConfig(config: Config): IConfigService {
+export function createStubConfig(config: Config): ILocalConfigService {
   const portals: IPortalConfigEntry[] = [...(config.portals ?? [])];
 
   const getConfig = (): Config => ({
