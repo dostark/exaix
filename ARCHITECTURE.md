@@ -47,7 +47,7 @@ Exaix follows a **three-tier edition model** to serve different organizational n
 | **Team** 🔵       | Small teams, startups, consulting firms | + Web UI, PostgreSQL, MCP server mode, multi-user collaboration |
 | **Enterprise** 🟣 | Regulated industries, large enterprises | + Governance dashboard, compliance frameworks, immudb, SSO/SAML |
 
-For the full component availability matrix by edition, see `docs/dev/Reference_Data.md#edition-model--component-availability`.
+For the full component availability matrix by edition, see `docs/Reference_Data.md#edition-model--component-availability`.
 
 ---
 
@@ -390,7 +390,7 @@ Exaix centralizes file-format parsing and validation into two layers:
 
 This layer is what keeps file-driven workflows safe and deterministic: request/plan files may come from humans or LLMs, but the runtime only proceeds when schemas validate.
 
-For the key modules table with file paths and sub-schema listings, see `docs/dev/Reference_Data.md#parsing--schema-layer--key-modules`.
+For the key modules table with file paths and sub-schema listings, see `docs/Reference_Data.md#parsing--schema-layer--key-modules`.
 
 ---
 
@@ -680,7 +680,7 @@ All tools enforce portal-scoped operations. For the class diagram, patch file st
 
 The CLI is organized as command groups (Request, Plan, Review, Git, Daemon, Portal, Blueprint, Dashboard), each extending a shared `BaseCommand` with `CommandContext` for config and database access.
 
-For the command group mermaid diagram and extends-relationship details, see `docs/dev/Reference_Data.md#cli-commands-architecture`.
+For the command group mermaid diagram and extends-relationship details, see `docs/Reference_Data.md#cli-commands-architecture`.
 
 ---
 
@@ -710,7 +710,7 @@ For the dashboard overview (entry point, integrated views), component architectu
 
 The Memory Banks system provides persistent knowledge storage for project context, execution history, and cross-project learnings across four bank types (Local, Execution, Global, Skills).
 
-For the bank-type-to-service mapping table, directory structure mermaid, update workflow sequence diagram, CLI command tree, and key components table, see `docs/dev/Reference_Data.md#memory-banks`.
+For the bank-type-to-service mapping table, directory structure mermaid, update workflow sequence diagram, CLI command tree, and key components table, see `docs/Reference_Data.md#memory-banks`.
 
 ---
 
@@ -738,19 +738,19 @@ For full cleanup behavior details, see `packages/portal/README.md#review-cleanup
 
 Blueprints define agent identities, each stored as `Workspace/Blueprints/Identities/{agent_id}.md` with TOML frontmatter specifying provider, model, capabilities, and persona instructions.
 
-For the built-in template list, blueprint CLI commands, and runtime usage flow diagram, see `docs/dev/Reference_Data.md#blueprint-management`.
+For the built-in template list, blueprint CLI commands, and runtime usage flow diagram, see `docs/Reference_Data.md#blueprint-management`.
 
 ---
 
 ## Daemon Lifecycle
 
-For the daemon state diagram with all transitions and notes, see `docs/dev/Reference_Data.md#daemon-lifecycle`.
+For the daemon state diagram with all transitions and notes, see `docs/Reference_Data.md#daemon-lifecycle`.
 
 ---
 
 ## Activity Journal Flow {#activity-journal-flow}
 
-For the component table, event flow mermaid diagram, database schema details, and retrieval commands, see `docs/dev/Reference_Data.md#activity-journal`.
+For the component table, event flow mermaid diagram, database schema details, and retrieval commands, see `docs/Reference_Data.md#activity-journal`.
 
 ---
 
@@ -773,13 +773,13 @@ ReActLoopStrategy ──heartbeat──▶ EventBusService ◀── EventLogger
                               Color-coded terminal output
 ```
 
-For the component responsibilities table, key design decisions, and configuration constants, see `docs/dev/Reference_Data.md#live-execution-streaming`.
+For the component responsibilities table, key design decisions, and configuration constants, see `docs/Reference_Data.md#live-execution-streaming`.
 
 ---
 
 ## Scenario Framework Extension
 
-The scenario framework provides comprehensive end-to-end testing for Exaix features including dynamic tool selection, ReAct reasoning, and extended MCP tool handlers. For scenario pack definitions and execution modes, see `docs/dev/Reference_Data.md#scenario-framework`.
+The scenario framework provides comprehensive end-to-end testing for Exaix features including dynamic tool selection, ReAct reasoning, and extended MCP tool handlers. For scenario pack definitions and execution modes, see `docs/Reference_Data.md#scenario-framework`.
 
 ---
 
@@ -787,19 +787,19 @@ The scenario framework provides comprehensive end-to-end testing for Exaix featu
 
 Exaix includes repository tooling under `scripts/` to keep development workflows deterministic, along with a developer-facing knowledge base under `.copilot/`.
 
-For the full script inventory and `.copilot/` artifact details, see `docs/dev/Reference_Data.md#developer-tooling`.
+For the full script inventory and `.copilot/` artifact details, see `docs/Reference_Data.md#developer-tooling`.
 
 ---
 
 ## Module Grounding Index
 
-This section provides explicit grounding for core infrastructure modules and helpers. For the full lookup table, see `docs/dev/Reference_Data.md#module-grounding-index`.
+This section provides explicit grounding for core infrastructure modules and helpers. For the full lookup table, see `docs/Reference_Data.md#module-grounding-index`.
 
 ---
 
 ## Component Responsibilities
 
-For the full 60+ entry component responsibilities table with file paths and edition tiers, see `docs/dev/Reference_Data.md#component-responsibilities`.
+For the full 60+ entry component responsibilities table with file paths and edition tiers, see `docs/Reference_Data.md#component-responsibilities`.
 
 ---
 
@@ -817,7 +817,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `packages/mcp/README.md` — MCP tool handlers, ReAct engine, security
   - `apps/tui/README.md` — Terminal UI views, layout, keyboard reference
   - `packages/memory/README.md` — Memory bank architecture, schemas, CLI commands
-  - `docs/dev/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle
+  - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 

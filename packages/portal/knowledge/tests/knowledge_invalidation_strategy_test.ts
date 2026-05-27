@@ -55,6 +55,14 @@ class FakeGitHeadResolver implements IGitHeadResolver {
   changedFilesSince(_portalPath: string, _fromSha: string): Promise<string[] | null> {
     return Promise.resolve(this._changedFiles);
   }
+
+  startWatching(): void {
+    // No-op stub
+  }
+
+  stopWatching(): void {
+    // No-op stub
+  }
 }
 
 Deno.test("[KnowledgeInvalidationStrategy] skip when HEAD matches cached SHA", async () => {

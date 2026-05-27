@@ -1159,24 +1159,45 @@ export const __test_command = new Command()
           }),
       )
       .command(
-        "validate <agent-id>",
+        "validate [agent-id]",
         new Command()
           .description("Validate blueprint format")
-          .action(async (_options, ...args: string[]) => {
-            const identityId = args[0];
+          .option("--file <path:string>", "Validate a blueprint file by path")
+          .action(async (options: { file?: string }, ...args: string[]) => {
             try {
-              const result = await blueprintCommands.validate(identityId);
-              if (result.valid) {
-                display.info("blueprint.valid", identityId, {
-                  status: "Valid ✓",
-                  warnings: result.warnings?.length || 0,
-                });
+              if (options.file) {
+                const result = await blueprintCommands.validateFile(options.file);
+                const label = options.file;
+                if (result.valid) {
+                  display.info("blueprint.valid", label, {
+                    status: "Valid ✓",
+                    warnings: result.warnings?.length || 0,
+                  });
+                } else {
+                  display.error("blueprint.invalid", label, {
+                    status: "Invalid ✗",
+                    errors: result.errors,
+                  });
+                  Deno.exit(1);
+                }
               } else {
-                display.error("blueprint.invalid", identityId, {
-                  status: "Invalid ✗",
-                  errors: result.errors,
-                });
-                Deno.exit(1);
+                const identityId = args[0];
+                if (!identityId) {
+                  throw new Error("Either <agent-id> or --file <path> is required");
+                }
+                const result = await blueprintCommands.validate(identityId);
+                if (result.valid) {
+                  display.info("blueprint.valid", identityId, {
+                    status: "Valid ✓",
+                    warnings: result.warnings?.length || 0,
+                  });
+                } else {
+                  display.error("blueprint.invalid", identityId, {
+                    status: "Invalid ✗",
+                    errors: result.errors,
+                  });
+                  Deno.exit(1);
+                }
               }
             } catch (error) {
               display.error("cli.error", "blueprint validate", {

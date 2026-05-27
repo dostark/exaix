@@ -29,11 +29,15 @@ export function createRoutingPolicyService(
     blueprintsPath: `${options.root}/${options.config.paths.blueprints}`,
   });
 
+  const policyLoader = new RoutingPolicyLoader({
+    config: options.config,
+    root: options.root,
+  });
+
+  policyLoader.startWatching();
+
   return new RoutingPolicyService({
-    policyLoader: new RoutingPolicyLoader({
-      config: options.config,
-      root: options.root,
-    }),
+    policyLoader,
     candidateDiscovery: new CandidateDiscovery(blueprintLoader),
     performanceRepository: new IdentityPerformanceRepository({
       db: options.db,

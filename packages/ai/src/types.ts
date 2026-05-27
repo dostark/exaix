@@ -36,6 +36,15 @@ export interface IModelProvider {
    * @returns The generated response payload
    */
   generate(prompt: string, options?: IModelOptions): Promise<IGenerateResult>;
+
+  /**
+   * Optional streaming variant. If implemented, yields content chunks as they
+   * are produced by the provider. Consumers collect chunks into the final
+   * IGenerateResult with streamed: true.
+   * @param prompt The input prompt to send to the model
+   * @param options Optional generation parameters (stream option hints streaming)
+   */
+  generateStream?(prompt: string, options?: IModelOptions): AsyncGenerator<string>;
 }
 
 /**

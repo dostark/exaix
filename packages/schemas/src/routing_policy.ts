@@ -69,6 +69,7 @@ export const ZRoutingCandidate = z.object({
   version: z.string().min(1),
   capabilities: z.array(z.string()).default([]),
   score: z.number().default(0),
+  preferLocal: z.boolean().optional(),
   scoreBreakdown: z.object({
     capabilityScore: z.number().default(0),
     policyScore: z.number().default(0),

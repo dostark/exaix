@@ -23,14 +23,72 @@ export interface IRoutingPolicyLoadResult {
   path: string;
 }
 
+const DEFAULT_DEBOUNCE_MS = 100;
+
 export class RoutingPolicyLoader {
   private readonly policyPath: string;
   private cachedPolicy: IRoutingPolicy | null = null;
   private cachedMtimeMs: number | null = null;
+  private watcher: Deno.FsWatcher | null = null;
+  private abortController: AbortController | null = null;
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: IRoutingPolicyLoaderOptions) {
     const routingConfig = options.config.routing;
     this.policyPath = join(options.root, routingConfig?.policy_path ?? ".exaix/routing.policy.yaml");
+  }
+
+  /**
+   * Start watching the policy file for changes.
+   * On modify events, the internal cache is invalidated so the next
+   * loadPolicy() call re-reads the file.
+   */
+  startWatching(): void {
+    if (this.abortController) return;
+    this.abortController = new AbortController();
+    try {
+      this.watcher = Deno.watchFs(this.policyPath);
+      this.watchLoop(this.abortController.signal);
+    } catch {
+      // File may not exist yet; watching is best-effort
+    }
+  }
+
+  private async watchLoop(signal: AbortSignal): Promise<void> {
+    try {
+      for await (const event of this.watcher!) {
+        if (signal.aborted) break;
+        if (event.kind === "modify" || event.kind === "create") {
+          if (this.debounceTimer) clearTimeout(this.debounceTimer);
+          this.debounceTimer = setTimeout(() => {
+            this.debounceTimer = null;
+            this.cachedMtimeMs = null;
+          }, DEFAULT_DEBOUNCE_MS);
+        }
+      }
+    } catch {
+      // Watcher closed
+    }
+  }
+
+  /** Close the file watcher if active. */
+  close(): void {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+    if (this.watcher) {
+      try {
+        this.watcher.close();
+      } catch {
+        // Already closed
+      }
+      this.watcher = null;
+    }
   }
 
   async loadPolicy(): Promise<IRoutingPolicyLoadResult> {
@@ -45,6 +103,14 @@ export class RoutingPolicyLoader {
       const parsed = parseYaml(raw) as unknown;
       const result = ZRoutingPolicy.safeParse(parsed);
       if (!result.success) {
+        if (this.cachedPolicy) {
+          return {
+            success: false,
+            policy: this.cachedPolicy,
+            errors: result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`),
+            path: this.policyPath,
+          };
+        }
         return {
           success: false,
           policy: ZRoutingPolicy.parse({}),

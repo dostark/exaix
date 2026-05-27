@@ -100,6 +100,61 @@ export class CapabilityMatcher {
     };
   }
 
+  /**
+   * Fallback selection when no blueprint matches criteria exactly.
+   * Returns the closest-matching blueprint rather than throwing.
+   * Scores all blueprints by capability overlap and returns the best,
+   * or null if the list is empty.
+   */
+  fallback(
+    blueprints: ILoadedBlueprint[],
+    criteria: IRoutingMatchCriteria,
+  ): ReturnType<typeof ZRoutingCandidate.parse> | null {
+    let best: ReturnType<typeof ZRoutingCandidate.parse> | null = null;
+    let bestScore = -1;
+
+    for (const bp of blueprints) {
+      if (bp.frontmatter.deprecated && !this.allowDeprecated) continue;
+
+      const blueprintCapabilities = normalize(bp.capabilities);
+      const requestedCapability = criteria.capability ? criteria.capability.trim().toLowerCase() : "";
+      const requestedTags = normalize(criteria.tags ?? []);
+
+      const hasCapability = !requestedCapability || blueprintCapabilities.includes(requestedCapability);
+      const matchedTags = requestedTags.filter((tag) => blueprintCapabilities.includes(tag));
+      const totalRequested = requestedCapability ? 1 + requestedTags.length : requestedTags.length;
+      const matched = [
+        ...(requestedCapability && hasCapability ? [requestedCapability] : []),
+        ...matchedTags,
+      ];
+      const uniqueMatches = Array.from(new Set(matched));
+      const capabilityScore = totalRequested > 0 ? uniqueMatches.length / totalRequested : 1;
+
+      const metadata = this.extractBlueprintMetadata(bp);
+      const overallScore = this.computeOverallScore(capabilityScore, criteria, metadata);
+
+      if (capabilityScore <= 0) continue;
+
+      if (overallScore > bestScore) {
+        bestScore = overallScore;
+        best = ZRoutingCandidate.parse({
+          identityId: bp.identityId,
+          version: bp.version,
+          capabilities: blueprintCapabilities,
+          score: overallScore,
+          scoreBreakdown: {
+            capabilityScore,
+            policyScore: 0,
+            journalScore: 0,
+            experimentScore: 0,
+          },
+        });
+      }
+    }
+
+    return best;
+  }
+
   private computeCapabilityScore(
     requestedCapability: string,
     requestedTags: string[],

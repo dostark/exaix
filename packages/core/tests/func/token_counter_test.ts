@@ -7,7 +7,7 @@
  */
 
 import { assertEquals, assertGreater, assertLess } from "@std/assert";
-import { TokenCounter } from "@exaix/core/func";
+import { TokenCounter, trackStreamTokens } from "@exaix/core/func";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
 
 Deno.test("[TokenCounter] estimates tokens using 4:1 heuristic", () => {
@@ -44,6 +44,33 @@ Deno.test("[TokenCounter] includes whitespace in token count", () => {
   assertEquals(tokensWith, Math.ceil(9 / TOKEN_ESTIMATION_CHARS_PER_TOKEN));
   assertEquals(tokensWithout, Math.ceil(5 / TOKEN_ESTIMATION_CHARS_PER_TOKEN));
   assertGreater(tokensWith, tokensWithout);
+});
+
+Deno.test("[trackStreamTokens] returns zero initially", () => {
+  const tracker = trackStreamTokens();
+  assertEquals(tracker.total, 0);
+});
+
+Deno.test("[trackStreamTokens] accumulates tokens across chunks", () => {
+  const tracker = trackStreamTokens();
+  tracker.push("x".repeat(400));
+  assertEquals(tracker.total, 100);
+  tracker.push("x".repeat(400));
+  assertEquals(tracker.total, 200);
+  tracker.push("");
+  assertEquals(tracker.total, 200);
+  tracker.push("x".repeat(40));
+  assertEquals(tracker.total, 210);
+});
+
+Deno.test("[trackStreamTokens] handles empty and whitespace chunks", () => {
+  const tracker = trackStreamTokens();
+  tracker.push("");
+  assertEquals(tracker.total, 0);
+  tracker.push("   ");
+  assertEquals(tracker.total, 1);
+  tracker.push("");
+  assertEquals(tracker.total, 1);
 });
 
 Deno.test("[TokenCounter] uses TOKEN_ESTIMATION_CHARS_PER_TOKEN constant", () => {

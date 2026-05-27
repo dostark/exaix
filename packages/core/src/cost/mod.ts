@@ -8,3 +8,4 @@
  */
 
 export { CostTracker } from "./cost_tracker.ts";
+export { MemoryCostRouter } from "./memory_cost_router.ts";

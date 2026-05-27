@@ -10,7 +10,7 @@ export * from "./src/constants.ts";
 export { TestEnvironment } from "../../tests/integration/helpers/test_environment.ts";
 export type { ILoggedActivity, TestDatabaseService } from "./src/helpers/db.ts";
 export { createLoggingTestDb } from "./src/helpers/db.ts";
-export { createMockConfig, createTestConfigService } from "./src/helpers/config.ts";
+export { createMockConfig, writeTestConfigFile } from "./src/helpers/config.ts";
 export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";
 export { createTestLearning, createTestProposal } from "./src/helpers/services/memory_test_helpers.ts";

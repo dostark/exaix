@@ -14,6 +14,7 @@ import {
   FlowOutputFormat,
   FlowStepExecutionMode,
   FlowStepType,
+  ProviderCostTier,
 } from "@exaix/core";
 import { type z, ZodError } from "zod";
 import { FlowSchema, FlowStepSchema } from "@exaix/schemas";
@@ -439,4 +440,72 @@ Deno.test("IFlow as Flow schemas: can be imported and used by other modules", ()
   // Verify the types work at runtime
   assertEquals(FlowStepSchema.parse(testStep).id, "test-step");
   assertEquals(FlowSchema.parse(testFlow).id, "test-flow");
+});
+
+// Tests for the tier field on FlowStepSchema (Gap UF-3)
+Deno.test("FlowStepSchema: parses step with valid tier annotation", () => {
+  const step = {
+    id: "test",
+    name: "Test",
+    identity: "agent1",
+    tier: ProviderCostTier.FREE,
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.tier, ProviderCostTier.FREE);
+});
+
+Deno.test("FlowStepSchema: parses step with FREEMIUM tier", () => {
+  const step = {
+    id: "test",
+    name: "Test",
+    identity: "agent1",
+    tier: ProviderCostTier.FREEMIUM,
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.tier, ProviderCostTier.FREEMIUM);
+});
+
+Deno.test("FlowStepSchema: parses step with PAID tier", () => {
+  const step = {
+    id: "test",
+    name: "Test",
+    identity: "agent1",
+    tier: ProviderCostTier.PAID,
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.tier, ProviderCostTier.PAID);
+});
+
+Deno.test("FlowStepSchema: parses step with LOCAL tier", () => {
+  const step = {
+    id: "test",
+    name: "Test",
+    identity: "agent1",
+    tier: ProviderCostTier.LOCAL,
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.tier, ProviderCostTier.LOCAL);
+});
+
+Deno.test("FlowStepSchema: omitting tier is backward compatible", () => {
+  const step = {
+    id: "test",
+    name: "Test",
+    identity: "agent1",
+  };
+  const result = FlowStepSchema.parse(step);
+  assertEquals(result.tier, undefined);
+});
+
+Deno.test("FlowStepSchema: rejects invalid tier value", () => {
+  assertThrows(
+    () =>
+      FlowStepSchema.parse({
+        id: "test",
+        name: "Test",
+        identity: "agent1",
+        tier: "ULTRA_CHEAP",
+      }),
+    ZodError,
+  );
 });

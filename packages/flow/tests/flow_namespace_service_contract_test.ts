@@ -9,7 +9,8 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import type { IFlowNamespaceWrite } from "@exaix/schemas/flow.ts";
 import type { IFlowNamespaceService, IFlowNamespaceSnapshot } from "@exaix/flow";
-import { NamespaceQuotaExceededError } from "@exaix/flow";
+import { FlowNamespaceService, NamespaceQuotaExceededError } from "@exaix/flow";
+import { createMockConfig } from "@exaix/testing";
 
 class StubFlowNamespaceService implements IFlowNamespaceService {
   getNamespacePath(traceId: string): string {
@@ -52,6 +53,14 @@ class StubFlowNamespaceService implements IFlowNamespaceService {
     return Promise.resolve();
   }
 
+  snapshot(traceId: string): Promise<IFlowNamespaceSnapshot> {
+    return Promise.resolve(this.createSnapshot(traceId));
+  }
+
+  restore(_traceId: string, _snapshot: IFlowNamespaceSnapshot): Promise<void> {
+    return Promise.resolve();
+  }
+
   private createSnapshot(traceId: string): IFlowNamespaceSnapshot {
     return {
       traceId,
@@ -80,6 +89,8 @@ Deno.test("[IFlowNamespaceService] stub satisfies interface contract", () => {
   assertEquals(typeof service.readKeys, "function");
   assertEquals(typeof service.writeEntries, "function");
   assertEquals(typeof service.delete, "function");
+  assertEquals(typeof service.snapshot, "function");
+  assertEquals(typeof service.restore, "function");
 });
 
 Deno.test("[IFlowNamespaceSnapshot] fields are present with correct types", () => {
@@ -112,4 +123,68 @@ Deno.test("[NamespaceQuotaExceededError] preserves message and error name", asyn
     NamespaceQuotaExceededError,
     "Namespace quota exceeded for trace-123: 70000 bytes > 65536 limit",
   );
+});
+
+Deno.test("[FlowNamespaceService] snapshot returns current entries", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const config = createMockConfig(tempDir);
+  const service = new FlowNamespaceService(config);
+  const traceId = "snapshot-test-1";
+
+  try {
+    await service.writeEntries(traceId, "step1", [{ key: "foo", mode: "write" }], "bar");
+    const snap = await service.snapshot(traceId);
+    assertEquals(snap.traceId, traceId);
+    assertEquals(snap.entries["foo"], "bar");
+  } finally {
+    await service.delete(traceId);
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[FlowNamespaceService] restore restores previously captured entries", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const config = createMockConfig(tempDir);
+  const service = new FlowNamespaceService(config);
+  const traceId = "restore-test-1";
+
+  try {
+    await service.writeEntries(traceId, "step1", [{ key: "alpha", mode: "write" }], "first");
+    await service.writeEntries(traceId, "step2", [{ key: "beta", mode: "write" }], "second");
+
+    const snap = await service.snapshot(traceId);
+
+    await service.writeEntries(traceId, "step3", [{ key: "gamma", mode: "write" }], "third");
+    const beforeRestore = await service.load(traceId);
+    assertEquals(beforeRestore.entries["gamma"], "third");
+
+    await service.restore(traceId, snap);
+    const afterRestore = await service.load(traceId);
+    assertEquals(afterRestore.entries["alpha"], "first");
+    assertEquals(afterRestore.entries["beta"], "second");
+    assertEquals(afterRestore.entries["gamma"], undefined);
+  } finally {
+    await service.delete(traceId);
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[FlowNamespaceService] snapshot/restore round-trip preserves all data", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const config = createMockConfig(tempDir);
+  const service = new FlowNamespaceService(config);
+  const traceId = "roundtrip-test-1";
+
+  try {
+    await service.writeEntries(traceId, "step1", [{ key: "x", mode: "write" }, { key: "y", mode: "write" }], "value");
+    const snap = await service.snapshot(traceId);
+    await service.restore(traceId, snap);
+    const final = await service.load(traceId);
+    assertEquals(final.entries["x"], "value");
+    assertEquals(final.entries["y"], "value");
+    assertEquals(Object.keys(final.entries).length, 2);
+  } finally {
+    await service.delete(traceId);
+    await Deno.remove(tempDir, { recursive: true });
+  }
 });

@@ -15,7 +15,7 @@ import type { IRoutingPolicyService } from "@exaix/routing";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILogEvent } from "@exaix/core";
-import type { EventLogger, IEventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IRequestFrontmatter } from "@exaix/core/request";
 import type { JSONValue, LogMetadata } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
@@ -212,7 +212,7 @@ export function createTestRequestRouter(
         flowRunner,
         agentRunner,
         flowValidator,
-        eventLogger: logger as EventLogger,
+        eventLogger: logger,
         defaultAgentId: defaultAgent,
         blueprintsPath,
         config,

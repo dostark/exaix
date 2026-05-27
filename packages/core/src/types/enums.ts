@@ -1175,3 +1175,21 @@ export enum ToolSideEffectScope {
   NETWORK = "network",
   SYSTEM = "system",
 }
+
+/**
+ * Action to take when a HITL amendment request times out.
+ */
+export enum AmendmentTimeoutAction {
+  ABORT = "abort",
+  REJECT = "reject",
+  APPROVE = "approve",
+}
+
+/**
+ * Storage tier for memory operations. LOCAL is free (keyword/HNSW over
+ * local JSON files). REMOTE incurs cost (embedding API calls, remote DB).
+ */
+export enum MemoryStorageTier {
+  LOCAL = "local",
+  REMOTE = "remote",
+}

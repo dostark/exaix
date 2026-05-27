@@ -134,3 +134,45 @@ Deno.test("CapabilityMatcher: includes deprecated blueprints when allowed", () =
   assertExists(candidate);
   assertEquals(candidate?.identityId, "test-agent");
 });
+
+// ── Gap 60-2: Streaming capability tests ──────────────────────────────────
+
+Deno.test("CapabilityMatcher: matches blueprint with streaming capability", () => {
+  const matcher = new CapabilityMatcher();
+  const blueprint = makeBlueprint({ capabilities: ["chat", "streaming"] });
+
+  const candidate = matcher.matchBlueprint(blueprint, { capability: "streaming", tags: [] });
+
+  assertExists(candidate);
+  assertEquals(candidate?.identityId, "test-agent");
+  assertEquals(candidate?.score, 1);
+});
+
+Deno.test("CapabilityMatcher: returns null when blueprint lacks streaming capability", () => {
+  const matcher = new CapabilityMatcher();
+  const blueprint = makeBlueprint({ capabilities: ["chat"] });
+
+  const candidate = matcher.matchBlueprint(blueprint, { capability: "streaming", tags: [] });
+
+  assertEquals(candidate, null);
+});
+
+Deno.test("CapabilityMatcher: fallback selects streaming-capable blueprint over non-streaming one", () => {
+  const matcher = new CapabilityMatcher();
+  const streamingBp = makeBlueprint({
+    identityId: "streaming-agent",
+    capabilities: ["chat", "streaming"],
+  });
+  const nonStreamingBp = makeBlueprint({
+    identityId: "basic-agent",
+    capabilities: ["chat"],
+  });
+
+  const candidate = matcher.fallback([streamingBp, nonStreamingBp], {
+    capability: "streaming",
+    tags: [],
+  });
+
+  assertExists(candidate);
+  assertEquals(candidate?.identityId, "streaming-agent");
+});

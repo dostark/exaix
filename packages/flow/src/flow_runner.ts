@@ -264,6 +264,8 @@ export interface IFlowEventPayloadMap {
     waveNumber: number;
     groupId: string;
     stepIds: string[];
+    startedAt: number;
+    isoStartedAt: string;
   };
   "flow.parallel_group.completed": IFlowEventRequestContext & {
     flowRunId: string;
@@ -273,6 +275,7 @@ export interface IFlowEventPayloadMap {
     successCount: number;
     failureCount: number;
     failed: boolean;
+    duration: number;
   };
   "flow.parallel_group.merge_failed": IFlowEventRequestContext & {
     flowRunId: string;
@@ -609,7 +612,7 @@ export class FlowRunner implements IFlowRunner {
       const activityJournal = new ActivityJournal(this.eventLogger);
 
       // Use existing context if available, otherwise build a minimal one for McpClient
-      const context = options.context || {
+      const context = (options.context || {
         config: {
           get: () => config,
           getAll: () => config,
@@ -631,7 +634,7 @@ export class FlowRunner implements IFlowRunner {
           fatal: () => Promise.resolve(),
         },
         git: createGitServiceStub(),
-      } as IApplicationContext;
+      }) as IApplicationContext;
 
       // Prefer the canonical Map from buildDynamicHandlers(); fall back to legacy array.
       const mcpClient = dynamicHandlers
@@ -1107,21 +1110,54 @@ export class FlowRunner implements IFlowRunner {
       return { stepIds: unit.stepIds, results: result };
     }
 
+    const groupStartedAt = performance.now();
+
     await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_STARTED, {
       flowRunId,
       waveNumber,
       groupId: unit.groupId,
       stepIds: unit.stepIds,
+      startedAt: groupStartedAt,
+      isoStartedAt: new Date().toISOString(),
       traceId: request.traceId,
       requestId: request.requestId,
     });
 
-    const results = await Promise.allSettled(
+    const groupStep = flow.steps.find((s) => s.parallel?.group === unit.groupId);
+    const groupTimeoutMs = groupStep?.parallel?.timeout_ms;
+    const continueOnError = groupStep?.parallel?.continue_on_error ?? false;
+
+    const executionPromise = Promise.allSettled(
       unit.stepIds.map((stepId) => this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)),
     );
-    const successCount = results.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
+
+    const results = groupTimeoutMs
+      ? await Promise.race([
+        executionPromise,
+        new Promise<PromiseSettledResult<IStepResult>[]>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Parallel group '${unit.groupId}' timed out after ${groupTimeoutMs}ms`)),
+            groupTimeoutMs,
+          )
+        ),
+      ])
+      : await executionPromise;
+
+    const processed = continueOnError
+      ? results.map((result) => {
+        if (this.isPromiseFulfilledResult(result) && !result.value.success) {
+          return {
+            ...result,
+            value: { ...result.value, success: true, error: undefined },
+          } as PromiseFulfilledResult<IStepResult>;
+        }
+        return result;
+      })
+      : results;
+
+    const successCount = processed.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
       .length;
-    const failureCount = results.length - successCount;
+    const failureCount = processed.length - successCount;
 
     await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_COMPLETED, {
       flowRunId,
@@ -1131,11 +1167,12 @@ export class FlowRunner implements IFlowRunner {
       successCount,
       failureCount,
       failed: failureCount > 0,
+      duration: performance.now() - groupStartedAt,
       traceId: request.traceId,
       requestId: request.requestId,
     });
 
-    return { stepIds: unit.stepIds, results };
+    return { stepIds: unit.stepIds, results: processed };
   }
 
   /**

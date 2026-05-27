@@ -31,11 +31,17 @@ export class CandidateDiscovery {
 
     const broad = blueprints.filter((bp) => bp.identityId !== explicitIdentityId);
 
-    const scored = [...explicit, ...broad]
-      .map((bp, index) => ({
-        candidate: this.matcher.matchBlueprint(bp, criteria),
-        isExplicit: index < explicit.length,
-      }))
+    let scored = [...explicit, ...broad]
+      .map((bp, index) => {
+        const candidate = this.matcher.matchBlueprint(bp, criteria);
+        if (candidate && bp.frontmatter?.routing_prefer_local === true) {
+          candidate.preferLocal = true;
+        }
+        return {
+          candidate,
+          isExplicit: index < explicit.length,
+        };
+      })
       .filter((entry): entry is { candidate: IRoutingCandidate; isExplicit: boolean } => entry.candidate !== null)
       .sort((a, b) => {
         if (a.isExplicit !== b.isExplicit) {
@@ -44,6 +50,14 @@ export class CandidateDiscovery {
         return b.candidate.score - a.candidate.score || a.candidate.identityId.localeCompare(b.candidate.identityId);
       })
       .map((entry) => entry.candidate);
+
+    // Fallback: when no blueprint matches exactly, return the closest match
+    if (scored.length === 0 && broad.length > 0) {
+      const fallback = this.matcher.fallback(blueprints, criteria);
+      if (fallback) {
+        scored = [fallback];
+      }
+    }
 
     return scored;
   }

@@ -3,7 +3,7 @@
  * @related-files []
  * @architectural-layer Services
  * @description TODO: Add description */
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import type { IActivityRecord } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import { IdentityPerformanceRepository } from "@exaix/routing";
@@ -155,4 +155,89 @@ Deno.test("[IdentityPerformanceRepository] marks snapshots stable when sample th
 
   assertEquals(snapshots.length, 1);
   assertEquals(snapshots[0].stable, true);
+});
+
+Deno.test("[IdentityPerformanceRepository] filters old records and applies recency weighting", async () => {
+  const ttlMs = 86_400_000; // 1 day
+
+  const records: IActivityRecord[] = [
+    {
+      id: "1",
+      trace_id: "trace-1",
+      actor: "agent",
+      actor_type: null,
+      identity_id: "decay-agent",
+      agent_kind: null,
+      action_type: "agent.execution.completed",
+      target: "TestPortal",
+      payload: JSON.stringify({
+        success: true,
+        confidence: 90,
+        capabilities: ["decay_test"],
+        version: "1.0.0",
+        portal: "TestPortal",
+      }),
+      prompt_tokens: 100,
+      completion_tokens: 200,
+      cost_usd: 0.1,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: "2",
+      trace_id: "trace-2",
+      actor: "agent",
+      actor_type: null,
+      identity_id: "decay-agent",
+      agent_kind: null,
+      action_type: "agent.execution.completed",
+      target: "TestPortal",
+      payload: JSON.stringify({
+        success: false,
+        confidence: 50,
+        capabilities: ["decay_test"],
+        version: "1.0.0",
+        portal: "TestPortal",
+      }),
+      prompt_tokens: 100,
+      completion_tokens: 200,
+      cost_usd: 0.1,
+      timestamp: new Date(Date.now() - ttlMs).toISOString(),
+    },
+    {
+      id: "3",
+      trace_id: "trace-3",
+      actor: "agent",
+      actor_type: null,
+      identity_id: "decay-agent",
+      agent_kind: null,
+      action_type: "agent.execution.completed",
+      target: "TestPortal",
+      payload: JSON.stringify({
+        success: true,
+        confidence: 95,
+        capabilities: ["decay_test"],
+        version: "1.0.0",
+        portal: "TestPortal",
+      }),
+      prompt_tokens: 100,
+      completion_tokens: 200,
+      cost_usd: 0.1,
+      timestamp: new Date(Date.now() - 3 * ttlMs).toISOString(),
+    },
+  ];
+
+  const repo = new IdentityPerformanceRepository({
+    db: makeStubDb(records),
+  });
+
+  const snapshots = await repo.getPerformanceByCapability("decay_test", "TestPortal", { maxAgeMs: ttlMs });
+
+  assertEquals(snapshots.length, 1);
+  assertEquals(snapshots[0].sampleSize, 2, "record 3 days old should be filtered out");
+  assertEquals(typeof snapshots[0].weightedScore, "number", "weightedScore should be present when decay applied");
+
+  // Without decay: successRate = 1/2 = 0.5
+  // With decay: recent success (weight ~1) / (weight ~1 + weight ~0.135) ≈ 0.88
+  assert(snapshots[0].successRate > 0.5, "weighted success rate higher than unweighted");
+  assert(snapshots[0].weightedScore! > 0.5, "weightedScore higher than unweighted");
 });

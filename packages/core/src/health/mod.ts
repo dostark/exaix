@@ -8,3 +8,5 @@
 
 export { handleHealthCheck, HealthCheckService } from "./health_check_service.ts";
 export type { IHealthCheck } from "./health_check_service.ts";
+export { ProviderHealthMonitor, ProviderHealthVerdict } from "./provider_health_monitor.ts";
+export type { IProviderHealthStatus } from "./provider_health_monitor.ts";

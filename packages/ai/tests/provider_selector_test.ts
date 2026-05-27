@@ -457,6 +457,86 @@ Deno.test("ProviderSelector: blocks paid env provider in test mode", async () =>
   }
 });
 
+Deno.test("ProviderSelector: preferFree budget excludes all PAID providers", async () => {
+  const { db: _db, cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+
+    // Register multiple PAID providers and one FREE
+    for (let i = 0; i < 3; i++) {
+      ProviderRegistry.registerWithMetadata(`paid-provider-${i}`, new MockProviderFactory(), {
+        name: `paid-provider-${i}`,
+        description: "Paid provider",
+        capabilities: ["chat"],
+        costTier: ProviderCostTier.PAID,
+        pricingTier: PricingTier.HIGH,
+        strengths: ["general"],
+      });
+    }
+
+    ProviderRegistry.registerWithMetadata("free-provider", new MockProviderFactory(), {
+      name: "free-provider",
+      description: "Free provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.FREE,
+      strengths: ["general"],
+    });
+
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
+
+    const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
+
+    const provider = await selector.selectProvider({
+      preferFree: true,
+      requiredCapabilities: ["chat"],
+    });
+
+    assertEquals(provider, "free-provider");
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("ProviderSelector: selects streaming-capable provider when streaming required", async () => {
+  const { db: _db, cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+
+    ProviderRegistry.registerWithMetadata("basic-provider", new MockProviderFactory(), {
+      name: "basic-provider",
+      description: "Basic chat provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["general"],
+    });
+
+    ProviderRegistry.registerWithMetadata("streaming-provider", new MockProviderFactory(), {
+      name: "streaming-provider",
+      description: "Streaming-capable provider",
+      capabilities: ["chat", "streaming"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["general"],
+    });
+
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
+
+    const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
+
+    const provider = await selector.selectProvider({
+      requiredCapabilities: ["streaming"],
+    });
+
+    assertEquals(provider, "streaming-provider");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("ProviderSelector: enforces budget constraints", async () => {
   const { db: _db, cleanup } = await initTestDbService();
   try {

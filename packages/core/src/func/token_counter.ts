@@ -18,3 +18,19 @@ export class TokenCounter {
     return Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
   }
 }
+
+export function trackStreamTokens(): {
+  push(chunk: string): void;
+  total: number;
+} {
+  let total = 0;
+  const counter = new TokenCounter();
+  return {
+    push(chunk: string): void {
+      total += counter.countTokens(chunk);
+    },
+    get total(): number {
+      return total;
+    },
+  };
+}

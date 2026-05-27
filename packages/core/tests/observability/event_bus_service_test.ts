@@ -6,7 +6,7 @@
  * @description Verifies the EventBusService pub/sub foundation for live execution streaming.
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { EventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE, STREAMING_EVENT_HEARTBEAT, STREAMING_EVENT_TOOL_START } from "@exaix/core";
@@ -156,6 +156,72 @@ Deno.test("EventBusService: publish after close should not throw", () => {
 
   // Should not throw
   bus.publish(makeEvent());
+});
+
+// ============================================================================
+// Stream Subscription Tests
+// ============================================================================
+
+Deno.test("EventBusService: subscribeStream should deliver all events when consumer keeps up", async () => {
+  const bus = new EventBusService();
+  const traceId = "test-stream-catchup";
+
+  const stream = bus.subscribeStream!(traceId);
+  const reader = stream.getReader();
+
+  const publishCount = 10;
+  for (let i = 0; i < publishCount; i++) {
+    bus.publish(makeEvent({ traceId, payload: { seq: i } }));
+  }
+
+  const received: IStreamingEvent[] = [];
+  for (let i = 0; i < publishCount; i++) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received.push(value);
+  }
+
+  assertEquals(received.length, publishCount);
+  for (let i = 0; i < publishCount; i++) {
+    assertEquals(received[i].payload.seq, i);
+  }
+
+  await reader.cancel();
+});
+
+Deno.test("EventBusService: subscribeStream should drop events under backpressure when consumer is slow", async () => {
+  const bus = new EventBusService();
+  const traceId = "test-stream-backpressure";
+
+  const stream = bus.subscribeStream!(traceId);
+  const reader = stream.getReader();
+
+  // Publish far more events than the HWM without reading in between
+  const publishCount = EVENT_BUS_MAX_SUBSCRIBER_QUEUE * 3;
+  for (let i = 0; i < publishCount; i++) {
+    bus.publish(makeEvent({ traceId, payload: { seq: i } }));
+  }
+
+  // Read what was buffered — at most HWM events (buffer can't exceed HWM)
+  const received: IStreamingEvent[] = [];
+  for (let i = 0; i < EVENT_BUS_MAX_SUBSCRIBER_QUEUE; i++) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received.push(value);
+  }
+
+  await reader.cancel();
+
+  // We received some events from the buffer
+  assert(received.length > 0);
+  // But many were dropped due to backpressure
+  assert(received.length < publishCount);
+  // The stream buffered at most HWM events
+  assert(received.length <= EVENT_BUS_MAX_SUBSCRIBER_QUEUE);
+  // Events should be in order
+  if (received.length > 0) {
+    assertEquals(received[0].payload.seq, 0);
+  }
 });
 
 // ============================================================================

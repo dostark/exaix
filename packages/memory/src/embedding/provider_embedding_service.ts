@@ -13,12 +13,20 @@ import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { ILearning } from "@exaix/schemas/memory_bank.ts";
-import type { IEmbeddingSearchResult } from "@exaix/core/types";
+import type { IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/types";
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
-import { cosineSimilarity } from "./memory_embedding.ts";
+import { HnswVectorIndex } from "./vector_index.ts";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
+import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
 
-const EMBEDDING_LRU_CACHE_MAX_ENTRIES = 512;
+const EMBEDDING_CACHE_MAX_ENTRIES = 512;
+
+/**
+ * Estimated cost per embedding API call in USD.
+ * Based on ~100 tokens per query at ~$0.002/1K tokens.
+ */
+const ESTIMATED_EMBED_COST_USD = 0.0002;
 
 interface IEmbeddingFile {
   id: string;
@@ -39,32 +47,6 @@ interface IEmbeddingManifest {
   index: IManifestEntry[];
 }
 
-class EmbeddingLruCache {
-  private entries = new Map<string, number[]>();
-
-  get size(): number {
-    return this.entries.size;
-  }
-
-  get(key: string): number[] | undefined {
-    if (!this.entries.has(key)) return undefined;
-    const value = this.entries.get(key)!;
-    this.entries.delete(key);
-    this.entries.set(key, value);
-    return value;
-  }
-
-  set(key: string, value: number[]): void {
-    if (this.entries.has(key)) {
-      this.entries.delete(key);
-    } else if (this.entries.size >= EMBEDDING_LRU_CACHE_MAX_ENTRIES) {
-      const oldestKey = this.entries.keys().next().value;
-      if (oldestKey !== undefined) this.entries.delete(oldestKey);
-    }
-    this.entries.set(key, value);
-  }
-}
-
 /**
  * File-backed embedding service that delegates vector generation to any
  * IEmbeddingProvider. Stores vectors as JSON files with a manifest index.
@@ -72,15 +54,21 @@ class EmbeddingLruCache {
 export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   private embeddingsDir: string;
   private manifestPath: string;
-  private cache: EmbeddingLruCache;
+  private cache: DiskBackedEmbeddingCache;
+  private cacheReady = false;
+  private hnsw: HnswVectorIndex;
+  private indexBuilt = false;
 
   constructor(
     private config: Config,
-    private provider: IEmbeddingProvider,
+    private provider: IEmbeddingProvider = new OllamaEmbeddingClient(),
+    private costRouter?: IMemoryCostRouter,
   ) {
     this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
-    this.cache = new EmbeddingLruCache();
+    const cacheDir = join(config.system.root, config.paths.runtime, "cache", "embeddings");
+    this.cache = new DiskBackedEmbeddingCache(cacheDir, EMBEDDING_CACHE_MAX_ENTRIES);
+    this.hnsw = new HnswVectorIndex();
   }
 
   async initializeManifest(): Promise<void> {
@@ -98,8 +86,20 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   async embedLearning(learning: ILearning): Promise<void> {
     await this.initializeManifest();
 
+    // Check cost router before calling the embedding provider.
+    // When remote operations are not allowed (budget exhausted), skip
+    // embedding — the learning is stored text-only and can be searched
+    // via keyword fallback.
+    const remoteAllowed = this.costRouter ? await this.costRouter.isRemoteAllowed() : true;
+    if (!remoteAllowed) return;
+
     const text = `${learning.title} ${learning.description}`;
     const vector = await this.embedText(text);
+
+    // Record the estimated cost of this embedding operation
+    if (this.costRouter) {
+      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD);
+    }
 
     const embeddingFile: IEmbeddingFile = {
       id: learning.id,
@@ -113,6 +113,9 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     await Deno.writeTextFile(embeddingPath, JSON.stringify(embeddingFile, null, 2));
 
     await this.updateManifest(learning.id, learning.title, embeddingPath);
+
+    this.hnsw.insert(learning.id, vector);
+    this.indexBuilt = true;
   }
 
   async searchByEmbedding(
@@ -122,32 +125,47 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     const manifest = await this.loadManifest();
     if (manifest.index.length === 0) return [];
 
+    // Check cost router before calling the embedding provider.
+    // When remote operations are not allowed (budget exhausted), return
+    // empty results so the caller falls through to free keyword/local search.
+    const remoteAllowed = this.costRouter ? await this.costRouter.isRemoteAllowed() : true;
+    if (!remoteAllowed) return [];
+
     const queryVector = await this.embedText(query);
+    const limit = options?.limit ?? 10;
+    const threshold = options?.threshold ?? 0.0;
+
+    // Record the estimated cost of this embedding query
+    if (this.costRouter) {
+      await this.costRouter.recordOperation(ESTIMATED_EMBED_COST_USD);
+    }
+
+    // Ensure HNSW index is built from stored embeddings
+    await this.ensureIndex(manifest);
+
+    // Search via HNSW index (O(log N))
+    const indexResults = this.hnsw.search(queryVector, limit);
+
+    // Load metadata for top-K results only (O(K) disk reads)
     const results: IEmbeddingSearchResult[] = [];
-
-    for (const entry of manifest.index) {
+    for (const ir of indexResults) {
+      if (ir.similarity < threshold) continue;
+      const embeddingPath = join(this.embeddingsDir, `${ir.id}.json`);
       try {
-        const fileContent = await Deno.readTextFile(entry.embeddingFile);
-        const embedding: IEmbeddingFile = JSON.parse(fileContent) as IEmbeddingFile;
-        const similarity = cosineSimilarity(queryVector, embedding.vector);
-
-        const threshold = options?.threshold ?? 0.0;
-        if (similarity >= threshold) {
-          results.push({
-            id: embedding.id,
-            title: embedding.title,
-            summary: embedding.text.substring(0, 200),
-            similarity,
-          });
-        }
+        const content = await Deno.readTextFile(embeddingPath);
+        const embedding: IEmbeddingFile = JSON.parse(content) as IEmbeddingFile;
+        results.push({
+          id: embedding.id,
+          title: embedding.title,
+          summary: embedding.text.substring(0, 200),
+          similarity: ir.similarity,
+        });
       } catch {
-        // File not readable — skip silently
+        continue;
       }
     }
 
     results.sort((a, b) => b.similarity - a.similarity);
-
-    const limit = options?.limit ?? 10;
     return results.slice(0, limit);
   }
 
@@ -181,6 +199,8 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     manifest.index.splice(entryIndex, 1);
     manifest.generated_at = new Date().toISOString();
     await this.saveManifest(manifest);
+
+    this.hnsw.delete(id);
   }
 
   async getStats(): Promise<{ total: number; generated_at: string }> {
@@ -192,16 +212,25 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   }
 
   private async embedText(text: string): Promise<number[]> {
-    const cached = this.cache.get(text);
+    if (!this.cacheReady) {
+      await this.cache.init();
+      this.cacheReady = true;
+    }
+
+    const hash = await computeTextHash(text);
+    const cached = this.cache.get(hash);
     if (cached) return cached;
 
+    if (!this.provider) {
+      throw new Error("Embedding provider not configured");
+    }
     const vectors = await this.provider.embed([text]);
     if (vectors.length === 0 || vectors[0].length === 0) {
       throw new Error("Embedding provider returned empty vector");
     }
 
     const vector = vectors[0];
-    this.cache.set(text, vector);
+    await this.cache.set(hash, vector);
     return vector;
   }
 
@@ -220,5 +249,23 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     manifest.index.push({ id, title, embeddingFile });
     manifest.generated_at = new Date().toISOString();
     await this.saveManifest(manifest);
+  }
+
+  private async ensureIndex(manifest: IEmbeddingManifest): Promise<void> {
+    if (this.indexBuilt) return;
+
+    const vectors = new Map<string, number[]>();
+    for (const entry of manifest.index) {
+      try {
+        const content = await Deno.readTextFile(entry.embeddingFile);
+        const embedding: IEmbeddingFile = JSON.parse(content) as IEmbeddingFile;
+        vectors.set(entry.id, embedding.vector);
+      } catch {
+        continue;
+      }
+    }
+
+    this.hnsw.rebuildFromVectors(vectors);
+    this.indexBuilt = true;
   }
 }

@@ -14,6 +14,7 @@ export { RoutingPolicyService } from "./src/routing_policy_service.ts";
 export type { ICandidateDiscoveryOptions } from "./src/candidate_discovery.ts";
 export type { ICapabilityMatcherOptions } from "./src/capability_matcher.ts";
 export type {
+  IBuildSnapshotOptions,
   IIdentityPerformanceRepository,
   IIdentityPerformanceRepositoryOptions,
   IIdentityPerformanceSnapshot,

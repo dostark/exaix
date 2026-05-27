@@ -31,6 +31,8 @@ export interface IFlowNamespaceService {
     stepOutput: string,
   ): Promise<IFlowNamespaceSnapshot>;
   delete(traceId: string): Promise<void>;
+  snapshot(traceId: string): Promise<IFlowNamespaceSnapshot>;
+  restore(traceId: string, snapshot: IFlowNamespaceSnapshot): Promise<void>;
 }
 
 export class NamespaceQuotaExceededError extends Error {
@@ -141,6 +143,26 @@ export class FlowNamespaceService implements IFlowNamespaceService {
     }
 
     await Deno.remove(namespacePath);
+  }
+
+  async snapshot(traceId: string): Promise<IFlowNamespaceSnapshot> {
+    return await this.load(traceId);
+  }
+
+  async restore(traceId: string, snapshot: IFlowNamespaceSnapshot): Promise<void> {
+    const entries: IFlowNamespaceEntry[] = Object.entries(snapshot.entries).map(
+      ([key, value]) => ({
+        key,
+        value,
+        authorStepId: "restore",
+        updatedAt: snapshot.updatedAt,
+      }),
+    );
+
+    const rendered = this.renderMarkdown(entries);
+    const namespacePath = this.getNamespacePath(traceId);
+    await ensureDir(dirname(namespacePath));
+    await Deno.writeTextFile(namespacePath, rendered);
   }
 
   private async loadEntryList(traceId: string): Promise<IFlowNamespaceEntry[]> {

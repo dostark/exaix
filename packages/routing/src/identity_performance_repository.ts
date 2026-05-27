@@ -6,7 +6,7 @@
  * @related-files [packages/routing/src/routing_policy_service.ts]
  */
 
-import type { IActivityRecord } from "@exaix/core/types";
+import type { IActivityRecord, IJournalFilterOptions } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
@@ -20,6 +20,11 @@ export interface IIdentityPerformanceSnapshot {
   sampleSize: number;
   lastUsedAt?: string;
   stable: boolean;
+  weightedScore?: number;
+}
+
+export interface IBuildSnapshotOptions {
+  maxAgeMs?: number;
 }
 
 export interface IIdentityPerformanceRepositoryOptions {
@@ -31,10 +36,16 @@ export interface IIdentityPerformanceRepository {
   getPerformanceByCapability(
     capability: string,
     portalName?: string,
+    options?: IBuildSnapshotOptions,
   ): Promise<IIdentityPerformanceSnapshot[]>;
 
-  getPerformanceByIdentity(identityId: string): Promise<IIdentityPerformanceSnapshot[]>;
+  getPerformanceByIdentity(
+    identityId: string,
+    options?: IBuildSnapshotOptions,
+  ): Promise<IIdentityPerformanceSnapshot[]>;
 }
+
+const DECAY_FACTOR = 2.0;
 
 interface SnapshotAccumulator {
   identityId: string;
@@ -45,6 +56,9 @@ interface SnapshotAccumulator {
   promptTokenSum: number;
   costUsdSum: number;
   lastUsedAt: string;
+  weightedSuccessCount: number;
+  weightedConfidenceSum: number;
+  totalWeight: number;
 }
 
 export class IdentityPerformanceRepository implements IIdentityPerformanceRepository {
@@ -59,25 +73,43 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
   async getPerformanceByCapability(
     capability: string,
     portalName?: string,
+    options?: IBuildSnapshotOptions,
   ): Promise<IIdentityPerformanceSnapshot[]> {
-    const records = await this.db.queryActivity({ payload: capability, limit: 1000 });
-    return this.buildSnapshots(records, capability, portalName);
+    const filter: IJournalFilterOptions = { payload: capability, limit: 1000 };
+    if (options?.maxAgeMs) {
+      filter.since = new Date(Date.now() - options.maxAgeMs).toISOString();
+    }
+    const records = await this.db.queryActivity(filter);
+    return this.buildSnapshots(records, capability, portalName, options);
   }
 
-  async getPerformanceByIdentity(identityId: string): Promise<IIdentityPerformanceSnapshot[]> {
-    const records = await this.db.queryActivity({ identityId, limit: 1000 });
-    return this.buildSnapshots(records);
+  async getPerformanceByIdentity(
+    identityId: string,
+    options?: IBuildSnapshotOptions,
+  ): Promise<IIdentityPerformanceSnapshot[]> {
+    const filter: IJournalFilterOptions = { identityId, limit: 1000 };
+    if (options?.maxAgeMs) {
+      filter.since = new Date(Date.now() - options.maxAgeMs).toISOString();
+    }
+    const records = await this.db.queryActivity(filter);
+    return this.buildSnapshots(records, undefined, undefined, options);
   }
 
   private buildSnapshots(
     records: IActivityRecord[],
     capability?: string,
     portalName?: string,
+    options?: IBuildSnapshotOptions,
   ): IIdentityPerformanceSnapshot[] {
     const buckets = new Map<string, SnapshotAccumulator>();
+    const now = Date.now();
+    const maxAgeMs = options?.maxAgeMs ?? 0;
 
     for (const record of records) {
       if (!record.identity_id) continue;
+
+      const ageMs = Math.max(0, now - new Date(record.timestamp).getTime());
+      if (maxAgeMs > 0 && ageMs > maxAgeMs) continue;
 
       const payload = this.safeParsePayload(record.payload);
       const capabilities = this.extractCapabilities(payload);
@@ -94,11 +126,13 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
       const key = `${record.identity_id}::${version}`;
       const existing = this.getOrCreateSnapshotAccumulator(buckets, key, record.identity_id, version);
 
-      this.applyRecordToSnapshot(existing, payload, record);
+      const recencyWeight = maxAgeMs > 0 ? Math.exp(-(ageMs / maxAgeMs) * DECAY_FACTOR) : 1;
+
+      this.applyRecordToSnapshot(existing, payload, record, recencyWeight);
       buckets.set(key, existing);
     }
 
-    return this.formatSnapshots(buckets);
+    return this.formatSnapshots(buckets, maxAgeMs > 0);
   }
 
   private extractCapabilities(payload: JsonPayload | null): string[] {
@@ -133,6 +167,9 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
       promptTokenSum: 0,
       costUsdSum: 0,
       lastUsedAt: "",
+      weightedSuccessCount: 0,
+      weightedConfidenceSum: 0,
+      totalWeight: 0,
     };
   }
 
@@ -140,14 +177,19 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
     existing: SnapshotAccumulator,
     payload: JsonPayload | null,
     record: IActivityRecord,
+    recencyWeight: number,
   ): void {
     existing.sampleSize += 1;
+    existing.totalWeight += recencyWeight;
 
     if (payload?.success === true) {
       existing.successCount += 1;
+      existing.weightedSuccessCount += recencyWeight;
     }
 
-    existing.confidenceSum += typeof payload?.confidence === "number" ? payload.confidence : 0;
+    const confidence = typeof payload?.confidence === "number" ? payload.confidence : 0;
+    existing.confidenceSum += confidence;
+    existing.weightedConfidenceSum += confidence * recencyWeight;
     existing.promptTokenSum += Number(record.prompt_tokens ?? 0);
     existing.costUsdSum += Number(record.cost_usd ?? 0);
 
@@ -156,18 +198,27 @@ export class IdentityPerformanceRepository implements IIdentityPerformanceReposi
     }
   }
 
-  private formatSnapshots(buckets: Map<string, SnapshotAccumulator>): IIdentityPerformanceSnapshot[] {
-    return Array.from(buckets.values()).map((bucket) => ({
-      identityId: bucket.identityId,
-      version: bucket.version,
-      successRate: bucket.sampleSize > 0 ? bucket.successCount / bucket.sampleSize : 0,
-      averageConfidence: bucket.sampleSize > 0 ? bucket.confidenceSum / bucket.sampleSize : 0,
-      averagePromptTokens: bucket.sampleSize > 0 ? bucket.promptTokenSum / bucket.sampleSize : 0,
-      averageCostUsd: bucket.sampleSize > 0 ? bucket.costUsdSum / bucket.sampleSize : 0,
-      sampleSize: bucket.sampleSize,
-      lastUsedAt: bucket.lastUsedAt || undefined,
-      stable: bucket.sampleSize >= this.sampleThreshold,
-    }));
+  private formatSnapshots(
+    buckets: Map<string, SnapshotAccumulator>,
+    hasWeighting: boolean,
+  ): IIdentityPerformanceSnapshot[] {
+    return Array.from(buckets.values()).map((bucket) => {
+      const totalWeight = bucket.totalWeight || 1;
+      const weightedSuccessRate = bucket.sampleSize > 0 ? bucket.weightedSuccessCount / totalWeight : 0;
+      const weightedAvgConfidence = bucket.sampleSize > 0 ? bucket.weightedConfidenceSum / totalWeight : 0;
+      return {
+        identityId: bucket.identityId,
+        version: bucket.version,
+        successRate: hasWeighting ? weightedSuccessRate : bucket.successCount / (bucket.sampleSize || 1),
+        averageConfidence: hasWeighting ? weightedAvgConfidence : bucket.confidenceSum / (bucket.sampleSize || 1),
+        averagePromptTokens: bucket.sampleSize > 0 ? bucket.promptTokenSum / bucket.sampleSize : 0,
+        averageCostUsd: bucket.sampleSize > 0 ? bucket.costUsdSum / bucket.sampleSize : 0,
+        sampleSize: bucket.sampleSize,
+        lastUsedAt: bucket.lastUsedAt || undefined,
+        stable: bucket.sampleSize >= this.sampleThreshold,
+        weightedScore: hasWeighting ? weightedSuccessRate : undefined,
+      };
+    });
   }
 
   private safeParsePayload(payload: string): JsonPayload | null {

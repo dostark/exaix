@@ -101,8 +101,18 @@ export class SseHandler {
           }
         });
 
-        // Unsubscribe on client disconnect
+        // Emit heartbeat every 15s to keep the connection alive
+        const heartbeatInterval = setInterval(() => {
+          try {
+            controller.enqueue(new TextEncoder().encode(":\n\n"));
+          } catch {
+            // Stream already closed — ignore
+          }
+        }, 15_000);
+
+        // Unsubscribe and clear heartbeat on client disconnect
         req.signal.addEventListener("abort", () => {
+          clearInterval(heartbeatInterval);
           unsubscribe();
           try {
             controller.close();

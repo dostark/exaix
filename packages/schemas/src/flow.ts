@@ -17,6 +17,7 @@ import {
   FlowStepOnErrorAction,
   FlowStepType,
   McpToolName,
+  ProviderCostTier,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 
@@ -110,6 +111,12 @@ export const ZFlowParallelConfig = z.object({
   order: z.array(z.string()).optional().describe(
     "Step IDs within this group; used for ordered fan-in merge. Validated against actual group member IDs in validateIFlow().",
   ),
+  timeout_ms: z.number().positive().optional().describe(
+    "Wall-clock timeout for the entire parallel group in milliseconds. Group is aborted on expiry.",
+  ),
+  continue_on_error: z.boolean().optional().describe(
+    "When true, individual step failures within the group do not propagate to the wave-level failFast check.",
+  ),
 });
 
 // Gate evaluation configuration schema
@@ -198,6 +205,8 @@ export const FlowStepSchema = z.object({
   consensus: ConsensusConfigSchema.optional(),
   /** Skills to apply for this step (Phase 17) */
   skills: z.array(z.string()).optional(),
+  /** Cost tier annotation for provider routing (Gap UF-3) */
+  tier: z.nativeEnum(ProviderCostTier).optional(),
   namespace: ZFlowStepNamespace.optional(),
   parallel: ZFlowParallelConfig.optional(),
   mergeFromGroups: z.array(z.string()).optional(),

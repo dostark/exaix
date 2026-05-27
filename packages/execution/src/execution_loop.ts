@@ -40,12 +40,15 @@ import { PlanAmendmentService } from "@exaix/core/planning";
 import {
   ACTIVITY_ACTOR_AGENT,
   DEFAULT_AMENDMENT_EXPIRY_MS,
+  DEFAULT_AMENDMENT_ON_TIMEOUT,
   DEFAULT_EXECUTION_MEMORY_PATH,
   EXECUTION_ARTIFACT_ANALYSIS_SECTION_TITLE,
   EXECUTION_ARTIFACT_PLAN_SECTION_TITLE,
   EXECUTION_ARTIFACT_SECTION_SEPARATOR,
   EXECUTION_REPORT_FILENAME,
+  PLAN_AMENDMENT_EVENT_APPROVED,
   PLAN_AMENDMENT_EVENT_EXPIRED,
+  PLAN_AMENDMENT_EVENT_REJECTED,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 
@@ -1163,18 +1166,60 @@ export class ExecutionLoop {
             if (proposedAtStr) {
               const proposedAt = new Date(proposedAtStr).getTime();
               if (now - proposedAt > expiryMs) {
-                console.log(`[ExecutionLoop] Amendment for ${frontmatter.request_id} expired. Aborting plan.`);
-                await this.handleFailure(
-                  planPath,
-                  frontmatter.trace_id!,
-                  frontmatter.request_id!,
-                  "Plan amendment request expired (timeout).",
-                );
-                // Emit expiry event
-                this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, frontmatter.trace_id!, {
-                  request_id: frontmatter.request_id,
-                  amendment_id: frontmatter.amendment_id ?? null,
-                });
+                const requestId = frontmatter.request_id ?? "unknown";
+                const traceId = frontmatter.trace_id ?? "unknown";
+                const amendmentId = frontmatter.amendment_id ?? null;
+                const onTimeout = this.config.amendment?.on_timeout ?? DEFAULT_AMENDMENT_ON_TIMEOUT;
+
+                switch (onTimeout) {
+                  case "reject": {
+                    this.logActivity(PLAN_AMENDMENT_EVENT_REJECTED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment rejected due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
+                    const content = await Deno.readTextFile(planPath);
+                    const updated = content.replace(
+                      /status: "?amendment_pending"?/,
+                      `status: ${PlanStatus.REJECTED}`,
+                    );
+                    await Deno.writeTextFile(planPath, updated);
+                    break;
+                  }
+                  case "approve": {
+                    this.logActivity(PLAN_AMENDMENT_EVENT_APPROVED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment approved due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
+                    const content = await Deno.readTextFile(planPath);
+                    const updated = content.replace(
+                      /status: "?amendment_pending"?/,
+                      `status: ${PlanStatus.APPROVED}`,
+                    );
+                    await Deno.writeTextFile(planPath, updated);
+                    break;
+                  }
+                  default: {
+                    this.logActivity(PLAN_AMENDMENT_EVENT_EXPIRED, traceId, {
+                      request_id: requestId,
+                      amendment_id: amendmentId,
+                      decidedBy: "timeout",
+                      rationale: "Amendment expired due to HITL timeout",
+                      timestamp: new Date().toISOString(),
+                    });
+                    await this.handleFailure(
+                      planPath,
+                      traceId,
+                      requestId,
+                      "Plan amendment request expired (timeout).",
+                    );
+                  }
+                }
               }
             }
           }

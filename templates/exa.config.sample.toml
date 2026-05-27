@@ -418,6 +418,13 @@ persist_analysis = true          # write _analysis.json alongside each request f
 # Analyzes portal repositories to extract architecture, conventions, and symbols
 # for injection into agent prompts.
 # ---------------------------------------------------------------------------
+[memory.embedding]
+# Embedding model configuration for memory bank vectorization
+# Model name for generating embeddings
+model = "nomic-embed-text"
+# Dimension of the embedding vectors (must match model output)
+dimension = 768
+
 [portal_knowledge]
 # Automatically trigger quick analysis after `exactl portal add`
 auto_analyze_on_mount = true

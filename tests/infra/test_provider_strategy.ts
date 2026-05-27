@@ -269,3 +269,108 @@ Deno.test("Provider Strategy: Multi-provider concurrent requests", async (t) => 
     }
   });
 });
+
+Deno.test("Provider Strategy: preferFree cost-tier filtering with all four tiers", async (t) => {
+  await t.step("preferFree selects FREE or FREEMIUM, never PAID or LOCAL", async () => {
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata("free-provider", new MockProviderFactory(), {
+      name: "free-provider",
+      description: "Free tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.FREE,
+      strengths: ["testing"],
+    });
+    ProviderRegistry.registerWithMetadata("freemium-provider", new MockProviderFactory(), {
+      name: "freemium-provider",
+      description: "Freemium tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREEMIUM,
+      pricingTier: PricingTier.LOW,
+      strengths: ["testing"],
+    });
+    ProviderRegistry.registerWithMetadata("paid-provider", new MockProviderFactory(), {
+      name: "paid-provider",
+      description: "Paid tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.HIGH,
+      strengths: ["complex"],
+    });
+    ProviderRegistry.registerWithMetadata("local-provider", new MockProviderFactory(), {
+      name: "local-provider",
+      description: "Local tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.LOCAL,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["testing"],
+    });
+
+    const env = await TestEnvironment.create();
+    try {
+      const costTracker = new CostTracker(env.db);
+      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
+      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+
+      const provider = await selector.selectProvider({
+        preferFree: true,
+        requiredCapabilities: ["chat"],
+      });
+
+      assert(
+        provider === "free-provider" || provider === "freemium-provider",
+        `Expected FREE or FREEMIUM provider, got ${provider} (costTier not in preferFree set)`,
+      );
+    } finally {
+      await env.cleanup();
+    }
+  });
+
+  await t.step("preferFree selects FREEMIUM when no FREE providers are registered", async () => {
+    ProviderRegistry.clear();
+    ProviderRegistry.registerWithMetadata("freemium-provider", new MockProviderFactory(), {
+      name: "freemium-provider",
+      description: "Freemium tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREEMIUM,
+      pricingTier: PricingTier.LOW,
+      strengths: ["testing"],
+    });
+    ProviderRegistry.registerWithMetadata("paid-provider", new MockProviderFactory(), {
+      name: "paid-provider",
+      description: "Paid tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.PAID,
+      pricingTier: PricingTier.HIGH,
+      strengths: ["complex"],
+    });
+    ProviderRegistry.registerWithMetadata("local-provider", new MockProviderFactory(), {
+      name: "local-provider",
+      description: "Local tier provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.LOCAL,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["testing"],
+    });
+
+    const env = await TestEnvironment.create();
+    try {
+      const costTracker = new CostTracker(env.db);
+      const healthCheck = new HealthCheckService(DEFAULT_MCP_VERSION);
+      const selector = new ProviderSelector(ProviderRegistry, costTracker, healthCheck);
+
+      const provider = await selector.selectProvider({
+        preferFree: true,
+        requiredCapabilities: ["chat"],
+      });
+
+      assertEquals(
+        provider,
+        "freemium-provider",
+        "Should select FREEMIUM as best available when no FREE provider exists",
+      );
+    } finally {
+      await env.cleanup();
+    }
+  });
+});

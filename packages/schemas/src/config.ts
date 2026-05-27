@@ -271,6 +271,10 @@ export const ConfigSchema = z.object({
       sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
       max_batch_size: z.number().int().min(1).max(100).default(20),
     }).default({}),
+    embedding: z.object({
+      model: z.string().default("nomic-embed-text"),
+      dimension: z.number().int().positive().default(768),
+    }).optional(),
   }).optional().default({}),
   skills: z.object({
     max_per_request: z.number().int().min(1).default(DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST),
@@ -431,10 +435,14 @@ export const ConfigSchema = z.object({
     enabled: z.boolean().default(false),
     threshold: z.number().min(0).max(100).default(DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD),
     expiryMs: z.number().int().positive().default(DEFAULTS.DEFAULT_AMENDMENT_EXPIRY_MS),
+    hitl_timeout_ms: z.number().int().positive().default(DEFAULTS.DEFAULT_AMENDMENT_HITL_TIMEOUT_MS),
+    on_timeout: z.enum(["abort", "reject", "approve"]).default(DEFAULTS.DEFAULT_AMENDMENT_ON_TIMEOUT),
   }).optional().default({
     enabled: false,
     threshold: DEFAULTS.DEFAULT_AMENDMENT_THRESHOLD,
     expiryMs: DEFAULTS.DEFAULT_AMENDMENT_EXPIRY_MS,
+    hitl_timeout_ms: DEFAULTS.DEFAULT_AMENDMENT_HITL_TIMEOUT_MS,
+    on_timeout: DEFAULTS.DEFAULT_AMENDMENT_ON_TIMEOUT,
   }),
   /** Prompt budget enforcement policy overrides (Phase 62) */
   budget_enforcement: ZBudgetPolicy.optional(),
@@ -659,6 +667,7 @@ export const ConfigSchema = z.object({
       .min(DEFAULTS.HEALTH_CACHE_TTL_MS_MIN)
       .max(DEFAULTS.HEALTH_CACHE_TTL_MS_MAX)
       .default(DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS),
+    poll_interval_ms: z.number().int().positive().default(DEFAULTS.DEFAULT_HEALTH_POLL_INTERVAL_MS),
     memory_warn_percent: z.number()
       .min(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MIN)
       .max(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MAX)
@@ -670,6 +679,7 @@ export const ConfigSchema = z.object({
   }).optional().default({
     check_timeout_ms: DEFAULTS.DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
     cache_ttl_ms: DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS,
+    poll_interval_ms: DEFAULTS.DEFAULT_HEALTH_POLL_INTERVAL_MS,
     memory_warn_percent: DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT,
     memory_critical_percent: DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT,
   }),
