@@ -264,6 +264,7 @@ export interface IFlowEventPayloadMap {
     waveNumber: number;
     groupId: string;
     stepIds: string[];
+    startedAt: number;
   };
   "flow.parallel_group.completed": IFlowEventRequestContext & {
     flowRunId: string;
@@ -273,6 +274,7 @@ export interface IFlowEventPayloadMap {
     successCount: number;
     failureCount: number;
     failed: boolean;
+    duration: number;
   };
   "flow.parallel_group.merge_failed": IFlowEventRequestContext & {
     flowRunId: string;
@@ -1107,11 +1109,14 @@ export class FlowRunner implements IFlowRunner {
       return { stepIds: unit.stepIds, results: result };
     }
 
+    const groupStartedAt = performance.now();
+
     await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_STARTED, {
       flowRunId,
       waveNumber,
       groupId: unit.groupId,
       stepIds: unit.stepIds,
+      startedAt: groupStartedAt,
       traceId: request.traceId,
       requestId: request.requestId,
     });
@@ -1131,6 +1136,7 @@ export class FlowRunner implements IFlowRunner {
       successCount,
       failureCount,
       failed: failureCount > 0,
+      duration: performance.now() - groupStartedAt,
       traceId: request.traceId,
       requestId: request.requestId,
     });

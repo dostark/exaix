@@ -27,10 +27,49 @@ export class RoutingPolicyLoader {
   private readonly policyPath: string;
   private cachedPolicy: IRoutingPolicy | null = null;
   private cachedMtimeMs: number | null = null;
+  private watcher: Deno.FsWatcher | null = null;
 
   constructor(options: IRoutingPolicyLoaderOptions) {
     const routingConfig = options.config.routing;
     this.policyPath = join(options.root, routingConfig?.policy_path ?? ".exaix/routing.policy.yaml");
+  }
+
+  /**
+   * Start watching the policy file for changes.
+   * On modify events, the internal cache is invalidated so the next
+   * loadPolicy() call re-reads the file.
+   */
+  startWatching(): void {
+    try {
+      this.watcher = Deno.watchFs(this.policyPath);
+      this.watchLoop();
+    } catch {
+      // File may not exist yet; watching is best-effort
+    }
+  }
+
+  private async watchLoop(): Promise<void> {
+    try {
+      for await (const event of this.watcher!) {
+        if (event.kind === "modify" || event.kind === "create") {
+          this.cachedMtimeMs = null;
+        }
+      }
+    } catch {
+      // Watcher closed
+    }
+  }
+
+  /** Close the file watcher if active. */
+  close(): void {
+    if (this.watcher) {
+      try {
+        this.watcher.close();
+      } catch {
+        // Already closed
+      }
+      this.watcher = null;
+    }
   }
 
   async loadPolicy(): Promise<IRoutingPolicyLoadResult> {
