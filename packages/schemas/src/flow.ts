@@ -17,6 +17,7 @@ import {
   FlowStepOnErrorAction,
   FlowStepType,
   McpToolName,
+  ProviderCostTier,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 
@@ -204,6 +205,8 @@ export const FlowStepSchema = z.object({
   consensus: ConsensusConfigSchema.optional(),
   /** Skills to apply for this step (Phase 17) */
   skills: z.array(z.string()).optional(),
+  /** Cost tier annotation for provider routing (Gap UF-3) */
+  tier: z.nativeEnum(ProviderCostTier).optional(),
   namespace: ZFlowStepNamespace.optional(),
   parallel: ZFlowParallelConfig.optional(),
   mergeFromGroups: z.array(z.string()).optional(),

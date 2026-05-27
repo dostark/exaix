@@ -659,6 +659,108 @@ Deno.test("[blueprint] edit - rejects non-existent blueprint", async () => {
   }
 });
 
+Deno.test("[blueprint] edit - allows save when only warnings exist", async () => {
+  await setupTest();
+  try {
+    // Create a blueprint with valid frontmatter and required tags
+    // but short body (< 50 chars) to trigger warnings only
+    await commands.create("warn-test", {
+      name: "Warn Test",
+      model: "ollama:llama3.2",
+    });
+
+    // Overwrite with short valid content: has tags, but < 50 chars → warning
+    const blueprintPath = join(
+      testEnv.config.system.root,
+      testEnv.config.paths.blueprints,
+      "Identities",
+      "warn-test.md",
+    );
+    const shortContent = `+++
+identity_id = "warn-test"
+name = "Warn Test"
+model = "ollama:llama3.2"
+version = "1.0.0"
+created = "2026-05-27T00:00:00Z"
+created_by = "test"
++++
+
+<thought></thought><content></content>`;
+    await Deno.writeTextFile(blueprintPath, shortContent);
+
+    const originalEditor = Deno.env.get("EDITOR");
+    Deno.env.set("EDITOR", "true");
+
+    try {
+      // Should NOT throw — warnings should not block save
+      await commands.edit("warn-test");
+
+      // Verify activity logged
+      await testEnv.db.waitForFlush();
+      const activities = testEnv.db.getActivitiesByActionType("blueprint.edited");
+      const activity = activities.find((a) => a.target === "warn-test");
+      assertExists(activity);
+    } finally {
+      if (originalEditor) {
+        Deno.env.set("EDITOR", originalEditor);
+      } else {
+        Deno.env.delete("EDITOR");
+      }
+    }
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] edit - blocks save when validation errors exist", async () => {
+  await setupTest();
+  try {
+    // Create a blueprint with valid content
+    await commands.create("error-test", {
+      name: "Error Test",
+      model: "ollama:llama3.2",
+    });
+
+    // Overwrite with content missing required tags → error, no save
+    const blueprintPath = join(
+      testEnv.config.system.root,
+      testEnv.config.paths.blueprints,
+      "Identities",
+      "error-test.md",
+    );
+    const errorContent = `+++
+identity_id = "error-test"
+name = "Error Test"
+model = "ollama:llama3.2"
+version = "1.0.0"
++++
+
+No thought or content tags here at all.`;
+    await Deno.writeTextFile(blueprintPath, errorContent);
+
+    const originalEditor = Deno.env.get("EDITOR");
+    Deno.env.set("EDITOR", "true");
+
+    try {
+      await assertRejects(
+        async () => {
+          await commands.edit("error-test");
+        },
+        Error,
+        "validation",
+      );
+    } finally {
+      if (originalEditor) {
+        Deno.env.set("EDITOR", originalEditor);
+      } else {
+        Deno.env.delete("EDITOR");
+      }
+    }
+  } finally {
+    await teardownTest();
+  }
+});
+
 // Additional edge case tests for improved coverage
 
 Deno.test("[blueprint] create - rejects when system prompt file not found", async () => {

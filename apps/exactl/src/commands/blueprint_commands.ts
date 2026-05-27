@@ -923,11 +923,18 @@ ${systemPrompt}
 
       // Validate after editing
       const validation = await this.validate(identityId);
-      if (!validation.valid) {
+      if (validation.errors.length > 0) {
         const msg = `Blueprint has validation errors after editing:\n${
-          validation.errors?.map((e: string) => `  - ${e}`).join("\n")
+          validation.errors.map((e: string) => `  - ${e}`).join("\n")
         }`;
         throw new Error(msg);
+      }
+
+      // Display warnings if any (but allow save to proceed)
+      if (validation.warnings && validation.warnings.length > 0) {
+        for (const warning of validation.warnings) {
+          await this.display.warn("blueprint.edit.warning", identityId, { warning });
+        }
       }
 
       // Log activity
