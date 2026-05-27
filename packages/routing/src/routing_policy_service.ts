@@ -44,6 +44,12 @@ export interface IRoutingPolicyService {
   selectIdentity(context: IRoutingContext): Promise<IRoutingPolicyDecision>;
 }
 
+function sortCandidates(a: IRoutingCandidate, b: IRoutingCandidate): number {
+  if (a.preferLocal && !b.preferLocal) return -1;
+  if (!a.preferLocal && b.preferLocal) return 1;
+  return b.score - a.score || a.identityId.localeCompare(b.identityId);
+}
+
 export class RoutingPolicyService {
   private readonly experimentSalt: string;
 
@@ -299,7 +305,7 @@ export class RoutingPolicyService {
             : 0,
         },
       });
-    }).sort((a, b) => b.score - a.score || a.identityId.localeCompare(b.identityId));
+    }).sort(sortCandidates);
   }
 
   private async buildFallbackDecision(

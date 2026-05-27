@@ -32,10 +32,16 @@ export class CandidateDiscovery {
     const broad = blueprints.filter((bp) => bp.identityId !== explicitIdentityId);
 
     let scored = [...explicit, ...broad]
-      .map((bp, index) => ({
-        candidate: this.matcher.matchBlueprint(bp, criteria),
-        isExplicit: index < explicit.length,
-      }))
+      .map((bp, index) => {
+        const candidate = this.matcher.matchBlueprint(bp, criteria);
+        if (candidate && bp.frontmatter?.routing_prefer_local === true) {
+          candidate.preferLocal = true;
+        }
+        return {
+          candidate,
+          isExplicit: index < explicit.length,
+        };
+      })
       .filter((entry): entry is { candidate: IRoutingCandidate; isExplicit: boolean } => entry.candidate !== null)
       .sort((a, b) => {
         if (a.isExplicit !== b.isExplicit) {

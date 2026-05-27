@@ -135,6 +135,9 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
 
   /** Deprecation flag for outdated blueprints */
   deprecated: z.boolean().default(false),
+
+  /** Prefer this agent locally for routing fallback */
+  routing_prefer_local: z.boolean().optional(),
 });
 
 export type RuntimeBlueprintFrontmatter = z.infer<typeof RuntimeBlueprintFrontmatterSchema>;
