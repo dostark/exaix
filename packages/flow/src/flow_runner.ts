@@ -1123,6 +1123,7 @@ export class FlowRunner implements IFlowRunner {
 
     const groupStep = flow.steps.find((s) => s.parallel?.group === unit.groupId);
     const groupTimeoutMs = groupStep?.parallel?.timeout_ms;
+    const continueOnError = groupStep?.parallel?.continue_on_error ?? false;
 
     const executionPromise = Promise.allSettled(
       unit.stepIds.map((stepId) => this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)),
@@ -1139,9 +1140,22 @@ export class FlowRunner implements IFlowRunner {
         ),
       ])
       : await executionPromise;
-    const successCount = results.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
+
+    const processed = continueOnError
+      ? results.map((result) => {
+        if (this.isPromiseFulfilledResult(result) && !result.value.success) {
+          return {
+            ...result,
+            value: { ...result.value, success: true, error: undefined },
+          } as PromiseFulfilledResult<IStepResult>;
+        }
+        return result;
+      })
+      : results;
+
+    const successCount = processed.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
       .length;
-    const failureCount = results.length - successCount;
+    const failureCount = processed.length - successCount;
 
     await this.eventLogger.log(FLOW_EVENT_PARALLEL_GROUP_COMPLETED, {
       flowRunId,
@@ -1156,7 +1170,7 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
-    return { stepIds: unit.stepIds, results };
+    return { stepIds: unit.stepIds, results: processed };
   }
 
   /**

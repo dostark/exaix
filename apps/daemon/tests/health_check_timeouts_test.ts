@@ -26,6 +26,7 @@ Deno.test("[health] slow check times out and is reported as FAIL", async () => {
   config.health = {
     check_timeout_ms: 50,
     cache_ttl_ms: 10_000,
+    poll_interval_ms: 10_000,
     memory_warn_percent: 80,
     memory_critical_percent: 95,
   };

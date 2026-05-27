@@ -113,6 +113,9 @@ export const ZFlowParallelConfig = z.object({
   timeout_ms: z.number().positive().optional().describe(
     "Wall-clock timeout for the entire parallel group in milliseconds. Group is aborted on expiry.",
   ),
+  continue_on_error: z.boolean().optional().describe(
+    "When true, individual step failures within the group do not propagate to the wave-level failFast check.",
+  ),
 });
 
 // Gate evaluation configuration schema
