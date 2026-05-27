@@ -85,7 +85,7 @@ Deno.test("Step 71.1: MemoryExtractorService attaches required metadata to propo
       max_clarification_rounds: 5,
       thresholds: { minimum: 30, enrichment: 50, proceed: 80 },
     },
-    amendment: { enabled: false, threshold: 80, expiryMs: 3600000 },
+    amendment: { enabled: false, threshold: 80, expiryMs: 3600000, hitl_timeout_ms: 300_000, on_timeout: "abort" },
     git: {
       branch_prefix_pattern: "feat/*",
       allowed_prefixes: ["feat", "fix"],

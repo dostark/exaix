@@ -17,7 +17,13 @@ import { castAny as castTo, makeGenerateResult as makeResult } from "@exaix/test
 
 function makeAmendmentConfig() {
   const config = createMockConfig("/tmp/test");
-  config.amendment = { enabled: true, threshold: 60, expiryMs: 86_400_000 };
+  config.amendment = {
+    enabled: true,
+    threshold: 60,
+    expiryMs: 86_400_000,
+    hitl_timeout_ms: 300_000,
+    on_timeout: "abort",
+  };
   return config;
 }
 

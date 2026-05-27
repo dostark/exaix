@@ -1175,3 +1175,12 @@ export enum ToolSideEffectScope {
   NETWORK = "network",
   SYSTEM = "system",
 }
+
+/**
+ * Action to take when a HITL amendment request times out.
+ */
+export enum AmendmentTimeoutAction {
+  ABORT = "abort",
+  REJECT = "reject",
+  APPROVE = "approve",
+}

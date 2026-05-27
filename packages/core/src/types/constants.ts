@@ -68,6 +68,8 @@ export const ExaPathDefaults = {
 export const AMENDMENT_ARTIFACTS_DIR = "amendments";
 export const DEFAULT_AMENDMENT_EXPIRY_MS = 86_400_000; // 24 hours
 export const DEFAULT_AMENDMENT_THRESHOLD = 60; // ConfidenceScorer 0-100
+export const DEFAULT_AMENDMENT_HITL_TIMEOUT_MS = 300_000; // 5 minutes
+export const DEFAULT_AMENDMENT_ON_TIMEOUT = "abort";
 
 // Live execution streaming constants (Phase 67)
 export const STREAMING_EVENT_HEARTBEAT = "agent.heartbeat";

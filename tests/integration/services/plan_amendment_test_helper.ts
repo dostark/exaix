@@ -107,6 +107,8 @@ export function createPlanAmendmentExecutor(options: ICreatePlanAmendmentExecuto
       enabled: options.enabled ?? true,
       threshold: options.threshold,
       expiryMs: options.expiryMs,
+      hitl_timeout_ms: 300_000,
+      on_timeout: "abort",
     },
   });
 
@@ -132,6 +134,8 @@ export function createPlanAmendmentServiceForTest(
       enabled: options.enabled ?? true,
       threshold: options.threshold ?? DEFAULT_PLAN_AMENDMENT_THRESHOLD,
       expiryMs: options.expiryMs ?? DEFAULT_PLAN_AMENDMENT_EXPIRY_MS,
+      hitl_timeout_ms: 300_000,
+      on_timeout: "abort",
     },
   });
 
