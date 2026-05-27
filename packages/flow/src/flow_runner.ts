@@ -611,7 +611,7 @@ export class FlowRunner implements IFlowRunner {
       const activityJournal = new ActivityJournal(this.eventLogger);
 
       // Use existing context if available, otherwise build a minimal one for McpClient
-      const context = options.context || {
+      const context = (options.context || {
         config: {
           get: () => config,
           getAll: () => config,
@@ -633,7 +633,7 @@ export class FlowRunner implements IFlowRunner {
           fatal: () => Promise.resolve(),
         },
         git: createGitServiceStub(),
-      } as IApplicationContext;
+      }) as IApplicationContext;
 
       // Prefer the canonical Map from buildDynamicHandlers(); fall back to legacy array.
       const mcpClient = dynamicHandlers
@@ -1121,9 +1121,24 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
-    const results = await Promise.allSettled(
+    const groupStep = flow.steps.find((s) => s.parallel?.group === unit.groupId);
+    const groupTimeoutMs = groupStep?.parallel?.timeout_ms;
+
+    const executionPromise = Promise.allSettled(
       unit.stepIds.map((stepId) => this.executeStepSafe(flowRunId, stepId, flow, request, stepResults)),
     );
+
+    const results = groupTimeoutMs
+      ? await Promise.race([
+        executionPromise,
+        new Promise<PromiseSettledResult<IStepResult>[]>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Parallel group '${unit.groupId}' timed out after ${groupTimeoutMs}ms`)),
+            groupTimeoutMs,
+          )
+        ),
+      ])
+      : await executionPromise;
     const successCount = results.filter((result) => this.isPromiseFulfilledResult(result) && result.value.success)
       .length;
     const failureCount = results.length - successCount;

@@ -663,6 +663,7 @@ export const ConfigSchema = z.object({
       .min(DEFAULTS.HEALTH_CACHE_TTL_MS_MIN)
       .max(DEFAULTS.HEALTH_CACHE_TTL_MS_MAX)
       .default(DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS),
+    poll_interval_ms: z.number().int().positive().default(DEFAULTS.DEFAULT_HEALTH_POLL_INTERVAL_MS),
     memory_warn_percent: z.number()
       .min(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MIN)
       .max(DEFAULTS.HEALTH_MEMORY_WARN_PERCENT_MAX)
@@ -674,6 +675,7 @@ export const ConfigSchema = z.object({
   }).optional().default({
     check_timeout_ms: DEFAULTS.DEFAULT_HEALTH_CHECK_TIMEOUT_MS,
     cache_ttl_ms: DEFAULTS.DEFAULT_HEALTH_CACHE_TTL_MS,
+    poll_interval_ms: DEFAULTS.DEFAULT_HEALTH_POLL_INTERVAL_MS,
     memory_warn_percent: DEFAULTS.DEFAULT_MEMORY_WARN_PERCENT,
     memory_critical_percent: DEFAULTS.DEFAULT_MEMORY_CRITICAL_PERCENT,
   }),

@@ -110,6 +110,9 @@ export const ZFlowParallelConfig = z.object({
   order: z.array(z.string()).optional().describe(
     "Step IDs within this group; used for ordered fan-in merge. Validated against actual group member IDs in validateIFlow().",
   ),
+  timeout_ms: z.number().positive().optional().describe(
+    "Wall-clock timeout for the entire parallel group in milliseconds. Group is aborted on expiry.",
+  ),
 });
 
 // Gate evaluation configuration schema
