@@ -20,6 +20,7 @@ export * from "./i_cli_application_context.ts";
 export * from "./i_config_service.ts";
 export * from "./i_context_card_generator_service.ts";
 export * from "./i_cost_tracker.ts";
+export * from "./i_memory_cost_router.ts";
 export * from "./i_criteria_generator_service.ts";
 export * from "./i_daemon_service.ts";
 export * from "./i_database_service.ts";

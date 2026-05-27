@@ -499,6 +499,44 @@ Deno.test("ProviderSelector: preferFree budget excludes all PAID providers", asy
   }
 });
 
+Deno.test("ProviderSelector: selects streaming-capable provider when streaming required", async () => {
+  const { db: _db, cleanup } = await initTestDbService();
+  try {
+    ProviderRegistry.clear();
+
+    ProviderRegistry.registerWithMetadata("basic-provider", new MockProviderFactory(), {
+      name: "basic-provider",
+      description: "Basic chat provider",
+      capabilities: ["chat"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["general"],
+    });
+
+    ProviderRegistry.registerWithMetadata("streaming-provider", new MockProviderFactory(), {
+      name: "streaming-provider",
+      description: "Streaming-capable provider",
+      capabilities: ["chat", "streaming"],
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.LOCAL,
+      strengths: ["general"],
+    });
+
+    const costTracker = createStubCostTracker();
+    const healthService = createStubHealthChecker();
+
+    const selector = new ProviderSelector(ProviderRegistry, costTracker, healthService);
+
+    const provider = await selector.selectProvider({
+      requiredCapabilities: ["streaming"],
+    });
+
+    assertEquals(provider, "streaming-provider");
+  } finally {
+    await cleanup();
+  }
+});
+
 Deno.test("ProviderSelector: enforces budget constraints", async () => {
   const { db: _db, cleanup } = await initTestDbService();
   try {

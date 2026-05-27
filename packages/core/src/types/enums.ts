@@ -1184,3 +1184,12 @@ export enum AmendmentTimeoutAction {
   REJECT = "reject",
   APPROVE = "approve",
 }
+
+/**
+ * Storage tier for memory operations. LOCAL is free (keyword/HNSW over
+ * local JSON files). REMOTE incurs cost (embedding API calls, remote DB).
+ */
+export enum MemoryStorageTier {
+  LOCAL = "local",
+  REMOTE = "remote",
+}

@@ -15,6 +15,8 @@ export { buildFilesIndex, buildPatternsIndex, buildTagsIndex, writeIndices } fro
 
 export { cosineSimilarity, generateMockEmbedding, MemoryEmbeddingService } from "./src/embedding/memory_embedding.ts";
 export type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "./src/embedding/memory_embedding.ts";
+export { HnswVectorIndex } from "./src/embedding/vector_index.ts";
+export type { IVectorIndexEntry, IVectorIndexSnapshot } from "./src/embedding/vector_index.ts";
 export { ProviderEmbeddingService } from "./src/embedding/provider_embedding_service.ts";
 
 export { MemoryExtractorService } from "./src/extraction/memory_extractor.ts";

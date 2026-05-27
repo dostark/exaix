@@ -168,6 +168,8 @@ export const SKILL_EVENT_MATCH_COMPLETED = "skills.match_completed";
 export const SKILL_EVENT_RETRIEVAL_TIMEOUT = "skills.retrieval_timeout";
 export const SKILL_EVENT_RETRIEVAL_FAILED = "skills.retrieval_failed";
 export const MEMORY_EVENT_AUTO_APPROVED = "memory.auto_approved";
+export const MEMORY_EVENT_TIER_SELECTED = "memory.tier_selected";
+export const MEMORY_MIN_VECTORS_FOR_LOCAL_SEARCH = 5;
 
 /** Example execution time used in AgentExecutor response-shape examples. */
 export const AGENT_EXECUTION_EXAMPLE_TIME_MS = 2_000;
@@ -442,6 +444,7 @@ export const DEFAULT_PROVIDER_STRATEGY_ALLOW_LOCAL = true;
 export const DEFAULT_PROVIDER_STRATEGY_MAX_DAILY_COST_USD = 5.0;
 export const DEFAULT_PROVIDER_STRATEGY_HEALTH_CHECK_ENABLED = true;
 export const DEFAULT_HEALTH_POLL_INTERVAL_MS = 60_000;
+export const DEFAULT_MEMORY_REMOTE_BUDGET_USD = 2.0;
 export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_ENABLED = true;
 export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
   "balanced": ["openai", "anthropic", "google"],
