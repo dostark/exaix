@@ -6,15 +6,29 @@
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
+import { join } from "@std/path";
 import { SafeSubprocess } from "@exaix/core";
 import { DEFAULT_GIT_REV_PARSE_TIMEOUT_MS, GIT_CMD_REV_PARSE } from "@exaix/git";
 
 export interface IGitHeadResolver {
   resolve(portalPath: string): Promise<string | null>;
   changedFilesSince(portalPath: string, fromSha: string): Promise<string[] | null>;
+  startWatching(
+    portalPath: string,
+    onHeadChange: (newHash: string, prevHash: string) => void,
+    options?: { signal?: AbortSignal },
+  ): void;
+  stopWatching(): void;
 }
 
+const DEFAULT_DEBOUNCE_MS = 100;
+
 export class GitHeadResolver implements IGitHeadResolver {
+  private _watcher: Deno.FsWatcher | null = null;
+  private _abortController: AbortController | null = null;
+  private _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private _previousHash: string | null = null;
+
   async resolve(portalPath: string): Promise<string | null> {
     try {
       const result = await SafeSubprocess.run("git", [GIT_CMD_REV_PARSE, "HEAD"], {
@@ -41,6 +55,87 @@ export class GitHeadResolver implements IGitHeadResolver {
         .filter((line) => line.length > 0);
     } catch {
       return null;
+    }
+  }
+
+  startWatching(
+    portalPath: string,
+    onHeadChange: (newHash: string, prevHash: string) => void,
+    options?: { signal?: AbortSignal },
+  ): void {
+    if (this._abortController) return;
+    this._abortController = new AbortController();
+
+    const externalSignal = options?.signal;
+    if (externalSignal) {
+      externalSignal.addEventListener("abort", () => {
+        this.stopWatching();
+      }, { once: true });
+    }
+
+    const headPath = join(portalPath, ".git", "HEAD");
+    try {
+      this._watcher = Deno.watchFs(headPath);
+      this._watchLoop(portalPath, onHeadChange, this._abortController.signal);
+    } catch {
+      // File may not exist yet; best-effort
+    }
+  }
+
+  stopWatching(): void {
+    if (this._debounceTimer) {
+      clearTimeout(this._debounceTimer);
+      this._debounceTimer = null;
+    }
+    if (this._abortController) {
+      this._abortController.abort();
+      this._abortController = null;
+    }
+    if (this._watcher) {
+      try {
+        this._watcher.close();
+      } catch {
+        // Already closed
+      }
+      this._watcher = null;
+    }
+    this._previousHash = null;
+  }
+
+  private async _watchLoop(
+    portalPath: string,
+    onHeadChange: (newHash: string, prevHash: string) => void,
+    signal: AbortSignal,
+  ): Promise<void> {
+    this._previousHash = await this.resolve(portalPath);
+
+    try {
+      for await (const event of this._watcher!) {
+        if (signal.aborted) break;
+        if (event.kind === "modify") {
+          if (this._debounceTimer) clearTimeout(this._debounceTimer);
+          this._debounceTimer = setTimeout(() => {
+            this._debounceTimer = null;
+            this._onHeadChangeDebounced(portalPath, onHeadChange);
+          }, DEFAULT_DEBOUNCE_MS);
+        }
+      }
+    } catch {
+      // Watcher closed
+    }
+  }
+
+  private async _onHeadChangeDebounced(
+    portalPath: string,
+    onHeadChange: (newHash: string, prevHash: string) => void,
+  ): Promise<void> {
+    const newHash = await this.resolve(portalPath);
+    if (newHash && newHash !== this._previousHash) {
+      const prevHash = this._previousHash;
+      this._previousHash = newHash;
+      onHeadChange(newHash, prevHash!);
+    } else if (newHash === null) {
+      this._previousHash = null;
     }
   }
 }

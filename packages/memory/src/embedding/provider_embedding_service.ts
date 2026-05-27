@@ -17,8 +17,9 @@ import type { IEmbeddingSearchResult, IMemoryCostRouter } from "@exaix/core/type
 import type { IEmbeddingProvider } from "@exaix/ai";
 import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import { HnswVectorIndex } from "./vector_index.ts";
+import { computeTextHash, DiskBackedEmbeddingCache } from "./disk_cache.ts";
 
-const EMBEDDING_LRU_CACHE_MAX_ENTRIES = 512;
+const EMBEDDING_CACHE_MAX_ENTRIES = 512;
 
 /**
  * Estimated cost per embedding API call in USD.
@@ -45,32 +46,6 @@ interface IEmbeddingManifest {
   index: IManifestEntry[];
 }
 
-class EmbeddingLruCache {
-  private entries = new Map<string, number[]>();
-
-  get size(): number {
-    return this.entries.size;
-  }
-
-  get(key: string): number[] | undefined {
-    if (!this.entries.has(key)) return undefined;
-    const value = this.entries.get(key)!;
-    this.entries.delete(key);
-    this.entries.set(key, value);
-    return value;
-  }
-
-  set(key: string, value: number[]): void {
-    if (this.entries.has(key)) {
-      this.entries.delete(key);
-    } else if (this.entries.size >= EMBEDDING_LRU_CACHE_MAX_ENTRIES) {
-      const oldestKey = this.entries.keys().next().value;
-      if (oldestKey !== undefined) this.entries.delete(oldestKey);
-    }
-    this.entries.set(key, value);
-  }
-}
-
 /**
  * File-backed embedding service that delegates vector generation to any
  * IEmbeddingProvider. Stores vectors as JSON files with a manifest index.
@@ -78,18 +53,20 @@ class EmbeddingLruCache {
 export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   private embeddingsDir: string;
   private manifestPath: string;
-  private cache: EmbeddingLruCache;
+  private cache: DiskBackedEmbeddingCache;
+  private cacheReady = false;
   private hnsw: HnswVectorIndex;
   private indexBuilt = false;
 
   constructor(
     private config: Config,
-    private provider: IEmbeddingProvider,
+    private provider: IEmbeddingProvider | null = null,
     private costRouter?: IMemoryCostRouter,
   ) {
     this.embeddingsDir = join(config.system.root, config.paths.memory, "Index", "embeddings");
     this.manifestPath = join(this.embeddingsDir, "manifest.json");
-    this.cache = new EmbeddingLruCache();
+    const cacheDir = join(config.system.root, config.paths.runtime, "cache", "embeddings");
+    this.cache = new DiskBackedEmbeddingCache(cacheDir, EMBEDDING_CACHE_MAX_ENTRIES);
     this.hnsw = new HnswVectorIndex();
   }
 
@@ -234,16 +211,25 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
   }
 
   private async embedText(text: string): Promise<number[]> {
-    const cached = this.cache.get(text);
+    if (!this.cacheReady) {
+      await this.cache.init();
+      this.cacheReady = true;
+    }
+
+    const hash = await computeTextHash(text);
+    const cached = this.cache.get(hash);
     if (cached) return cached;
 
+    if (!this.provider) {
+      throw new Error("Embedding provider not configured");
+    }
     const vectors = await this.provider.embed([text]);
     if (vectors.length === 0 || vectors[0].length === 0) {
       throw new Error("Embedding provider returned empty vector");
     }
 
     const vector = vectors[0];
-    this.cache.set(text, vector);
+    await this.cache.set(hash, vector);
     return vector;
   }
 

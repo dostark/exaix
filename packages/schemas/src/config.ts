@@ -271,6 +271,10 @@ export const ConfigSchema = z.object({
       sources_allowed: z.array(AutoApproveSourceSchema).default(["AGENT"]),
       max_batch_size: z.number().int().min(1).max(100).default(20),
     }).default({}),
+    embedding: z.object({
+      model: z.string().default("nomic-embed-text"),
+      dimension: z.number().int().positive().default(768),
+    }).optional(),
   }).optional().default({}),
   skills: z.object({
     max_per_request: z.number().int().min(1).default(DEFAULTS.DEFAULT_SKILLS_MAX_PER_REQUEST),

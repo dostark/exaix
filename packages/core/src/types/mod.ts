@@ -35,6 +35,7 @@ export * from "./i_memory_embedding_service.ts";
 export * from "./i_memory_extractor_service.ts";
 export * from "./i_memory_service.ts";
 export * from "./i_notification_service.ts";
+export * from "./i_plan_amendment_gate.ts";
 export * from "./i_plan_amendment_service.ts";
 export * from "./i_plan_service.ts";
 export * from "./i_portal_knowledge_service.ts";

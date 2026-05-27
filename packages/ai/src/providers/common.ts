@@ -19,6 +19,7 @@ export interface IGenerateResult {
   model: string;
   provider: string;
   cost_usd?: number;
+  streamed?: boolean;
 }
 /**
  * Base error class for model provider errors.

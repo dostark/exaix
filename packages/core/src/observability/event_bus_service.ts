@@ -23,6 +23,7 @@ interface ISubscriberEntry {
 export interface IEventBusService {
   publish(event: IStreamingEvent): void;
   subscribe(traceId: string, callback: (event: IStreamingEvent) => void): () => void;
+  subscribeStream?(traceId: string): ReadableStream<IStreamingEvent>;
   close(): void;
 }
 
@@ -83,6 +84,35 @@ export class EventBusService implements IEventBusService {
         this.subscribers.delete(traceId);
       }
     };
+  }
+
+  subscribeStream(traceId: string): ReadableStream<IStreamingEvent> {
+    let ctrl: ReadableStreamDefaultController<IStreamingEvent> | null = null;
+    let cleanup: (() => void) | null = null;
+
+    const stream = new ReadableStream<IStreamingEvent>(
+      {
+        start: (controller) => {
+          ctrl = controller;
+          cleanup = this.subscribe(traceId, (event) => {
+            if (!ctrl) return;
+            if (ctrl.desiredSize !== null && ctrl.desiredSize <= 0) return;
+            try {
+              ctrl.enqueue(event);
+            } catch {
+              ctrl = null;
+            }
+          });
+        },
+        cancel: () => {
+          ctrl = null;
+          cleanup?.();
+        },
+      },
+      { highWaterMark: EVENT_BUS_MAX_SUBSCRIBER_QUEUE },
+    );
+
+    return stream;
   }
 
   close(): void {

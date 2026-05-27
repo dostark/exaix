@@ -21,6 +21,8 @@
     "@exaix/testing/": "../testing/src/",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/": "../ai/src/",
+    "@exaix/ai-ollama": "../ai-ollama/mod.ts",
+    "@exaix/ai-ollama/": "../ai-ollama/src/",
     "@exaix/storage-sqlite": "../storage-sqlite/mod.ts",
     "@exaix/storage-sqlite/": "../storage-sqlite/src/"
   },

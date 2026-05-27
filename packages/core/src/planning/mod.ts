@@ -9,6 +9,7 @@
 export * from "./errors.ts";
 export * from "./plan.ts";
 export * from "./plan_adapter.ts";
+export * from "./plan_amendment_gate.ts";
 export * from "./plan_amendment_service.ts";
 export * from "./plan_executor.ts";
 export * from "./plan_writer.ts";

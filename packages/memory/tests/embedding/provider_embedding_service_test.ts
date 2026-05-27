@@ -230,3 +230,40 @@ Deno.test("ProviderEmbeddingService: deleteEmbedding is idempotent for missing i
     await cleanup();
   }
 });
+
+Deno.test("ProviderEmbeddingService: defaults to OllamaEmbeddingClient when no provider given", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "exa-embed-default-test-" });
+  const config = {
+    system: { root: tempDir, log_level: "info", schema_version: "1.0.0", version: "1.0.0" },
+    paths: {
+      memory: "./Memory",
+      blueprints: "./Blueprints",
+      runtime: "./.exa",
+      workspace: "./Workspace",
+      portals: "./Portals",
+      active: "Active",
+      archive: "Archive",
+      plans: "Plans",
+      requests: "Requests",
+      rejected: "Rejected",
+      identities: "Identities",
+      flows: "Flows",
+      memoryProjects: "Projects",
+      memoryExecution: "Execution",
+      memoryIndex: "Index",
+      memorySkills: "Skills",
+      memoryPending: "Pending",
+      memoryTasks: "Tasks",
+      memoryGlobal: "Global",
+    },
+  } as Config;
+
+  // Should not throw when no provider is provided — defaults to OllamaEmbeddingClient
+  const service = new ProviderEmbeddingService(config);
+  assert(service instanceof ProviderEmbeddingService);
+
+  // initializeManifest doesn't call the provider — just creates the directory + manifest file
+  await service.initializeManifest();
+
+  await Deno.remove(tempDir, { recursive: true });
+});

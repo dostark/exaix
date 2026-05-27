@@ -38,3 +38,13 @@ export const ZStreamingEvent = z.object({
 });
 
 export type IStreamingEvent = z.infer<typeof ZStreamingEvent>;
+
+/**
+ * Typed payload interface for LLM stream events carrying token count metadata.
+ * Use this to type-cast the payload when type === STREAMING_EVENT_LLM_STREAM.
+ */
+export interface ITokenStreamPayload {
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+}
