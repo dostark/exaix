@@ -845,6 +845,59 @@ ${systemPrompt}
   }
 
   /**
+   * Validate a blueprint file at an arbitrary path.
+   * Unlike validate(), this does not look up the blueprints directory.
+   */
+  async validateFile(filePath: string): Promise<IBlueprintValidationResult> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      if (!await exists(filePath)) {
+        throw new Error(`Blueprint file not found: ${filePath}`);
+      }
+
+      const content = await Deno.readTextFile(filePath);
+      const { frontmatter, body } = this.extractTomlFrontmatter(content);
+
+      if (!frontmatter) {
+        errors.push("Missing or invalid TOML frontmatter");
+        return { valid: false, errors, warnings };
+      }
+
+      // Validate frontmatter against schema
+      const validation = BlueprintFrontmatterSchema.safeParse(frontmatter);
+      if (!validation.success) {
+        for (const issue of validation.error.issues) {
+          errors.push(`${issue.path.join(".")}: ${issue.message}`);
+        }
+      }
+
+      // Check system prompt has required tags
+      if (!body.includes("<thought>")) {
+        errors.push("System prompt must include <thought> tag for reasoning");
+      }
+      if (!body.includes("<content>")) {
+        errors.push("System prompt must include <content> tag for responses");
+      }
+
+      // Warnings
+      if (body.length < 50) {
+        warnings.push("System prompt is very short (< 50 characters)");
+      }
+
+      return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+      };
+    } catch (error) {
+      errors.push(error instanceof Error ? error.message : String(error));
+      return { valid: false, errors, warnings };
+    }
+  }
+
+  /**
    * Edit a blueprint in user's $EDITOR
    */
   async edit(identityId: string): Promise<void> {

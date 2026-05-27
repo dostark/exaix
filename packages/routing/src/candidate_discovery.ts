@@ -31,7 +31,7 @@ export class CandidateDiscovery {
 
     const broad = blueprints.filter((bp) => bp.identityId !== explicitIdentityId);
 
-    const scored = [...explicit, ...broad]
+    let scored = [...explicit, ...broad]
       .map((bp, index) => ({
         candidate: this.matcher.matchBlueprint(bp, criteria),
         isExplicit: index < explicit.length,
@@ -44,6 +44,14 @@ export class CandidateDiscovery {
         return b.candidate.score - a.candidate.score || a.candidate.identityId.localeCompare(b.candidate.identityId);
       })
       .map((entry) => entry.candidate);
+
+    // Fallback: when no blueprint matches exactly, return the closest match
+    if (scored.length === 0 && broad.length > 0) {
+      const fallback = this.matcher.fallback(blueprints, criteria);
+      if (fallback) {
+        scored = [fallback];
+      }
+    }
 
     return scored;
   }
