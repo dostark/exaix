@@ -6,8 +6,9 @@
  * @related-files [packages/core/src/context/prompt_budget_allocator.ts, "packages/schemas/src/prompt_budget.ts"]
  */
 
-import { assertEquals, assertGreater } from "@std/assert";
+import { assert, assertEquals, assertGreater, assertRejects } from "@std/assert";
 import { PromptBudgetAllocator } from "@exaix/core/context";
+import { ContextBudgetExceededError } from "@exaix/core/errors";
 import {
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   MODEL_CONTEXT_WINDOWS,
@@ -100,21 +101,20 @@ Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", asy
 });
 
 // ============================================================================
-// Test 6: Local model defaults to relaxed/no-enforcement mode
+// Test 6: Local model defaults to strict budgeting now (DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = true)
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] local model defaults to relaxed pass-through budget", async () => {
+Deno.test("[PromptBudgetAllocator] local model defaults to strict budget enforcement", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = await allocator.allocate("ollama:llama3.2");
+  const budget = await allocator.allocate("ollama:llama3.2", {
+    memoryUsedTokens: 0,
+    skillsUsedTokens: 0,
+    loopHistoryUsedTokens: 0,
+  });
 
   assertEquals(budget.totalBudgetTokens, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.safetyBufferTokens, 0);
-  assertEquals(budget.sections.system, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.sections.plan, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.sections.portalKnowledge, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.sections.memory, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.sections.skills, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
-  assertEquals(budget.sections.loopHistory, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+  assertGreater(budget.safetyBufferTokens, 0);
+  assertGreater(budget.sections.plan, SECTION_FLOORS.plan - 1);
 });
 
 // ============================================================================
@@ -167,4 +167,84 @@ Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud p
   assertEquals(budget.safetyBufferTokens, 0);
   assertEquals(budget.sections.system, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
   assertEquals(budget.sections.plan, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
+});
+
+// ============================================================================
+// Test 10: Overfill with enforcement ON throws ContextBudgetExceededError
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] overfill throws ContextBudgetExceededError when enforcement enabled", async () => {
+  const allocator = new PromptBudgetAllocator({
+    cloud: true,
+    enabled: true,
+  });
+
+  // Set hints that suggest the actual usage exceeds the total budget
+  await assertRejects(
+    () =>
+      allocator.allocate("openai:gpt-4o-mini", {
+        systemUsedTokens: 200_000,
+        planUsedTokens: 200_000,
+      }),
+    ContextBudgetExceededError,
+  );
+});
+
+// ============================================================================
+// Test 11: Error message includes Object.keys(sections).length
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] error message includes sections count", async () => {
+  const allocator = new PromptBudgetAllocator({
+    cloud: true,
+    enabled: true,
+  });
+
+  try {
+    await allocator.allocate("openai:gpt-4o-mini", {
+      systemUsedTokens: 200_000,
+      planUsedTokens: 200_000,
+    });
+    throw new Error("Should have thrown");
+  } catch (error) {
+    assert(error instanceof ContextBudgetExceededError);
+    assert(error.message.includes("sections"));
+    assert(error.message.includes("6")); // 6 section keys
+  }
+});
+
+// ============================================================================
+// Test 12: Underfill — normal allocation, no error
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] underfill does not throw", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, enabled: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 0,
+    skillsUsedTokens: 0,
+    loopHistoryUsedTokens: 0,
+  });
+  assert(budget.totalBudgetTokens > 0);
+  assert(budget.sections.plan > 0);
+});
+
+// ============================================================================
+// Test 13: enforcement.enabled overrides local:false
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] enabled:true overrides local:false sub-field", async () => {
+  const allocator = new PromptBudgetAllocator({
+    local: false,
+    enabled: true,
+  });
+
+  const budget = await allocator.allocate("ollama:llama3.2", {
+    memoryUsedTokens: 0,
+    skillsUsedTokens: 0,
+    loopHistoryUsedTokens: 0,
+  });
+
+  // Should have strict budgeting despite local:false
+  assertGreater(budget.safetyBufferTokens, 0);
+  assert(budget.sections.system < LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
 });

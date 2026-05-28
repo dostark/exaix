@@ -38,6 +38,8 @@ export const ZPromptBudget = z.object({
 export const ZBudgetPolicy = z.object({
   cloud: z.boolean().default(DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED),
   local: z.boolean().default(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED),
+  /** When set, overrides per-provider cloud/local sub-fields. */
+  enabled: z.boolean().optional(),
 });
 
 export type IPromptBudgetSections = z.infer<typeof ZPromptBudgetSections>;

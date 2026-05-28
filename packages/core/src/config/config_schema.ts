@@ -163,6 +163,8 @@ export const PortalPermissionsSchema = z.object({
 export const ZBudgetPolicy = z.object({
   cloud: z.boolean().default(DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED),
   local: z.boolean().default(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED),
+  /** When set, overrides per-provider cloud/local sub-fields. */
+  enabled: z.boolean().optional(),
 });
 
 function getCwdSafe(): string {
@@ -652,6 +654,11 @@ export const ConfigSchema = z.object({
     backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
       .default(TokenizerBackend.AUTO),
   }).optional().default({ backend: TokenizerBackend.AUTO }),
+  /** Execution configuration (Phase 103) */
+  execution: z.object({
+    /** Model to use for step summarization. Falls back to agent provider if unset. */
+    summarization_model: z.string().optional(),
+  }).optional().default({ summarization_model: undefined }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   const configData = data as z.infer<typeof ConfigSchema>;
   const modelKeys = Object.keys(configData.models || {});

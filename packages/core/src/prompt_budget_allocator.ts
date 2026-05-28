@@ -18,6 +18,7 @@ import {
 import type { IBudgetPolicy, IPromptBudget, IPromptBudgetSections } from "@exaix/schemas/prompt_budget.ts";
 import type { ITokenizer } from "./func/tokenizer.ts";
 import { AiTokenEstimatorTokenizer } from "./func/tokenizer.ts";
+import { ContextBudgetExceededError } from "./errors/context_budget_error.ts";
 
 export interface IAllocationHints {
   memoryUsedTokens?: number;
@@ -32,6 +33,7 @@ function normalizeBudgetPolicy(policy?: Partial<IBudgetPolicy>): IBudgetPolicy {
   return {
     cloud: policy?.cloud ?? DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
     local: policy?.local ?? DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
+    enabled: policy?.enabled,
   };
 }
 
@@ -47,7 +49,9 @@ export class PromptBudgetAllocator {
   allocate(modelId: string, hints?: IAllocationHints): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
     const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
-    const enforcementEnabled = isLocalModel ? this.policy.local : this.policy.cloud;
+
+    const enforcementEnabled = this.policy.enabled ??
+      (isLocalModel ? this.policy.local : this.policy.cloud);
 
     if (!enforcementEnabled) {
       return Promise.resolve(this._buildRelaxedBudget(modelId, totalTokens));
@@ -78,6 +82,27 @@ export class PromptBudgetAllocator {
       sections.plan += Math.floor(surplus * 0.5);
       sections.portalKnowledge += Math.floor(surplus * 0.3);
       sections.system += Math.floor(surplus * 0.2);
+    }
+
+    // Check if estimated usage exceeds context window
+    const hintTotal = this._calculateHintTotal(hints);
+    const allocatedTotal = sections.system + sections.plan +
+      sections.portalKnowledge + sections.memory +
+      sections.skills + sections.loopHistory;
+    const estimatedTotal = Math.max(allocatedTotal, hintTotal);
+
+    if (estimatedTotal > totalTokens) {
+      return Promise.reject(
+        new ContextBudgetExceededError(
+          `Budget exceeded for ${modelId}: estimated ${estimatedTotal} > ${totalTokens} context window (${
+            Object.keys(sections).length
+          } sections)`,
+          modelId,
+          totalTokens,
+          estimatedTotal,
+          { ...sections },
+        ),
+      );
     }
 
     return Promise.resolve({
@@ -145,5 +170,16 @@ export class PromptBudgetAllocator {
     }
 
     return surplus;
+  }
+
+  /** Sum hinted usage values, or 0 if no hints provided. */
+  private _calculateHintTotal(hints?: IAllocationHints): number {
+    if (!hints) return 0;
+    return (hints.systemUsedTokens ?? 0) +
+      (hints.planUsedTokens ?? 0) +
+      (hints.portalKnowledgeUsedTokens ?? 0) +
+      (hints.memoryUsedTokens ?? 0) +
+      (hints.skillsUsedTokens ?? 0) +
+      (hints.loopHistoryUsedTokens ?? 0);
   }
 }

@@ -343,7 +343,7 @@ export const LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK = 32_768;
 
 /** Default budget enforcement policy by provider category. */
 export const DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED = true;
-export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = false;
+export const DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED = true;
 
 /** Default maximum character budget for formatted session memory context. */
 export const DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT = 4_000;

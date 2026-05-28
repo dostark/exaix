@@ -26,7 +26,13 @@ import { McpToolName } from "@exaix/mcp";
 import { PROVIDER_OPENAI } from "@exaix/ai-openai";
 import { join } from "@std/path";
 
-import { AgentExecutionError, AgentExecutor, type IAgentFileBlueprint } from "@exaix/execution";
+import {
+  AgentExecutionError,
+  AgentExecutor,
+  type IAgentFileBlueprint,
+  type ICompactedEntry,
+  type ILoopHistoryEntry,
+} from "@exaix/execution";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -43,6 +49,14 @@ import type { IPortalPermissions } from "@exaix/schemas/portal_permissions.ts";
 import { StrategyRegistry } from "@exaix/execution";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { readFixtureTextSync } from "@exaix/testing";
+
+/** Payload for context.budget.compacted event. */
+interface IBudgetCompactedPayload {
+  tokensBefore: number;
+  tokensAfter: number;
+  compressedCount: number;
+  preservedCount: number;
+}
 
 // Test fixtures - initialized once
 let testDir: string;
@@ -184,7 +198,163 @@ Deno.test({
         permissions,
       );
 
-      assertExists(executor);
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: compactLoopHistory with < 3 steps does nothing",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/short",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: ["src/short.ts"],
+            description: "Short step",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      // Only 2 steps — too few for compaction
+      for (let i = 1; i <= 2; i++) {
+        const context: IExecutionContext = {
+          trace_id: crypto.randomUUID(),
+          request_id: `short-req-${i}`,
+          request: `Step ${i}`,
+          plan: "Short",
+          portal: "TestPortal",
+        };
+        const options: IAgentExecutionOptions = {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        };
+        await executor.executeStep(context, options);
+      }
+
+      // compactLoopHistory with default keepLastN=2 should not compact
+      await executor.compactLoopHistory();
+
+      // All entries should still be individual steps
+      for (const entry of executor.loopHistory) {
+        assertEquals(entry.type, "step", "all entries should remain as steps");
+      }
+      assertEquals(executor.loopHistory.length, 2);
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: compactLoopHistory emits context.budget.compacted event",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const loggedPayloads: Array<IBudgetCompactedPayload> = [];
+      logger.info = ((_name: string, _id: string, payload?: IBudgetCompactedPayload) => {
+        if (payload) loggedPayloads.push(payload);
+        return Promise.resolve();
+      }) as typeof logger.info;
+
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/event-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: ["src/event.ts"],
+            description: "Event test step",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      // Run 4 steps
+      for (let i = 1; i <= 4; i++) {
+        const context: IExecutionContext = {
+          trace_id: crypto.randomUUID(),
+          request_id: `event-req-${i}`,
+          request: `Step ${i}`,
+          plan: "Event",
+          portal: "TestPortal",
+        };
+        const options: IAgentExecutionOptions = {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        };
+        await executor.executeStep(context, options);
+      }
+
+      await executor.compactLoopHistory();
+
+      assertEquals(loggedPayloads.length, 1, "context.budget.compacted should be emitted once");
+      const payload = loggedPayloads[0];
+      assert(
+        payload.tokensBefore > payload.tokensAfter,
+        "tokensBefore should be greater than tokensAfter",
+      );
+
+      executor.dispose();
     } finally {
       await cleanup();
     }
@@ -2192,6 +2362,304 @@ Deno.test({
       // Validates parse fail fallback
       assertStringIncludes(result.branch, "feat/r3-ce5c81f3");
       assertEquals(result.files_changed.length, 0);
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: tracks loop history after successful executeStep",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () =>
+          Promise.resolve({
+            branch: "feat/loop-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: ["src/test.ts"],
+            description: "Loop history test step",
+            tool_calls: 2,
+            execution_time_ms: 50,
+          }),
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      const context: IExecutionContext = {
+        trace_id: crypto.randomUUID(),
+        request_id: "loop-req-1",
+        request: "Test loop history",
+        plan: "Execute a step",
+        portal: "TestPortal",
+      };
+      const options: IAgentExecutionOptions = {
+        portal: "TestPortal",
+        identity_id: "test-agent",
+        security_mode: SecurityMode.HYBRID,
+        timeout_ms: 300000,
+        max_tool_calls: 100,
+        audit_enabled: true,
+      };
+
+      // loopHistory should be empty before any step
+      assertEquals(executor.loopHistory.length, 0, "loopHistory should start empty");
+
+      await executor.executeStep(context, options);
+
+      // loopHistory should have one entry after a successful step
+      assertEquals(executor.loopHistory.length, 1, "loopHistory should have 1 entry after executeStep");
+      const entry = executor.loopHistory[0] as ILoopHistoryEntry;
+      assertEquals(entry.type, "step");
+      assertEquals(entry.description, "Loop history test step");
+      assertEquals(entry.filesChanged, ["src/test.ts"]);
+      assertEquals(typeof entry.tokens, "number");
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: compactLoopHistory preserves last 2 steps and compacts older ones",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      let stepCount = 0;
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () => {
+          stepCount++;
+          return Promise.resolve({
+            branch: `feat/loop-${stepCount}`,
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [`src/step${stepCount}.ts`],
+            description: `Step ${stepCount} execution`,
+            tool_calls: 1,
+            execution_time_ms: stepCount * 10,
+          });
+        },
+      });
+
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: async (): Promise<IGenerateResult> => {
+          await Promise.resolve();
+          return {
+            content: "Summarized: completed steps 1-2 with file changes",
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          };
+        },
+      };
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        mockProvider,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      // Run 4 steps to populate loop history
+      for (let i = 1; i <= 4; i++) {
+        const context: IExecutionContext = {
+          trace_id: crypto.randomUUID(),
+          request_id: `loop-req-${i}`,
+          request: `Step ${i}`,
+          plan: "Execute a step",
+          portal: "TestPortal",
+        };
+        const options: IAgentExecutionOptions = {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        };
+        await executor.executeStep(context, options);
+      }
+
+      // 4 steps in history
+      assertEquals(executor.loopHistory.length, 4);
+
+      // Compact — compress steps older than N-2
+      await executor.compactLoopHistory(2);
+
+      // After: 2 individual steps (3,4) + 1 compacted entry
+      assertEquals(executor.loopHistory.length, 3);
+
+      // Last 2 entries should be individual steps (3,4)
+      const entry3 = executor.loopHistory[1] as ILoopHistoryEntry;
+      const entry4 = executor.loopHistory[2] as ILoopHistoryEntry;
+      assertEquals(entry3.type, "step");
+      assertEquals(entry3.description, "Step 3 execution");
+      assertEquals(entry4.type, "step");
+      assertEquals(entry4.description, "Step 4 execution");
+
+      // First entry should be compacted
+      const compacted = executor.loopHistory[0] as ICompactedEntry;
+      assertEquals(compacted.type, "compacted");
+      assertEquals(typeof compacted.summary, "string");
+      assertEquals(compacted.compressedFrom.length, 2);
+      assertEquals(compacted.originalStepIds.length, 2);
+      assert(compacted.tokens < sumTokens(executor.loopHistory), "compacted tokens should be less");
+
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+/** Sum tokens from all entries in the loop history. */
+function sumTokens(history: Array<ILoopHistoryEntry | ICompactedEntry>): number {
+  return history.reduce((acc, entry) => acc + entry.tokens, 0);
+}
+
+Deno.test({
+  name: "AgentExecutor: executeStep triggers compaction when loopHistory budget exceeds 80%",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      let stepCount = 0;
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: () => {
+          stepCount++;
+          return Promise.resolve({
+            branch: `feat/loop-${stepCount}`,
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [`src/step${stepCount}.ts`],
+            description: `Step ${stepCount} execution`,
+            tool_calls: 1,
+            execution_time_ms: stepCount * 10,
+          });
+        },
+      });
+
+      // Budget with a tiny loopHistory section to trigger compaction
+      const tinyLoopHistoryAllocator = {
+        allocate: (_modelId: string) =>
+          Promise.resolve({
+            model: "gpt-4o-mini",
+            totalBudgetTokens: 1000,
+            safetyBufferTokens: 0,
+            sections: {
+              system: 100,
+              plan: 100,
+              portalKnowledge: 50,
+              memory: 50,
+              skills: 10,
+              loopHistory: 20,
+            },
+          }),
+      };
+
+      const mockProvider: IModelProvider = {
+        id: "mock",
+        generate: (_prompt: string): Promise<IGenerateResult> =>
+          Promise.resolve({
+            content: "Summarized: completed steps",
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            model: "mock-model",
+            provider: "mock",
+            cost_usd: 0,
+          }),
+      };
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        mockProvider,
+        strategyRegistry,
+        undefined,
+        tinyLoopHistoryAllocator,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      for (let i = 1; i <= 4; i++) {
+        const context: IExecutionContext = {
+          trace_id: crypto.randomUUID(),
+          request_id: `budget-req-${i}`,
+          request: `Step ${i}`,
+          plan: "Execute a step",
+          portal: "TestPortal",
+        };
+        const options: IAgentExecutionOptions = {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        };
+        await executor.executeStep(context, options);
+      }
+
+      // After 4 steps with tiny loopHistory budget, compaction should have triggered.
+      // Expect fewer than 4 entries (some steps were compacted).
+      assert(
+        executor.loopHistory.length < 4,
+        `Expected compaction to reduce history below 4, got ${executor.loopHistory.length}`,
+      );
+
+      // First entry should be compacted (old steps merged), last 2 preserved
+      assert(executor.loopHistory[0].type === "compacted", "first entry should be compacted");
+
+      executor.dispose();
     } finally {
       await cleanup();
     }

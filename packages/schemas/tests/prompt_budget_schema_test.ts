@@ -83,7 +83,7 @@ Deno.test("[PromptBudgetConstants] exports local fallback context window", () =>
 
 Deno.test("[PromptBudgetConstants] exports cloud/local budget enforcement defaults", () => {
   assertEquals(DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED, true);
-  assertEquals(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED, false);
+  assertEquals(DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED, true);
 });
 
 Deno.test("[PromptBudgetSchema] validates budget policy defaults", () => {
@@ -92,19 +92,22 @@ Deno.test("[PromptBudgetSchema] validates budget policy defaults", () => {
   assertEquals(result.success, true);
   if (result.success) {
     assertEquals(result.data.cloud, true);
-    assertEquals(result.data.local, false);
+    assertEquals(result.data.local, true);
+    assertEquals(result.data.enabled, undefined);
   }
 });
 
 Deno.test("[PromptBudgetSchema] validates explicit budget policy overrides", () => {
   const result = ZBudgetPolicy.safeParse({
     cloud: false,
-    local: true,
+    local: false,
+    enabled: true,
   });
 
   assertEquals(result.success, true);
   if (result.success) {
     assertEquals(result.data.cloud, false);
-    assertEquals(result.data.local, true);
+    assertEquals(result.data.local, false);
+    assertEquals(result.data.enabled, true);
   }
 });

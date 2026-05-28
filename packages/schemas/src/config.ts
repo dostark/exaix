@@ -722,6 +722,11 @@ export const ConfigSchema = z.object({
     backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
       .default(TokenizerBackend.AUTO),
   }).optional().default({ backend: TokenizerBackend.AUTO }),
+  /** Execution configuration (Phase 103) */
+  execution: z.object({
+    /** Model to use for step summarization. Falls back to agent provider if unset. */
+    summarization_model: z.string().optional(),
+  }).optional().default({ summarization_model: undefined }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;

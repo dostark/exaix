@@ -72,6 +72,7 @@ import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 
 export interface IPromptBudgetAllocator {
   allocate(modelId: string, hints?: object): Promise<IPromptBudget>;
@@ -131,6 +132,7 @@ export class AgentExecutor {
   private originalWorkingDirectory?: string;
   private currentPromptBudget?: IPromptBudget;
   private promptBudgetAllocator?: IPromptBudgetAllocator;
+  private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
 
   constructor(
     private config: Config,
@@ -166,6 +168,84 @@ export class AgentExecutor {
 
   public set toolRegistry(registry: IToolRegistry | undefined) {
     this._toolRegistry = registry;
+  }
+
+  /**
+   * Loop history tracking completed execution steps for summarization.
+   */
+  public get loopHistory(): Array<ILoopHistoryEntry | ICompactedEntry> {
+    return this._loopHistory;
+  }
+
+  /**
+   * Compact older loop history entries to free budget.
+   * Preserves the last `keepLastN` entries as individual steps and replaces
+   * all older entries with a single compacted summary.
+   */
+  public async compactLoopHistory(keepLastN: number = 2): Promise<void> {
+    if (this._loopHistory.length <= keepLastN + 1) return;
+
+    const compressible = this._loopHistory.slice(0, this._loopHistory.length - keepLastN);
+    if (compressible.length < 2) return;
+
+    const stepOnlyEntries = compressible.filter(
+      (e): e is ILoopHistoryEntry => e.type === "step",
+    );
+    if (stepOnlyEntries.length < 2) return;
+
+    const stepDescriptions = stepOnlyEntries.map((e) => `- ${e.description} (files: ${e.filesChanged.join(", ")})`)
+      .join("\n");
+
+    const summaryPrompt =
+      `Summarize the following completed execution steps concisely (2-3 sentences):\n${stepDescriptions}`;
+
+    let summary = `${compressible.length} steps completed`;
+    try {
+      const provider = this.provider;
+      if (provider) {
+        const result = await provider.generate(summaryPrompt, { max_tokens: 200 });
+        summary = result.content.trim();
+      }
+    } catch {
+      // Use default summary on error
+    }
+
+    const compressedTokens = Math.round(
+      compressible.reduce((sum, e) => sum + e.tokens, 0) * 0.3,
+    );
+
+    const compressedEntry: ICompactedEntry = {
+      type: "compacted",
+      summary,
+      compressedFrom: stepOnlyEntries.map((e) => e.description),
+      originalStepIds: stepOnlyEntries.map((e) => e.stepId),
+      tokens: compressedTokens,
+      timestamp: Date.now(),
+    };
+
+    const tokensBefore = compressible.reduce((sum, e) => sum + e.tokens, 0);
+    const tokensAfter = compressedEntry.tokens;
+    const preserved = this._loopHistory.slice(this._loopHistory.length - keepLastN);
+    this._loopHistory = [compressedEntry, ...preserved];
+
+    this.logger.info("context.budget.compacted", "", {
+      tokensBefore,
+      tokensAfter,
+      compressedCount: compressible.length,
+      preservedCount: preserved.length,
+    });
+  }
+
+  /**
+   * Check if loop history exceeds 80% of its budget and trigger compaction.
+   */
+  private async _checkLoopHistoryBudget(): Promise<void> {
+    if (!this.currentPromptBudget) return;
+    const loopBudget = this.currentPromptBudget.sections.loopHistory;
+    const usedTokens = this._loopHistory.reduce((sum, e) => sum + e.tokens, 0);
+    if (loopBudget > 0 && usedTokens > loopBudget * 0.8) {
+      await this.compactLoopHistory();
+    }
   }
 
   /**
@@ -543,6 +623,19 @@ export class AgentExecutor {
           AgentExecutionErrorType.SECURITY_VIOLATION,
         );
       }
+
+      // Track step in loop history for potential summarization
+      this._loopHistory.push({
+        type: "step",
+        stepId: `${context.trace_id}-step-${this._loopHistory.length + 1}`,
+        description: validated.description || "executed step",
+        filesChanged: validated.files_changed ?? [],
+        tokens: usage.tokens,
+        timestamp: Date.now(),
+      });
+
+      // Budget-pressure check: compact if loop history exceeds 80% of its budget
+      await this._checkLoopHistoryBudget();
 
       // Log completion
       await this.logExecutionComplete(
