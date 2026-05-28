@@ -9,7 +9,7 @@
  * @related-files [packages/core/src/logger/event_logger.ts, packages/mcp/server/sse_handler.ts]
  */
 
-import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE } from "@exaix/core";
+import { EVENT_BUS_MAX_SUBSCRIBER_QUEUE } from "../types/constants.ts";
 import type { IStreamingEvent } from "@exaix/schemas";
 
 type ISubscriberCallback = (event: IStreamingEvent) => void;

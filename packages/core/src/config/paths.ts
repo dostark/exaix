@@ -6,7 +6,7 @@
  * @related-files ["packages/schemas/src/config.ts", "packages/core/src/types/constants.ts"]
  */
 
-import * as DEFAULTS from "@exaix/core";
+import * as DEFAULTS from "../types/constants.ts";
 
 export interface IExaPaths {
   workspace: string;

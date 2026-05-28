@@ -7,8 +7,8 @@
  */
 
 import { z } from "zod";
-import type { ProviderType } from "@exaix/core";
-import { AI_TIMEOUT_MS_MAX, AI_TIMEOUT_MS_MIN, KNOWN_PROVIDERS } from "@exaix/core";
+import type { ProviderType } from "../types/enums.ts";
+import { AI_TIMEOUT_MS_MAX, AI_TIMEOUT_MS_MIN, KNOWN_PROVIDERS } from "../types/constants.ts";
 
 /**
  * Schema for EXA_LLM_* environment variable overrides

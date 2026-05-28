@@ -11,11 +11,11 @@ import { dirname, isAbsolute, join } from "@std/path";
 import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { type Config, ConfigSchema } from "./config_schema.ts";
-import type { PortalExecutionStrategy } from "@exaix/core";
-import { logInfo } from "@exaix/core/logger";
+import type { PortalExecutionStrategy } from "../types/portal.ts";
+import { logInfo } from "../logger/structured_logger.ts";
 
-import type { IPortalConfigEntry } from "@exaix/core/types";
-import { ExaPathDefaults } from "@exaix/core";
+import type { IPortalConfigEntry } from "../types/mod.ts";
+import { ExaPathDefaults } from "../types/constants.ts";
 
 export class ConfigService {
   private readonly configPath: string;

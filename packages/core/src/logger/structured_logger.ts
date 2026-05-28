@@ -17,17 +17,13 @@
 
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import * as DEFAULTS from "@exaix/core";
+import * as DEFAULTS from "../types/constants.ts";
+import { LogLevel } from "../types/enums.ts";
+import type { LogRotationInterval } from "../types/enums.ts";
+import type { JSONValue, LogMetadata } from "../types/json.ts";
 
-// ============================================================================
-// Types and Interfaces
-// ============================================================================
-
-import { LogLevel, type LogRotationInterval } from "@exaix/core";
-import type { JSONValue, LogMetadata } from "@exaix/core";
-
-import type * as LogServiceTypes from "@exaix/core/types";
-import type * as LoggingTypes from "@exaix/core/types";
+import type * as LogServiceTypes from "../types/mod.ts";
+import type * as LoggingTypes from "../types/mod.ts";
 
 export type ILogger = LogServiceTypes.ILogger;
 export type ILogOutput = LogServiceTypes.ILogOutput;

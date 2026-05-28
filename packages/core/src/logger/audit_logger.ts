@@ -9,8 +9,8 @@
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { dirname, join } from "@std/path";
 
-import type { JSONValue } from "@exaix/core";
-import type { IAuditLogger, ISecurityEvent } from "@exaix/core/types";
+import type { JSONValue } from "../types/json.ts";
+import type { IAuditLogger, ISecurityEvent } from "../types/mod.ts";
 
 // ============================================================================
 // Types and Interfaces

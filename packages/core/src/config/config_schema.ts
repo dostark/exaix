@@ -7,8 +7,7 @@
  */
 
 import { z } from "zod";
-import * as DEFAULTS from "@exaix/core";
-import { TokenizerBackend } from "../types/enums.ts";
+import * as DEFAULTS from "../types/constants.ts";
 import {
   AI_RETRY_BACKOFF_BASE_MS_MAX,
   AI_RETRY_BACKOFF_BASE_MS_MIN,
@@ -18,7 +17,6 @@ import {
   AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN,
   AI_TIMEOUT_MS_MAX,
   AI_TIMEOUT_MS_MIN,
-  ConfidenceAssessmentLevel,
   DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
@@ -37,9 +35,6 @@ import {
   DEFAULT_MCP_VERSION,
   DEFAULT_MOCK_STRATEGY,
   DEFAULT_PORTAL_DEFAULT_BRANCH,
-  LogLevel,
-  McpTransportType,
-  MemoryBankSource,
   MOCK_DELAY_MS,
   MOCK_DELAY_MS_MAX,
   MOCK_DELAY_MS_MIN,
@@ -49,23 +44,29 @@ import {
   MOCK_OUTPUT_TOKENS,
   MOCK_OUTPUT_TOKENS_MAX,
   MOCK_OUTPUT_TOKENS_MIN,
-  MockStrategy,
-  PermissionAction,
-  PortalAnalysisMode,
-  PortalOperation,
   PROVIDER_ANTHROPIC,
   PROVIDER_GOOGLE,
   PROVIDER_MOCK,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
+} from "../types/constants.ts";
+import {
+  ConfidenceAssessmentLevel,
+  LogLevel,
+  McpTransportType,
+  MemoryBankSource,
+  MockStrategy,
+  PermissionAction,
   ProviderCostTier,
   ProviderType,
   QualityGateMode,
   SecurityMode,
   SqliteJournalMode,
-} from "@exaix/core";
-import { WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
-import { AnalysisMode } from "@exaix/core/request";
+  TokenizerBackend,
+} from "../types/enums.ts";
+import { PortalAnalysisMode, PortalOperation } from "../types/portal.ts";
+import { WORKSPACE_SCHEMA_VERSION } from "../version.ts";
+import { AnalysisMode } from "../request/mod.ts";
 
 export interface IPortalConfig {
   alias: string;

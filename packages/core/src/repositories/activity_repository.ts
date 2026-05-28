@@ -6,7 +6,8 @@
  * @related-files ["packages/storage-sqlite/src/database_service.ts", "packages/core/src/logger/event_logger.ts"]
  */
 
-import type { IDatabaseService, JSONValue } from "@exaix/core";
+import type { IDatabaseService } from "../types/i_database_service.ts";
+import type { JSONValue } from "../types/json.ts";
 
 import type { IActivityRecord } from "@exaix/core/types";
 

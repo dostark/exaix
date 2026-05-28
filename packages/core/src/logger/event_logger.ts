@@ -7,12 +7,17 @@
  * @related-files ["packages/core/src/logger/event_logger.ts", "packages/core/src/repositories/activity_repository.ts", "packages/core/src/types/service_context.ts"]
  */
 
-import type { IDatabaseService, JSONValue } from "@exaix/core";
-import type { ActivityRepository } from "@exaix/core/repositories";
+import type { IDatabaseService } from "../types/i_database_service.ts";
+import type { JSONValue } from "../types/json.ts";
+import type { ActivityRepository } from "../repositories/activity_repository.ts";
 
-import { ActivityActor, type Actor, type ILogEvent, LogLevel } from "@exaix/core";
-import { EventBusService, type IEventBusService } from "@exaix/core/observability";
-import { type LogMetadata, SHARED_DEFAULT_ICONS, toSafeJson } from "@exaix/core";
+import { ActivityActor, LogLevel } from "../types/enums.ts";
+import type { Actor } from "../types/actor.ts";
+import type { ILogEvent } from "../types/i_log_event.ts";
+import { EventBusService } from "../observability/event_bus_service.ts";
+import type { IEventBusService } from "../observability/event_bus_service.ts";
+import { SHARED_DEFAULT_ICONS } from "../types/constants.ts";
+import { type LogMetadata, toSafeJson } from "../types/json.ts";
 import type { IStreamingEvent } from "@exaix/schemas";
 
 import {
@@ -21,7 +26,7 @@ import {
   STREAMING_EVENT_LLM_STREAM,
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
-} from "@exaix/core";
+} from "../types/constants.ts";
 
 /**
  * Configuration for EventLogger

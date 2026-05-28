@@ -5,9 +5,9 @@
  * @architectural-layer Core
  * @related-files [packages/core/src/logger/event_logger.ts]
  */
-import type { EventLogger } from "@exaix/core/logger";
-import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
-import { toSafeJson } from "@exaix/core/types";
+import type { EventLogger } from "./event_logger.ts";
+import { DEFAULT_UNKNOWN_LABEL } from "../types/constants.ts";
+import { toSafeJson } from "../types/json.ts";
 
 type SafeJsonInput = string | number | boolean | null | undefined | SafeJsonInput[] | { [key: string]: SafeJsonInput };
 
