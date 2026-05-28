@@ -358,8 +358,11 @@ Deno.test({
 
       await executor.compactLoopHistory();
 
-      assertEquals(loggedPayloads.length, 1, "context.budget.compacted should be emitted once");
-      const payload = loggedPayloads[0];
+      const compactedEvents = loggedPayloads.filter(
+        (p) => p.tokensBefore !== undefined && p.tokensAfter !== undefined,
+      );
+      assertEquals(compactedEvents.length, 1, "context.budget.compacted should be emitted once");
+      const payload = compactedEvents[0];
       assert(
         payload.tokensBefore > payload.tokensAfter,
         "tokensBefore should be greater than tokensAfter",

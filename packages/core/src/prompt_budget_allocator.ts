@@ -14,6 +14,8 @@ import {
   ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST,
   ADJUSTMENT_PORTAL_KNOWLEDGE_REDUCTION,
   ADJUSTMENT_PRECISION,
+  CONTEXT_BUDGET_ALLOCATED,
+  CONTEXT_BUDGET_EXCEEDED,
   DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
@@ -33,6 +35,7 @@ import type { ITokenizer } from "./func/tokenizer.ts";
 import { AiTokenEstimatorTokenizer } from "./func/tokenizer.ts";
 import { ContextBudgetExceededError } from "./errors/context_budget_error.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IEventLogger } from "./logger/event_logger.ts";
 import { TaskType } from "./types/enums.ts";
 
 export interface IAllocationHints {
@@ -65,10 +68,12 @@ function normalizeBudgetPolicy(policy?: Partial<IBudgetPolicy>): IBudgetPolicy {
 export class PromptBudgetAllocator {
   private readonly policy: IBudgetPolicy;
   private readonly tokenizer: ITokenizer;
+  private readonly logger?: IEventLogger;
 
-  constructor(policy?: Partial<IBudgetPolicy>, tokenizer?: ITokenizer) {
+  constructor(policy?: Partial<IBudgetPolicy>, tokenizer?: ITokenizer, logger?: IEventLogger) {
     this.policy = normalizeBudgetPolicy(policy);
     this.tokenizer = tokenizer ?? new AiTokenEstimatorTokenizer();
+    this.logger = logger;
   }
 
   allocate(modelId: string, hints?: IAllocationHints, analysis?: IRequestAnalysis): Promise<IPromptBudget> {
@@ -120,6 +125,13 @@ export class PromptBudgetAllocator {
     const estimatedTotal = Math.max(allocatedTotal, hintTotal);
 
     if (estimatedTotal > totalTokens) {
+      this.logger?.info(CONTEXT_BUDGET_EXCEEDED, "", {
+        model: modelId,
+        contextWindow: totalTokens,
+        estimatedTokens: estimatedTotal,
+        sectionBreakdown: { ...sections },
+        tokenSource: "heuristic",
+      });
       return Promise.reject(
         new ContextBudgetExceededError(
           `Budget exceeded for ${modelId}: estimated ${estimatedTotal} > ${totalTokens} context window (${
@@ -133,12 +145,22 @@ export class PromptBudgetAllocator {
       );
     }
 
-    return Promise.resolve({
+    const budget: IPromptBudget = {
       model: modelId,
       totalBudgetTokens: totalTokens,
       safetyBufferTokens,
       sections,
+    };
+
+    this.logger?.info(CONTEXT_BUDGET_ALLOCATED, "", {
+      model: modelId,
+      totalTokens,
+      safetyBufferTokens,
+      sections: { ...sections },
+      tokenSource: "heuristic",
     });
+
+    return Promise.resolve(budget);
   }
 
   private _isLocalModel(modelId: string): boolean {

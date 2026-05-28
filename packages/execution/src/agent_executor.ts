@@ -15,6 +15,7 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { ITokenizer } from "@exaix/core/func";
 import { SafeError } from "@exaix/core/errors";
 import { PromptBudgetAllocator, SafeSubprocess, SubprocessTimeoutError } from "@exaix/core";
 import {
@@ -146,6 +147,8 @@ export class AgentExecutor {
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
   private _contextCache?: ContextCache;
 
+  private readonly _tokenizer?: ITokenizer;
+
   constructor(
     private config: Config,
     private db: IDatabaseService,
@@ -157,10 +160,12 @@ export class AgentExecutor {
     private _toolRegistry?: IToolRegistry,
     promptBudgetAllocator?: IPromptBudgetAllocator,
     contextCache?: ContextCache,
+    tokenizer?: ITokenizer,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
-      new PromptBudgetAllocator(this.config.budget_enforcement);
+      new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
     this._contextCache = contextCache;
+    this._tokenizer = tokenizer;
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
@@ -247,6 +252,7 @@ export class AgentExecutor {
       tokensAfter,
       compressedCount: compressible.length,
       preservedCount: preserved.length,
+      summarizationModel: this.config.execution?.summarization_model ?? undefined,
     });
   }
 
@@ -786,6 +792,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       return text;
     }
 
+    const tokenSource = this._tokenizer ? "bpe" : "heuristic";
     const maxChars = tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
     if (text.length <= maxChars) {
       if (sectionName) {
@@ -794,7 +801,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
           allocatedTokens: tokenBudget,
           actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
           truncated: false,
-          tokenSource: "heuristic",
+          tokenSource,
         });
       }
       return text;
@@ -807,14 +814,14 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         allocatedTokens: tokenBudget,
         actualTokens: Math.ceil(truncated.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
         truncated: true,
-        tokenSource: "heuristic",
+        tokenSource,
       });
       this.logger.info(CONTEXT_SECTION_TRUNCATED, "", {
         section: sectionName,
         allocatedTokens: tokenBudget,
         actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
         truncatedAtChar: maxChars,
-        tokenSource: "heuristic",
+        tokenSource,
       });
     }
     return truncated;

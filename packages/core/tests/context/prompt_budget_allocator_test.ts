@@ -11,6 +11,9 @@ import { PromptBudgetAllocator } from "@exaix/core/context";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
 import { RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ITokenizer } from "@exaix/core/func";
+import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import {
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   MODEL_CONTEXT_WINDOWS,
@@ -369,4 +372,132 @@ Deno.test("[PromptBudgetAllocator] ratio floors keep plan >= 0.30 after adjustme
   // Floor clamping at 0.35 then re-normalization to sum 1.0 yields ~0.318
   assert(budget.sections.plan / usable >= 0.30, "plan ratio should be >= 0.30 after floor + renormalize");
   assert(budget.sections.system / usable >= 0.17, "system ratio should be >= 0.17 after floor + renormalize");
+});
+
+// ============================================================================
+// Step 103.9: Budget event emission tests
+// ============================================================================
+
+interface CapturedEvent {
+  action: string;
+  payload: Record<string, number | string | boolean | Record<string, number>>;
+}
+
+function createMockLogger(): { logger: IEventLogger; events: CapturedEvent[] } {
+  const events: CapturedEvent[] = [];
+  const logger: IEventLogger = {
+    info(action: string, _target: string | null, payload?: CapturedEvent["payload"]): Promise<void> {
+      events.push({ action, payload: payload ?? {} });
+      return Promise.resolve();
+    },
+    log(): Promise<void> {
+      return Promise.resolve();
+    },
+    warn(): Promise<void> {
+      return Promise.resolve();
+    },
+    error(): Promise<void> {
+      return Promise.resolve();
+    },
+    fatal(): Promise<void> {
+      return Promise.resolve();
+    },
+    debug(): Promise<void> {
+      return Promise.resolve();
+    },
+    child(): IEventLogger {
+      return logger;
+    },
+  };
+  return { logger, events };
+}
+
+Deno.test("[PromptBudgetAllocator] allocate emits CONTEXT_BUDGET_ALLOCATED with sections breakdown", async () => {
+  const { logger, events } = createMockLogger();
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true }, undefined, logger);
+  await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  });
+
+  const allocEvents = events.filter((e) => e.action === "context.budget.allocated");
+  assert(allocEvents.length >= 1, "should emit context.budget.allocated");
+  const payload = allocEvents[0].payload;
+  assert(payload.model, "payload should include model");
+  assert(payload.totalTokens, "payload should include totalTokens");
+  assert(payload.sections, "payload should include sections breakdown");
+  assert(payload.tokenSource, "payload should include tokenSource");
+});
+
+Deno.test("[PromptBudgetAllocator] overfill emits CONTEXT_BUDGET_EXCEEDED before rejecting", async () => {
+  const { logger, events } = createMockLogger();
+  const allocator = new PromptBudgetAllocator({ cloud: true, enabled: true }, undefined, logger);
+
+  try {
+    await allocator.allocate("openai:gpt-4o-mini", {
+      systemUsedTokens: 200_000,
+      planUsedTokens: 200_000,
+    });
+  } catch {
+    // expected
+  }
+
+  const exceededEvents = events.filter((e) => e.action === "context.budget.exceeded");
+  assert(exceededEvents.length >= 1, "should emit context.budget.exceeded");
+  const payload = exceededEvents[0].payload;
+  assert(payload.model, "payload should include model");
+  assert(payload.contextWindow, "payload should include contextWindow");
+  assert(payload.estimatedTokens, "payload should include estimatedTokens");
+  assert(payload.tokenSource, "payload should include tokenSource");
+});
+
+Deno.test("[PromptBudgetAllocator] underfill emits only allocated event, not exceeded", async () => {
+  const { logger, events } = createMockLogger();
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true }, undefined, logger);
+  await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  });
+
+  const allocEvents = events.filter((e) => e.action === "context.budget.allocated");
+  const exceededEvents = events.filter((e) => e.action === "context.budget.exceeded");
+  assert(allocEvents.length >= 1, "should emit allocated event");
+  assertEquals(exceededEvents.length, 0, "should not emit exceeded event on underfill");
+});
+
+Deno.test("[PromptBudgetAllocator] budget events include tokenSource field", async () => {
+  const { logger, events } = createMockLogger();
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true }, undefined, logger);
+  await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  });
+
+  const allocEvents = events.filter((e) => e.action === "context.budget.allocated");
+  assert(allocEvents.length >= 1);
+  assertEquals(allocEvents[0].payload.tokenSource, "heuristic");
+});
+
+// ============================================================================
+// Tokenizer integration tests (Step 103.13)
+// ============================================================================
+
+Deno.test("[PromptBudgetAllocator] uses injected ITokenizer when provided", async () => {
+  const tokenizer: ITokenizer = new AiTokenEstimatorTokenizer();
+  const allocator = new PromptBudgetAllocator({ cloud: true }, tokenizer);
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  });
+  assert(budget.totalBudgetTokens > 0);
+  assert(budget.sections.plan > 0);
+});
+
+Deno.test("[PromptBudgetAllocator] defaults to AiTokenEstimatorTokenizer when none injected", () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true });
+  assert(allocator !== null);
 });

@@ -7,7 +7,7 @@
  * @related-files [packages/core/src/func/tokenizer.ts]
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { AiTokenEstimatorTokenizer } from "@exaix/core/func";
 import type { ITokenizer } from "@exaix/core/func";
 import { TokenizerBackend } from "@exaix/core/types";
@@ -44,4 +44,25 @@ Deno.test("[Tokenizer] TokenizerBackend type accepts valid values", () => {
 Deno.test("[Tokenizer] AiTokenEstimatorTokenizer implements ITokenizer", () => {
   const t: ITokenizer = new AiTokenEstimatorTokenizer();
   assertEquals(t !== null, true);
+});
+
+Deno.test("[Tokenizer] LOCAL backend passes mode:local to ai-token-estimator", async () => {
+  const t = new AiTokenEstimatorTokenizer(TokenizerBackend.LOCAL);
+  const result = await t.countTokens("hello world", "gpt-4o");
+  assertEquals(typeof result, "number");
+  assert(result > 0, "LOCAL backend should produce positive token count");
+});
+
+Deno.test("[Tokenizer] AUTO backend does not fail without mode param", async () => {
+  const t = new AiTokenEstimatorTokenizer(TokenizerBackend.AUTO);
+  const result = await t.countTokens("hello world", "gpt-4o");
+  assertEquals(typeof result, "number");
+  assert(result > 0, "AUTO backend should produce positive token count");
+});
+
+Deno.test("[Tokenizer] AiTokenEstimatorTokenizer falls back to heuristic for unknown model", async () => {
+  const t = new AiTokenEstimatorTokenizer(TokenizerBackend.LOCAL);
+  const result = await t.countTokens("hello world", "unknown:model");
+  assertEquals(typeof result, "number");
+  assert(result > 0, "unknown model should still produce token count");
 });

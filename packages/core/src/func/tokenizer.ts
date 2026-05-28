@@ -21,7 +21,11 @@ export class AiTokenEstimatorTokenizer implements ITokenizer {
 
   async countTokens(text: string, model: string): Promise<number> {
     if (text.length === 0) return 0;
-    const result = await aiCountTokens({ text, model } as { text: string; model: string });
+    const options: { text: string; model: string; mode?: string } = { text, model };
+    if (this.backend === TokenizerBackend.LOCAL) {
+      options.mode = "local";
+    }
+    const result = await aiCountTokens(options as { text: string; model: string });
     return result.tokens;
   }
 
