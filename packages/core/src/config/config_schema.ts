@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import * as DEFAULTS from "@exaix/core";
+import { TokenizerBackend } from "../types/enums.ts";
 import {
   AI_RETRY_BACKOFF_BASE_MS_MAX,
   AI_RETRY_BACKOFF_BASE_MS_MIN,
@@ -635,6 +636,7 @@ export const ConfigSchema = z.object({
     staleness_hours: z.number().positive().default(DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS),
     use_llm_inference: z.boolean().default(true),
     ignore_patterns: z.array(z.string()).default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
+    relevance_search_embedding_enabled: z.boolean().optional().default(false),
   }).optional().default({
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
@@ -643,7 +645,13 @@ export const ConfigSchema = z.object({
     staleness_hours: DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS,
     use_llm_inference: true,
     ignore_patterns: DEFAULTS.DEFAULT_IGNORE_PATTERNS,
+    relevance_search_embedding_enabled: false,
   }),
+  /** Tokenizer backend configuration (Phase 103) */
+  tokenizer: z.object({
+    backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
+      .default(TokenizerBackend.AUTO),
+  }).optional().default({ backend: TokenizerBackend.AUTO }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   const configData = data as z.infer<typeof ConfigSchema>;
   const modelKeys = Object.keys(configData.models || {});

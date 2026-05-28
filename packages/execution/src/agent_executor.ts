@@ -74,7 +74,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 
 export interface IPromptBudgetAllocator {
-  allocate(modelId: string, hints?: object): IPromptBudget;
+  allocate(modelId: string, hints?: object): Promise<IPromptBudget>;
 }
 
 /**
@@ -476,7 +476,7 @@ export class AgentExecutor {
     // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
-    this.currentPromptBudget = this.promptBudgetAllocator!.allocate(modelId);
+    this.currentPromptBudget = await this.promptBudgetAllocator!.allocate(modelId);
 
     // Log execution start
     await this.logExecutionStart(

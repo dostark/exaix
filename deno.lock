@@ -47,6 +47,8 @@
     "jsr:@std/yaml@^1.0.2": "1.1.0",
     "jsr:@std/yaml@^1.1.0": "1.1.0",
     "npm:@babel/parser@7.29.3": "7.29.3",
+    "npm:ai-token-estimator@*": "1.7.1",
+    "npm:ai-token-estimator@1.7.1": "1.7.1",
     "npm:mermaid@11.4.1": "11.4.1",
     "npm:sql.js@*": "1.14.1",
     "npm:typescript@6.0.3": "6.0.3",
@@ -467,6 +469,9 @@
     "acorn@8.16.0": {
       "integrity": "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==",
       "bin": true
+    },
+    "ai-token-estimator@1.7.1": {
+      "integrity": "sha512-4li0kKJNgC9+DUdX5b4RCQQ+KXm46r9IK9Ya8NoLRzbiKpz996dOHwJMwuLb9rXu1zBXIEoawtS8u45We4zg3w=="
     },
     "chevrotain-allstar@0.3.1_chevrotain@11.0.3": {
       "integrity": "sha512-b7g+y9A0v4mxCW1qUhf3BSVPg+/NvGErk/dOkrDaHA0nQIQGAtrOjlX//9OQtRlSCy+x9rfB5N8yC71lH1nvMw==",
@@ -1944,7 +1949,8 @@
           "jsr:@std/fs@^1.0.23",
           "jsr:@std/path@^1.1.4",
           "jsr:@std/testing@^1.0.18",
-          "jsr:@std/toml@^1.0.11"
+          "jsr:@std/toml@^1.0.11",
+          "npm:ai-token-estimator@1.7.1"
         ]
       },
       "packages/execution": {

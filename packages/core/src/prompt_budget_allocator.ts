@@ -16,6 +16,8 @@ import {
   SECTION_FLOORS,
 } from "../mod.ts";
 import type { IBudgetPolicy, IPromptBudget, IPromptBudgetSections } from "@exaix/schemas/prompt_budget.ts";
+import type { ITokenizer } from "./func/tokenizer.ts";
+import { AiTokenEstimatorTokenizer } from "./func/tokenizer.ts";
 
 export interface IAllocationHints {
   memoryUsedTokens?: number;
@@ -35,18 +37,20 @@ function normalizeBudgetPolicy(policy?: Partial<IBudgetPolicy>): IBudgetPolicy {
 
 export class PromptBudgetAllocator {
   private readonly policy: IBudgetPolicy;
+  private readonly tokenizer: ITokenizer;
 
-  constructor(policy?: Partial<IBudgetPolicy>) {
+  constructor(policy?: Partial<IBudgetPolicy>, tokenizer?: ITokenizer) {
     this.policy = normalizeBudgetPolicy(policy);
+    this.tokenizer = tokenizer ?? new AiTokenEstimatorTokenizer();
   }
 
-  allocate(modelId: string, hints?: IAllocationHints): IPromptBudget {
+  allocate(modelId: string, hints?: IAllocationHints): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
     const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
     const enforcementEnabled = isLocalModel ? this.policy.local : this.policy.cloud;
 
     if (!enforcementEnabled) {
-      return this._buildRelaxedBudget(modelId, totalTokens);
+      return Promise.resolve(this._buildRelaxedBudget(modelId, totalTokens));
     }
 
     const safetyBufferTokens = Math.floor(totalTokens * 0.1);
@@ -76,12 +80,12 @@ export class PromptBudgetAllocator {
       sections.system += Math.floor(surplus * 0.2);
     }
 
-    return {
+    return Promise.resolve({
       model: modelId,
       totalBudgetTokens: totalTokens,
       safetyBufferTokens,
       sections,
-    };
+    });
   }
 
   private _isLocalModel(modelId: string): boolean {

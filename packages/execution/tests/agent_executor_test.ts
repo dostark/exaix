@@ -1166,7 +1166,7 @@ Deno.test({
       const mockBudgetAllocator = {
         allocate: (modelId: string) => {
           budgetCalls.push(modelId);
-          return {
+          return Promise.resolve({
             model: modelId,
             totalBudgetTokens: 128000,
             safetyBufferTokens: 12800,
@@ -1178,7 +1178,7 @@ Deno.test({
               skills: 500,
               loopHistory: 500,
             },
-          };
+          });
         },
       };
 
@@ -1267,7 +1267,7 @@ Deno.test({
         assertEquals(policy?.cloud, false);
         assertEquals(policy?.local, true);
 
-        return {
+        return Promise.resolve({
           model: modelId,
           totalBudgetTokens: 128000,
           safetyBufferTokens: 0,
@@ -1279,7 +1279,7 @@ Deno.test({
             skills: 500,
             loopHistory: 500,
           },
-        };
+        });
       },
     );
 

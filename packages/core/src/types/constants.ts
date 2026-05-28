@@ -370,10 +370,21 @@ export const MODEL_PRICING_MAP: Record<string, number> = {
   "google:gemini-2.5-flash": 0.00035,
 };
 
+// Tokenizer backend modes
+export const TOKENIZER_BACKEND_AUTO = "auto" as const;
+export const TOKENIZER_BACKEND_LOCAL = "local" as const;
+export const TOKENIZER_BACKEND_API = "api" as const;
+
 /** Minimum reserved tokens for critical prompt sections. */
 export const SECTION_FLOORS = {
   system: 1_000,
   plan: 2_000,
+} as const;
+
+/** Ratio-based weight floors for adaptive reallocation (0.0–1.0 scale, NOT token counts). */
+export const SECTION_WEIGHT_RATIO_FLOORS = {
+  system: 0.20,
+  plan: 0.35,
 } as const;
 
 /**

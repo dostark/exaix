@@ -1193,3 +1193,14 @@ export enum MemoryStorageTier {
   LOCAL = "local",
   REMOTE = "remote",
 }
+
+/**
+ * Tokenizer backend selection modes for prompt budget estimation.
+ * AUTO uses ai-token-estimator locally; LOCAL forces local-only;
+ * API permits provider-native tokenizer calls.
+ */
+export enum TokenizerBackend {
+  AUTO = "auto",
+  LOCAL = "local",
+  API = "api",
+}

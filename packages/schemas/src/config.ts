@@ -10,6 +10,7 @@ import { z } from "zod";
 import { AiConfigSchema, ProviderTypeSchema } from "./ai_config.ts";
 import { MCPConfigSchema } from "./mcp.ts";
 import * as DEFAULTS from "@exaix/core";
+import { TokenizerBackend } from "@exaix/core";
 import {
   AI_RETRY_BACKOFF_BASE_MS_MAX,
   AI_RETRY_BACKOFF_BASE_MS_MIN,
@@ -704,6 +705,8 @@ export const ConfigSchema = z.object({
     /** Directory/file patterns to skip during analysis. */
     ignore_patterns: z.array(z.string())
       .default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
+    /** Whether to send request text to embedding service for relevance search (opt-in, default false). */
+    relevance_search_embedding_enabled: z.boolean().optional().default(false),
   }).optional().default({
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
@@ -712,7 +715,13 @@ export const ConfigSchema = z.object({
     staleness_hours: DEFAULTS.DEFAULT_KNOWLEDGE_STALENESS_HOURS,
     use_llm_inference: true,
     ignore_patterns: DEFAULTS.DEFAULT_IGNORE_PATTERNS,
+    relevance_search_embedding_enabled: false,
   }),
+  /** Tokenizer backend configuration (Phase 103) */
+  tokenizer: z.object({
+    backend: z.enum([TokenizerBackend.AUTO, TokenizerBackend.LOCAL, TokenizerBackend.API])
+      .default(TokenizerBackend.AUTO),
+  }).optional().default({ backend: TokenizerBackend.AUTO }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference
   const configData = data as z.infer<typeof ConfigSchema>;

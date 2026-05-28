@@ -19,9 +19,9 @@ import {
 // Test 1: Base allocation respects model windows and safety buffer
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context window", () => {
+Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context window", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("openai:gpt-4o-mini");
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
 
   assertEquals(budget.model, "openai:gpt-4o-mini");
   assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
@@ -39,9 +39,9 @@ Deno.test("[PromptBudgetAllocator] allocates budgets respecting model context wi
 // Test 2: Base allocation enforces section floors
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] enforces SECTION_FLOORS for system and plan", () => {
+Deno.test("[PromptBudgetAllocator] enforces SECTION_FLOORS for system and plan", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("openai:gpt-4o-mini");
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
 
   // System and Plan must meet floor requirements
   assertGreater(budget.sections.system, SECTION_FLOORS.system - 1);
@@ -52,11 +52,11 @@ Deno.test("[PromptBudgetAllocator] enforces SECTION_FLOORS for system and plan",
 // Test 3: Waterfall reallocation shifts surplus from empty sections
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] reallocates surplus from empty memory/skills to plan", () => {
+Deno.test("[PromptBudgetAllocator] reallocates surplus from empty memory/skills to plan", async () => {
   const allocator = new PromptBudgetAllocator();
 
   // Signal that memory and skills are empty (0 tokens used)
-  const budget = allocator.allocate("openai:gpt-4o-mini", {
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
     memoryUsedTokens: 0,
     skillsUsedTokens: 0,
     loopHistoryUsedTokens: 0,
@@ -70,9 +70,9 @@ Deno.test("[PromptBudgetAllocator] reallocates surplus from empty memory/skills 
 // Test 4: Base weights are applied proportionally
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] applies base weights to allocate sections", () => {
+Deno.test("[PromptBudgetAllocator] applies base weights to allocate sections", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("openai:gpt-4o-mini");
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
 
   const usableBudget = budget.totalBudgetTokens - budget.safetyBufferTokens;
 
@@ -89,9 +89,9 @@ Deno.test("[PromptBudgetAllocator] applies base weights to allocate sections", (
 // Test 5: Unsupported model falls back to default
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", () => {
+Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("unknown:model");
+  const budget = await allocator.allocate("unknown:model");
 
   // Should return a valid budget (fallback to a known model or default)
   assertEquals(budget.model, "unknown:model");
@@ -103,9 +103,9 @@ Deno.test("[PromptBudgetAllocator] falls back to default for unknown model", () 
 // Test 6: Local model defaults to relaxed/no-enforcement mode
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] local model defaults to relaxed pass-through budget", () => {
+Deno.test("[PromptBudgetAllocator] local model defaults to relaxed pass-through budget", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("ollama:llama3.2");
+  const budget = await allocator.allocate("ollama:llama3.2");
 
   assertEquals(budget.totalBudgetTokens, LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
   assertEquals(budget.safetyBufferTokens, 0);
@@ -121,13 +121,13 @@ Deno.test("[PromptBudgetAllocator] local model defaults to relaxed pass-through 
 // Test 7: Local model with enforcement enabled uses 32k strict budgeting
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local policy enabled", () => {
+Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local policy enabled", async () => {
   const allocator = new PromptBudgetAllocator({
     cloud: true,
     local: true,
   });
 
-  const budget = allocator.allocate("ollama:llama3.2", {
+  const budget = await allocator.allocate("ollama:llama3.2", {
     memoryUsedTokens: 0,
     skillsUsedTokens: 0,
     loopHistoryUsedTokens: 0,
@@ -142,9 +142,9 @@ Deno.test("[PromptBudgetAllocator] local model uses strict budgeting when local 
 // Test 8: Unknown cloud model stays strict and uses cloud fallback
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fallback", () => {
+Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fallback", async () => {
   const allocator = new PromptBudgetAllocator();
-  const budget = allocator.allocate("custom: any-cloud-model");
+  const budget = await allocator.allocate("custom: any-cloud-model");
 
   assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
   assertGreater(budget.safetyBufferTokens, 0);
@@ -155,13 +155,13 @@ Deno.test("[PromptBudgetAllocator] unknown non-local model uses cloud strict fal
 // Test 9: Cloud enforcement can be disabled via policy override
 // ============================================================================
 
-Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud policy disabled", () => {
+Deno.test("[PromptBudgetAllocator] cloud model can run relaxed mode when cloud policy disabled", async () => {
   const allocator = new PromptBudgetAllocator({
     cloud: false,
     local: false,
   });
 
-  const budget = allocator.allocate("openai:gpt-4o-mini");
+  const budget = await allocator.allocate("openai:gpt-4o-mini");
 
   assertEquals(budget.totalBudgetTokens, MODEL_CONTEXT_WINDOWS["openai:gpt-4o-mini"]);
   assertEquals(budget.safetyBufferTokens, 0);

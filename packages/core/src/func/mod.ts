@@ -16,5 +16,6 @@ export * from "./async_utils.ts";
 export * from "./secure_random.ts";
 export * from "./transforms.ts";
 export * from "./define_flow.ts";
+export * from "./tokenizer.ts";
 export { extractKeywords } from "../skills/text_utils.ts";
 export { MiddlewarePipeline } from "./pipeline.ts";
