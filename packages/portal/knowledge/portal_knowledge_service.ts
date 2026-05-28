@@ -48,6 +48,29 @@ export interface IPortalKnowledgeServiceOptions {
 }
 
 // ---------------------------------------------------------------------------
+// Local constants
+// ---------------------------------------------------------------------------
+
+/** Estimated tokens per character for rough token counting. */
+const ESTIMATED_TOKENS_PER_CHAR = 0.25;
+
+/** Number of nearest-neighbor results to retrieve from HNSW index. */
+const HNSW_SEARCH_RESULT_COUNT = 5;
+
+/** Maximum characters per text chunk when splitting knowledge content. */
+const TEXT_CHUNK_MAX_CHARS = 512;
+
+/** Number of consecutive sentences to group into one chunk for context coherence. */
+const CHUNK_SENTENCE_GROUP_SIZE = 2;
+
+/** Number of sentences to overlap between adjacent groups (keeps context continuity). */
+const CHUNK_SENTENCE_OVERLAP = 1;
+
+// ---------------------------------------------------------------------------
+// Service implementation
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // PortalKnowledgeService
 // ---------------------------------------------------------------------------
 
@@ -365,18 +388,17 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     }
 
     const [queryVector] = await this._embeddingProvider.embed([requestText]);
-    const results = indexData.index.search(queryVector, 5);
+    const results = indexData.index.search(queryVector, HNSW_SEARCH_RESULT_COUNT);
 
     if (results.length === 0) return undefined;
 
     const chunks: string[] = [];
     let tokenCount = 0;
-    const estimatedTokensPerChar = 0.25;
 
     for (const result of results) {
       const text = indexData.chunks.get(result.id);
       if (!text) continue;
-      const estimatedTokens = Math.ceil(text.length * estimatedTokensPerChar);
+      const estimatedTokens = Math.ceil(text.length * ESTIMATED_TOKENS_PER_CHAR);
       if (tokenCount + estimatedTokens > maxTokens) break;
       chunks.push(text);
       tokenCount += estimatedTokens;
@@ -486,25 +508,35 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   }
 
   /**
-   * Split text into sentence-sized chunks of at most ~512 characters.
+   * Split text into overlapping sentence groups for semantic coherence.
+   * Each group contains CHUNK_SENTENCE_GROUP_SIZE sentences with
+   * CHUNK_SENTENCE_OVERLAP overlap, so adjacent chunks share context.
    */
   private _splitSentences(text: string): string[] {
-    const sentences = text.split(/(?<=[.!?])\s+/);
-    const chunks: string[] = [];
-    let current = "";
+    const sentences = text.split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (sentences.length === 0) return [];
 
-    for (const sentence of sentences) {
-      const trimmed = sentence.trim();
-      if (!trimmed) continue;
-      if (current.length + trimmed.length > 512) {
-        if (current) chunks.push(current.trim());
-        current = trimmed;
+    const groups: string[] = [];
+    const step = CHUNK_SENTENCE_GROUP_SIZE - CHUNK_SENTENCE_OVERLAP;
+    let i = 0;
+
+    while (i < sentences.length) {
+      const group = sentences.slice(i, i + CHUNK_SENTENCE_GROUP_SIZE);
+      const joined = group.join(" ");
+      if (joined.length <= TEXT_CHUNK_MAX_CHARS) {
+        groups.push(joined);
       } else {
-        current += (current ? " " : "") + trimmed;
+        // Group exceeds max chars — emit each sentence individually
+        for (const sentence of group) {
+          groups.push(sentence);
+        }
       }
+      i += step;
     }
-    if (current) chunks.push(current.trim());
-    return chunks;
+
+    return groups;
   }
 
   /**

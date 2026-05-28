@@ -9,6 +9,8 @@
 import { assert, assertEquals, assertGreater, assertRejects } from "@std/assert";
 import { PromptBudgetAllocator } from "@exaix/core/context";
 import { ContextBudgetExceededError } from "@exaix/core/errors";
+import { RequestTaskType } from "@exaix/schemas/request_analysis.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import {
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   MODEL_CONTEXT_WINDOWS,
@@ -247,4 +249,124 @@ Deno.test("[PromptBudgetAllocator] enabled:true overrides local:false sub-field"
   // Should have strict budgeting despite local:false
   assertGreater(budget.safetyBufferTokens, 0);
   assert(budget.sections.system < LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK);
+});
+
+// ============================================================================
+// Step 103.5: Request-Adaptive Weight Reallocation tests
+// ============================================================================
+
+function makeAnalysis(overrides: Partial<{
+  taskType: RequestTaskType;
+  referencedFiles: string[];
+}> = {}): IRequestAnalysis {
+  return {
+    taskType: overrides.taskType ?? RequestTaskType.UNKNOWN,
+    referencedFiles: overrides.referencedFiles ?? [],
+    goals: [{ description: "test", explicit: true, priority: 1 }],
+    requirements: [{ description: "test", confidence: 0.9, type: "functional", explicit: true }],
+    constraints: [],
+    acceptanceCriteria: [],
+    ambiguities: [],
+    actionabilityScore: 80,
+    complexity: "simple" as never,
+    tags: [],
+    metadata: { analyzedAt: "", durationMs: 0, mode: "heuristic" as never, analyzerVersion: "" },
+  };
+}
+
+Deno.test("[PromptBudgetAllocator] code_generation shifts 5% from portalKnowledge to plan", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  }, makeAnalysis({ taskType: RequestTaskType.FEATURE }));
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  assert(budget.sections.plan / usable > 0.38, "plan should get +5% boost");
+  assert(budget.sections.portalKnowledge / usable < 0.18, "portalKnowledge should shrink 5%");
+});
+
+Deno.test("[PromptBudgetAllocator] code_review shifts from plan to portalKnowledge (within floors)", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  }, makeAnalysis({ taskType: RequestTaskType.ANALYSIS }));
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  // Plan floor (0.35) limits the shift, but portalKnowledge should still
+  // receive a boost compared to the default 0.20
+  assert(budget.sections.portalKnowledge / usable > 0.22, "portalKnowledge should get a boost");
+});
+
+Deno.test("[PromptBudgetAllocator] no analysis leaves static weights unchanged", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  });
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  assert(Math.abs(budget.sections.plan / usable - 0.35) < 0.02, "plan ~0.35");
+  assert(Math.abs(budget.sections.portalKnowledge / usable - 0.20) < 0.02, "pk ~0.20");
+});
+
+Deno.test("[PromptBudgetAllocator] large referencedFiles boosts portalKnowledge", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate(
+    "openai:gpt-4o-mini",
+    {
+      memoryUsedTokens: 100,
+      skillsUsedTokens: 100,
+      loopHistoryUsedTokens: 100,
+    },
+    makeAnalysis({
+      taskType: RequestTaskType.UNKNOWN,
+      referencedFiles: Array.from({ length: 15 }, (_, i) => `file${i}.ts`),
+    }),
+  );
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  assert(budget.sections.skills / usable < 0.08, "skills should shrink 5%");
+  assert(budget.sections.portalKnowledge / usable > 0.22, "pk should get +5% from file count");
+});
+
+Deno.test("[PromptBudgetAllocator] unknown taskType leaves weights unchanged", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  }, makeAnalysis({ taskType: RequestTaskType.UNKNOWN }));
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  assert(Math.abs(budget.sections.plan / usable - 0.35) < 0.02, "plan ~0.35");
+});
+
+Deno.test("[PromptBudgetAllocator] analysis with missing fields uses safe defaults", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 0,
+    skillsUsedTokens: 0,
+    loopHistoryUsedTokens: 0,
+  }, {} as never);
+  assert(budget.sections.plan > 0);
+  assert(budget.sections.portalKnowledge > 0);
+});
+
+Deno.test("[PromptBudgetAllocator] ratio floors keep plan >= 0.30 after adjustment and re-normalization", async () => {
+  const allocator = new PromptBudgetAllocator({ cloud: true, local: true });
+  const budget = await allocator.allocate("openai:gpt-4o-mini", {
+    memoryUsedTokens: 100,
+    skillsUsedTokens: 100,
+    loopHistoryUsedTokens: 100,
+  }, makeAnalysis({ taskType: RequestTaskType.ANALYSIS }));
+
+  const usable = budget.totalBudgetTokens - budget.safetyBufferTokens;
+  // Floor clamping at 0.35 then re-normalization to sum 1.0 yields ~0.318
+  assert(budget.sections.plan / usable >= 0.30, "plan ratio should be >= 0.30 after floor + renormalize");
+  assert(budget.sections.system / usable >= 0.17, "system ratio should be >= 0.17 after floor + renormalize");
 });

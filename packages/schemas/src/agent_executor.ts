@@ -55,6 +55,9 @@ export const AgentExecutionOptionsSchema = z.object({
   allowed_paths: z.array(z.string()).optional().describe(
     "Allowed paths for modification (security audit)",
   ),
+  request_analysis: z.any().optional().describe(
+    "Request analysis for adaptive budget reallocation",
+  ),
 });
 export type IAgentExecutionOptions = z.output<
   typeof AgentExecutionOptionsSchema

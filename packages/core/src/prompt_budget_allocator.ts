@@ -7,18 +7,33 @@
  */
 
 import {
+  ADJUSTMENT_EPSILON,
+  ADJUSTMENT_FILE_COUNT_THRESHOLD,
+  ADJUSTMENT_PLAN_BOOST,
+  ADJUSTMENT_PLAN_REDUCTION,
+  ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST,
+  ADJUSTMENT_PORTAL_KNOWLEDGE_REDUCTION,
+  ADJUSTMENT_PRECISION,
   DEFAULT_CLOUD_BUDGET_ENFORCEMENT_ENABLED,
   DEFAULT_LOCAL_BUDGET_ENFORCEMENT_ENABLED,
   LOCAL_MODEL_CONTEXT_WINDOW_FALLBACK,
   LOCAL_PROVIDER_PREFIXES,
+  MINIMUM_HINT_THRESHOLD,
   MODEL_CONTEXT_WINDOWS,
+  SAFETY_BUFFER_RATIO,
   SECTION_BASE_WEIGHTS,
   SECTION_FLOORS,
+  SECTION_WEIGHT_RATIO_FLOORS,
+  SURPLUS_PLAN_RATIO,
+  SURPLUS_PORTAL_KNOWLEDGE_RATIO,
+  SURPLUS_SYSTEM_RATIO,
 } from "../mod.ts";
 import type { IBudgetPolicy, IPromptBudget, IPromptBudgetSections } from "@exaix/schemas/prompt_budget.ts";
 import type { ITokenizer } from "./func/tokenizer.ts";
 import { AiTokenEstimatorTokenizer } from "./func/tokenizer.ts";
 import { ContextBudgetExceededError } from "./errors/context_budget_error.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import { TaskType } from "./types/enums.ts";
 
 export interface IAllocationHints {
   memoryUsedTokens?: number;
@@ -27,6 +42,16 @@ export interface IAllocationHints {
   systemUsedTokens?: number;
   planUsedTokens?: number;
   portalKnowledgeUsedTokens?: number;
+}
+
+/** Mutable weight ratios for budget section allocation. */
+export interface IPromptBudgetSectionsWeights {
+  system: number;
+  plan: number;
+  portalKnowledge: number;
+  memory: number;
+  skills: number;
+  loopHistory: number;
 }
 
 function normalizeBudgetPolicy(policy?: Partial<IBudgetPolicy>): IBudgetPolicy {
@@ -46,7 +71,7 @@ export class PromptBudgetAllocator {
     this.tokenizer = tokenizer ?? new AiTokenEstimatorTokenizer();
   }
 
-  allocate(modelId: string, hints?: IAllocationHints): Promise<IPromptBudget> {
+  allocate(modelId: string, hints?: IAllocationHints, analysis?: IRequestAnalysis): Promise<IPromptBudget> {
     const isLocalModel = this._isLocalModel(modelId);
     const totalTokens = this._resolveTotalTokens(modelId, isLocalModel);
 
@@ -57,16 +82,19 @@ export class PromptBudgetAllocator {
       return Promise.resolve(this._buildRelaxedBudget(modelId, totalTokens));
     }
 
-    const safetyBufferTokens = Math.floor(totalTokens * 0.1);
+    // Apply request-adaptive weight reallocation when analysis is provided
+    const weights = this._adjustWeights(analysis);
+
+    const safetyBufferTokens = Math.floor(totalTokens * SAFETY_BUFFER_RATIO);
     const usableTokens = totalTokens - safetyBufferTokens;
 
     const sections: IPromptBudgetSections = {
-      system: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.system),
-      plan: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.plan),
-      portalKnowledge: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.portalKnowledge),
-      memory: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.memory),
-      skills: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.skills),
-      loopHistory: Math.floor(usableTokens * SECTION_BASE_WEIGHTS.loopHistory),
+      system: Math.floor(usableTokens * weights.system),
+      plan: Math.floor(usableTokens * weights.plan),
+      portalKnowledge: Math.floor(usableTokens * weights.portalKnowledge),
+      memory: Math.floor(usableTokens * weights.memory),
+      skills: Math.floor(usableTokens * weights.skills),
+      loopHistory: Math.floor(usableTokens * weights.loopHistory),
     };
 
     if (sections.system < SECTION_FLOORS.system) {
@@ -79,9 +107,9 @@ export class PromptBudgetAllocator {
     const surplus = this._calculateSurplus(sections, hints);
 
     if (surplus > 0) {
-      sections.plan += Math.floor(surplus * 0.5);
-      sections.portalKnowledge += Math.floor(surplus * 0.3);
-      sections.system += Math.floor(surplus * 0.2);
+      sections.plan += Math.floor(surplus * SURPLUS_PLAN_RATIO);
+      sections.portalKnowledge += Math.floor(surplus * SURPLUS_PORTAL_KNOWLEDGE_RATIO);
+      sections.system += Math.floor(surplus * SURPLUS_SYSTEM_RATIO);
     }
 
     // Check if estimated usage exceeds context window
@@ -154,17 +182,17 @@ export class PromptBudgetAllocator {
   ): number {
     let surplus = 0;
 
-    if (!hints?.memoryUsedTokens || hints.memoryUsedTokens < 100) {
+    if (!hints?.memoryUsedTokens || hints.memoryUsedTokens < MINIMUM_HINT_THRESHOLD) {
       surplus += sections.memory;
       sections.memory = 0;
     }
 
-    if (!hints?.skillsUsedTokens || hints.skillsUsedTokens < 100) {
+    if (!hints?.skillsUsedTokens || hints.skillsUsedTokens < MINIMUM_HINT_THRESHOLD) {
       surplus += sections.skills;
       sections.skills = 0;
     }
 
-    if (!hints?.loopHistoryUsedTokens || hints.loopHistoryUsedTokens < 100) {
+    if (!hints?.loopHistoryUsedTokens || hints.loopHistoryUsedTokens < MINIMUM_HINT_THRESHOLD) {
       surplus += sections.loopHistory;
       sections.loopHistory = 0;
     }
@@ -181,5 +209,56 @@ export class PromptBudgetAllocator {
       (hints.memoryUsedTokens ?? 0) +
       (hints.skillsUsedTokens ?? 0) +
       (hints.loopHistoryUsedTokens ?? 0);
+  }
+
+  /**
+   * Adjust weight ratios based on request analysis.
+   * Returns the adjusted weight object, or SECTION_BASE_WEIGHTS if no analysis.
+   */
+  private _adjustWeights(analysis?: IRequestAnalysis): IPromptBudgetSectionsWeights {
+    if (!analysis) return SECTION_BASE_WEIGHTS;
+
+    const weights: IPromptBudgetSectionsWeights = { ...SECTION_BASE_WEIGHTS };
+
+    // Apply task-type adjustments
+    if (analysis.taskType === TaskType.FEATURE || analysis.taskType === TaskType.REFACTOR) {
+      weights.plan += ADJUSTMENT_PLAN_BOOST;
+      weights.portalKnowledge -= ADJUSTMENT_PORTAL_KNOWLEDGE_REDUCTION;
+    } else if (analysis.taskType === TaskType.ANALYSIS || analysis.taskType === TaskType.DOCS) {
+      weights.portalKnowledge += ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST;
+      weights.plan -= ADJUSTMENT_PLAN_REDUCTION;
+    }
+
+    // Apply file-count adjustments
+    if (analysis.referencedFiles && analysis.referencedFiles.length > ADJUSTMENT_FILE_COUNT_THRESHOLD) {
+      weights.portalKnowledge += ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST;
+      weights.skills -= ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST;
+    }
+
+    // Re-normalize to sum exactly 1.0
+    const sum = Object.values(weights).reduce((a, b) => a + b, 0);
+    if (Math.abs(sum - 1.0) > ADJUSTMENT_EPSILON) {
+      for (const key of Object.keys(weights) as Array<keyof IPromptBudgetSectionsWeights>) {
+        weights[key] = +(weights[key] / sum).toFixed(ADJUSTMENT_PRECISION);
+      }
+    }
+
+    // Clamp to ratio floors
+    if (weights.system < SECTION_WEIGHT_RATIO_FLOORS.system) {
+      weights.system = SECTION_WEIGHT_RATIO_FLOORS.system;
+    }
+    if (weights.plan < SECTION_WEIGHT_RATIO_FLOORS.plan) {
+      weights.plan = SECTION_WEIGHT_RATIO_FLOORS.plan;
+    }
+
+    // Re-normalize again after clamping if needed
+    const sum2 = Object.values(weights).reduce((a, b) => a + b, 0);
+    if (Math.abs(sum2 - 1.0) > ADJUSTMENT_EPSILON) {
+      for (const key of Object.keys(weights) as Array<keyof IPromptBudgetSectionsWeights>) {
+        weights[key] = +(weights[key] / sum2).toFixed(ADJUSTMENT_PRECISION);
+      }
+    }
+
+    return weights;
   }
 }

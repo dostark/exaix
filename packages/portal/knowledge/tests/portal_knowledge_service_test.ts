@@ -587,3 +587,56 @@ Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit"
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader context", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const projectsDir = join(tempDir, "Memory/Projects");
+    await ensureDir(projectsDir);
+
+    const mockEmbedder: IEmbeddingProvider = {
+      providerId: "test-mock",
+      dimension: 2,
+      embed: (texts: string[]) => {
+        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+      },
+    };
+
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      memoryBank: null as never,
+      runner: makeMockDocRunner(),
+      embeddingProvider: mockEmbedder,
+      projectsDir,
+    });
+
+    const portalDir = join(tempDir, "test-portal");
+    await ensureDir(portalDir);
+    await Deno.writeTextFile(join(portalDir, "main.ts"), "export const x = 1;");
+
+    const baseKnowledge = await svc.analyze("test-portal", portalDir);
+    const knowledge = {
+      ...baseKnowledge,
+      portal: "test-portal",
+      architectureOverview:
+        "The auth module handles user login. It uses JWT tokens for sessions. Tokens expire after 24 hours. " +
+        "The database stores user credentials. Passwords are hashed with bcrypt.",
+      keyFiles: [],
+      conventions: [],
+    };
+
+    await svc.indexPortalKnowledge("test-portal", knowledge);
+
+    // Query for a detail that appears late in the text
+    const result = await svc.getRelevantContext("bcrypt password hashing", portalDir, 5000);
+    assert(result, "should return context for bcrypt query");
+    // With overlapping groups, the chunk containing "bcrypt" should also
+    // contain its preceding sentence for context
+    assert(
+      result.includes("database stores user credentials"),
+      "overlapping group should include preceding sentence for context",
+    );
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

@@ -72,10 +72,20 @@ import { McpAgentStrategy } from "./strategies/mcp_agent_strategy.ts";
 import { ReActLoopStrategy } from "./strategies/react_loop_strategy.ts";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
+import {
+  COMPACT_SUMMARY_MAX_TOKENS,
+  CONTEXT_BUDGET_COMPACTED_EVENT,
+  CONTEXT_BUDGET_CONSUMED,
+  CONTEXT_SECTION_TRUNCATED,
+  DEFAULT_KEEP_LAST_N_STEPS,
+  LOOP_HISTORY_BUDGET_THRESHOLD,
+  LOOP_HISTORY_COMPRESSION_RATIO,
+} from "@exaix/core";
 
 export interface IPromptBudgetAllocator {
-  allocate(modelId: string, hints?: object): Promise<IPromptBudget>;
+  allocate(modelId: string, hints?: object, analysis?: IRequestAnalysis): Promise<IPromptBudget>;
 }
 
 /**
@@ -182,7 +192,7 @@ export class AgentExecutor {
    * Preserves the last `keepLastN` entries as individual steps and replaces
    * all older entries with a single compacted summary.
    */
-  public async compactLoopHistory(keepLastN: number = 2): Promise<void> {
+  public async compactLoopHistory(keepLastN: number = DEFAULT_KEEP_LAST_N_STEPS): Promise<void> {
     if (this._loopHistory.length <= keepLastN + 1) return;
 
     const compressible = this._loopHistory.slice(0, this._loopHistory.length - keepLastN);
@@ -203,7 +213,7 @@ export class AgentExecutor {
     try {
       const provider = this.provider;
       if (provider) {
-        const result = await provider.generate(summaryPrompt, { max_tokens: 200 });
+        const result = await provider.generate(summaryPrompt, { max_tokens: COMPACT_SUMMARY_MAX_TOKENS });
         summary = result.content.trim();
       }
     } catch {
@@ -211,7 +221,7 @@ export class AgentExecutor {
     }
 
     const compressedTokens = Math.round(
-      compressible.reduce((sum, e) => sum + e.tokens, 0) * 0.3,
+      compressible.reduce((sum, e) => sum + e.tokens, 0) * LOOP_HISTORY_COMPRESSION_RATIO,
     );
 
     const compressedEntry: ICompactedEntry = {
@@ -228,7 +238,7 @@ export class AgentExecutor {
     const preserved = this._loopHistory.slice(this._loopHistory.length - keepLastN);
     this._loopHistory = [compressedEntry, ...preserved];
 
-    this.logger.info("context.budget.compacted", "", {
+    this.logger.info(CONTEXT_BUDGET_COMPACTED_EVENT, "", {
       tokensBefore,
       tokensAfter,
       compressedCount: compressible.length,
@@ -237,13 +247,13 @@ export class AgentExecutor {
   }
 
   /**
-   * Check if loop history exceeds 80% of its budget and trigger compaction.
+   * Check if loop history exceeds the budget threshold and trigger compaction.
    */
   private async _checkLoopHistoryBudget(): Promise<void> {
     if (!this.currentPromptBudget) return;
     const loopBudget = this.currentPromptBudget.sections.loopHistory;
     const usedTokens = this._loopHistory.reduce((sum, e) => sum + e.tokens, 0);
-    if (loopBudget > 0 && usedTokens > loopBudget * 0.8) {
+    if (loopBudget > 0 && usedTokens > loopBudget * LOOP_HISTORY_BUDGET_THRESHOLD) {
       await this.compactLoopHistory();
     }
   }
@@ -556,7 +566,11 @@ export class AgentExecutor {
     // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
-    this.currentPromptBudget = await this.promptBudgetAllocator!.allocate(modelId);
+    this.currentPromptBudget = await this.promptBudgetAllocator!.allocate(
+      modelId,
+      undefined,
+      options.request_analysis as IRequestAnalysis | undefined,
+    );
 
     // Log execution start
     await this.logExecutionStart(
@@ -679,22 +693,27 @@ export class AgentExecutor {
     const sanitizedRequest = this.applyTokenBudget(
       this.sanitizeUserInput(context.request),
       this.currentPromptBudget?.sections.memory,
+      "memory",
     );
     const sanitizedPlan = this.applyTokenBudget(
       this.sanitizeUserInput(context.plan),
       this.currentPromptBudget?.sections.plan,
+      "plan",
     );
     const portalContext = this.applyTokenBudget(
       this.buildPortalContextBlock(options.portal) ?? "",
       this.currentPromptBudget?.sections.portalKnowledge,
+      "portalKnowledge",
     );
     const systemPrompt = this.applyTokenBudget(
       blueprint.systemPrompt,
       this.currentPromptBudget?.sections.system,
+      "system",
     );
     const skillContext = this.applyTokenBudget(
       context.skills_context ?? "",
       this.currentPromptBudget?.sections.skills,
+      "skills",
     );
 
     // Use clear delimiters that prevent injection
@@ -745,17 +764,43 @@ Respond with valid JSON containing the changeset result:
 Ensure your response contains ONLY valid JSON, no additional text.`;
   }
 
-  private applyTokenBudget(text: string, tokenBudget?: number): string {
+  private applyTokenBudget(text: string, tokenBudget?: number, sectionName?: string): string {
     if (!tokenBudget || tokenBudget <= 0) {
       return text;
     }
 
     const maxChars = tokenBudget * TOKEN_ESTIMATION_CHARS_PER_TOKEN;
     if (text.length <= maxChars) {
+      if (sectionName) {
+        this.logger.info(CONTEXT_BUDGET_CONSUMED, "", {
+          section: sectionName,
+          allocatedTokens: tokenBudget,
+          actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+          truncated: false,
+          tokenSource: "heuristic",
+        });
+      }
       return text;
     }
 
-    return text.slice(0, Math.max(0, maxChars));
+    const truncated = text.slice(0, Math.max(0, maxChars));
+    if (sectionName) {
+      this.logger.info(CONTEXT_BUDGET_CONSUMED, "", {
+        section: sectionName,
+        allocatedTokens: tokenBudget,
+        actualTokens: Math.ceil(truncated.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        truncated: true,
+        tokenSource: "heuristic",
+      });
+      this.logger.info(CONTEXT_SECTION_TRUNCATED, "", {
+        section: sectionName,
+        allocatedTokens: tokenBudget,
+        actualTokens: Math.ceil(text.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        truncatedAtChar: maxChars,
+        tokenSource: "heuristic",
+      });
+    }
+    return truncated;
   }
 
   private resolveModelId(blueprint: IAgentFileBlueprint): string {

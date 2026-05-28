@@ -387,6 +387,30 @@ export const SECTION_WEIGHT_RATIO_FLOORS = {
   plan: 0.35,
 } as const;
 
+/** Safety buffer deducted from total context window before budget allocation. */
+export const SAFETY_BUFFER_RATIO = 0.1;
+
+/** Surplus redistribution ratios after waterfall reallocation. */
+export const SURPLUS_PLAN_RATIO = 0.5;
+export const SURPLUS_PORTAL_KNOWLEDGE_RATIO = 0.3;
+export const SURPLUS_SYSTEM_RATIO = 0.2;
+
+/** Weight deltas for request-adaptive budget reallocation (Step 103.5). */
+export const ADJUSTMENT_PLAN_BOOST = 0.05;
+export const ADJUSTMENT_PORTAL_KNOWLEDGE_BOOST = 0.05;
+export const ADJUSTMENT_PLAN_REDUCTION = 0.10;
+export const ADJUSTMENT_PORTAL_KNOWLEDGE_REDUCTION = 0.10;
+export const ADJUSTMENT_FILE_COUNT_THRESHOLD = 10;
+
+/** Epsilon for floating-point sum comparison during weight re-normalization. */
+export const ADJUSTMENT_EPSILON = 0.001;
+
+/** Decimal precision for re-normalized weight values. */
+export const ADJUSTMENT_PRECISION = 4;
+
+/** Minimum hint value to avoid surplus reallocation. */
+export const MINIMUM_HINT_THRESHOLD = 100;
+
 /**
  * Base allocation weights for prompt budget sections (as proportions of usable context).
  * Sum should equal 1.0 after waterfall reallocation.
@@ -1247,6 +1271,33 @@ export const TOML_BLOCK_PATTERN = /```toml\s*([\s\S]*?)```/g;
 /** Default parameters for legacy agent execution */
 export const LEGACY_EXECUTION_TEMPERATURE = 0.7;
 export const LEGACY_EXECUTION_MAX_TOKENS = 4000;
+
+/** Loop history compaction threshold: fraction of budget before auto-compaction triggers. */
+export const LOOP_HISTORY_BUDGET_THRESHOLD = 0.8;
+
+/** Token compression ratio applied to compacted loop history entries. */
+export const LOOP_HISTORY_COMPRESSION_RATIO = 0.3;
+
+/** Max tokens for LLM summarization prompt during loop history compaction. */
+export const COMPACT_SUMMARY_MAX_TOKENS = 200;
+
+/** Number of most recent steps preserved in full during compaction. */
+export const DEFAULT_KEEP_LAST_N_STEPS = 2;
+
+/** Event name emitted when loop history compaction occurs. */
+export const CONTEXT_BUDGET_COMPACTED_EVENT = "context.budget.compacted";
+
+/** Event name emitted after initial budget allocation with full breakdown. */
+export const CONTEXT_BUDGET_ALLOCATED = "context.budget.allocated";
+
+/** Event name emitted after each section is built in the execution prompt. */
+export const CONTEXT_BUDGET_CONSUMED = "context.budget.consumed";
+
+/** Event name emitted when a section is truncated to fit budget. */
+export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
+
+/** Event name emitted when total estimated tokens exceed context window. */
+export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
 /** Default parameters for internal report generation */
 export const REPORT_GENERATION_TEMPERATURE = 0.1;

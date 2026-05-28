@@ -58,6 +58,16 @@ interface IBudgetCompactedPayload {
   preservedCount: number;
 }
 
+/** Payload for budget consumption and truncation events. */
+interface IBudgetEventPayload {
+  section: string;
+  allocatedTokens: number;
+  actualTokens: number;
+  truncated?: boolean;
+  truncatedAtChar?: number;
+  tokenSource: string;
+}
+
 // Test fixtures - initialized once
 let testDir: string;
 let blueprintsDir: string;
@@ -2659,6 +2669,179 @@ Deno.test({
       // First entry should be compacted (old steps merged), last 2 preserved
       assert(executor.loopHistory[0].type === "compacted", "first entry should be compacted");
 
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: applyTokenBudget emits CONTEXT_BUDGET_CONSUMED per section",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const logged: Array<{ name: string; payload: IBudgetEventPayload }> = [];
+      logger.info = ((name: string, _id: string, payload?: IBudgetEventPayload) => {
+        if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
+          logged.push({ name, payload: payload! });
+        }
+        return Promise.resolve();
+      }) as typeof logger.info;
+
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+          // buildExecutionPrompt is called within executeStep's strategy execution,
+          // so currentPromptBudget is set. We just need to trigger prompt building.
+          executor.buildExecutionPrompt(_blueprint, ctx, opts);
+          return Promise.resolve({
+            branch: "feat/budget-event-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Budget event test",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          });
+        },
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      await executor.executeStep(
+        {
+          trace_id: crypto.randomUUID(),
+          request_id: "budget-evt-1",
+          request: "Test",
+          plan: "Plan",
+          portal: "TestPortal",
+        },
+        {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        },
+      );
+
+      const consumedEvents = logged.filter((e) => e.name === "context.budget.consumed");
+      assert(consumedEvents.length >= 1, "should emit at least one CONTEXT_BUDGET_CONSUMED event");
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: applyTokenBudget emits CONTEXT_SECTION_TRUNCATED on overflow",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const logged: Array<{ name: string; payload: IBudgetEventPayload }> = [];
+      logger.info = ((name: string, _id: string, payload?: IBudgetEventPayload) => {
+        if (name.startsWith("context.budget.") || name.startsWith("context.section.")) {
+          logged.push({ name, payload: payload! });
+        }
+        return Promise.resolve();
+      }) as typeof logger.info;
+
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: (_blueprint: IAgentFileBlueprint, ctx: IExecutionContext, opts: IAgentExecutionOptions) => {
+          executor.buildExecutionPrompt(_blueprint, ctx, opts);
+          return Promise.resolve({
+            branch: "feat/trunc-event-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Truncation event test",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          });
+        },
+      });
+
+      const tinyMemoryAllocator = {
+        allocate: (_modelId: string) =>
+          Promise.resolve({
+            model: "gpt-4o-mini",
+            totalBudgetTokens: 1000,
+            safetyBufferTokens: 0,
+            sections: {
+              system: 100,
+              plan: 100,
+              portalKnowledge: 50,
+              memory: 10,
+              skills: 10,
+              loopHistory: 5,
+            },
+          }),
+      };
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+        undefined,
+        tinyMemoryAllocator,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\n" + "X".repeat(10000),
+      );
+
+      await executor.executeStep(
+        {
+          trace_id: crypto.randomUUID(),
+          request_id: "trunc-evt-1",
+          request: "X".repeat(100),
+          plan: "Plan",
+          portal: "TestPortal",
+        },
+        {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        },
+      );
+
+      const truncEvents = logged.filter((e) => e.name === "context.section.truncated");
+      assert(truncEvents.length >= 1, "should emit CONTEXT_SECTION_TRUNCATED when budget exceeded");
       executor.dispose();
     } finally {
       await cleanup();
