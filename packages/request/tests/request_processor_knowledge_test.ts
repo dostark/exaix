@@ -267,3 +267,32 @@ Deno.test("[RequestProcessor] skips knowledge resolution if request specifies no
     await env.cleanup();
   }
 });
+
+Deno.test("[RequestProcessor] calls getRelevantContext when portal knowledge resolved", async () => {
+  const mockKnowledge = makeMockKnowledgeService({ relevanceEnabled: true });
+  const env = await makeKnowledgeProcessorEnv({ knowledgeService: mockKnowledge, withPortal: true });
+
+  try {
+    const filePath = makeAgentRequestFile(env.requestsDir, { portal: "test-portal" });
+
+    // Write a dummy blueprint
+    const blueprintPath = join(env.blueprintsPath, "Identities", "test-agent.md");
+    Deno.writeTextFileSync(blueprintPath, "# test-agent blueprint\n{{context}}");
+
+    await env.processor.process(filePath);
+
+    // getRelevantContext should have been called
+    assertEquals(
+      mockKnowledge.relevanceCalls.length,
+      1,
+      "getRelevantContext should be called once during processing",
+    );
+
+    // The prompt should contain the relevant context instead of the full summary
+    const lastPrompt = env.capturedPrompts[env.capturedPrompts.length - 1];
+    assertStringIncludes(lastPrompt, "Relevant: TypeScript service");
+    assertEquals(lastPrompt.includes("## Portal Knowledge Summary"), false);
+  } finally {
+    await env.cleanup();
+  }
+});

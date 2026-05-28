@@ -618,7 +618,8 @@ export class RequestProcessor {
       request.context[PORTAL_CONTEXT_KEY] = portalContext;
     }
     if (portalKnowledge) {
-      request.context[PORTAL_KNOWLEDGE_KEY] = buildPortalKnowledgeSummary(portalKnowledge);
+      const summary = await this._resolveKnowledgeContext(body, frontmatter.portal, portalKnowledge);
+      request.context[PORTAL_KNOWLEDGE_KEY] = summary;
     }
     if (memoryContext) {
       request.context[MEMORY_CONTEXT_KEY] = memoryContext;
@@ -715,6 +716,35 @@ ${result.content}`,
     }
 
     return null; // Should be unreachable
+  }
+
+  /**
+   * Resolve portal knowledge context, trying relevance-based retrieval
+   * and falling back to the full summary.
+   */
+  private async _resolveKnowledgeContext(
+    body: string,
+    portalAlias: string | undefined,
+    portalKnowledge: IPortalKnowledge,
+  ): Promise<string> {
+    const fallback = buildPortalKnowledgeSummary(portalKnowledge);
+    if (!this.portalKnowledgeService || !portalAlias) return fallback;
+
+    const portalPath = (this.config.portals ?? []).find(
+      (p) => p.alias === portalAlias,
+    )?.target_path;
+    if (!portalPath) return fallback;
+
+    try {
+      const relevant = await this.portalKnowledgeService.getRelevantContext(
+        body,
+        portalPath,
+        PORTAL_KNOWLEDGE_PROMPT_MAX_LINES * 50,
+      );
+      return relevant ?? fallback;
+    } catch {
+      return fallback;
+    }
   }
 
   private async handleBlueprintNotFound(

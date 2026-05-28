@@ -215,13 +215,20 @@ export function makeKnowledge(overrides: Partial<IPortalKnowledge> = {}): IPorta
 }
 
 export function makeMockKnowledgeService(
-  opts: { fail?: boolean; knowledge?: IPortalKnowledge } = {},
-): IPortalKnowledgeService & { callCount: number } {
+  opts: { fail?: boolean; knowledge?: IPortalKnowledge; relevanceEnabled?: boolean } = {},
+): IPortalKnowledgeService & {
+  callCount: number;
+  relevanceCalls: Array<{ text: string; path: string; maxTokens: number }>;
+} {
   let callCount = 0;
+  const relevanceCalls: Array<{ text: string; path: string; maxTokens: number }> = [];
   const knowledge = opts.knowledge ?? makeKnowledge();
   return {
     get callCount() {
       return callCount;
+    },
+    get relevanceCalls() {
+      return relevanceCalls;
     },
     analyze: (_alias: string, _path: string) => {
       callCount++;
@@ -235,5 +242,15 @@ export function makeMockKnowledgeService(
     },
     isStale: (_alias: string) => Promise.resolve(false),
     updateKnowledge: (_alias: string, _path: string) => Promise.resolve(knowledge),
-  } as IPortalKnowledgeService & { callCount: number };
+    getRelevantContext: (requestText: string, portalPath: string, maxTokens: number) => {
+      relevanceCalls.push({ text: requestText, path: portalPath, maxTokens });
+      if (opts.relevanceEnabled) {
+        return Promise.resolve("Relevant: TypeScript service with I-prefix interfaces");
+      }
+      return Promise.resolve(undefined);
+    },
+  } as IPortalKnowledgeService & {
+    callCount: number;
+    relevanceCalls: Array<{ text: string; path: string; maxTokens: number }>;
+  };
 }
