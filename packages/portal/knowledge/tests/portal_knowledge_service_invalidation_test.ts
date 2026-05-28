@@ -38,6 +38,7 @@ function makeConfig(): IPortalKnowledgeConfig {
     ignorePatterns: [],
     staleness: 168,
     useLlmInference: false,
+    relevanceSearchEmbeddingEnabled: false,
   };
 }
 

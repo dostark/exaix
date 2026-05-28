@@ -50,6 +50,7 @@ async function createPortalTestEnv() {
     isStale: () => Promise.resolve(false),
     updateKnowledge: (portalAlias: string) =>
       mockKnowledge.analyze(portalAlias, "/tmp/dummy", PortalAnalysisMode.QUICK),
+    getRelevantContext: () => Promise.resolve(undefined),
   };
   const mockKnowledgeConfig: IPortalKnowledgeConfig = {
     autoAnalyzeOnMount: false,
@@ -59,6 +60,7 @@ async function createPortalTestEnv() {
     ignorePatterns: [],
     staleness: 168,
     useLlmInference: false,
+    relevanceSearchEmbeddingEnabled: false,
   };
 
   const service = new PortalService(

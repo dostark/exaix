@@ -97,6 +97,7 @@ function makeMockKnowledgeService(
       updateCallCount++;
       return Promise.resolve(knowledge);
     },
+    getRelevantContext: () => Promise.resolve(undefined),
   };
 }
 
@@ -109,6 +110,7 @@ function makeKnowledgeConfig(): IPortalKnowledgeConfig {
     ignorePatterns: [],
     staleness: 168,
     useLlmInference: false,
+    relevanceSearchEmbeddingEnabled: false,
   };
 }
 

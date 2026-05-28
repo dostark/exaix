@@ -35,6 +35,8 @@ export interface IPortalKnowledgeConfig {
   staleness: number;
   /** Whether to call the LLM for architecture inference in standard/deep modes. */
   useLlmInference: boolean;
+  /** Whether to enable relevance-based retrieval via HNSW embedding search. */
+  relevanceSearchEmbeddingEnabled: boolean;
 }
 
 /**
@@ -100,4 +102,22 @@ export interface IPortalKnowledgeService {
     portalPath: string,
     changedFiles?: string[],
   ): Promise<IPortalKnowledge>;
+
+  /**
+   * Retrieve context-relevant portal knowledge chunks via vector similarity search.
+   *
+   * Returns `undefined` when:
+   * - `relevanceSearchEmbeddingEnabled` is `false`
+   * - The HNSW index is cold (not yet populated)
+   *
+   * @param requestText - The user request text to embed and search against.
+   * @param portalPath  - Absolute filesystem path to the portal root.
+   * @param maxTokens   - Maximum token count for the returned context string.
+   * @returns           Relevant context string, or `undefined` to fall back to full analysis.
+   */
+  getRelevantContext(
+    requestText: string,
+    portalPath: string,
+    maxTokens: number,
+  ): Promise<string | undefined>;
 }

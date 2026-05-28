@@ -47,6 +47,14 @@ class StubPortalKnowledgeService implements IPortalKnowledgeService {
   ): Promise<IPortalKnowledge> {
     return Promise.reject(new Error("stub"));
   }
+
+  getRelevantContext(
+    _requestText: string,
+    _portalPath: string,
+    _maxTokens: number,
+  ): Promise<string | undefined> {
+    return Promise.reject(new Error("stub"));
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +69,7 @@ const validConfig: IPortalKnowledgeConfig = {
   ignorePatterns: ["node_modules", ".git"],
   staleness: 168,
   useLlmInference: true,
+  relevanceSearchEmbeddingEnabled: false,
 };
 
 // ---------------------------------------------------------------------------

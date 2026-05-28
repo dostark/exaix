@@ -159,6 +159,7 @@ export async function initializeServices(
       staleness: cfg.portal_knowledge.staleness_hours,
       useLlmInference: cfg.portal_knowledge.use_llm_inference,
       ignorePatterns: cfg.portal_knowledge.ignore_patterns,
+      relevanceSearchEmbeddingEnabled: cfg.portal_knowledge.relevance_search_embedding_enabled ?? false,
     };
 
     const portalKnowledge = new PortalKnowledgeService({

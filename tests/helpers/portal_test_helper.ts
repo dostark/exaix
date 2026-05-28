@@ -75,6 +75,7 @@ export function createMockKnowledgeService(): IPortalKnowledgeService {
         stats: { totalFiles: 0, totalDirectories: 0, extensionDistribution: {} },
         metadata: { mode: PortalAnalysisMode.QUICK, durationMs: 0, filesScanned: 0, filesRead: 0 },
       }),
+    getRelevantContext: () => Promise.resolve(undefined),
   };
 }
 
@@ -89,6 +90,7 @@ export const DEFAULT_KNOWLEDGE_CONFIG: IPortalKnowledgeConfig = {
   ignorePatterns: [],
   staleness: 0,
   useLlmInference: false,
+  relevanceSearchEmbeddingEnabled: false,
 };
 
 export class PortalConfigTestHelper {

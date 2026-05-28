@@ -67,7 +67,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
     const tinyBudgetAllocator = {
       allocate: (_modelId: string) => {
         allocatorCalls++;
-        return {
+        return Promise.resolve({
           model: "openai:gpt-4o-mini",
           totalBudgetTokens: 1000,
           safetyBufferTokens: 0,
@@ -79,7 +79,7 @@ Deno.test("Integration: context overflow recovers by truncating prompt via alloc
             skills: 10,
             loopHistory: 10,
           },
-        };
+        });
       },
     };
 

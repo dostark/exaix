@@ -35,6 +35,7 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
     ignorePatterns: ["node_modules", ".git"],
     staleness: 168,
     useLlmInference: false,
+    relevanceSearchEmbeddingEnabled: false,
     ...overrides,
   };
 }
@@ -271,6 +272,7 @@ Deno.test(
           });
           return svc.analyze(alias, path);
         },
+        getRelevantContext: () => Promise.resolve(undefined),
       };
 
       await env.createBlueprint("code-analyst");

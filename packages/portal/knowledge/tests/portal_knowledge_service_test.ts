@@ -10,11 +10,12 @@
  * IModelProvider, IDatabaseService, and IDocCommandRunner for testability.
  */
 
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
+import { ensureDir } from "@std/fs";
 import { type IDocCommandRunner, PortalKnowledgeService } from "@exaix/portal/knowledge";
 import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
-import type { IModelProvider } from "@exaix/ai/types.ts";
+import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { PortalAnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
@@ -101,6 +102,7 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
     ignorePatterns: [],
     staleness: 24,
     useLlmInference: true,
+    relevanceSearchEmbeddingEnabled: false,
     ...overrides,
   };
 }
@@ -441,6 +443,146 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
     // Should not throw; architectureOverview falls back to empty
     assertEquals(result.architectureOverview, "");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+// ============================================================================
+// getRelevantContext
+// ============================================================================
+
+Deno.test("[PortalKnowledgeService] getRelevantContext returns undefined when embedding disabled", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: false }),
+      memoryBank: null as never,
+      runner: makeMockDocRunner(),
+    });
+
+    const result = await svc.getRelevantContext("test request", tempDir, 1000);
+    assertEquals(result, undefined);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] getRelevantContext falls back to undefined when index cold", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      memoryBank: null as never,
+      runner: makeMockDocRunner(),
+    });
+
+    const result = await svc.getRelevantContext("test request", tempDir, 1000);
+    // HNSW index is cold (not yet built) — must return undefined
+    assertEquals(result, undefined);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] indexPortalKnowledge then getRelevantContext returns chunks", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const projectsDir = join(tempDir, "Memory/Projects");
+    await ensureDir(projectsDir);
+
+    const mockEmbedder: IEmbeddingProvider = {
+      providerId: "test-mock",
+      dimension: 2,
+      embed: (texts: string[]) => {
+        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+      },
+    };
+
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      memoryBank: null as never,
+      runner: makeMockDocRunner(),
+      embeddingProvider: mockEmbedder,
+      projectsDir,
+    });
+    const portalDir = join(tempDir, "test-portal");
+    await ensureDir(portalDir);
+    await Deno.writeTextFile(join(portalDir, "main.ts"), "export const x = 1;");
+
+    // Build a minimal IPortalKnowledge via the service's analyze, then override fields
+    const baseKnowledge = await svc.analyze("test-portal", portalDir);
+
+    const knowledge = {
+      ...baseKnowledge,
+      portal: "test-portal",
+      architectureOverview:
+        "This is a test portal architecture. It uses TypeScript. The main module exports constants.",
+      keyFiles: [{ description: "Entry point for the application", path: "main.ts", role: "entrypoint" as const }],
+      conventions: [{
+        name: "use-const",
+        description: "Always use const for variables",
+        category: "naming" as const,
+        examples: [],
+        evidenceCount: 1,
+        confidence: "low" as const,
+      }],
+    };
+
+    await svc.indexPortalKnowledge("test-portal", knowledge);
+
+    // Query with a related text
+    const result = await svc.getRelevantContext("TypeScript architecture constants export", portalDir, 5000);
+    assert(result, "getRelevantContext should return a result after indexing");
+    assert(result.length > 0, "context string should not be empty");
+    assert(result.includes("TypeScript"), "context should contain relevant content");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("[PortalKnowledgeService] getRelevantContext respects maxTokens limit", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const projectsDir = join(tempDir, "Memory/Projects");
+    await ensureDir(projectsDir);
+
+    const mockEmbedder: IEmbeddingProvider = {
+      providerId: "test-mock",
+      dimension: 2,
+      embed: (texts: string[]) => {
+        return Promise.resolve(texts.map((t, i) => [i + 1, t.length]));
+      },
+    };
+
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ relevanceSearchEmbeddingEnabled: true }),
+      memoryBank: null as never,
+      runner: makeMockDocRunner(),
+      embeddingProvider: mockEmbedder,
+      projectsDir,
+    });
+    const portalDir2 = join(tempDir, "test-portal-2");
+    await ensureDir(portalDir2);
+    await Deno.writeTextFile(join(portalDir2, "app.ts"), "export const y = 2;");
+
+    const baseKnowledge2 = await svc.analyze("test-portal-2", portalDir2);
+
+    const knowledge = {
+      ...baseKnowledge2,
+      portal: "test-portal-2",
+      architectureOverview:
+        "This is a test portal architecture overview with significant content. It describes the system in detail. There is a lot of information here that should be chunked into pieces. Each sentence adds meaningful context that an LLM could use for relevance matching.",
+    };
+
+    await svc.indexPortalKnowledge("test-portal-2", knowledge);
+
+    // Query with very low maxTokens to force truncation
+    const result = await svc.getRelevantContext("architecture", portalDir2, 1);
+    // Should either be undefined (no chunk fits) or a short string
+    if (result) {
+      assert(result.length < 100, "result with maxTokens=1 should be very short");
+    }
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

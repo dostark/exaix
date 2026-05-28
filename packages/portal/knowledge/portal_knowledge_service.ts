@@ -10,6 +10,7 @@
  */
 
 import { join } from "@std/path";
+import { ensureDir } from "@std/fs";
 import { analyzeDirectory, walkDirectory } from "./directory_analyzer.ts";
 import { parseConfigFiles } from "./config_parser.ts";
 import { identifyKeyFiles } from "./key_file_identifier.ts";
@@ -27,9 +28,11 @@ import type {
 } from "@exaix/core/types";
 import type { IPortalKnowledge } from "@exaix/schemas";
 
-import type { IModelProvider } from "@exaix/ai";
+import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 
 import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE, PortalAnalysisMode } from "@exaix/core";
+
+import { HnswVectorIndex, type IVectorIndexSnapshot } from "@exaix/memory";
 
 export interface IPortalKnowledgeServiceOptions {
   config: IPortalKnowledgeConfig;
@@ -40,6 +43,8 @@ export interface IPortalKnowledgeServiceOptions {
   runner?: IDocCommandRunner;
   gitHeadResolver?: IGitHeadResolver;
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
+  embeddingProvider?: IEmbeddingProvider;
+  projectsDir?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,9 +73,17 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _symbolRunner: IDocCommandRunner | undefined;
   private readonly _gitHeadResolver: IGitHeadResolver;
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
+  private readonly _embeddingProvider?: IEmbeddingProvider;
+  private readonly _projectsDir: string;
 
   /** In-memory cache: alias → latest IPortalKnowledge. */
   private readonly _cache: Map<string, IPortalKnowledge> = new Map();
+
+  /** Per-portal HNSW index + chunk text cache for relevance retrieval. */
+  private readonly _portalIndices: Map<
+    string,
+    { index: HnswVectorIndex; chunks: Map<string, string> }
+  > = new Map();
 
   constructor(options: IPortalKnowledgeServiceOptions) {
     const optionsWithDefaults = {
@@ -89,7 +102,8 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     this._invalidationStrategy = optionsWithDefaults.invalidationStrategy ?? new KnowledgeInvalidationStrategy(
       this._gitHeadResolver,
     );
-    // memoryBank is stored for use in Step 10 (persistence)
+    this._embeddingProvider = options.embeddingProvider;
+    this._projectsDir = options.projectsDir ?? "";
     void this._memoryBank;
   }
 
@@ -331,5 +345,208 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     _changedFiles?: string[],
   ): Promise<IPortalKnowledge> {
     return this.analyze(portalAlias, portalPath, this._config.defaultMode);
+  }
+
+  async getRelevantContext(
+    requestText: string,
+    portalPath: string,
+    maxTokens: number,
+  ): Promise<string | undefined> {
+    if (!this._config.relevanceSearchEmbeddingEnabled || !this._embeddingProvider) {
+      return undefined;
+    }
+
+    const portalAlias = this._resolveAliasFromPath(portalPath);
+    if (!portalAlias) return undefined;
+
+    const indexData = await this._loadIndex(portalAlias);
+    if (!indexData || indexData.index.size() === 0) {
+      return undefined;
+    }
+
+    const [queryVector] = await this._embeddingProvider.embed([requestText]);
+    const results = indexData.index.search(queryVector, 5);
+
+    if (results.length === 0) return undefined;
+
+    const chunks: string[] = [];
+    let tokenCount = 0;
+    const estimatedTokensPerChar = 0.25;
+
+    for (const result of results) {
+      const text = indexData.chunks.get(result.id);
+      if (!text) continue;
+      const estimatedTokens = Math.ceil(text.length * estimatedTokensPerChar);
+      if (tokenCount + estimatedTokens > maxTokens) break;
+      chunks.push(text);
+      tokenCount += estimatedTokens;
+    }
+
+    return chunks.length > 0 ? chunks.join("\n\n---\n\n") : undefined;
+  }
+
+  async indexPortalKnowledge(
+    portalAlias: string,
+    knowledge: IPortalKnowledge,
+  ): Promise<void> {
+    if (!this._embeddingProvider || !this._projectsDir) return;
+
+    const chunked = this._chunkKnowledge(knowledge);
+    if (chunked.length === 0) return;
+
+    const texts = chunked.map((c) => c.text);
+    const vectors = await this._embeddingProvider.embed(texts);
+
+    let indexData = this._portalIndices.get(portalAlias);
+    if (!indexData) {
+      indexData = { index: new HnswVectorIndex(), chunks: new Map() };
+      this._portalIndices.set(portalAlias, indexData);
+    }
+
+    for (let i = 0; i < chunked.length; i++) {
+      const { id, text } = chunked[i];
+      if (indexData.chunks.has(id)) continue;
+      indexData.chunks.set(id, text);
+      indexData.index.insert(id, vectors[i]);
+    }
+
+    await this._persistIndex(portalAlias, indexData);
+  }
+
+  // -------------------------------------------------------------------------
+  // Private helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Resolve portal alias from a portal path by scanning the cached knowledge.
+   * Returns the first matching alias, or undefined if no cached knowledge
+   * references this path.
+   */
+  private _resolveAliasFromPath(_portalPath: string): string | undefined {
+    for (const [alias] of this._cache) {
+      return alias;
+    }
+    return undefined;
+  }
+
+  /**
+   * Load or build an in-memory index for the given portal alias.
+   * Attempts to load from disk cache first; returns undefined on miss.
+   */
+  private async _loadIndex(
+    portalAlias: string,
+  ): Promise<{ index: HnswVectorIndex; chunks: Map<string, string> } | undefined> {
+    const cached = this._portalIndices.get(portalAlias);
+    if (cached) return cached;
+
+    if (!this._projectsDir) return undefined;
+
+    try {
+      const indexPath = join(this._projectsDir, portalAlias, "hnsw_index.json");
+      const raw = await Deno.readTextFile(indexPath);
+      const data = JSON.parse(raw) as {
+        snapshot: IVectorIndexSnapshot;
+        chunks: Array<[string, string]>;
+      };
+
+      const index = new HnswVectorIndex();
+      index.load(data.snapshot);
+      const chunks = new Map<string, string>(data.chunks);
+
+      const indexData = { index, chunks };
+      this._portalIndices.set(portalAlias, indexData);
+      return indexData;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Persist a portal's HNSW index and chunk text map to disk.
+   */
+  private async _persistIndex(
+    portalAlias: string,
+    indexData: { index: HnswVectorIndex; chunks: Map<string, string> },
+  ): Promise<void> {
+    if (!this._projectsDir) return;
+
+    const portalDir = join(this._projectsDir, portalAlias);
+    await ensureDir(portalDir);
+
+    const indexPath = join(portalDir, "hnsw_index.json");
+    const tmpPath = `${indexPath}.tmp`;
+
+    const data = {
+      snapshot: indexData.index.save(),
+      chunks: Array.from(indexData.chunks.entries()),
+    };
+
+    await Deno.writeTextFile(tmpPath, JSON.stringify(data));
+    await Deno.rename(tmpPath, indexPath);
+  }
+
+  /**
+   * Split text into sentence-sized chunks of at most ~512 characters.
+   */
+  private _splitSentences(text: string): string[] {
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    const chunks: string[] = [];
+    let current = "";
+
+    for (const sentence of sentences) {
+      const trimmed = sentence.trim();
+      if (!trimmed) continue;
+      if (current.length + trimmed.length > 512) {
+        if (current) chunks.push(current.trim());
+        current = trimmed;
+      } else {
+        current += (current ? " " : "") + trimmed;
+      }
+    }
+    if (current) chunks.push(current.trim());
+    return chunks;
+  }
+
+  /**
+   * Compute a simple content hash for deduplication.
+   */
+  private _contentHash(text: string): string {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash |= 0;
+    }
+    return `hash:${Math.abs(hash).toString(36)}`;
+  }
+
+  /**
+   * Chunk IPortalKnowledge into embeddable text segments.
+   * Includes architecture overview, conventions, and key file descriptions.
+   */
+  private _chunkKnowledge(
+    knowledge: IPortalKnowledge,
+  ): Array<{ id: string; text: string }> {
+    const chunks: Array<{ id: string; text: string }> = [];
+
+    if (knowledge.architectureOverview) {
+      const sentences = this._splitSentences(knowledge.architectureOverview);
+      for (const sentence of sentences) {
+        const text = `Architecture: ${sentence}`;
+        chunks.push({ id: this._contentHash(text), text });
+      }
+    }
+
+    for (const convention of knowledge.conventions ?? []) {
+      const text = `Convention: ${convention.name}: ${convention.description}`;
+      chunks.push({ id: this._contentHash(text), text });
+    }
+
+    for (const file of knowledge.keyFiles ?? []) {
+      const text = `Key file: ${file.path} (${file.role}): ${file.description}`;
+      chunks.push({ id: this._contentHash(text), text });
+    }
+
+    return chunks;
   }
 }

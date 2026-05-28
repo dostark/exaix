@@ -65,6 +65,7 @@ function makeMockKnowledgeService(
     getOrAnalyze: (_portalAlias: string, _portalPath: string) => Promise.resolve(makeKnowledgeResult("mock")),
     isStale: (_portalAlias: string) => Promise.resolve(false),
     updateKnowledge: (_portalAlias: string, _portalPath: string) => Promise.resolve(makeKnowledgeResult("mock")),
+    getRelevantContext: () => Promise.resolve(undefined),
   };
 }
 
@@ -79,6 +80,7 @@ function makeKnowledgeConfig(
     ignorePatterns: [],
     staleness: 168,
     useLlmInference: false,
+    relevanceSearchEmbeddingEnabled: false,
     ...overrides,
   };
 }
