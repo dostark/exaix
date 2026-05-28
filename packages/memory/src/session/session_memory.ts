@@ -24,6 +24,12 @@ import {
   MemoryType,
 } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
+import type { ITieredMemoryEntry } from "@exaix/core/types";
+import {
+  MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD,
+  MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT,
+  MemoryTier,
+} from "@exaix/core";
 
 function mapConfidenceLevelToAssessment(
   confidence: ConfidenceLevel,
@@ -138,6 +144,7 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
  */
 export class SessionMemoryService {
   private config: SessionMemoryConfig;
+  private _tieredEntries: Map<string, ITieredMemoryEntry> = new Map();
 
   constructor(
     private memoryBank: IMemoryBankService,
@@ -211,6 +218,17 @@ export class SessionMemoryService {
         source: result.trace_id ? `execution:${result.trace_id}` : `${result.type}:${result.title}`,
         tags: result.tags,
       });
+    }
+
+    // Apply tier-based relevance boost for hierarchical memory prioritization
+    const tierBoost = this._computeTierBoosts();
+
+    for (const memory of memories) {
+      const learningId = this._extractLearningId(memory);
+      if (learningId && tierBoost.has(learningId)) {
+        memory.relevance += tierBoost.get(learningId)!;
+        memory.relevance = Math.min(memory.relevance, 1.0);
+      }
     }
 
     // Sort by relevance and limit
@@ -344,6 +362,18 @@ export class SessionMemoryService {
       // Generate embedding for semantic search
       await this.embeddingService.embedLearning(learning);
 
+      // Create tiered memory entry for promotion tracking
+      this._tieredEntries.set(learning.id, {
+        id: learning.id,
+        content: learning.description || learning.title,
+        tier: MemoryTier.WORKING,
+        source: { planId: "", stepId: "" },
+        createdAt: Date.now(),
+        lastAccessedAt: Date.now(),
+        accessCount: 1,
+        promotionScore: learning.confidence === "high" ? 80 : learning.confidence === "medium" ? 50 : 20,
+      });
+
       return {
         success: true,
         learningId: learning.id,
@@ -354,6 +384,51 @@ export class SessionMemoryService {
         success: false,
         message: `Failed to save insight: ${error instanceof Error ? error.message : String(error)}`,
       };
+    }
+  }
+
+  /**
+   * Promote tiered memory entries up the hierarchy.
+   * WORKING → EPISODIC: when promotionScore exceeds threshold.
+   * EPISODIC → SEMANTIC: when accessCount exceeds threshold.
+   * SEMANTIC entries are never auto-demoted.
+   * @returns Number of entries promoted.
+   */
+  promoteMemories(): number {
+    let promotedCount = 0;
+
+    for (const [, entry] of this._tieredEntries) {
+      if (
+        entry.tier === MemoryTier.WORKING &&
+        entry.promotionScore >= MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD
+      ) {
+        entry.tier = MemoryTier.EPISODIC;
+        promotedCount++;
+      } else if (
+        entry.tier === MemoryTier.EPISODIC &&
+        entry.accessCount >= MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT
+      ) {
+        entry.tier = MemoryTier.SEMANTIC;
+        promotedCount++;
+      }
+    }
+
+    return promotedCount;
+  }
+
+  /**
+   * Record access to a tiered memory entry, incrementing access count
+   * and updating the last-accessed timestamp.
+   * @param index - The 1-based index of the entry to access.
+   */
+  accessMemory(index: number): void {
+    const keys = Array.from(this._tieredEntries.keys());
+    if (index < 1 || index > keys.length) return;
+    const key = keys[index - 1];
+    const entry = this._tieredEntries.get(key);
+    if (entry) {
+      entry.accessCount++;
+      entry.lastAccessedAt = Date.now();
     }
   }
 
@@ -622,6 +697,38 @@ ${memory.content}`;
       default:
         return MemoryType.INSIGHT;
     }
+  }
+
+  /**
+   * Compute tier-based relevance boosts for all tiered entries.
+   * WORKING → +0.3, EPISODIC → +0.2, SEMANTIC → +0.1
+   */
+  private _computeTierBoosts(): Map<string, number> {
+    const boosts = new Map<string, number>();
+    for (const [id, entry] of this._tieredEntries) {
+      switch (entry.tier) {
+        case MemoryTier.WORKING:
+          boosts.set(id, 0.3);
+          break;
+        case MemoryTier.EPISODIC:
+          boosts.set(id, 0.2);
+          break;
+        case MemoryTier.SEMANTIC:
+          boosts.set(id, 0.1);
+          break;
+      }
+    }
+    return boosts;
+  }
+
+  /**
+   * Extract learning ID from a memory item's source field.
+   * Source format: "learning:<uuid>" or "execution:<trace_id>".
+   */
+  private _extractLearningId(memory: MemoryItem): string | undefined {
+    if (!memory.source) return undefined;
+    const match = memory.source.match(/^learning:(.+)$/);
+    return match?.[1];
   }
 }
 

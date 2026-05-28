@@ -1204,3 +1204,15 @@ export enum TokenizerBackend {
   LOCAL = "local",
   API = "api",
 }
+
+/**
+ * Memory tier for hierarchical memory promotion (Phase 103).
+ * WORKING: newly created learnings during execution.
+ * EPISODIC: promoted after meeting promotion threshold (retained across sessions).
+ * SEMANTIC: promoted after repeated access (core knowledge, never auto-demoted).
+ */
+export enum MemoryTier {
+  WORKING = "working",
+  EPISODIC = "episodic",
+  SEMANTIC = "semantic",
+}

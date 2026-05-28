@@ -411,6 +411,12 @@ export const ADJUSTMENT_PRECISION = 4;
 /** Minimum hint value to avoid surplus reallocation. */
 export const MINIMUM_HINT_THRESHOLD = 100;
 
+/** Promotion score threshold for WORKING → EPISODIC memory tier promotion. */
+export const MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD = 50;
+
+/** Access count threshold for EPISODIC → SEMANTIC memory tier promotion. */
+export const MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT = 3;
+
 /**
  * Base allocation weights for prompt budget sections (as proportions of usable context).
  * Sum should equal 1.0 after waterfall reallocation.
