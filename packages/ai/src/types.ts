@@ -18,6 +18,12 @@ export interface IModelOptions {
   top_p?: number;
   stop?: string[];
   stream?: boolean;
+  /**
+   * Indices of content blocks eligible for Anthropic cache_control.
+   * Set by AgentExecutor based on ContextCache stability analysis.
+   * Non-Anthropic providers ignore this field.
+   */
+  cachedSections?: number[];
 }
 
 import type { IGenerateResult } from "./providers/common.ts";

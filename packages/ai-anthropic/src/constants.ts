@@ -37,3 +37,9 @@ export const ANTHROPIC_DEFAULTS: IProviderDefaults = {
   defaultRetryMaxAttempts: DEFAULT_ANTHROPIC_RETRY_MAX_ATTEMPTS,
   defaultRetryBackoffMs: DEFAULT_ANTHROPIC_RETRY_BACKOFF_MS,
 };
+
+/** Content block type for Anthropic Messages API text blocks. */
+export const ANTHROPIC_CONTENT_TYPE_TEXT = "text";
+
+/** Cache control type for ephemeral prompt caching. */
+export const ANTHROPIC_CACHE_CONTROL_EPHEMERAL = "ephemeral";

@@ -7,6 +7,8 @@
  */
 
 import {
+  ANTHROPIC_CACHE_CONTROL_EPHEMERAL,
+  ANTHROPIC_CONTENT_TYPE_TEXT,
   DEFAULT_ANTHROPIC_API_VERSION,
   DEFAULT_ANTHROPIC_ENDPOINT,
   DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -53,6 +55,19 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   protected override async attemptGenerate(prompt: string, options?: IModelOptions): Promise<IGenerateResult> {
+    // Build messages with optional cache_control for cached sections
+    const cachedSections = options?.cachedSections;
+    const messages = (cachedSections && cachedSections.length > 0)
+      ? [{
+        role: "user" as const,
+        content: [
+          { type: ANTHROPIC_CONTENT_TYPE_TEXT, text: prompt },
+        ].map((block, i) =>
+          cachedSections.includes(i) ? { ...block, cache_control: { type: ANTHROPIC_CACHE_CONTROL_EPHEMERAL } } : block
+        ),
+      }]
+      : [{ role: "user" as const, content: prompt }];
+
     return await performProviderCall<AnthropicResponse>(this.baseUrl, {
       method: "POST",
       headers: {
@@ -63,7 +78,7 @@ export class AnthropicProvider extends BaseProvider {
       body: JSON.stringify({
         model: this.model,
         max_tokens: options?.max_tokens ?? DEFAULT_ANTHROPIC_MAX_TOKENS,
-        messages: [{ role: "user", content: prompt }],
+        messages,
         temperature: options?.temperature,
         top_p: options?.top_p,
         stop_sequences: options?.stop,

@@ -9,3 +9,4 @@
 export * from "./context_card_generator.ts";
 export * from "./context_loader.ts";
 export * from "./prompt_budget_allocator.ts";
+export * from "./context_cache.ts";

@@ -74,6 +74,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
+import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
   CONTEXT_BUDGET_COMPACTED_EVENT,
@@ -143,6 +144,7 @@ export class AgentExecutor {
   private currentPromptBudget?: IPromptBudget;
   private promptBudgetAllocator?: IPromptBudgetAllocator;
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
+  private _contextCache?: ContextCache;
 
   constructor(
     private config: Config,
@@ -154,9 +156,11 @@ export class AgentExecutor {
     private strategyRegistry?: StrategyRegistry,
     private _toolRegistry?: IToolRegistry,
     promptBudgetAllocator?: IPromptBudgetAllocator,
+    contextCache?: ContextCache,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement);
+    this._contextCache = contextCache;
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
@@ -350,6 +354,9 @@ export class AgentExecutor {
    * Call this when the AgentExecutor is no longer needed
    */
   dispose(): void {
+    // Invalidate context cache at end of execution
+    this._contextCache?.invalidateAll();
+
     // Dispose all strategies (which cleans up their signal listeners).
     // Uses the IExecutionStrategy.dispose?() optional-chaining contract.
     if (this.strategyRegistry) {
@@ -715,6 +722,16 @@ export class AgentExecutor {
       this.currentPromptBudget?.sections.skills,
       "skills",
     );
+
+    // Mark stable sections in context cache for potential cache_control
+    if (this._contextCache && this.currentPromptBudget) {
+      const budget = this.currentPromptBudget.sections;
+      this._contextCache.markStable("system", systemPrompt, budget.system);
+      this._contextCache.markStable("plan", sanitizedPlan, budget.plan);
+      this._contextCache.markStable("portalKnowledge", portalContext, budget.portalKnowledge);
+      this._contextCache.markStable("memory", sanitizedRequest, budget.memory);
+      this._contextCache.markStable("skills", skillContext, budget.skills);
+    }
 
     // Use clear delimiters that prevent injection
     return `${systemPrompt}

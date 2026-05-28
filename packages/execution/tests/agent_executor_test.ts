@@ -33,6 +33,7 @@ import {
   type ICompactedEntry,
   type ILoopHistoryEntry,
 } from "@exaix/execution";
+import { ContextCache } from "@exaix/core/context";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { type IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
@@ -2842,6 +2843,81 @@ Deno.test({
 
       const truncEvents = logged.filter((e) => e.name === "context.section.truncated");
       assert(truncEvents.length >= 1, "should emit CONTEXT_SECTION_TRUNCATED when budget exceeded");
+      executor.dispose();
+    } finally {
+      await cleanup();
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "AgentExecutor: marks stable sections in ContextCache during executeStep",
+  fn: async () => {
+    await setup();
+    try {
+      const { db, logger, pathResolver, permissions } = getServices();
+      const contextCache = new ContextCache();
+      const strategyRegistry = new StrategyRegistry();
+      strategyRegistry.register({
+        name: ExecutionStrategyName.LEGACY,
+        execute: (_blueprint: IAgentFileBlueprint, _ctx: IExecutionContext, _opts: IAgentExecutionOptions) => {
+          executor.buildExecutionPrompt(_blueprint, _ctx, _opts);
+          return Promise.resolve({
+            branch: "feat/cache-test",
+            commit_sha: "0000000000000000000000000000000000000000",
+            files_changed: [],
+            description: "Context cache test",
+            tool_calls: 1,
+            execution_time_ms: 10,
+          });
+        },
+      });
+
+      const executor = new AgentExecutor(
+        testConfig,
+        db,
+        logger,
+        pathResolver,
+        permissions,
+        undefined,
+        strategyRegistry,
+        undefined,
+        undefined,
+        contextCache,
+      );
+
+      const blueprintPath = join(testConfig.paths.blueprints, "Identities", "test-agent.md");
+      await Deno.mkdir(join(testConfig.paths.blueprints, "Identities"), { recursive: true });
+      await Deno.writeTextFile(
+        blueprintPath,
+        "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
+      );
+
+      await executor.executeStep(
+        {
+          trace_id: crypto.randomUUID(),
+          request_id: "cache-req-1",
+          request: "Test",
+          plan: "Plan",
+          portal: "TestPortal",
+        },
+        {
+          portal: "TestPortal",
+          identity_id: "test-agent",
+          security_mode: SecurityMode.HYBRID,
+          timeout_ms: 300000,
+          max_tool_calls: 100,
+          audit_enabled: true,
+        },
+      );
+
+      // After executeStep, the cache should have entries for stable sections
+      const stableKeys = ["system", "plan", "memory", "portalKnowledge", "skills"];
+      const stable = contextCache.getStableSections(stableKeys);
+      assert(stable.length > 0, "At least one stable section should be cached after executeStep");
+
       executor.dispose();
     } finally {
       await cleanup();
