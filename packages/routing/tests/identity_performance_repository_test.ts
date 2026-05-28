@@ -201,7 +201,7 @@ Deno.test("[IdentityPerformanceRepository] filters old records and applies recen
       prompt_tokens: 100,
       completion_tokens: 200,
       cost_usd: 0.1,
-      timestamp: new Date(Date.now() - ttlMs).toISOString(),
+      timestamp: new Date(Date.now() - Math.floor(ttlMs / 2)).toISOString(),
     },
     {
       id: "3",
