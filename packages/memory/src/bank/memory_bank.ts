@@ -791,7 +791,7 @@ export class MemoryBankService implements IMemoryBankService {
     );
 
     // Rewrite learnings.md without the demoted learning
-    await this.rewriteLearningsMarkdown(globalMem as IGlobalMemory);
+    await this.rewriteLearningsMarkdown(globalMem);
 
     this.logActivity({
       event_type: "memory.learning.demoted",

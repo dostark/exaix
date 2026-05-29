@@ -27,16 +27,18 @@ export type IEmbeddingProviderConfig =
  * Create an IEmbeddingProvider from discriminated config.
  * @param config - Provider-specific config with a `provider` discriminator.
  * @returns Concrete IEmbeddingProvider instance.
- * @throws EmbeddingError if the provider is unknown.
+ * @throws EmbeddingError if the provider is unknown or not yet implemented.
  */
 export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbeddingProvider {
   switch (config.provider) {
     case "ollama":
       return new OllamaEmbeddingClient(config);
     case "openai":
-      return new OpenAIEmbeddingClient(config);
     case "llamacpp":
-      return new LlamaCppEmbeddingClient(config);
+      throw new EmbeddingError(
+        "PROVIDER_UNAVAILABLE",
+        `Embedding provider '${config.provider}' is not yet implemented. Use 'ollama' or implement the embed() method.`,
+      );
     default:
       throw new EmbeddingError(
         "UNKNOWN_PROVIDER",
