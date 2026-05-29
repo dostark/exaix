@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
@@ -56,6 +58,8 @@ jobs:
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
