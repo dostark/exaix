@@ -11,17 +11,13 @@
 
 import type { IEmbeddingProvider } from "./embedding_provider.ts";
 import { EmbeddingError } from "./embedding_errors.ts";
-import { type IOllamaEmbeddingConfig, OllamaEmbeddingClient } from "@exaix/ai-ollama";
-import { type IOpenAIEmbeddingConfig, OpenAIEmbeddingClient } from "@exaix/ai-openai";
-import { type ILlamaCppEmbeddingConfig, LlamaCppEmbeddingClient } from "../providers/llamacpp_embedding_client.ts";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
+import type { IOllamaEmbeddingConfig } from "@exaix/ai-ollama";
 
 /**
  * Discriminated union of all embedding provider configs.
  */
-export type IEmbeddingProviderConfig =
-  | ({ provider: "ollama" } & IOllamaEmbeddingConfig)
-  | ({ provider: "openai" } & IOpenAIEmbeddingConfig)
-  | ({ provider: "llamacpp" } & ILlamaCppEmbeddingConfig);
+export type IEmbeddingProviderConfig = { provider: "ollama" } & IOllamaEmbeddingConfig;
 
 /**
  * Create an IEmbeddingProvider from discriminated config.
@@ -33,16 +29,12 @@ export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbe
   switch (config.provider) {
     case "ollama":
       return new OllamaEmbeddingClient(config);
-    case "openai":
-    case "llamacpp":
-      throw new EmbeddingError(
-        "PROVIDER_UNAVAILABLE",
-        `Embedding provider '${config.provider}' is not yet implemented. Use 'ollama' or implement the embed() method.`,
-      );
     default:
       throw new EmbeddingError(
         "UNKNOWN_PROVIDER",
-        `Unknown embedding provider: ${(config as { provider: string }).provider}`,
+        `Unknown embedding provider: ${
+          (config as { provider: string }).provider
+        }. Only 'ollama' is currently implemented.`,
       );
   }
 }

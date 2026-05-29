@@ -7,14 +7,7 @@
  */
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
 import { LANG_TYPESCRIPT } from "@exaix/core";
-import {
-  ConfidenceAssessmentLevel,
-  ExecutionStatus,
-  LearningCategory,
-  MemoryBankSource,
-  MemoryReferenceType,
-  MemoryScope,
-} from "@exaix/core";
+import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 
 /**
  * Extracts learnings from agent executions.
