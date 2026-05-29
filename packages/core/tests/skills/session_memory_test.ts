@@ -8,12 +8,7 @@
  */
 
 import { assertEquals, assertExists, assertGreater, assertLess, assertStringIncludes } from "@std/assert";
-import {
-  createDisabledSessionMemoryService,
-  createSessionMemoryService,
-  type Insight,
-  SessionMemoryService,
-} from "@exaix/memory";
+import { type Insight, SessionMemoryService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
 import type { IExecutionMemory, ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
@@ -467,40 +462,6 @@ Deno.test("SessionMemoryService - saveInsights saves multiple", async () => {
   assertEquals(savedLearnings.length, 2);
 });
 
-// ===== Prompt Building Tests =====
-
-Deno.test("SessionMemoryService - buildPromptWithMemory includes memory context", async () => {
-  const memoryBank = createMockMemoryBank(sampleSearchResults);
-  const embeddingService = createMockEmbeddingService(sampleEmbeddingResults);
-
-  const service = new SessionMemoryService(memoryBank, embeddingService);
-  const prompt = await service.buildPromptWithMemory(
-    "You are a helpful assistant.",
-    "How do I implement authentication?",
-  );
-
-  assertStringIncludes(prompt, "You are a helpful assistant.");
-  assertStringIncludes(prompt, "## User Request");
-  assertStringIncludes(prompt, "How do I implement authentication?");
-});
-
-Deno.test("SessionMemoryService - buildPromptWithMemory without memories", async () => {
-  const memoryBank = createMockMemoryBank([]);
-  const embeddingService = createMockEmbeddingService([]);
-
-  const service = new SessionMemoryService(memoryBank, embeddingService);
-  const prompt = await service.buildPromptWithMemory(
-    "You are a helpful assistant.",
-    "Hello!",
-  );
-
-  assertStringIncludes(prompt, "You are a helpful assistant.");
-  assertStringIncludes(prompt, "## User Request");
-  assertStringIncludes(prompt, "Hello!");
-  // Should NOT have memory context section
-  assertEquals(prompt.includes("Relevant Context from Memory"), false);
-});
-
 // ===== Tag-based Search Tests =====
 
 Deno.test("SessionMemoryService - getMemoriesByTag filters correctly", async () => {
@@ -539,29 +500,6 @@ Deno.test("SessionMemoryService - getRecentExecutions respects limit", async () 
   const memories = await service.getRecentExecutions(undefined, 1);
 
   assertEquals(memories.length, 1);
-});
-
-// ===== Factory Function Tests =====
-
-Deno.test("createSessionMemoryService - creates service with config", () => {
-  const memoryBank = createMockMemoryBank();
-  const embeddingService = createMockEmbeddingService();
-
-  const service = createSessionMemoryService(memoryBank, embeddingService, { topK: 7 });
-  const config = service.getConfig();
-
-  assertEquals(config.topK, 7);
-  assertEquals(config.enabled, true);
-});
-
-Deno.test("createDisabledSessionMemoryService - creates disabled service", () => {
-  const memoryBank = createMockMemoryBank();
-  const embeddingService = createMockEmbeddingService();
-
-  const service = createDisabledSessionMemoryService(memoryBank, embeddingService);
-  const config = service.getConfig();
-
-  assertEquals(config.enabled, false);
 });
 
 // ===== Key Term Extraction Tests =====

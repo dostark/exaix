@@ -448,30 +448,6 @@ export class SessionMemoryService {
   }
 
   /**
-   * Build agent prompt with memory context
-   *
-   * Convenience method to combine a base prompt with memory context.
-   *
-   * @param basePrompt - The base agent prompt
-   * @param request - The user request
-   * @param options - Optional configuration
-   * @returns Combined prompt with memory context
-   */
-  async buildPromptWithMemory(
-    basePrompt: string,
-    request: string,
-    options?: Partial<SessionMemoryConfig>,
-  ): Promise<string> {
-    const enhanced = await this.enhanceRequest(request, options);
-
-    if (!enhanced.memoryContext) {
-      return `${basePrompt}\n\n## User Request\n${request}`;
-    }
-
-    return `${basePrompt}\n\n## Relevant Context from Memory\n${enhanced.memoryContext}\n\n## User Request\n${request}`;
-  }
-
-  /**
    * Get memories by tag
    *
    * Retrieves memories that match specific tags.
@@ -730,27 +706,4 @@ ${memory.content}`;
     const match = memory.source.match(/^learning:(.+)$/);
     return match?.[1];
   }
-}
-
-// ===== Factory Functions =====
-
-/**
- * Create a SessionMemoryService with default configuration
- */
-export function createSessionMemoryService(
-  memoryBank: IMemoryBankService,
-  embeddingService: IMemoryEmbeddingService,
-  config?: Partial<SessionMemoryConfig>,
-): SessionMemoryService {
-  return new SessionMemoryService(memoryBank, embeddingService, config);
-}
-
-/**
- * Create a disabled SessionMemoryService (for testing or opt-out)
- */
-export function createDisabledSessionMemoryService(
-  memoryBank: IMemoryBankService,
-  embeddingService: IMemoryEmbeddingService,
-): SessionMemoryService {
-  return new SessionMemoryService(memoryBank, embeddingService, { enabled: false });
 }

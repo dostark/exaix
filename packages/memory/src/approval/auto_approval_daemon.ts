@@ -12,25 +12,25 @@ import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.t
 import type { MemoryExtractorService } from "../extraction/memory_extractor.ts";
 import type { INotificationService } from "@exaix/core/types";
 
-type INotificationServiceMinimal = Pick<INotificationService, "notifyPendingDigestIfNeeded">;
-type IMemoryExtractorServiceMinimal = Pick<MemoryExtractorService, "listPending">;
-type IAutoApprovalServiceMinimal = Pick<MemoryAutoApprovalService, "runApprovalCycle">;
-type ILoggerMinimal = Pick<IEventLogger, "info">;
-
 export async function initializeMemoryAutoApprovalMaintenance(
-  notificationService: INotificationServiceMinimal,
-  memoryExtractor: IMemoryExtractorServiceMinimal,
-  autoApprovalService: IAutoApprovalServiceMinimal,
-  logger: ILoggerMinimal,
+  notificationService: Pick<INotificationService, "notifyPendingDigestIfNeeded">,
+  memoryExtractor: Pick<MemoryExtractorService, "listPending">,
+  autoApprovalService: Pick<MemoryAutoApprovalService, "runApprovalCycle">,
+  logger: Pick<IEventLogger, "error" | "info">,
   intervalMs = 60 * 60 * 1000,
 ): Promise<{ stop: () => void }> {
-  const pendingProposals = await memoryExtractor.listPending();
-  const pendingCount = pendingProposals.length;
-  const digestCreated = await notificationService.notifyPendingDigestIfNeeded(pendingCount);
-
-  if (digestCreated) {
-    await logger.info("memory.pending_digest", "Pending memory digest notification sent", {
-      pendingCount,
+  try {
+    const pendingProposals = await memoryExtractor.listPending();
+    const pendingCount = pendingProposals.length;
+    const digestCreated = await notificationService.notifyPendingDigestIfNeeded(pendingCount);
+    if (digestCreated) {
+      await logger.info("memory.pending_digest", "Pending memory digest notification sent", {
+        pendingCount,
+      });
+    }
+  } catch (error) {
+    await logger.error("memory.init_failed", "Memory auto-approval initialization failed", {
+      error: String(error),
     });
   }
 
@@ -47,7 +47,9 @@ export async function initializeMemoryAutoApprovalMaintenance(
         );
       }
     } catch (error) {
-      console.error("[AutoApproval] Maintenance cycle failed:", error);
+      await logger.error("memory.maintenance_cycle_failed", "Auto-approval maintenance cycle failed", {
+        error: String(error),
+      });
     }
   }, intervalMs);
 

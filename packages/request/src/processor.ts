@@ -256,7 +256,12 @@ export class RequestProcessor {
 
     // Enhance request with session memory context before analysis
     const memoryContext = this.sessionMemory
-      ? await this.sessionMemory.enhanceRequest(assessedBody).catch(() => undefined)
+      ? await this.sessionMemory.enhanceRequest(assessedBody).catch((err) => {
+        this.logger.warn("memory.enhance_failed", "Session memory enhancement failed", {
+          error: String(err),
+        });
+        return undefined;
+      })
       : undefined;
 
     // Run analysis before pipeline so both agent and flow paths benefit

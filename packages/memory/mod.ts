@@ -23,8 +23,6 @@ export { MemoryExtractorService } from "./src/extraction/memory_extractor.ts";
 export { LearningExtractor } from "./src/extraction/learning_extractor.ts";
 
 export {
-  createDisabledSessionMemoryService,
-  createSessionMemoryService,
   DEFAULT_SESSION_MEMORY_CONFIG,
   EnhancedRequestSchema,
   InsightSchema,
