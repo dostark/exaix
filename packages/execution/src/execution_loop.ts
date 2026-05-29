@@ -1250,7 +1250,7 @@ export class ExecutionLoop {
    * Create a MissionReporter instance with Memory Bank integration
    */
   private createMissionReporter(): MissionReporter {
-    const memoryBank = new MemoryBankService(this.config, this.db!);
+    const memoryBank = (this.context?.memoryBank ?? new MemoryBankService(this.config, this.db!)) as MemoryBankService;
     const reportConfig = {
       reportsDirectory: join(
         this.config.system.root,

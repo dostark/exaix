@@ -214,6 +214,7 @@ if (import.meta.main) {
       memoryBank,
       extractor: memoryExtractor,
       portalKnowledge,
+      embeddings: providerEmbedding,
     };
 
     // Ensure required directories exist

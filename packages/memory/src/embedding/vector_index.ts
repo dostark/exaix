@@ -25,6 +25,9 @@ interface HnswNode {
   neighbors: Map<number, Set<string>>;
 }
 
+// Brute-force is used below this size; HNSW kicks in for larger datasets.
+// Current embedding dimension is 64 — brute-force is fast enough for <10k entries.
+const BRUTE_FORCE_THRESHOLD = 100;
 const DEFAULT_M = 16;
 const DEFAULT_EF_CONSTRUCTION = 200;
 const DEFAULT_EF_SEARCH = 50;
@@ -140,7 +143,7 @@ export class HnswVectorIndex {
   search(query: number[], k: number): Array<{ id: string; similarity: number }> {
     if (this.nodes.size === 0 || k <= 0) return [];
 
-    if (this.nodes.size <= 10) {
+    if (this.nodes.size <= BRUTE_FORCE_THRESHOLD) {
       return this.bruteForceSearch(query, k);
     }
 
