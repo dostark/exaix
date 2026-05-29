@@ -98,13 +98,13 @@ Deno.test("Memory auto-approval daemon emits pending digest and schedules approv
     },
   );
 
-  const maintenance = await initializeMemoryAutoApprovalMaintenance(
-    mockNotificationService,
-    mockMemoryExtractor,
-    mockAutoApprovalService,
-    mockLogger,
-    10,
-  );
+  const maintenance = await initializeMemoryAutoApprovalMaintenance({
+    notificationService: mockNotificationService,
+    memoryExtractor: mockMemoryExtractor,
+    autoApprovalService: mockAutoApprovalService,
+    logger: mockLogger,
+    intervalMs: 10,
+  });
 
   await delay(50);
   maintenance.stop();

@@ -10,6 +10,8 @@ import { z } from "zod";
 import type { IMemoryBankService } from "@exaix/core/types";
 import type { IMemoryEmbeddingService } from "../embedding/memory_embedding.ts";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
+import { ensureDir, exists } from "@std/fs";
+import { join } from "@std/path";
 import {
   DEFAULT_MEMORY_CONTEXT_CHAR_LIMIT,
   SESSION_MEMORY_INSIGHT_DESCRIPTION_MAX_CHARS,
@@ -27,6 +29,9 @@ import { MemoryStatus } from "@exaix/core/status";
 import type { ITieredMemoryEntry } from "@exaix/core/types";
 import {
   MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD,
+  MEMORY_TIER_PROMOTION_SCORE_HIGH,
+  MEMORY_TIER_PROMOTION_SCORE_LOW,
+  MEMORY_TIER_PROMOTION_SCORE_MEDIUM,
   MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT,
   MemoryTier,
 } from "@exaix/core";
@@ -145,13 +150,32 @@ export const DEFAULT_SESSION_MEMORY_CONFIG: SessionMemoryConfig = {
 export class SessionMemoryService {
   private config: SessionMemoryConfig;
   private _tieredEntries: Map<string, ITieredMemoryEntry> = new Map();
+  private tieredEntriesLoaded = false;
 
   constructor(
     private memoryBank: IMemoryBankService,
     private embeddingService: IMemoryEmbeddingService,
     config?: Partial<SessionMemoryConfig>,
+    private tieredEntriesPath?: string,
   ) {
     this.config = { ...DEFAULT_SESSION_MEMORY_CONFIG, ...config };
+  }
+
+  private async ensureTieredEntriesLoaded(): Promise<void> {
+    if (this.tieredEntriesLoaded || !this.tieredEntriesPath) return;
+    if (await exists(this.tieredEntriesPath)) {
+      const content = await Deno.readTextFile(this.tieredEntriesPath);
+      const entries = JSON.parse(content) as Array<[string, ITieredMemoryEntry]>;
+      this._tieredEntries = new Map(entries);
+    }
+    this.tieredEntriesLoaded = true;
+  }
+
+  private async persistTieredEntries(): Promise<void> {
+    if (!this.tieredEntriesPath) return;
+    await ensureDir(join(this.tieredEntriesPath, ".."));
+    const entries = Array.from(this._tieredEntries.entries());
+    await Deno.writeTextFile(this.tieredEntriesPath, JSON.stringify(entries, null, 2));
   }
 
   /**
@@ -328,8 +352,6 @@ export class SessionMemoryService {
   }
 
   /**
-   * Save an insight from agent execution to memory
-   *
    * Creates a new learning entry in the memory bank that can be retrieved
    * in future sessions.
    *
@@ -337,8 +359,8 @@ export class SessionMemoryService {
    * @returns Save result with learning ID if successful
    */
   async saveInsight(insight: Insight): Promise<SaveInsightResult> {
+    await this.ensureTieredEntriesLoaded();
     try {
-      // Validate insight
       InsightSchema.parse(insight);
 
       // Create learning entry
@@ -371,8 +393,14 @@ export class SessionMemoryService {
         createdAt: Date.now(),
         lastAccessedAt: Date.now(),
         accessCount: 1,
-        promotionScore: learning.confidence === "high" ? 80 : learning.confidence === "medium" ? 50 : 20,
+        promotionScore: learning.confidence === ConfidenceAssessmentLevel.HIGH
+          ? MEMORY_TIER_PROMOTION_SCORE_HIGH
+          : learning.confidence === ConfidenceAssessmentLevel.MEDIUM
+          ? MEMORY_TIER_PROMOTION_SCORE_MEDIUM
+          : MEMORY_TIER_PROMOTION_SCORE_LOW,
       });
+
+      await this.persistTieredEntries();
 
       return {
         success: true,
@@ -394,8 +422,10 @@ export class SessionMemoryService {
    * SEMANTIC entries are never auto-demoted.
    * @returns Number of entries promoted.
    */
-  promoteMemories(): number {
+  async promoteMemories(): Promise<number> {
     let promotedCount = 0;
+
+    await this.ensureTieredEntriesLoaded();
 
     for (const [, entry] of this._tieredEntries) {
       if (
@@ -413,6 +443,10 @@ export class SessionMemoryService {
       }
     }
 
+    if (promotedCount > 0) {
+      await this.persistTieredEntries();
+    }
+
     return promotedCount;
   }
 
@@ -421,7 +455,8 @@ export class SessionMemoryService {
    * and updating the last-accessed timestamp.
    * @param index - The 1-based index of the entry to access.
    */
-  accessMemory(index: number): void {
+  async accessMemory(index: number): Promise<void> {
+    await this.ensureTieredEntriesLoaded();
     const keys = Array.from(this._tieredEntries.keys());
     if (index < 1 || index > keys.length) return;
     const key = keys[index - 1];
@@ -429,6 +464,7 @@ export class SessionMemoryService {
     if (entry) {
       entry.accessCount++;
       entry.lastAccessedAt = Date.now();
+      await this.persistTieredEntries();
     }
   }
 
@@ -448,6 +484,9 @@ export class SessionMemoryService {
   }
 
   /**
+   * @deprecated Use MEMORY_CONTEXT_KEY flow instead — memory context is
+   * injected into agent prompts via AgentRunner.buildSystemPrompt().
+   *
    * Build agent prompt with memory context
    *
    * Convenience method to combine a base prompt with memory context.

@@ -417,6 +417,15 @@ export const MEMORY_TIER_EPISODIC_PROMOTION_THRESHOLD = 50;
 /** Access count threshold for EPISODIC → SEMANTIC memory tier promotion. */
 export const MEMORY_TIER_SEMANTIC_PROMOTION_ACCESS_COUNT = 3;
 
+/** Initial promotion score for high-confidence tiered memory entries. */
+export const MEMORY_TIER_PROMOTION_SCORE_HIGH = 80;
+
+/** Initial promotion score for medium-confidence tiered memory entries. */
+export const MEMORY_TIER_PROMOTION_SCORE_MEDIUM = 50;
+
+/** Initial promotion score for low-confidence tiered memory entries. */
+export const MEMORY_TIER_PROMOTION_SCORE_LOW = 20;
+
 /**
  * Base allocation weights for prompt budget sections (as proportions of usable context).
  * Sum should equal 1.0 after waterfall reallocation.

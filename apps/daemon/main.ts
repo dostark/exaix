@@ -21,9 +21,15 @@ import {
   MemoryAutoApprovalService,
   MemoryBankService,
   MemoryExtractorService,
+  ProviderEmbeddingService,
+  SessionMemoryService,
 } from "@exaix/memory";
+import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
+import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -139,6 +145,39 @@ if (import.meta.main) {
 
     const notificationService = new NotificationService(config, dbService);
 
+    // Initialize Memory Services (needed for context and request processing)
+    const memoryBank = new MemoryBankService(config, dbService);
+    const memoryAdapter = new MemoryBankAdapter(memoryBank);
+    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    const embeddingProvider = new OllamaEmbeddingClient();
+    const costTracker = new CostTracker(dbService, config);
+    const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
+    const providerEmbedding = new ProviderEmbeddingService(config, embeddingProvider, memoryCostRouter);
+
+    const tieredEntriesPath = join(config.system.root, config.paths.memory, "tiered_entries.json");
+    const sessionMemory = new SessionMemoryService(memoryBank, providerEmbedding, undefined, tieredEntriesPath);
+
+    memoryBank.setEmbeddingService(providerEmbedding);
+
+    // Initialize Portal Knowledge Service
+    const pkCfg = config.portal_knowledge;
+    const portalKnowledgeConfig: IPortalKnowledgeConfig = {
+      autoAnalyzeOnMount: pkCfg.auto_analyze_on_mount,
+      defaultMode: pkCfg.default_mode as PortalAnalysisMode,
+      quickScanLimit: pkCfg.quick_scan_limit,
+      maxFilesToRead: pkCfg.max_files_to_read,
+      ignorePatterns: pkCfg.ignore_patterns,
+      staleness: pkCfg.staleness_hours,
+      useLlmInference: pkCfg.use_llm_inference,
+      relevanceSearchEmbeddingEnabled: pkCfg.relevance_search_embedding_enabled ?? false,
+    };
+    const portalKnowledge = new PortalKnowledgeService({
+      config: portalKnowledgeConfig,
+      memoryBank,
+      db: dbService,
+      embeddingProvider,
+    });
+
     // Create central application context
     const context: IApplicationContext = {
       config: configService,
@@ -147,6 +186,9 @@ if (import.meta.main) {
       git: gitService,
       display: logger,
       notificationService,
+      memoryBank,
+      extractor: memoryExtractor,
+      portalKnowledge,
     };
 
     // Ensure required directories exist
@@ -164,6 +206,7 @@ if (import.meta.main) {
       blueprintsPath: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
       includeReasoning: true,
       context, // Support unified DI
+      sessionMemory,
     });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {
@@ -203,27 +246,27 @@ if (import.meta.main) {
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     const executionLoop = new ExecutionLoop({
-      context, // Preferred unified DI
+      context,
       config,
       db: dbService,
       identityId: DAEMON_IDENTITY_ID,
       llmProvider,
       reviewRegistry,
+      sessionMemory,
     });
 
-    // Initialize Memory Auto-Approval Service
-    const memoryBank = new MemoryBankService(config, dbService);
-    const memoryAdapter = new MemoryBankAdapter(memoryBank);
-    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)
     const autoApprovalService = new MemoryAutoApprovalService(config, memoryExtractor);
 
-    const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance(
+    const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance({
       notificationService,
       memoryExtractor,
       autoApprovalService,
       logger,
-      60 * 60 * 1000,
-    );
+      intervalMs: 60 * 60 * 1000,
+      sessionMemory,
+      memoryBank,
+    });
 
     // Start file watcher for approved plans (Workspace/Active)
     // Detection for Step 5.12: Plan Execution Flow
