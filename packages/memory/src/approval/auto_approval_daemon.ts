@@ -16,7 +16,7 @@ export async function initializeMemoryAutoApprovalMaintenance(
   notificationService: Pick<INotificationService, "notifyPendingDigestIfNeeded">,
   memoryExtractor: Pick<MemoryExtractorService, "listPending">,
   autoApprovalService: Pick<MemoryAutoApprovalService, "runApprovalCycle">,
-  logger: Pick<IEventLogger, "error" | "info">,
+  logger: IEventLogger,
   intervalMs = 60 * 60 * 1000,
 ): Promise<{ stop: () => void }> {
   try {
