@@ -1,14 +1,17 @@
 /**
- * @module OpenAIPackageEmbeddingClient
- * @path packages/ai-openai/src/openai_embedding_client.ts
- * @description OpenAI embedding client owned by the @exaix/ai-openai package.
+ * @module OpenAIEmbeddingClient
+ * @path packages/ai/src/providers/openai_embedding_client.ts
+ * @description IEmbeddingProvider implementation for the OpenAI /embeddings endpoint.
+ * Lives in @exaix/ai (not @exaix/ai-openai) to avoid a circular dependency —
+ * the factory in this package must instantiate it directly.
  * @architectural-layer AI
  * @ungrounded
- * @related-files [packages/ai/src/providers/openai_embedding_client.ts]
+ * @dependencies [packages/ai/src/embeddings/embedding_provider.ts, packages/ai/src/embeddings/embedding_errors.ts]
+ * @related-files [packages/ai/src/embeddings/embedding_provider_factory.ts]
  */
 
-import { EmbeddingError } from "@exaix/ai/embeddings/embedding_errors.ts";
-import type { IEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider.ts";
+import type { IEmbeddingProvider } from "../embeddings/embedding_provider.ts";
+import { EmbeddingError } from "../embeddings/embedding_errors.ts";
 
 export interface IOpenAIEmbeddingConfig {
   apiKey: string;
