@@ -11,7 +11,8 @@
 import { ExecutionMemoryBuilder, ProjectMemoryBuilder } from "../../../../tests/fixtures/memory_builder.ts";
 import type { MemoryBankService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
+import type { IEmbeddingSearchResult } from "@exaix/memory";
+import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type {
   IActivitySummary,
   IDecision,

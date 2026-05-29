@@ -160,6 +160,11 @@ export interface IMemoryEmbeddingService {
  * Memory Embedding Service
  *
  * Manages embedding generation and search for memory learnings.
+ *
+ * @deprecated Use ProviderEmbeddingService from packages/memory/src/embedding/provider_embedding_service.ts.
+ *   MemoryEmbeddingService uses deterministic hash-based mock vectors and is retained only for
+ *   backward compatibility with existing test fixtures. All production code in the daemon
+ *   now uses ProviderEmbeddingService with a real embedding provider.
  */
 export class MemoryEmbeddingService implements IMemoryEmbeddingService {
   private embeddingsDir: string;

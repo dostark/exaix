@@ -43,7 +43,6 @@ import {
   FlowValidatorAdapter,
   MemoryBankAdapter,
   MemoryEmbeddingAdapter,
-  MemoryExtractorAdapter,
   PlanAdapter,
   PlanAmendmentAdapter,
   PortalAdapter,
@@ -208,7 +207,7 @@ export async function initializeServices(
     context.plans = new PlanAdapter(plans);
     context.amendments = new PlanAmendmentAdapter(amendments);
     context.memoryBank = new MemoryBankAdapter(memoryBank);
-    context.extractor = new MemoryExtractorAdapter(extractor);
+    context.extractor = extractor;
     context.embeddings = new MemoryEmbeddingAdapter(embedding);
     context.skills = new SkillsAdapter(skills);
     context.archive = new ArchiveAdapter(archive);

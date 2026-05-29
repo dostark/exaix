@@ -86,6 +86,7 @@ Deno.test("DiskBackedEmbeddingCache: persists across instances", async () => {
     await cache1.init();
     await cache1.set("hash-a", testVectorA);
     await cache1.set("hash-b", testVectorB);
+    await cache1.flush(); // flush debounced writes before reading from a second instance
 
     const cache2 = new DiskBackedEmbeddingCache(dir);
     await cache2.init();

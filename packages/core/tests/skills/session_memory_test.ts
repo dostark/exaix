@@ -10,7 +10,8 @@
 import { assertEquals, assertExists, assertGreater, assertLess, assertStringIncludes } from "@std/assert";
 import { type Insight, SessionMemoryService } from "@exaix/memory";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { IEmbeddingSearchResult, IMemoryEmbeddingService } from "@exaix/memory";
+import type { IEmbeddingSearchResult } from "@exaix/memory";
+import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type { IExecutionMemory, ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceLevel,

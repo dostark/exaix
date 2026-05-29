@@ -47,6 +47,7 @@ import {
   searchMemory as searchMemoryHelper,
   searchMemoryAdvanced as searchMemoryAdvancedHelper,
 } from "./memory_search.ts";
+import type { ISearchDeps } from "./memory_search.ts";
 import type {
   IActivitySummary,
   IDecision,
@@ -861,26 +862,7 @@ export class MemoryBankService implements IMemoryBankService {
     query: string,
     options?: { portal?: string; limit?: number },
   ): Promise<IMemorySearchResult[]> {
-    return await searchMemoryHelper(query, options, {
-      projectsDir: this.projectsDir,
-      getProjectMemory: this.getProjectMemory.bind(this),
-      getExecutionHistory: this.getExecutionHistory.bind(this),
-      loadLearningsFromFile: this.loadLearningsFromFile.bind(this),
-      calculateFrequency: this.calculateFrequency.bind(this),
-      calculateRelevance: this.calculateRelevance.bind(this),
-    });
-  }
-
-  // Helper: calculate frequency of a keyword in text
-  private calculateFrequency(text: string | undefined, keywordLower: string): number {
-    if (!text) return 0;
-    const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
-    return matches ? matches.length : 0;
-  }
-
-  // Helper: calculate a relevance score based on title/description frequency
-  private calculateRelevance(titleFreq: number, descFreq: number): number {
-    return Math.min(0.99, 0.5 + (titleFreq * 0.15) + (descFreq * 0.05));
+    return await searchMemoryHelper(query, options, this.buildSearchDeps());
   }
 
   /**
@@ -894,14 +876,7 @@ export class MemoryBankService implements IMemoryBankService {
     tags: string[],
     options?: { portal?: string; limit?: number },
   ): Promise<IMemorySearchResult[]> {
-    return await searchByTagsHelper(tags, options, {
-      projectsDir: this.projectsDir,
-      getProjectMemory: this.getProjectMemory.bind(this),
-      getExecutionHistory: this.getExecutionHistory.bind(this),
-      loadLearningsFromFile: this.loadLearningsFromFile.bind(this),
-      calculateFrequency: this.calculateFrequency.bind(this),
-      calculateRelevance: this.calculateRelevance.bind(this),
-    });
+    return await searchByTagsHelper(tags, options, this.buildSearchDeps());
   }
 
   /**
@@ -915,14 +890,7 @@ export class MemoryBankService implements IMemoryBankService {
     keyword: string,
     options?: { portal?: string; limit?: number },
   ): Promise<IMemorySearchResult[]> {
-    return await searchByKeywordHelper(keyword, options, {
-      projectsDir: this.projectsDir,
-      getProjectMemory: this.getProjectMemory.bind(this),
-      getExecutionHistory: this.getExecutionHistory.bind(this),
-      loadLearningsFromFile: this.loadLearningsFromFile.bind(this),
-      calculateFrequency: this.calculateFrequency.bind(this),
-      calculateRelevance: this.calculateRelevance.bind(this),
-    });
+    return await searchByKeywordHelper(keyword, options, this.buildSearchDeps());
   }
 
   async searchMemoryAdvanced(
@@ -933,14 +901,16 @@ export class MemoryBankService implements IMemoryBankService {
       limit?: number;
     },
   ): Promise<IMemorySearchResult[]> {
-    return await searchMemoryAdvancedHelper(options, {
+    return await searchMemoryAdvancedHelper(options, this.buildSearchDeps());
+  }
+
+  private buildSearchDeps(): ISearchDeps {
+    return {
       projectsDir: this.projectsDir,
       getProjectMemory: this.getProjectMemory.bind(this),
       getExecutionHistory: this.getExecutionHistory.bind(this),
       loadLearningsFromFile: this.loadLearningsFromFile.bind(this),
-      calculateFrequency: this.calculateFrequency.bind(this),
-      calculateRelevance: this.calculateRelevance.bind(this),
-    });
+    };
   }
 
   /**
@@ -1001,9 +971,9 @@ export class MemoryBankService implements IMemoryBankService {
     // Build indices using extracted functions
     const executions = await this.getExecutionHistory(undefined, 1000);
     const filesIndex = buildFilesIndex(executions);
-    const patternsIndex = await buildPatternsIndex(this.projectsDir, this.getProjectMemory.bind(this));
+    const patternsIndex = await buildPatternsIndex(this.projectsDir, (p) => this.getProjectMemory(p));
     const learnings = await this.loadLearningsFromFile();
-    const tagsIndex = await buildTagsIndex(this.projectsDir, this.getProjectMemory.bind(this), learnings);
+    const tagsIndex = await buildTagsIndex(this.projectsDir, (p) => this.getProjectMemory(p), learnings);
 
     // Write indices
     await writeIndices(this.indexDir, filesIndex, patternsIndex, tagsIndex);
@@ -1044,6 +1014,8 @@ export class MemoryBankService implements IMemoryBankService {
         await embeddingService.embedLearning(learning);
       }
     }
+    // Flush debounced cache writes after the batch
+    await embeddingService.flush?.();
 
     // Log embedding rebuild
     const approvedCount = learnings.filter((l) => l.status === MemoryStatus.APPROVED).length;

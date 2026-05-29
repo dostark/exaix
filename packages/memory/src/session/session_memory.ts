@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { IMemoryEmbeddingService } from "../embedding/memory_embedding.ts";
+import type { IMemoryEmbeddingService } from "@exaix/core/types";
 import type { ILearning, IMemorySearchResult } from "@exaix/schemas/memory_bank.ts";
 import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
@@ -163,8 +163,12 @@ export class SessionMemoryService {
 
   private async ensureTieredEntriesLoaded(): Promise<void> {
     if (this.tieredEntriesLoaded || !this.tieredEntriesPath) return;
-    if (await exists(this.tieredEntriesPath)) {
-      const content = await Deno.readTextFile(this.tieredEntriesPath);
+    const p = this.tieredEntriesPath;
+    if (p.length === 0 || p === "/" || p === "\\") {
+      throw new Error(`Invalid tieredEntriesPath: "${p}" — must be a non-empty, non-root absolute path`);
+    }
+    if (await exists(p)) {
+      const content = await Deno.readTextFile(p);
       const entries = JSON.parse(content) as Array<[string, ITieredMemoryEntry]>;
       this._tieredEntries = new Map(entries);
     }
@@ -173,9 +177,13 @@ export class SessionMemoryService {
 
   private async persistTieredEntries(): Promise<void> {
     if (!this.tieredEntriesPath) return;
-    await ensureDir(join(this.tieredEntriesPath, ".."));
+    const p = this.tieredEntriesPath;
+    if (p.length === 0 || p === "/" || p === "\\") {
+      throw new Error(`Invalid tieredEntriesPath: "${p}" — must be a non-empty, non-root absolute path`);
+    }
+    await ensureDir(join(p, ".."));
     const entries = Array.from(this._tieredEntries.entries());
-    await Deno.writeTextFile(this.tieredEntriesPath, JSON.stringify(entries, null, 2));
+    await Deno.writeTextFile(p, JSON.stringify(entries, null, 2));
   }
 
   /**

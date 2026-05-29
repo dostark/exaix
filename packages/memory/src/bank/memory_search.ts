@@ -15,8 +15,16 @@ export interface ISearchDeps {
   getProjectMemory: (portal: string) => Promise<IProjectMemory | null>;
   getExecutionHistory: (portal?: string, limit?: number) => Promise<IExecutionMemory[]>;
   loadLearningsFromFile: () => Promise<ILearning[]>;
-  calculateFrequency: (text: string | undefined, keywordLower: string) => number;
-  calculateRelevance: (titleFreq: number, descFreq: number) => number;
+}
+
+export function calculateFrequency(text: string | undefined, keywordLower: string): number {
+  if (!text) return 0;
+  const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
+  return matches ? matches.length : 0;
+}
+
+export function calculateRelevance(titleFreq: number, descFreq: number): number {
+  return Math.min(0.99, 0.5 + (titleFreq * 0.15) + (descFreq * 0.05));
 }
 
 function matchesAnyLower(texts: string[], queryLower: string): boolean {
@@ -216,8 +224,8 @@ export async function searchByKeyword(
     ...await collectProjectResults(deps, options?.portal, (portalName, projectMem) => {
       const projectResults: IMemorySearchResult[] = [];
       for (const pattern of projectMem.patterns) {
-        const titleFreq = deps.calculateFrequency(pattern.name, keywordLower);
-        const descFreq = deps.calculateFrequency(pattern.description, keywordLower);
+        const titleFreq = calculateFrequency(pattern.name, keywordLower);
+        const descFreq = calculateFrequency(pattern.description, keywordLower);
         if (titleFreq === 0 && descFreq === 0) continue;
 
         projectResults.push({
@@ -225,14 +233,14 @@ export async function searchByKeyword(
           portal: portalName,
           title: pattern.name,
           summary: pattern.description,
-          relevance_score: deps.calculateRelevance(titleFreq, descFreq),
+          relevance_score: calculateRelevance(titleFreq, descFreq),
           tags: pattern.tags,
         });
       }
 
       for (const decision of projectMem.decisions) {
-        const titleFreq = deps.calculateFrequency(decision.decision, keywordLower);
-        const descFreq = deps.calculateFrequency(decision.rationale, keywordLower);
+        const titleFreq = calculateFrequency(decision.decision, keywordLower);
+        const descFreq = calculateFrequency(decision.rationale, keywordLower);
         if (titleFreq === 0 && descFreq === 0) continue;
 
         projectResults.push({
@@ -240,19 +248,19 @@ export async function searchByKeyword(
           portal: portalName,
           title: `Decision: ${decision.date}`,
           summary: decision.decision,
-          relevance_score: deps.calculateRelevance(titleFreq, descFreq),
+          relevance_score: calculateRelevance(titleFreq, descFreq),
           tags: decision.tags,
         });
       }
 
-      const overviewFreq = deps.calculateFrequency(projectMem.overview, keywordLower);
+      const overviewFreq = calculateFrequency(projectMem.overview, keywordLower);
       if (overviewFreq > 0) {
         projectResults.push({
           type: MemoryType.PROJECT,
           portal: portalName,
           title: `${portalName} Overview`,
           summary: projectMem.overview.substring(0, 200),
-          relevance_score: deps.calculateRelevance(0, overviewFreq),
+          relevance_score: calculateRelevance(0, overviewFreq),
         });
       }
 
@@ -263,14 +271,14 @@ export async function searchByKeyword(
   const learnings = await deps.loadLearningsFromFile();
   for (const learning of learnings) {
     if (learning.status !== MemoryStatus.APPROVED) continue;
-    const titleFreq = deps.calculateFrequency(learning.title, keywordLower);
-    const descFreq = deps.calculateFrequency(learning.description, keywordLower);
+    const titleFreq = calculateFrequency(learning.title, keywordLower);
+    const descFreq = calculateFrequency(learning.description, keywordLower);
     if (titleFreq === 0 && descFreq === 0) continue;
     results.push({
       type: MemoryType.LEARNING,
       title: learning.title || DEFAULT_TITLE_PLACEHOLDER,
       summary: learning.description || "",
-      relevance_score: deps.calculateRelevance(titleFreq, descFreq),
+      relevance_score: calculateRelevance(titleFreq, descFreq),
       tags: learning.tags,
       id: learning.id,
     });
