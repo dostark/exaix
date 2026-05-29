@@ -84,13 +84,6 @@ Deno.test("[regression] searchByKeyword finds patterns, decisions and overview",
           source: MemoryBankSource.IDENTITY,
         }),
       ]),
-    calculateFrequency: (text: string | undefined, keywordLower: string) => {
-      if (!text) return 0;
-      const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
-      return matches ? matches.length : 0;
-    },
-    calculateRelevance: (titleFreq: number, descFreq: number) =>
-      Math.min(0.99, 0.5 + (titleFreq * 0.15) + (descFreq * 0.05)),
   };
 
   const results = await searchByKeyword("X", { portal: "projA", limit: 10 }, deps);
@@ -132,8 +125,6 @@ Deno.test("[regression] searchByTags returns matching items and learnings", asyn
           tags: ["t1"],
         }),
       ]),
-    calculateFrequency: () => 0,
-    calculateRelevance: () => 0.5,
   };
 
   const results = await searchByTags(["t1"], { portal: "projA", limit: 10 }, deps);
@@ -161,13 +152,6 @@ Deno.test("[regression] searchMemoryAdvanced combines tag and keyword results wi
       } as IProjectMemory),
     getExecutionHistory: () => Promise.resolve([]),
     loadLearningsFromFile: () => Promise.resolve([]),
-    calculateFrequency: (text: string | undefined, keywordLower: string) => {
-      if (!text) return 0;
-      const matches = text.toLowerCase().match(new RegExp(keywordLower, "gi"));
-      return matches ? matches.length : 0;
-    },
-    calculateRelevance: (titleFreq: number, descFreq: number) =>
-      Math.min(0.99, 0.5 + (titleFreq * 0.15) + (descFreq * 0.05)),
   };
 
   const results = await searchMemoryAdvanced({ tags: ["t1"], keyword: "zed", portal: "projA", limit: 10 }, deps);

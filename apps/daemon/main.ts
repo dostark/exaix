@@ -8,7 +8,7 @@
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config";
-import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
+import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -21,9 +21,16 @@ import {
   MemoryAutoApprovalService,
   MemoryBankService,
   MemoryExtractorService,
+  ProviderEmbeddingService,
+  SessionMemoryService,
 } from "@exaix/memory";
+import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
+import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
+import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
+import { PortalKnowledgeService } from "@exaix/portal/knowledge";
+import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
@@ -139,6 +146,63 @@ if (import.meta.main) {
 
     const notificationService = new NotificationService(config, dbService);
 
+    // Initialize Memory Services (needed for context and request processing)
+    const memoryBank = new MemoryBankService(config, dbService);
+    const memoryAdapter = new MemoryBankAdapter(memoryBank);
+    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    const embCfg = config.memory?.embedding;
+    const providerType = embCfg?.provider ?? "ollama";
+    let providerConfig: IEmbeddingProviderConfig;
+    switch (providerType) {
+      case ProviderType.OPENAI:
+        providerConfig = { provider: ProviderType.OPENAI, apiKey: embCfg?.apiKey ?? "", model: embCfg?.model };
+        break;
+      case ProviderType.LLAMACPP:
+        providerConfig = {
+          provider: ProviderType.LLAMACPP,
+          model: embCfg?.model,
+          baseUrl: embCfg?.baseUrl,
+          chunkSize: embCfg?.chunkSize,
+        };
+        break;
+      default:
+        providerConfig = {
+          provider: ProviderType.OLLAMA,
+          model: embCfg?.model,
+          baseUrl: embCfg?.baseUrl,
+          chunkSize: embCfg?.chunkSize,
+          timeoutMs: embCfg?.timeoutMs,
+        };
+    }
+    const embeddingProvider = createEmbeddingProvider(providerConfig);
+    const costTracker = new CostTracker(dbService, config);
+    const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
+    const providerEmbedding = new ProviderEmbeddingService(config, embeddingProvider, memoryCostRouter);
+
+    const tieredEntriesPath = join(config.system.root, config.paths.memory, "tiered_entries.json");
+    const sessionMemory = new SessionMemoryService(memoryBank, providerEmbedding, undefined, tieredEntriesPath);
+
+    memoryBank.setEmbeddingService(providerEmbedding);
+
+    // Initialize Portal Knowledge Service
+    const pkCfg = config.portal_knowledge;
+    const portalKnowledgeConfig: IPortalKnowledgeConfig = {
+      autoAnalyzeOnMount: pkCfg.auto_analyze_on_mount,
+      defaultMode: pkCfg.default_mode as PortalAnalysisMode,
+      quickScanLimit: pkCfg.quick_scan_limit,
+      maxFilesToRead: pkCfg.max_files_to_read,
+      ignorePatterns: pkCfg.ignore_patterns,
+      staleness: pkCfg.staleness_hours,
+      useLlmInference: pkCfg.use_llm_inference,
+      relevanceSearchEmbeddingEnabled: pkCfg.relevance_search_embedding_enabled ?? false,
+    };
+    const portalKnowledge = new PortalKnowledgeService({
+      config: portalKnowledgeConfig,
+      memoryBank,
+      db: dbService,
+      embeddingProvider,
+    });
+
     // Create central application context
     const context: IApplicationContext = {
       config: configService,
@@ -147,6 +211,10 @@ if (import.meta.main) {
       git: gitService,
       display: logger,
       notificationService,
+      memoryBank,
+      extractor: memoryExtractor,
+      portalKnowledge,
+      embeddings: providerEmbedding,
     };
 
     // Ensure required directories exist
@@ -164,6 +232,7 @@ if (import.meta.main) {
       blueprintsPath: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
       includeReasoning: true,
       context, // Support unified DI
+      sessionMemory,
     });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {
@@ -203,27 +272,27 @@ if (import.meta.main) {
     const reviewRegistry = new ReviewRegistry(dbService, logger);
 
     const executionLoop = new ExecutionLoop({
-      context, // Preferred unified DI
+      context,
       config,
       db: dbService,
       identityId: DAEMON_IDENTITY_ID,
       llmProvider,
       reviewRegistry,
+      sessionMemory,
     });
 
-    // Initialize Memory Auto-Approval Service
-    const memoryBank = new MemoryBankService(config, dbService);
-    const memoryAdapter = new MemoryBankAdapter(memoryBank);
-    const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
+    // Initialize Memory Auto-Approval Service (reuses memoryExtractor from context setup)
     const autoApprovalService = new MemoryAutoApprovalService(config, memoryExtractor);
 
-    const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance(
+    const { stop: stopAutoApproval } = await initializeMemoryAutoApprovalMaintenance({
       notificationService,
       memoryExtractor,
       autoApprovalService,
       logger,
-      60 * 60 * 1000,
-    );
+      intervalMs: 60 * 60 * 1000,
+      sessionMemory,
+      memoryBank,
+    });
 
     // Start file watcher for approved plans (Workspace/Active)
     // Detection for Step 5.12: Plan Execution Flow

@@ -42,6 +42,7 @@ import {
   PROVIDER_MOCK,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
+  ProviderType,
 } from "@exaix/core";
 import {
   DEFAULT_MCP_ENABLED,
@@ -273,8 +274,13 @@ export const ConfigSchema = z.object({
       max_batch_size: z.number().int().min(1).max(100).default(20),
     }).default({}),
     embedding: z.object({
+      provider: z.nativeEnum(ProviderType).default(ProviderType.OLLAMA),
       model: z.string().default("nomic-embed-text"),
       dimension: z.number().int().positive().default(768),
+      baseUrl: z.string().optional(),
+      apiKey: z.string().optional(),
+      chunkSize: z.number().int().min(1).max(100).optional(),
+      timeoutMs: z.number().int().positive().optional(),
     }).optional(),
   }).optional().default({}),
   skills: z.object({

@@ -203,6 +203,10 @@ export class ProviderEmbeddingService implements IMemoryEmbeddingService {
     this.hnsw.delete(id);
   }
 
+  async flush(): Promise<void> {
+    await this.cache.flush();
+  }
+
   async getStats(): Promise<{ total: number; generated_at: string }> {
     const manifest = await this.loadManifest();
     return {

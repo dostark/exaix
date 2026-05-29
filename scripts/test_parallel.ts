@@ -37,6 +37,7 @@ const SEQUENTIAL_FILES: string[] = [
   "tests/integration/18_cli_commands_integration_test.ts",
   "tests/integration/24_portal_e2e_workflow_test.ts",
   "tests/integration/26_portal_worktree_review_cleanup_e2e_test.ts",
+  "tests/migrations/migrate_db_test.ts",
   "apps/daemon/tests/deploy_workspace_test.ts",
   "packages/execution/tests/agent_executor_test.ts",
   "apps/exactl/tests/review_commands_test.ts",

@@ -31,6 +31,7 @@ import {
   AGENT_EVENT_PROMPT_ASSEMBLED,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
+  MEMORY_CONTEXT_KEY,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
 } from "@exaix/core";
@@ -618,6 +619,11 @@ export class AgentRunner implements IAgentRunner {
     const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
     if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
       parts.push(portalKnowledge);
+    }
+
+    const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
+    if (typeof memoryContext === "string" && memoryContext.trim()) {
+      parts.push(memoryContext);
     }
 
     if (request.userPrompt.trim()) {

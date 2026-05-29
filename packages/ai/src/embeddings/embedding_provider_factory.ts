@@ -11,9 +11,12 @@
 
 import type { IEmbeddingProvider } from "./embedding_provider.ts";
 import { EmbeddingError } from "./embedding_errors.ts";
-import { type IOllamaEmbeddingConfig, OllamaEmbeddingClient } from "@exaix/ai-ollama";
-import { type IOpenAIEmbeddingConfig, OpenAIEmbeddingClient } from "@exaix/ai-openai";
-import { type ILlamaCppEmbeddingConfig, LlamaCppEmbeddingClient } from "../providers/llamacpp_embedding_client.ts";
+import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
+import type { IOllamaEmbeddingConfig } from "@exaix/ai-ollama";
+import { OpenAIEmbeddingClient } from "../providers/openai_embedding_client.ts";
+import type { IOpenAIEmbeddingConfig } from "../providers/openai_embedding_client.ts";
+import { LlamaCppEmbeddingClient } from "../providers/llamacpp_embedding_client.ts";
+import type { ILlamaCppEmbeddingConfig } from "../providers/llamacpp_embedding_client.ts";
 
 /**
  * Discriminated union of all embedding provider configs.
@@ -27,7 +30,7 @@ export type IEmbeddingProviderConfig =
  * Create an IEmbeddingProvider from discriminated config.
  * @param config - Provider-specific config with a `provider` discriminator.
  * @returns Concrete IEmbeddingProvider instance.
- * @throws EmbeddingError if the provider is unknown.
+ * @throws EmbeddingError if the provider is unknown or not yet implemented.
  */
 export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbeddingProvider {
   switch (config.provider) {
@@ -37,10 +40,14 @@ export function createEmbeddingProvider(config: IEmbeddingProviderConfig): IEmbe
       return new OpenAIEmbeddingClient(config);
     case "llamacpp":
       return new LlamaCppEmbeddingClient(config);
-    default:
+    default: {
+      const _exhaustive: never = config;
       throw new EmbeddingError(
         "UNKNOWN_PROVIDER",
-        `Unknown embedding provider: ${(config as { provider: string }).provider}`,
+        `Unknown embedding provider: ${
+          (_exhaustive as { provider: string }).provider
+        }. Supported: ollama, openai, llamacpp.`,
       );
+    }
   }
 }

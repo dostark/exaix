@@ -129,8 +129,10 @@ export class MemoryCostRouter implements IMemoryCostRouter {
    * When no cost tracker is configured, the cost is silently dropped
    * (consistent with the conservative LOCAL-only behaviour).
    *
-   * @param costUsd Actual cost of the operation in USD. Use a small
+   * @param costUsd Estimated cost of the operation in USD. Use a small
    *   value like `0.0002` for a single embedding query.
+   *   Note: tokens are reported as 0 because embedding APIs do not
+   *   expose per-request token counts — the cost is an approximation.
    */
   async recordOperation(costUsd: number): Promise<void> {
     if (!this.costTracker) return;

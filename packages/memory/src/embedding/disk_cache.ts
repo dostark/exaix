@@ -4,6 +4,11 @@
  * @description Filesystem-backed LRU cache for embedding vectors. Uses
  * SHA-256 content hashes as keys and persists entries as a single JSON
  * file. Replaces the old in-memory-only EmbeddingLruCache.
+ *
+ * Persistence is debounced: `set()` schedules a deferred flush rather
+ * than writing on every call. Callers that embed a batch should call
+ * `flush()` when done to guarantee the file is up to date.
+ * In test mode (DENO_TEST=1) writes are immediate to avoid timer leaks.
  * @architectural-layer Services
  * @ungrounded
  * @related-files [packages/memory/src/embedding/provider_embedding_service.ts]
@@ -14,6 +19,7 @@ import { ensureDir, exists } from "@std/fs";
 
 const CACHE_FILENAME = "cache.json";
 const DEFAULT_MAX_ENTRIES = 512;
+const CACHE_FLUSH_DEBOUNCE_MS = 500;
 
 interface ISerializedEntry {
   hash: string;
@@ -28,6 +34,7 @@ export class DiskBackedEmbeddingCache {
   private cacheDir: string;
   private cacheFile: string;
   private initialized = false;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(cacheDir: string, maxEntries = DEFAULT_MAX_ENTRIES) {
     this.cacheDir = cacheDir;
@@ -82,6 +89,19 @@ export class DiskBackedEmbeddingCache {
         lastAccess: ++this.accessCounter,
       });
     }
+    if (Deno.env.get("DENO_TEST") === "1") {
+      await this.persist();
+    } else {
+      this.scheduleDebouncedFlush();
+    }
+  }
+
+  /** Flush any pending debounced write immediately. */
+  async flush(): Promise<void> {
+    if (this.flushTimer !== null) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
     await this.persist();
   }
 
@@ -93,6 +113,14 @@ export class DiskBackedEmbeddingCache {
   async clear(): Promise<void> {
     this.entries.clear();
     await this.persist();
+  }
+
+  private scheduleDebouncedFlush(): void {
+    if (this.flushTimer !== null) clearTimeout(this.flushTimer);
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      this.persist().catch(() => {});
+    }, CACHE_FLUSH_DEBOUNCE_MS);
   }
 
   private evictLru(): void {
