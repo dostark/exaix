@@ -26,7 +26,7 @@ import type { PlanFrontmatter } from "@exaix/schemas/plan_schema.ts";
 import { BlueprintLoader } from "@exaix/core/blueprint";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import type { ReviewRegistry } from "@exaix/core/artifact";
-import { MemoryBankService } from "@exaix/memory";
+import { MemoryBankService, type SessionMemoryService } from "@exaix/memory";
 import { MissionReporter } from "@exaix/core/artifact";
 import { PlanExecutor } from "@exaix/core/planning";
 import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
@@ -51,6 +51,7 @@ import {
   PLAN_AMENDMENT_EVENT_REJECTED,
 } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
+import { ConfidenceAssessmentLevel, ConfidenceLevel } from "@exaix/core";
 
 /** Represents raw YAML frontmatter before validation */
 interface RawFrontmatter {
@@ -67,6 +68,7 @@ export interface IExecutionLoopConfig {
   llmProvider?: IModelProvider;
   reviewRegistry?: ReviewRegistry;
   context?: IApplicationContext;
+  sessionMemory?: SessionMemoryService;
 }
 
 export interface IExecutionResult {
@@ -116,6 +118,7 @@ export class ExecutionLoop {
   private llmProvider?: IModelProvider;
   private confidenceScorer?: ConfidenceScorer;
   private amendmentService?: PlanAmendmentService;
+  private sessionMemory?: SessionMemoryService;
 
   constructor(
     config: IExecutionLoopConfig,
@@ -127,6 +130,7 @@ export class ExecutionLoop {
     this.llmProvider = ctx?.provider || config.llmProvider;
     this.reviewRegistry = config.reviewRegistry;
     this.context = ctx;
+    this.sessionMemory = config.sessionMemory;
     this.plansDir = join(this.config.system.root, this.config.paths.workspace, this.config.paths.active);
     this.blueprintLoader = new BlueprintLoader({
       blueprintsPath: join(this.config.system.root, this.config.paths.blueprints, this.config.paths.identities),
@@ -202,10 +206,11 @@ export class ExecutionLoop {
     let portalGitService: IGitService | undefined;
     let worktreePath: string | undefined;
     let leaseAcquired = false;
+    let frontmatter: PlanFrontmatter | undefined;
 
     try {
       // Parse plan frontmatter first (validates before lease)
-      const frontmatter = await this.parsePlan(planPath);
+      frontmatter = await this.parsePlan(planPath);
       if (frontmatter.status === PlanStatus.AMENDMENT_PENDING) {
         this.logActivity("execution.skipped", frontmatter.trace_id, {
           request_id: frontmatter.request_id,
@@ -283,7 +288,7 @@ export class ExecutionLoop {
       }
 
       // Handle success
-      await this.handleSuccess(planPath, traceId!, requestId!, {
+      await this.handleSuccess(planPath, traceId!, requestId!, frontmatter, {
         isReadOnly: prepared.isReadOnly,
         planAgentId: prepared.planAgentId,
         portal: frontmatter.portal,
@@ -299,7 +304,7 @@ export class ExecutionLoop {
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (traceId && requestId && leaseAcquired) {
-        await this.handleFailure(planPath, traceId, requestId, errorMessage, {
+        await this.handleFailure(planPath, traceId, requestId, errorMessage, frontmatter, {
           portalGitService,
           worktreePath,
         });
@@ -890,10 +895,14 @@ export class ExecutionLoop {
     planPath: string,
     traceId: string,
     requestId: string,
+    frontmatter?: PlanFrontmatter,
     artifactContext?: ISuccessArtifactContext,
   ): Promise<void> {
     // Generate mission report
-    await this.generateMissionReport(traceId, requestId);
+    await this.generateMissionReport(traceId, requestId, frontmatter);
+
+    // Auto-extract learnings from execution if extractor is configured
+    await this.extractExecutionLearnings(traceId);
 
     // Update plan status to COMPLETED
     try {
@@ -1018,13 +1027,17 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     error: string,
+    frontmatter?: PlanFrontmatter,
     _cleanup?: {
       portalGitService?: IGitService;
       worktreePath?: string;
     },
   ): Promise<void> {
     // Generate failure report
-    await this.generateFailureReport(traceId, requestId, error);
+    await this.generateFailureReport(traceId, requestId, error, frontmatter);
+
+    // Auto-extract troubleshooting learnings from failed execution
+    await this.extractExecutionLearnings(traceId);
 
     // Persist the failed plan as an execution artifact for trace inspection.
     let planContent: string | null = null;
@@ -1217,6 +1230,7 @@ export class ExecutionLoop {
                       traceId,
                       requestId,
                       "Plan amendment request expired (timeout).",
+                      undefined,
                     );
                   }
                 }
@@ -1245,6 +1259,36 @@ export class ExecutionLoop {
       ),
     };
     return new MissionReporter(this.config, reportConfig, memoryBank, this.db);
+  }
+
+  /**
+   * Auto-extract learnings from execution using the configured MemoryExtractorService.
+   * Loads the persisted execution record and delegates to analyzeExecution + createProposal.
+   */
+  private async extractExecutionLearnings(traceId: string): Promise<void> {
+    if (!this.context?.extractor || !this.db) return;
+
+    try {
+      const memoryBank = new MemoryBankService(this.config, this.db);
+      const executionMemory = await memoryBank.getExecutionByTraceId(traceId);
+      if (!executionMemory) return;
+
+      const learnings = this.context.extractor.analyzeExecution(executionMemory);
+      for (const learning of learnings) {
+        await this.context.extractor.createProposal(learning, executionMemory, this.identityId);
+        if (this.sessionMemory) {
+          await this.sessionMemory.saveInsight({
+            title: learning.title,
+            description: learning.description,
+            category: learning.category,
+            tags: learning.tags,
+            confidence: mapToConfidenceLevel(learning.confidence),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("[ExecutionLoop] Failed to extract memory learnings:", error);
+    }
   }
 
   /**
@@ -1318,9 +1362,15 @@ export class ExecutionLoop {
   private async generateMissionReport(
     traceId: string,
     requestId: string,
+    frontmatter?: PlanFrontmatter,
   ): Promise<void> {
     try {
       const reporter = this.createMissionReporter();
+
+      const contextFiles: string[] = [];
+      if (frontmatter?.portal) {
+        contextFiles.push(frontmatter.portal);
+      }
 
       // Prepare trace data
       const traceData = {
@@ -1330,7 +1380,7 @@ export class ExecutionLoop {
         status: ExecutionStatus.COMPLETED,
         branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
         completedAt: new Date(),
-        contextFiles: [], // TODO: Extract from plan execution context
+        contextFiles,
         reasoning: "Plan execution completed successfully",
         summary: `Successfully executed plan for request: ${requestId}`,
       };
@@ -1357,9 +1407,15 @@ export class ExecutionLoop {
     traceId: string,
     requestId: string,
     error: string,
+    frontmatter?: PlanFrontmatter,
   ): Promise<void> {
     try {
       const reporter = this.createMissionReporter();
+
+      const contextFiles: string[] = [];
+      if (frontmatter?.portal) {
+        contextFiles.push(frontmatter.portal);
+      }
 
       // Prepare trace data for failure
       const traceData = {
@@ -1369,7 +1425,7 @@ export class ExecutionLoop {
         status: ExecutionStatus.FAILED,
         branch: `feat/${requestId}-${traceId.substring(0, 8)}`,
         completedAt: new Date(),
-        contextFiles: [], // TODO: Extract from plan execution context
+        contextFiles,
         reasoning: `Plan execution failed: ${error}`,
         summary: `Execution failed for request: ${requestId}`,
       };
@@ -1468,5 +1524,20 @@ export class ExecutionLoop {
     } catch (error) {
       console.warn(`Failed to archive request ${requestId} to ${targetDir}:`, error);
     }
+  }
+}
+
+function mapToConfidenceLevel(
+  level: string,
+): ConfidenceLevel {
+  switch (level) {
+    case ConfidenceAssessmentLevel.VERY_LOW:
+    case ConfidenceAssessmentLevel.LOW:
+      return ConfidenceLevel.LOW;
+    case ConfidenceAssessmentLevel.MEDIUM:
+      return ConfidenceLevel.MEDIUM;
+    case ConfidenceAssessmentLevel.HIGH:
+    case ConfidenceAssessmentLevel.VERY_HIGH:
+      return ConfidenceLevel.HIGH;
   }
 }
