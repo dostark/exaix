@@ -1539,5 +1539,7 @@ function mapToConfidenceLevel(
     case ConfidenceAssessmentLevel.HIGH:
     case ConfidenceAssessmentLevel.VERY_HIGH:
       return ConfidenceLevel.HIGH;
+    default:
+      return ConfidenceLevel.LOW;
   }
 }

@@ -8,7 +8,7 @@
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
 import { ConfigService } from "@exaix/core/config";
-import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel } from "@exaix/core";
+import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
@@ -25,7 +25,8 @@ import {
   SessionMemoryService,
 } from "@exaix/memory";
 import { CostTracker, MemoryCostRouter } from "@exaix/core/cost";
-import { OllamaEmbeddingClient } from "@exaix/ai-ollama";
+import { createEmbeddingProvider } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
+import type { IEmbeddingProviderConfig } from "@exaix/ai/embeddings/embedding_provider_factory.ts";
 import { NotificationService } from "@exaix/core/notification";
 import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapter.ts";
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
@@ -149,7 +150,31 @@ if (import.meta.main) {
     const memoryBank = new MemoryBankService(config, dbService);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
-    const embeddingProvider = new OllamaEmbeddingClient();
+    const embCfg = config.memory?.embedding;
+    const providerType = embCfg?.provider ?? "ollama";
+    let providerConfig: IEmbeddingProviderConfig;
+    switch (providerType) {
+      case ProviderType.OPENAI:
+        providerConfig = { provider: ProviderType.OPENAI, apiKey: embCfg?.apiKey ?? "", model: embCfg?.model };
+        break;
+      case ProviderType.LLAMACPP:
+        providerConfig = {
+          provider: ProviderType.LLAMACPP,
+          model: embCfg?.model,
+          baseUrl: embCfg?.baseUrl,
+          chunkSize: embCfg?.chunkSize,
+        };
+        break;
+      default:
+        providerConfig = {
+          provider: ProviderType.OLLAMA,
+          model: embCfg?.model,
+          baseUrl: embCfg?.baseUrl,
+          chunkSize: embCfg?.chunkSize,
+          timeoutMs: embCfg?.timeoutMs,
+        };
+    }
+    const embeddingProvider = createEmbeddingProvider(providerConfig);
     const costTracker = new CostTracker(dbService, config);
     const memoryCostRouter = new MemoryCostRouter(costTracker, logger);
     const providerEmbedding = new ProviderEmbeddingService(config, embeddingProvider, memoryCostRouter);

@@ -237,6 +237,7 @@ export const KNOWN_PROVIDERS = [
   ProviderType.ANTHROPIC,
   ProviderType.OPENAI,
   ProviderType.GOOGLE,
+  ProviderType.LLAMACPP,
 ] as const;
 
 // ============================================================================
