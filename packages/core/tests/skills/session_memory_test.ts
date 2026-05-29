@@ -597,7 +597,7 @@ Deno.test("SessionMemoryService - promoteMemories promotes WORKING to EPISODIC",
   });
 
   // Promote — entry has high confidence, should promote from WORKING to EPISODIC
-  const promoted = service.promoteMemories();
+  const promoted = await service.promoteMemories();
   assertGreater(promoted, 0, "at least one entry should be promoted");
 });
 
@@ -615,14 +615,14 @@ Deno.test("SessionMemoryService - promoteMemories promotes EPISODIC to SEMANTIC 
   });
 
   // Promote to EPISODIC first
-  service.promoteMemories();
+  await service.promoteMemories();
 
   // Access the entry 3+ times to trigger EPISODIC → SEMANTIC
   for (let i = 0; i < 4; i++) {
-    service.accessMemory(1);
+    await service.accessMemory(1);
   }
 
-  const promoted = service.promoteMemories();
+  const promoted = await service.promoteMemories();
   assertGreater(promoted, 0, "episodic entries with high access count should promote to semantic");
 });
 
@@ -644,7 +644,7 @@ Deno.test("SessionMemoryService - lookup prioritizes higher-tier memories", asyn
   });
 
   // Promote it to EPISODIC
-  service.promoteMemories();
+  await service.promoteMemories();
 
   // Look up memories — the tiered entry should influence sorting
   const memories = await service.lookupMemories("architecture", 10000, {

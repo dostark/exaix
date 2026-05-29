@@ -626,8 +626,8 @@ export class RequestProcessor {
       const summary = await this._resolveKnowledgeContext(body, frontmatter.portal, portalKnowledge);
       request.context[PORTAL_KNOWLEDGE_KEY] = summary;
     }
-    if (memoryContext) {
-      request.context[MEMORY_CONTEXT_KEY] = memoryContext;
+    if (memoryContext?.memoryContext) {
+      request.context[MEMORY_CONTEXT_KEY] = memoryContext.memoryContext;
     }
 
     const taskComplexity = this.classifyTaskComplexity(blueprint, request, analysis);

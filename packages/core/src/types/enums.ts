@@ -201,6 +201,8 @@ export enum ProviderType {
   GOOGLE = "google",
   /** Mock provider for testing and development */
   MOCK = "mock",
+  /** Local llama.cpp server for running open-source models */
+  LLAMACPP = "llamacpp",
 }
 
 /**

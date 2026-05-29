@@ -10,7 +10,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { MockProvider } from "@exaix/ai/providers.ts";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
-import { MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
+import { MEMORY_CONTEXT_KEY, MemoryBankSource, MemoryScope, PORTAL_CONTEXT_KEY, SkillStatus } from "@exaix/core";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { ISkillsService } from "@exaix/core/types";
 import type { ISkillMatchRequest } from "@exaix/core/types";
@@ -120,6 +120,29 @@ Deno.test("AgentRunner injects portal context when provided", async () => {
   });
 
   assertStringIncludes(capturedPrompt, portalContext);
+});
+
+Deno.test("AgentRunner injects memory context when provided", async () => {
+  let capturedPrompt = "";
+
+  const mockProvider = new MockProvider(wellFormedResponse);
+  const originalGenerate = mockProvider.generate.bind(mockProvider);
+  mockProvider.generate = async (prompt: string): Promise<IGenerateResult> => {
+    capturedPrompt = prompt;
+    return await originalGenerate(prompt);
+  };
+
+  const runner = new AgentRunner(mockProvider);
+  const memoryContext = "Relevant past memories:\n- Learned TypeScript patterns\n- Project structure knowledge";
+
+  await runner.run(sampleBlueprint, {
+    ...sampleRequest,
+    context: {
+      [MEMORY_CONTEXT_KEY]: memoryContext,
+    },
+  });
+
+  assertStringIncludes(capturedPrompt, memoryContext);
 });
 
 // ============================================================================

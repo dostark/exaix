@@ -6,7 +6,7 @@
  * @related-files ["packages/memory/src/bank/memory_bank.ts", "packages/schemas/src/memory_bank.ts"]
  */
 import type { IExecutionMemory, IProposalLearning } from "@exaix/schemas/memory_bank.ts";
-import { LANG_TYPESCRIPT } from "@exaix/core";
+import { ExecutionStatus, LANG_TYPESCRIPT, MemoryReferenceType } from "@exaix/core";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope } from "@exaix/core";
 
 /**
