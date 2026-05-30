@@ -9,7 +9,13 @@
  * @related-files [packages/portal/knowledge/portal_knowledge_service.ts]
  */
 
-import { GIT_HISTORY_COMMIT_LIMIT, GIT_HISTORY_SINCE, GIT_HISTORY_TIMEOUT_MS, SafeSubprocess } from "@exaix/core";
+import {
+  GIT_HISTORY_COMMIT_LIMIT,
+  GIT_HISTORY_SINCE,
+  GIT_HISTORY_SUFFICIENT_COMMITS,
+  GIT_HISTORY_TIMEOUT_MS,
+  SafeSubprocess,
+} from "@exaix/core";
 
 export interface IGitHotspot {
   file: string;
@@ -44,7 +50,7 @@ export class GitHistoryAnalyzer {
 
       const topAuthors = authorStats.slice(0, 10);
       const totalAuthorCount = authorStats.length;
-      const hasSufficientHistory = totalCommits >= 50;
+      const hasSufficientHistory = totalCommits >= GIT_HISTORY_SUFFICIENT_COMMITS;
 
       return {
         totalCommits,
@@ -79,25 +85,27 @@ export class GitHistoryAnalyzer {
 
   private async getAuthorStats(
     portalPath: string,
-    _commitLimit: number,
+    commitLimit: number,
     since: string,
   ): Promise<Array<{ name: string; commitCount: number }>> {
     const result = await SafeSubprocess.run("git", [
       "log",
       "--format=%an",
       `--since=${since}`,
+      `-${commitLimit}`,
     ], { cwd: portalPath, timeoutMs: GIT_HISTORY_TIMEOUT_MS });
     return this.parseLogAuthors(result.stdout);
   }
 
   private async getHotspots(
     portalPath: string,
-    _commitLimit: number,
+    commitLimit: number,
     since: string,
   ): Promise<Array<{ file: string; commitCount: number }>> {
     const result = await SafeSubprocess.run("git", [
       "log",
       `--since=${since}`,
+      `-${commitLimit}`,
       "--name-only",
       "--pretty=format:",
     ], { cwd: portalPath, timeoutMs: GIT_HISTORY_TIMEOUT_MS });

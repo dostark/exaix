@@ -7,6 +7,7 @@
 
 // deno-lint-ignore-file no-explicit-any
 import { assertEquals, assertGreaterOrEqual } from "@std/assert";
+import { GIT_HISTORY_SUFFICIENT_COMMITS } from "@exaix/core";
 import { GitHistoryAnalyzer } from "../git_history_analyzer.ts";
 
 Deno.test("GitHistoryAnalyzer: parseLogAuthors parses standard format", () => {
@@ -71,6 +72,116 @@ Deno.test("GitHistoryAnalyzer: returns empty state when not a git repo", async (
     assertEquals(result.totalCommits, 0);
     assertEquals(result.totalAuthors, 0);
     assertEquals(result.hasSufficientHistory, false);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test(
+  "GitHistoryAnalyzer: hasSufficientHistory is true for totalCommits >= GIT_HISTORY_SUFFICIENT_COMMITS",
+  async () => {
+    const tempDir = await Deno.makeTempDir();
+    try {
+      await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
+      await new Deno.Command("git", {
+        args: ["config", "user.email", "t@t.com"],
+        cwd: tempDir,
+      }).output();
+      await new Deno.Command("git", {
+        args: ["config", "user.name", "T"],
+        cwd: tempDir,
+      }).output();
+
+      // Create exactly GIT_HISTORY_SUFFICIENT_COMMITS commits
+      for (let i = 1; i <= GIT_HISTORY_SUFFICIENT_COMMITS; i++) {
+        await Deno.writeTextFile(`${tempDir}/file${i}.txt`, `content ${i}`);
+        await new Deno.Command("git", { args: ["add", "."], cwd: tempDir }).output();
+        await new Deno.Command("git", {
+          args: ["commit", "-m", `commit ${i}`],
+          cwd: tempDir,
+        }).output();
+      }
+
+      const result = await new GitHistoryAnalyzer().analyze(tempDir);
+      assertEquals(
+        result.hasSufficientHistory,
+        true,
+        `hasSufficientHistory should be true for ${GIT_HISTORY_SUFFICIENT_COMMITS} commits`,
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "GitHistoryAnalyzer: hasSufficientHistory is false for totalCommits < GIT_HISTORY_SUFFICIENT_COMMITS",
+  async () => {
+    const tempDir = await Deno.makeTempDir();
+    try {
+      await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
+      await new Deno.Command("git", {
+        args: ["config", "user.email", "t@t.com"],
+        cwd: tempDir,
+      }).output();
+      await new Deno.Command("git", {
+        args: ["config", "user.name", "T"],
+        cwd: tempDir,
+      }).output();
+
+      // One fewer than the threshold
+      for (let i = 1; i < GIT_HISTORY_SUFFICIENT_COMMITS; i++) {
+        await Deno.writeTextFile(`${tempDir}/file${i}.txt`, `content ${i}`);
+        await new Deno.Command("git", { args: ["add", "."], cwd: tempDir }).output();
+        await new Deno.Command("git", {
+          args: ["commit", "-m", `commit ${i}`],
+          cwd: tempDir,
+        }).output();
+      }
+
+      const result = await new GitHistoryAnalyzer().analyze(tempDir);
+      assertEquals(
+        result.hasSufficientHistory,
+        false,
+        `hasSufficientHistory should be false for ${GIT_HISTORY_SUFFICIENT_COMMITS - 1} commits`,
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test("GitHistoryAnalyzer: commitLimit bounds the number of commits analyzed", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    await new Deno.Command("git", { args: ["init"], cwd: tempDir }).output();
+    await new Deno.Command("git", {
+      args: ["config", "user.email", "t@t.com"],
+      cwd: tempDir,
+    }).output();
+    await new Deno.Command("git", {
+      args: ["config", "user.name", "T"],
+      cwd: tempDir,
+    }).output();
+
+    // 3 commits that each touch the same file
+    for (let i = 1; i <= 3; i++) {
+      await Deno.writeTextFile(`${tempDir}/main.ts`, `export const v = ${i};`);
+      await new Deno.Command("git", { args: ["add", "."], cwd: tempDir }).output();
+      await new Deno.Command("git", {
+        args: ["commit", "-m", `update ${i}`],
+        cwd: tempDir,
+      }).output();
+    }
+
+    // Limit to only the last 1 commit
+    const result = await new GitHistoryAnalyzer().analyze(tempDir, 1, "1.year");
+    const mainEntry = result.topChangedFiles?.find((f) => f.file.endsWith("main.ts"));
+    assertEquals(
+      mainEntry?.commitCount,
+      1,
+      "commitLimit=1 should restrict analysis to 1 commit, so main.ts appears only once",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

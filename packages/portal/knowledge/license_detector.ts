@@ -10,6 +10,11 @@
 
 import { ConfidenceLevel, LicenseSource } from "@exaix/core";
 
+/** Minimal shape of a parsed package.json for license field extraction. */
+interface IPackageJson {
+  license?: string | Record<string, string>;
+}
+
 export interface ILicenseInfo {
   type: string;
   source: LicenseSource;
@@ -73,7 +78,23 @@ export class LicenseDetector {
       }
     }
 
-    // Layer 2: SPDX headers in source files (sample up to 20)
+    // Layer 2: package.json "license" field
+    try {
+      const pkgRaw = await Deno.readTextFile(`${portalPath}/package.json`);
+      const pkg = JSON.parse(pkgRaw) as IPackageJson;
+      if (typeof pkg.license === "string" && pkg.license.length > 0) {
+        licenses.push({
+          type: pkg.license,
+          source: LicenseSource.PACKAGE,
+          filePath: "package.json",
+          confidence: ConfidenceLevel.HIGH,
+        });
+      }
+    } catch {
+      // no package.json or unreadable — skip
+    }
+
+    // Layer 3: SPDX headers in source files (sample up to 20)
     const sourceFiles = fileList
       .filter((f) =>
         f.endsWith(".ts") || f.endsWith(".js") || f.endsWith(".tsx") || f.endsWith(".rs") || f.endsWith(".py") ||

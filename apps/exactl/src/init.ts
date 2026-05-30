@@ -159,6 +159,14 @@ export async function initializeServices(
       useLlmInference: cfg.portal_knowledge.use_llm_inference,
       ignorePatterns: cfg.portal_knowledge.ignore_patterns,
       relevanceSearchEmbeddingEnabled: cfg.portal_knowledge.relevance_search_embedding_enabled ?? false,
+      maxPatternDetectorSampleSize: cfg.portal_knowledge.max_pattern_detector_sample_size,
+      minPatternDetectorSampleSize: cfg.portal_knowledge.min_pattern_detector_sample_size,
+      enableAstAnalysis: cfg.portal_knowledge.enable_ast_analysis,
+      enableTestExecution: cfg.portal_knowledge.enable_test_execution,
+      enableVulnerabilityScan: cfg.portal_knowledge.enable_vulnerability_scan,
+      enableGitHistoryAnalysis: cfg.portal_knowledge.enable_git_history_analysis,
+      gitHistoryCommitLimit: cfg.portal_knowledge.git_history_commit_limit,
+      gitHistorySince: cfg.portal_knowledge.git_history_since,
     };
 
     const portalKnowledge = new PortalKnowledgeService({

@@ -948,6 +948,9 @@ export const GIT_HISTORY_COMMIT_LIMIT = 500;
 /** Default git since filter for GitHistoryAnalyzer. */
 export const GIT_HISTORY_SINCE = "1.year";
 
+/** Minimum commit count required for GitHistoryAnalyzer to consider history sufficient. */
+export const GIT_HISTORY_SUFFICIENT_COMMITS = 10;
+
 /** Max lines in the portal knowledge Markdown summary injected into agent prompts. */
 export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES = 60;
 

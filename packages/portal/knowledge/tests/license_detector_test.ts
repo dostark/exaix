@@ -2,7 +2,8 @@
  * @module LicenseDetectorTest
  * @path packages/portal/knowledge/tests/license_detector_test.ts
  * @description Tests for LicenseDetector — Strategy 9 of PortalKnowledgeService.
- * Tests license file reading, SPDX header detection, and confidence scoring.
+ * Tests license file reading, package.json field detection, SPDX header detection,
+ * and confidence scoring.
  */
 
 import { assertEquals } from "@std/assert";
@@ -78,7 +79,7 @@ Deno.test("LicenseDetector: reads LICENSE.md file", async () => {
   }
 });
 
-Deno.test("LicenseDetector: returns empty array when no LICENSE file", async () => {
+Deno.test("LicenseDetector: returns empty array when no license sources found", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
     const detector = new LicenseDetector();
@@ -110,89 +111,58 @@ Deno.test("LicenseDetector: detects SPDX headers in source files", async () => {
   }
 });
 
-Deno.test("LicenseDetector: detectLicenseFromContent returns Apache-2.0 for Apache content", () => {
-  const detector = new LicenseDetector();
+// ============================================================================
+// Step 105.14 — package.json license detection (Layer 2)
+// ============================================================================
 
-  const result = detector.detectLicenseFromContent(
-    "Apache License, Version 2.0\n\nLicensed under the Apache License",
-    "/tmp/LICENSE",
-  );
-
-  assertEquals(result?.type, "Apache-2.0");
-  assertEquals(result?.source, "file");
-  assertEquals(result?.confidence, "high");
-});
-
-Deno.test("LicenseDetector: detectLicenseFromContent returns null for no match", () => {
-  const detector = new LicenseDetector();
-
-  const result = detector.detectLicenseFromContent(
-    "Custom license text that doesn't match any known pattern",
-    "/tmp/LICENSE",
-  );
-
-  assertEquals(result, null);
-});
-
-Deno.test("LicenseDetector: reads LICENSE file from temp directory", async () => {
+Deno.test("LicenseDetector: detects license from package.json license field", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    await Deno.writeTextFile(`${tempDir}/LICENSE`, "MIT License\n\nPermission is hereby granted");
+    await Deno.writeTextFile(
+      `${tempDir}/package.json`,
+      JSON.stringify({ name: "my-pkg", version: "1.0.0", license: "MIT" }),
+    );
     const detector = new LicenseDetector();
 
-    const licenses = await detector.analyze(tempDir, ["main.ts"]);
+    const licenses = await detector.analyze(tempDir, ["package.json"]);
 
-    assertEquals(licenses.length, 1);
-    assertEquals(licenses[0].type, "MIT");
-    assertEquals(licenses[0].source, "file");
-    assertEquals(licenses[0].confidence, "high");
+    const pkgLicense = licenses.find((l) => l.source === LicenseSource.PACKAGE);
+    assertEquals(pkgLicense?.type, "MIT", "Should detect MIT from package.json license field");
+    assertEquals(pkgLicense?.confidence, ConfidenceLevel.HIGH);
+    assertEquals(pkgLicense?.filePath, "package.json");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
 });
 
-Deno.test("LicenseDetector: reads LICENSE.md file", async () => {
+Deno.test("LicenseDetector: handles malformed package.json without crashing", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    await Deno.writeTextFile(`${tempDir}/LICENSE.md`, "Apache License, Version 2.0");
+    await Deno.writeTextFile(`${tempDir}/package.json`, "{ invalid json ]]]");
     const detector = new LicenseDetector();
 
-    const licenses = await detector.analyze(tempDir, ["main.ts"]);
+    // Should not throw
+    const licenses = await detector.analyze(tempDir, ["package.json"]);
 
-    assertEquals(licenses.length, 1);
-    assertEquals(licenses[0].type, "Apache-2.0");
+    assertEquals(Array.isArray(licenses), true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
 });
 
-Deno.test("LicenseDetector: returns empty array when no LICENSE file", async () => {
+Deno.test("LicenseDetector: handles non-string package.json license without crashing", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
+    await Deno.writeTextFile(
+      `${tempDir}/package.json`,
+      JSON.stringify({ name: "my-pkg", license: { type: "MIT" } }),
+    );
     const detector = new LicenseDetector();
 
-    const licenses = await detector.analyze(tempDir, ["main.ts"]);
+    const licenses = await detector.analyze(tempDir, ["package.json"]);
 
-    assertEquals(licenses, []);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
-Deno.test("LicenseDetector: detects SPDX headers in source files", async () => {
-  const tempDir = await Deno.makeTempDir();
-  try {
-    const sourceContent =
-      "// SPDX-License-Identifier: MIT\n// SPDX-License-Identifier: Apache-2.0\n\nexport const x = 1;";
-    await Deno.writeTextFile(`${tempDir}/LICENSE`, "MIT License");
-    await Deno.writeTextFile(`${tempDir}/main.ts`, sourceContent);
-    const detector = new LicenseDetector();
-
-    const licenses = await detector.analyze(tempDir, ["main.ts"]);
-
-    const spdxLicenses = licenses.filter((l) => l.source === "spdx");
-    assertEquals(spdxLicenses.length, 1);
-    assertEquals(spdxLicenses[0].type, "MIT");
+    const pkgLicense = licenses.find((l) => l.source === LicenseSource.PACKAGE);
+    assertEquals(pkgLicense, undefined, "Non-string license field should not produce a result");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
