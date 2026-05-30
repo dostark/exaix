@@ -1,9 +1,10 @@
 /**
  * @module PortalKnowledgeService
  * @path packages/portal/knowledge/portal_knowledge_service.ts
- * @description Orchestrator for all 6 portal analysis strategies: DirectoryAnalyzer,
- * ConfigParser, KeyFileIdentifier, PatternDetector, ArchitectureInferrer, and
- * SymbolExtractor. Implements IPortalKnowledgeService with quick/standard/deep
+ * @description Orchestrator for all 11 portal analysis strategies: DirectoryAnalyzer,
+ * ConfigParser, KeyFileIdentifier, PatternDetector, ArchitectureInferrer,
+ * SymbolExtractor, AstAnalyzer, TestRunner, LicenseDetector, VulnerabilityScanner,
+ * GitHistoryAnalyzer. Implements IPortalKnowledgeService with quick/standard/deep
  * modes, in-memory staleness check, and async background re-analysis on stale cache.
  * @architectural-layer Services
  * @related-files [packages/portal/knowledge/mod.ts, "packages/core/src/types/i_portal_knowledge_service.ts"]
@@ -260,17 +261,14 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       architectureInferenceFailed = inferrer.architectureInferenceFailed;
     }
 
-    // Strategy 6: symbol extraction (standard/deep + TS/JS)
+    // Strategy 6: symbol extraction (standard/deep + TS/JS) — uses all TS/JS files
     let symbolMap: IPortalKnowledge["symbolMap"] = [];
+    let symbolSourceFilesScanned: number | undefined;
     if (resolvedMode !== PortalAnalysisMode.QUICK) {
       const extractor = this._symbolRunner ? new SymbolExtractor(this._symbolRunner) : new SymbolExtractor();
-      const entrypoints = keyFiles
-        .filter((kf) => kf.role === "entrypoint")
-        .map((kf) => kf.path);
-      if (entrypoints.length === 0 && fileList.length > 0) {
-        entrypoints.push(fileList[0]);
-      }
-      symbolMap = await extractor.extractSymbols(portalPath, entrypoints, {
+      const allTsFiles = fileList.filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs)$/.test(f));
+      symbolSourceFilesScanned = allTsFiles.length;
+      symbolMap = await extractor.extractSymbols(portalPath, allTsFiles, {
         primaryLanguage,
         allFilePaths: fileList,
       });
@@ -372,6 +370,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         filesScanned: fileList.length,
         filesRead,
         ...(architectureInferenceFailed !== undefined ? { architectureInferenceFailed } : {}),
+        ...(symbolSourceFilesScanned !== undefined ? { symbolSourceFilesScanned } : {}),
       },
     };
 
@@ -443,10 +442,31 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       return;
     }
 
-    const mode = validity.analysisMode === "incremental" ? PortalAnalysisMode.QUICK : undefined;
+    const isIncremental = validity.analysisMode === "incremental";
+    const previousCache = isIncremental ? this._cache.get(portalAlias) : undefined;
+
+    const mode = isIncremental ? PortalAnalysisMode.QUICK : undefined;
     await this.analyze(portalAlias, portalPath, mode).catch(() => {
       // Swallow background analysis failures to preserve stale return behavior.
     });
+
+    // For incremental re-analysis (QUICK mode), merge strategy 7-11 data from the
+    // prior full analysis back onto the new cache entry — QUICK mode skips those
+    // strategies and would otherwise silently destroy previously collected data.
+    if (isIncremental && previousCache) {
+      const fresh = this._cache.get(portalAlias);
+      if (fresh) {
+        const merged = {
+          ...fresh,
+          astDiagnostics: fresh.astDiagnostics ?? previousCache.astDiagnostics,
+          testInfo: fresh.testInfo ?? previousCache.testInfo,
+          licenses: fresh.licenses ?? previousCache.licenses,
+          vulnerabilities: fresh.vulnerabilities ?? previousCache.vulnerabilities,
+          gitHistory: fresh.gitHistory ?? previousCache.gitHistory,
+        };
+        this._cache.set(portalAlias, merged);
+      }
+    }
   }
 
   private _mapValidityEventType(mode: KnowledgeAnalysisMode): string {
