@@ -649,6 +649,17 @@ export const ConfigSchema = z.object({
     use_llm_inference: z.boolean().default(true),
     ignore_patterns: z.array(z.string()).default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
     relevance_search_embedding_enabled: z.boolean().optional().default(false),
+    max_pattern_detector_sample_size: z.number().int().min(1)
+      .default(DEFAULTS.DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE),
+    min_pattern_detector_sample_size: z.number().int().min(1)
+      .default(DEFAULTS.DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE),
+    enable_ast_analysis: z.boolean().default(true),
+    enable_test_execution: z.boolean().default(false),
+    enable_vulnerability_scan: z.boolean().default(false),
+    enable_git_history_analysis: z.boolean().default(true),
+    git_history_commit_limit: z.number().int().min(1)
+      .default(DEFAULTS.GIT_HISTORY_COMMIT_LIMIT),
+    git_history_since: z.string().default(DEFAULTS.GIT_HISTORY_SINCE),
   }).optional().default({
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
@@ -658,6 +669,14 @@ export const ConfigSchema = z.object({
     use_llm_inference: true,
     ignore_patterns: DEFAULTS.DEFAULT_IGNORE_PATTERNS,
     relevance_search_embedding_enabled: false,
+    max_pattern_detector_sample_size: DEFAULTS.DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
+    min_pattern_detector_sample_size: DEFAULTS.DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
+    enable_ast_analysis: true,
+    enable_test_execution: false,
+    enable_vulnerability_scan: false,
+    enable_git_history_analysis: true,
+    git_history_commit_limit: DEFAULTS.GIT_HISTORY_COMMIT_LIMIT,
+    git_history_since: DEFAULTS.GIT_HISTORY_SINCE,
   }),
   /** Tokenizer backend configuration (Phase 103) */
   tokenizer: z.object({

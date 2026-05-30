@@ -915,6 +915,42 @@ export const ARCHITECTURE_INFERRER_TOKEN_BUDGET = 8_000;
 /** Max lines per file before truncation when assembling the LLM prompt. */
 export const ARCHITECTURE_INFERRER_MAX_FILE_TOKENS = 200;
 
+/** Default minimum sample size for PatternDetector content analysis. */
+export const DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE = 10;
+
+/** Default maximum sample size for PatternDetector content analysis. */
+export const DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE = 50;
+
+/** Maximum retry attempts for ArchitectureInferrer LLM call. */
+export const ARCHITECTURE_INFERRER_MAX_RETRIES = 3;
+
+/** Initial backoff delay (ms) for ArchitectureInferrer retries. */
+export const ARCHITECTURE_INFERRER_BACKOFF_MS = 1_000;
+
+/** Backoff multiplier per retry attempt. */
+export const ARCHITECTURE_INFERRER_BACKOFF_MULTIPLIER = 2;
+
+/** Subprocess timeout for deno check in AstAnalyzer (ms). */
+export const AST_ANALYZER_TIMEOUT_MS = 30_000;
+
+/** Subprocess timeout for deno test --dry-run in TestRunner (ms). */
+export const TEST_RUNNER_TIMEOUT_MS = 30_000;
+
+/** Subprocess timeout for deno audit / npm audit in VulnerabilityScanner (ms). */
+export const VULN_SCANNER_TIMEOUT_MS = 60_000;
+
+/** Subprocess timeout for git queries in GitHistoryAnalyzer (ms). */
+export const GIT_HISTORY_TIMEOUT_MS = 30_000;
+
+/** Default max commits to analyze in GitHistoryAnalyzer. */
+export const GIT_HISTORY_COMMIT_LIMIT = 500;
+
+/** Default git since filter for GitHistoryAnalyzer. */
+export const GIT_HISTORY_SINCE = "1.year";
+
+/** Minimum commit count required for GitHistoryAnalyzer to consider history sufficient. */
+export const GIT_HISTORY_SUFFICIENT_COMMITS = 10;
+
 /** Max lines in the portal knowledge Markdown summary injected into agent prompts. */
 export const PORTAL_KNOWLEDGE_PROMPT_MAX_LINES = 60;
 
@@ -923,6 +959,18 @@ export const DEFAULT_SYMBOL_MAP_LIMIT = 100;
 
 /** Subprocess timeout for `deno doc --json` call in milliseconds. */
 export const DENO_DOC_TIMEOUT_MS = 15_000;
+
+/** The deno CLI executable name used when spawning subprocesses. */
+export const DENO_COMMAND = "deno";
+
+/** deno CLI subcommand for running tests (deno test). */
+export const DENO_SUBCOMMAND_TEST = "test";
+
+/** deno CLI subcommand for type-checking (deno check). */
+export const DENO_SUBCOMMAND_CHECK = "check";
+
+/** deno CLI subcommand for auditing dependencies (deno audit). */
+export const DENO_SUBCOMMAND_AUDIT = "audit";
 
 /** File/directory name patterns skipped during portal traversal by default. */
 export const DEFAULT_IGNORE_PATTERNS: string[] = [
@@ -1370,3 +1418,35 @@ export const TOOL_CONFIRMATION_EVENT_DENIED = "tool.confirmation.denied";
 
 /** Notification type string used when surfacing a pending tool approval to the user. */
 export const TOOL_CONFIRMATION_NOTIFY_TYPE = "tool_approval_pending";
+
+/** Sleep for the given number of milliseconds using setTimeout. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Maximum parallel deno doc --json processes for SymbolExtractor. */
+export const SYMBOL_EXTRACTOR_CONCURRENCY = 4;
+
+/**
+ * Run async tasks with bounded concurrency.
+ * Processes items in batches of `concurrency`, ensuring at most `concurrency`
+ * promises are in-flight at any time.
+ */
+export async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  const executing: Promise<void>[] = [];
+  for (const item of items) {
+    const p = fn(item).finally(() => {
+      const idx = executing.indexOf(p);
+      if (idx >= 0) executing.splice(idx, 1);
+    });
+    executing.push(p);
+    if (executing.length >= concurrency) {
+      await Promise.race(executing);
+    }
+  }
+  await Promise.all(executing);
+}

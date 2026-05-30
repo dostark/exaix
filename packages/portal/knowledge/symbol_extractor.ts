@@ -18,6 +18,8 @@ import {
   DENO_DOC_TIMEOUT_MS,
   LANG_JAVASCRIPT,
   LANG_TYPESCRIPT,
+  runWithConcurrency,
+  SYMBOL_EXTRACTOR_CONCURRENCY,
   SystemCommand,
 } from "@exaix/core";
 
@@ -192,49 +194,63 @@ export class SymbolExtractor {
   }
 
   /**
-   * Extract symbols from the given entrypoints.
+   * Extract symbols from the given file paths.
+   * When many files are provided, groups by directory and runs `deno doc --json`
+   * per directory with bounded concurrency. Deduplicates symbols by name + file path.
    * Returns [] immediately for non-TypeScript/JavaScript portals.
    */
   async extractSymbols(
     portalPath: string,
-    entrypoints: string[],
+    filePaths: string[],
     options: ISymbolExtractorOptions,
   ): Promise<ISymbolEntry[]> {
     const lang = options.primaryLanguage.toLowerCase();
     if (lang !== LANG_TYPESCRIPT && lang !== LANG_JAVASCRIPT) return [];
+    if (filePaths.length === 0) return [];
 
     const allSymbols: ISymbolEntry[] = [];
+    const seen = new Set<string>();
 
-    for (const entrypoint of entrypoints) {
-      let raw: string | null;
-      try {
-        raw = await this._runner.run(entrypoint, portalPath);
-      } catch {
-        return [];
+    // Group files by directory for batching — run deno doc --json per batch
+    const dirGroups = groupByDirectory(filePaths);
+    const batches = [...dirGroups.entries()];
+
+    await runWithConcurrency(batches, SYMBOL_EXTRACTOR_CONCURRENCY, async ([_dir, dirFiles]) => {
+      for (const filePath of dirFiles) {
+        let raw: string | null;
+        try {
+          raw = await this._runner.run(filePath, portalPath);
+        } catch {
+          return;
+        }
+        if (!raw) continue;
+
+        let nodes: IDenoDocNode[];
+        try {
+          nodes = JSON.parse(raw) as IDenoDocNode[];
+        } catch {
+          continue;
+        }
+
+        for (const node of nodes) {
+          const name = node.name ?? "";
+          if (!name) continue;
+          const denoKind = node.kind ?? "";
+          const kind = mapKind(denoKind, node);
+          if (!kind) continue;
+
+          const file = node.location?.filename ?? filePath;
+          const dedupKey = `${name}:${file}`;
+          if (seen.has(dedupKey)) continue;
+          seen.add(dedupKey);
+
+          const signature = buildSignature(name, node);
+          const doc = node.jsDoc?.doc || undefined;
+
+          allSymbols.push({ name, kind, file, signature, doc });
+        }
       }
-      if (!raw) continue;
-
-      let nodes: IDenoDocNode[];
-      try {
-        nodes = JSON.parse(raw) as IDenoDocNode[];
-      } catch {
-        continue;
-      }
-
-      for (const node of nodes) {
-        const name = node.name ?? "";
-        if (!name) continue;
-        const denoKind = node.kind ?? "";
-        const kind = mapKind(denoKind, node);
-        if (!kind) continue;
-
-        const file = node.location?.filename ?? entrypoint;
-        const signature = buildSignature(name, node);
-        const doc = node.jsDoc?.doc || undefined;
-
-        allSymbols.push({ name, kind, file, signature, doc });
-      }
-    }
+    });
 
     const withScores = (options.allFilePaths && options.importMap)
       ? computePageRankScores(allSymbols, options.allFilePaths, options.importMap)
@@ -244,4 +260,15 @@ export class SymbolExtractor {
       .sort((a, b) => (b.pageRankScore ?? 0) - (a.pageRankScore ?? 0))
       .slice(0, DEFAULT_SYMBOL_MAP_LIMIT);
   }
+}
+
+/** Group file paths by their top-level directory. */
+function groupByDirectory(filePaths: string[]): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+  for (const fp of filePaths) {
+    const dir = fp.includes("/") ? fp.substring(0, fp.lastIndexOf("/")) : "";
+    if (!groups.has(dir)) groups.set(dir, []);
+    groups.get(dir)!.push(fp);
+  }
+  return groups;
 }

@@ -195,6 +195,14 @@ if (import.meta.main) {
       staleness: pkCfg.staleness_hours,
       useLlmInference: pkCfg.use_llm_inference,
       relevanceSearchEmbeddingEnabled: pkCfg.relevance_search_embedding_enabled ?? false,
+      maxPatternDetectorSampleSize: pkCfg.max_pattern_detector_sample_size,
+      minPatternDetectorSampleSize: pkCfg.min_pattern_detector_sample_size,
+      enableAstAnalysis: pkCfg.enable_ast_analysis,
+      enableTestExecution: pkCfg.enable_test_execution,
+      enableVulnerabilityScan: pkCfg.enable_vulnerability_scan,
+      enableGitHistoryAnalysis: pkCfg.enable_git_history_analysis,
+      gitHistoryCommitLimit: pkCfg.git_history_commit_limit,
+      gitHistorySince: pkCfg.git_history_since,
     };
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,

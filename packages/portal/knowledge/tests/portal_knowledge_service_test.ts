@@ -4,19 +4,22 @@
  * @related-files []
  * @architectural-layer Portal
  * @description Integration tests for PortalKnowledgeService: the orchestrator
- * that combines all 6 analysis strategies (DirectoryAnalyzer, ConfigParser,
- * KeyFileIdentifier, PatternDetector, ArchitectureInferrer, SymbolExtractor)
- * into a single IPortalKnowledge result. Uses a real temp directory with mock
- * IModelProvider, IDatabaseService, and IDocCommandRunner for testability.
+ * that combines all 11 analysis strategies into a single IPortalKnowledge result.
+ * Uses a real temp directory with mock IModelProvider, IDatabaseService, and
+ * IDocCommandRunner for testability.
  */
 
 import { assert, assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
-import { type IDocCommandRunner, PortalKnowledgeService } from "@exaix/portal/knowledge";
+import {
+  type IDocCommandRunner,
+  type IKnowledgeInvalidationStrategy,
+  PortalKnowledgeService,
+} from "@exaix/portal/knowledge";
 import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
-import { PortalAnalysisMode } from "@exaix/core";
+import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Mock helpers
@@ -103,6 +106,14 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
     staleness: 24,
     useLlmInference: true,
     relevanceSearchEmbeddingEnabled: false,
+    maxPatternDetectorSampleSize: 50,
+    minPatternDetectorSampleSize: 10,
+    enableAstAnalysis: true,
+    enableTestExecution: false,
+    enableVulnerabilityScan: false,
+    enableGitHistoryAnalysis: true,
+    gitHistoryCommitLimit: 500,
+    gitHistorySince: "1.year",
     ...overrides,
   };
 }
@@ -295,7 +306,14 @@ Deno.test(
       };
 
       const svc = new PortalKnowledgeService({
-        config: makeConfig({ staleness: 0, useLlmInference: false }),
+        config: makeConfig({
+          staleness: 0,
+          useLlmInference: false,
+          enableGitHistoryAnalysis: false,
+          enableAstAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
         memoryBank: makeMockMemoryBank(),
         provider: slowProvider,
         db: makeMockDb(),
@@ -341,7 +359,12 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
       },
     };
     const svc = new PortalKnowledgeService({
-      config: makeConfig({ staleness: 0, useLlmInference: false }),
+      config: makeConfig({
+        staleness: 0,
+        useLlmInference: false,
+        enableAstAnalysis: false,
+        enableGitHistoryAnalysis: false,
+      }),
       memoryBank: makeMockMemoryBank(),
       provider: trackingProvider,
       db: makeMockDb(),
@@ -356,7 +379,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
     await svc.getOrAnalyze("bg2-portal", tempDir);
 
     // Wait for background re-analysis to finish
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 1000));
 
     // Background analysis ran (even if no LLM was called in quick mode,
     // the service should have re-analyzed and updated the cache)
@@ -441,8 +464,10 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
-    // Should not throw; architectureOverview falls back to empty
-    assertEquals(result.architectureOverview, "");
+    // Should not throw; architectureOverview falls back to heuristic
+    assertEquals(result.architectureOverview.length > 0, true);
+    assertEquals(result.architectureOverview.includes("Heuristic"), true);
+    assertEquals(result.metadata.architectureInferenceFailed, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -640,3 +665,320 @@ Deno.test("[PortalKnowledgeService] overlapping sentence groups provide broader 
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+// ============================================================================
+// Step 105.11 — Strategy 6 all-TS-files wiring + symbolSourceFilesScanned
+// ============================================================================
+
+/** Tracking runner records every entrypoint passed to run(). */
+function makeTrackingDocRunner(): IDocCommandRunner & { calls: string[] } {
+  const calls: string[] = [];
+  return {
+    calls,
+    run(entrypoint: string, _portalPath: string): Promise<string | null> {
+      calls.push(entrypoint);
+      return Promise.resolve("[]");
+    },
+  };
+}
+
+/** Temp portal with one entrypoint (main.ts) and two non-entrypoint TS files. */
+async function makeTempPortalMultiFile(): Promise<{ dir: string; tsFileCount: number }> {
+  const dir = await Deno.makeTempDir({ prefix: "pks_multi_" });
+  await Deno.mkdir(join(dir, "src"), { recursive: true });
+  await Deno.mkdir(join(dir, "lib"), { recursive: true });
+  await Deno.writeTextFile(join(dir, "src", "main.ts"), "export function start(): void {}");
+  await Deno.writeTextFile(join(dir, "src", "utils.ts"), "export function util(): void {}");
+  await Deno.writeTextFile(join(dir, "lib", "helper.ts"), "export function help(): void {}");
+  await Deno.writeTextFile(join(dir, "deno.json"), JSON.stringify({ tasks: { test: "deno test" } }));
+  return { dir, tsFileCount: 3 };
+}
+
+Deno.test(
+  "[PortalKnowledgeService] standard mode passes all TS/JS files to SymbolExtractor (not just entrypoints)",
+  async () => {
+    const { dir, tsFileCount: _tsFileCount } = await makeTempPortalMultiFile();
+    try {
+      const tracker = makeTrackingDocRunner();
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false, enableAstAnalysis: false, enableGitHistoryAnalysis: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: tracker,
+      });
+      await svc.analyze("multi-portal", dir, PortalAnalysisMode.STANDARD);
+      const hasUtils = tracker.calls.some((f) => f.endsWith("utils.ts"));
+      const hasHelper = tracker.calls.some((f) => f.endsWith("helper.ts"));
+      assertEquals(
+        hasUtils,
+        true,
+        `utils.ts should be passed to SymbolExtractor; got: [${tracker.calls.join(", ")}]`,
+      );
+      assertEquals(
+        hasHelper,
+        true,
+        `helper.ts should be passed to SymbolExtractor; got: [${tracker.calls.join(", ")}]`,
+      );
+    } finally {
+      await Deno.remove(dir, { recursive: true });
+    }
+  },
+);
+
+Deno.test("[PortalKnowledgeService] metadata.symbolSourceFilesScanned equals TS/JS file count", async () => {
+  const { dir, tsFileCount } = await makeTempPortalMultiFile();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false, enableAstAnalysis: false, enableGitHistoryAnalysis: false }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
+    const result = await svc.analyze("scanned-portal", dir, PortalAnalysisMode.STANDARD);
+    assertEquals(
+      result.metadata.symbolSourceFilesScanned,
+      tsFileCount,
+      `symbolSourceFilesScanned should equal number of TS/JS files (${tsFileCount})`,
+    );
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+// ============================================================================
+// Step 105.12 — Incremental re-analysis merge semantics
+// ============================================================================
+
+Deno.test(
+  "[PortalKnowledgeService] incremental re-analysis preserves gitHistory from prior full analysis",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const mockStrategy: IKnowledgeInvalidationStrategy = {
+        check: () =>
+          Promise.resolve({
+            isValid: false,
+            reason: KnowledgeValidityReason.TIME_TTL,
+            analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
+          }),
+      };
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: true,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+        invalidationStrategy: mockStrategy,
+      });
+
+      // Full STANDARD analysis — populates gitHistory (empty values for non-git dir)
+      const full = await svc.analyze("merge-git-portal", tempDir, PortalAnalysisMode.STANDARD);
+      assertExists(full.gitHistory, "Full analysis should populate gitHistory");
+
+      // getOrAnalyze fires background INCREMENTAL re-analysis (QUICK mode → strips gitHistory)
+      await svc.getOrAnalyze("merge-git-portal", tempDir);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // After background incremental run, gitHistory must be preserved from the prior full analysis
+      const merged = await svc.getOrAnalyze("merge-git-portal", tempDir);
+      assertExists(
+        merged.gitHistory,
+        "Incremental re-analysis must preserve gitHistory from prior full analysis",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] incremental re-analysis preserves licenses from prior full analysis",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const mockStrategy: IKnowledgeInvalidationStrategy = {
+        check: () =>
+          Promise.resolve({
+            isValid: false,
+            reason: KnowledgeValidityReason.TIME_TTL,
+            analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
+          }),
+      };
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+        invalidationStrategy: mockStrategy,
+      });
+
+      // Full STANDARD analysis — runs license detection (returns [] for temp dir)
+      const full = await svc.analyze("merge-lic-portal", tempDir, PortalAnalysisMode.STANDARD);
+      // licenses is populated (may be empty array) in standard mode
+      assertEquals(Array.isArray(full.licenses), true, "Standard analysis should populate licenses array");
+
+      // Background INCREMENTAL re-analysis (QUICK mode → no license detection)
+      await svc.getOrAnalyze("merge-lic-portal", tempDir);
+      await new Promise((r) => setTimeout(r, 800));
+
+      // After incremental, licenses must be preserved
+      const merged = await svc.getOrAnalyze("merge-lic-portal", tempDir);
+      assertEquals(
+        Array.isArray(merged.licenses),
+        true,
+        "Incremental re-analysis must preserve licenses from prior full analysis",
+      );
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+// ============================================================================
+// Step 105.16 — Mode-gating tests for strategies 7–11
+// ============================================================================
+
+Deno.test("[PortalKnowledgeService] quick mode produces no new strategy fields", async () => {
+  const tempDir = await makeTempPortal();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
+    const result = await svc.analyze("gate-quick", tempDir, PortalAnalysisMode.QUICK);
+    assertEquals(result.astDiagnostics, undefined, "quick mode must not run strategy 7");
+    assertEquals(result.testInfo, undefined, "quick mode must not run strategy 8");
+    assertEquals(result.licenses, undefined, "quick mode must not run strategy 9");
+    assertEquals(result.vulnerabilities, undefined, "quick mode must not run strategy 10");
+    assertEquals(result.gitHistory, undefined, "quick mode must not run strategy 11");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test(
+  "[PortalKnowledgeService] standard mode populates licenses and gitHistory (strategies 9 + 11)",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+          enableGitHistoryAnalysis: true,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-std", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(Array.isArray(result.licenses), true, "standard mode must run strategy 9 (licenses)");
+      assertEquals(result.gitHistory !== undefined, true, "standard mode must run strategy 11 (gitHistory)");
+      assertEquals(result.testInfo, undefined, "standard mode must NOT run strategy 8 (deep only)");
+      assertEquals(result.vulnerabilities, undefined, "standard mode must NOT run strategy 10 (deep only)");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableAstAnalysis=false skips strategy 7 in standard mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false, enableAstAnalysis: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-noast", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(result.astDiagnostics, undefined, "enableAstAnalysis=false must skip strategy 7");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableGitHistoryAnalysis=false skips strategy 11 in standard mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false, enableGitHistoryAnalysis: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-nogit", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(result.gitHistory, undefined, "enableGitHistoryAnalysis=false must skip strategy 11");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableTestExecution=false skips strategy 8 in deep mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-notest", tempDir, PortalAnalysisMode.DEEP);
+      assertEquals(result.testInfo, undefined, "enableTestExecution=false must skip strategy 8");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableVulnerabilityScan=false skips strategy 10 in deep mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-novuln", tempDir, PortalAnalysisMode.DEEP);
+      assertEquals(result.vulnerabilities, undefined, "enableVulnerabilityScan=false must skip strategy 10");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);

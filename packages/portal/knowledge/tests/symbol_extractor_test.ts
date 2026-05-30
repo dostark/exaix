@@ -10,7 +10,7 @@
 
 import { assertEquals } from "@std/assert";
 import { type IDenoDocNode, type IDocCommandRunner, SymbolExtractor } from "@exaix/portal/knowledge";
-import { DEFAULT_SYMBOL_MAP_LIMIT } from "@exaix/core";
+import { DEFAULT_SYMBOL_MAP_LIMIT, runWithConcurrency, SYMBOL_EXTRACTOR_CONCURRENCY } from "@exaix/core";
 
 // ---------------------------------------------------------------------------
 // Mock helpers
@@ -180,4 +180,74 @@ Deno.test("[SymbolExtractor] returns empty array when runner returns null", asyn
     primaryLanguage: "typescript",
   });
   assertEquals(result, []);
+});
+
+// ---------------------------------------------------------------------------
+// Full-source extraction (directory batching + dedup + concurrency)
+// ---------------------------------------------------------------------------
+
+Deno.test("[SymbolExtractor] extracts symbols from all TS files (not just entrypoints)", async () => {
+  const nodesA = [
+    makeDocNode("function", "funcA", { location: { filename: "src/a.ts" }, functionDef: { params: [] } }),
+  ];
+  const nodesB = [
+    makeDocNode("function", "funcB", { location: { filename: "src/b.ts" }, functionDef: { params: [] } }),
+  ];
+  let callCount = 0;
+  const trackingRunner: IDocCommandRunner = {
+    run: (_entrypoint: string) => {
+      callCount++;
+      if (_entrypoint.includes("a.ts")) return Promise.resolve(JSON.stringify(nodesA));
+      if (_entrypoint.includes("b.ts")) return Promise.resolve(JSON.stringify(nodesB));
+      return Promise.resolve("[]");
+    },
+  };
+  const extractor = new SymbolExtractor(trackingRunner);
+  const result = await extractor.extractSymbols("/portal", ["src/a.ts", "src/b.ts"], {
+    primaryLanguage: "typescript",
+  });
+  assertEquals(callCount >= 2, true);
+  assertEquals(result.length, 2);
+  assertEquals(result.some((r) => r.name === "funcA"), true);
+  assertEquals(result.some((r) => r.name === "funcB"), true);
+});
+
+Deno.test("[SymbolExtractor] deduplicates symbols by name + file path", async () => {
+  const sameSymbol = makeDocNode("function", "duplicated", {
+    location: { filename: "src/shared.ts" },
+    functionDef: { params: [] },
+  });
+  const runner: IDocCommandRunner = {
+    run: () => Promise.resolve(JSON.stringify([sameSymbol, sameSymbol])),
+  };
+  const extractor = new SymbolExtractor(runner);
+  const result = await extractor.extractSymbols("/portal", ["src/a.ts", "src/b.ts"], {
+    primaryLanguage: "typescript",
+  });
+  const matched = result.filter((r) => r.name === "duplicated" && r.file === "src/shared.ts");
+  assertEquals(matched.length, 1, "Same symbol from same file should appear once");
+});
+
+Deno.test("[SymbolExtractor] handles empty file list gracefully", async () => {
+  const extractor = new SymbolExtractor();
+  const result = await extractor.extractSymbols("/portal", [], {
+    primaryLanguage: "typescript",
+  });
+  assertEquals(result, []);
+});
+
+Deno.test("[runWithConcurrency] runs all items with bounded concurrency", async () => {
+  const results: number[] = [];
+  const maxConcurrent: number[] = [0];
+  let running = 0;
+  await runWithConcurrency([1, 2, 3, 4], SYMBOL_EXTRACTOR_CONCURRENCY, async (item) => {
+    running++;
+    maxConcurrent[0] = Math.max(maxConcurrent[0], running);
+    await new Promise((r) => setTimeout(r, 10));
+    results.push(item);
+    running--;
+  });
+  assertEquals(results.length, 4);
+  assertEquals(results.sort((a, b) => a - b).join(","), "1,2,3,4");
+  assertEquals(maxConcurrent[0] <= SYMBOL_EXTRACTOR_CONCURRENCY, true);
 });

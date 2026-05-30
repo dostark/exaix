@@ -70,6 +70,14 @@ const validConfig: IPortalKnowledgeConfig = {
   staleness: 168,
   useLlmInference: true,
   relevanceSearchEmbeddingEnabled: false,
+  maxPatternDetectorSampleSize: 50,
+  minPatternDetectorSampleSize: 10,
+  enableAstAnalysis: true,
+  enableTestExecution: false,
+  enableVulnerabilityScan: false,
+  enableGitHistoryAnalysis: true,
+  gitHistoryCommitLimit: 500,
+  gitHistorySince: "1.year",
 };
 
 // ---------------------------------------------------------------------------

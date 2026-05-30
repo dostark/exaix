@@ -37,6 +37,22 @@ export interface IPortalKnowledgeConfig {
   useLlmInference: boolean;
   /** Whether to enable relevance-based retrieval via HNSW embedding search. */
   relevanceSearchEmbeddingEnabled: boolean;
+  /** Maximum number of files to sample for PatternDetector content analysis. Default: 50. */
+  maxPatternDetectorSampleSize?: number;
+  /** Minimum number of files to sample for PatternDetector content analysis. Default: 10. */
+  minPatternDetectorSampleSize?: number;
+  /** Whether to run AST-level analysis in standard/deep modes. Default: true. */
+  enableAstAnalysis?: boolean;
+  /** Whether to run test execution analysis (deep mode only). Default: false. */
+  enableTestExecution?: boolean;
+  /** Whether to run dependency vulnerability scan (deep mode only). Default: false. */
+  enableVulnerabilityScan?: boolean;
+  /** Whether to run git history analysis in standard/deep modes. Default: true. */
+  enableGitHistoryAnalysis?: boolean;
+  /** Max commits to analyze in git history. Default: 500. */
+  gitHistoryCommitLimit?: number;
+  /** Git since filter (e.g. "1.year", "30.days"). Default: "1.year". */
+  gitHistorySince?: string;
 }
 
 /**

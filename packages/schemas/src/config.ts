@@ -713,6 +713,25 @@ export const ConfigSchema = z.object({
       .default(DEFAULTS.DEFAULT_IGNORE_PATTERNS),
     /** Whether to send request text to embedding service for relevance search (opt-in, default false). */
     relevance_search_embedding_enabled: z.boolean().optional().default(false),
+    /** Maximum files to sample for PatternDetector content analysis. */
+    max_pattern_detector_sample_size: z.number().int().min(1).optional()
+      .default(DEFAULTS.DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE),
+    /** Minimum files to sample for PatternDetector content analysis. */
+    min_pattern_detector_sample_size: z.number().int().min(1).optional()
+      .default(DEFAULTS.DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE),
+    /** Whether to run AST-level analysis in standard/deep modes. */
+    enable_ast_analysis: z.boolean().optional().default(true),
+    /** Whether to run test execution analysis (deep mode only, opt-in). */
+    enable_test_execution: z.boolean().optional().default(false),
+    /** Whether to run dependency vulnerability scan (deep mode only, opt-in). */
+    enable_vulnerability_scan: z.boolean().optional().default(false),
+    /** Whether to run git history analysis in standard/deep modes. */
+    enable_git_history_analysis: z.boolean().optional().default(true),
+    /** Max commits to analyze in git history. */
+    git_history_commit_limit: z.number().int().min(1).optional()
+      .default(DEFAULTS.GIT_HISTORY_COMMIT_LIMIT),
+    /** Git since filter (e.g. "1.year", "30.days"). */
+    git_history_since: z.string().optional().default(DEFAULTS.GIT_HISTORY_SINCE),
   }).optional().default({
     auto_analyze_on_mount: true,
     default_mode: DEFAULTS.DEFAULT_PORTAL_KNOWLEDGE_MODE as PortalAnalysisMode,
@@ -722,6 +741,14 @@ export const ConfigSchema = z.object({
     use_llm_inference: true,
     ignore_patterns: DEFAULTS.DEFAULT_IGNORE_PATTERNS,
     relevance_search_embedding_enabled: false,
+    max_pattern_detector_sample_size: DEFAULTS.DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
+    min_pattern_detector_sample_size: DEFAULTS.DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
+    enable_ast_analysis: true,
+    enable_test_execution: false,
+    enable_vulnerability_scan: false,
+    enable_git_history_analysis: true,
+    git_history_commit_limit: DEFAULTS.GIT_HISTORY_COMMIT_LIMIT,
+    git_history_since: DEFAULTS.GIT_HISTORY_SINCE,
   }),
   /** Tokenizer backend configuration (Phase 103) */
   tokenizer: z.object({
