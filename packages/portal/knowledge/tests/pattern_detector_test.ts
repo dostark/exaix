@@ -10,7 +10,7 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { detectPatterns } from "@exaix/portal/knowledge";
+import { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "@exaix/portal/knowledge";
 import type { IFileSignificance } from "@exaix/schemas/portal_knowledge.ts";
 
 // Minimal key-file stubs used across tests
@@ -233,4 +233,92 @@ Deno.test("[PatternDetector] assigns confidence high for 10+ evidence files", ()
   const convention = result.find((c) => c.name.toLowerCase().includes("service"));
   assertExists(convention);
   assertEquals(convention.confidence, "high");
+});
+
+// ---------------------------------------------------------------------------
+// Adaptive sample size
+// ---------------------------------------------------------------------------
+
+Deno.test("[PatternDetector] computeAdaptiveSampleSize scales with total files (5% floor, min 10, max 50)", () => {
+  // 5% of 10 = 0.5, floor = 0, clamped to min 10
+  assertEquals(computeAdaptiveSampleSize(10, 10, 50), 10);
+  // 5% of 200 = 10
+  assertEquals(computeAdaptiveSampleSize(200, 10, 50), 10);
+  // 5% of 1000 = 50, at max
+  assertEquals(computeAdaptiveSampleSize(1000, 10, 50), 50);
+  // 5% of 2000 = 100, clamped to max 50
+  assertEquals(computeAdaptiveSampleSize(2000, 10, 50), 50);
+  // 5% of 50 = 2.5, floor = 2, clamped to min 5
+  assertEquals(computeAdaptiveSampleSize(50, 5, 50), 5);
+});
+
+Deno.test("[PatternDetector] computeAdaptiveSampleSize handles 0 files", () => {
+  assertEquals(computeAdaptiveSampleSize(0, 10, 50), 0);
+});
+
+Deno.test("[PatternDetector] computeAdaptiveSampleSize handles min >= max", () => {
+  // When min >= max, min takes precedence as the floor
+  assertEquals(computeAdaptiveSampleSize(500, 100, 100), 100);
+  assertEquals(computeAdaptiveSampleSize(500, 100, 50), 100);
+});
+
+// ---------------------------------------------------------------------------
+// Stratified sampling
+// ---------------------------------------------------------------------------
+
+Deno.test("[PatternDetector] stratified sampling covers all top-level directories", () => {
+  const files = [
+    "src/a.ts",
+    "src/b.ts",
+    "src/c.ts",
+    "tests/x_test.ts",
+    "tests/y_test.ts",
+    "docs/readme.md",
+  ];
+  const sample = selectSampleFiles(files, 6);
+  // All files should be selected since sample >= total
+  assertEquals(sample.length, 6);
+  // Every directory should be represented
+  assertEquals(sample.includes("src/a.ts"), true);
+  assertEquals(sample.includes("tests/x_test.ts"), true);
+  assertEquals(sample.includes("docs/readme.md"), true);
+});
+
+Deno.test("[PatternDetector] stratified sampling prefers TS/JS files within each bucket", () => {
+  const files = [
+    "src/a.ts",
+    "src/b.ts",
+    "src/c.ts",
+    "src/d.js",
+    "src/e.json",
+    "src/f.txt",
+    "tests/test_a.ts",
+    "tests/test_b.ts",
+    "tests/test_c.py",
+  ];
+  // Request 3 files — should get 1 from each top-level dir, preferring TS/JS
+  const sample = selectSampleFiles(files, 4);
+  assertEquals(sample.length, 4);
+  // Both src and tests should be represented
+  const srcFiles = sample.filter((f: string) => f.startsWith("src/"));
+  const testFiles = sample.filter((f: string) => f.startsWith("tests/"));
+  assertEquals(srcFiles.length >= 1, true);
+  assertEquals(testFiles.length >= 1, true);
+  // src files should prefer TS/JS
+  for (const f of srcFiles) {
+    assertEquals(f.endsWith(".ts") || f.endsWith(".js"), true);
+  }
+});
+
+Deno.test("[PatternDetector] handles edge case: 0 files → empty sample", () => {
+  const sample = selectSampleFiles([], 10);
+  assertEquals(sample.length, 0);
+});
+
+Deno.test("[PatternDetector] handles edge case: fewer files than min sample size", () => {
+  const files = ["src/a.ts", "src/b.ts"];
+  const sample = selectSampleFiles(files, 10);
+  assertEquals(sample.length, 2);
+  assertEquals(sample.includes("src/a.ts"), true);
+  assertEquals(sample.includes("src/b.ts"), true);
 });

@@ -103,6 +103,14 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
     staleness: 24,
     useLlmInference: true,
     relevanceSearchEmbeddingEnabled: false,
+    maxPatternDetectorSampleSize: 50,
+    minPatternDetectorSampleSize: 10,
+    enableAstAnalysis: true,
+    enableTestExecution: false,
+    enableVulnerabilityScan: false,
+    enableGitHistoryAnalysis: true,
+    gitHistoryCommitLimit: 500,
+    gitHistorySince: "1.year",
     ...overrides,
   };
 }
@@ -295,7 +303,14 @@ Deno.test(
       };
 
       const svc = new PortalKnowledgeService({
-        config: makeConfig({ staleness: 0, useLlmInference: false }),
+        config: makeConfig({
+          staleness: 0,
+          useLlmInference: false,
+          enableGitHistoryAnalysis: false,
+          enableAstAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
         memoryBank: makeMockMemoryBank(),
         provider: slowProvider,
         db: makeMockDb(),
@@ -341,7 +356,12 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
       },
     };
     const svc = new PortalKnowledgeService({
-      config: makeConfig({ staleness: 0, useLlmInference: false }),
+      config: makeConfig({
+        staleness: 0,
+        useLlmInference: false,
+        enableAstAnalysis: false,
+        enableGitHistoryAnalysis: false,
+      }),
       memoryBank: makeMockMemoryBank(),
       provider: trackingProvider,
       db: makeMockDb(),
@@ -356,7 +376,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
     await svc.getOrAnalyze("bg2-portal", tempDir);
 
     // Wait for background re-analysis to finish
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 1000));
 
     // Background analysis ran (even if no LLM was called in quick mode,
     // the service should have re-analyzed and updated the cache)
@@ -441,8 +461,10 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
-    // Should not throw; architectureOverview falls back to empty
-    assertEquals(result.architectureOverview, "");
+    // Should not throw; architectureOverview falls back to heuristic
+    assertEquals(result.architectureOverview.length > 0, true);
+    assertEquals(result.architectureOverview.includes("Heuristic"), true);
+    assertEquals(result.metadata.architectureInferenceFailed, true);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

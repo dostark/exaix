@@ -1218,3 +1218,30 @@ export enum MemoryTier {
   EPISODIC = "episodic",
   SEMANTIC = "semantic",
 }
+
+/**
+ * Sources for license detection results.
+ */
+export enum LicenseSource {
+  FILE = "file",
+  PACKAGE = "package",
+  SPDX = "spdx",
+}
+
+/**
+ * Vulnerability scanner types.
+ */
+export enum ScannerType {
+  DENO_AUDIT = "deno_audit",
+  NPM_AUDIT = "npm_audit",
+  NONE = "none",
+}
+
+/**
+ * Test detection kinds for portal knowledge analysis.
+ */
+export enum TestDetectionKind {
+  EXECUTED = "executed",
+  INFERRED = "inferred",
+  NONE = "none",
+}

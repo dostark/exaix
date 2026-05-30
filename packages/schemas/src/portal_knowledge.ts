@@ -212,7 +212,72 @@ export const PortalKnowledgeSchema = z.object({
     filesScanned: z.number().int().min(0),
     /** Files read (content analyzed) */
     filesRead: z.number().int().min(0),
+    /** Whether architecture inference failed and fallback was used */
+    architectureInferenceFailed: z.boolean().optional(),
+    /** Number of source files scanned for symbol extraction */
+    symbolSourceFilesScanned: z.number().int().min(0).optional(),
   }),
+
+  /** AST-level diagnostics from deno check (Strategy 7) */
+  astDiagnostics: z.object({
+    totalModules: z.number().int().min(0),
+    totalImports: z.number().int().min(0),
+    diagnostics: z.array(z.object({
+      file: z.string(),
+      message: z.string(),
+    })),
+    importGraph: z.record(z.string(), z.array(z.string())),
+    errorCount: z.number().int().min(0),
+  }).optional(),
+
+  /** Test execution analysis (Strategy 8) */
+  testInfo: z.object({
+    testFiles: z.array(z.string()),
+    testCount: z.number().int().min(0),
+    testFramework: z.string().optional(),
+    detected: z.enum(["executed", "inferred", "none"]),
+  }).optional(),
+
+  /** License detection (Strategy 9) */
+  licenses: z.array(z.object({
+    type: z.string().min(1),
+    source: z.enum(["file", "package", "spdx"]),
+    filePath: z.string().optional(),
+    confidence: z.enum(["high", "medium", "low"]),
+  })).optional(),
+
+  /** Dependency vulnerability scan (Strategy 10) */
+  vulnerabilities: z.object({
+    totalVulnerabilities: z.number().int().min(0),
+    bySeverity: z.object({
+      critical: z.number().int().min(0),
+      high: z.number().int().min(0),
+      medium: z.number().int().min(0),
+      low: z.number().int().min(0),
+    }),
+    scannerUsed: z.enum(["deno_audit", "npm_audit", "none"]),
+    skipReason: z.string().optional(),
+  }).optional(),
+
+  /** Git history analysis (Strategy 11) */
+  gitHistory: z.object({
+    totalCommits: z.number().int().min(0),
+    totalAuthors: z.number().int().min(0),
+    hasSufficientHistory: z.boolean(),
+    topChangedFiles: z.array(z.object({
+      file: z.string(),
+      commitCount: z.number().int().min(0),
+    })).optional(),
+    topAuthors: z.array(z.object({
+      name: z.string(),
+      commitCount: z.number().int().min(0),
+      percentage: z.number().min(0).max(100),
+    })).optional(),
+    hotspots: z.array(z.object({
+      file: z.string(),
+      commitCount: z.number().int().min(0),
+    })).optional(),
+  }).optional(),
 });
 
 export type IPortalKnowledge = z.infer<typeof PortalKnowledgeSchema>;

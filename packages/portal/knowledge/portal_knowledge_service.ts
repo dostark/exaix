@@ -14,14 +14,20 @@ import { ensureDir } from "@std/fs";
 import { analyzeDirectory, walkDirectory } from "./directory_analyzer.ts";
 import { parseConfigFiles } from "./config_parser.ts";
 import { identifyKeyFiles } from "./key_file_identifier.ts";
-import { detectPatterns } from "./pattern_detector.ts";
+import { computeAdaptiveSampleSize, detectPatterns, selectSampleFiles } from "./pattern_detector.ts";
 import { ArchitectureInferrer, type IArchitectureValidator } from "./architecture_inferrer.ts";
+import { AstAnalyzer } from "./ast_analyzer.ts";
 import { type IDocCommandRunner, SymbolExtractor } from "./symbol_extractor.ts";
 import { GitHeadResolver, type IGitHeadResolver } from "./git_head_resolver.ts";
+import { GitHistoryAnalyzer } from "./git_history_analyzer.ts";
+import { LicenseDetector } from "./license_detector.ts";
+import { TestRunner } from "./test_runner.ts";
+import { VulnerabilityScanner } from "./vulnerability_scanner.ts";
 import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./knowledge_invalidation_strategy.ts";
 import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
 import type {
   IDatabaseService,
+  ILogger,
   IMemoryBankService,
   IPortalKnowledgeConfig,
   IPortalKnowledgeService,
@@ -30,7 +36,15 @@ import type { IPortalKnowledge } from "@exaix/schemas";
 
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 
-import { DEFAULT_IGNORE_PATTERNS, DEFAULT_NONE_VALUE, PortalAnalysisMode } from "@exaix/core";
+import {
+  DEFAULT_IGNORE_PATTERNS,
+  DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
+  DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
+  DEFAULT_NONE_VALUE,
+  GIT_HISTORY_COMMIT_LIMIT,
+  GIT_HISTORY_SINCE,
+  PortalAnalysisMode,
+} from "@exaix/core";
 
 import { HnswVectorIndex, type IVectorIndexSnapshot } from "@exaix/memory";
 
@@ -45,6 +59,7 @@ export interface IPortalKnowledgeServiceOptions {
   invalidationStrategy?: IKnowledgeInvalidationStrategy;
   embeddingProvider?: IEmbeddingProvider;
   projectsDir?: string;
+  logger?: ILogger;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,9 +92,6 @@ const CHUNK_SENTENCE_OVERLAP = 1;
 /** Multiplier applied to maxFilesToRead for `deep` mode analysis. */
 const _DEEP_MODE_FILE_CAP_MULTIPLIER = 3;
 
-/** How many files' content are passed to PatternDetector in `standard` mode. */
-const PATTERN_DETECTOR_SAMPLE_SIZE = 10;
-
 /**
  * Orchestrates all 6 analysis strategies and implements `IPortalKnowledgeService`.
  *
@@ -98,6 +110,12 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _invalidationStrategy: IKnowledgeInvalidationStrategy;
   private readonly _embeddingProvider?: IEmbeddingProvider;
   private readonly _projectsDir: string;
+  private readonly _logger?: ILogger;
+  private readonly _astAnalyzer: AstAnalyzer;
+  private readonly _testRunner: TestRunner;
+  private readonly _licenseDetector: LicenseDetector;
+  private readonly _vulnerabilityScanner: VulnerabilityScanner;
+  private readonly _gitHistoryAnalyzer: GitHistoryAnalyzer;
 
   /** In-memory cache: alias → latest IPortalKnowledge. */
   private readonly _cache: Map<string, IPortalKnowledge> = new Map();
@@ -127,6 +145,12 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     );
     this._embeddingProvider = options.embeddingProvider;
     this._projectsDir = options.projectsDir ?? "";
+    this._logger = options.logger;
+    this._astAnalyzer = new AstAnalyzer();
+    this._testRunner = new TestRunner();
+    this._licenseDetector = new LicenseDetector();
+    this._vulnerabilityScanner = new VulnerabilityScanner();
+    this._gitHistoryAnalyzer = new GitHistoryAnalyzer();
     void this._memoryBank;
   }
 
@@ -181,7 +205,12 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     if (resolvedMode === PortalAnalysisMode.QUICK) {
       conventions = detectPatterns(portalPath, fileList, keyFiles);
     } else {
-      const sampleFiles = fileList.slice(0, PATTERN_DETECTOR_SAMPLE_SIZE);
+      const adaptiveSampleSize = computeAdaptiveSampleSize(
+        fileList.length,
+        this._config.minPatternDetectorSampleSize ?? DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
+        this._config.maxPatternDetectorSampleSize ?? DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
+      );
+      const sampleFiles = selectSampleFiles(fileList, adaptiveSampleSize);
       conventions = await detectPatterns(
         portalPath,
         fileList,
@@ -195,6 +224,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
     // Strategy 5: architecture inference (standard/deep only + LLM available)
     let architectureOverview = "";
+    let architectureInferenceFailed: boolean | undefined;
     if (
       resolvedMode !== PortalAnalysisMode.QUICK &&
       this._config.useLlmInference &&
@@ -211,6 +241,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
             raw: content,
           }),
         },
+        this._logger,
       );
       architectureOverview = await inferrer.infer({
         portalPath,
@@ -226,6 +257,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
           .map((d) => `${d.name}@${d.version ?? "?"}`)
           .join(", "),
       });
+      architectureInferenceFailed = inferrer.architectureInferenceFailed;
     }
 
     // Strategy 6: symbol extraction (standard/deep + TS/JS)
@@ -244,9 +276,67 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       });
     }
 
+    // Strategy 7: AST analysis (standard/deep + enableAstAnalysis)
+    let astDiagnostics: IPortalKnowledge["astDiagnostics"];
+    if (
+      resolvedMode !== PortalAnalysisMode.QUICK &&
+      (this._config.enableAstAnalysis ?? true)
+    ) {
+      const entrypoints = keyFiles
+        .filter((kf) => kf.role === "entrypoint")
+        .map((kf) => kf.path);
+      astDiagnostics = await this._astAnalyzer.analyze(
+        portalPath,
+        entrypoints,
+        primaryLanguage,
+      );
+    }
+
+    // Strategy 8: test execution (deep mode + enableTestExecution)
+    let testInfo: IPortalKnowledge["testInfo"];
+    if (
+      resolvedMode === PortalAnalysisMode.DEEP &&
+      (this._config.enableTestExecution ?? false)
+    ) {
+      testInfo = await this._testRunner.analyze(portalPath, fileList, primaryLanguage);
+    }
+
+    // Strategy 9: license detection (standard/deep)
+    let licenses: IPortalKnowledge["licenses"];
+    if (resolvedMode !== PortalAnalysisMode.QUICK) {
+      licenses = await this._licenseDetector.analyze(portalPath, fileList);
+    }
+
+    // Strategy 10: vulnerability scan (deep mode + enableVulnerabilityScan)
+    let vulnerabilities: IPortalKnowledge["vulnerabilities"];
+    if (
+      resolvedMode === PortalAnalysisMode.DEEP &&
+      (this._config.enableVulnerabilityScan ?? false)
+    ) {
+      vulnerabilities = await this._vulnerabilityScanner.scan(portalPath);
+    }
+
+    // Strategy 11: git history analysis (standard/deep + enableGitHistoryAnalysis)
+    let gitHistory: IPortalKnowledge["gitHistory"];
+    if (
+      resolvedMode !== PortalAnalysisMode.QUICK &&
+      (this._config.enableGitHistoryAnalysis ?? true)
+    ) {
+      gitHistory = await this._gitHistoryAnalyzer.analyze(
+        portalPath,
+        this._config.gitHistoryCommitLimit ?? GIT_HISTORY_COMMIT_LIMIT,
+        this._config.gitHistorySince ?? GIT_HISTORY_SINCE,
+      );
+    }
+
     // Compute filesRead estimate (key files + pattern detector sample)
+    const sampleSize = computeAdaptiveSampleSize(
+      fileList.length,
+      this._config.minPatternDetectorSampleSize ?? DEFAULT_MIN_PATTERN_DETECTOR_SAMPLE_SIZE,
+      this._config.maxPatternDetectorSampleSize ?? DEFAULT_MAX_PATTERN_DETECTOR_SAMPLE_SIZE,
+    );
     const filesRead = Math.min(
-      keyFiles.length + PATTERN_DETECTOR_SAMPLE_SIZE,
+      keyFiles.length + sampleSize,
       fileList.length,
     );
 
@@ -264,6 +354,11 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
       packages: dirResult.packages,
       techStack,
       symbolMap,
+      ...(astDiagnostics !== undefined ? { astDiagnostics } : {}),
+      ...(testInfo !== undefined ? { testInfo } : {}),
+      ...(licenses !== undefined ? { licenses } : {}),
+      ...(vulnerabilities !== undefined ? { vulnerabilities } : {}),
+      ...(gitHistory !== undefined ? { gitHistory } : {}),
       stats: dirResult.stats ?? {
         totalFiles: fileList.length,
         totalDirectories: 0,
@@ -276,10 +371,14 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         mode: resolvedMode,
         filesScanned: fileList.length,
         filesRead,
+        ...(architectureInferenceFailed !== undefined ? { architectureInferenceFailed } : {}),
       },
     };
 
     this._cache.set(portalAlias, knowledge);
+
+    // Build HNSW index for semantic retrieval (no-op if embedding provider is unconfigured)
+    await this.indexPortalKnowledge(portalAlias, knowledge);
 
     // Log activity
     this._db?.logActivity(
