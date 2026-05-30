@@ -36,6 +36,14 @@ function makeConfig(overrides: Partial<IPortalKnowledgeConfig> = {}): IPortalKno
     staleness: 168,
     useLlmInference: false,
     relevanceSearchEmbeddingEnabled: false,
+    maxPatternDetectorSampleSize: 50,
+    minPatternDetectorSampleSize: 10,
+    enableAstAnalysis: false,
+    enableTestExecution: false,
+    enableVulnerabilityScan: false,
+    enableGitHistoryAnalysis: false,
+    gitHistoryCommitLimit: 500,
+    gitHistorySince: "1.year",
     ...overrides,
   };
 }
@@ -359,6 +367,73 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
     // Direct analyze confirms the version counter increments
     const fresh = await service.analyze("stale-portal", portalDir);
     assertGreater(fresh.version, 1, "version should increment after re-analysis");
+
+    await Deno.remove(tempDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 7: standard mode populates new strategy fields (phase-105 GAP-7)
+// ---------------------------------------------------------------------------
+
+Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tempDir = await Deno.makeTempDir();
+    const portalDir = await createMockPortalDir(tempDir);
+
+    const service = new PortalKnowledgeService({
+      config: makeConfig({
+        defaultMode: PortalAnalysisMode.STANDARD,
+        enableGitHistoryAnalysis: true,
+      }),
+      memoryBank: null as never,
+      db,
+      runner: NULL_RUNNER,
+    });
+    const knowledge = await service.analyze("e2e-new-fields", portalDir, PortalAnalysisMode.STANDARD);
+
+    assert(Array.isArray(knowledge.licenses), "standard mode must populate licenses (strategy 9)");
+    assertExists(knowledge.gitHistory, "standard mode must populate gitHistory (strategy 11)");
+    assertEquals(knowledge.testInfo, undefined, "testInfo absent without enableTestExecution");
+    assertEquals(knowledge.vulnerabilities, undefined, "vulnerabilities absent without enableVulnerabilityScan");
+
+    await Deno.remove(tempDir, { recursive: true });
+  } finally {
+    await cleanup();
+  }
+});
+
+Deno.test("[E2E] knowledge.json round-trip preserves new optional fields", async () => {
+  const { db, cleanup } = await initTestDbService();
+  try {
+    const tempDir = await Deno.makeTempDir();
+    const portalDir = await createMockPortalDir(tempDir);
+    const projectsDir = join(tempDir, "Memory", "Projects");
+    await ensureDir(projectsDir);
+
+    const service = new PortalKnowledgeService({
+      config: makeConfig({
+        defaultMode: PortalAnalysisMode.STANDARD,
+        enableGitHistoryAnalysis: true,
+      }),
+      memoryBank: null as never,
+      db,
+      runner: NULL_RUNNER,
+    });
+    const knowledge = await service.analyze("round-trip", portalDir, PortalAnalysisMode.STANDARD);
+
+    // Persist to disk and reload
+    await saveKnowledge("round-trip", knowledge, null, projectsDir);
+    const loaded = await loadKnowledge("round-trip", projectsDir);
+
+    assertExists(loaded, "loadKnowledge should return saved knowledge");
+    assert(Array.isArray(loaded!.licenses), "licenses must survive JSON round-trip");
+    assertExists(loaded!.gitHistory, "gitHistory must survive JSON round-trip");
+    assertEquals(loaded!.portal, knowledge.portal);
+    assertEquals(loaded!.version, knowledge.version);
 
     await Deno.remove(tempDir, { recursive: true });
   } finally {

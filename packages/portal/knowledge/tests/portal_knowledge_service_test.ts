@@ -842,3 +842,143 @@ Deno.test(
     }
   },
 );
+
+// ============================================================================
+// Step 105.16 — Mode-gating tests for strategies 7–11
+// ============================================================================
+
+Deno.test("[PortalKnowledgeService] quick mode produces no new strategy fields", async () => {
+  const tempDir = await makeTempPortal();
+  try {
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      db: makeMockDb(),
+      runner: makeMockDocRunner(),
+    });
+    const result = await svc.analyze("gate-quick", tempDir, PortalAnalysisMode.QUICK);
+    assertEquals(result.astDiagnostics, undefined, "quick mode must not run strategy 7");
+    assertEquals(result.testInfo, undefined, "quick mode must not run strategy 8");
+    assertEquals(result.licenses, undefined, "quick mode must not run strategy 9");
+    assertEquals(result.vulnerabilities, undefined, "quick mode must not run strategy 10");
+    assertEquals(result.gitHistory, undefined, "quick mode must not run strategy 11");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test(
+  "[PortalKnowledgeService] standard mode populates licenses and gitHistory (strategies 9 + 11)",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+          enableGitHistoryAnalysis: true,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-std", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(Array.isArray(result.licenses), true, "standard mode must run strategy 9 (licenses)");
+      assertEquals(result.gitHistory !== undefined, true, "standard mode must run strategy 11 (gitHistory)");
+      assertEquals(result.testInfo, undefined, "standard mode must NOT run strategy 8 (deep only)");
+      assertEquals(result.vulnerabilities, undefined, "standard mode must NOT run strategy 10 (deep only)");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableAstAnalysis=false skips strategy 7 in standard mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false, enableAstAnalysis: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-noast", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(result.astDiagnostics, undefined, "enableAstAnalysis=false must skip strategy 7");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableGitHistoryAnalysis=false skips strategy 11 in standard mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({ useLlmInference: false, enableGitHistoryAnalysis: false }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-nogit", tempDir, PortalAnalysisMode.STANDARD);
+      assertEquals(result.gitHistory, undefined, "enableGitHistoryAnalysis=false must skip strategy 11");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableTestExecution=false skips strategy 8 in deep mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-notest", tempDir, PortalAnalysisMode.DEEP);
+      assertEquals(result.testInfo, undefined, "enableTestExecution=false must skip strategy 8");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
+
+Deno.test(
+  "[PortalKnowledgeService] enableVulnerabilityScan=false skips strategy 10 in deep mode",
+  async () => {
+    const tempDir = await makeTempPortal();
+    try {
+      const svc = new PortalKnowledgeService({
+        config: makeConfig({
+          useLlmInference: false,
+          enableAstAnalysis: false,
+          enableGitHistoryAnalysis: false,
+          enableTestExecution: false,
+          enableVulnerabilityScan: false,
+        }),
+        memoryBank: makeMockMemoryBank(),
+        db: makeMockDb(),
+        runner: makeMockDocRunner(),
+      });
+      const result = await svc.analyze("gate-novuln", tempDir, PortalAnalysisMode.DEEP);
+      assertEquals(result.vulnerabilities, undefined, "enableVulnerabilityScan=false must skip strategy 10");
+    } finally {
+      await Deno.remove(tempDir, { recursive: true });
+    }
+  },
+);
