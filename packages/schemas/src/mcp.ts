@@ -13,6 +13,9 @@ import {
   DEFAULT_MCP_IDENTITY_ID,
   DEFAULT_MCP_VERSION,
   DEFAULT_QUERY_LIMIT,
+  GitLogFormat,
+  GitStatusFormat,
+  GitWorktreeAction,
   JSONValueSchema,
   MCP_CONTENT_TYPE_STRUCTURED_DATA,
   McpTransportType,
@@ -62,6 +65,8 @@ export const GitCreateBranchToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   branch: z.string().min(1, "Branch name required")
     .regex(/^(feat|fix|docs|chore|refactor|test)\//, "Branch must start with feat/, fix/, docs/, etc."),
+  track: z.string().optional(),
+  force: z.boolean().optional().default(false),
   identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
@@ -69,12 +74,64 @@ export const GitCommitToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
   message: z.string().min(1, "Commit message required"),
   files: z.array(z.string()).optional(),
+  amend: z.boolean().optional().default(false),
+  signoff: z.boolean().optional().default(false),
   identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
 });
 
 export const GitStatusToolArgsSchema = z.object({
   portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  format: z.nativeEnum(GitStatusFormat).optional().default(GitStatusFormat.PORCELAIN),
+  include_untracked: z.boolean().optional().default(true),
   identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+});
+
+export const GitLogToolArgsSchema = z.object({
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  ref: z.string().optional(),
+  max_count: z.number().int().positive().optional().default(50),
+  skip: z.number().int().min(0).optional().default(0),
+  since: z.string().optional(),
+  until: z.string().optional(),
+  author: z.string().optional(),
+  grep: z.string().optional(),
+  path: z.string().optional(),
+  no_merges: z.boolean().optional().default(false),
+  reverse: z.boolean().optional().default(false),
+  decorate: z.boolean().optional().default(false),
+  format: z.nativeEnum(GitLogFormat).optional().default(GitLogFormat.ONELINE),
+  custom_format: z.string().optional(),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+});
+
+export const GitWorktreeToolArgsSchema = z.object({
+  portal: z.string().min(1, MCP_ERR_PORTAL_REQUIRED),
+  action: z.nativeEnum(GitWorktreeAction),
+  path: z.string().optional(),
+  ref: z.string().optional(),
+  branch: z.string().optional(),
+  detach: z.boolean().optional().default(false),
+  force: z.boolean().optional().default(false),
+  lock: z.boolean().optional().default(false),
+  reason: z.string().optional(),
+  porcelain: z.boolean().optional().default(false),
+  dry_run: z.boolean().optional().default(false),
+  verbose: z.boolean().optional().default(false),
+  expire: z.string().optional(),
+  identity_id: z.string().min(1, MCP_ERR_IDENTITY_REQUIRED).default(DEFAULT_MCP_IDENTITY_ID),
+}).superRefine((value, ctx) => {
+  if (
+    [GitWorktreeAction.ADD, GitWorktreeAction.REMOVE, GitWorktreeAction.LOCK, GitWorktreeAction.UNLOCK].includes(
+      value.action,
+    ) &&
+    !value.path
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Path is required for action '${value.action}'`,
+      path: ["path"],
+    });
+  }
 });
 
 export const PatchFileToolArgsSchema = z.object({
@@ -154,6 +211,8 @@ export type MCPToolArgs =
   | z.infer<typeof GitCreateBranchToolArgsSchema>
   | z.infer<typeof GitCommitToolArgsSchema>
   | z.infer<typeof GitStatusToolArgsSchema>
+  | z.infer<typeof GitLogToolArgsSchema>
+  | z.infer<typeof GitWorktreeToolArgsSchema>
   | z.infer<typeof CreateRequestToolArgsSchema>
   | z.infer<typeof ListPlansToolArgsSchema>
   | z.infer<typeof ApprovePlanToolArgsSchema>

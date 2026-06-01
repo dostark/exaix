@@ -10,6 +10,7 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { JsonSchemaType, PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCommitToolArgsSchema } from "@exaix/schemas/mcp.ts";
+import { GIT_CMD_COMMIT } from "@exaix/git";
 
 /**
  * GitCommitTool - Commits changes in portal git repositories
@@ -27,9 +28,11 @@ export class GitCommitTool extends ToolHandler {
       portal: string;
       message: string;
       files?: string[];
+      amend?: boolean;
+      signoff?: boolean;
       identity_id: string;
     };
-    const { portal, message, files, identity_id } = validatedArgs;
+    const { portal, message, files, amend, signoff, identity_id } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
@@ -59,8 +62,17 @@ export class GitCommitTool extends ToolHandler {
       await stageCmd.output();
 
       // Commit changes
+      const commitArgs = [GIT_CMD_COMMIT];
+      if (amend) {
+        commitArgs.push("--amend");
+      }
+      if (signoff) {
+        commitArgs.push("--signoff");
+      }
+      commitArgs.push("-m", message);
+
       const commitCmd = new Deno.Command("git", {
-        args: ["commit", "-m", message],
+        args: commitArgs,
         cwd: portalPath,
         stdout: "piped",
         stderr: "piped",
@@ -93,7 +105,14 @@ export class GitCommitTool extends ToolHandler {
         portal,
         identity_id,
         [{ type: "text", text: commitHash }],
-        { message, files: files?.length || "all", identity_id, commit_sha: commitHash },
+        {
+          message,
+          files: files?.length || "all",
+          amend: !!amend,
+          signoff: !!signoff,
+          identity_id,
+          commit_sha: commitHash,
+        },
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -104,6 +123,8 @@ export class GitCommitTool extends ToolHandler {
       return this.formatToolError("git_commit", portal, identity_id, code, message, {
         message,
         files: files?.length || "all",
+        amend: !!amend,
+        signoff: !!signoff,
         identity_id,
       });
     }
@@ -129,6 +150,14 @@ export class GitCommitTool extends ToolHandler {
             type: JsonSchemaType.ARRAY,
             items: { type: "string" },
             description: "Optional: specific files to commit (defaults to all changes)",
+          },
+          amend: {
+            type: "boolean",
+            description: "Optional: amend the previous commit instead of creating a new one",
+          },
+          signoff: {
+            type: "boolean",
+            description: "Optional: add Signed-off-by trailer to the commit message",
           },
           identity_id: {
             type: "string",

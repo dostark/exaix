@@ -23,6 +23,8 @@ const EXPECTED_DOCS_VISIBLE_TOOLS: string[] = [
   McpToolName.GIT_CREATE_BRANCH,
   McpToolName.GIT_COMMIT,
   McpToolName.GIT_STATUS,
+  McpToolName.GIT_LOG,
+  McpToolName.GIT_WORKTREE,
   McpToolName.RUN_COMMAND,
   McpToolName.CREATE_REQUEST,
   McpToolName.LIST_PLANS,

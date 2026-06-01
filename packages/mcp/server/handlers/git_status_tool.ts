@@ -8,7 +8,7 @@
 import { ToolHandler } from "../tool_handler.ts";
 import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
-import { PortalOperation, ToolErrorCode } from "@exaix/core";
+import { GitStatusFormat, PortalOperation, ToolErrorCode } from "@exaix/core";
 import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
 
 /**
@@ -22,11 +22,8 @@ import { GitStatusToolArgsSchema } from "@exaix/schemas/mcp.ts";
  */
 export class GitStatusTool extends ToolHandler {
   async execute(args: Record<string, JSONValue>): Promise<MCPToolResponse> {
-    const validatedArgs = GitStatusToolArgsSchema.parse(args) as {
-      portal: string;
-      identity_id: string;
-    };
-    const { portal, identity_id } = validatedArgs;
+    const validatedArgs = GitStatusToolArgsSchema.parse(args);
+    const { portal, format, include_untracked, identity_id } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
@@ -39,8 +36,19 @@ export class GitStatusTool extends ToolHandler {
       await this.validateGitRepository(portalPath, portal);
 
       // Get git status
+      const statusArgs = ["status"];
+      if (format === GitStatusFormat.SHORT) {
+        statusArgs.push("--short");
+      } else if (format === GitStatusFormat.PORCELAIN) {
+        statusArgs.push("--porcelain");
+      }
+
+      if (include_untracked === false) {
+        statusArgs.push("--untracked-files=no");
+      }
+
       const cmd = new Deno.Command("git", {
-        args: ["status", "--porcelain"],
+        args: statusArgs,
         cwd: portalPath,
         stdout: "piped",
         stderr: "piped",
@@ -61,7 +69,12 @@ export class GitStatusTool extends ToolHandler {
         portal,
         identity_id,
         [{ type: "text", text: statusText }],
-        { identity_id, has_changes: output.trim().length > 0 },
+        {
+          identity_id,
+          format: format ?? GitStatusFormat.PORCELAIN,
+          include_untracked: include_untracked !== false,
+          has_changes: output.trim().length > 0,
+        },
       );
     } catch (error) {
       return this.formatToolError(
@@ -70,7 +83,11 @@ export class GitStatusTool extends ToolHandler {
         identity_id,
         ToolErrorCode.EXECUTION_FAILED,
         error instanceof Error ? error.message : String(error),
-        { identity_id },
+        {
+          identity_id,
+          format: format ?? GitStatusFormat.PORCELAIN,
+          include_untracked: include_untracked !== false,
+        },
       );
     }
   }
@@ -86,6 +103,15 @@ export class GitStatusTool extends ToolHandler {
           portal: {
             type: "string",
             description: "Portal name",
+          },
+          format: {
+            type: "string",
+            enum: Object.values(GitStatusFormat),
+            description: "Optional: output format. short/porcelain are machine-friendly; long is human-readable.",
+          },
+          include_untracked: {
+            type: "boolean",
+            description: "Optional: include untracked files in status output (default: true)",
           },
           identity_id: {
             type: "string",

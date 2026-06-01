@@ -20,7 +20,9 @@ import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
 import { DeleteFileTool } from "./handlers/delete_file_tool.ts";
 import { GitCommitTool } from "./handlers/git_commit_tool.ts";
 import { GitCreateBranchTool } from "./handlers/git_create_branch_tool.ts";
+import { GitLogTool } from "./handlers/git_log_tool.ts";
 import { GitStatusTool } from "./handlers/git_status_tool.ts";
+import { GitWorktreeTool } from "./handlers/git_worktree_tool.ts";
 import { ListDirectoryTool } from "./handlers/list_directory_tool.ts";
 import { MoveFileTool } from "./handlers/move_file_tool.ts";
 import { PatchFileTool } from "./handlers/patch_file_tool.ts";
@@ -47,6 +49,8 @@ export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> 
   [McpToolName.GIT_CREATE_BRANCH, (context, permissions) => new GitCreateBranchTool(context, permissions)],
   [McpToolName.GIT_COMMIT, (context, permissions) => new GitCommitTool(context, permissions)],
   [McpToolName.GIT_STATUS, (context, permissions) => new GitStatusTool(context, permissions)],
+  [McpToolName.GIT_LOG, (context, permissions) => new GitLogTool(context, permissions)],
+  [McpToolName.GIT_WORKTREE, (context, permissions) => new GitWorktreeTool(context, permissions)],
   [McpToolName.RUN_COMMAND, (context, permissions) => new RunCommandTool(context, permissions)],
   [McpToolName.SEARCH_FILES, (context, permissions) => new SearchFilesTool(context, permissions)],
   [McpToolName.CREATE_REQUEST, (context, permissions) => new CreateRequestTool(context, permissions)],

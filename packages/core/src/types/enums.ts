@@ -457,10 +457,44 @@ export enum McpToolName {
   GIT_CREATE_BRANCH = "git_create_branch",
   GIT_COMMIT = "git_commit",
   GIT_STATUS = "git_status",
+  GIT_LOG = "git_log",
+  GIT_WORKTREE = "git_worktree",
   CREATE_REQUEST = "exaix_create_request",
   LIST_PLANS = "exaix_list_plans",
   APPROVE_PLAN = "exaix_approve_plan",
   QUERY_JOURNAL = "exaix_query_journal",
+}
+
+/**
+ * Git status output formats.
+ */
+export enum GitStatusFormat {
+  SHORT = "short",
+  PORCELAIN = "porcelain",
+  LONG = "long",
+}
+
+/**
+ * Git log output formats.
+ */
+export enum GitLogFormat {
+  ONELINE = "oneline",
+  SHORT = "short",
+  FULL = "full",
+  FULLER = "fuller",
+  CUSTOM = "custom",
+}
+
+/**
+ * Supported git worktree actions.
+ */
+export enum GitWorktreeAction {
+  ADD = "add",
+  LIST = "list",
+  REMOVE = "remove",
+  PRUNE = "prune",
+  LOCK = "lock",
+  UNLOCK = "unlock",
 }
 /**
  * Types of artifacts produced by agents.

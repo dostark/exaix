@@ -10,6 +10,7 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import { PortalOperation, ToolErrorCode } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { GitCreateBranchToolArgsSchema } from "@exaix/schemas/mcp.ts";
+import { GIT_CMD_CHECKOUT } from "@exaix/git";
 
 /**
  * GitCreateBranchTool - Creates feature branches in portal git repositories
@@ -25,9 +26,11 @@ export class GitCreateBranchTool extends ToolHandler {
     const validatedArgs = GitCreateBranchToolArgsSchema.parse(args) as {
       portal: string;
       branch: string;
+      track?: string;
+      force?: boolean;
       identity_id: string;
     };
-    const { portal, branch, identity_id } = validatedArgs;
+    const { portal, branch, track, force, identity_id } = validatedArgs;
 
     try {
       // All tools make permission checking for portal operations
@@ -40,8 +43,9 @@ export class GitCreateBranchTool extends ToolHandler {
       await this.validateGitRepository(portalPath, portal);
 
       // Create branch using git command
+      const createArgs = [GIT_CMD_CHECKOUT, force ? "-B" : "-b", branch];
       const cmd = new Deno.Command("git", {
-        args: ["checkout", "-b", branch],
+        args: createArgs,
         cwd: portalPath,
         stdout: "piped",
         stderr: "piped",
@@ -54,12 +58,27 @@ export class GitCreateBranchTool extends ToolHandler {
         throw new Error(`Failed to create branch: ${error}`);
       }
 
+      if (track) {
+        const trackCmd = new Deno.Command("git", {
+          args: ["branch", "--set-upstream-to", track, branch],
+          cwd: portalPath,
+          stdout: "piped",
+          stderr: "piped",
+        });
+
+        const { code: trackCode, stderr: trackStderr } = await trackCmd.output();
+        if (trackCode !== 0) {
+          const error = new TextDecoder().decode(trackStderr);
+          throw new Error(`Failed to set upstream tracking: ${error}`);
+        }
+      }
+
       return this.formatSuccess(
         "git_create_branch",
         portal,
         identity_id,
         [{ type: "text", text: `Branch '${branch}' created and checked out successfully in portal '${portal}'` }],
-        { branch, identity_id },
+        { branch, track: track ?? null, force: !!force, identity_id },
       );
     } catch (error) {
       return this.formatToolError(
@@ -88,6 +107,14 @@ export class GitCreateBranchTool extends ToolHandler {
           branch: {
             type: "string",
             description: "Branch name (must start with feat/, fix/, docs/, chore/, refactor/, or test/)",
+          },
+          track: {
+            type: "string",
+            description: "Optional: upstream branch to track (for example, main or origin/main)",
+          },
+          force: {
+            type: "boolean",
+            description: "Optional: force-reset existing branch to current HEAD if it already exists",
           },
           identity_id: {
             type: "string",

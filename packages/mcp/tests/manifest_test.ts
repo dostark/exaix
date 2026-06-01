@@ -41,16 +41,16 @@ Deno.test("[McpManifest] tool names are unique across the manifest", () => {
   );
 });
 
-Deno.test("[McpManifest] total entry count is 21", () => {
-  assertEquals(TOOL_MANIFEST.length, 21, "Expected 21 total tool entries in TOOL_MANIFEST");
+Deno.test("[McpManifest] total entry count is 23", () => {
+  assertEquals(TOOL_MANIFEST.length, 23, "Expected 23 total tool entries in TOOL_MANIFEST");
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Live MCP tools
 
-Deno.test("[McpManifest] 12 MCP_HANDLER entries exist", () => {
+Deno.test("[McpManifest] 14 MCP_HANDLER entries exist", () => {
   const handlers = TOOL_MANIFEST.filter((e) => e.kind === ToolKind.MCP_HANDLER);
-  assertEquals(handlers.length, 12, `Expected 12 MCP_HANDLER entries, got ${handlers.length}`);
+  assertEquals(handlers.length, 14, `Expected 14 MCP_HANDLER entries, got ${handlers.length}`);
 });
 
 Deno.test("[McpManifest] 4 MCP_DOMAIN entries exist", () => {

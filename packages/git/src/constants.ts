@@ -49,6 +49,9 @@ export const GIT_CMD_CONFIG = "config";
 export const GIT_CMD_BRANCH = "branch";
 export const GIT_CMD_STATUS = "status";
 export const GIT_CMD_LIST = "list";
+export const GIT_CMD_CHECKOUT = "checkout";
+export const GIT_CMD_COMMIT = "commit";
+export const GIT_CMD_LOG = "log";
 
 export const GIT_ERROR_NOTHING_TO_COMMIT = "nothing to commit";
 export const GIT_ERROR_NOT_A_REPO = "not a git repository";

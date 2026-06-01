@@ -85,6 +85,8 @@ Deno.test("MCP Server: handles tools/list request", async () => {
     assert(toolNames.includes(McpToolName.GIT_CREATE_BRANCH));
     assert(toolNames.includes(McpToolName.GIT_COMMIT));
     assert(toolNames.includes(McpToolName.GIT_STATUS));
+    assert(toolNames.includes(McpToolName.GIT_LOG));
+    assert(toolNames.includes(McpToolName.GIT_WORKTREE));
     assert(toolNames.includes(McpToolName.CREATE_REQUEST));
     assert(toolNames.includes(McpToolName.LIST_PLANS));
     assert(toolNames.includes(McpToolName.APPROVE_PLAN));
