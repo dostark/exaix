@@ -18,11 +18,15 @@ Deno.test("bootstrapProviderRegistry registers root concrete providers and is id
   assertEquals(supported.includes("anthropic"), true);
   assertEquals(supported.includes("openai"), true);
   assertEquals(supported.includes("google"), true);
+  assertEquals(supported.includes("vertex-ai"), true);
+  assertEquals(supported.includes("openrouter"), true);
   assertEquals(supported.includes("ollama"), true);
   assertExists(ProviderRegistry.getFactory("mock"));
   assertExists(ProviderRegistry.getFactory("anthropic"));
   assertExists(ProviderRegistry.getFactory("openai"));
   assertExists(ProviderRegistry.getFactory("google"));
+  assertExists(ProviderRegistry.getFactory("vertex-ai"));
+  assertExists(ProviderRegistry.getFactory("openrouter"));
   assertExists(ProviderRegistry.getFactory("ollama"));
 
   bootstrapProviderRegistry();
