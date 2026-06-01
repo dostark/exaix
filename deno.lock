@@ -1935,6 +1935,11 @@
           "jsr:@std/assert@^1.0.19"
         ]
       },
+      "packages/ai-vertex": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      },
       "packages/cli": {
         "dependencies": [
           "jsr:@cliffy/table@^1.1.0",
