@@ -13,9 +13,12 @@ import type { ICostFilter, IProviderCostRecord } from "../types/mod.ts";
 import {
   COST_RATE_ANTHROPIC,
   COST_RATE_GOOGLE,
+  COST_RATE_LLAMACPP,
   COST_RATE_MOCK,
   COST_RATE_OLLAMA,
   COST_RATE_OPENAI,
+  COST_RATE_OPENROUTER,
+  COST_RATE_VERTEX,
   DEFAULT_COST_TRACKING_BATCH_DELAY_MS,
   DEFAULT_COST_TRACKING_MAX_BATCH_SIZE,
   TOKENS_PER_COST_UNIT,
@@ -33,7 +36,10 @@ export class CostTracker implements ICostTracker {
       [ProviderType.OPENAI]: COST_RATE_OPENAI,
       [ProviderType.ANTHROPIC]: COST_RATE_ANTHROPIC,
       [ProviderType.GOOGLE]: COST_RATE_GOOGLE,
+      [ProviderType.VERTEX]: COST_RATE_VERTEX,
+      [ProviderType.OPENROUTER]: COST_RATE_OPENROUTER,
       [ProviderType.OLLAMA]: COST_RATE_OLLAMA,
+      [ProviderType.LLAMACPP]: COST_RATE_LLAMACPP,
       [ProviderType.MOCK]: COST_RATE_MOCK,
     };
 

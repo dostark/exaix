@@ -49,6 +49,8 @@ import {
   PROVIDER_MOCK,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
+  PROVIDER_OPENROUTER,
+  PROVIDER_VERTEX,
 } from "../types/constants.ts";
 import {
   ConfidenceAssessmentLevel,
@@ -180,6 +182,8 @@ const DEFAULT_COST_TRACKING_RATES: Record<string, number> = {
   [PROVIDER_OPENAI]: DEFAULTS.COST_RATE_OPENAI,
   [PROVIDER_ANTHROPIC]: DEFAULTS.COST_RATE_ANTHROPIC,
   [PROVIDER_GOOGLE]: DEFAULTS.COST_RATE_GOOGLE,
+  [PROVIDER_VERTEX]: DEFAULTS.COST_RATE_VERTEX,
+  [PROVIDER_OPENROUTER]: DEFAULTS.COST_RATE_OPENROUTER,
   [PROVIDER_OLLAMA]: DEFAULTS.COST_RATE_OLLAMA,
   [PROVIDER_MOCK]: DEFAULTS.COST_RATE_MOCK,
 };
@@ -692,7 +696,15 @@ export const ConfigSchema = z.object({
   const configData = data as z.infer<typeof ConfigSchema>;
   const modelKeys = Object.keys(configData.models || {});
   const fallbackChainKeys = Object.keys(configData.provider_strategy?.fallback_chains || {});
-  const providerTypes = [PROVIDER_OLLAMA, PROVIDER_ANTHROPIC, PROVIDER_OPENAI, PROVIDER_GOOGLE, PROVIDER_MOCK];
+  const providerTypes = [
+    PROVIDER_OLLAMA,
+    PROVIDER_ANTHROPIC,
+    PROVIDER_OPENAI,
+    PROVIDER_GOOGLE,
+    PROVIDER_VERTEX,
+    PROVIDER_OPENROUTER,
+    PROVIDER_MOCK,
+  ];
   const allAvailable = [...modelKeys, ...fallbackChainKeys, ...providerTypes, DEFAULTS.DEFAULT_AGENT_MODEL];
 
   if (data.agents?.default_model && !allAvailable.includes(data.agents.default_model)) {
