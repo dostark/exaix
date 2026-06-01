@@ -424,6 +424,24 @@ export const ConfigSchema = z.object({
     default_model: "claude-haiku-4-5-20251001",
     max_tokens_default: 4096,
   }),
+  /** Google Vertex AI provider options (service-account auth, regional endpoints) */
+  ai_vertex: z.object({
+    service_account_env: z.string().default("VERTEX_AI_SERVICE_ACCOUNT"),
+    region: z.string().default("us-central1"),
+  }).optional().default({
+    service_account_env: "VERTEX_AI_SERVICE_ACCOUNT",
+    region: "us-central1",
+  }),
+  /** OpenRouter unified-gateway provider options (API key + ranking headers) */
+  ai_openrouter: z.object({
+    api_key_env: z.string().default("OPENROUTER_API_KEY"),
+    site_name: z.string().default("Exaix"),
+    site_url: z.string().url().default("https://exaix.dev"),
+  }).optional().default({
+    api_key_env: "OPENROUTER_API_KEY",
+    site_name: "Exaix",
+    site_url: "https://exaix.dev",
+  }),
   mcp: MCPConfigSchema.optional().default({
     enabled: DEFAULT_MCP_ENABLED,
     transport: DEFAULT_MCP_TRANSPORT,
