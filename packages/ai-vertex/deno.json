@@ -6,6 +6,7 @@
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "@exaix/ai": "../ai/mod.ts",
     "@exaix/ai/providers": "../ai/src/providers/mod.ts",
+    "@exaix/ai/": "../ai/src/",
     "@exaix/core": "../core/mod.ts",
     "@exaix/core/logger": "../core/src/logger/mod.ts"
   },
