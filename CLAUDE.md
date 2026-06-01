@@ -15,6 +15,8 @@ links:
 > **⚠️ CRITICAL:** This document and `.copilot/` are **MANDATORY** context for all code tasks.
 > _Note: `.copilot/` is the canonical directory. Symlinks like `.claude/`, `.agents/`, `.cursor/`, and `AGENTS.md` exist intentionally to support various agents. They all point to `.copilot/`. For Qwen agents, `.qwen/skills/` contains auto-generated routing wrappers that redirect to the canonical skills in `.copilot/skills/`._
 > Read this file first, then use the `.copilot/` documents it points you to as task-specific extensions. If you find a conflict between this file and a `.copilot/` document, or between two `.copilot/` documents, stop and report the conflict instead of guessing.
+> A missing task-type entry in `.copilot/cross-reference.md` is not a conflict; follow the documented fallback path.
+> If a project instruction conflicts with a known security risk or language/runtime constraint (not merely a stylistic preference), flag it inline as `WARNING: <description>` and proceed with the project instruction unless it would introduce a critical vulnerability.
 >
 > **Conflict reporting format:** State the conflict explicitly in your response in the form: `CONFLICT: "<file-a>" says X, "<file-b>" says Y — cannot proceed without resolution.` Do not attempt to resolve the conflict yourself.
 >
@@ -22,16 +24,17 @@ links:
 
 ---
 
-## ⚠️ START HERE — Mandatory Pre-Task Checklist
+## ⚠️ START HERE — PHASE 1: PRE-TASK
 
 **Before beginning ANY code modification task, you MUST:**
 
-- [ ] Read this `CLAUDE.md` file completely
+- [ ] Read this file completely
 - [ ] Read `LLM_GUIDE.md` — universal behavioral guidelines (think before coding, simplicity, surgical changes, goal-driven execution)
 - [ ] Use `.copilot/cross-reference.md` to identify every required `.copilot/` document for the task type(s) involved, then read all of them before implementation
 - [ ] If the task type is not listed in `.copilot/cross-reference.md`, fall back to `.copilot/guidelines/exaix-development.md` and note that fallback in your implementation plan
 - [ ] If a required document listed in `.copilot/cross-reference.md` is missing on disk, stop and report the missing path instead of inferring its contents
-- [ ] Read frontmatter of root `.md` files when relevant; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
+- [ ] If a required document exists on disk but cannot be read or is empty, stop and report: `UNREADABLE: "<path>" exists but could not be read — cannot proceed without resolution.`
+- [ ] Read frontmatter of root `.md` files whenever you are selecting which `.copilot/` documents to consult for a task; the first 20 lines identify `copilot_knowledge_base: true` and relevant `capabilities` for that document
 - [ ] Read `ARCHITECTURE.md` before modifying any core flow
 - [ ] Use symbol-based links (for example `packages/core/src/types.ts:MyServiceConfig`) when referencing code locations
 - [ ] Identify your LLM provider and read the matching file in `.copilot/providers/` before starting (available: `claude.md`, `openai.md`, `google.md`, `google-long-context.md`). If no file exists for your provider, skip this step.
@@ -112,7 +115,7 @@ deno task docs-sync-schemas   # Sync MCP tool schemas to TOOLS.md
 
 ### TDD-First For Behavior Changes (MANDATORY)
 
-A **behavior change** is any edit that affects runtime output, observable state, or what an existing test asserts — as opposed to comments, documentation, formatting, or config-only changes that alter no executed code path.
+A **behavior change** is any edit that affects runtime output, observable state, or what an existing test asserts — as opposed to comments, documentation, formatting, or config-only changes that alter no executed code path. Config-only changes qualify as non-behavior changes only when the changed values are never read by executed code paths (for example, editor settings or CI metadata). Changes to runtime-read config values such as thresholds or feature flags are behavior changes and require TDD.
 
 For changes that modify behavior:
 
@@ -129,37 +132,35 @@ DI, environment variables, and related topics.
 
 ### Before Committing
 
-Use the **Task Checklist** below before claiming the task is complete or creating a commit.
+Use the phase checklists below before claiming the task is complete or creating a commit.
 
-## Task Checklist
+## PHASE 2: DURING IMPLEMENTATION
 
-Use this as the single canonical checklist for code tasks:
+Use this checklist while implementing:
 
-1. DURING: For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
-2. DURING: Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
-3. DURING: Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
-4. DURING: Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
-5. DURING: Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
-6. DONE: Ensure `deno check packages/ apps/ tests/` is clean before finishing.
-7. DONE: Complete the CI Verification section below before claiming the task is complete.
-8. DONE: Do not use raw SQL table creation in tests when project helpers already cover the setup.
-9. DONE: Do not bypass failing checks or ignore pre-commit failures.
-10. DONE: Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
-11. DONE: Do not place imports anywhere other than the top of the file.
-12. DONE: If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
+1. For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
+2. Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
+3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
+4. Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
+5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
 
-### CI Verification (MANDATORY)
+## PHASE 3: DONE / CI
 
-**Before claiming any task is complete, you MUST verify all CI checks pass locally.**
+Complete this sequence in order before claiming any task is complete:
 
-This section expands Task Checklist item 7. Follow these steps in order:
+1. Ensure `deno check packages/ apps/ tests/` is clean before finishing.
+2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
+3. Do not bypass failing checks or ignore pre-commit failures.
+4. Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
+5. Do not place imports anywhere other than the top of the file.
+6. If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
+7. After each discrete implementation step, run the quick verification command below.
+8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
+9. If `deno run -A scripts/ci.ts all` fails without a clear cause, run the manual workflow commands listed below to replicate CI behavior.
+10. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete. Mark it as `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
+11. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
 
-1. After each discrete implementation step, run the quick verification command below.
-2. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
-3. If `deno run -A scripts/ci.ts all` fails without a clear cause, use the Manual CI Workflow Verification steps below.
-4. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified.
-
-#### Quick CI Verification
+### Quick CI Verification
 
 When running `deno task test_parallel`, always redirect stdout+stderr to a temp file to capture full output without truncation, then search for failures. Requires `ripgrep` (`rg`); fall back to `grep -E` if unavailable:
 
@@ -180,7 +181,7 @@ deno run -A scripts/ci.ts test     # Test suite
 deno run -A scripts/ci.ts coverage # Coverage verification
 ```
 
-#### Manual CI Workflow Verification
+### Manual CI Workflow Verification
 
 To replicate exact CI behavior, run the workflows locally:
 
@@ -224,14 +225,14 @@ deno run -A scripts/ci.ts check
 deno run -A scripts/ci.ts test --quick
 ```
 
-#### CI Failure Response Protocol
+### CI Failure Response Protocol
 
-**If CI fails:**
+If CI fails, follow this sequence:
 
-1. **DO NOT** claim the task is complete
-2. Read the full error output to identify the root cause
-3. Fix the issue (do not bypass checks with `--no-verify` or similar flags)
-4. Re-run the failing check to confirm it passes before continuing
+1. **DO NOT** claim the task is complete.
+2. Read the full error output to identify the root cause.
+3. Fix the issue (do not bypass checks with `--no-verify` or similar flags).
+4. Re-run the failing check to confirm it passes before continuing.
 
 **Common CI Failures:**
 
@@ -348,11 +349,12 @@ An `apps/` or runtime-wiring module orchestrates the running Exaix process. It c
 - It coordinates two or more packages — it is glue, not logic.
 - Removing it would break daemon startup or the request-processing pipeline directly.
 
-### TUI Tests
+### Test Guidance
 
-> For general test placement and helper conventions see `.copilot/guidelines/testing.md`. The rules below are TUI-specific additions to that guideline.
+> For full test placement and helper conventions see `.copilot/guidelines/testing.md`. The rules below apply across all test types.
 
-- Place TUI tests in the owning package or app test directory (`packages/tui/tests/`, `apps/tui/tests/`), not next to source files.
+- Place tests in the owning boundary: package-owned tests in `packages/<package>/tests/`, app-owned tests in `apps/<app>/tests/`, and cross-cutting integration/scenario/security/system tests in root `tests/`.
+- Do not place new tests next to source files unless the project testing guideline explicitly requires it.
 - Use `sanitizeOps: false, sanitizeResources: false` for timer-based tests.
 - Skip `setTimeout` in test mode to avoid timer leaks — pattern: `if (Deno.env.get("DENO_TEST") !== "1") setTimeout(...)`
 
