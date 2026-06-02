@@ -154,6 +154,8 @@ export interface IFlowRunnerConfig {
   stepDurabilityStore?: IStepDurabilityStore;
   /** Optional replay policy for deciding whether a prior step result can be reused. No-op (deny all) when omitted. */
   stepReplayPolicy?: IStepReplayPolicy;
+  /** Optional checkpoint service override for testing; takes precedence over config-derived service. */
+  checkpointService?: IFlowCheckpointService;
 }
 
 /**
@@ -611,6 +613,7 @@ export class FlowRunner implements IFlowRunner {
   private namespaceService?: IFlowNamespaceService;
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
+  private readonly migratedCheckpointTraceIds = new Set<string>();
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -639,8 +642,12 @@ export class FlowRunner implements IFlowRunner {
     this.db = options.context?.db || options.db;
     this.gateEvaluator = options.context?.gateEvaluator || options.gateEvaluator;
     this.config = options.context?.config.get() || options.config;
-    if (this.config) {
+    if (options.checkpointService) {
+      this.checkpointService = options.checkpointService;
+    } else if (this.config) {
       this.checkpointService = new FlowCheckpointService(this.config);
+    }
+    if (this.config) {
       this.namespaceService = new FlowNamespaceService(this.config);
     }
 
@@ -2827,6 +2834,8 @@ export class FlowRunner implements IFlowRunner {
       stepResults.set(stepId, result);
     }
 
+    await this.migrateCheckpointToDurabilityStore(checkpoint, flow.id, request.traceId);
+
     await this.eventLogger.log(FLOW_EVENT_CHECKPOINT_LOADED, {
       flowRunId,
       flowId: flow.id,
@@ -2853,6 +2862,40 @@ export class FlowRunner implements IFlowRunner {
       namespaceId,
       flowId: flow.id,
     });
+  }
+
+  private async migrateCheckpointToDurabilityStore(
+    checkpoint: IFlowCheckpoint,
+    flowId: string,
+    traceId: string,
+  ): Promise<void> {
+    if (this.migratedCheckpointTraceIds.has(traceId)) {
+      return;
+    }
+    this.migratedCheckpointTraceIds.add(traceId);
+
+    for (const [stepId, snapshot] of Object.entries(checkpoint.completedSteps)) {
+      const record: IStepExecutionRecord = {
+        recordId: crypto.randomUUID(),
+        traceId,
+        flowId,
+        stepId,
+        idempotencyKey: {
+          traceId,
+          flowId,
+          stepId,
+          attemptClass: StepAttemptClass.RESUME,
+          inputHash: "",
+        },
+        disposition: StepExecutionDisposition.EXECUTED,
+        startedAt: snapshot.startedAt as string,
+        completedAt: snapshot.completedAt as string,
+        inputHash: "",
+        sideEffectClass: StepSideEffectClass.MIXED,
+        replayEligible: false,
+      };
+      await this.stepDurabilityStore.save(record);
+    }
   }
 
   private restoreStepResultsFromCheckpoint(checkpoint: IFlowCheckpoint): Record<string, IStepResult> {
