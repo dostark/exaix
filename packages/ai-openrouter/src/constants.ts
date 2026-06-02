@@ -22,6 +22,9 @@ export const X_TITLE_HEADER = "X-Title";
 export const OPENROUTER_DEFAULT_SITE_NAME = "Exaix";
 export const OPENROUTER_DEFAULT_SITE_URL = "https://exaix.dev";
 
+/** Default environment variable holding the OpenRouter API key. */
+export const DEFAULT_OPENROUTER_API_KEY_ENV = "OPENROUTER_API_KEY";
+
 export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
 export const PROVIDER_OPENROUTER_DESCRIPTION = "OpenRouter unified gateway to many models";
 export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "streaming", "multi-model"] as const;
