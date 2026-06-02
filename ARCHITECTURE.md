@@ -69,22 +69,8 @@ For the pipeline gate diagram with ASCII art and TOML configuration sample, see 
 
 ## System Architecture Overview
 
-Exaix follows a layered architecture: **CLI/TUI → Daemon Pipeline → Services → Storage → AI Providers**. Each layer has clear boundaries and dependency direction.
-
-For the full architecture with focused, readable Mermaid diagrams broken down by
-subsystem layer, see `exaix-dev-docs/dev/System_Architecture_Diagram.md`. Quick
-reference for the major layers:
-
-| Layer               | Role                                          | Key Components                                                                                                |
-| ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **CLI/TUI**         | Human interface                               | `exactl` commands, TUI dashboard                                                                              |
-| **Daemon Pipeline** | Request → Analyze → Route → Execute           | RequestProcessor, RequestAnalyzer, RequestRouter, AgentRunner, FlowRunner                                     |
-| **Services**        | Business logic, context, planning, validation | ConfigService, GitService, EventLogger, ContextLoader, PlanWriter, OutputValidator                            |
-| **Storage**         | Edition-tiered persistence                    | File system (source of truth), SQLite/PostgreSQL/immudb journal                                               |
-| **AI Providers**    | LLM abstraction with circuit breaker          | ProviderSelector, ProviderFactory, concrete providers (Anthropic, OpenAI, Google, Ollama, OpenRouter, Vertex) |
-
-Data flows: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter`
-→ `AgentRunner`/`FlowRunner` → `Workspace/Plans/`. All activity journaled to the database.
+See `exaix-dev-docs/dev/System_Architecture_Diagram.md` for the full architecture
+with focused Mermaid diagrams broken down by subsystem layer.
 
 ---
 
