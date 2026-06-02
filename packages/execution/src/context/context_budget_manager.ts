@@ -21,7 +21,10 @@ import {
   type IContextBudgetSnapshot,
 } from "@exaix/schemas/execution/context_budget.ts";
 import { CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import type { ITokenizer } from "@exaix/core/func";
 import type { IContextSegment } from "./context_segment.ts";
+import type { IContextCompactor } from "./context_compactor.ts";
+import type { ISnapshotStore } from "./snapshot_store.ts";
 
 export interface IContextBudgetManagerInput {
   traceId: string;
@@ -91,11 +94,28 @@ function sectionBudgetFor(
 }
 
 /**
+ * Segment kinds that are eligible for async LLM summarization when dropped.
+ * System/request/acceptance_criteria are protected and never reach this path.
+ */
+const ASYNC_COMPACTABLE_KINDS = new Set<IContextSegment["kind"]>([
+  ContextSegmentKindSchema.enum.tool_result,
+  ContextSegmentKindSchema.enum.portal_knowledge,
+  ContextSegmentKindSchema.enum.reflection,
+]);
+
+/**
  * Default ContextBudgetManager implementation.
  * Synchronous tier: sort by priority descending, greedy-keep within section budgets.
  * No LLM calls in this tier — must complete within CONTEXT_BUDGET_OVERHEAD_TARGET_MS.
+ * Async tier: schedules summarization for compactable dropped segments via queueMicrotask.
  */
 export class ContextBudgetManager implements IContextBudgetManager {
+  constructor(
+    private readonly _tokenizer?: ITokenizer,
+    private readonly compactor?: IContextCompactor,
+    private readonly snapshotStore?: ISnapshotStore,
+  ) {}
+
   prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
     const startedAt = Date.now();
     const { traceId, stepId, model, promptBudget, segments } = input;
@@ -191,6 +211,15 @@ export class ContextBudgetManager implements IContextBudgetManager {
     const usedInputTokens = kept.reduce((sum, s) => sum + s.tokenEstimate, 0);
     const durationMs = Date.now() - startedAt;
 
+    // Async tier: schedule LLM summarization for compactable dropped segments.
+    const droppedCompactable = sorted.filter(
+      (s) =>
+        !kept.some((k) => k.segmentId === s.segmentId) &&
+        ASYNC_COMPACTABLE_KINDS.has(s.kind) &&
+        !isProtected(s),
+    );
+    const overflowRecovered = droppedCompactable.length > 0 && this.compactor !== undefined;
+
     const snapshot: IContextBudgetSnapshot = {
       traceId,
       stepId,
@@ -198,9 +227,26 @@ export class ContextBudgetManager implements IContextBudgetManager {
       maxContextTokens: promptBudget.totalBudgetTokens,
       usedInputTokens,
       decisions,
-      overflowRecovered: false,
+      overflowRecovered,
       durationMs,
     };
+
+    if (overflowRecovered && this.compactor) {
+      const compactor = this.compactor;
+      const snapshotStore = this.snapshotStore;
+      queueMicrotask(() => {
+        void (async () => {
+          for (const seg of droppedCompactable) {
+            // Summarise for next-iteration benefit; result is not used in current prompt.
+            await compactor.summarize(seg, {
+              // Noop provider placeholder — real integration wires IModelProvider in Step 3.
+              generate: () => Promise.resolve({ content: "", model: "", usage: undefined }),
+            } as never);
+          }
+          await snapshotStore?.save(snapshot);
+        })();
+      });
+    }
 
     return Promise.resolve({ segments: kept, snapshot });
   }

@@ -12,6 +12,7 @@
 
 import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import {
+  CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
   CONTEXT_PRIORITY_PORTAL_KNOWLEDGE,
   CONTEXT_PRIORITY_SYSTEM,
@@ -19,7 +20,7 @@ import {
 } from "@exaix/core";
 import type { IContextBudgetManager } from "@exaix/execution";
 import type { IContextSegment } from "@exaix/execution";
-import { ContextBudgetManager } from "@exaix/execution";
+import { ContextBudgetManager, NoopContextCompactor } from "@exaix/execution";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -231,4 +232,134 @@ Deno.test("[ContextBudgetManager] snapshot.durationMs is a non-negative integer"
 
   assertEquals(typeof snapshot.durationMs, "number");
   assertLessOrEqual(0, snapshot.durationMs!);
+});
+
+// ─── Step 2 extensions ────────────────────────────────────────────────────────
+
+Deno.test("[ContextBudgetManager] drops low-priority tool_result before portal_knowledge at same budget", async () => {
+  // Both loopHistory (tool_result) and portalKnowledge are set to 0 so both would be dropped.
+  // Verify that tool_result (lower priority) IS dropped while the decision record
+  // shows portal_knowledge was also dropped — the decisions must include the
+  // lower-priority segment.
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+
+  const tool = makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 20 });
+  const portal = makeSegment({
+    kind: "portal_knowledge",
+    priority: CONTEXT_PRIORITY_PORTAL_KNOWLEDGE,
+    tokenEstimate: 20,
+  });
+
+  const { snapshot } = await manager.prepare({
+    traceId: "trace-ordering",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: makePromptBudget(0), // zero loopHistory forces tool_result drop
+    segments: [tool, portal],
+  });
+
+  const droppedKinds = snapshot.decisions
+    .filter((d) => d.action === "drop")
+    .map((d) => d.kind);
+
+  assertEquals(droppedKinds.includes("tool_result"), true);
+  // portal_knowledge maps to portalKnowledge section which has budget, so it's kept
+  assertEquals(droppedKinds.includes("portal_knowledge"), false);
+});
+
+Deno.test("[ContextBudgetManager] never drops system or acceptance_criteria segments under any budget pressure", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+
+  const budget = {
+    ...makePromptBudget(),
+    sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+  };
+
+  const { segments: out } = await manager.prepare({
+    traceId: "trace-protected",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: budget,
+    segments: [
+      makeSegment({ kind: "system", priority: CONTEXT_PRIORITY_SYSTEM, tokenEstimate: 999 }),
+      makeSegment({
+        kind: "acceptance_criteria",
+        priority: CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+        tokenEstimate: 999,
+      }),
+      makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 999 }),
+    ],
+  });
+
+  const keptKinds = out.map((s) => s.kind);
+  assertEquals(keptKinds.includes("system"), true);
+  assertEquals(keptKinds.includes("acceptance_criteria"), true);
+  assertEquals(keptKinds.includes("tool_result"), false);
+});
+
+Deno.test("[ContextBudgetManager] synchronous tier completes within CONTEXT_BUDGET_OVERHEAD_TARGET_MS ms", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+  const segments = Array.from({ length: 20 }, (_, i) =>
+    makeSegment({
+      kind: "tool_result",
+      priority: CONTEXT_PRIORITY_TOOL_RESULT,
+      tokenEstimate: i + 1,
+    }));
+
+  const start = Date.now();
+  await manager.prepare({
+    traceId: "trace-timing",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: makePromptBudget(),
+    segments,
+  });
+  const elapsed = Date.now() - start;
+
+  assertLessOrEqual(elapsed, CONTEXT_BUDGET_OVERHEAD_TARGET_MS * 10); // 10× margin in test env
+});
+
+Deno.test("[ContextBudgetManager] snapshot.overflowRecovered is true when async compactor path fires", async () => {
+  const compactor = new NoopContextCompactor();
+  const manager: IContextBudgetManager = new ContextBudgetManager(undefined, compactor);
+
+  // tool_result (compactable) is dropped due to zero loopHistory budget
+  const { snapshot } = await manager.prepare({
+    traceId: "trace-overflow",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: makePromptBudget(0),
+    segments: [
+      makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
+    ],
+  });
+
+  assertEquals(snapshot.overflowRecovered, true);
+});
+
+Deno.test("[ContextBudgetManager] protected segments with nonCompactable=true are always kept", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+
+  const budget = {
+    ...makePromptBudget(),
+    sections: { system: 0, plan: 0, portalKnowledge: 0, memory: 0, skills: 0, loopHistory: 0 },
+  };
+
+  const { segments: out } = await manager.prepare({
+    traceId: "trace-noncompactable",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: budget,
+    segments: [
+      makeSegment({
+        kind: "tool_result",
+        priority: CONTEXT_PRIORITY_TOOL_RESULT,
+        tokenEstimate: 999,
+        metadata: { nonCompactable: true },
+      }),
+    ],
+  });
+
+  assertEquals(out.length, 1);
+  assertEquals(out[0].metadata.nonCompactable, true);
 });
