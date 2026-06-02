@@ -75,6 +75,7 @@ import { ToolRegistry } from "@exaix/tool-runtime";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
+import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
@@ -142,12 +143,28 @@ const BlueprintSchema = z.object({
 export class AgentExecutor {
   private executionContext?: IWorkspaceExecutionContext;
   private originalWorkingDirectory?: string;
-  private currentPromptBudget?: IPromptBudget;
+  private _currentPromptBudget?: IPromptBudget;
   private promptBudgetAllocator?: IPromptBudgetAllocator;
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
   private _contextCache?: ContextCache;
+  private _contextBudgetManager?: IContextBudgetManager;
 
   private readonly _tokenizer?: ITokenizer;
+
+  /** Exposes current prompt budget to IReActLoopExecutor (Phase 83). */
+  public get currentPromptBudget(): IPromptBudget | undefined {
+    return this._currentPromptBudget;
+  }
+
+  /** Exposes context budget manager to IReActLoopExecutor (Phase 83). */
+  public get contextBudgetManager(): IContextBudgetManager | undefined {
+    return this._contextBudgetManager;
+  }
+
+  /** Budget pressure logger forwarded to IReActLoopExecutor (Phase 83). */
+  public get budgetLogger(): IEventLogger {
+    return this.logger;
+  }
 
   constructor(
     private config: Config,
@@ -260,8 +277,8 @@ export class AgentExecutor {
    * Check if loop history exceeds the budget threshold and trigger compaction.
    */
   private async _checkLoopHistoryBudget(): Promise<void> {
-    if (!this.currentPromptBudget) return;
-    const loopBudget = this.currentPromptBudget.sections.loopHistory;
+    if (!this._currentPromptBudget) return;
+    const loopBudget = this._currentPromptBudget.sections.loopHistory;
     const usedTokens = this._loopHistory.reduce((sum, e) => sum + e.tokens, 0);
     if (loopBudget > 0 && usedTokens > loopBudget * LOOP_HISTORY_BUDGET_THRESHOLD) {
       await this.compactLoopHistory();
@@ -579,7 +596,7 @@ export class AgentExecutor {
     // Load blueprint — capabilities array drives strategy dispatch (Phase 61: MCP > ReAct > Legacy fallback).
     const _blueprint = await this.loadBlueprint(options.identity_id ?? "");
     const modelId = this.resolveModelId(_blueprint);
-    this.currentPromptBudget = await this.promptBudgetAllocator!.allocate(
+    this._currentPromptBudget = await this.promptBudgetAllocator!.allocate(
       modelId,
       undefined,
       options.request_analysis as IRequestAnalysis | undefined,
@@ -683,7 +700,7 @@ export class AgentExecutor {
 
       throw error;
     } finally {
-      this.currentPromptBudget = undefined;
+      this._currentPromptBudget = undefined;
     }
   }
 
@@ -705,33 +722,33 @@ export class AgentExecutor {
     // Sanitize all user-controlled inputs
     const sanitizedRequest = this.applyTokenBudget(
       this.sanitizeUserInput(context.request),
-      this.currentPromptBudget?.sections.memory,
+      this._currentPromptBudget?.sections.memory,
       "memory",
     );
     const sanitizedPlan = this.applyTokenBudget(
       this.sanitizeUserInput(context.plan),
-      this.currentPromptBudget?.sections.plan,
+      this._currentPromptBudget?.sections.plan,
       "plan",
     );
     const portalContext = this.applyTokenBudget(
       this.buildPortalContextBlock(options.portal) ?? "",
-      this.currentPromptBudget?.sections.portalKnowledge,
+      this._currentPromptBudget?.sections.portalKnowledge,
       "portalKnowledge",
     );
     const systemPrompt = this.applyTokenBudget(
       blueprint.systemPrompt,
-      this.currentPromptBudget?.sections.system,
+      this._currentPromptBudget?.sections.system,
       "system",
     );
     const skillContext = this.applyTokenBudget(
       context.skills_context ?? "",
-      this.currentPromptBudget?.sections.skills,
+      this._currentPromptBudget?.sections.skills,
       "skills",
     );
 
     // Mark stable sections in context cache for potential cache_control
-    if (this._contextCache && this.currentPromptBudget) {
-      const budget = this.currentPromptBudget.sections;
+    if (this._contextCache && this._currentPromptBudget) {
+      const budget = this._currentPromptBudget.sections;
       this._contextCache.markStable("system", systemPrompt, budget.system);
       this._contextCache.markStable("plan", sanitizedPlan, budget.plan);
       this._contextCache.markStable("portalKnowledge", portalContext, budget.portalKnowledge);

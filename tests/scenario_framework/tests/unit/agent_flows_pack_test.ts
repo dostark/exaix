@@ -70,6 +70,7 @@ Deno.test("[ScenarioFrameworkAgentFlowsPack] scenario metadata for the Agent Flo
     agentFlowScenarios.map((scenario: IScenario) => scenario.id).sort(),
     [
       "acceptance-criteria-propagation",
+      "context-budget-react-overflow",
       "memory-aware-analysis",
       "plan-amendment-lifecycle",
       "portal-knowledge-snapshot",
