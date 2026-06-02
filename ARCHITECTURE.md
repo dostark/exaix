@@ -283,7 +283,7 @@ Advanced agent orchestration capabilities provide improved output quality, relia
 
 For the agent orchestration flow diagram (request → session memory → reflexive
 agent → output validation → retry/confidence → tool reflection → response), see
-`exaix-dev-docs/dev/Agent_Orchestration_Diagram.md`.
+`exaix-dev-docs/dev/System_Architecture_Diagram.md#6-agent-orchestration`.
 
 ### Service Responsibilities
 
@@ -306,7 +306,7 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 For the ReAct loop diagram (step objective → blueprint → MCP client → LLM
 reasoning → tool call → permission check → observe → iterate/complete), see
-`exaix-dev-docs/dev/ReAct_Loop_Diagram.md`.
+`exaix-dev-docs/dev/System_Architecture_Diagram.md#7-react-loop-architecture`.
 
 ### Security and Auditability
 
