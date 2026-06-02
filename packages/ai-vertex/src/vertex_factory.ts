@@ -18,17 +18,21 @@ import { DEFAULT_VERTEX_REGION, DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV, PROVIDER_VER
 /**
  * Creates VertexProvider instances from a Google service-account credential.
  *
- * Note (Phase 80 Step 3): the service-account env var and region use package
- * defaults here. Config-driven overrides are wired in Step 5.
+ * Honours the `[ai_vertex]` config block (`service_account_env`, `region`),
+ * falling back to package defaults when the block or a field is absent.
  */
 export class VertexProviderFactory extends AbstractProviderFactory {
   create(options: IResolvedProviderOptions): Promise<IModelProvider> {
-    const serviceAccount = parseServiceAccountFromEnv(DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV, options.logger);
+    const vertexConfig = options.config?.ai_vertex;
+    const serviceAccountEnv = vertexConfig?.service_account_env ?? DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV;
+    const region = vertexConfig?.region ?? DEFAULT_VERTEX_REGION;
+
+    const serviceAccount = parseServiceAccountFromEnv(serviceAccountEnv, options.logger);
     if (!serviceAccount) {
       return Promise.reject(
         new AuthenticationError(
           PROVIDER_VERTEX,
-          `Vertex AI requires a valid service account JSON in the ${DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV} environment variable`,
+          `Vertex AI requires a valid service account JSON in the ${serviceAccountEnv} environment variable`,
         ),
       );
     }
@@ -41,7 +45,7 @@ export class VertexProviderFactory extends AbstractProviderFactory {
         logger: options.logger,
         timeoutMs: options.timeoutMs,
         serviceAccount,
-        region: DEFAULT_VERTEX_REGION,
+        region,
       }),
     );
   }

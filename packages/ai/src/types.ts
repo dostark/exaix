@@ -7,7 +7,7 @@
  */
 import type { ConfigSource, JSONValue, McpToolName, MockStrategy, ProviderType } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { IBlueprintFrontmatter } from "@exaix/schemas";
+import type { Config, IBlueprintFrontmatter } from "@exaix/schemas";
 
 /**
  * Options for model generation requests.
@@ -77,6 +77,8 @@ export interface IResolvedProviderOptions {
   responses?: string[];
   /** Optional event logger for usage tracking */
   logger?: IEventLogger;
+  /** Resolved Exaix config — lets provider-specific factories read their option blocks. */
+  config?: Config;
 }
 
 /**
