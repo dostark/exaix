@@ -75,8 +75,10 @@ import {
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
+  FLOW_EVENT_STEP_INVALIDATED,
   FLOW_EVENT_STEP_RETRY,
   FLOW_EVENT_STEP_SKIPPED,
+  FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
@@ -1650,12 +1652,17 @@ export class FlowRunner implements IFlowRunner {
     const stepId = step.id;
     const traceId = request.traceId ?? flowRunId;
 
+    const toolPolicyHash = await this.computeStringHash(JSON.stringify(step.permitted_tools ?? []));
+    const portalScopeHash = await this.computeStringHash(JSON.stringify([]));
+
     const priorRecord = await this.stepDurabilityStore.findReplayCandidate({
       traceId,
       flowId: flow.id,
       stepId,
       inputHash,
       attemptClass,
+      toolPolicyHash,
+      portalScopeHash,
     });
 
     if (priorRecord) {
@@ -1666,13 +1673,13 @@ export class FlowRunner implements IFlowRunner {
       });
 
       if (reuseDecision.allowed) {
-        this.eventLogger.log("flow.step.replayed", {
-          flowId: flow.id,
+        this.eventLogger.log(FLOW_EVENT_STEP_SKIPPED_BY_REUSE, {
           traceId,
-          stepId,
+          requestId: request.requestId,
           flowRunId,
-          recordId: priorRecord.recordId,
-          reason: reuseDecision.reason ?? "replay-allowed",
+          stepId,
+          priorRecordId: priorRecord.recordId,
+          inputHash,
         });
 
         return {
@@ -1697,6 +1704,8 @@ export class FlowRunner implements IFlowRunner {
         stepId,
         attemptClass,
         inputHash,
+        toolPolicyHash,
+        portalScopeHash,
       },
       disposition: StepExecutionDisposition.EXECUTED,
       startedAt: startedAt.toISOString(),
@@ -2779,6 +2788,11 @@ export class FlowRunner implements IFlowRunner {
     return encodeHex(digest);
   }
 
+  private async computeStringHash(value: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+    return encodeHex(digest);
+  }
+
   private computeSideEffectClass(step: IFlowStep): StepSideEffectClass {
     if (step.type === FlowStepType.GATE) {
       return StepSideEffectClass.NONE;
@@ -2826,6 +2840,18 @@ export class FlowRunner implements IFlowRunner {
         requestId: request.requestId,
       });
       await this.checkpointService.delete(request.traceId);
+      for (const stepId of Object.keys(checkpoint.completedSteps)) {
+        const recordId = `stale:${request.traceId}:${stepId}`;
+        await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
+        this.eventLogger.log(FLOW_EVENT_STEP_INVALIDATED, {
+          traceId: request.traceId,
+          requestId: request.requestId,
+          flowRunId,
+          stepId,
+          recordId,
+          reason: "stale-checkpoint",
+        });
+      }
       return;
     }
 
