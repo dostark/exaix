@@ -100,6 +100,12 @@ graph TB
 
 Provider selection is configured in `exa.config.toml`. See the [Provider Strategy Guide](../../docs/Provider_Strategy_Guide.md) for detailed configuration options, cost-based routing, and health-aware fallback chains.
 
+### Vertex AI & OpenRouter notes
+
+- **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
+- **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
+- Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
+
 ## See Also
 
 - [Provider Strategy Guide](../../docs/Provider_Strategy_Guide.md) — Cost, performance, and health-based provider selection
