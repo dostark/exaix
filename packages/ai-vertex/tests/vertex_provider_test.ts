@@ -10,6 +10,8 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
+import { AuthenticationError } from "@exaix/ai/providers";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGoogleAuth } from "@exaix/ai-vertex";
 import {
   DEFAULT_VERTEX_SERVICE_ACCOUNT_ENV,
@@ -128,4 +130,35 @@ Deno.test("VertexProviderFactory.create throws an actionable error when the serv
 Deno.test("VERTEX_PROVIDER_METADATA describes the vertex-ai provider", () => {
   assertEquals(VERTEX_PROVIDER_METADATA.name, "vertex-ai");
   assert(VERTEX_PROVIDER_METADATA.capabilities.includes("chat"));
+});
+
+Deno.test("VertexProvider metadata advertises no unimplemented capabilities", async () => {
+  const provider: IModelProvider = new VertexProvider({
+    apiKey: "",
+    model: "gemini-2.5-flash",
+    serviceAccount: await validServiceAccount(),
+    region: "us-central1",
+    auth: fakeAuth,
+  });
+  const capabilities = VERTEX_PROVIDER_METADATA.capabilities as readonly string[];
+  if (capabilities.includes("streaming")) {
+    assertEquals(typeof provider.generateStream, "function");
+  }
+});
+
+Deno.test("VertexProvider.generate maps a 401 to AuthenticationError", async () => {
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() => Promise.resolve(new Response("unauthorized", { status: 401 }))) as typeof fetch;
+  try {
+    const provider = new VertexProvider({
+      apiKey: "",
+      model: "gemini-2.5-flash",
+      serviceAccount: await validServiceAccount(),
+      region: "us-central1",
+      auth: fakeAuth,
+    });
+    await assertRejects(() => provider.generate("hi"), AuthenticationError);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });

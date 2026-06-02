@@ -10,6 +10,8 @@
 
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { ProviderType } from "@exaix/core";
+import { AuthenticationError } from "@exaix/ai/providers";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import {
   OPENROUTER_DEFAULT_SITE_NAME,
   OPENROUTER_DEFAULT_SITE_URL,
@@ -78,4 +80,23 @@ Deno.test("OpenRouterProviderFactory.create throws when the API key is missing",
 Deno.test("OPENROUTER_PROVIDER_METADATA describes the openrouter provider", () => {
   assertEquals(OPENROUTER_PROVIDER_METADATA.name, "openrouter");
   assert(OPENROUTER_PROVIDER_METADATA.capabilities.includes("multi-model"));
+});
+
+Deno.test("OpenRouterProvider metadata advertises no unimplemented capabilities", () => {
+  const provider: IModelProvider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
+  const capabilities = OPENROUTER_PROVIDER_METADATA.capabilities as readonly string[];
+  if (capabilities.includes("streaming")) {
+    assertEquals(typeof provider.generateStream, "function");
+  }
+});
+
+Deno.test("OpenRouterProvider.generate maps a 401 to AuthenticationError", async () => {
+  const origFetch = globalThis.fetch;
+  globalThis.fetch = (() => Promise.resolve(new Response("unauthorized", { status: 401 }))) as typeof fetch;
+  try {
+    const provider = new OpenRouterProvider({ apiKey: "sk-test", model: "openai/gpt-4" });
+    await assertRejects(() => provider.generate("hi"), AuthenticationError);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
 });

@@ -27,7 +27,7 @@ export const DEFAULT_OPENROUTER_API_KEY_ENV = "OPENROUTER_API_KEY";
 
 export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
 export const PROVIDER_OPENROUTER_DESCRIPTION = "OpenRouter unified gateway to many models";
-export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "streaming", "multi-model"] as const;
+export const PROVIDER_OPENROUTER_CAPABILITIES = ["chat", "multi-model"] as const;
 export const PROVIDER_OPENROUTER_STRENGTHS = ["model-variety", "auto-fallback", "unified-billing"] as const;
 export const PROVIDER_OPENROUTER_COST_TIER = ProviderCostTier.PAID;
 
