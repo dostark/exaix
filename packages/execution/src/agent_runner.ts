@@ -20,6 +20,7 @@ import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
@@ -145,6 +146,10 @@ export interface IAgentRunnerConfig {
 
   /** Optional: Application context for service resolution */
   context?: IApplicationContext;
+
+  /** Optional: Segment-level context budget manager (Phase 83). When present, called in
+   * constructPrompt() after all prompt parts are collected, before joining. */
+  contextBudgetManager?: IContextBudgetManager;
 }
 
 /**

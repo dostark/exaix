@@ -18,3 +18,6 @@ export * from "./src/confidence_scorer.ts";
 export * from "./src/types.ts";
 export * from "./src/reflexive_agent.ts";
 export * from "./src/execution_loop.ts";
+export * from "./src/context/context_segment.ts";
+export * from "./src/context/context_budget_manager.ts";
+export * from "./src/context/context_budget_event_types.ts";
