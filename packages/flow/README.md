@@ -61,6 +61,7 @@ silent skip of side-effecting steps (tool invocations, git operations).
 interface IFlowRunnerConfig {
   stepDurabilityStore?: IStepDurabilityStore; // optional, no-op by default
   stepReplayPolicy?: IStepReplayPolicy; // optional, DefaultStepReplayPolicy by default
+  checkpointService?: IFlowCheckpointService; // optional override for testing
 }
 ```
 
@@ -83,19 +84,41 @@ interface IFlowRunnerConfig {
 - `attemptClass` — e.g. `INITIAL`, `RETRY`, `FALLBACK`
 - Optional: `toolPolicyHash`, `portalScopeHash`
 
+### Checkpoint Migration
+
+When `loadCheckpointIfAvailable` restores steps from a valid checkpoint, it
+backfills the durability store with one audit-only record per restored step
+(`inputHash: ""`, `replayEligible: false`, `disposition: executed`,
+`attemptClass: resume`). These records are informational — the empty hash
+prevents `findReplayCandidate` from matching them for automatic replay.
+
+A session-scoped `migratedCheckpointTraceIds` set on the `FlowRunner`
+instance prevents double-backfill when `execute()` is called more than once
+with the same `traceId`.
+
+When a **stale** checkpoint is detected (schema version or flow content hash
+mismatch), it is discarded and `FLOW_EVENT_STEP_INVALIDATED` is emitted for
+each step that was in the stale checkpoint, then `store.invalidate()` is
+called with a synthetic record ID (`stale:<traceId>:<stepId>`).
+
 ### Journal Events
 
-| Event                        | Payload Fields                                                   | When Emitted                             |
-| ---------------------------- | ---------------------------------------------------------------- | ---------------------------------------- |
-| `flow.step.replayed`         | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`, `flowId` | Prior execution record reused for a step |
-| `flow.step.skipped_by_reuse` | `flowRunId`, `stepId`, `priorRecordId`, `inputHash`, `traceId`   | Step skipped entirely via reuse policy   |
-| `flow.step.invalidated`      | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`           | Stored record explicitly invalidated     |
+| Event                        | Payload Fields                                                   | When Emitted                                     |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| `flow.step.skipped_by_reuse` | `flowRunId`, `stepId`, `priorRecordId`, `inputHash`, `traceId`   | Prior record matched and policy permits reuse    |
+| `flow.step.replayed`         | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`, `flowId` | Reserved — future result-reconstruction path     |
+| `flow.step.invalidated`      | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`           | Stale checkpoint discarded or record invalidated |
 
 ### Invariants
 
 - Artifact-centric model unchanged — durability is internal runtime semantics.
 - Replay is conservative by default (only `NONE` / `LLM` steps).
-- Output reconstruction uses `IStepExecutionRecord.summary` from prior execution.
+- `replayEligible` is initialized `false` at record construction; flipped to
+  `true` only after the step's success branch completes.
+- `durationMs` (wall-clock milliseconds) is computed and stored on every
+  successful execution record.
+- Output reconstruction uses `IStepExecutionRecord.summary` from prior
+  execution.
 - No new record is created when replaying; the prior record is reused in place.
 
 ## Error Recovery
