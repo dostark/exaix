@@ -231,12 +231,16 @@ export const PROVIDER_OLLAMA = ProviderType.OLLAMA;
 export const PROVIDER_OPENAI = ProviderType.OPENAI;
 export const PROVIDER_ANTHROPIC = ProviderType.ANTHROPIC;
 export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
+export const PROVIDER_VERTEX = ProviderType.VERTEX;
+export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
 export const KNOWN_PROVIDERS = [
   ProviderType.MOCK,
   ProviderType.OLLAMA,
   ProviderType.ANTHROPIC,
   ProviderType.OPENAI,
   ProviderType.GOOGLE,
+  ProviderType.VERTEX,
+  ProviderType.OPENROUTER,
   ProviderType.LLAMACPP,
 ] as const;
 
@@ -460,7 +464,14 @@ export const COST_RATE_OPENAI = 0.002;
 export const COST_RATE_ANTHROPIC = 0.005;
 // Google gemini-2.5-flash (Vertex AI): $2.50/1M output → $0.0025/1K
 export const COST_RATE_GOOGLE = 0.0025;
+// Vertex AI bills Gemini at the same output rate as the Google AI API.
+export const COST_RATE_VERTEX = 0.0025;
+// OpenRouter pricing varies per underlying sub-model; 0 is an unmetered
+// sentinel — usage token counts are still recorded for auditing.
+export const COST_RATE_OPENROUTER = 0.0;
 export const COST_RATE_OLLAMA = 0.0;
+// llama.cpp runs locally and incurs no provider cost.
+export const COST_RATE_LLAMACPP = 0.0;
 export const COST_RATE_MOCK = 0.0;
 export const TOKENS_PER_COST_UNIT = 1000;
 

@@ -314,6 +314,7 @@ export class ProviderFactory {
       timeoutMs,
       mockStrategy: mockStrategy as MockStrategy,
       mockFixturesDir,
+      config,
     };
   }
 

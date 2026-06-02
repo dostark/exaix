@@ -199,6 +199,10 @@ export enum ProviderType {
   OPENAI = "openai",
   /** Google's Gemini models */
   GOOGLE = "google",
+  /** Google Vertex AI (service-account auth, project-based quotas) */
+  VERTEX = "vertex-ai",
+  /** OpenRouter unified API gateway to many models */
+  OPENROUTER = "openrouter",
   /** Mock provider for testing and development */
   MOCK = "mock",
   /** Local llama.cpp server for running open-source models */

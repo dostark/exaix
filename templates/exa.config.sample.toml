@@ -195,6 +195,18 @@ api_version = "2023-06-01"
 default_model = "claude-haiku-4-5-20251001"
 max_tokens_default = 4096
 
+[ai_vertex]
+# Google Vertex AI (service-account auth for project-based quotas).
+# Provide the service-account JSON (single line) in the named env var.
+service_account_env = "VERTEX_AI_SERVICE_ACCOUNT"
+region = "us-central1"   # e.g. europe-west4, asia-southeast1
+
+[ai_openrouter]
+# OpenRouter unified gateway (single API key to many models).
+api_key_env = "OPENROUTER_API_KEY"
+site_name = "Exaix"
+site_url = "https://exaix.dev"
+
 # ---------------------------------------------------------------------------
 # Model-specific defaults
 # Override timeout and other settings per model configuration

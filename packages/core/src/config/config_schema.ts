@@ -49,6 +49,8 @@ import {
   PROVIDER_MOCK,
   PROVIDER_OLLAMA,
   PROVIDER_OPENAI,
+  PROVIDER_OPENROUTER,
+  PROVIDER_VERTEX,
 } from "../types/constants.ts";
 import {
   ConfidenceAssessmentLevel,
@@ -180,6 +182,8 @@ const DEFAULT_COST_TRACKING_RATES: Record<string, number> = {
   [PROVIDER_OPENAI]: DEFAULTS.COST_RATE_OPENAI,
   [PROVIDER_ANTHROPIC]: DEFAULTS.COST_RATE_ANTHROPIC,
   [PROVIDER_GOOGLE]: DEFAULTS.COST_RATE_GOOGLE,
+  [PROVIDER_VERTEX]: DEFAULTS.COST_RATE_VERTEX,
+  [PROVIDER_OPENROUTER]: DEFAULTS.COST_RATE_OPENROUTER,
   [PROVIDER_OLLAMA]: DEFAULTS.COST_RATE_OLLAMA,
   [PROVIDER_MOCK]: DEFAULTS.COST_RATE_MOCK,
 };
@@ -419,6 +423,24 @@ export const ConfigSchema = z.object({
     api_version: "2023-06-01",
     default_model: "claude-haiku-4-5-20251001",
     max_tokens_default: 4096,
+  }),
+  /** Google Vertex AI provider options (service-account auth, regional endpoints) */
+  ai_vertex: z.object({
+    service_account_env: z.string().default("VERTEX_AI_SERVICE_ACCOUNT"),
+    region: z.string().default("us-central1"),
+  }).optional().default({
+    service_account_env: "VERTEX_AI_SERVICE_ACCOUNT",
+    region: "us-central1",
+  }),
+  /** OpenRouter unified-gateway provider options (API key + ranking headers) */
+  ai_openrouter: z.object({
+    api_key_env: z.string().default("OPENROUTER_API_KEY"),
+    site_name: z.string().default("Exaix"),
+    site_url: z.string().url().default("https://exaix.dev"),
+  }).optional().default({
+    api_key_env: "OPENROUTER_API_KEY",
+    site_name: "Exaix",
+    site_url: "https://exaix.dev",
   }),
   mcp: MCPConfigSchema.optional().default({
     enabled: DEFAULT_MCP_ENABLED,
@@ -692,7 +714,15 @@ export const ConfigSchema = z.object({
   const configData = data as z.infer<typeof ConfigSchema>;
   const modelKeys = Object.keys(configData.models || {});
   const fallbackChainKeys = Object.keys(configData.provider_strategy?.fallback_chains || {});
-  const providerTypes = [PROVIDER_OLLAMA, PROVIDER_ANTHROPIC, PROVIDER_OPENAI, PROVIDER_GOOGLE, PROVIDER_MOCK];
+  const providerTypes = [
+    PROVIDER_OLLAMA,
+    PROVIDER_ANTHROPIC,
+    PROVIDER_OPENAI,
+    PROVIDER_GOOGLE,
+    PROVIDER_VERTEX,
+    PROVIDER_OPENROUTER,
+    PROVIDER_MOCK,
+  ];
   const allAvailable = [...modelKeys, ...fallbackChainKeys, ...providerTypes, DEFAULTS.DEFAULT_AGENT_MODEL];
 
   if (data.agents?.default_model && !allAvailable.includes(data.agents.default_model)) {
