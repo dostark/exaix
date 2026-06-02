@@ -59,6 +59,21 @@ All tools enforce portal-scoped operations:
 | LLM Client   | Prompts LLM to reason about next action in ReAct loop        |
 | Activity Log | Logs every reasoning step and tool call, correlated by trace |
 
+## Tool Result Compactability (Phase 83)
+
+Tool results returned from MCP handlers are forwarded to the ReAct loop as `"tool_result"` context
+segments. By default these segments are **compactable** — when the `ContextBudgetManager` detects
+budget pressure, `tool_result` segments are the first to be trimmed or asynchronously summarized
+(priority 30, the lowest of all compactable kinds).
+
+To mark a tool result as non-compactable (for example, a security audit output that must be
+preserved in full), set `metadata.nonCompactable = true` on the `IContextSegment` when forwarding
+the result. The compaction engine treats any segment with `nonCompactable = true` as protected,
+equivalent to a system prompt.
+
+For the full compaction policy and segment kind table, see
+`packages/execution/README.md#context-budget-manager`.
+
 ## Tool Confirmation Interceptor
 
 - `FlowRunner` selects the confirmation path at runtime before constructing `DynamicStepExecutor`
