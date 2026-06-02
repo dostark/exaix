@@ -16,8 +16,8 @@ tools_referenced:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-**Version:** 3.0\
-**Date:** May 25, 2026
+**Version:** 3.1\
+**Date:** June 2, 2026
 
 > **What this document covers:** component boundaries, dependency direction, edition-tiering rationale, and architectural invariants — the "why" that code alone doesn't convey.
 > **What this document does NOT cover:** configuration syntax, CLI command trees, score formulas, step-by-step protocols, or schema definitions. Those live in package and app READMEs under `packages/` and `apps/`, with redirects in `docs/dev/`.
@@ -64,13 +64,6 @@ Session tools are treated as **external delegates** — launched via a configura
 Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.
 
 For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
-
----
-
-## System Architecture Overview
-
-See `exaix-dev-docs/dev/System_Architecture_Diagram.md` for the full architecture
-with focused Mermaid diagrams broken down by subsystem layer.
 
 ---
 
@@ -288,52 +281,9 @@ Advanced agent orchestration capabilities provide improved output quality, relia
 
 ### Orchestration Components
 
-```mermaid
-flowchart TB
-    subgraph Orchestration["🎭 Agent Orchestration"]
-        Request[Request Input]
-        SessMem[Session Memory]
-        AgentRun[Agent Runner]
-        ReflexAgt[Reflexive Agent]
-        OutputVal[Output Validator]
-        ConfScore[Confidence Scorer]
-        RetryPol[Retry Policy]
-        ToolRefl[Tool Reflector]
-        Response[Final Response]
-    end
-
-    subgraph Memory["💾 Memory Bank"]
-        Learnings[Learnings]
-        Patterns[Patterns]
-        Executions[Executions]
-    end
-
-    Request --> SessMem
-    SessMem -->|Lookup| Memory
-    Memory -->|Context| SessMem
-    SessMem -->|Enhanced| AgentRun
-
-    AgentRun --> ReflexAgt
-    ReflexAgt -->|Critique| ReflexAgt
-    ReflexAgt --> OutputVal
-
-    OutputVal -->|Invalid| RetryPol
-    RetryPol -->|Retry| AgentRun
-    OutputVal -->|Valid| ConfScore
-
-    ConfScore -->|Low| Response
-    ConfScore -->|High| Response
-
-    AgentRun --> ToolRefl
-    ToolRefl -->|Reflect| ToolRefl
-    ToolRefl --> AgentRun
-
-    classDef orch fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef mem fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-
-    class Request,SessMem,AgentRun,ReflexAgt,OutputVal,ConfScore,RetryPol,ToolRefl,Response orch
-    class Learnings,Patterns,Executions mem
-```
+For the agent orchestration flow diagram (request → session memory → reflexive
+agent → output validation → retry/confidence → tool reflection → response), see
+`exaix-dev-docs/dev/Agent_Orchestration_Diagram.md`.
 
 ### Service Responsibilities
 
@@ -561,8 +511,10 @@ For the full 60+ entry component responsibilities table with file paths and edit
 
 ## Related Documentation
 
-- **[User Guide](Exaix_User_Guide.md)** — End-user documentation
-- **[White Paper](Exaix_White_paper.md)** — Vision and philosophy
+- **[System_Architecture_Diagram](exaix-dev-docs/dev/System_Architecture_Diagram.md)** - full architecture
+  with focused Mermaid diagrams broken down by subsystem layer.
+- **[User Guide](docs/Exaix_User_Guide.md)** — End-user documentation
+- **[White Paper](exaix-dev-docs/dev/Exaix_White_Paper.md)** — Vision and philosophy
 - **Package and App READMEs** — Implementation reference (formerly `docs/dev/`):
   - `packages/flow/README.md` — Flow engine, orchestration services, session tool integration
   - `packages/request/README.md` — Request processing, analysis, routing
