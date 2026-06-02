@@ -12,6 +12,7 @@
 
 import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import {
+  CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
   CONTEXT_PRIORITY_PORTAL_KNOWLEDGE,
@@ -21,6 +22,8 @@ import {
 import type { IContextBudgetManager } from "@exaix/execution";
 import type { IContextSegment } from "@exaix/execution";
 import { ContextBudgetManager, NoopContextCompactor } from "@exaix/execution";
+import { castAny } from "@exaix/testing";
+import type { IEventLogger } from "@exaix/core/logger";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -363,3 +366,41 @@ Deno.test("[ContextBudgetManager] protected segments with nonCompactable=true ar
   assertEquals(out.length, 1);
   assertEquals(out[0].metadata.nonCompactable, true);
 });
+
+Deno.test(
+  "[ContextBudgetManager] emits CONTEXT_BUDGET_COMPACTED_EVENT after async snapshot save",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const loggedActions: string[] = [];
+    const mockLogger = castAny<IEventLogger>({
+      info: (action: string): Promise<void> => {
+        loggedActions.push(action);
+        return Promise.resolve();
+      },
+    });
+
+    const compactor = new NoopContextCompactor();
+    const manager: IContextBudgetManager = new ContextBudgetManager(
+      undefined,
+      compactor,
+      undefined, // no snapshotStore
+      mockLogger,
+    );
+
+    await manager.prepare({
+      traceId: "trace-event",
+      stepId: "step-1",
+      model: "anthropic:claude-3-5-sonnet",
+      promptBudget: makePromptBudget(0), // zero loopHistory forces drop → overflowRecovered = true
+      segments: [
+        makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
+      ],
+    });
+
+    // The async IIFE inside queueMicrotask has multiple await points (compactor.summarize,
+    // snapshotStore.save). Use a macrotask fence to ensure all pending microtasks complete.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    assertEquals(loggedActions.includes(CONTEXT_BUDGET_COMPACTED_EVENT), true);
+  },
+);

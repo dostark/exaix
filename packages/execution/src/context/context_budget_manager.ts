@@ -20,7 +20,12 @@ import {
   type IContextBudgetDecision,
   type IContextBudgetSnapshot,
 } from "@exaix/schemas/execution/context_budget.ts";
-import { CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA, TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
+import {
+  CONTEXT_BUDGET_COMPACTED_EVENT,
+  CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
+} from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
 import type { IContextSegment } from "./context_segment.ts";
 import type { IContextCompactor } from "./context_compactor.ts";
@@ -114,6 +119,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
     private readonly _tokenizer?: ITokenizer,
     private readonly compactor?: IContextCompactor,
     private readonly snapshotStore?: ISnapshotStore,
+    private readonly logger?: IEventLogger,
   ) {}
 
   prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
@@ -234,6 +240,8 @@ export class ContextBudgetManager implements IContextBudgetManager {
     if (overflowRecovered && this.compactor) {
       const compactor = this.compactor;
       const snapshotStore = this.snapshotStore;
+      const logger = this.logger;
+      const tokensBefore = droppedCompactable.reduce((s, seg) => s + seg.tokenEstimate, 0);
       queueMicrotask(() => {
         void (async () => {
           for (const seg of droppedCompactable) {
@@ -244,6 +252,13 @@ export class ContextBudgetManager implements IContextBudgetManager {
             } as never);
           }
           await snapshotStore?.save(snapshot);
+          void logger?.info(CONTEXT_BUDGET_COMPACTED_EVENT, null, {
+            traceId: snapshot.traceId as string,
+            stepId: snapshot.stepId as string,
+            tokensBefore: tokensBefore as number,
+            tokensAfter: 0 as number,
+            compressedSegmentCount: droppedCompactable.length as number,
+          });
         })();
       });
     }
