@@ -36,6 +36,54 @@ step:
     - HAS_TESTS
 ```
 
+## Step Durability
+
+Step durability preserves execution records so resumed flows can skip
+recomputation of prior steps through selective replay.
+
+### Configuration
+
+```typescript
+interface IFlowRunnerConfig {
+  stepDurabilityStore?: IStepDurabilityStore; // optional, no-op by default
+  stepReplayPolicy?: IStepReplayPolicy; // optional, DefaultStepReplayPolicy by default
+}
+```
+
+### Replay Policy Defaults
+
+| Side Effect Class | Replayable | Rationale                      |
+| ----------------- | ---------- | ------------------------------ |
+| `NONE`            | ✅ Yes     | No external side effects       |
+| `LLM`             | ✅ Yes     | Purely analytical (idempotent) |
+| `TOOL`            | ❌ No      | May have external side effects |
+| `GIT`             | ❌ No      | Git state mutation             |
+| `MIXED`           | ❌ No      | Combination of the above       |
+
+### Match Keys
+
+`findReplayCandidate` matches stored records on:
+
+- `traceId`, `flowId`, `stepId` — execution identity
+- `inputHash` — SHA-256 of serialized step request; exact match required
+- `attemptClass` — e.g. `INITIAL`, `RETRY`, `FALLBACK`
+- Optional: `toolPolicyHash`, `portalScopeHash`
+
+### Journal Events
+
+| Event                        | Payload Fields                                                   | When Emitted                             |
+| ---------------------------- | ---------------------------------------------------------------- | ---------------------------------------- |
+| `flow.step.replayed`         | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`, `flowId` | Prior execution record reused for a step |
+| `flow.step.skipped_by_reuse` | `flowRunId`, `stepId`, `priorRecordId`, `inputHash`, `traceId`   | Step skipped entirely via reuse policy   |
+| `flow.step.invalidated`      | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`           | Stored record explicitly invalidated     |
+
+### Invariants
+
+- Artifact-centric model unchanged — durability is internal runtime semantics.
+- Replay is conservative by default (only `NONE` / `LLM` steps).
+- Output reconstruction uses `IStepExecutionRecord.summary` from prior execution.
+- No new record is created when replaying; the prior record is reused in place.
+
 ## Error Recovery
 
 | Action       | Behavior                                                      |

@@ -421,6 +421,24 @@ export interface IFlowEventPayloadMap {
     error: string;
     errorType: string;
   };
+  "flow.step.replayed": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    recordId: string;
+    reason: string;
+  };
+  "flow.step.skipped_by_reuse": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    priorRecordId: string;
+    inputHash: string;
+  };
+  "flow.step.invalidated": IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    recordId: string;
+    reason: string;
+  };
   "flow.checkpoint.stale": IFlowEventRequestContext & { flowRunId: string; flowId: string };
   "flow.checkpoint.loaded": IFlowEventRequestContext & { flowRunId: string; flowId: string; restoredSteps: number };
   "flow.checkpoint.saved": IFlowEventRequestContext & { flowRunId: string; flowId: string; completedSteps: number };

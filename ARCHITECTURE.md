@@ -526,6 +526,43 @@ For merge mode names, group lifecycle event constants, schema definitions, event
 
 ---
 
+## Step Durability and Replay
+
+`FlowRunner` includes a step-level durability layer that persists execution records
+and supports selective replay on resume, reducing recomputation of expensive
+analytical steps (LLM calls) while preventing silent skip of side-effecting steps
+(tool invocations, git operations).
+
+At the architecture level, the important contracts and boundaries are:
+
+- `IStepDurabilityStore` — persistence contract for saving, querying (via
+  `findReplayCandidate`), and invalidating step execution records. The store is
+  configured as `stepDurabilityStore` on `FlowRunnerConfig`; a no-op store is
+  used when persistence is not needed.
+- `IStepReplayPolicy` — decision contract for whether a matched prior execution
+  record may be reused. `DefaultStepReplayPolicy` allows replay for
+  `StepSideEffectClass.NONE` and `StepSideEffectClass.LLM` (analytical steps)
+  and denies it for `TOOL`, `GIT`, and `MIXED` (side-effecting steps).
+- `IFlowRunConfig.stepReplayPolicy` — optional; defaults to a
+  `DefaultStepReplayPolicy` instance. When omitted, replay does not occur.
+- Replay match keys — `findReplayCandidate` matches on traceId, flowId, stepId,
+  inputHash (SHA-256 of serialized step request), and attemptClass. Optional
+  fields (toolPolicyHash, portalScopeHash) further narrow the match.
+- `IStepExecutionRecord.summary` — stores execution output content for
+  reconstruction on replay. Set after successful step execution.
+
+When a replay occurs, `FlowRunner` emits a `flow.step.replayed` journal event
+and returns the prior record's `summary` as the step result without invoking
+the agent executor. The artifact-centric external model is unchanged — step
+durability is internal runtime semantics only.
+
+For contract interfaces, schema definitions, and event payload types, see:
+
+- `packages/flow/src/contracts/step_durability.ts`
+- `packages/flow/README.md#step-durability`
+
+---
+
 ## AI Provider Architecture {#ai-provider-architecture}
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
