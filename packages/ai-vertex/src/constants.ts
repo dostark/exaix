@@ -26,6 +26,11 @@ export const JWT_TYPE = "JWT";
 export const OAUTH_TOKEN_TTL_SECONDS = 3600;
 export const MS_PER_SECOND = 1000;
 
+/** Upper bound on the token-endpoint exchange before it is aborted. */
+export const TOKEN_REFRESH_TIMEOUT_MS = 10000;
+/** Early-refresh margin subtracted from the reported expiry to absorb clock skew / latency. */
+export const TOKEN_EXPIRY_SKEW_SECONDS = 60;
+
 /** Chunk size for streaming base64 encoding to avoid call-stack overflow on large inputs. */
 export const BASE64_CHUNK_SIZE = 0x8000;
 
@@ -61,7 +66,7 @@ export function buildVertexEndpoint(region: string, projectId: string, model: st
 }
 
 export const PROVIDER_VERTEX_DESCRIPTION = "Google Vertex AI (service-account auth, project quotas)";
-export const PROVIDER_VERTEX_CAPABILITIES = ["chat", "streaming", "vision", "long-context"] as const;
+export const PROVIDER_VERTEX_CAPABILITIES = ["chat", "vision", "long-context"] as const;
 export const PROVIDER_VERTEX_STRENGTHS = ["enterprise-quotas", "regional-endpoints", "gcp-billing"] as const;
 export const PROVIDER_VERTEX_COST_TIER = ProviderCostTier.PAID;
 

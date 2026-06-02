@@ -9,6 +9,7 @@
  * surfaces only sanitized errors (never the upstream response body).
  */
 
+import { z } from "zod";
 import { AuthenticationError } from "@exaix/ai/providers";
 import type { IEventLogger } from "@exaix/core/logger";
 import { authEventPayload, type ServiceAccountKey } from "./service_account.ts";
@@ -22,13 +23,9 @@ import {
   MS_PER_SECOND,
   OAUTH_TOKEN_TTL_SECONDS,
   PROVIDER_VERTEX,
+  TOKEN_EXPIRY_SKEW_SECONDS,
+  TOKEN_REFRESH_TIMEOUT_MS,
 } from "../constants.ts";
-
-/** Minimal OAuth2 token-endpoint response. */
-interface IAccessTokenResponse {
-  access_token: string;
-  expires_in: number;
-}
 
 export interface IGoogleAuth {
   /** Returns a cached access token, refreshing via the JWT-bearer flow when expired. */
@@ -42,7 +39,15 @@ export interface IGoogleAuthOptions {
   fetchImpl?: typeof fetch;
   /** Injectable clock in ms (defaults to Date.now) — enables deterministic expiry tests. */
   nowFn?: () => number;
+  /** Token-exchange timeout in ms (defaults to TOKEN_REFRESH_TIMEOUT_MS). */
+  tokenTimeoutMs?: number;
 }
+
+/** OAuth2 token-endpoint response — validated so a malformed 200 never poisons the cache. */
+const AccessTokenResponseSchema = z.object({
+  access_token: z.string().min(1),
+  expires_in: z.number().positive(),
+});
 
 /** Strip PEM envelope/whitespace and import a pkcs8 RSA key for RS256 signing. */
 async function importPrivateKey(pem: string): Promise<CryptoKey> {
@@ -66,6 +71,8 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
 export class GoogleAuth implements IGoogleAuth {
   private accessToken: string | null = null;
   private expiryMs = 0;
+  /** In-flight refresh shared across concurrent callers (single token fetch). */
+  private refreshing: Promise<void> | null = null;
 
   constructor(private readonly opts: IGoogleAuthOptions) {}
 
@@ -74,27 +81,45 @@ export class GoogleAuth implements IGoogleAuth {
     if (this.accessToken && now < this.expiryMs) {
       return this.accessToken;
     }
-    await this.refresh(now);
+    // Dedup concurrent refreshes: the first caller starts it, the rest await it.
+    this.refreshing ??= this.refresh(now).finally(() => {
+      this.refreshing = null;
+    });
+    await this.refreshing;
     return this.accessToken as string;
   }
 
   private async refresh(now: number): Promise<void> {
     const assertion = await this.signJwt(now);
     const fetchImpl = this.opts.fetchImpl ?? fetch;
-    const response = await fetchImpl(this.opts.serviceAccount.token_uri, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ grant_type: JWT_BEARER_GRANT_TYPE, assertion }).toString(),
-    });
+
+    let response: Response;
+    try {
+      response = await fetchImpl(this.opts.serviceAccount.token_uri, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ grant_type: JWT_BEARER_GRANT_TYPE, assertion }).toString(),
+        signal: AbortSignal.timeout(this.opts.tokenTimeoutMs ?? TOKEN_REFRESH_TIMEOUT_MS),
+      });
+    } catch {
+      // Timeout/network error — sanitized, never surface upstream detail.
+      throw new AuthenticationError(PROVIDER_VERTEX, "token refresh request failed or timed out");
+    }
 
     if (!response.ok) {
       // Sanitized: never surface the raw response body (may contain tokens/PII).
       throw new AuthenticationError(PROVIDER_VERTEX, `token refresh failed (status ${response.status})`);
     }
 
-    const data = await response.json() as IAccessTokenResponse;
-    this.accessToken = data.access_token;
-    this.expiryMs = now + data.expires_in * MS_PER_SECOND;
+    const parsed = AccessTokenResponseSchema.safeParse(await response.json().catch(() => null));
+    if (!parsed.success) {
+      throw new AuthenticationError(PROVIDER_VERTEX, "token refresh returned an invalid response");
+    }
+
+    this.accessToken = parsed.data.access_token;
+    // Apply an early-refresh skew margin (never negative).
+    const ttlSeconds = Math.max(parsed.data.expires_in - TOKEN_EXPIRY_SKEW_SECONDS, 0);
+    this.expiryMs = now + ttlSeconds * MS_PER_SECOND;
     void this.opts.logger?.info(
       EVENT_AUTH_TOKEN_REFRESHED,
       null,
