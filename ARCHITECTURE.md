@@ -304,52 +304,9 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### ReAct Loop Architecture
 
-```mermaid
-flowchart TB
-    subgraph DynamicStep["Dynamic Step Execution"]
-        Start[Step Objective]
-        LoadBP[Load Identity Blueprint]
-        InitClients[Init MCP Client + LLM Client]
-        Reason[LLM Reasons Next Action]
-        Decide{Decision}
-        ToolCall[Call Tool via MCP Client]
-        Observe[Observe Result]
-        Journal[Log to Activity Journal]
-        Done[Step Complete]
-    end
-
-    subgraph Boundaries["Permission Boundaries"]
-        PermitTools[permitted_tools from Blueprint]
-        ReadOnlyCheck[Read-Only Tools Only]
-        MaxIter[maxIterations limit]
-    end
-
-    Start --> LoadBP
-    LoadBP --> InitClients
-    InitClients --> Reason
-
-    Reason --> Decide
-    Decide -->|tool_call| ToolCall
-    Decide -->|complete| Done
-
-    ToolCall --> ReadOnlyCheck
-    ReadOnlyCheck -->|valid| Journal
-    ReadOnlyCheck -->|invalid| Reason
-
-    Journal --> Observe
-    Observe --> MaxIter
-    MaxIter -->|more iterations| Reason
-    MaxIter -->|max reached| Done
-
-    PermitTools -.-> Reason
-    PermitTools -.-> ReadOnlyCheck
-
-    classDef dynamic fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef boundary fill:#fff3e0,stroke:#e65100,stroke-width:2px
-
-    class Start,LoadBP,InitClients,Reason,Decide,ToolCall,Observe,Journal,Done dynamic
-    class PermitTools,ReadOnlyCheck,MaxIter boundary
-```
+For the ReAct loop diagram (step objective → blueprint → MCP client → LLM
+reasoning → tool call → permission check → observe → iterate/complete), see
+`exaix-dev-docs/dev/ReAct_Loop_Diagram.md`.
 
 ### Security and Auditability
 
