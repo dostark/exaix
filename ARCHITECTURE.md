@@ -157,6 +157,8 @@ flowchart TB
         Claude[Claude API<br/>Anthropic]
         GPT[OpenAI GPT<br/>Remote]
         Gemini[Google Gemini<br/>Remote]
+        Vertex[Vertex AI<br/>Service Account]
+        OpenRouter[OpenRouter<br/>Gateway]
         Mock[Mock Provider<br/>Testing]
     end
 
@@ -239,6 +241,8 @@ flowchart TB
     Factory --> Claude
     Factory --> GPT
     Factory --> Gemini
+    Factory --> Vertex
+    Factory --> OpenRouter
     Factory --> Mock
 
     %% Agent Orchestration
@@ -270,7 +274,7 @@ flowchart TB
     class Main,ReqWatch,PlanWatch,ReqProc,ReqAn,ReqRouter,PlanExec,AgentRun,FlowEng,FlowRun,ExecLoop core
     class ConfigSvc,DBSvc,GitSvc,EventLog,ContextLoad,PromptBudget,PlanWriter,MissionRpt,PathRes,ToolReg,CtxCard,OutputVal,RetryPol,ReflexAgt,ConfScore,SessMem,ToolRefl service
     class DB,FS,Workspace,Blueprint,Memory,Portals,System,Requests,Plans storage
-    class Factory,Ollama,Claude,GPT,Gemini,Mock ai
+    class Factory,Ollama,Claude,GPT,Gemini,Vertex,OpenRouter,Mock ai
 
     class TuiDash,TuiViews cli
 ```
@@ -304,8 +308,10 @@ flowchart TB
 
 - Local-first: Ollama (no cloud required)
 - Cloud options: Claude, GPT, Gemini (🟢 all editions)
-- Enterprise providers: Azure OpenAI, AWS Bedrock, GCP Vertex (🟣 Enterprise)
-- Provider factory pattern for extensibility
+- Vertex AI: Google service-account auth for project-based quotas and regional endpoints (🟢 all editions; `@exaix/ai-vertex`)
+- OpenRouter: unified gateway to many models (ships in the Solo build; positioned as a 🔵 Team+ differentiator; `@exaix/ai-openrouter`)
+- Enterprise providers: Azure OpenAI, AWS Bedrock (🟣 Enterprise)
+- Provider factory pattern for extensibility; concrete providers register at bootstrap via `apps/common/registry_bootstrap.ts`
 - Cost management with edition-tiered capabilities
 
 ### 5. **Portal System**
@@ -441,8 +447,8 @@ Acceptance criteria propagation closes the gap between "what was asked" and "wha
 Verification occurs at **three independent layers**:
 
 1. **Quality Gate** (blocking, post-step) — `GateEvaluator` invoked synchronously by `FlowRunner` after guarded agent steps; blocks the flow if scores fall below threshold.
-2. **Reflexive Critique** (iterative, in-flight) — `ReflexiveAgent.run()` embeds structured requirements into the critique prompt; corrects artifacts before they reach a gate.
-3. **Confidence Scoring** (non-blocking, post-execution) — `ConfidenceScorer.assess()` blends requirement-fulfilment evidence into the final confidence score.
+
+1.
 
 All three layers degrade gracefully when `IRequestAnalysis` is absent: gates use only static criteria, `ReflexiveAgent` omits the requirements block, and `ConfidenceScorer` applies no goal-alignment penalty.
 
