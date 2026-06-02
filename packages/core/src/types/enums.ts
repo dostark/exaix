@@ -199,6 +199,10 @@ export enum ProviderType {
   OPENAI = "openai",
   /** Google's Gemini models */
   GOOGLE = "google",
+  /** Google Vertex AI (service-account auth, project-based quotas) */
+  VERTEX = "vertex-ai",
+  /** OpenRouter unified API gateway to many models */
+  OPENROUTER = "openrouter",
   /** Mock provider for testing and development */
   MOCK = "mock",
   /** Local llama.cpp server for running open-source models */
@@ -1278,4 +1282,40 @@ export enum TestDetectionKind {
   EXECUTED = "executed",
   INFERRED = "inferred",
   NONE = "none",
+}
+
+// ============================================================================
+// Step Execution Durability Enums (Phase 82)
+// ============================================================================
+
+/**
+ * Disposition of a step execution record: executed normally, replayed,
+ * skipped because a prior identical execution was reused, or invalidated.
+ */
+export enum StepExecutionDisposition {
+  EXECUTED = "executed",
+  REPLAYED = "replayed",
+  SKIPPED_BY_REUSE = "skipped_by_reuse",
+  INVALIDATED = "invalidated",
+}
+
+/**
+ * Side-effect class used for replay-eligibility heuristics.
+ */
+export enum StepSideEffectClass {
+  NONE = "none",
+  LLM = "llm",
+  TOOL = "tool",
+  GIT = "git",
+  MIXED = "mixed",
+}
+
+/**
+ * Attempt classification for step execution.
+ */
+export enum StepAttemptClass {
+  INITIAL = "initial",
+  RETRY = "retry",
+  RESUME = "resume",
+  REPLAY = "replay",
 }

@@ -75,7 +75,7 @@ Key facts about the Exaix system:
 - **Entry point**: `apps/daemon/main.ts` — starts the daemon, wires all services
 - **Request flow**: `Workspace/Requests/` → `RequestProcessor` → `RequestAnalyzer` → `RequestRouter` → `AgentRunner` → `PlanWriter` → `Workspace/Plans/`
 - **Core storage**: SQLite at `.exa/journal.db` (all activity); filesystem at `Workspace/`, `Portals/`, `Memory/`
-- **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
+- **AI providers**: concrete providers live in `@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`; selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory`; registered at bootstrap by `apps/common/registry_bootstrap.ts`
 - **Architecture invariant**: read the `AGENT_LOGIC` YAML comment in ARCHITECTURE.md's `Request Processing Flow` section before modifying any core flow
 - **Boundary rules**: TUI (`apps/tui/src/`) and CLI (`apps/exactl/src/commands/`) must not import directly from services — use interfaces in shared packages under `packages/`
 - **MCP tools**: all agent-accessible tools are listed in [TOOLS.md](./TOOLS.md#agent-tools) and implemented in `packages/mcp/src/handlers/`
@@ -120,9 +120,9 @@ A **behavior change** is any edit that affects runtime output, observable state,
 For changes that modify behavior:
 
 1. Write failing tests first
-2. Run the test and confirm it fails
-3. Implement the minimum code to make it pass
-4. Refactor, keeping tests green
+
+1.
+1.
 
 ### Coding Standards
 
@@ -139,26 +139,26 @@ Use the phase checklists below before claiming the task is complete or creating 
 Use this checklist while implementing:
 
 1. For changes that modify behavior, follow TDD by adding or updating the relevant test first, running it to confirm failure, then implementing the minimal fix.
-2. Place tests in the owning boundary: package-owned code goes in `packages/<package>/tests/`, app-owned code goes in `apps/<app>/tests/`, and cross-cutting integration, scenario, security, and system checks stay in root `tests/`.
-3. Do not add new `*_test.ts` files next to source files or under retired legacy test directories.
-4. Use established test helpers (`initTestDbService`, `createCliTestContext`, etc.) when project helpers already cover the setup.
-5. Rerun the failing or behavior-scoped test for the changed slice; if the changed code belongs to a package or app with its own test command, run that package- or app-scoped test command next.
+
+1.
+1.
+1.
 
 ## PHASE 3: DONE / CI
 
 Complete this sequence in order before claiming any task is complete:
 
 1. Ensure `deno check packages/ apps/ tests/` is clean before finishing.
-2. Do not use raw SQL table creation in tests when project helpers already cover the setup.
-3. Do not bypass failing checks or ignore pre-commit failures.
-4. Do not introduce magic numbers or strings without following project guidance in `CONTRIBUTING.md`.
-5. Do not place imports anywhere other than the top of the file.
-6. If you modified any MCP tool handler in `packages/mcp/src/handlers/`, run `deno task docs-sync-schemas` and stage the result.
-7. After each discrete implementation step, run the quick verification command below.
-8. Before any PR handoff or completion claim, run `deno run -A scripts/ci.ts all`.
-9. If `deno run -A scripts/ci.ts all` fails without a clear cause, run the manual workflow commands listed below to replicate CI behavior.
-10. If you cannot execute shell commands in the current environment, state which validation steps were skipped, why they were skipped, and that the task remains unverified. A task with skipped CI steps must NOT be marked complete. Mark it as `PENDING VERIFICATION` and list the exact commands a human reviewer must run to close it.
-11. If CI fails, do not claim completion; identify the root cause, fix it without bypass flags, and rerun the failing check until it passes.
+
+1.
+1.
+1.
+1.
+1.
+1.
+1.
+1.
+1.
 
 ### Quick CI Verification
 
@@ -230,9 +230,9 @@ deno run -A scripts/ci.ts test --quick
 If CI fails, follow this sequence:
 
 1. **DO NOT** claim the task is complete.
-2. Read the full error output to identify the root cause.
-3. Fix the issue (do not bypass checks with `--no-verify` or similar flags).
-4. Re-run the failing check to confirm it passes before continuing.
+
+1.
+1.
 
 **Common CI Failures:**
 

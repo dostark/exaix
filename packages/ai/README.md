@@ -85,15 +85,26 @@ graph TB
 
 ## Edition Availability
 
-| Provider Category                         | Solo | Team | Enterprise |
-| ----------------------------------------- | ---- | ---- | ---------- |
-| Local (Ollama)                            | ✅   | ✅   | ✅         |
-| Cloud Basic (OpenAI, Anthropic, Google)   | ✅   | ✅   | ✅         |
-| Cloud Enterprise (Azure, Bedrock, Vertex) | ❌   | ❌   | ✅         |
+| Provider Category                                  | Solo | Team | Enterprise |
+| -------------------------------------------------- | ---- | ---- | ---------- |
+| Local (Ollama)                                     | ✅   | ✅   | ✅         |
+| Cloud Basic (OpenAI, Anthropic, Google, Vertex AI) | ✅   | ✅   | ✅         |
+| Unified Gateway (OpenRouter)                       | ✅\* | ✅   | ✅         |
+| Cloud Enterprise (Azure, Bedrock)                  | ❌   | ❌   | ✅         |
+
+> Vertex AI is a service-account auth variant of the Google provider and is available in all editions.
+> \* OpenRouter ships in the Solo build today; it is positioned as a Team+ differentiator, so runtime
+> edition-gating may be applied in a future edition-enforcement phase.
 
 ## Provider Configuration
 
 Provider selection is configured in `exa.config.toml`. See the [Provider Strategy Guide](../../docs/Provider_Strategy_Guide.md) for detailed configuration options, cost-based routing, and health-aware fallback chains.
+
+### Vertex AI & OpenRouter notes
+
+- **Vertex token refresh** is hardened: concurrent refreshes are deduplicated into a single token exchange, the exchange is timeout-bounded, the token response is schema-validated, and an early-refresh skew margin is applied. Service-account credentials are env-only and never logged; the token endpoint is restricted to `*.googleapis.com`.
+- **OpenRouter is intentionally unmetered** — pricing varies per underlying sub-model, so the inline `IGenerateResult.cost_usd` is informational; authoritative spend is recorded by `CostTracker`, keyed on `ProviderType`. Vertex bills at the Google output rate.
+- Neither provider implements streaming yet, so their capability metadata does not advertise `streaming`.
 
 ## See Also
 
@@ -101,4 +112,6 @@ Provider selection is configured in `exa.config.toml`. See the [Provider Strateg
 - [@exaix/ai-anthropic](../../packages/ai-anthropic/) — Anthropic/Claude provider implementation
 - [@exaix/ai-openai](../../packages/ai-openai/) — OpenAI/GPT provider implementation
 - [@exaix/ai-google](../../packages/ai-google/) — Google/Gemini provider implementation
+- [@exaix/ai-vertex](../../packages/ai-vertex/) — Google Vertex AI provider (service-account auth, regional quotas)
+- [@exaix/ai-openrouter](../../packages/ai-openrouter/) — OpenRouter unified-gateway provider
 - [@exaix/ai-ollama](../../packages/ai-ollama/) — Ollama provider implementation

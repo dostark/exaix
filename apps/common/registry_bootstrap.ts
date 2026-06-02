@@ -15,6 +15,13 @@ import {
   PROVIDER_ANTHROPIC,
 } from "@exaix/ai-anthropic";
 import { GOOGLE_DEFAULTS, GOOGLE_PROVIDER_METADATA, GoogleProviderFactory, PROVIDER_GOOGLE } from "@exaix/ai-google";
+import { PROVIDER_VERTEX, VERTEX_DEFAULTS, VERTEX_PROVIDER_METADATA, VertexProviderFactory } from "@exaix/ai-vertex";
+import {
+  OPENROUTER_DEFAULTS,
+  OPENROUTER_PROVIDER_METADATA,
+  OpenRouterProviderFactory,
+  PROVIDER_OPENROUTER,
+} from "@exaix/ai-openrouter";
 import { OLLAMA_DEFAULTS, OLLAMA_PROVIDER_METADATA, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
 import { OPENAI_DEFAULTS, OPENAI_PROVIDER_METADATA, OpenAIProviderFactory, PROVIDER_OPENAI } from "@exaix/ai-openai";
 
@@ -80,6 +87,38 @@ function registerConcreteProviders(): void {
       googleMetadata,
     );
   }
+
+  if (!supported.includes(PROVIDER_VERTEX)) {
+    const vertexMetadata: IProviderMetadata = {
+      name: VERTEX_PROVIDER_METADATA.name,
+      description: VERTEX_PROVIDER_METADATA.description,
+      capabilities: [...VERTEX_PROVIDER_METADATA.capabilities],
+      costTier: VERTEX_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [...VERTEX_PROVIDER_METADATA.strengths],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_VERTEX,
+      new VertexProviderFactory(),
+      vertexMetadata,
+    );
+  }
+
+  if (!supported.includes(PROVIDER_OPENROUTER)) {
+    const openrouterMetadata: IProviderMetadata = {
+      name: OPENROUTER_PROVIDER_METADATA.name,
+      description: OPENROUTER_PROVIDER_METADATA.description,
+      capabilities: [...OPENROUTER_PROVIDER_METADATA.capabilities],
+      costTier: OPENROUTER_PROVIDER_METADATA.costTier,
+      pricingTier: PricingTier.MEDIUM,
+      strengths: [...OPENROUTER_PROVIDER_METADATA.strengths],
+    };
+    ProviderRegistry.registerWithMetadata(
+      PROVIDER_OPENROUTER,
+      new OpenRouterProviderFactory(),
+      openrouterMetadata,
+    );
+  }
 }
 
 function registerProviderDefaults(): void {
@@ -87,6 +126,8 @@ function registerProviderDefaults(): void {
   ProviderDefaultsRegistry.register(PROVIDER_ANTHROPIC, ANTHROPIC_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_OPENAI, OPENAI_DEFAULTS);
   ProviderDefaultsRegistry.register(PROVIDER_GOOGLE, GOOGLE_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_VERTEX, VERTEX_DEFAULTS);
+  ProviderDefaultsRegistry.register(PROVIDER_OPENROUTER, OPENROUTER_DEFAULTS);
 }
 
 setProviderRegistryBootstrap(registerConcreteProviders);

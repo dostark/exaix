@@ -248,6 +248,50 @@ model = "llama3.2"
 | **Google**    | Long context, multimodal         | `gemini-3-pro`    | $$   |
 | **Ollama**    | Privacy, zero cost, offline      | `llama3.2`        | Free |
 
+#### 2.4.4 Enterprise Providers (Vertex AI, OpenRouter)
+
+For users who hit free-tier quotas on a paid subscription, or who want one key for many models:
+
+**Google Vertex AI** — uses a Google Cloud **service account** (project-based quotas/billing) instead of a simple API key.
+
+1. Create a GCP project with the Vertex AI API enabled and billing on.
+2. Create a service account with the **Vertex AI User** role and download its JSON key.
+3. Provide the JSON (single line) via the configured env var, then point a model at the `vertex-ai` provider:
+
+   ```bash
+   export VERTEX_AI_SERVICE_ACCOUNT="$(cat ~/exaix-vertex-key.json)"
+   ```
+
+   ```toml
+   [ai_vertex]
+   service_account_env = "VERTEX_AI_SERVICE_ACCOUNT"
+   region = "us-central1"   # or europe-west4, asia-southeast1
+
+   [models.vertex]
+   provider = "vertex-ai"
+   model = "gemini-2.5-flash"
+   ```
+
+   > The service-account JSON is read from the environment only and is never logged. The
+   > token endpoint is restricted to `*.googleapis.com`.
+
+**OpenRouter** — a single API key to many models (`vendor/model` names).
+
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
+```
+
+```toml
+[ai_openrouter]
+api_key_env = "OPENROUTER_API_KEY"
+site_name = "Exaix"
+site_url = "https://exaix.dev"
+
+[models.openrouter]
+provider = "openrouter"
+model = "anthropic/claude-3-opus"   # any model from openrouter.ai/models
+```
+
 ### 2.4 Advanced Deployment Options
 
 ```bash

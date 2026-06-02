@@ -6,16 +6,16 @@ Implementation reference data — edition tables, component status, scenario pac
 
 ## Edition Model — Component Availability
 
-| Component Category  | Solo 🟢                           | Team 🔵                  | Enterprise 🟣                           |
-| ------------------- | --------------------------------- | ------------------------ | --------------------------------------- |
-| **Interface**       | CLI + TUI (7 views)               | + Web UI                 | + Enhanced TUI (9 views)                |
-| **Audit Database**  | SQLite (embedded)                 | PostgreSQL (append-only) | PostgreSQL + immudb (WORM)              |
-| **MCP Support**     | Client only                       | + Server mode            | + Custom tool development               |
-| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google | + OpenRouter             | + Azure OpenAI, AWS Bedrock, GCP Vertex |
-| **Memory Banks**    | Basic (file-based)                | + Full-text search       | + Vector search, knowledge graphs       |
-| **Collaboration**   | Single user                       | Multi-user (unlimited)   | + RBAC, department isolation            |
-| **Compliance**      | ❌                                | ❌                       | ✅ EU AI Act, HIPAA, SOX, ISO 27001     |
-| **Cost Management** | Basic logs                        | Per-user budgets, alerts | Forecasting, anomaly detection          |
+| Component Category  | Solo 🟢                                                  | Team 🔵                  | Enterprise 🟣                       |
+| ------------------- | -------------------------------------------------------- | ------------------------ | ----------------------------------- |
+| **Interface**       | CLI + TUI (7 views)                                      | + Web UI                 | + Enhanced TUI (9 views)            |
+| **Audit Database**  | SQLite (embedded)                                        | PostgreSQL (append-only) | PostgreSQL + immudb (WORM)          |
+| **MCP Support**     | Client only                                              | + Server mode            | + Custom tool development           |
+| **LLM Providers**   | Ollama, OpenAI, Anthropic, Google, Vertex AI, OpenRouter | OpenRouter (Team+ tier)  | + Azure OpenAI, AWS Bedrock         |
+| **Memory Banks**    | Basic (file-based)                                       | + Full-text search       | + Vector search, knowledge graphs   |
+| **Collaboration**   | Single user                                              | Multi-user (unlimited)   | + RBAC, department isolation        |
+| **Compliance**      | ❌                                                       | ❌                       | ✅ EU AI Act, HIPAA, SOX, ISO 27001 |
+| **Cost Management** | Basic logs                                               | Per-user budgets, alerts | Forecasting, anomaly detection      |
 
 ---
 
@@ -225,6 +225,8 @@ Core infrastructure modules for architecture validation:
 - `packages/ai-anthropic/src/*.ts` (Anthropic/Claude provider)
 - `packages/ai-openai/src/*.ts` (OpenAI provider)
 - `packages/ai-google/src/*.ts` (Google Gemini provider)
+- `packages/ai-vertex/src/*.ts` (Google Vertex AI provider, service-account auth)
+- `packages/ai-openrouter/src/*.ts` (OpenRouter unified-gateway provider)
 - `packages/ai-ollama/src/*.ts` (Ollama provider)
 - `packages/mcp/src/*.ts` (MCP client, manifest, handlers)
 - `packages/mcp/src/handlers/*.ts` (MCP Tool implementations)
