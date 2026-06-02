@@ -15,7 +15,9 @@ import {
   CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+  CONTEXT_PRIORITY_PLAN_STEP,
   CONTEXT_PRIORITY_PORTAL_KNOWLEDGE,
+  CONTEXT_PRIORITY_SUMMARY,
   CONTEXT_PRIORITY_SYSTEM,
   CONTEXT_PRIORITY_TOOL_RESULT,
 } from "@exaix/core";
@@ -404,3 +406,91 @@ Deno.test(
     assertEquals(loggedActions.includes(CONTEXT_BUDGET_COMPACTED_EVENT), true);
   },
 );
+
+// ─── Step 5: section-key bug regression tests ─────────────────────────────────
+
+Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan respect combined budget", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+
+  // sections.plan = 100 tokens.
+  // acceptance_criteria (60 tokens) is protected — always kept, consumes plan budget.
+  // plan_step (70 tokens) must compete against the remaining 40 tokens of sections.plan,
+  // not against its own fresh counter.
+  const tightBudget = {
+    ...makePromptBudget(),
+    sections: {
+      system: 0,
+      plan: 100,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 0,
+    },
+  };
+
+  const { segments: out, snapshot } = await manager.prepare({
+    traceId: "trace-section-plan",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: tightBudget,
+    segments: [
+      makeSegment({
+        kind: "acceptance_criteria",
+        priority: CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+        tokenEstimate: 60,
+      }),
+      makeSegment({
+        kind: "plan_step",
+        priority: CONTEXT_PRIORITY_PLAN_STEP,
+        tokenEstimate: 70,
+      }),
+    ],
+  });
+
+  // acceptance_criteria is protected: always kept
+  const keptKinds = out.map((s) => s.kind);
+  assertEquals(keptKinds.includes("acceptance_criteria"), true);
+
+  // plan_step (70) cannot fit the remaining 40 tokens — must be trimmed or dropped
+  const planStepDecision = snapshot.decisions.find((d) => d.kind === "plan_step");
+  assertEquals(planStepDecision?.action !== "keep", true);
+
+  // Combined usedInputTokens must not exceed sections.plan = 100
+  assertLessOrEqual(snapshot.usedInputTokens, 100);
+});
+
+Deno.test("[ContextBudgetManager] tool_result + summary share sections.loopHistory counter", async () => {
+  const manager: IContextBudgetManager = new ContextBudgetManager();
+
+  // sections.loopHistory = 50. tool_result (30) keeps 30 tokens.
+  // summary (30) must see remaining = 50 - 30 = 20, not fresh 50.
+  const tightBudget = {
+    ...makePromptBudget(),
+    sections: {
+      system: 0,
+      plan: 0,
+      portalKnowledge: 0,
+      memory: 0,
+      skills: 0,
+      loopHistory: 50,
+    },
+  };
+
+  const { snapshot } = await manager.prepare({
+    traceId: "trace-section-loop",
+    stepId: "step-1",
+    model: "anthropic:claude-3-5-sonnet",
+    promptBudget: tightBudget,
+    segments: [
+      makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 30 }),
+      makeSegment({ kind: "summary", priority: CONTEXT_PRIORITY_SUMMARY, tokenEstimate: 30 }),
+    ],
+  });
+
+  // Combined must not exceed sections.loopHistory = 50
+  assertLessOrEqual(snapshot.usedInputTokens, 50);
+
+  // summary decision must be trim or drop, not keep (it would overflow the shared counter)
+  const summaryDecision = snapshot.decisions.find((d) => d.kind === "summary");
+  assertEquals(summaryDecision?.action !== "keep", true);
+});

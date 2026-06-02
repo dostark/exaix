@@ -72,30 +72,39 @@ function isProtected(segment: IContextSegment): boolean {
 }
 
 /**
- * Map a segment kind to its corresponding section budget key.
- * Segments that don't map to a specific section fall back to the loopHistory budget.
+ * Map a segment kind to its canonical section name in IPromptBudget.sections.
+ * All kinds that share a section return the same key, ensuring their consumed
+ * tokens are summed against a single counter.
+ */
+function sectionNameFor(kind: IContextSegment["kind"]): string {
+  const k = ContextSegmentKindSchema.enum;
+  switch (kind) {
+    case k.system:
+      return "system";
+    case k.request:
+    case k.acceptance_criteria:
+    case k.plan_step:
+      return "plan";
+    case k.portal_knowledge:
+      return "portalKnowledge";
+    case k.reflection:
+      return "memory";
+    case k.tool_result:
+    case k.summary:
+    default:
+      return "loopHistory";
+  }
+}
+
+/**
+ * Map a segment kind to its corresponding section budget token limit.
  */
 function sectionBudgetFor(
   kind: IContextSegment["kind"],
   sections: IPromptBudget["sections"],
 ): number {
-  const k = ContextSegmentKindSchema.enum;
-  switch (kind) {
-    case k.system:
-      return sections.system;
-    case k.request:
-    case k.acceptance_criteria:
-    case k.plan_step:
-      return sections.plan;
-    case k.portal_knowledge:
-      return sections.portalKnowledge;
-    case k.reflection:
-      return sections.memory;
-    case k.tool_result:
-    case k.summary:
-    default:
-      return sections.loopHistory;
-  }
+  const sectionKey = sectionNameFor(kind);
+  return sections[sectionKey as keyof typeof sections];
 }
 
 /**
@@ -141,7 +150,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
 
     for (const segment of sorted) {
       const sectionBudget = sectionBudgetFor(segment.kind, promptBudget.sections);
-      const sectionKey = segment.kind;
+      const sectionKey = sectionNameFor(segment.kind);
       const used = consumed[sectionKey] ?? 0;
 
       if (isProtected(segment)) {

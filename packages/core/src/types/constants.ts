@@ -1412,6 +1412,14 @@ export const CONTEXT_PRIORITY_SUMMARY = 20;
  */
 export const REACT_TOOL_RESULT_BUDGET_RATIO = 0.6;
 
+/** Canonical section names in IPromptBudget.sections (used for budget tracking). */
+export const CONTEXT_SECTION_SYSTEM = "system";
+export const CONTEXT_SECTION_PLAN = "plan";
+export const CONTEXT_SECTION_PORTAL_KNOWLEDGE = "portalKnowledge";
+export const CONTEXT_SECTION_MEMORY = "memory";
+export const CONTEXT_SECTION_SKILLS = "skills";
+export const CONTEXT_SECTION_LOOP_HISTORY = "loopHistory";
+
 /** Default parameters for internal report generation */
 export const REPORT_GENERATION_TEMPERATURE = 0.1;
 export const REPORT_GENERATION_MAX_TOKENS = 1000;

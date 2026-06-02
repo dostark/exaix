@@ -76,6 +76,7 @@ import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { ICompactedEntry, ILoopHistoryEntry } from "./types.ts";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
+import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
@@ -148,6 +149,7 @@ export class AgentExecutor {
   private _loopHistory: Array<ILoopHistoryEntry | ICompactedEntry> = [];
   private _contextCache?: ContextCache;
   private _contextBudgetManager?: IContextBudgetManager;
+  private _snapshotStore?: ISnapshotStore;
 
   private readonly _tokenizer?: ITokenizer;
 
@@ -159,6 +161,11 @@ export class AgentExecutor {
   /** Exposes context budget manager to IReActLoopExecutor (Phase 83). */
   public get contextBudgetManager(): IContextBudgetManager | undefined {
     return this._contextBudgetManager;
+  }
+
+  /** Exposes snapshot store to async compaction tier (Phase 83). */
+  public get snapshotStore(): ISnapshotStore | undefined {
+    return this._snapshotStore;
   }
 
   /** Budget pressure logger forwarded to IReActLoopExecutor (Phase 83). */
@@ -178,11 +185,15 @@ export class AgentExecutor {
     promptBudgetAllocator?: IPromptBudgetAllocator,
     contextCache?: ContextCache,
     tokenizer?: ITokenizer,
+    contextBudgetManager?: IContextBudgetManager,
+    snapshotStore?: ISnapshotStore,
   ) {
     this.promptBudgetAllocator = promptBudgetAllocator ??
       new PromptBudgetAllocator(this.config.budget_enforcement, undefined, this.logger);
     this._contextCache = contextCache;
     this._tokenizer = tokenizer;
+    this._contextBudgetManager = contextBudgetManager;
+    this._snapshotStore = snapshotStore;
     // If no registry provided, create one and register core strategies
     if (!this.strategyRegistry) {
       this.strategyRegistry = new StrategyRegistry();
