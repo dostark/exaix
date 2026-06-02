@@ -153,3 +153,42 @@ Deno.test("StepDurabilityFailure: no store does not crash on failure", async () 
     FlowExecutionError,
   );
 });
+
+Deno.test("StepDurabilityFailure: replayEligible is false on initial pre-execution save", async () => {
+  class SaveAllStore implements IStepDurabilityStore {
+    allSaves: IStepExecutionRecord[] = [];
+
+    save(record: IStepExecutionRecord): Promise<void> {
+      this.allSaves.push({ ...record });
+      return Promise.resolve();
+    }
+
+    findReplayCandidate(): Promise<IStepExecutionRecord | null> {
+      return Promise.resolve(null);
+    }
+
+    invalidate(_recordId: string, _reason: string): Promise<void> {
+      return Promise.resolve();
+    }
+  }
+
+  const store = new SaveAllStore();
+  const agent = new FailingAgentRunner();
+  const logger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
+
+  const flow = buildFailureFlow();
+  await assertRejects(
+    () => runner.execute(flow as IFlow, { userPrompt: "test" }),
+    FlowExecutionError,
+  );
+
+  assertEquals(store.allSaves.length >= 1, true, "At least one save must happen");
+  const firstSave = store.allSaves[0];
+  assertEquals(
+    firstSave.replayEligible,
+    false,
+    "Initial pre-execution save must have replayEligible: false (GAP-12 fix)",
+  );
+});

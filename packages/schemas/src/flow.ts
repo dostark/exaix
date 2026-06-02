@@ -283,7 +283,7 @@ export const StepIdempotencyKeySchema = z.object({
   flowId: z.string().min(1),
   stepId: z.string().min(1),
   attemptClass: StepAttemptClassSchema,
-  inputHash: z.string().min(1),
+  inputHash: z.string().min(8),
   toolPolicyHash: z.string().optional(),
   portalScopeHash: z.string().optional(),
 });
@@ -292,7 +292,7 @@ export const StepIdempotencyKeySchema = z.object({
  * Full step execution record stored for durability and replay.
  */
 export const StepExecutionRecordSchema = z.object({
-  recordId: z.string().min(1),
+  recordId: z.string().uuid(),
   traceId: z.string().min(1),
   flowId: z.string().min(1),
   stepId: z.string().min(1),
@@ -300,10 +300,14 @@ export const StepExecutionRecordSchema = z.object({
   disposition: StepExecutionDispositionSchema,
   startedAt: z.string().datetime(),
   completedAt: z.string().datetime().optional(),
-  inputHash: z.string().min(1),
+  durationMs: z.number().int().nonnegative().optional(),
+  inputHash: z.string().min(8),
   outputHash: z.string().optional(),
   sideEffectClass: StepSideEffectClassSchema,
   replayEligible: z.boolean(),
+  checkpointId: z.string().optional(),
+  summary: z.string().optional(),
+  invalidationReason: z.string().optional(),
   metadata: z.record(z.unknown()).optional().default({}),
   error: z.string().optional(),
 });

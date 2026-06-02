@@ -194,3 +194,66 @@ Deno.test("StepExecutionRecordSchema: accepts all valid sideEffectClass values",
     assertEquals(StepExecutionRecordSchema.parse(record).sideEffectClass, cls);
   }
 });
+
+Deno.test("StepExecutionRecordSchema: rejects non-UUID recordId", () => {
+  assertThrows(
+    () =>
+      StepExecutionRecordSchema.parse({
+        recordId: "not-a-uuid",
+        traceId: "t",
+        flowId: "f",
+        stepId: "s",
+        idempotencyKey: {
+          traceId: "t",
+          flowId: "f",
+          stepId: "s",
+          attemptClass: "initial",
+          inputHash: "abcdef1234567890",
+        },
+        disposition: "executed",
+        startedAt: new Date().toISOString(),
+        inputHash: "abcdef1234567890",
+        sideEffectClass: "llm",
+        replayEligible: true,
+      }),
+    ZodError,
+  );
+});
+
+Deno.test("StepExecutionRecordSchema: durationMs round-trips through schema", () => {
+  const record = {
+    recordId: crypto.randomUUID(),
+    traceId: "t",
+    flowId: "f",
+    stepId: "s",
+    idempotencyKey: {
+      traceId: "t",
+      flowId: "f",
+      stepId: "s",
+      attemptClass: "initial",
+      inputHash: "abcdef1234567890",
+    },
+    disposition: "executed",
+    startedAt: new Date().toISOString(),
+    inputHash: "abcdef1234567890",
+    sideEffectClass: "llm",
+    replayEligible: true,
+    durationMs: 42,
+  };
+  const result = StepExecutionRecordSchema.parse(record);
+  assertEquals(result.durationMs, 42, "durationMs must survive schema round-trip");
+});
+
+Deno.test("StepIdempotencyKeySchema: rejects inputHash shorter than 8 chars", () => {
+  assertThrows(
+    () =>
+      StepIdempotencyKeySchema.parse({
+        traceId: "t",
+        flowId: "f",
+        stepId: "s",
+        attemptClass: "initial",
+        inputHash: "short",
+      }),
+    ZodError,
+  );
+});

@@ -35,11 +35,14 @@ export interface IStepExecutionRecord {
   disposition: StepExecutionDisposition;
   startedAt: string;
   completedAt?: string;
+  durationMs?: number;
   inputHash: string;
   outputHash?: string;
   sideEffectClass: StepSideEffectClass;
   replayEligible: boolean;
+  checkpointId?: string;
   summary?: string;
+  invalidationReason?: string;
   metadata?: StepEntryMetadata;
   error?: string;
 }

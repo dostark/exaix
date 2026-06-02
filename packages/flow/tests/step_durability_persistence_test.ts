@@ -180,3 +180,19 @@ Deno.test("StepDurabilityPersistence: does not crash when no store is provided",
 
   assertEquals(result.success, true);
 });
+
+Deno.test("StepDurabilityPersistence: durationMs is populated and non-negative on successful step records", async () => {
+  const store = new RecordingDurabilityStore();
+  const agent = new MockAgentRunner({ agent1: "result" });
+  const logger = new MockEventLogger();
+
+  const runner = new FlowRunner({ agentExecutor: agent, eventLogger: logger, stepDurabilityStore: store });
+
+  const flow = buildSimpleFlow([{ id: "step1", identity: "agent1" }]);
+  await runner.execute(flow as IFlow, { userPrompt: "test" });
+
+  assertEquals(store.savedRecords.length, 1);
+  const record = store.savedRecords[0];
+  assertEquals(typeof record.durationMs, "number", "durationMs must be a number on successful records");
+  assertEquals(record.durationMs! >= 0, true, "durationMs must be non-negative");
+});

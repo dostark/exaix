@@ -430,6 +430,7 @@ export interface IFlowEventPayloadMap {
     stepId: string;
     recordId: string;
     reason: string;
+    flowId: string;
   };
   "flow.step.skipped_by_reuse": IFlowEventRequestContext & {
     flowRunId: string;
@@ -1711,7 +1712,7 @@ export class FlowRunner implements IFlowRunner {
       startedAt: startedAt.toISOString(),
       inputHash,
       sideEffectClass: StepSideEffectClass.MIXED,
-      replayEligible: true,
+      replayEligible: false,
     };
 
     record.sideEffectClass = this.computeSideEffectClass(step);
@@ -1721,6 +1722,7 @@ export class FlowRunner implements IFlowRunner {
     try {
       const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
       record.completedAt = new Date().toISOString();
+      record.durationMs = Date.now() - startedAt.getTime();
       record.replayEligible = true;
       record.summary = result.content;
       await this.stepDurabilityStore.save(record);
