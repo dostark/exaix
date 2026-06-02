@@ -30,6 +30,7 @@ export type { GateConfig } from "./src/gate_evaluator.ts";
 export type { IStepDurabilityStore } from "./src/contracts/step_durability.ts";
 export type { IStepExecutionRecord } from "./src/contracts/step_durability.ts";
 export type { IStepReplayPolicy } from "./src/contracts/step_durability.ts";
+export { DefaultStepReplayPolicy } from "./src/contracts/step_durability.ts";
 
 export { FlowCheckpointService } from "./src/checkpoint_service.ts";
 export { FlowNamespaceService, NamespaceQuotaExceededError } from "./src/namespace_service.ts";

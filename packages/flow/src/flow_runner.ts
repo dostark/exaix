@@ -28,7 +28,15 @@ import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas/blueprint.ts";
 import { createGitServiceStub, createProviderStub } from "@exaix/testing/helpers/stub_factories.ts";
-import { FlowInputSource, FlowStepExecutionMode, FlowStepOnErrorAction, FlowStepType } from "@exaix/core";
+import {
+  FlowInputSource,
+  FlowStepExecutionMode,
+  FlowStepOnErrorAction,
+  FlowStepType,
+  StepAttemptClass,
+  StepExecutionDisposition,
+  StepSideEffectClass,
+} from "@exaix/core";
 import { DynamicStepExecutor } from "./dynamic_step_executor.ts";
 import { ActivityJournal } from "./activity_journal.ts";
 import { McpClient } from "@exaix/mcp/server";
@@ -71,6 +79,8 @@ import {
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_VALIDATION_FAILED,
 } from "@exaix/core";
+import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
+import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -140,6 +150,10 @@ export interface IFlowRunnerConfig {
   dynamicHandlers?: Map<McpToolName, ToolHandler>;
   /** @deprecated Use dynamicHandlers with buildDynamicHandlers() output instead. */
   mcpHandlers?: ToolHandler[];
+  /** Optional step durability store for persisting execution records. No-op when omitted. */
+  stepDurabilityStore?: IStepDurabilityStore;
+  /** Optional replay policy for deciding whether a prior step result can be reused. No-op (deny all) when omitted. */
+  stepReplayPolicy?: IStepReplayPolicy;
 }
 
 /**
@@ -577,6 +591,16 @@ export class FlowRunner implements IFlowRunner {
   private config?: Config;
   private checkpointService?: IFlowCheckpointService;
   private namespaceService?: IFlowNamespaceService;
+  private stepDurabilityStore: IStepDurabilityStore;
+  private stepReplayPolicy: IStepReplayPolicy;
+
+  private createNoOpDurabilityStore(): IStepDurabilityStore {
+    return {
+      save: (_record: IStepExecutionRecord) => Promise.resolve(),
+      findReplayCandidate: () => Promise.resolve(null),
+      invalidate: (_recordId: string, _reason: string) => Promise.resolve(),
+    };
+  }
 
   private isPromiseRejectedResult(result: PromiseSettledResult<IStepResult>): result is PromiseRejectedResult {
     return result.status === "rejected";
@@ -601,6 +625,9 @@ export class FlowRunner implements IFlowRunner {
       this.checkpointService = new FlowCheckpointService(this.config);
       this.namespaceService = new FlowNamespaceService(this.config);
     }
+
+    this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
+    this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
 
     const config = this.config;
     const db = this.db;
@@ -1591,20 +1618,97 @@ export class FlowRunner implements IFlowRunner {
     request: { userPrompt: string; traceId?: string; requestId?: string; requestAnalysis?: IRequestAnalysis },
     stepResults: Map<string, IStepResult>,
     startedAt: Date,
+    attemptClass: StepAttemptClass = StepAttemptClass.INITIAL,
   ): Promise<{ result: IAgentExecutionResult; namespaceWrites?: IStepNamespaceWrites }> {
     const stepRequest = await this.prepareStepRequest(flowRunId, step, flow, request, stepResults);
-    const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
-    const writes = step.namespace?.writes ?? [];
+    const inputHash = await this.computeStepInputHash(stepRequest);
+    const stepId = step.id;
+    const traceId = request.traceId ?? flowRunId;
 
-    return {
-      result,
-      namespaceWrites: writes.length > 0
-        ? {
-          writes,
-          stepOutput: result.content,
-        }
-        : undefined,
+    const priorRecord = await this.stepDurabilityStore.findReplayCandidate({
+      traceId,
+      flowId: flow.id,
+      stepId,
+      inputHash,
+      attemptClass,
+    });
+
+    if (priorRecord) {
+      const reuseDecision = this.stepReplayPolicy.canReuse({
+        step: { userPrompt: stepRequest.userPrompt, context: stepRequest.context ?? {} },
+        prior: priorRecord,
+        currentInputHash: inputHash,
+      });
+
+      if (reuseDecision.allowed) {
+        this.eventLogger.log("flow.step.replayed", {
+          flowId: flow.id,
+          traceId,
+          stepId,
+          flowRunId,
+          recordId: priorRecord.recordId,
+          reason: reuseDecision.reason ?? "replay-allowed",
+        });
+
+        return {
+          result: {
+            thought: "(replayed)",
+            content: priorRecord.summary ?? "",
+            raw: priorRecord.summary ?? "",
+          },
+        };
+      }
+    }
+
+    const recordId = crypto.randomUUID();
+    const record: IStepExecutionRecord = {
+      recordId,
+      traceId,
+      flowId: flow.id,
+      stepId,
+      idempotencyKey: {
+        traceId,
+        flowId: flow.id,
+        stepId,
+        attemptClass,
+        inputHash,
+      },
+      disposition: StepExecutionDisposition.EXECUTED,
+      startedAt: startedAt.toISOString(),
+      inputHash,
+      sideEffectClass: StepSideEffectClass.MIXED,
+      replayEligible: true,
     };
+
+    record.sideEffectClass = this.computeSideEffectClass(step);
+
+    await this.stepDurabilityStore.save(record);
+
+    try {
+      const result = await this.executeStepLogic(flowRunId, step, flow, request, stepRequest, startedAt);
+      record.completedAt = new Date().toISOString();
+      record.replayEligible = true;
+      record.summary = result.content;
+      await this.stepDurabilityStore.save(record);
+
+      const writes = step.namespace?.writes ?? [];
+
+      return {
+        result,
+        namespaceWrites: writes.length > 0
+          ? {
+            writes,
+            stepOutput: result.content,
+          }
+          : undefined,
+      };
+    } catch (error) {
+      record.completedAt = new Date().toISOString();
+      record.error = error instanceof Error ? error.message : String(error);
+      record.replayEligible = false;
+      await this.stepDurabilityStore.save(record);
+      throw error;
+    }
   }
 
   /**
@@ -2638,6 +2742,36 @@ export class FlowRunner implements IFlowRunner {
     });
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
     return encodeHex(digest);
+  }
+
+  private async computeStepInputHash(stepRequest: IFlowStepRequest): Promise<string> {
+    const serialized = JSON.stringify({
+      userPrompt: stepRequest.userPrompt,
+      context: stepRequest.context,
+      skills: stepRequest.skills,
+    });
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
+    return encodeHex(digest);
+  }
+
+  private computeSideEffectClass(step: IFlowStep): StepSideEffectClass {
+    if (step.type === FlowStepType.GATE) {
+      return StepSideEffectClass.NONE;
+    }
+
+    const hasTools = step.permitted_tools && step.permitted_tools.length > 0;
+    const isDynamic = step.execution_mode === FlowStepExecutionMode.DYNAMIC;
+
+    if (isDynamic && hasTools) {
+      const hasGitTools = step.permitted_tools!.some((t) => t.startsWith("git_"));
+      return hasGitTools ? StepSideEffectClass.GIT : StepSideEffectClass.TOOL;
+    }
+
+    if (!isDynamic && !hasTools) {
+      return StepSideEffectClass.LLM;
+    }
+
+    return StepSideEffectClass.MIXED;
   }
 
   private async loadCheckpointIfAvailable(

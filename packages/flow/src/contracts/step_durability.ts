@@ -8,7 +8,8 @@
  * @architectural-layer Contracts
  */
 
-import type { JSONValue, StepAttemptClass, StepExecutionDisposition, StepSideEffectClass } from "@exaix/core";
+import type { JSONValue, StepAttemptClass, StepExecutionDisposition } from "@exaix/core";
+import { StepSideEffectClass } from "@exaix/core";
 
 export type StepEntryMetadata = { [key: string]: JSONValue };
 export type StepReplayContext = { [key: string]: JSONValue };
@@ -38,6 +39,7 @@ export interface IStepExecutionRecord {
   outputHash?: string;
   sideEffectClass: StepSideEffectClass;
   replayEligible: boolean;
+  summary?: string;
   metadata?: StepEntryMetadata;
   error?: string;
 }
@@ -86,4 +88,23 @@ export interface IStepReplayPolicy {
     prior: IStepExecutionRecord;
     currentInputHash: string;
   }): { allowed: boolean; reason?: string };
+}
+
+export class DefaultStepReplayPolicy implements IStepReplayPolicy {
+  canReuse(params: {
+    step: { userPrompt: string; context: StepReplayContext };
+    prior: IStepExecutionRecord;
+    currentInputHash: string;
+  }): { allowed: boolean; reason?: string } {
+    switch (params.prior.sideEffectClass) {
+      case StepSideEffectClass.NONE:
+      case StepSideEffectClass.LLM:
+        return { allowed: true };
+      default:
+        return {
+          allowed: false,
+          reason: `Step with sideEffectClass ${params.prior.sideEffectClass} is not replay-safe by default`,
+        };
+    }
+  }
 }
