@@ -39,7 +39,21 @@ step:
 ## Step Durability
 
 Step durability preserves execution records so resumed flows can skip
-recomputation of prior steps through selective replay.
+recomputation of prior steps through selective replay. This reduces
+recomputation of expensive analytical steps (LLM calls) while preventing
+silent skip of side-effecting steps (tool invocations, git operations).
+
+### Architecture Boundary
+
+- `FlowRunner` selects and applies replay policy during execution.
+- `IStepDurabilityStore` — persistence contract for saving, querying
+  (`findReplayCandidate`), and invalidating step execution records.
+- `IStepReplayPolicy` — decision contract for whether a matched prior
+  record may be reused. `DefaultStepReplayPolicy` allows replay for
+  `StepSideEffectClass.NONE` and `StepSideEffectClass.LLM` and denies
+  it for `TOOL`, `GIT`, and `MIXED`.
+- The artifact-centric external model is unchanged — durability is
+  internal runtime semantics only.
 
 ### Configuration
 
@@ -86,6 +100,19 @@ interface IFlowRunnerConfig {
 
 ## Error Recovery
 
+`FlowRunner` includes recovery controls so a multi-step flow can preserve
+completed work, retry transient failures, or unwind prior side effects
+instead of always restarting from scratch.
+
+### Architecture Boundary
+
+- `FlowRunner` selects and applies recovery strategy during execution.
+- `FlowCheckpointService` owns resume snapshots and stale-checkpoint invalidation.
+- Recovery metadata is runtime state on step results rather than part of
+  the persisted flow definition.
+
+### Recovery Actions
+
 | Action       | Behavior                                                      |
 | ------------ | ------------------------------------------------------------- |
 | `RETRY`      | Re-execute the failed step (up to `maxRetries`), with backoff |
@@ -101,6 +128,22 @@ interface IFlowRunnerConfig {
 - Compensations execute in LIFO order
 
 ## Parallel Execution Groups
+
+Steps that share a `parallel.group` ID within the same dependency wave
+execute concurrently via `Promise.allSettled`, and downstream steps
+aggregate results through configurable merge modes.
+
+### Architecture Boundary
+
+- `FlowRunner` owns group detection, concurrent execution, and fan-in aggregation.
+- `FlowCheckpointService` captures individual group members by step ID
+  — no schema changes needed; group membership is re-derived from the
+  flow definition at resume.
+- Merged outputs are injected via `parallelGroupResults` on
+  `IFlowStepRequest` (not inside `context`), keeping dates serialized
+  to ISO strings and out of arbitrary context namespaces.
+
+### Merge Modes
 
 | Mode      | Behavior                                                         |
 | --------- | ---------------------------------------------------------------- |
@@ -133,6 +176,18 @@ interface IFlowRunnerConfig {
 | `REQUEST_UNDERSTANDING` | Correct understanding demonstrated    | Validation gates          |
 
 ## Namespace & Blackboard Coordination
+
+A flow-scoped shared blackboard lets steps exchange structured findings
+without threading every value through transforms.
+
+### Architecture Boundary
+
+- `FlowRunner` owns wave scheduling and when namespace reads and writes occur.
+- `FlowNamespaceService` owns persistence and artifact serialization.
+- Flow definitions opt into namespace coordination explicitly rather than
+  enabling implicit global state.
+
+### Runtime Behavior
 
 Steps can share structured findings through a flow-scoped namespace:
 
