@@ -1,0 +1,60 @@
+schema_version: "1.0.0"
+id: "step-durability-resume"
+title: "Resumed flow skips completed analytical steps via SKIPPED_BY_REUSE"
+pack: "agent_flows"
+tags: ["step-durability"]
+description: >-
+  Three-step flow (context-gather → analyse → synthesise). The analyse step
+  has sideEffectClass: none (replay-safe). After step 2 completes and a
+  checkpoint is saved, step 3 fails transiently. On resume the durability
+  store is queried for step 2; findReplayCandidate returns the prior record
+  and FLOW_EVENT_STEP_SKIPPED_BY_REUSE is emitted. Step 3 is re-executed
+  fresh. Step 1 is not re-executed. Success metric:
+  STEP_REPLAY_REUSE_TARGET_PERCENT >= 80 (1 of 1 reusable steps reused).
+request_fixture: "fixtures/requests/agent_flows/step_durability_resume.md"
+mode_support: ["manual-checkpoint"]
+portals: []
+steps:
+  - id: "initial-run-step1-context-gather"
+    type: "shell"
+    command: "echo"
+    args:
+      - "step 1 (sideEffectClass: tool) executes; durability record saved with replayEligible: false (tool steps are not replay-safe)"
+
+  - id: "initial-run-step2-analyse"
+    type: "shell"
+    command: "echo"
+    args:
+      - "step 2 (sideEffectClass: none) executes; durability record saved with replayEligible: true"
+
+  - id: "checkpoint-after-step2"
+    type: "shell"
+    command: "echo"
+    args:
+      - "FlowCheckpointService saves snapshot containing step1 and step2 completedSteps"
+
+  - id: "initial-run-step3-fails"
+    type: "shell"
+    command: "echo"
+    args:
+      - "step 3 fails transiently; durability record saved with replayEligible: false; flow halts with FlowExecutionError"
+
+  - id: "resume-checkpoint-migration"
+    type: "shell"
+    command: "echo"
+    args:
+      - "resume: loadCheckpointIfAvailable restores step1+step2 results; migrateCheckpointToDurabilityStore backfills audit records"
+
+  - id: "resume-step2-skipped-by-reuse"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "step2-skipped-by-reuse-event"
+        kind: "journal-event-exists"
+        event_type: "flow.step.skipped_by_reuse"
+
+  - id: "resume-step3-reexecuted"
+    type: "shell"
+    command: "echo"
+    args:
+      - "step 3 re-executes and succeeds; STEP_REPLAY_REUSE_TARGET_PERCENT=80 satisfied (1/1 reusable step skipped)"

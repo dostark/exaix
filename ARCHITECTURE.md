@@ -16,8 +16,8 @@ tools_referenced:
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
 
-**Version:** 3.0\
-**Date:** May 25, 2026
+**Version:** 3.1\
+**Date:** June 2, 2026
 
 > **What this document covers:** component boundaries, dependency direction, edition-tiering rationale, and architectural invariants — the "why" that code alone doesn't convey.
 > **What this document does NOT cover:** configuration syntax, CLI command trees, score formulas, step-by-step protocols, or schema definitions. Those live in package and app READMEs under `packages/` and `apps/`, with redirects in `docs/dev/`.
@@ -64,220 +64,6 @@ Session tools are treated as **external delegates** — launched via a configura
 Session tool integration **must not introduce session state into Exaix's core pipeline**. The pipeline remains file-driven and asynchronous. The session tool is a transient external process that reads from and writes to the same file system — it does not change how Exaix models work.
 
 For the pipeline gate diagram with ASCII art and TOML configuration sample, see `packages/flow/README.md#session-tool-integration`.
-
----
-
-## System Architecture Overview
-
-This document provides a comprehensive architectural overview of Exaix components using Mermaid diagrams.
-
-```mermaid
-flowchart TB
-    subgraph Actors["👥 Actors"]
-        User[👤 User/Developer]
-        Agent[🤖 AI Agent]
-    end
-
-    subgraph CLI["🖥️ CLI Layer"]
-        Exactl[exactl CLI Entry]
-        ReqCmd[Request Commands]
-        PlanCmd[Plan Commands]
-        ChangeCmd[Review Commands]
-        GitCmd[Git Commands]
-        DaemonCmd[Daemon Commands]
-        PortalCmd[Portal Commands]
-        BlueprintCmd[Blueprint Commands]
-        DashCmd[Dashboard Commands]
-    end
-
-    subgraph TUI["🧩 TUI Layer"]
-        TuiDash[TUI Dashboard]
-        TuiViews[Views: portals / plans / requests / logs / daemon / agents]
-    end
-
-    subgraph Core["⚙️ Core System"]
-        Main[main.ts - Daemon]
-        ReqWatch[Request Watcher<br/>Workspace/Requests]
-        PlanWatch[Plan Watcher<br/>Workspace/Active]
-        ReqProc[Request Processor]
-        ReqAn[Request Analyzer]
-        ReqRouter[Request Router]
-        PlanExec[Plan Executor]
-        AgentRun[Agent Runner]
-        FlowEng[Flow Engine]
-        FlowRun[Flow Runner]
-        ExecLoop[Execution Loop]
-    end
-
-    subgraph Services["🔧 Services"]
-        ConfigSvc[Config Service]
-        DBSvc[Database Service]
-        GitSvc[Git Service]
-        EventLog[Event Logger]
-        ContextLoad[Context Loader]
-        PromptBudget[Prompt Budget Allocator<br/>budget_enforcement<br/>system / plan / portalKnowledge<br/>memory / skills / loopHistory]
-        PlanWriter[Plan Writer]
-        PlanAdapter[Plan Adapter]
-        MissionRpt[Mission Reporter]
-        PathRes[Path Resolver]
-        ToolReg[Tool Registry]
-        CtxCard[Context Card Generator]
-        OutputVal[Output Validator]
-        RetryPol[Retry Policy]
-        ReflexAgt[Reflexive Agent]
-        ConfScore[Confidence Scorer]
-        SessMem[Session Memory]
-        SkillsSvc[Skills Service]
-        ToolRefl[Tool Reflector]
-        CostTrack[Cost Tracker]
-        HealthSvc[Health Check Svc]
-        ShutDown[Graceful Shutdown]
-        InputVal[Input Validator]
-        DBPool[DB Conn Pool]
-    end
-
-    subgraph Storage["💾 Storage"]
-        DB[(SQLite DB<br/>.exa/journal.db)]
-        FS[/File System<br/>~/Exaix/]
-        Requests[Requests]
-        Plans[Plans]
-        System[System]
-        Workspace[Workspace/<br/>Requests & Plans/]
-        Blueprint[Blueprints/<br/>Agents & Flows/]
-        Memory[Memory/<br/>Memory Banks/]
-        Portals[Portals/<br/>External Projects/]
-        Runtime[/.exa/<br/>Active & Archive/]
-    end
-
-    subgraph AI["🤖 AI Providers"]
-        Selector[Provider Selector]
-        Breaker[Circuit Breaker]
-        Factory[Provider Factory]
-        Ollama[Ollama<br/>Local]
-        Claude[Claude API<br/>Anthropic]
-        GPT[OpenAI GPT<br/>Remote]
-        Gemini[Google Gemini<br/>Remote]
-        Vertex[Vertex AI<br/>Service Account]
-        OpenRouter[OpenRouter<br/>Gateway]
-        Mock[Mock Provider<br/>Testing]
-    end
-
-    %% User interactions
-    User -->|CLI Commands| Exactl
-    User -->|Drop .md files| Requests
-    Agent -->|Read/Write| Portals
-
-    %% CLI routing
-    Exactl --> ReqCmd
-    Exactl --> PlanCmd
-    Exactl --> ChangeCmd
-    Exactl --> GitCmd
-    Exactl --> DaemonCmd
-    Exactl --> PortalCmd
-    Exactl --> BlueprintCmd
-    Exactl --> DashCmd
-
-    %% CLI to Services
-    ReqCmd --> Requests
-    PlanCmd --> Plans
-    ChangeCmd --> GitSvc
-    GitCmd --> GitSvc
-    DaemonCmd --> Main
-    PortalCmd --> ConfigSvc
-    PortalCmd --> CtxCard
-    BlueprintCmd --> Blueprint
-    DashCmd --> TuiDash
-    TuiDash --> TuiViews
-
-    %% Core daemon flow
-    Main --> ConfigSvc
-    Main --> DBSvc
-    Main --> ShutDown
-    Main --> HealthSvc
-    Main --> Factory
-    Main --> ReqWatch
-    Main --> PlanWatch
-    Main --> ReqProc
-    Main --> ReqAn
-    Main --> ReqRouter
-    Main --> PlanExec
-    ReqWatch --> Requests
-    PlanWatch --> System
-    ReqProc --> InputVal
-    ReqProc --> ReqAn
-    ReqAn --> ReqRouter
-    ReqRouter --> AgentRun
-    ReqRouter --> FlowRun
-    PlanExec --> AgentRun
-    AgentRun --> ExecLoop
-    ExecLoop --> FlowEng
-    FlowRun --> FlowEng
-
-    %% Services integration
-    AgentRun --> ContextLoad
-    AgentRun --> PromptBudget
-    AgentRun --> PlanWriter
-    AgentRun --> MissionRpt
-    AgentRun --> EventLog
-    AgentRun --> SkillsSvc
-    PromptBudget --> ContextLoad
-    ExecLoop --> ToolReg
-    ExecLoop --> GitSvc
-    ContextLoad --> Memory
-    ContextLoad --> Portals
-    PlanWriter --> Plans
-    PlanWriter --> PlanAdapter
-    EventLog --> DB
-    GitSvc --> FS
-    PathRes --> FS
-    DBSvc --> DBPool
-
-    %% AI Provider routing
-    AgentRun --> Selector
-    Selector --> CostTrack
-    Selector --> Breaker
-    Breaker --> Factory
-    Factory --> Ollama
-    Factory --> Claude
-    Factory --> GPT
-    Factory --> Gemini
-    Factory --> Vertex
-    Factory --> OpenRouter
-    Factory --> Mock
-
-    %% Agent Orchestration
-    AgentRun --> OutputVal
-    AgentRun --> RetryPol
-    AgentRun --> ReflexAgt
-    AgentRun --> ConfScore
-    SessMem --> Memory
-    AgentRun --> SessMem
-    ExecLoop --> ToolRefl
-
-    %% Storage access
-    ConfigSvc --> FS
-    ConfigSvc --> PromptBudget
-    DBSvc --> DB
-    ReqProc --> Blueprint
-    PlanWatch --> System
-
-    %% Styling
-    classDef actor fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef cli fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef core fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef service fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef storage fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-    classDef ai fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-
-    class User,Agent actor
-    class Exactl,ReqCmd,PlanCmd,ChangeCmd,GitCmd,DaemonCmd,PortalCmd,BlueprintCmd,DashCmd cli
-    class Main,ReqWatch,PlanWatch,ReqProc,ReqAn,ReqRouter,PlanExec,AgentRun,FlowEng,FlowRun,ExecLoop core
-    class ConfigSvc,DBSvc,GitSvc,EventLog,ContextLoad,PromptBudget,PlanWriter,MissionRpt,PathRes,ToolReg,CtxCard,OutputVal,RetryPol,ReflexAgt,ConfScore,SessMem,ToolRefl service
-    class DB,FS,Workspace,Blueprint,Memory,Portals,System,Requests,Plans storage
-    class Factory,Ollama,Claude,GPT,Gemini,Vertex,OpenRouter,Mock ai
-
-    class TuiDash,TuiViews cli
-```
 
 ---
 
@@ -478,51 +264,8 @@ For the step table, sequence diagram, component hierarchy, MCP server implementa
 
 ---
 
-## Flow Namespace & Shared Blackboard
-
-A flow-scoped shared blackboard lets steps exchange structured findings without threading every value through transforms. `FlowRunner` delegates persistence to `FlowNamespaceService`, and the namespace artifact lives alongside other execution state under `Memory/Execution/{traceId}/`.
-
-At the architecture level, the important boundary is:
-
-- `FlowRunner` owns wave scheduling and when namespace reads and writes occur.
-- `FlowNamespaceService` owns persistence and artifact serialization.
-- Flow definitions opt into namespace coordination explicitly rather than enabling implicit global state.
-
-For configuration shape, runtime semantics, storage details, and YAML examples, see:
-
-- `packages/flow/README.md#namespace--blackboard-coordination`
-- `packages/flow/README.md`
-
----
-
-## Flow Error Recovery
-
-`FlowRunner` includes recovery controls so a multi-step flow can preserve completed work, retry transient failures, or unwind prior side effects instead of always restarting from scratch.
-
-At the architecture level, the important boundary is:
-
-- `FlowRunner` selects and applies recovery strategy during execution.
-- `FlowCheckpointService` owns resume snapshots and stale-checkpoint invalidation.
-- Recovery metadata is runtime state on step results rather than part of the persisted flow definition.
-
-For supported `onError` actions, checkpoint lifecycle, compensation ordering, and recovery metadata details, see:
-
-- `packages/flow/README.md#error-recovery`
-- `packages/flow/README.md`
-
----
-
-## Flow Parallel Execution Groups
-
-`FlowRunner` supports explicit parallel group declarations and deterministic fan-in merge semantics. Steps that share a `parallel.group` ID within the same dependency wave execute concurrently via `Promise.allSettled`, and downstream steps aggregate results through configurable merge modes.
-
-At the architecture level, the important boundaries are:
-
-- `FlowRunner` owns group detection, concurrent execution, and fan-in aggregation.
-- `FlowCheckpointService` captures individual group members by step ID — no schema changes needed; group membership is re-derived from the flow definition at resume.
-- Merged outputs are injected via `parallelGroupResults` on `IFlowStepRequest` (not inside `context`), keeping dates serialized to ISO strings and out of arbitrary context namespaces.
-
-For merge mode names, group lifecycle event constants, schema definitions, event payloads, YAML examples, evaluation components, and quality gate configuration, see `packages/flow/README.md#parallel-execution-groups`.
+For flow namespace coordination, error recovery, parallel execution groups, and step
+durability, see `packages/flow/README.md`.
 
 ---
 
@@ -538,52 +281,9 @@ Advanced agent orchestration capabilities provide improved output quality, relia
 
 ### Orchestration Components
 
-```mermaid
-flowchart TB
-    subgraph Orchestration["🎭 Agent Orchestration"]
-        Request[Request Input]
-        SessMem[Session Memory]
-        AgentRun[Agent Runner]
-        ReflexAgt[Reflexive Agent]
-        OutputVal[Output Validator]
-        ConfScore[Confidence Scorer]
-        RetryPol[Retry Policy]
-        ToolRefl[Tool Reflector]
-        Response[Final Response]
-    end
-
-    subgraph Memory["💾 Memory Bank"]
-        Learnings[Learnings]
-        Patterns[Patterns]
-        Executions[Executions]
-    end
-
-    Request --> SessMem
-    SessMem -->|Lookup| Memory
-    Memory -->|Context| SessMem
-    SessMem -->|Enhanced| AgentRun
-
-    AgentRun --> ReflexAgt
-    ReflexAgt -->|Critique| ReflexAgt
-    ReflexAgt --> OutputVal
-
-    OutputVal -->|Invalid| RetryPol
-    RetryPol -->|Retry| AgentRun
-    OutputVal -->|Valid| ConfScore
-
-    ConfScore -->|Low| Response
-    ConfScore -->|High| Response
-
-    AgentRun --> ToolRefl
-    ToolRefl -->|Reflect| ToolRefl
-    ToolRefl --> AgentRun
-
-    classDef orch fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef mem fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-
-    class Request,SessMem,AgentRun,ReflexAgt,OutputVal,ConfScore,RetryPol,ToolRefl,Response orch
-    class Learnings,Patterns,Executions mem
-```
+For the agent orchestration flow diagram (request → session memory → reflexive
+agent → output validation → retry/confidence → tool reflection → response), see
+`exaix-dev-docs/dev/System_Architecture_Diagram.md#6-agent-orchestration`.
 
 ### Service Responsibilities
 
@@ -604,52 +304,9 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### ReAct Loop Architecture
 
-```mermaid
-flowchart TB
-    subgraph DynamicStep["Dynamic Step Execution"]
-        Start[Step Objective]
-        LoadBP[Load Identity Blueprint]
-        InitClients[Init MCP Client + LLM Client]
-        Reason[LLM Reasons Next Action]
-        Decide{Decision}
-        ToolCall[Call Tool via MCP Client]
-        Observe[Observe Result]
-        Journal[Log to Activity Journal]
-        Done[Step Complete]
-    end
-
-    subgraph Boundaries["Permission Boundaries"]
-        PermitTools[permitted_tools from Blueprint]
-        ReadOnlyCheck[Read-Only Tools Only]
-        MaxIter[maxIterations limit]
-    end
-
-    Start --> LoadBP
-    LoadBP --> InitClients
-    InitClients --> Reason
-
-    Reason --> Decide
-    Decide -->|tool_call| ToolCall
-    Decide -->|complete| Done
-
-    ToolCall --> ReadOnlyCheck
-    ReadOnlyCheck -->|valid| Journal
-    ReadOnlyCheck -->|invalid| Reason
-
-    Journal --> Observe
-    Observe --> MaxIter
-    MaxIter -->|more iterations| Reason
-    MaxIter -->|max reached| Done
-
-    PermitTools -.-> Reason
-    PermitTools -.-> ReadOnlyCheck
-
-    classDef dynamic fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef boundary fill:#fff3e0,stroke:#e65100,stroke-width:2px
-
-    class Start,LoadBP,InitClients,Reason,Decide,ToolCall,Observe,Journal,Done dynamic
-    class PermitTools,ReadOnlyCheck,MaxIter boundary
-```
+For the ReAct loop diagram (step objective → blueprint → MCP client → LLM
+reasoning → tool call → permission check → observe → iterate/complete), see
+`exaix-dev-docs/dev/System_Architecture_Diagram.md#7-react-loop-architecture`.
 
 ### Security and Auditability
 
@@ -811,8 +468,10 @@ For the full 60+ entry component responsibilities table with file paths and edit
 
 ## Related Documentation
 
-- **[User Guide](Exaix_User_Guide.md)** — End-user documentation
-- **[White Paper](Exaix_White_paper.md)** — Vision and philosophy
+- **[System_Architecture_Diagram](exaix-dev-docs/dev/System_Architecture_Diagram.md)** - full architecture
+  with focused Mermaid diagrams broken down by subsystem layer.
+- **[User Guide](docs/Exaix_User_Guide.md)** — End-user documentation
+- **[White Paper](exaix-dev-docs/dev/Exaix_White_Paper.md)** — Vision and philosophy
 - **Package and App READMEs** — Implementation reference (formerly `docs/dev/`):
   - `packages/flow/README.md` — Flow engine, orchestration services, session tool integration
   - `packages/request/README.md` — Request processing, analysis, routing

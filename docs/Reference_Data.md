@@ -335,6 +335,25 @@ Core infrastructure modules for architecture validation:
 
 ---
 
+## Flow Event Reference
+
+The flow engine publishes structured events via `EventLogger.log()` with typed
+payloads defined in `packages/flow/src/flow_runner.ts:IFlowEventPayloadMap`.
+
+### Step Durability Events
+
+| Event                        | Example Reason       | When Fired                         |
+| ---------------------------- | -------------------- | ---------------------------------- |
+| `flow.step.replayed`         | `replay-allowed`     | Prior record reused for a step     |
+| `flow.step.skipped_by_reuse` | `reuse-policy-match` | Step skipped by reuse policy       |
+| `flow.step.invalidated`      | `stale-input-hash`   | Step record explicitly invalidated |
+
+Event payloads include `flowRunId`, `stepId`, `traceId`, event-specific fields
+(see `IFlowEventPayloadMap` in `flow_runner.ts`), and any additional context
+passed through `Record<string, JSONValue | undefined>`.
+
+---
+
 ## Activity Journal
 
 ### Component Table

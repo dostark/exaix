@@ -36,7 +36,105 @@ step:
     - HAS_TESTS
 ```
 
+## Step Durability
+
+Step durability preserves execution records so resumed flows can skip
+recomputation of prior steps through selective replay. This reduces
+recomputation of expensive analytical steps (LLM calls) while preventing
+silent skip of side-effecting steps (tool invocations, git operations).
+
+### Architecture Boundary
+
+- `FlowRunner` selects and applies replay policy during execution.
+- `IStepDurabilityStore` — persistence contract for saving, querying
+  (`findReplayCandidate`), and invalidating step execution records.
+- `IStepReplayPolicy` — decision contract for whether a matched prior
+  record may be reused. `DefaultStepReplayPolicy` allows replay for
+  `StepSideEffectClass.NONE` and `StepSideEffectClass.LLM` and denies
+  it for `TOOL`, `GIT`, and `MIXED`.
+- The artifact-centric external model is unchanged — durability is
+  internal runtime semantics only.
+
+### Configuration
+
+```typescript
+interface IFlowRunnerConfig {
+  stepDurabilityStore?: IStepDurabilityStore; // optional, no-op by default
+  stepReplayPolicy?: IStepReplayPolicy; // optional, DefaultStepReplayPolicy by default
+  checkpointService?: IFlowCheckpointService; // optional override for testing
+}
+```
+
+### Replay Policy Defaults
+
+| Side Effect Class | Replayable | Rationale                      |
+| ----------------- | ---------- | ------------------------------ |
+| `NONE`            | ✅ Yes     | No external side effects       |
+| `LLM`             | ✅ Yes     | Purely analytical (idempotent) |
+| `TOOL`            | ❌ No      | May have external side effects |
+| `GIT`             | ❌ No      | Git state mutation             |
+| `MIXED`           | ❌ No      | Combination of the above       |
+
+### Match Keys
+
+`findReplayCandidate` matches stored records on:
+
+- `traceId`, `flowId`, `stepId` — execution identity
+- `inputHash` — SHA-256 of serialized step request; exact match required
+- `attemptClass` — e.g. `INITIAL`, `RETRY`, `FALLBACK`
+- Optional: `toolPolicyHash`, `portalScopeHash`
+
+### Checkpoint Migration
+
+When `loadCheckpointIfAvailable` restores steps from a valid checkpoint, it
+backfills the durability store with one audit-only record per restored step
+(`inputHash: ""`, `replayEligible: false`, `disposition: executed`,
+`attemptClass: resume`). These records are informational — the empty hash
+prevents `findReplayCandidate` from matching them for automatic replay.
+
+A session-scoped `migratedCheckpointTraceIds` set on the `FlowRunner`
+instance prevents double-backfill when `execute()` is called more than once
+with the same `traceId`.
+
+When a **stale** checkpoint is detected (schema version or flow content hash
+mismatch), it is discarded and `FLOW_EVENT_STEP_INVALIDATED` is emitted for
+each step that was in the stale checkpoint, then `store.invalidate()` is
+called with a synthetic record ID (`stale:<traceId>:<stepId>`).
+
+### Journal Events
+
+| Event                        | Payload Fields                                                   | When Emitted                                     |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| `flow.step.skipped_by_reuse` | `flowRunId`, `stepId`, `priorRecordId`, `inputHash`, `traceId`   | Prior record matched and policy permits reuse    |
+| `flow.step.replayed`         | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`, `flowId` | Reserved — future result-reconstruction path     |
+| `flow.step.invalidated`      | `flowRunId`, `stepId`, `recordId`, `reason`, `traceId`           | Stale checkpoint discarded or record invalidated |
+
+### Invariants
+
+- Artifact-centric model unchanged — durability is internal runtime semantics.
+- Replay is conservative by default (only `NONE` / `LLM` steps).
+- `replayEligible` is initialized `false` at record construction; flipped to
+  `true` only after the step's success branch completes.
+- `durationMs` (wall-clock milliseconds) is computed and stored on every
+  successful execution record.
+- Output reconstruction uses `IStepExecutionRecord.summary` from prior
+  execution.
+- No new record is created when replaying; the prior record is reused in place.
+
 ## Error Recovery
+
+`FlowRunner` includes recovery controls so a multi-step flow can preserve
+completed work, retry transient failures, or unwind prior side effects
+instead of always restarting from scratch.
+
+### Architecture Boundary
+
+- `FlowRunner` selects and applies recovery strategy during execution.
+- `FlowCheckpointService` owns resume snapshots and stale-checkpoint invalidation.
+- Recovery metadata is runtime state on step results rather than part of
+  the persisted flow definition.
+
+### Recovery Actions
 
 | Action       | Behavior                                                      |
 | ------------ | ------------------------------------------------------------- |
@@ -53,6 +151,22 @@ step:
 - Compensations execute in LIFO order
 
 ## Parallel Execution Groups
+
+Steps that share a `parallel.group` ID within the same dependency wave
+execute concurrently via `Promise.allSettled`, and downstream steps
+aggregate results through configurable merge modes.
+
+### Architecture Boundary
+
+- `FlowRunner` owns group detection, concurrent execution, and fan-in aggregation.
+- `FlowCheckpointService` captures individual group members by step ID
+  — no schema changes needed; group membership is re-derived from the
+  flow definition at resume.
+- Merged outputs are injected via `parallelGroupResults` on
+  `IFlowStepRequest` (not inside `context`), keeping dates serialized
+  to ISO strings and out of arbitrary context namespaces.
+
+### Merge Modes
 
 | Mode      | Behavior                                                         |
 | --------- | ---------------------------------------------------------------- |
@@ -85,6 +199,18 @@ step:
 | `REQUEST_UNDERSTANDING` | Correct understanding demonstrated    | Validation gates          |
 
 ## Namespace & Blackboard Coordination
+
+A flow-scoped shared blackboard lets steps exchange structured findings
+without threading every value through transforms.
+
+### Architecture Boundary
+
+- `FlowRunner` owns wave scheduling and when namespace reads and writes occur.
+- `FlowNamespaceService` owns persistence and artifact serialization.
+- Flow definitions opt into namespace coordination explicitly rather than
+  enabling implicit global state.
+
+### Runtime Behavior
 
 Steps can share structured findings through a flow-scoped namespace:
 

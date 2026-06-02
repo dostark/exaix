@@ -18,6 +18,9 @@ import {
   FlowStepType,
   McpToolName,
   ProviderCostTier,
+  StepAttemptClass,
+  StepExecutionDisposition,
+  StepSideEffectClass,
 } from "@exaix/core";
 import { JSONValueSchema } from "@exaix/core";
 
@@ -260,3 +263,57 @@ export type IGateEvaluate = z.infer<typeof GateEvaluateSchema>;
 export type IFeedbackLoopConfig = z.infer<typeof FeedbackLoopSchema>;
 export type IBranchCondition = z.infer<typeof BranchConditionSchema>;
 export type IConsensusConfig = z.infer<typeof ConsensusConfigSchema>;
+
+// ============================================================================
+// Step Execution Durability Schemas (Phase 82)
+// ============================================================================
+
+export const StepExecutionDispositionSchema = z.nativeEnum(StepExecutionDisposition);
+
+export const StepSideEffectClassSchema = z.nativeEnum(StepSideEffectClass);
+
+export const StepAttemptClassSchema = z.nativeEnum(StepAttemptClass);
+
+/**
+ * Idempotency key uniquely identifying a step execution attempt.
+ * Used for replay detection and result reuse.
+ */
+export const StepIdempotencyKeySchema = z.object({
+  traceId: z.string().min(1),
+  flowId: z.string().min(1),
+  stepId: z.string().min(1),
+  attemptClass: StepAttemptClassSchema,
+  inputHash: z.string().min(8),
+  toolPolicyHash: z.string().optional(),
+  portalScopeHash: z.string().optional(),
+});
+
+/**
+ * Full step execution record stored for durability and replay.
+ */
+export const StepExecutionRecordSchema = z.object({
+  recordId: z.string().uuid(),
+  traceId: z.string().min(1),
+  flowId: z.string().min(1),
+  stepId: z.string().min(1),
+  idempotencyKey: StepIdempotencyKeySchema,
+  disposition: StepExecutionDispositionSchema,
+  startedAt: z.string().datetime(),
+  completedAt: z.string().datetime().optional(),
+  durationMs: z.number().int().nonnegative().optional(),
+  inputHash: z.string().min(8),
+  outputHash: z.string().optional(),
+  sideEffectClass: StepSideEffectClassSchema,
+  replayEligible: z.boolean(),
+  checkpointId: z.string().optional(),
+  summary: z.string().optional(),
+  invalidationReason: z.string().optional(),
+  metadata: z.record(z.unknown()).optional().default({}),
+  error: z.string().optional(),
+});
+
+export type IStepExecutionDisposition = z.infer<typeof StepExecutionDispositionSchema>;
+export type IStepSideEffectClass = z.infer<typeof StepSideEffectClassSchema>;
+export type IStepAttemptClass = z.infer<typeof StepAttemptClassSchema>;
+export type IStepIdempotencyKey = z.infer<typeof StepIdempotencyKeySchema>;
+export type IStepExecutionRecord = z.infer<typeof StepExecutionRecordSchema>;

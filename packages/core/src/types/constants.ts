@@ -802,6 +802,16 @@ export const FLOW_EVENT_ABORTED = "flow.aborted";
 export const FLOW_EVENT_FAILED = "flow.failed";
 export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 
+// Flow step durability event names (Phase 82)
+export const FLOW_EVENT_STEP_REPLAYED = "flow.step.replayed";
+export const FLOW_EVENT_STEP_SKIPPED_BY_REUSE = "flow.step.skipped_by_reuse";
+export const FLOW_EVENT_STEP_INVALIDATED = "flow.step.invalidated";
+
+// Step durability success metric thresholds (Phase 82)
+export const STEP_REPLAY_REUSE_TARGET_PERCENT = 80;
+export const STEP_DURABILITY_OVERHEAD_TARGET_MS = 10;
+export const STEP_DURABILITY_RECORD_TARGET_PERCENT = 100;
+
 /** Default max serialized size for a flow namespace artifact in bytes. */
 export const DEFAULT_NAMESPACE_MAX_BYTES = 65536;
 
