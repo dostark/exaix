@@ -19,7 +19,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          token: ${{ secrets.GH_PAT }}
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
@@ -61,7 +60,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-          token: ${{ secrets.GH_PAT }}
 
       - name: "Setup Deno"
         uses: denoland/setup-deno@v2
