@@ -327,6 +327,11 @@ Every compaction decision is persisted to `Memory/Execution/{traceId}/` as an
 prompt-state hygiene observable and auditable. Protected segment classes (`"system"`,
 `"request"`, `"acceptance_criteria"`, `metadata.nonCompactable = true`) are never dropped.
 
+Phase 83 is activated by injecting `contextBudgetManager` and (optionally) `snapshotStore`
+as the 12th and 13th constructor parameters of `AgentExecutor`. Without that injection the
+`_contextBudgetManager` field is `undefined` and budget compaction is silently skipped on
+every ReAct iteration. `ReActLoopStrategy` reads both values via `IReActLoopExecutor`.
+
 For segment kinds, priority constants, and the two-tier timing model, see
 `packages/execution/README.md#context-budget-manager`.
 

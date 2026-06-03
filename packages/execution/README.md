@@ -124,7 +124,11 @@ insertion order (FIFO).
   decisions made without any LLM calls. All prompt assembly uses synchronously compacted content.
 - **Asynchronous tier** (best-effort, non-blocking): when `IContextCompactor` is configured,
   dropped segments of compactable kinds are scheduled for LLM summarization via `queueMicrotask`
-  for next-iteration benefit. The current prompt is not affected.
+  for next-iteration benefit. The current prompt is not affected. Supply
+  `provider: yourModelProvider` in `IContextBudgetManagerInput` to enable actual LLM
+  summarisation; when `provider` is absent the async block still fires (snapshot save and
+  `CONTEXT_BUDGET_COMPACTED_EVENT` emission still occur) but `compactor.summarize()` is
+  skipped.
 
 ### Protected Segments
 
@@ -133,6 +137,22 @@ A segment is always kept when:
 - `kind` is `"system"`, `"request"`, or `"acceptance_criteria"`, **or**
 - `metadata.nonCompactable === true` (use for tool results that must survive compaction, e.g. security audit outputs), **or**
 - `priority >= CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA` (90).
+
+### Snapshot Security
+
+`FileSnapshotStore` validates both `traceId` (against `/^[a-zA-Z0-9_-]{1,128}$/`) and
+`stepId` (against `/^[a-zA-Z0-9_-]{1,256}$/`) before constructing the filesystem path.
+A `SecurityError` is thrown on failure. `PathResolver` provides workspace root confinement
+as a second-layer defence.
+
+### Known Limitations
+
+`AgentRunner.constructPrompt()` passes an uncapped `IPromptBudget` stub (all section budgets
+set to `Number.MAX_SAFE_INTEGER`) when calling `ContextBudgetManager.prepare()`. Budget
+manager invocations from `AgentRunner` therefore apply segment-priority ordering but impose
+no section token limits. Callers that require real section caps should supply a
+pre-computed `IPromptBudget` from `PromptBudgetAllocator.allocate()` via a wrapper, or use
+the `ReActLoopStrategy` path which reads `AgentExecutor.currentPromptBudget` directly.
 
 ### Key Files
 
