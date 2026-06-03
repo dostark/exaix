@@ -80,6 +80,8 @@ import {
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
+  FLOW_EVENT_WAIT_CREATED,
+  FLOW_EVENT_WAIT_PENDING,
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
@@ -983,7 +985,7 @@ export class FlowRunner implements IFlowRunner {
       const pendingStepResults = [...stepResults.values()].filter((r) => r.waitStateId);
       const hasPendingWait = pendingStepResults.length > 0;
       if (hasPendingWait) {
-        await this.eventLogger.log("flow.wait.pending", {
+        await this.eventLogger.log(FLOW_EVENT_WAIT_PENDING, {
           flowRunId,
           waitStateId: pendingStepResults[0].waitStateId!,
           traceId: request.traceId ?? "",
@@ -2235,7 +2237,7 @@ export class FlowRunner implements IFlowRunner {
           deadlineAt: undefined,
         });
         this.pendingWaitStateId = ws.waitStateId;
-        await this.eventLogger.log("flow.wait.created", {
+        await this.eventLogger.log(FLOW_EVENT_WAIT_CREATED, {
           flowRunId,
           stepId: step.id,
           waitStateId: ws.waitStateId,

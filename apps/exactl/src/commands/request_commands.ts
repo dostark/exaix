@@ -26,6 +26,7 @@ import {
   type IRequestShowResult,
 } from "@exaix/core/request";
 import { join } from "@std/path";
+import { WaitStateSchema } from "@exaix/flow";
 
 /**
  * RequestCommands provides CLI operations for creating and managing requests.
@@ -126,10 +127,19 @@ export class RequestCommands extends BaseCommand {
           for await (const entry of Deno.readDir(waitDir)) {
             if (!entry.isFile || !entry.name.endsWith(".json")) continue;
             const content = await Deno.readTextFile(join(waitDir, entry.name));
-            const parsed = JSON.parse(content) as { kind?: string; status?: string };
+            let parsed;
+            try {
+              parsed = WaitStateSchema.parse(JSON.parse(content));
+            } catch {
+              continue;
+            }
             if (parsed.kind === "clarification" && parsed.status === "pending") {
-              parsed.status = "fulfilled";
-              await Deno.writeTextFile(join(waitDir, entry.name), JSON.stringify(parsed, null, 2));
+              const updated = WaitStateSchema.parse({
+                ...parsed,
+                status: "fulfilled",
+                updatedAt: new Date().toISOString(),
+              });
+              await Deno.writeTextFile(join(waitDir, entry.name), JSON.stringify(updated, null, 2));
             }
           }
         } catch {

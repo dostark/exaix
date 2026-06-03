@@ -75,11 +75,3 @@ export const TransitionWaitStateInputSchema = z.object({
 export type WaitStateAction = "resume" | "approve" | "reject" | "amend" | "expire" | "cancel";
 
 export type TransitionWaitStateInput = z.infer<typeof TransitionWaitStateInputSchema>;
-
-export const WAIT_STATE_EVENT_CREATED = "wait_state.created";
-export const WAIT_STATE_EVENT_RESUMED = "wait_state.resumed";
-export const WAIT_STATE_EVENT_FULFILLED = "wait_state.fulfilled";
-export const WAIT_STATE_EVENT_REJECTED = "wait_state.rejected";
-export const WAIT_STATE_EVENT_AMENDED = "wait_state.amended";
-export const WAIT_STATE_EVENT_EXPIRED = "wait_state.expired";
-export const WAIT_STATE_EVENT_CANCELLED = "wait_state.cancelled";
