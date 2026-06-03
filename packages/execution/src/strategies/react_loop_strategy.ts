@@ -31,6 +31,7 @@ import {
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
+  REACT_TOOL_RESULT_BUDGET_RATIO,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
@@ -280,6 +281,9 @@ export class ReActLoopStrategy implements IExecutionStrategy {
 
     const segments: IContextSegment[] = [];
 
+    // Per-segment cap for tool_result kind in dynamic mode (GAP-5).
+    const toolResultCap = Math.floor(promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO);
+
     // System prompt — always protected
     if (blueprint.systemPrompt) {
       segments.push({
@@ -296,12 +300,16 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     for (let idx = 0; idx < history.length; idx++) {
       const entry = history[idx];
       const kind = entry.role === ReActRole.RESULT ? "tool_result" as const : "reflection" as const;
+      let tokenEstimate = Math.ceil(entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+      if (kind === "tool_result" && toolResultCap > 0) {
+        tokenEstimate = Math.min(tokenEstimate, toolResultCap);
+      }
       segments.push({
         segmentId: `hist-${idx}-${context.trace_id}`,
         kind,
         content: entry.content,
         priority: kind === "tool_result" ? CONTEXT_PRIORITY_TOOL_RESULT : CONTEXT_PRIORITY_REFLECTION,
-        tokenEstimate: Math.ceil(entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        tokenEstimate,
         metadata: { iterationIndex: iteration },
       });
     }
@@ -312,6 +320,7 @@ export class ReActLoopStrategy implements IExecutionStrategy {
       model: blueprint.model,
       promptBudget,
       segments,
+      provider: this.provider,
     };
 
     const { snapshot } = await budgetManager.prepare(input);

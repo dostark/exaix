@@ -36,6 +36,7 @@ export class SecurityError extends Error {
 }
 
 const VALID_TRACE_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
+const VALID_STEP_ID_RE = /^[a-zA-Z0-9_-]{1,256}$/;
 
 /**
  * Writes snapshots to Memory/Execution/{traceId}/{stepId}_snapshot.json.
@@ -49,6 +50,12 @@ export class FileSnapshotStore implements ISnapshotStore {
     if (!VALID_TRACE_ID_RE.test(snapshot.traceId)) {
       throw new SecurityError(
         `Invalid traceId: "${snapshot.traceId}" — must match /^[a-zA-Z0-9_-]{1,128}$/`,
+      );
+    }
+
+    if (!VALID_STEP_ID_RE.test(snapshot.stepId)) {
+      throw new SecurityError(
+        `Invalid stepId: "${snapshot.stepId}" — must match /^[a-zA-Z0-9_-]{1,256}$/`,
       );
     }
 

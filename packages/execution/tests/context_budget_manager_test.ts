@@ -26,6 +26,7 @@ import type { IContextSegment } from "@exaix/execution";
 import { ContextBudgetManager, NoopContextCompactor } from "@exaix/execution";
 import { castAny } from "@exaix/testing";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IModelProvider } from "@exaix/ai/types.ts";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -458,6 +459,74 @@ Deno.test("[ContextBudgetManager] request + plan_step sharing sections.plan resp
   // Combined usedInputTokens must not exceed sections.plan = 100
   assertLessOrEqual(snapshot.usedInputTokens, 100);
 });
+
+// ─── Step 8: provider wiring for async compaction (GAP-4) ────────────────────
+
+Deno.test(
+  "[ContextBudgetManager] async compaction calls compactor.summarize with real provider when provider is supplied",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    let capturedProvider: IModelProvider | undefined;
+    const trackingCompactor = {
+      summarize(seg: IContextSegment, provider: IModelProvider): Promise<IContextSegment> {
+        capturedProvider = provider;
+        return Promise.resolve({ ...seg, kind: "summary" as const, content: "summarized" });
+      },
+    };
+
+    const mockProvider = castAny<IModelProvider>({
+      generate: () => Promise.resolve({ content: "", model: "test", usage: { promptTokens: 0, completionTokens: 0 } }),
+    });
+
+    const manager = new ContextBudgetManager(undefined, castAny(trackingCompactor));
+
+    await manager.prepare({
+      traceId: "trace-provider-wiring",
+      stepId: "step-1",
+      model: "anthropic:claude-3-5-sonnet",
+      promptBudget: makePromptBudget(0),
+      segments: [
+        makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
+      ],
+      provider: mockProvider,
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    assertEquals(capturedProvider, mockProvider);
+  },
+);
+
+Deno.test(
+  "[ContextBudgetManager] async compaction is skipped when no provider is in input",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    let summarizeCalled = false;
+    const trackingCompactor = {
+      summarize(seg: IContextSegment): Promise<IContextSegment> {
+        summarizeCalled = true;
+        return Promise.resolve(seg);
+      },
+    };
+
+    const manager = new ContextBudgetManager(undefined, castAny(trackingCompactor));
+
+    await manager.prepare({
+      traceId: "trace-no-provider",
+      stepId: "step-1",
+      model: "anthropic:claude-3-5-sonnet",
+      promptBudget: makePromptBudget(0),
+      segments: [
+        makeSegment({ kind: "tool_result", priority: CONTEXT_PRIORITY_TOOL_RESULT, tokenEstimate: 50 }),
+      ],
+      // no provider field
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    assertEquals(summarizeCalled, false);
+  },
+);
 
 Deno.test("[ContextBudgetManager] tool_result + summary share sections.loopHistory counter", async () => {
   const manager: IContextBudgetManager = new ContextBudgetManager();

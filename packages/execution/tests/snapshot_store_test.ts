@@ -82,6 +82,21 @@ Deno.test("[SnapshotStore] FileSnapshotStore: rejects traceId with shell metacha
   }
 });
 
+Deno.test("[SnapshotStore] FileSnapshotStore: rejects stepId with path traversal characters", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const store = new FileSnapshotStore(makeResolver(tempDir));
+    for (const badStepId of ["../../etc", "step$1", "step;1", "step/1", "step|1", "step id"]) {
+      await assertRejects(
+        () => store.save(makeSnapshot("valid-trace", badStepId)),
+        SecurityError,
+      );
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
 Deno.test("[SnapshotStore] FileSnapshotStore: writes atomically (tmp file then rename)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

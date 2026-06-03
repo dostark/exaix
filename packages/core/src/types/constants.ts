@@ -1409,6 +1409,8 @@ export const CONTEXT_PRIORITY_SUMMARY = 20;
 /**
  * Fraction of the loopHistory section budget applied as a per-segment cap
  * for tool_result segments in dynamic (ReAct) execution mode.
+ * Used in ReActLoopStrategy.applyContextBudget() to prevent any single
+ * tool result from consuming the entire loopHistory budget.
  */
 export const REACT_TOOL_RESULT_BUDGET_RATIO = 0.6;
 

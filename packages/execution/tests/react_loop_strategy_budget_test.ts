@@ -11,12 +11,14 @@
  * ]
  */
 
-import { assertEquals, assertGreater } from "@std/assert";
+import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
 import {
   CONTEXT_BUDGET_EXCEEDED,
   LOOP_HISTORY_BUDGET_THRESHOLD,
   REACT_STATUS_COMPLETE,
   REACT_SUMMARY_PREFIX,
+  REACT_TOOL_RESULT_BUDGET_RATIO,
+  TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentFileBlueprint } from "@exaix/execution";
@@ -267,6 +269,93 @@ Deno.test(
     assertEquals(capturedPrompts.length, 1);
     // Prompt must not exceed a reasonable bound — system content only when history is compacted
     assertGreater(0, -1); // dummy assertion; main check: strategy completes without error
+  },
+);
+
+Deno.test(
+  "[ReActLoopStrategyBudget] ReActLoopStrategy: tool_result segments are capped at REACT_TOOL_RESULT_BUDGET_RATIO * loopHistory budget",
+  { sanitizeOps: false, sanitizeResources: false },
+  async () => {
+    const loopHistoryTokens = 100;
+    const loopHistoryBudget: IPromptBudget = {
+      model: TEST_MODEL,
+      totalBudgetTokens: 200_000,
+      safetyBufferTokens: 20_000,
+      sections: {
+        system: 40_000,
+        plan: 70_000,
+        portalKnowledge: 40_000,
+        memory: 20_000,
+        skills: 20_000,
+        loopHistory: loopHistoryTokens,
+      },
+    };
+    const expectedCap = Math.floor(loopHistoryTokens * REACT_TOOL_RESULT_BUDGET_RATIO);
+
+    // Big data: 3× the loopHistory budget in chars so raw tokenEstimate >> cap
+    const bigData = "Z".repeat(loopHistoryTokens * TOKEN_ESTIMATION_CHARS_PER_TOKEN * 3);
+
+    let lastInput: IContextBudgetManagerInput | undefined;
+    const capturingManager: IContextBudgetManager = {
+      prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
+        lastInput = input;
+        return Promise.resolve({
+          segments: input.segments,
+          snapshot: {
+            traceId: input.traceId,
+            stepId: input.stepId,
+            model: input.model,
+            maxContextTokens: input.promptBudget.totalBudgetTokens,
+            usedInputTokens: 0,
+            decisions: [],
+            overflowRecovered: false,
+            durationMs: 1,
+          },
+        });
+      },
+    };
+
+    // Step 1: return a tool call action; Step 2: return COMPLETE
+    let callCount = 0;
+    const twoStepProvider: IModelProvider = {
+      generate(_prompt: string) {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(
+            makeGenerateResult('```toml\n[[actions]]\ntool = "list_dir"\n```'),
+          );
+        }
+        return Promise.resolve(makeGenerateResult(`${REACT_STATUS_COMPLETE}\n${REACT_SUMMARY_PREFIX}done`));
+      },
+    } as IModelProvider;
+
+    const executor: ReActExecutor = {
+      logAgentOutput: () => Promise.resolve(),
+      validateReviewResult: (r: IChangesetResult) => r,
+      parseAgentResponse: (_r: string, ctx: IExecutionContext, t: number): IChangesetResult => ({
+        branch: "feat/test",
+        commit_sha: "0000000000000000000000000000000000000000",
+        files_changed: [],
+        description: ctx.plan,
+        tool_calls: 0,
+        execution_time_ms: Date.now() - t,
+      }),
+      logGeneration: () => Promise.resolve(),
+      toolRegistry: castAny({
+        execute: () => Promise.resolve({ success: true, data: bigData }),
+        getTools: () => [],
+      }),
+      contextBudgetManager: capturingManager,
+      currentPromptBudget: loopHistoryBudget,
+    };
+
+    const strategy = new ReActLoopStrategy(executor, twoStepProvider);
+    await strategy.execute(testBlueprint, testContext, makeOptions());
+
+    // lastInput is from the second iteration — the one with history entries
+    const toolResultSeg = lastInput?.segments.find((s) => s.kind === "tool_result");
+    if (!toolResultSeg) throw new Error("Expected tool_result segment in second iteration");
+    assertLessOrEqual(toolResultSeg.tokenEstimate, expectedCap);
   },
 );
 

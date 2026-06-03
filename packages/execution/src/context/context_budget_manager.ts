@@ -14,6 +14,7 @@
  * @related-files ["packages/execution/src/agent_runner.ts"]
  */
 
+import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import {
   ContextSegmentKindSchema,
@@ -23,6 +24,11 @@ import {
 import {
   CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
+  CONTEXT_SECTION_LOOP_HISTORY,
+  CONTEXT_SECTION_MEMORY,
+  CONTEXT_SECTION_PLAN,
+  CONTEXT_SECTION_PORTAL_KNOWLEDGE,
+  CONTEXT_SECTION_SYSTEM,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
@@ -39,6 +45,12 @@ export interface IContextBudgetManagerInput {
   promptBudget: IPromptBudget;
   /** Segments to evaluate — may be empty; prepare() never throws on missing kinds. */
   segments: IContextSegment[];
+  /**
+   * Model provider for async LLM summarization.
+   * When absent, compactor.summarize() is skipped — snapshot save and event
+   * emission still occur.
+   */
+  provider?: IModelProvider;
 }
 
 export interface IContextBudgetManagerOutput {
@@ -80,19 +92,19 @@ function sectionNameFor(kind: IContextSegment["kind"]): string {
   const k = ContextSegmentKindSchema.enum;
   switch (kind) {
     case k.system:
-      return "system";
+      return CONTEXT_SECTION_SYSTEM;
     case k.request:
     case k.acceptance_criteria:
     case k.plan_step:
-      return "plan";
+      return CONTEXT_SECTION_PLAN;
     case k.portal_knowledge:
-      return "portalKnowledge";
+      return CONTEXT_SECTION_PORTAL_KNOWLEDGE;
     case k.reflection:
-      return "memory";
+      return CONTEXT_SECTION_MEMORY;
     case k.tool_result:
     case k.summary:
     default:
-      return "loopHistory";
+      return CONTEXT_SECTION_LOOP_HISTORY;
   }
 }
 
@@ -250,15 +262,14 @@ export class ContextBudgetManager implements IContextBudgetManager {
       const compactor = this.compactor;
       const snapshotStore = this.snapshotStore;
       const logger = this.logger;
+      const provider = input.provider;
       const tokensBefore = droppedCompactable.reduce((s, seg) => s + seg.tokenEstimate, 0);
       queueMicrotask(() => {
         void (async () => {
-          for (const seg of droppedCompactable) {
-            // Summarise for next-iteration benefit; result is not used in current prompt.
-            await compactor.summarize(seg, {
-              // Noop provider placeholder — real integration wires IModelProvider in Step 3.
-              generate: () => Promise.resolve({ content: "", model: "", usage: undefined }),
-            } as never);
+          if (provider) {
+            for (const seg of droppedCompactable) {
+              await compactor.summarize(seg, provider);
+            }
           }
           await snapshotStore?.save(snapshot);
           void logger?.info(CONTEXT_BUDGET_COMPACTED_EVENT, null, {
