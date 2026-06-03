@@ -1384,6 +1384,44 @@ export const CONTEXT_SECTION_TRUNCATED = "context.section.truncated";
 /** Event name emitted when total estimated tokens exceed context window. */
 export const CONTEXT_BUDGET_EXCEEDED = "context.budget.exceeded";
 
+// ============================================================================
+// Context Budget Manager — Segment-Level Compaction (Phase 83)
+// ============================================================================
+
+/** Maximum median latency in ms for the synchronous compaction tier (no LLM calls). */
+export const CONTEXT_BUDGET_OVERHEAD_TARGET_MS = 15;
+
+/**
+ * Segment priority constants (range 0–100, higher = more protected).
+ * Tie-break rule: insertion order (FIFO).
+ * Segments with kind "system", "request", "acceptance_criteria" are always kept
+ * regardless of these values.
+ */
+export const CONTEXT_PRIORITY_SYSTEM = 100;
+export const CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA = 90;
+export const CONTEXT_PRIORITY_PLAN_STEP = 80;
+export const CONTEXT_PRIORITY_REQUEST = 75;
+export const CONTEXT_PRIORITY_PORTAL_KNOWLEDGE = 60;
+export const CONTEXT_PRIORITY_REFLECTION = 40;
+export const CONTEXT_PRIORITY_TOOL_RESULT = 30;
+export const CONTEXT_PRIORITY_SUMMARY = 20;
+
+/**
+ * Fraction of the loopHistory section budget applied as a per-segment cap
+ * for tool_result segments in dynamic (ReAct) execution mode.
+ * Used in ReActLoopStrategy.applyContextBudget() to prevent any single
+ * tool result from consuming the entire loopHistory budget.
+ */
+export const REACT_TOOL_RESULT_BUDGET_RATIO = 0.6;
+
+/** Canonical section names in IPromptBudget.sections (used for budget tracking). */
+export const CONTEXT_SECTION_SYSTEM = "system";
+export const CONTEXT_SECTION_PLAN = "plan";
+export const CONTEXT_SECTION_PORTAL_KNOWLEDGE = "portalKnowledge";
+export const CONTEXT_SECTION_MEMORY = "memory";
+export const CONTEXT_SECTION_SKILLS = "skills";
+export const CONTEXT_SECTION_LOOP_HISTORY = "loopHistory";
+
 /** Default parameters for internal report generation */
 export const REPORT_GENERATION_TEMPERATURE = 0.1;
 export const REPORT_GENERATION_MAX_TOKENS = 1000;

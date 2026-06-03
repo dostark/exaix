@@ -1,0 +1,42 @@
+schema_version: "1.0.0"
+id: "context-budget-react-overflow"
+title: "ReAct loop compacts oversized tool results via ContextBudgetManager"
+pack: "agent_flows"
+tags: ["context-budget", "react"]
+description: >-
+  Three-observation ReAct scenario where each tool result is artificially large.
+  ContextBudgetManager is configured with a tight loopHistory budget, causing
+  tool_result segments to be dropped after the first iteration. The scenario
+  asserts that context.budget.compacted is emitted in the journal, proving that
+  Phase 83 Step 3 wiring is active. Requires manual checkpoint mode because it
+  depends on a configured ContextBudgetManager injected into AgentExecutor —
+  not auto-wired in the default test runner.
+request_fixture: "fixtures/requests/agent_flows/context_budget_react_overflow.md"
+mode_support: ["manual-checkpoint"]
+portals: []
+steps:
+  - id: "inject-large-observation-1"
+    type: "shell"
+    command: "echo"
+    args:
+      - "Observation 1: large tool result (simulated). ContextBudgetManager receives this as a tool_result segment with high tokenEstimate."
+
+  - id: "inject-large-observation-2"
+    type: "shell"
+    command: "echo"
+    args:
+      - "Observation 2: large tool result (simulated). Budget pressure accumulates across iterations as history grows."
+
+  - id: "inject-large-observation-3"
+    type: "shell"
+    command: "echo"
+    args:
+      - "Observation 3: large tool result (simulated). By the third iteration the loopHistory budget is exhausted; tool_result segments are dropped and overflowRecovered is set to true."
+
+  - id: "assert-compaction-event"
+    type: "journal-assert"
+    input_criteria: []
+    output_criteria:
+      - id: "budget-compacted-event-present"
+        kind: "journal-event-exists"
+        event_type: "context.budget.compacted"

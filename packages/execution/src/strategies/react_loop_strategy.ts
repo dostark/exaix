@@ -17,8 +17,13 @@ import type { JSONValue } from "@exaix/core";
 import type { IEventBusService } from "@exaix/core/observability";
 import type { IStreamingEvent } from "@exaix/schemas/streaming_event.ts";
 import {
+  CONTEXT_BUDGET_EXCEEDED,
+  CONTEXT_PRIORITY_REFLECTION,
+  CONTEXT_PRIORITY_SYSTEM,
+  CONTEXT_PRIORITY_TOOL_RESULT,
   DEFAULT_AGENT_MAX_ITERATIONS,
   EXECUTION_HEARTBEAT_INTERVAL_MS,
+  LOOP_HISTORY_BUDGET_THRESHOLD,
   REACT_CALLING_TOOL_PREFIX,
   REACT_DEFAULT_MAX_TOKENS,
   REACT_DEFAULT_TEMPERATURE,
@@ -26,9 +31,14 @@ import {
   REACT_SUMMARY_PREFIX,
   REACT_THOUGHT_PREFIX,
   REACT_TOOL_ERROR_PREFIX,
+  REACT_TOOL_RESULT_BUDGET_RATIO,
   STREAMING_EVENT_HEARTBEAT,
   TOKEN_ESTIMATION_CHARS_PER_TOKEN,
 } from "@exaix/core";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
+import type { IContextBudgetManager, IContextBudgetManagerInput } from "../context/context_budget_manager.ts";
+import type { IContextSegment } from "../context/context_segment.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 
 interface IReActLoopExecutor {
   logAgentOutput: AgentExecutor["logAgentOutput"];
@@ -37,6 +47,12 @@ interface IReActLoopExecutor {
   toolRegistry: AgentExecutor["toolRegistry"];
   logGeneration: AgentExecutor["logGeneration"];
   eventBus?: IEventBusService;
+  /** Optional segment-level budget manager (Phase 83). */
+  contextBudgetManager?: IContextBudgetManager;
+  /** Current section-level prompt budget from PromptBudgetAllocator; may be undefined. */
+  currentPromptBudget?: IPromptBudget;
+  /** Logger for budget pressure events (Phase 83); optional for backward-compat. */
+  budgetLogger?: IEventLogger;
 }
 
 export interface IReActAction {
@@ -94,10 +110,19 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     let totalCostUsd = 0;
 
     for (let i = 0; i < this.MAX_ITERATIONS; i++) {
-      // 1. Build prompt with history
-      const prompt = this.buildPrompt(blueprint, context, options, history);
+      // 1. Apply segment-level budget compaction when manager is configured (Phase 83).
+      //    No-op when contextBudgetManager is absent — backward-compatible.
+      const budgetedHistory = await this.applyContextBudget(
+        blueprint,
+        context,
+        history,
+        i,
+      );
 
-      // 2. Generate next step with heartbeat during long LLM waits
+      // 2. Build prompt with (possibly compacted) history
+      const prompt = this.buildPrompt(blueprint, context, options, budgetedHistory);
+
+      // 3. Generate next step with heartbeat during long LLM waits
       const response = await this.withHeartbeat(context, () =>
         this.provider!.generate(prompt, {
           temperature: REACT_DEFAULT_TEMPERATURE,
@@ -239,6 +264,91 @@ export class ReActLoopStrategy implements IExecutionStrategy {
     }
   }
 
+  /**
+   * Applies IContextBudgetManager to the current iteration's history.
+   * Returns filtered history when the manager is configured, or the
+   * original history unchanged when it is absent (backward-compatible).
+   */
+  private async applyContextBudget(
+    blueprint: IAgentFileBlueprint,
+    context: IExecutionContext,
+    history: Array<{ role: ReActRole; content: string }>,
+    iteration: number,
+  ): Promise<Array<{ role: ReActRole; content: string }>> {
+    const budgetManager = this.executor.contextBudgetManager;
+    const promptBudget = this.executor.currentPromptBudget;
+    if (!budgetManager || !promptBudget) return history;
+
+    const segments: IContextSegment[] = [];
+
+    // Per-segment cap for tool_result kind in dynamic mode (GAP-5).
+    const toolResultCap = Math.floor(promptBudget.sections.loopHistory * REACT_TOOL_RESULT_BUDGET_RATIO);
+
+    // System prompt — always protected
+    if (blueprint.systemPrompt) {
+      segments.push({
+        segmentId: `system-${context.trace_id}`,
+        kind: "system",
+        content: blueprint.systemPrompt,
+        priority: CONTEXT_PRIORITY_SYSTEM,
+        tokenEstimate: Math.ceil(blueprint.systemPrompt.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN),
+        metadata: {},
+      });
+    }
+
+    // History entries: results → tool_result, thoughts/actions → reflection
+    for (let idx = 0; idx < history.length; idx++) {
+      const entry = history[idx];
+      const kind = entry.role === ReActRole.RESULT ? "tool_result" as const : "reflection" as const;
+      let tokenEstimate = Math.ceil(entry.content.length / TOKEN_ESTIMATION_CHARS_PER_TOKEN);
+      if (kind === "tool_result" && toolResultCap > 0) {
+        tokenEstimate = Math.min(tokenEstimate, toolResultCap);
+      }
+      segments.push({
+        segmentId: `hist-${idx}-${context.trace_id}`,
+        kind,
+        content: entry.content,
+        priority: kind === "tool_result" ? CONTEXT_PRIORITY_TOOL_RESULT : CONTEXT_PRIORITY_REFLECTION,
+        tokenEstimate,
+        metadata: { iterationIndex: iteration },
+      });
+    }
+
+    const input: IContextBudgetManagerInput = {
+      traceId: context.trace_id,
+      stepId: `react-iter-${iteration}`,
+      model: blueprint.model,
+      promptBudget,
+      segments,
+      provider: this.provider,
+    };
+
+    const { snapshot } = await budgetManager.prepare(input);
+
+    // Emit budget pressure journal event if utilisation exceeds the threshold
+    if (
+      snapshot.maxContextTokens > 0 &&
+      snapshot.usedInputTokens / snapshot.maxContextTokens >= LOOP_HISTORY_BUDGET_THRESHOLD
+    ) {
+      void this.executor.budgetLogger?.info(CONTEXT_BUDGET_EXCEEDED, context.trace_id, {
+        model: blueprint.model as string,
+        contextWindow: snapshot.maxContextTokens as number,
+        estimatedTokens: snapshot.usedInputTokens as number,
+        tokenSource: "heuristic" as string,
+      });
+    }
+
+    // Rebuild history from kept history segments (system segment is not in history)
+    const keptHistoryIds = new Set(
+      snapshot.decisions
+        .filter((d) => d.action === "keep" || d.action === "trim")
+        .map((d) => d.segmentId)
+        .filter((id) => id.startsWith("hist-")),
+    );
+
+    return history.filter((_, idx) => keptHistoryIds.has(`hist-${idx}-${context.trace_id}`));
+  }
+
   private buildPrompt(
     blueprint: IAgentFileBlueprint,
     context: IExecutionContext,
@@ -313,9 +423,7 @@ ${REACT_SUMMARY_PREFIX}[What was done]
   }
 
   private getLoopHistoryCharBudget(): number | undefined {
-    const promptBudget = Reflect.get(this.executor, "currentPromptBudget") as {
-      sections?: { loopHistory?: number };
-    } | undefined;
+    const promptBudget = this.executor.currentPromptBudget;
     const loopHistoryTokens = promptBudget?.sections?.loopHistory;
 
     if (!loopHistoryTokens || loopHistoryTokens <= 0) {

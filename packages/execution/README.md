@@ -87,6 +87,83 @@ sequenceDiagram
 
 Tool result payloads are validated before crossing runtime boundaries. Read-only tools may use `normalize_then_validate`, `retry_once`, or `retry_with_backoff` when the manifest declares remediation is safe. `fail_closed` is the default terminal behavior. Mutating tools remain fail-closed even when validation fails after execution.
 
+## Context Budget Manager
+
+`packages/execution/src/context/` provides a segment-level compaction layer (Phase 83) that runs inside the ReAct loop before each LLM call.
+
+### Phase 62 vs Phase 83 Responsibility Split
+
+| Concern     | Phase 62 — `PromptBudgetAllocator`    | Phase 83 — `ContextBudgetManager`                       |
+| ----------- | ------------------------------------- | ------------------------------------------------------- |
+| Scope       | Section-level token allocation        | Segment-level compaction decisions                      |
+| Input       | `modelId`, request-analysis hints     | `IPromptBudget` + `IContextSegment[]`                   |
+| Output      | `IPromptBudget` with 6 section limits | Filtered `IContextSegment[]` + `IContextBudgetSnapshot` |
+| LLM calls   | None                                  | Optional async-tier only                                |
+| Audit trail | `CONTEXT_BUDGET_*` events only        | Events + persisted `IContextBudgetSnapshot`             |
+
+### Segment Kinds and Default Priorities
+
+| Kind                    | `CONTEXT_PRIORITY_*`   | Compactable?           |
+| ----------------------- | ---------------------- | ---------------------- |
+| `"system"`              | 100 — always protected | Never dropped          |
+| `"acceptance_criteria"` | 90 — always protected  | Never dropped          |
+| `"plan_step"`           | 80                     | Trim only              |
+| `"request"`             | 75 — always protected  | Never dropped          |
+| `"portal_knowledge"`    | 60                     | Trim / async summarize |
+| `"reflection"`          | 40                     | Trim / async summarize |
+| `"tool_result"`         | 30                     | Trim / async summarize |
+| `"summary"`             | 20                     | Trim                   |
+
+Priority range is 0–100 (higher = more protected). Within a section, segments are greedy-kept
+in priority-descending order until the section's token budget is exhausted. Tie-break is
+insertion order (FIFO).
+
+### Two-Tier Compaction Model
+
+- **Synchronous tier** (≤ `CONTEXT_BUDGET_OVERHEAD_TARGET_MS = 15` ms): keep / trim / drop
+  decisions made without any LLM calls. All prompt assembly uses synchronously compacted content.
+- **Asynchronous tier** (best-effort, non-blocking): when `IContextCompactor` is configured,
+  dropped segments of compactable kinds are scheduled for LLM summarization via `queueMicrotask`
+  for next-iteration benefit. The current prompt is not affected. Supply
+  `provider: yourModelProvider` in `IContextBudgetManagerInput` to enable actual LLM
+  summarisation; when `provider` is absent the async block still fires (snapshot save and
+  `CONTEXT_BUDGET_COMPACTED_EVENT` emission still occur) but `compactor.summarize()` is
+  skipped.
+
+### Protected Segments
+
+A segment is always kept when:
+
+- `kind` is `"system"`, `"request"`, or `"acceptance_criteria"`, **or**
+- `metadata.nonCompactable === true` (use for tool results that must survive compaction, e.g. security audit outputs), **or**
+- `priority >= CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA` (90).
+
+### Snapshot Security
+
+`FileSnapshotStore` validates both `traceId` (against `/^[a-zA-Z0-9_-]{1,128}$/`) and
+`stepId` (against `/^[a-zA-Z0-9_-]{1,256}$/`) before constructing the filesystem path.
+A `SecurityError` is thrown on failure. `PathResolver` provides workspace root confinement
+as a second-layer defence.
+
+### Known Limitations
+
+`AgentRunner.constructPrompt()` passes an uncapped `IPromptBudget` stub (all section budgets
+set to `Number.MAX_SAFE_INTEGER`) when calling `ContextBudgetManager.prepare()`. Budget
+manager invocations from `AgentRunner` therefore apply segment-priority ordering but impose
+no section token limits. Callers that require real section caps should supply a
+pre-computed `IPromptBudget` from `PromptBudgetAllocator.allocate()` via a wrapper, or use
+the `ReActLoopStrategy` path which reads `AgentExecutor.currentPromptBudget` directly.
+
+### Key Files
+
+| File                                        | Purpose                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `src/context/context_segment.ts`            | `IContextSegment`, `IContextSegmentMetadata`                       |
+| `src/context/context_budget_manager.ts`     | `IContextBudgetManager`, `ContextBudgetManager`                    |
+| `src/context/context_compactor.ts`          | `IContextCompactor`, `LlmContextCompactor`, `NoopContextCompactor` |
+| `src/context/snapshot_store.ts`             | `ISnapshotStore`, `FileSnapshotStore`, `SecurityError`             |
+| `src/context/context_budget_event_types.ts` | `IContextBudgetEventPayloadMap`                                    |
+
 ## See Also
 
 - [@exaix/mcp](../../packages/mcp/) — MCP tool handlers and manifest

@@ -31,17 +31,17 @@ Key points
 Canonical prompt (short):
 "Continue with implementation of next steps one-by-one in TDD red-green-refactor
 manner. For each completed step mark implemented success criteria and tests, run
-deno check, deno lint and other fast CI check scripts. Make occasional commits
-with nice detailed messages describing rationale and what was changed/added."
+deno check, deno lint and other fast CI check scripts. Make one commit per completed step
+with a detailed message describing rationale and what was changed/added."
 
 Workflow per step
 ─────────────────
 Validation policy
-   0. Default to file-scoped validation. Prefer `deno test --allow-all <test-file>` or a small set of touched test files.
-   0. Do not usually run full-suite commands such as `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a normal one-step cycle.
-   0. Use full-suite test commands only in exclusive cases:
+   0a. Default to file-scoped validation. Prefer `deno test --allow-all <test-file>` or a small set of touched test files.
+   0b. Do not usually run full-suite commands such as `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a normal one-step cycle.
+   0c. Use full-suite test commands only in exclusive cases:
        - the change is massive or cross-cutting
-       - the blast radius spans multiple subsystems or shared runtime foundations
+       - the change modifies files imported by more than 3 unrelated packages, or modifies shared utilities/base classes used across subsystems (e.g. files under packages/core/src/runtime/)
        - the user explicitly requests a full run
        - a planning document explicitly requires repository-wide validation and the step is broad enough to justify it
 
@@ -50,6 +50,9 @@ RED phase
      and "Planned tests" from the .copilot/planning/ doc. Briefly confirm what will be
      built (e.g. "Implementing Step 3.2: Add user authentication validation").
   2. Create the test file at the mirrored path under tests/.
+     If the step has no Planned tests, note this explicitly, skip the RED/GREEN test-file creation,
+     and proceed directly to implementing the source file followed by REFACTOR/CI gates.
+     Document the absence of tests in the commit body.
   3. Add a module-header JSDoc block (required by check:arch):
        /** @module XxxTest @path tests/... @description ... */
   4. Write all planned tests — they must import the not-yet-existing source file
@@ -73,7 +76,7 @@ REFACTOR + CI gates
      (use #refactor-check-magic if the count is non-trivial)
  15. (optional) deno task check:complexity  if implementation is non-trivial
      (complexity threshold: 15 — refactor any function breaching it)
- 16. (exception only) run a full-suite command only when the validation policy above says it is warranted
+ 16. (exception only) See Validation policy above for when a full-suite command is warranted.
 
 Planning doc update
  17. In the step's "Success criteria" block change `- [ ]` → `- [x]` for each
@@ -103,7 +106,7 @@ Do / Don't
 - ✅ Do write the test file BEFORE the source file (RED must come first)
 - ✅ Do add module-header JSDoc to every new file (src and test)
 - ✅ Do run deno fmt before git add (avoid fmt pre-hook failures)
-- ✅ Do mark planning doc checkboxes and add ✅ IMPLEMENTED after commit
+- ✅ Do mark planning doc checkboxes and add ✅ IMPLEMENTED before commit (include in the step's staged files)
 - ✅ Do use IFoo interface naming (not Foo) — enforced by check:style
 - ✅ Do use ICodeConvention["confidence"] instead of "low"|"medium"|"high" literal union
 - ✅ Do keep test execution proportional to scope; prefer focused tests for a single-step cycle
@@ -111,9 +114,10 @@ Do / Don't
 - ❌ Don't implement source code before writing the failing test
 - ❌ Don't batch multiple steps into one commit
 - ❌ Don't proceed to the next step if any CI gate fails
+- ✅ If a CI gate failure cannot be resolved within the current step's file scope (e.g. check:arch failure in an unrelated file), document the blocker in a comment, pause execution, and surface the specific failing command output and file to the user for a decision before proceeding.
 - ❌ Don't use Record<string, unknown> — define a specific interface instead
 - ❌ Don't commit without running deno fmt first
-- ❌ Don't usually run `deno task test`, `deno task test_parallel`, `deno test -A`, or unscoped `deno test --allow-all` for a narrow step
+- ❌ Don't run full-suite commands for a narrow step — see Validation policy above
 
 Related skills
 - #plan              — Create or extend a .copilot/planning/ document (precedes this skill)

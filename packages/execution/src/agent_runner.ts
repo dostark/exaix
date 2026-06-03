@@ -20,6 +20,10 @@ import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
+import type { IContextSegment } from "./context/context_segment.ts";
+import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
+import type { IPromptBudget } from "@exaix/schemas/prompt_budget.ts";
 import { createLLMRetryPolicy, createRetryPolicy } from "@exaix/core/request";
 import { createOutputValidator, type IOutputValidator, type IValidationMetrics } from "@exaix/tool-runtime";
 import { extractKeywords } from "@exaix/core/func";
@@ -145,6 +149,10 @@ export interface IAgentRunnerConfig {
 
   /** Optional: Application context for service resolution */
   context?: IApplicationContext;
+
+  /** Optional: Segment-level context budget manager (Phase 83). When present, called in
+   * constructPrompt() after all prompt parts are collected, before joining. */
+  contextBudgetManager?: IContextBudgetManager;
 }
 
 /**
@@ -265,7 +273,7 @@ export class AgentRunner implements IAgentRunner {
 
     // Step 1: Construct the combined prompt (with skill context) (Phase 70)
     const skillContextString = renderSkillsSection(skillsContext);
-    const combinedPrompt = this.constructPrompt(blueprint, request, skillContextString);
+    const combinedPrompt = await this.constructPrompt(blueprint, request, skillContextString);
 
     // Phase 70: Log prompt assembled event for observability
     this.logActivity(
@@ -590,47 +598,75 @@ export class AgentRunner implements IAgentRunner {
    * @param skillContext - Optional skill context to inject (Phase 17)
    * @returns Combined prompt string
    */
-  private constructPrompt(
+  private async constructPrompt(
     blueprint: IBlueprint,
     request: IParsedRequest,
     skillContext?: string,
-  ): string {
-    // Combination: system prompt first, then skill context, then user prompt
-    // Separated by double newlines for clarity
-    const parts: string[] = [];
+  ): Promise<string> {
+    const k = ContextSegmentKindSchema.enum;
+    type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
+    const entries: SegmentEntry[] = [];
 
     if (blueprint.systemPrompt.trim()) {
-      parts.push(blueprint.systemPrompt);
+      entries.push({ content: blueprint.systemPrompt, kind: k.system, priority: 100, nonCompactable: true });
     }
-
-    // Inject skill context after system prompt (Phase 17)
     if (skillContext?.trim()) {
-      parts.push(skillContext);
+      entries.push({ content: skillContext, kind: k.request, priority: 50, nonCompactable: false });
     }
-
-    // Inject strict JSON schema instructions for all plans
-    parts.push(this.planAdapter.getSchemaInstructions());
+    const schemaInstructions = this.planAdapter.getSchemaInstructions();
+    entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
 
     const portalContext = request.context?.[PORTAL_CONTEXT_KEY];
     if (typeof portalContext === "string" && portalContext.trim()) {
-      parts.push(portalContext);
+      entries.push({ content: portalContext, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
     }
-
     const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
     if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
-      parts.push(portalKnowledge);
+      entries.push({ content: portalKnowledge, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
     }
-
     const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
     if (typeof memoryContext === "string" && memoryContext.trim()) {
-      parts.push(memoryContext);
+      entries.push({ content: memoryContext, kind: k.reflection, priority: 40, nonCompactable: false });
     }
-
     if (request.userPrompt.trim()) {
-      parts.push(request.userPrompt);
+      entries.push({ content: request.userPrompt, kind: k.request, priority: 75, nonCompactable: true });
     }
 
-    return parts.join("\n\n");
+    const manager = this.config?.contextBudgetManager;
+    if (!manager) return entries.map((e) => e.content).join("\n\n");
+
+    const segments: IContextSegment[] = entries.map((e, i) => ({
+      segmentId: `prompt-part-${i}`,
+      content: e.content,
+      kind: e.kind,
+      priority: e.priority,
+      tokenEstimate: Math.ceil(e.content.length / 4),
+      metadata: { nonCompactable: e.nonCompactable },
+    }));
+
+    const budget: IPromptBudget = {
+      model: "default",
+      totalBudgetTokens: Number.MAX_SAFE_INTEGER,
+      safetyBufferTokens: 0,
+      sections: {
+        system: Number.MAX_SAFE_INTEGER,
+        plan: Number.MAX_SAFE_INTEGER,
+        portalKnowledge: Number.MAX_SAFE_INTEGER,
+        memory: Number.MAX_SAFE_INTEGER,
+        skills: Number.MAX_SAFE_INTEGER,
+        loopHistory: Number.MAX_SAFE_INTEGER,
+      },
+    };
+
+    const { segments: filtered } = await manager.prepare({
+      traceId: request.traceId ?? "unknown",
+      stepId: "agent-runner",
+      model: "default",
+      promptBudget: budget,
+      segments,
+    });
+
+    return filtered.map((s) => s.content).join("\n\n");
   }
 
   /**
