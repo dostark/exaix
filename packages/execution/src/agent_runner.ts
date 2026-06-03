@@ -598,52 +598,50 @@ export class AgentRunner implements IAgentRunner {
    * @param skillContext - Optional skill context to inject (Phase 17)
    * @returns Combined prompt string
    */
-  private determineSegmentKind(
-    content: string,
-    index: number,
-    portalContext: string | undefined,
-    portalKnowledge: string | undefined,
-    memoryContext: string | undefined,
-  ): IContextSegment["kind"] {
-    const k = ContextSegmentKindSchema.enum;
-    if (index === 0) return k.system;
-    if (content === this.planAdapter.getSchemaInstructions()) return k.acceptance_criteria;
-    if (content === portalContext || content === portalKnowledge) return k.portal_knowledge;
-    if (content === memoryContext) return k.reflection;
-    return k.request;
-  }
-
   private async constructPrompt(
     blueprint: IBlueprint,
     request: IParsedRequest,
     skillContext?: string,
   ): Promise<string> {
-    const parts: string[] = [];
-    if (blueprint.systemPrompt.trim()) parts.push(blueprint.systemPrompt);
-    if (skillContext?.trim()) parts.push(skillContext);
-    parts.push(this.planAdapter.getSchemaInstructions());
+    const k = ContextSegmentKindSchema.enum;
+    type SegmentEntry = { content: string; kind: IContextSegment["kind"]; priority: number; nonCompactable: boolean };
+    const entries: SegmentEntry[] = [];
+
+    if (blueprint.systemPrompt.trim()) {
+      entries.push({ content: blueprint.systemPrompt, kind: k.system, priority: 100, nonCompactable: true });
+    }
+    if (skillContext?.trim()) {
+      entries.push({ content: skillContext, kind: k.request, priority: 50, nonCompactable: false });
+    }
+    const schemaInstructions = this.planAdapter.getSchemaInstructions();
+    entries.push({ content: schemaInstructions, kind: k.acceptance_criteria, priority: 90, nonCompactable: true });
 
     const portalContext = request.context?.[PORTAL_CONTEXT_KEY];
-    if (typeof portalContext === "string" && portalContext.trim()) parts.push(portalContext);
-
+    if (typeof portalContext === "string" && portalContext.trim()) {
+      entries.push({ content: portalContext, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
+    }
     const portalKnowledge = request.context?.[PORTAL_KNOWLEDGE_KEY];
-    if (typeof portalKnowledge === "string" && portalKnowledge.trim()) parts.push(portalKnowledge);
-
+    if (typeof portalKnowledge === "string" && portalKnowledge.trim()) {
+      entries.push({ content: portalKnowledge, kind: k.portal_knowledge, priority: 60, nonCompactable: false });
+    }
     const memoryContext = request.context?.[MEMORY_CONTEXT_KEY];
-    if (typeof memoryContext === "string" && memoryContext.trim()) parts.push(memoryContext);
-
-    if (request.userPrompt.trim()) parts.push(request.userPrompt);
+    if (typeof memoryContext === "string" && memoryContext.trim()) {
+      entries.push({ content: memoryContext, kind: k.reflection, priority: 40, nonCompactable: false });
+    }
+    if (request.userPrompt.trim()) {
+      entries.push({ content: request.userPrompt, kind: k.request, priority: 75, nonCompactable: true });
+    }
 
     const manager = this.config?.contextBudgetManager;
-    if (!manager) return parts.join("\n\n");
+    if (!manager) return entries.map((e) => e.content).join("\n\n");
 
-    const segments: IContextSegment[] = parts.map((content, i) => ({
+    const segments: IContextSegment[] = entries.map((e, i) => ({
       segmentId: `prompt-part-${i}`,
-      content,
-      kind: this.determineSegmentKind(content, i, portalContext, portalKnowledge, memoryContext),
-      priority: i === 0 ? 100 : i === parts.length - 1 ? 75 : 50,
-      tokenEstimate: Math.ceil(content.length / 4),
-      metadata: { nonCompactable: i === 0 },
+      content: e.content,
+      kind: e.kind,
+      priority: e.priority,
+      tokenEstimate: Math.ceil(e.content.length / 4),
+      metadata: { nonCompactable: e.nonCompactable },
     }));
 
     const budget: IPromptBudget = {

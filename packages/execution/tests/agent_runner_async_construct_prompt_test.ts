@@ -1,10 +1,10 @@
 /**
  * @module AgentRunnerAsyncConstructPromptTest
  * @path packages/execution/tests/agent_runner_async_construct_prompt_test.ts
- * @description Integration test verifying Step 7: AgentRunner.constructPrompt()
- * is now async and integrates with contextBudgetManager.prepare() when configured.
- * Tests the backward-compatible behavior (when no budget manager is configured,
- * the prompt is returned unchanged).
+ * @description Tests for Step 7: AgentRunner.constructPrompt() budget integration.
+ * Verifies that prepare() is called when contextBudgetManager is configured, that
+ * segment kinds are assigned correctly by source (not by index), and that the
+ * prompt is returned unchanged when no manager is configured.
  * @architectural-layer Tests
  * @related-files [
  *   "packages/execution/src/agent_runner.ts",
@@ -12,38 +12,202 @@
  * ]
  */
 
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
+import { MockProvider } from "@exaix/ai/providers.ts";
+import { AgentRunner, type IBlueprint, type IContextBudgetManagerInput, type IParsedRequest } from "@exaix/execution";
+import { MEMORY_CONTEXT_KEY, PORTAL_KNOWLEDGE_KEY } from "@exaix/core";
+import type { IContextBudgetManager, IContextBudgetManagerOutput } from "@exaix/execution";
 
-// ─── Test Verification ────────────────────────────────────────────────────────
-//
-// This test file documents the Step 7 implementation:
-//
-// ✅ constructPrompt() is now private async (was: private ... string)
-// ✅ Call site in run() uses await (was: const combinedPrompt = this.constructPrompt(...))
-// ✅ Budget integration logic added after parts collection, before join
-// ✅ Segments are built with appropriate kinds (system, request, portal_knowledge, reflection, acceptance_criteria)
-// ✅ Budget manager is called with full IPromptBudget and segments
-// ✅ Filtered segments are joined to return final prompt
-// ✅ Backward-compatible: when no budget manager, prompt is returned unchanged
-//
-// Implementation details verified:
-// - manager = this.config?.contextBudgetManager (optional)
-// - if (manager) then call prepare() with segments
-// - Segments map each prompt part to appropriate kind and priority
-// - Protected segments: system (priority 100), user prompt (priority 75, nonCompactable for system)
-// - Budget is uncapped (Number.MAX_SAFE_INTEGER) at AgentRunner level
-// - Returns filtered.map((s) => s.content).join("\n\n")
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-Deno.test("[AgentRunner] constructPrompt is now async and integrates budget manager (Step 7)", () => {
-  // This test documents that the implementation is complete.
-  // Detailed functional testing would require full AgentRunner instantiation
-  // with mocked IModelProvider, ISkillsService, etc., which is better suited
-  // to integration tests in execution_loop_test.ts or similar.
-  //
-  // Quick verification that async signature is correct:
-  // - constructPrompt return type: Promise<string>
-  // - Call site in run(): const combinedPrompt = await this.constructPrompt(...)
-  // - Budget integration: manager?.prepare() called with full context
+const WELL_FORMED_RESPONSE = "<thought>ok</thought><content>done</content>";
 
-  assertEquals(true, true);
+function makeBlueprint(systemPrompt = "You are a test agent."): IBlueprint {
+  return { systemPrompt };
+}
+
+function makeRequest(overrides: Partial<IParsedRequest> = {}): IParsedRequest {
+  return { userPrompt: "User question here.", context: {}, ...overrides };
+}
+
+function makeCapturingManager(): { manager: IContextBudgetManager; captured: IContextBudgetManagerInput[] } {
+  const captured: IContextBudgetManagerInput[] = [];
+  const manager: IContextBudgetManager = {
+    prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
+      captured.push(input);
+      return Promise.resolve({
+        segments: input.segments,
+        snapshot: {
+          stepId: input.stepId,
+          traceId: input.traceId,
+          model: input.model,
+          decisions: input.segments.map((s) => ({
+            segmentId: s.segmentId,
+            kind: s.kind,
+            action: "keep" as const,
+            originalTokens: s.tokenEstimate,
+            resultingTokens: s.tokenEstimate,
+            reason: "pass-through",
+            createdAt: new Date().toISOString(),
+          })),
+          usedInputTokens: input.segments.reduce((sum, s) => sum + s.tokenEstimate, 0),
+          usedOutputTokens: 0,
+          maxContextTokens: 0,
+          overflowRecovered: false,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    },
+  };
+  return { manager, captured };
+}
+
+function makeDropFirstManager(): IContextBudgetManager {
+  return {
+    prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
+      const [_dropped, ...rest] = input.segments;
+      return Promise.resolve({
+        segments: rest,
+        snapshot: {
+          stepId: input.stepId,
+          traceId: input.traceId,
+          model: input.model,
+          decisions: [],
+          usedInputTokens: 0,
+          usedOutputTokens: 0,
+          maxContextTokens: 0,
+          overflowRecovered: false,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    },
+  };
+}
+
+// ─── Tests ────────────────────────────────────────────────────────────────────
+
+Deno.test("[AgentRunner] constructPrompt calls contextBudgetManager.prepare() when configured", async () => {
+  const { manager, captured } = makeCapturingManager();
+
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  await runner.run(makeBlueprint(), makeRequest());
+
+  assertEquals(captured.length, 1);
+  assertEquals(captured[0].stepId, "agent-runner");
+});
+
+Deno.test("[AgentRunner] constructPrompt does NOT call prepare() when no manager configured", async () => {
+  const { manager, captured } = makeCapturingManager();
+
+  // Pass manager-less config
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    {}, // no contextBudgetManager
+  );
+
+  await runner.run(makeBlueprint(), makeRequest());
+
+  assertEquals(captured.length, 0);
+  // Suppress unused variable — manager only used to check it was never called
+  assertEquals(typeof manager.prepare, "function");
+});
+
+Deno.test("[AgentRunner] system prompt segment gets kind=system", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  await runner.run(makeBlueprint("SYSTEM_TEXT"), makeRequest());
+
+  const systemSeg = captured[0].segments.find((s) => s.content === "SYSTEM_TEXT");
+  assertEquals(systemSeg?.kind, "system");
+});
+
+Deno.test("[AgentRunner] user prompt segment gets kind=request with priority 75", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  await runner.run(makeBlueprint(), makeRequest({ userPrompt: "USER_PROMPT_TEXT" }));
+
+  const userSeg = captured[0].segments.find((s) => s.content === "USER_PROMPT_TEXT");
+  assertEquals(userSeg?.kind, "request");
+  assertEquals(userSeg?.priority, 75);
+});
+
+Deno.test("[AgentRunner] portal knowledge segment gets kind=portal_knowledge", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  await runner.run(
+    makeBlueprint(),
+    makeRequest({ context: { [PORTAL_KNOWLEDGE_KEY]: "PORTAL_KNOWLEDGE_TEXT" } }),
+  );
+
+  const pkSeg = captured[0].segments.find((s) => s.content === "PORTAL_KNOWLEDGE_TEXT");
+  assertEquals(pkSeg?.kind, "portal_knowledge");
+});
+
+Deno.test("[AgentRunner] memory context segment gets kind=reflection", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  await runner.run(
+    makeBlueprint(),
+    makeRequest({ context: { [MEMORY_CONTEXT_KEY]: "MEMORY_TEXT" } }),
+  );
+
+  const memSeg = captured[0].segments.find((s) => s.content === "MEMORY_TEXT");
+  assertEquals(memSeg?.kind, "reflection");
+});
+
+Deno.test("[AgentRunner] system prompt kind=system even when it is not at index 0 (empty system prompt)", async () => {
+  const { manager, captured } = makeCapturingManager();
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: manager },
+  );
+
+  // Blueprint with empty systemPrompt — it should NOT be pushed; no segment should get kind=system
+  await runner.run(makeBlueprint(""), makeRequest());
+
+  const systemSegs = captured[0].segments.filter((s) => s.kind === "system");
+  assertEquals(systemSegs.length, 0, "No system segment when systemPrompt is empty");
+});
+
+Deno.test("[AgentRunner] filtered segments produce shorter prompt when manager drops a segment", async () => {
+  // Manager drops the first segment (system prompt)
+  const runner = new AgentRunner(
+    new MockProvider(WELL_FORMED_RESPONSE),
+    { contextBudgetManager: makeDropFirstManager() },
+  );
+
+  let capturedPrompt = "";
+  const origGenerate = runner["modelProvider"].generate.bind(runner["modelProvider"]);
+  runner["modelProvider"].generate = (prompt: string) => {
+    capturedPrompt = prompt;
+    return origGenerate(prompt);
+  };
+
+  const blueprint = makeBlueprint("SYSTEM_SECTION");
+  await runner.run(blueprint, makeRequest({ userPrompt: "USER_SECTION" }));
+
+  // System prompt was dropped by the manager — should not appear in the generated prompt
+  assertEquals(capturedPrompt.includes("SYSTEM_SECTION"), false);
+  // User prompt was kept — should appear
+  assertStringIncludes(capturedPrompt, "USER_SECTION");
 });
