@@ -35,6 +35,7 @@ import { createConfigReloadHandler } from "@exaix/core/config";
 import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
+import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
 import type { ILogOutput } from "@exaix/core/types";
 import { type LogMetadata, toSafeJson } from "@exaix/core/types";
@@ -233,6 +234,9 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
+    // Initialize wait state storage path for clarification lifecycle
+    const waitStatesRoot = join(config.system.root, config.paths.workspace, config.paths.waitStates ?? "WaitStates");
+
     // Initialize Request Processor
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
@@ -241,6 +245,28 @@ if (import.meta.main) {
       includeReasoning: true,
       context, // Support unified DI
       sessionMemory,
+      onClarificationCreated: async (traceId: string, _requestId: string) => {
+        const waitStateId = crypto.randomUUID();
+        const resumeToken = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const waitDir = join(waitStatesRoot, traceId);
+        await ensureDir(waitDir);
+        const waitState = WaitStateSchema.parse({
+          waitStateId,
+          traceId,
+          kind: "clarification",
+          status: "pending",
+          artifactPath: `Workspace/WaitStates/${traceId}/${waitStateId}.json`,
+          resumeToken,
+          createdAt: now,
+          updatedAt: now,
+          metadata: {},
+        });
+        await Deno.writeTextFile(
+          join(waitDir, `${waitStateId}.json`),
+          JSON.stringify(waitState, null, 2),
+        );
+      },
     });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {

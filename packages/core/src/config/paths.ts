@@ -21,6 +21,7 @@ export interface IExaPaths {
   rejected: string;
   identities: string;
   flows: string;
+  waitStates: string;
   memoryProjects: string;
   memoryExecution: string;
   memoryIndex: string;
@@ -44,6 +45,7 @@ export function getDefaultPaths(_root: string): IExaPaths {
     rejected: DEFAULTS.DEFAULT_REJECTED_PATH,
     identities: DEFAULTS.DEFAULT_IDENTITIES_PATH,
     flows: DEFAULTS.DEFAULT_FLOWS_PATH,
+    waitStates: DEFAULTS.DEFAULT_WAIT_STATES_PATH,
     memoryProjects: DEFAULTS.DEFAULT_PROJECTS_MEMORY_PATH,
     memoryExecution: DEFAULTS.DEFAULT_EXECUTION_MEMORY_PATH,
     memoryIndex: DEFAULTS.DEFAULT_INDEX_MEMORY_PATH,

@@ -206,7 +206,9 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
     "RequestRouter selects Agent or Flow runner",
     "Agent/Flow Runner generates Plan via AI Provider",
     "PlanAdapter materializes Plan to Workspace/Plans",
-    "Activity Journal records lifecycle events"
+    "FlowRunner pauses on failing quality gates, creating durable wait states for operator resolution",
+    "Operator approves, rejects, or amends wait states via `exactl wait` CLI commands",
+    "Activity Journal records lifecycle events (including wait-state events)"
   ]
 } -->
 
@@ -219,6 +221,8 @@ For frontmatter YAML examples, request type samples, flow validation rules, rout
 ## Request Quality Gate
 
 The **Request Quality Gate** is a pre-execution filter that assesses every incoming request body before routing. It prevents vague or unactionable requests from consuming LLM budget and provides an iterative Q&A loop to improve request quality.
+
+When a quality gate step fails during flow execution and a `waitStateService` is configured, the `FlowRunner` creates a **durable wait state** that pauses the flow until an operator resolves it via `exactl wait approve|reject|amend`. This replaces the previous feedback-loop retry model with an explicit asynchronous approval workflow.
 
 The gate produces one of four recommendations: **PROCEED**, **AUTO_ENRICH**, **NEEDS_CLARIFICATION**, or **REJECT** — each with configurable score thresholds. Assessment runs in `heuristic`, `llm`, or `hybrid` mode.
 
@@ -264,8 +268,8 @@ For the step table, sequence diagram, component hierarchy, MCP server implementa
 
 ---
 
-For flow namespace coordination, error recovery, parallel execution groups, and step
-durability, see `packages/flow/README.md`.
+For flow namespace coordination, error recovery, parallel execution groups, step
+durability, and wait states, see `packages/flow/README.md`.
 
 ---
 

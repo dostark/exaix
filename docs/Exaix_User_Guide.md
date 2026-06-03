@@ -1718,6 +1718,47 @@ $ exactl daemon logs --follow
 ...
 ```
 
+#### **Wait Commands** - Resolve durable wait states
+
+When a flow execution reaches a quality gate that fails below the configured
+threshold, the `FlowRunner` creates a **durable wait state** that pauses the
+flow until an operator resolves it. Use `exactl wait` commands to list and
+resolve these pending decisions.
+
+```bash
+# List all pending wait states
+exactl wait list
+
+# Filter by status
+exactl wait list --status pending
+
+# Approve a wait state (flow resumes from last checkpoint)
+exactl wait approve <resume-token> -m "Approved after review"
+
+# Reject a wait state
+exactl wait reject <resume-token> -m "Does not meet criteria"
+
+# Amend a wait state — marks original as amended and creates a successor
+exactl wait amend <resume-token> -m "Please revise approach"
+
+# Expire a wait state (bypasses deadline)
+exactl wait expire <resume-token> -m "Timed out"
+```
+
+**Wait state lifecycle:**
+
+| Command   | Resulting status | Flow behavior                                      |
+| --------- | ---------------- | -------------------------------------------------- |
+| `approve` | `fulfilled`      | Resumes flow execution from the last checkpoint    |
+| `reject`  | `rejected`       | Flow halts — gate decision stands as rejected      |
+| `amend`   | `amended`        | Original wait is replaced by a successor amendment |
+| `expire`  | `expired`        | Wait is closed without resumption                  |
+
+Wait states are persisted as JSON files at `{workspace}/WaitStates/{traceId}/{waitStateId}.json`
+and can be inspected manually if needed.
+
+---
+
 ### 4.3 Quick Reference
 
 **Most Common Operations:**

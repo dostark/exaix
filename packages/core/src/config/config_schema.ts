@@ -255,6 +255,7 @@ export const ConfigSchema = z.object({
     rejected: z.string().default(DEFAULTS.DEFAULT_REJECTED_PATH),
     identities: z.string().default(DEFAULTS.DEFAULT_IDENTITIES_PATH),
     flows: z.string().default(DEFAULTS.DEFAULT_FLOWS_PATH),
+    waitStates: z.string().default(DEFAULTS.DEFAULT_WAIT_STATES_PATH),
     memoryProjects: z.string().default(DEFAULTS.DEFAULT_PROJECTS_MEMORY_PATH),
     memoryExecution: z.string().default(DEFAULTS.DEFAULT_EXECUTION_MEMORY_PATH),
     memoryIndex: z.string().default(DEFAULTS.DEFAULT_INDEX_MEMORY_PATH),

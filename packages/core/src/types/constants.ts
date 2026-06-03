@@ -34,6 +34,7 @@ export const DEFAULT_REJECTED_PATH = "Rejected";
 // Subfolder Defaults (relative to their parent domain)
 export const DEFAULT_IDENTITIES_PATH = "Identities";
 export const DEFAULT_FLOWS_PATH = "Flows";
+export const DEFAULT_WAIT_STATES_PATH = "WaitStates";
 export const DEFAULT_PROJECTS_MEMORY_PATH = "Projects";
 export const DEFAULT_EXECUTION_MEMORY_PATH = "Execution";
 export const DEFAULT_INDEX_MEMORY_PATH = "Index";
@@ -49,6 +50,7 @@ export const ExaPathDefaults = {
   portals: DEFAULT_PORTALS_PATH,
   blueprints: DEFAULT_BLUEPRINTS_PATH,
   flows: `${DEFAULT_BLUEPRINTS_PATH}/${DEFAULT_FLOWS_PATH}`,
+  waitStates: DEFAULT_WAIT_STATES_PATH,
   requests: DEFAULT_REQUESTS_PATH,
   plans: DEFAULT_PLANS_PATH,
   active: DEFAULT_ACTIVE_PATH,
@@ -805,6 +807,10 @@ export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 // Flow step durability event names (Phase 82)
 export const FLOW_EVENT_STEP_REPLAYED = "flow.step.replayed";
 export const FLOW_EVENT_STEP_SKIPPED_BY_REUSE = "flow.step.skipped_by_reuse";
+
+// Flow wait state event names (Phase 84)
+export const FLOW_EVENT_WAIT_CREATED = "flow.wait.created";
+export const FLOW_EVENT_WAIT_PENDING = "flow.wait.pending";
 export const FLOW_EVENT_STEP_INVALIDATED = "flow.step.invalidated";
 
 // Step durability success metric thresholds (Phase 82)
