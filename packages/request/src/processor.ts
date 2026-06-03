@@ -105,6 +105,11 @@ export interface IRequestProcessorConfig {
   logger?: IEventLogger;
   // When no logger is provided, the constructor falls back to ctx.display,
   // and as a last resort creates an EventLogger internally.
+
+  /** Optional callback invoked when a clarification wait state should be created. */
+  onClarificationCreated?: (traceId: string, requestId: string) => Promise<void>;
+  /** Optional callback invoked when a clarification wait state should be resolved. */
+  onClarificationResolved?: (traceId: string) => Promise<void>;
 }
 
 // ============================================================================
@@ -245,7 +250,7 @@ export class RequestProcessor {
       specification?: IRequestSpecification;
     } = alreadyAssessed
       ? await this._loadSpecFromClarification(filePath)
-      : await this._runQualityGate(body, filePath, requestId, traceLogger);
+      : await this._runQualityGate(body, filePath, requestId, traceLogger, traceId);
     if (qgOutcome.earlyReturn) {
       return null;
     }
@@ -362,6 +367,7 @@ export class RequestProcessor {
     filePath: string,
     requestId: string,
     traceLogger: IEventLogger,
+    traceId?: string,
   ): Promise<
     { earlyReturn: true } | { earlyReturn: false; enrichedBody?: string; specification?: IRequestSpecification }
   > {
@@ -382,13 +388,7 @@ export class RequestProcessor {
         return { earlyReturn: true };
       }
       if (qgResult.recommendation === RequestQualityRecommendation.NEEDS_CLARIFICATION) {
-        await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
-        try {
-          const session = await this.qualityGate.startClarification(requestId, body);
-          await saveClarification(filePath, session);
-        } catch {
-          // Session start failed; REFINING status is preserved, return early anyway
-        }
+        await this._startClarificationSession(filePath, requestId, body, traceId);
         return { earlyReturn: true };
       }
       if (qgResult.recommendation === RequestQualityRecommendation.AUTO_ENRICH && qgResult.enrichedBody) {
@@ -406,6 +406,24 @@ export class RequestProcessor {
       traceLogger.warn("request.quality_gate.failed", filePath, { requestId });
     }
     return { earlyReturn: false };
+  }
+
+  private async _startClarificationSession(
+    filePath: string,
+    requestId: string,
+    body: string,
+    traceId?: string,
+  ): Promise<void> {
+    await this.statusManager.updateStatus(filePath, RequestStatus.REFINING);
+    try {
+      const session = await this.qualityGate!.startClarification(requestId, body);
+      await saveClarification(filePath, session);
+      if (traceId && this.processorConfig.onClarificationCreated) {
+        await this.processorConfig.onClarificationCreated(traceId, requestId);
+      }
+    } catch {
+      // Session start failed; REFINING status is preserved
+    }
   }
 
   private shouldSkipRequest(frontmatter: IRequestFrontmatter, _traceLogger: IEventLogger, _filePath: string): boolean {

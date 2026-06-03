@@ -25,6 +25,7 @@ import {
   type IRequestOptions,
   type IRequestShowResult,
 } from "@exaix/core/request";
+import { join } from "@std/path";
 
 /**
  * RequestCommands provides CLI operations for creating and managing requests.
@@ -116,6 +117,27 @@ export class RequestCommands extends BaseCommand {
    * @returns Current clarification state with pending questions and quality score
    */
   async clarify(requestId: string, options?: IClarifyOptions): Promise<IClarifyResult> {
+    if (!options?.onClarificationResolved) {
+      const cfg = this.context.config.getAll();
+      const waitStatesRoot = join(cfg.system.root, cfg.paths.workspace, cfg.paths.waitStates ?? "WaitStates");
+      const resolveCallback = async (traceId: string) => {
+        const waitDir = join(waitStatesRoot, traceId);
+        try {
+          for await (const entry of Deno.readDir(waitDir)) {
+            if (!entry.isFile || !entry.name.endsWith(".json")) continue;
+            const content = await Deno.readTextFile(join(waitDir, entry.name));
+            const parsed = JSON.parse(content) as { kind?: string; status?: string };
+            if (parsed.kind === "clarification" && parsed.status === "pending") {
+              parsed.status = "fulfilled";
+              await Deno.writeTextFile(join(waitDir, entry.name), JSON.stringify(parsed, null, 2));
+            }
+          }
+        } catch {
+          // wait directory may not exist — ignore
+        }
+      };
+      return await this.clarifyHandler.clarify(requestId, { ...options, onClarificationResolved: resolveCallback });
+    }
     return await this.clarifyHandler.clarify(requestId, options);
   }
 }
