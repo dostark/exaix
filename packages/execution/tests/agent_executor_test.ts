@@ -1944,7 +1944,7 @@ Deno.test({
       const { db, logger, pathResolver, permissions } = getServices();
       const executor = new AgentExecutor(testConfig, db, logger, pathResolver, permissions);
 
-      Reflect.set(executor, "currentPromptBudget", {
+      Reflect.set(executor, "_currentPromptBudget", {
         model: "openai:gpt-4o-mini",
         totalBudgetTokens: 1000,
         safetyBufferTokens: 0,
