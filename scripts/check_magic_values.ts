@@ -152,6 +152,16 @@ const STRUCTURAL_STRING_ARRAY_PROPERTY_NAMES = new Set([
   "tags",
 ]);
 
+const WAIT_STATE_STATUS_LITERALS = new Set([
+  "pending",
+  "resumed",
+  "fulfilled",
+  "rejected",
+  "amended",
+  "expired",
+  "cancelled",
+]);
+
 const ROUND_NUMBER_STEP = 50;
 const ROUND_NUMBER_MAX = 1_000;
 const HTTP_STATUS_MIN = 100;
@@ -305,6 +315,24 @@ function shouldSkip(node: ts.Node): boolean {
 
   // Skip enum member values (these are canonical definitions, not magic values)
   if (ts.isEnumMember(parent) && parent.initializer === node) return true;
+
+  // Skip wait-state status literals — they are domain-specific enum-like values
+  if (ts.isStringLiteral(node) && WAIT_STATE_STATUS_LITERALS.has(node.text)) return true;
+
+  // Skip Zod enum array literal values: z.enum(["a", "b", ...])
+  // String literals inside an array that is the first arg of a .enum() call.
+  if (ts.isArrayLiteralExpression(parent)) {
+    const grandparent = parent.parent;
+    if (
+      ts.isCallExpression(grandparent) &&
+      grandparent.arguments.length > 0 &&
+      grandparent.arguments[0] === parent &&
+      ts.isPropertyAccessExpression(grandparent.expression) &&
+      grandparent.expression.name.text === "enum"
+    ) {
+      return true;
+    }
+  }
 
   // Skip extracted constant declarations (UPPER_SNAKE_CASE = "value")
   if (ts.isVariableDeclaration(parent) && parent.initializer === node) {

@@ -20,6 +20,7 @@ import { MemoryCommands } from "./commands/memory_commands.ts";
 import { type IJournalCommandOptions, JournalCommands } from "./commands/journal_commands.ts";
 import { CostCommands } from "./commands/cost_commands.ts";
 import { RoutingCommands } from "./commands/routing_commands.ts";
+import { WaitStateCommands } from "./commands/wait_state_commands.ts";
 import { ToolCommands } from "./commands/tool_commands.ts";
 import {
   FlowInputSource,
@@ -97,6 +98,9 @@ const CLI_CMD_SHOW_ID = "show <id>";
 const CLI_OPTION_REASON = "-r, --reason <reason:string>";
 const CLI_OPTION_MODEL = "-m, --model <model:string>";
 const CLI_OPTION_PORTAL = "-p, --portal <portal:string>";
+const CLI_OPTION_WAIT_STATUS = "-s, --status <status:string>";
+const CLI_OPTION_WAIT_MESSAGE = "-m, --message <message:string>";
+const CLI_OPTION_WAIT_MESSAGE_DESC = "Resolution summary";
 
 const services = await initializeServices();
 const fullContext: ICliApplicationContext = services;
@@ -118,6 +122,7 @@ const flowCommands = new FlowCommands(fullContext);
 const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance = new WatchCommand(fullContext);
+const waitStateCommands = new WaitStateCommands(fullContext);
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
 export function __test_getContext(): {
@@ -140,6 +145,7 @@ export function __test_getContext(): {
   dashboardCommands: typeof dashboardCommands;
   memoryCommands: typeof memoryCommands;
   watchCommand: typeof watchCommandInstance;
+  waitStateCommands: typeof waitStateCommands;
 } {
   return {
     IN_TEST_MODE: isTestMode(),
@@ -161,6 +167,7 @@ export function __test_getContext(): {
     dashboardCommands,
     memoryCommands,
     watchCommand: watchCommandInstance,
+    waitStateCommands,
   };
 }
 
@@ -551,6 +558,125 @@ export const __test_command = new Command()
               await reviewCommands.reject(id, options.reason);
             } catch (error) {
               display.error("cli.error", "review reject", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      ),
+  )
+  // Wait state commands (Phase 84)
+  .command(
+    "wait",
+    new Command()
+      .description("Manage durable wait states for human-in-the-loop approvals")
+      .command(
+        "list",
+        new Command()
+          .description("List pending wait states")
+          .option(CLI_OPTION_WAIT_STATUS, "Filter by status")
+          .action(async (options) => {
+            try {
+              const entries = await waitStateCommands.list(options.status);
+              if (entries.length === 0) {
+                display.info("wait.list", null, { count: 0, message: "No wait states found" });
+                return;
+              }
+              for (const e of entries) {
+                display.info("wait.list.entry", e.waitStateId, {
+                  kind: e.kind,
+                  status: e.status,
+                  traceId: e.traceId,
+                  createdAt: e.createdAt,
+                });
+              }
+            } catch (error) {
+              display.error("cli.error", "wait list", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "approve <token>",
+        new Command()
+          .description("Approve a pending wait state by resume token")
+          .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .action(async (options, ...args: string[]) => {
+            try {
+              const updated = await waitStateCommands.approve(args[0], options.message);
+              display.info("wait.approve", updated.waitStateId.slice(0, 8), { status: updated.status });
+            } catch (error) {
+              display.error("cli.error", "wait approve", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "reject <token>",
+        new Command()
+          .description("Reject a pending wait state by resume token")
+          .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .action(async (options, ...args: string[]) => {
+            try {
+              const updated = await waitStateCommands.reject(args[0], options.message);
+              display.info("wait.reject", updated.waitStateId.slice(0, 8), { status: updated.status });
+            } catch (error) {
+              display.error("cli.error", "wait reject", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "amend <token>",
+        new Command()
+          .description("Mark a wait state as amended by resume token")
+          .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .action(async (options, ...args: string[]) => {
+            try {
+              const updated = await waitStateCommands.amend(args[0], options.message);
+              display.info("wait.amend", updated.waitStateId.slice(0, 8), { status: updated.status });
+            } catch (error) {
+              display.error("cli.error", "wait amend", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "expire <token>",
+        new Command()
+          .description("Expire a pending wait state by resume token")
+          .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .action(async (options, ...args: string[]) => {
+            try {
+              const updated = await waitStateCommands.expire(args[0], options.message);
+              display.info("wait.expire", updated.waitStateId.slice(0, 8), { status: updated.status });
+            } catch (error) {
+              display.error("cli.error", "wait expire", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
+        "cancel <token>",
+        new Command()
+          .description("Cancel a pending wait state by resume token")
+          .option(CLI_OPTION_WAIT_MESSAGE, CLI_OPTION_WAIT_MESSAGE_DESC)
+          .action(async (options, ...args: string[]) => {
+            try {
+              const updated = await waitStateCommands.cancel(args[0], options.message);
+              display.info("wait.cancel", updated.waitStateId.slice(0, 8), { status: updated.status });
+            } catch (error) {
+              display.error("cli.error", "wait cancel", {
                 message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
               });
               Deno.exit(1);

@@ -352,17 +352,28 @@ Event payloads include `flowRunId`, `stepId`, `traceId`, event-specific fields
 (see `IFlowEventPayloadMap` in `flow_runner.ts`), and any additional context
 passed through `Record<string, JSONValue | undefined>`.
 
+### Wait-State Lifecycle Events
+
+| Event               | Example Reason               | When Fired                                     |
+| ------------------- | ---------------------------- | ---------------------------------------------- |
+| `flow.wait.created` | `gate-score-below-threshold` | Gate step creates a wait state on failure      |
+| `flow.wait.pending` | `wait-state-pending`         | Flow pauses execution with pending wait states |
+
+Payloads include `flowRunId`, `stepId`, `waitStateId`, `traceId`, and event-specific
+fields (see `IFlowEventPayloadMap` in `flow_runner.ts`).
+
 ---
 
 ## Activity Journal
 
 ### Component Table
 
-| Role          | Responsibility                  | Implementation Path                                               |
-| ------------- | ------------------------------- | ----------------------------------------------------------------- |
-| `EventLogger` | Interface for system logging    | `packages/core/src/logger/event_logger.ts:EventLogger`            |
-| `DBService`   | SQLite persistence & migrations | `packages/storage-sqlite/src/database_service.ts:DatabaseService` |
-| `LogSchema`   | Activity Record validation      | `packages/core/src/types/database.ts:IActivityRecord`             |
+| Role               | Responsibility                  | Implementation Path                                                    |
+| ------------------ | ------------------------------- | ---------------------------------------------------------------------- |
+| `EventLogger`      | Interface for system logging    | `packages/core/src/logger/event_logger.ts:EventLogger`                 |
+| `DBService`        | SQLite persistence & migrations | `packages/storage-sqlite/src/database_service.ts:DatabaseService`      |
+| `LogSchema`        | Activity Record validation      | `packages/core/src/types/database.ts:IActivityRecord`                  |
+| `WaitStateService` | Durable wait state lifecycle    | `packages/flow/src/wait_states/wait_state_service.ts:WaitStateService` |
 
 ### Event Flow Diagram
 

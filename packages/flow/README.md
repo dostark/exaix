@@ -36,6 +36,54 @@ step:
     - HAS_TESTS
 ```
 
+## Wait States
+
+Durable wait states allow a flow to pause at a quality gate when an operator
+decision is required, then resume once the operator approves, rejects, or amends
+the decision via CLI or daemon API.
+
+### Architecture Boundary
+
+- `FlowRunner` creates a wait state via `IWaitStateService` when a gate step
+  score falls below threshold and `waitStateService` is configured.
+- `WaitStateService` (in-memory for tests; filesystem-backed for CLI) owns
+  state transitions, expiry, and amendment linkage.
+- `exactl wait` commands (`list`, `approve`, `reject`, `amend`, `expire`)
+  read/write JSON files at `Workspace/WaitStates/{traceId}/{waitStateId}.json`.
+
+### State Machine
+
+```
+pending → fulfilled   (operator approves)
+pending → rejected    (operator rejects)
+pending → amended     (operator amends — creates successor wait)
+pending → expired     (deadline reached or operator expires)
+pending → cancelled   (flow cancelled externally)
+amended → resumed     (amending wait resolved)
+amended → amended     (nested amendment)
+```
+
+### Configuration
+
+```typescript
+interface IFlowRunnerConfig {
+  waitStateService?: IWaitStateService; // optional, no-op by default
+}
+```
+
+### Journal Events
+
+| Event               | Payload Fields                                                         | When Emitted                                        |
+| ------------------- | ---------------------------------------------------------------------- | --------------------------------------------------- |
+| `flow.wait.created` | `flowRunId`, `stepId`, `waitStateId`, `resumeToken`, `kind`, `traceId` | Gate step creates a wait state on failure           |
+| `flow.wait.pending` | `flowRunId`, `waitStateId`, `traceId`, `stepIds`                       | Flow pauses and saves checkpoint with pending waits |
+
+### Amendment Loop
+
+When a wait state is amended, a successor wait state is created. The original
+is marked `amended` and the successor carries `amendmentOf` pointing to the
+original. Resolving the successor auto-transitions the original to `resumed`.
+
 ## Step Durability
 
 Step durability preserves execution records so resumed flows can skip

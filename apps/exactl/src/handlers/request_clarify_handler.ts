@@ -51,6 +51,8 @@ export interface IClarifyOptions {
   promptFn?: (questionText: string, questionId: string) => Promise<string | null>;
   /** Injected engine (for tests). When absent the handler skips processAnswers calls. */
   engine?: IClarificationEngineForCLI;
+  /** Optional callback invoked when a clarification wait state should be resolved. */
+  onClarificationResolved?: (traceId: string) => Promise<void>;
 }
 
 export interface IClarifyResult {
@@ -103,6 +105,7 @@ export class RequestClarifyHandler extends BaseCommand {
         : { ...session, status: ClarificationSessionStatus.USER_CANCELLED };
       await this.persistence.save(filePath, cancelled);
       await this._setStatus(filePath, RequestStatus.PENDING);
+      await this._resolveClarificationWait(filePath, options);
       return { status: ClarifyResultStatus.CANCELLED, score: latestScore };
     }
 
@@ -114,6 +117,7 @@ export class RequestClarifyHandler extends BaseCommand {
       };
       await this.persistence.save(filePath, confirmed);
       await this._setStatus(filePath, RequestStatus.PENDING);
+      await this._resolveClarificationWait(filePath, options);
       return { status: ClarifyResultStatus.COMPLETE, score: latestScore };
     }
 
@@ -132,12 +136,12 @@ export class RequestClarifyHandler extends BaseCommand {
         }
       }
 
-      return this._processAnswersAndReturnResult(filePath, session, answers, options.engine);
+      return this._processAnswersAndReturnResult(filePath, session, answers, options.engine, options);
     }
 
     // --answers: submit answers and advance session
     if (options.answers && options.engine) {
-      return this._processAnswersAndReturnResult(filePath, session, options.answers, options.engine);
+      return this._processAnswersAndReturnResult(filePath, session, options.answers, options.engine, options);
     }
 
     // Default: display current pending questions
@@ -156,12 +160,14 @@ export class RequestClarifyHandler extends BaseCommand {
     session: IClarificationSession,
     answers: Record<string, string>,
     engine: IClarificationEngineForCLI,
+    options: IClarifyOptions = {},
   ): Promise<IClarifyResult> {
     const updated = await engine.processAnswers(session, answers);
     await this.persistence.save(filePath, updated);
 
     if (TERMINAL_STATUSES.has(updated.status)) {
       await this._setStatus(filePath, RequestStatus.PENDING);
+      await this._resolveClarificationWait(filePath, options);
       return { status: ClarifyResultStatus.COMPLETE, score: updated.qualityHistory.at(-1)?.score };
     }
 
@@ -172,6 +178,27 @@ export class RequestClarifyHandler extends BaseCommand {
       round: latestRound?.round,
       score: updated.qualityHistory.at(-1)?.score,
     };
+  }
+
+  /** Read traceId from the request file's frontmatter YAML. */
+  private async _getTraceId(filePath: string): Promise<string | undefined> {
+    try {
+      const content = await Deno.readTextFile(filePath);
+      const match = content.match(/^trace_id:\s*(.+)$/m);
+      return match ? match[1].trim().replace(/^"(.*)"$/, "$1") : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Resolve a clarification wait state if a callback is configured. */
+  private async _resolveClarificationWait(filePath: string, options: IClarifyOptions): Promise<void> {
+    if (options.onClarificationResolved) {
+      const traceId = await this._getTraceId(filePath);
+      if (traceId) {
+        await options.onClarificationResolved(traceId);
+      }
+    }
   }
 
   /** Update the `status:` field in a request file's YAML frontmatter. */

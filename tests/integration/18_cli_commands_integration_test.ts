@@ -613,3 +613,68 @@ cliTest("CLI: daemon start/stop/restart/status/logs error handling", async () =>
     await env.cleanup();
   }
 });
+
+function makeWaitStateJson(overrides: object = {}): string {
+  return JSON.stringify(
+    {
+      waitStateId: "550e8400-e29b-41d4-a716-446655440000",
+      traceId: "trace-integration-wait",
+      kind: "plan_approval",
+      status: "pending",
+      artifactPath: "Workspace/Active/test-flow",
+      resumeToken: "550e8400-e29b-41d4-a716-446655440001",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      metadata: {},
+      ...overrides,
+    },
+    null,
+    2,
+  );
+}
+
+cliTest("CLI: wait list shows pending wait states", async () => {
+  const env = await TestEnvironment.create({ initGit: false });
+  try {
+    const waitDir = join(env.tempDir, "Workspace", "WaitStates", "trace-integration-wait");
+    await Deno.mkdir(waitDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(waitDir, "550e8400-e29b-41d4-a716-446655440000.json"),
+      makeWaitStateJson(),
+    );
+
+    const result = await runExactl(["wait", "list"], env.tempDir);
+    assertEquals(result.code, 0);
+    assertStringIncludes(result.stdout, "550e8400");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+cliTest("CLI: wait list --status pending filters correctly", async () => {
+  const env = await TestEnvironment.create({ initGit: false });
+  try {
+    const waitDir = join(env.tempDir, "Workspace", "WaitStates", "trace-integration-wait");
+    await Deno.mkdir(waitDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(waitDir, "550e8400-e29b-41d4-a716-446655440000.json"),
+      makeWaitStateJson({ status: "fulfilled" }),
+    );
+
+    const result = await runExactl(["wait", "list", "--status", "fulfilled"], env.tempDir);
+    assertEquals(result.code, 0);
+    assertStringIncludes(result.stdout, "550e8400");
+  } finally {
+    await env.cleanup();
+  }
+});
+
+cliTest("CLI: wait list shows empty state when no wait states", async () => {
+  const env = await TestEnvironment.create({ initGit: false });
+  try {
+    const result = await runExactl(["wait", "list"], env.tempDir);
+    assertEquals(result.code, 0);
+  } finally {
+    await env.cleanup();
+  }
+});

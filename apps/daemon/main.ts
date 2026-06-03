@@ -233,6 +233,9 @@ if (import.meta.main) {
     await ensureDir(plansPath);
     await ensureDir(activePath);
 
+    // Initialize wait state storage path for clarification lifecycle
+    const waitStatesRoot = join(config.system.root, config.paths.workspace, config.paths.waitStates ?? "WaitStates");
+
     // Initialize Request Processor
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
@@ -241,6 +244,31 @@ if (import.meta.main) {
       includeReasoning: true,
       context, // Support unified DI
       sessionMemory,
+      onClarificationCreated: async (traceId: string, _requestId: string) => {
+        const waitStateId = crypto.randomUUID();
+        const resumeToken = crypto.randomUUID();
+        const now = new Date().toISOString();
+        const waitDir = join(waitStatesRoot, traceId);
+        await ensureDir(waitDir);
+        await Deno.writeTextFile(
+          join(waitDir, `${waitStateId}.json`),
+          JSON.stringify(
+            {
+              waitStateId,
+              traceId,
+              kind: "clarification",
+              status: "pending",
+              artifactPath: `Workspace/WaitStates/${traceId}/${waitStateId}.json`,
+              resumeToken,
+              createdAt: now,
+              updatedAt: now,
+              metadata: {},
+            },
+            null,
+            2,
+          ),
+        );
+      },
     });
 
     await logger.info("request_processor.initialized", "RequestProcessor", {

@@ -83,6 +83,7 @@ import {
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
+import type { IWaitStateService } from "./wait_states/wait_state_service.ts";
 
 /**
  * Interface for agent executors (AgentRunner or similar)
@@ -158,6 +159,8 @@ export interface IFlowRunnerConfig {
   stepReplayPolicy?: IStepReplayPolicy;
   /** Optional checkpoint service override for testing; takes precedence over config-derived service. */
   checkpointService?: IFlowCheckpointService;
+  /** Optional wait-state service for durable approval/pause gates. No-op when omitted. */
+  waitStateService?: IWaitStateService;
 }
 
 /**
@@ -194,6 +197,8 @@ export interface IStepResult {
   compensationRan?: boolean;
   /** Deferred namespace writes flushed after the wave settles (Phase 64). */
   namespaceWrites?: IStepNamespaceWrites;
+  /** When set, the step created a durable wait state that must be resolved before the flow can continue. */
+  waitStateId?: string;
 }
 
 interface IStepNamespaceWrites {
@@ -461,6 +466,20 @@ export interface IFlowEventPayloadMap {
     requestId?: string;
   };
   "flow.token_summary.error": { flowRunId: string; flowId: string; error: string; traceId: string; requestId?: string };
+  "flow.wait.created": IFlowEventLogBase & {
+    flowRunId: string;
+    stepId: string;
+    waitStateId: string;
+    resumeToken: string;
+    kind: string;
+    traceId: string;
+  };
+  "flow.wait.pending": IFlowEventLogBase & {
+    flowRunId: string;
+    waitStateId: string;
+    traceId: string;
+    stepIds: string[];
+  };
 }
 
 export type IFlowEventPayload<TEvent extends string> = TEvent extends keyof IFlowEventPayloadMap
@@ -496,6 +515,10 @@ export interface IFlowResult {
     token_model?: string;
     token_cost_usd?: number;
   };
+  /** True when the flow is waiting for an operator to resolve a durable wait state. */
+  waiting?: boolean;
+  /** The wait state ID the flow is waiting on, when waiting=true. */
+  waitStateId?: string;
 }
 
 /**
@@ -617,6 +640,8 @@ export class FlowRunner implements IFlowRunner {
   private stepDurabilityStore: IStepDurabilityStore;
   private stepReplayPolicy: IStepReplayPolicy;
   private readonly migratedCheckpointTraceIds = new Set<string>();
+  private waitStateService?: IWaitStateService;
+  private pendingWaitStateId?: string;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -656,6 +681,7 @@ export class FlowRunner implements IFlowRunner {
 
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
+    this.waitStateService = options.waitStateService;
 
     const config = this.config;
     const db = this.db;
@@ -762,6 +788,21 @@ export class FlowRunner implements IFlowRunner {
     try {
       // Execute waves and aggregate results
       await this.executeWaves(flow, request, flowRunId, flowContentHash, stepResults);
+
+      // If any step entered a wait state, return early without aggregating — the flow
+      // will resume when an operator resolves the wait state externally.
+      const waitingSteps = [...stepResults.values()].filter((r) => r.waitStateId);
+      if (waitingSteps.length > 0) {
+        return {
+          flowRunId,
+          success: true,
+          stepResults,
+          output: "",
+          duration: new Date().getTime() - startedAt.getTime(),
+          waiting: true,
+          waitStateId: waitingSteps[0].waitStateId,
+        } as IFlowResult;
+      }
 
       // Aggregate output and finalize
       return await this.aggregateAndFinalize(flow, request, flowRunId, stepResults, startedAt);
@@ -936,6 +977,22 @@ export class FlowRunner implements IFlowRunner {
     for (let waveIndex = 0; waveIndex < waves.length; waveIndex++) {
       const wave = waves[waveIndex];
       await this.executeWave(flow, request, flowRunId, flowContentHash, wave, waveIndex, stepResults, failFast);
+
+      // If any step created a wait state in this wave, break the loop so the flow
+      // can be paused and resumed later. Checkpoint is saved so state is preserved.
+      const pendingStepResults = [...stepResults.values()].filter((r) => r.waitStateId);
+      const hasPendingWait = pendingStepResults.length > 0;
+      if (hasPendingWait) {
+        await this.eventLogger.log("flow.wait.pending", {
+          flowRunId,
+          waitStateId: pendingStepResults[0].waitStateId!,
+          traceId: request.traceId ?? "",
+          stepIds: pendingStepResults.map((r) => r.stepId),
+          ...this.getIFlowLogBase(flow, request),
+        });
+        await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
+        break;
+      }
     }
   }
 
@@ -2165,6 +2222,34 @@ export class FlowRunner implements IFlowRunner {
       stepRequest.requestAnalysis,
     );
 
+    // When a wait-state service is configured and the gate fails, create a durable wait state
+    // so an operator can resolve the gate decision asynchronously.
+    if (this.waitStateService && gateResult.score < effectiveGateConfig.threshold && request.traceId) {
+      try {
+        const ws = await this.waitStateService.create({
+          kind: "plan_approval",
+          traceId: request.traceId,
+          artifactPath: `Workspace/WaitStates/${request.traceId}/${step.id}.json`,
+          resumeToken: crypto.randomUUID(),
+          requestedBy: step.identity,
+          deadlineAt: undefined,
+        });
+        this.pendingWaitStateId = ws.waitStateId;
+        await this.eventLogger.log("flow.wait.created", {
+          flowRunId,
+          stepId: step.id,
+          waitStateId: ws.waitStateId,
+          resumeToken: ws.resumeToken,
+          kind: ws.kind,
+          traceId: request.traceId!,
+          ...this.getIFlowLogBase(flow, request),
+        });
+      } catch {
+        // Non-critical: wait state creation failure should not break the flow
+        this.pendingWaitStateId = undefined;
+      }
+    }
+
     return {
       thought: "",
       content: gateResult.evaluation.feedback,
@@ -2255,6 +2340,9 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
+    const waitStateId = this.pendingWaitStateId;
+    this.pendingWaitStateId = undefined;
+
     return {
       stepId: step.id,
       success: true,
@@ -2263,6 +2351,7 @@ export class FlowRunner implements IFlowRunner {
       startedAt,
       completedAt,
       namespaceWrites,
+      waitStateId,
       ...recoveryMetadata,
     };
   }
