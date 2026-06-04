@@ -9,3 +9,4 @@
 
 export * from "./domain_event_types.ts";
 export * from "./event_registry.ts";
+export * from "./event_journal_reader.ts";
