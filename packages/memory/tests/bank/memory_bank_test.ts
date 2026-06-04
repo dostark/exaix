@@ -429,7 +429,7 @@ Deno.test("MemoryBankService: searchMemory finds matching content", async () => 
 // ===== IActivity Journal Integration Tests =====
 
 Deno.test("MemoryBankService: createProjectMemory logs to IActivity Journal", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { db, config, cleanup } = await initTestDbService();
 
   try {
     const logger = new EventLogger({ db });
@@ -456,7 +456,7 @@ Deno.test("MemoryBankService: createProjectMemory logs to IActivity Journal", as
 });
 
 Deno.test("MemoryBankService: addPattern logs to IActivity Journal", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { db, config, cleanup } = await initTestDbService();
 
   try {
     const logger = new EventLogger({ db });
@@ -489,7 +489,7 @@ Deno.test("MemoryBankService: addPattern logs to IActivity Journal", async () =>
 });
 
 Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { db, config, cleanup } = await initTestDbService();
 
   try {
     const logger = new EventLogger({ db });

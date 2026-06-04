@@ -1180,7 +1180,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     if (validatedFiles.length === 0) {
       // Log that all files were filtered out as potentially malicious
       await this.logger.log({
-        action: "security.file_validation_filtered_all",
+        action: DomainEventType.SecurityFileValidationFilteredAll,
         target: portalPath,
         payload: {
           original_count: unauthorizedFiles.length,
@@ -1337,7 +1337,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         try {
           const stat = await Deno.lstat(join(portalPath, filename));
           if (stat.isSymlink) {
-            await this.logger.error("symlink_detected", portalPath, { filename });
+            await this.logger.error(DomainEventType.SecuritySymlinkDetected, portalPath, { filename });
             // Already added to results.failed
             continue;
           }

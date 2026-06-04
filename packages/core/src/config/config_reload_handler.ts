@@ -6,6 +6,7 @@
  * @related-files ["packages/core/src/config/service.ts", "packages/core/src/types/daemon.ts"]
  */
 
+import { DomainEventType } from "@exaix/core/events";
 import type { ConfigService } from "./service.ts";
 import type { LogMetadata } from "../types/json.ts";
 
@@ -35,7 +36,7 @@ export function createConfigReloadHandler(
     const newChecksum = configService.getChecksum();
 
     if (oldChecksum !== newChecksum) {
-      await logger.info("config.updated", "", {
+      await logger.info(DomainEventType.ConfigUpdated, "", {
         old_checksum: oldChecksum.slice(0, 8),
         new_checksum: newChecksum.slice(0, 8),
         portals_count: newConfig.portals?.length || 0,

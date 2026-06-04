@@ -11,6 +11,7 @@
  * @architectural-layer Services
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
+import { DomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
@@ -190,7 +191,7 @@ export class MissionReporter {
 
       // Log success
       this.logActivity({
-        event_type: "report.generated",
+        event_type: DomainEventType.ReportGenerated,
         target: traceData.requestId,
         trace_id: traceData.traceId,
         metadata: {
@@ -213,7 +214,7 @@ export class MissionReporter {
     } catch (error) {
       // Log error
       this.logActivity({
-        event_type: "report.error",
+        event_type: DomainEventType.ReportError,
         target: traceData.requestId,
         trace_id: traceData.traceId,
         metadata: {

@@ -7,6 +7,7 @@
  * @ungrounded
  * @related-files [apps/daemon/main.ts, packages/memory/src/approval/memory_auto_approval_service.ts, packages/core/src/notification/notification.ts]
  */
+import { DomainEventType } from "@exaix/core/events";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { MemoryAutoApprovalService } from "./memory_auto_approval_service.ts";
 import type { MemoryExtractorService } from "../extraction/memory_extractor.ts";
@@ -48,12 +49,12 @@ export async function initializeMemoryAutoApprovalMaintenance(
     const pendingCount = pendingProposals.length;
     const digestCreated = await notificationService.notifyPendingDigestIfNeeded(pendingCount);
     if (digestCreated) {
-      await logger.info("memory.pending_digest", "Pending memory digest notification sent", {
+      await logger.info(DomainEventType.MemoryPendingDigest, "Pending memory digest notification sent", {
         pendingCount,
       });
     }
   } catch (error) {
-    await logger.error("memory.init_failed", "Memory auto-approval initialization failed", {
+    await logger.error(DomainEventType.MemoryInitFailed, "Memory auto-approval initialization failed", {
       error: String(error),
     });
   }
@@ -63,7 +64,7 @@ export async function initializeMemoryAutoApprovalMaintenance(
       const result = await autoApprovalService.runApprovalCycle();
       if (result.promoted.length > 0) {
         await logger.info(
-          "memory.auto_approval_cycle",
+          DomainEventType.MemoryAutoApprovalCycle,
           `Promoted ${result.promoted.length} high-confidence learnings`,
           {
             promoted: result.promoted,
@@ -71,7 +72,7 @@ export async function initializeMemoryAutoApprovalMaintenance(
         );
       }
     } catch (error) {
-      await logger.error("memory.maintenance_cycle_failed", "Auto-approval maintenance cycle failed", {
+      await logger.error(DomainEventType.MemoryMaintenanceCycleFailed, "Auto-approval maintenance cycle failed", {
         error: String(error),
       });
     }
@@ -81,14 +82,14 @@ export async function initializeMemoryAutoApprovalMaintenance(
         const promoted = await sessionMemory.promoteMemories();
         if (promoted > 0) {
           await logger.info(
-            "memory.tier_promotion",
+            DomainEventType.MemoryTierPromotion,
             `Promoted ${promoted} tiered memory entries`,
             { promotedCount: promoted },
           );
         }
       }
     } catch (error) {
-      await logger.error("memory.tier_promotion_failed", "Memory tier promotion cycle failed", {
+      await logger.error(DomainEventType.MemoryTierPromotionFailed, "Memory tier promotion cycle failed", {
         error: String(error),
       });
     }
@@ -96,10 +97,10 @@ export async function initializeMemoryAutoApprovalMaintenance(
     try {
       if (memoryBank) {
         await memoryBank.rebuildIndices();
-        await logger.info("memory.indices.rebuilt", "Periodic index rebuild completed");
+        await logger.info(DomainEventType.MemoryIndicesRebuilt, "Periodic index rebuild completed");
       }
     } catch (error) {
-      await logger.error("memory.index_rebuild_failed", "Memory index rebuild cycle failed", {
+      await logger.error(DomainEventType.MemoryIndexRebuildFailed, "Memory index rebuild cycle failed", {
         error: String(error),
       });
     }

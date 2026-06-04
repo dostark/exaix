@@ -15,6 +15,7 @@ import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import {
   ActivityActor,
   ActivityType,
@@ -283,7 +284,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log to IActivity Journal
     this.logActivity({
-      event_type: "memory.project.created",
+      event_type: DomainEventType.MemoryProjectCreated,
       target: projectMem.portal,
       metadata: {
         patterns_count: projectMem.patterns.length,
@@ -326,7 +327,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log update
     this.logActivity({
-      event_type: "memory.project.updated",
+      event_type: DomainEventType.MemoryProjectUpdated,
       target: portal,
       metadata: { updated_fields: Object.keys(updates) },
     });
@@ -367,7 +368,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log pattern addition
     this.logActivity({
-      event_type: "memory.pattern.added",
+      event_type: DomainEventType.MemoryPatternAdded,
       target: portal,
       metadata: {
         pattern_name: pattern.name,
@@ -398,7 +399,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log decision addition
     this.logActivity({
-      event_type: "memory.decision.added",
+      event_type: DomainEventType.MemoryDecisionAdded,
       target: portal,
       metadata: {
         decision_summary: decision.decision.substring(0, 100),
@@ -434,7 +435,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log to IActivity Journal
     this.logActivity({
-      event_type: "memory.execution.recorded",
+      event_type: DomainEventType.MemoryExecutionRecorded,
       target: execution.portal,
       trace_id: execution.trace_id,
       metadata: {
@@ -580,7 +581,7 @@ export class MemoryBankService implements IMemoryBankService {
     );
 
     this.logActivity({
-      event_type: "memory.global.initialized",
+      event_type: DomainEventType.MemoryGlobalInitialized,
       target: MemoryScope.GLOBAL,
       metadata: { version: "1.0.0" },
     });
@@ -650,7 +651,7 @@ export class MemoryBankService implements IMemoryBankService {
     });
 
     this.logActivity({
-      event_type: "memory.global.learning.added",
+      event_type: DomainEventType.MemoryGlobalLearningAdded,
       target: MemoryScope.GLOBAL,
       metadata: {
         learning_id: learning.id,
@@ -714,7 +715,7 @@ export class MemoryBankService implements IMemoryBankService {
     await this.addGlobalLearning(learning);
 
     this.logActivity({
-      event_type: "memory.learning.promoted",
+      event_type: DomainEventType.MemoryLearningPromoted,
       target: portal,
       metadata: {
         learning_id: learningId,
@@ -795,7 +796,7 @@ export class MemoryBankService implements IMemoryBankService {
     await this.rewriteLearningsMarkdown(globalMem);
 
     this.logActivity({
-      event_type: "memory.learning.demoted",
+      event_type: DomainEventType.MemoryLearningDemoted,
       target: targetPortal,
       metadata: {
         learning_id: learningId,
@@ -980,7 +981,7 @@ export class MemoryBankService implements IMemoryBankService {
 
     // Log index rebuild
     this.logActivity({
-      event_type: "memory.indices.rebuilt",
+      event_type: DomainEventType.MemoryIndicesRebuilt,
       target: ActivityActor.SYSTEM,
       metadata: {
         files_indexed: Object.keys(filesIndex).length,
@@ -1020,7 +1021,7 @@ export class MemoryBankService implements IMemoryBankService {
     // Log embedding rebuild
     const approvedCount = learnings.filter((l) => l.status === MemoryStatus.APPROVED).length;
     this.logActivity({
-      event_type: "memory.embeddings.rebuilt",
+      event_type: DomainEventType.MemoryEmbeddingsRebuilt,
       target: ActivityActor.SYSTEM,
       metadata: {
         learnings_embedded: approvedCount,

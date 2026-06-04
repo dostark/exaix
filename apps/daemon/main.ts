@@ -7,6 +7,7 @@
  * @architectural-layer Application
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
+import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
@@ -94,7 +95,7 @@ if (import.meta.main) {
     const gracefulShutdown = new GracefulShutdown(getGlobalLogger());
 
     await logger.log({
-      action: "daemon.starting",
+      action: DomainEventType.DaemonStarting,
       target: "exaix",
       payload: {
         config_checksum: checksum.slice(0, 8),
@@ -118,13 +119,13 @@ if (import.meta.main) {
       }) as LogMetadata,
     );
 
-    await logger.info("config.loaded", "", {
+    await logger.info(DomainEventType.ConfigLoaded, "", {
       checksum: checksum.slice(0, 8),
       root: config.system.root,
       log_level: config.system.log_level,
     });
 
-    await logger.info("database.connected", "journal.db", { mode: "WAL" });
+    await logger.info(DomainEventType.DatabaseConnected, "journal.db", { mode: "WAL" });
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
@@ -132,7 +133,7 @@ if (import.meta.main) {
     const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
     const llmProvider = await ProviderFactory.createByName(config, defaultModelName);
 
-    await logger.info("llm.provider.initialized", providerInfo.id, {
+    await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
       type: providerInfo.type,
       model: providerInfo.model,
       source: providerInfo.source,
@@ -409,7 +410,7 @@ if (import.meta.main) {
     gracefulShutdown.registerErrorHandlers();
 
     await logger.log({
-      action: "daemon.started",
+      action: DomainEventType.DaemonStarted,
       target: "exaix",
       payload: {
         provider: providerInfo.id,

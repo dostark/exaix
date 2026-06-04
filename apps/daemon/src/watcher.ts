@@ -6,6 +6,7 @@
  * @architectural-layer Services
  * @related-files ["apps/daemon/main.ts", "packages/request/src/processor.ts"]
  */
+import { DomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
@@ -124,7 +125,7 @@ export class FileWatcher {
       }
     } catch (error) {
       // Log watcher error
-      await this.logger.error("watcher.error", this.watchPath, {
+      await this.logger.error(DomainEventType.WatcherError, this.watchPath, {
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
       });
@@ -195,7 +196,7 @@ export class FileWatcher {
   private async processFileQueued(path: string): Promise<void> {
     // Prevent concurrent processing of the same file
     if (this.processingFiles.has(path)) {
-      await this.logger.debug("watcher.file_already_processing", path, {
+      await this.logger.debug(DomainEventType.WatcherFileAlreadyProcessing, path, {
         skipped: true,
       });
       return;
@@ -225,7 +226,7 @@ export class FileWatcher {
       }
 
       // Log file ready
-      await this.logger.info("watcher.file_ready", path, {
+      await this.logger.info(DomainEventType.WatcherFileReady, path, {
         content_length: content.length,
         stability_check_used: this.stabilityCheck,
       });
@@ -234,7 +235,7 @@ export class FileWatcher {
       await this.onFileReady({ path, content });
     } catch (error) {
       // Log file processing error
-      await this.logger.warn("watcher.file_error", path, {
+      await this.logger.warn(DomainEventType.WatcherFileError, path, {
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
       });
@@ -267,7 +268,7 @@ export class FileWatcher {
           // Validate it's not empty
           if (content.trim().length > 0) {
             // Log successful stability check
-            await this.logger.debug("watcher.file_stable", path, {
+            await this.logger.debug(DomainEventType.WatcherFileStable, path, {
               attempts: attempt + 1,
               final_size: stat2.size,
             });
@@ -297,7 +298,7 @@ export class FileWatcher {
     }
 
     // Log file never stabilized
-    await this.logger.warn("watcher.file_unstable", path, {
+    await this.logger.warn(DomainEventType.WatcherFileUnstable, path, {
       max_attempts: maxAttempts,
     });
 
