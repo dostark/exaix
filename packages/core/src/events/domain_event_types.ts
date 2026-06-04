@@ -22,6 +22,9 @@ export const DomainEventType = {
   WaitStateCreated: "wait_state.created",
   WaitStateResolved: "wait_state.resolved",
 
+  // Cost tracking events
+  LlmUsageRecorded: "llm.usage",
+
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",
   ChildRunCompleted: "child_run.completed",

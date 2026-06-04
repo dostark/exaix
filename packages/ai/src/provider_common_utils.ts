@@ -6,6 +6,7 @@
  * @related-files [packages/ai/src/providers.ts]
  */
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 import {
   AuthenticationError,
@@ -158,7 +159,7 @@ export async function handleProviderResponse<T>(
         const inputTokens = tokens.prompt_tokens ?? 0;
         const outputTokens = tokens.completion_tokens ?? 0;
         const totalTokens = tokens.total_tokens ?? inputTokens + outputTokens;
-        await logger.info("llm.usage", id, {
+        await logger.info(DomainEventType.LlmUsageRecorded, id, {
           ...tokens,
           provider: tokens.provider ?? id,
           input_tokens: inputTokens,
