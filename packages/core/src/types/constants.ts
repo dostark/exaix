@@ -1368,9 +1368,6 @@ export const COMPACT_SUMMARY_MAX_TOKENS = 200;
 /** Number of most recent steps preserved in full during compaction. */
 export const DEFAULT_KEEP_LAST_N_STEPS = 2;
 
-/** Event name emitted when loop history compaction occurs. */
-export const CONTEXT_BUDGET_COMPACTED_EVENT = "context.budget.compacted";
-
 /** Event name emitted after initial budget allocation with full breakdown. */
 export const CONTEXT_BUDGET_ALLOCATED = "context.budget.allocated";
 

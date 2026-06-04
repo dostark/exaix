@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ITokenizer } from "@exaix/core/func";
@@ -80,7 +81,6 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
-  CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_BUDGET_CONSUMED,
   CONTEXT_SECTION_TRUNCATED,
   DEFAULT_KEEP_LAST_N_STEPS,
@@ -275,7 +275,7 @@ export class AgentExecutor {
     const preserved = this._loopHistory.slice(this._loopHistory.length - keepLastN);
     this._loopHistory = [compressedEntry, ...preserved];
 
-    this.logger.info(CONTEXT_BUDGET_COMPACTED_EVENT, "", {
+    this.logger.info(DomainEventType.ExecutionContextCompacted, "", {
       tokensBefore,
       tokensAfter,
       compressedCount: compressible.length,

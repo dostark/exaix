@@ -11,8 +11,8 @@
  */
 
 import { assertEquals, assertGreater, assertLessOrEqual } from "@std/assert";
+import { DomainEventType } from "@exaix/core/events";
 import {
-  CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_BUDGET_OVERHEAD_TARGET_MS,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
   CONTEXT_PRIORITY_PLAN_STEP,
@@ -371,7 +371,7 @@ Deno.test("[ContextBudgetManager] protected segments with nonCompactable=true ar
 });
 
 Deno.test(
-  "[ContextBudgetManager] emits CONTEXT_BUDGET_COMPACTED_EVENT after async snapshot save",
+  "[ContextBudgetManager] emits ExecutionContextCompacted after async snapshot save",
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     const loggedActions: string[] = [];
@@ -404,7 +404,7 @@ Deno.test(
     // snapshotStore.save). Use a macrotask fence to ensure all pending microtasks complete.
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-    assertEquals(loggedActions.includes(CONTEXT_BUDGET_COMPACTED_EVENT), true);
+    assertEquals(loggedActions.includes(DomainEventType.ExecutionContextCompacted), true);
   },
 );
 
