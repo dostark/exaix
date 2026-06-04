@@ -20,7 +20,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { IEventJournalReader } from "@exaix/core/events";
+import { DomainEventType, type IEventJournalReader } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
@@ -216,7 +216,7 @@ export class ExecutionLoop {
       // Parse plan frontmatter first (validates before lease)
       frontmatter = await this.parsePlan(planPath);
       if (frontmatter.status === PlanStatus.AMENDMENT_PENDING) {
-        this.logActivity("execution.skipped", frontmatter.trace_id, {
+        this.logActivity(DomainEventType.ExecutionSkipped, frontmatter.trace_id, {
           request_id: frontmatter.request_id,
           reason: "Plan is pending amendment approval",
         });
@@ -230,7 +230,7 @@ export class ExecutionLoop {
       leaseAcquired = true;
 
       // Log execution start
-      this.logActivity("execution.started", traceId, {
+      this.logActivity(DomainEventType.ExecutionStarted, traceId, {
         request_id: requestId,
         plan_path: planPath,
       });
@@ -517,7 +517,7 @@ export class ExecutionLoop {
   }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string }> {
     if (args.structuredPlan) {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
-        this.logActivity("execution.readonly_structured_plan_skipped", args.traceId, {
+        this.logActivity(DomainEventType.ExecutionReadonlyPlanSkipped, args.traceId, {
           request_id: args.requestId,
           identity_id: args.planAgentId ?? null,
         });
@@ -533,7 +533,7 @@ export class ExecutionLoop {
       );
 
       if (args.isReadOnly) {
-        this.logActivity("execution.readonly_structured_plan_executed", args.traceId, {
+        this.logActivity(DomainEventType.ExecutionReadonlyPlanExecuted, args.traceId, {
           request_id: args.requestId,
           identity_id: args.planAgentId ?? null,
         });
@@ -720,7 +720,7 @@ export class ExecutionLoop {
     for (const action of actions) {
       actionIndex++;
 
-      this.logActivity("execution.action_started", traceId, {
+      this.logActivity(DomainEventType.ExecutionActionStarted, traceId, {
         request_id: requestId,
         action_index: actionIndex,
         tool: action.tool,
@@ -733,7 +733,7 @@ export class ExecutionLoop {
         if (!result.success) {
           const errorMessage = result.error ?? "Unknown tool error";
 
-          this.logActivity("execution.action_failed", traceId, {
+          this.logActivity(DomainEventType.ExecutionActionFailed, traceId, {
             request_id: requestId,
             action_index: actionIndex,
             tool: action.tool,
@@ -743,7 +743,7 @@ export class ExecutionLoop {
           throw new Error(`Action ${actionIndex} (${action.tool}) failed: ${errorMessage}`);
         }
 
-        this.logActivity("execution.action_completed", traceId, {
+        this.logActivity(DomainEventType.ExecutionActionCompleted, traceId, {
           request_id: requestId,
           action_index: actionIndex,
           tool: action.tool,
@@ -752,7 +752,7 @@ export class ExecutionLoop {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
-        this.logActivity("execution.action_failed", traceId, {
+        this.logActivity(DomainEventType.ExecutionActionFailed, traceId, {
           request_id: requestId,
           action_index: actionIndex,
           tool: action.tool,
@@ -868,7 +868,7 @@ export class ExecutionLoop {
       acquiredAt: new Date(),
     });
 
-    this.logActivity("execution.lease_acquired", traceId, {
+    this.logActivity(DomainEventType.ExecutionLeaseAcquired, traceId, {
       file_path: filePath,
       holder: this.identityId,
     });
@@ -882,7 +882,7 @@ export class ExecutionLoop {
     if (lease) {
       this.leases.delete(filePath);
 
-      this.logActivity("execution.lease_released", "unknown", {
+      this.logActivity(DomainEventType.ExecutionLeaseReleased, "unknown", {
         file_path: filePath,
         holder: lease.holder,
       });
@@ -1015,7 +1015,7 @@ export class ExecutionLoop {
     await this.archiveRequest(requestId, ExecutionStatus.COMPLETED, archiveDir);
 
     // Log completion
-    this.logActivity("execution.completed", traceId, {
+    this.logActivity(DomainEventType.ExecutionCompleted, traceId, {
       request_id: requestId,
       archived_to: archivePath,
     });
@@ -1114,7 +1114,7 @@ export class ExecutionLoop {
     }
 
     // Log failure
-    this.logActivity("execution.failed", traceId, {
+    this.logActivity(DomainEventType.ExecutionFailed, traceId, {
       request_id: requestId,
       error,
       moved_to: targetRejectedPath,
@@ -1153,7 +1153,7 @@ export class ExecutionLoop {
       console.error("Failed to update plan status for amendment:", e);
     }
 
-    this.logActivity("execution.amendment_pending", traceId, {
+    this.logActivity(DomainEventType.ExecutionAmendmentPending, traceId, {
       request_id: requestId,
       amendment_id: error.amendmentId,
     });
@@ -1320,7 +1320,7 @@ export class ExecutionLoop {
       // If no changes to commit, that's actually a success (nothing needed to be done)
       if (error instanceof Error && error.message.includes("nothing to commit")) {
         // Log but don't fail
-        this.logActivity("execution.no_changes", traceId, {
+        this.logActivity(DomainEventType.ExecutionNoChanges, traceId, {
           request_id: requestId,
         });
         return null;
@@ -1398,13 +1398,13 @@ export class ExecutionLoop {
 
       await reporter.generate(traceData);
 
-      this.logActivity("report.generated", traceId, {
+      this.logActivity(DomainEventType.ReportGenerated, traceId, {
         request_id: requestId,
         report_type: "mission",
         reporter: "memory_banks",
       });
     } catch (error) {
-      this.logActivity("report.error", traceId, {
+      this.logActivity(DomainEventType.ReportError, traceId, {
         request_id: requestId,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -1461,14 +1461,14 @@ export class ExecutionLoop {
         // Non-fatal - logging already handled below
       }
 
-      this.logActivity("report.generated", traceId, {
+      this.logActivity(DomainEventType.ReportGenerated, traceId, {
         request_id: requestId,
         report_type: "failure",
         reporter: "memory_banks",
         error,
       });
     } catch (reportError) {
-      this.logActivity("report.error", traceId, {
+      this.logActivity(DomainEventType.ReportError, traceId, {
         request_id: requestId,
         error: reportError instanceof Error ? reportError.message : String(reportError),
       });
