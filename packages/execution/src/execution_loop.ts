@@ -19,6 +19,7 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
@@ -64,6 +65,7 @@ interface RawFrontmatter {
 export interface IExecutionLoopConfig {
   config: Config;
   db?: IDatabaseService;
+  logger?: IEventLogger;
   identityId: string;
   llmProvider?: IModelProvider;
   reviewRegistry?: ReviewRegistry;
@@ -109,6 +111,7 @@ export interface IExecuteOptions {
 export class ExecutionLoop {
   private config: Config;
   private db?: IDatabaseService;
+  private logger?: IEventLogger;
   private identityId: string;
   private plansDir: string;
   private leases = new Map<string, ITaskLease>();
@@ -126,6 +129,7 @@ export class ExecutionLoop {
     const ctx = config.context;
     this.config = ctx?.config.get() || config.config;
     this.db = ctx?.db || config.db;
+    this.logger = config.logger;
     this.identityId = config.identityId;
     this.llmProvider = ctx?.provider || config.llmProvider;
     this.reviewRegistry = config.reviewRegistry;
@@ -1472,6 +1476,11 @@ export class ExecutionLoop {
     traceId: string,
     payload: Record<string, JSONValue>,
   ): void {
+    if (this.logger) {
+      void this.logger.info(actionType, null, payload, traceId);
+      return;
+    }
+
     if (!this.db) return;
 
     try {
