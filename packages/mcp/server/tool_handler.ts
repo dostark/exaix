@@ -8,6 +8,7 @@
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
@@ -23,12 +24,14 @@ export abstract class ToolHandler {
   protected context: ICliApplicationContext;
   protected config: Config;
   protected db: IDatabaseService;
+  protected logger?: IEventLogger;
   protected permissions: IPortalPermissionsChecker | null;
 
-  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker) {
+  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker, logger?: IEventLogger) {
     this.context = context;
     this.config = context.config.getAll();
     this.db = context.db;
+    this.logger = logger;
     this.permissions = permissions || null;
   }
 
@@ -102,10 +105,15 @@ export abstract class ToolHandler {
     identityId: string,
     metadata: LogMetadata,
   ): void {
+    const action = `mcp.tool.${toolName}`;
+    if (this.logger) {
+      void this.logger.info(action, portal, metadata);
+      return;
+    }
     const actor = `identity:${identityId}`;
     this.db.logActivity(
       actor,
-      `mcp.tool.${toolName}`,
+      action,
       portal,
       toSafeJson(metadata) as Record<string, JSONValue>,
       undefined,
