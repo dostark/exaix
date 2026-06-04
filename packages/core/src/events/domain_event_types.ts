@@ -99,6 +99,13 @@ export const DomainEventType = {
   PlanExecutionFailed: "plan.execution_failed",
   PlanAmendmentTriggered: "plan.amendment_triggered",
 
+  // Plan writer events (plan_writer.ts)
+  PlanValidationSuccess: "plan.validation.success",
+  PlanValidationFailed: "plan.validation.failed",
+  PlanValidationEnriched: "plan.validation.enriched",
+  PlanParsed: "plan.parsed",
+  PlanCreated: "plan.created",
+
   // Memory lifecycle events (memory_bank.ts)
   MemoryProjectCreated: "memory.project.created",
   MemoryProjectUpdated: "memory.project.updated",
@@ -118,6 +125,16 @@ export const DomainEventType = {
   MemoryTierPromotion: "memory.tier_promotion",
   MemoryTierPromotionFailed: "memory.tier_promotion_failed",
   MemoryIndexRebuildFailed: "memory.index_rebuild_failed",
+
+  // Memory notification / proposal events (notification.ts, memory_extractor.ts)
+  MemoryUpdatePending: "memory.update.pending",
+  MemoryUpdateApproved: "memory.update.approved",
+  MemoryUpdateRejected: "memory.update.rejected",
+  MemoryUpdatePendingDigest: "memory.update.pending.digest",
+  MemoryProposalCreated: "memory.proposal.created",
+  MemoryProposalApproved: "memory.proposal.approved",
+  MemoryProposalRejected: "memory.proposal.rejected",
+  MemoryAutoApproved: "memory.auto_approved",
 
   // Review events (review_registry.ts)
   ReviewCreated: "review.created",
@@ -158,6 +175,10 @@ export const DomainEventType = {
   WatcherFileAlreadyProcessing: "watcher.file_already_processing",
   WatcherError: "watcher.error",
 
+  // Context loader events (context_loader.ts)
+  ContextLoaded: "context.loaded",
+  ContextFileLoadError: "context.file_load_error",
+
   // Config events
   ConfigLoaded: "config.loaded",
   ConfigUpdated: "config.updated",
@@ -166,6 +187,53 @@ export const DomainEventType = {
   SecurityFileValidationFilteredAll: "security.file_validation_filtered_all",
   SecuritySymlinkDetected: "symlink_detected",
   SecurityViolation: "security.violation",
+  SecurityPathTraversalAttempted: "security.path_traversal_attempted",
+  SecurityPathAccessDenied: "security.path_access_denied",
+
+  // Portal / path events
+  PathResolved: "path.resolved",
+  PathResolutionFailed: "path.resolution_failed",
+  PathResolutionError: "path.resolution_error",
+  PathInvalidAlias: "path.invalid_alias",
+  PathAccessDenied: "path.access_denied",
+  PortalAnalyzed: "portal.analyzed",
+
+  // Request processing — status and provider events
+  RequestStatusUpdateFailed: "request.status_update_failed",
+  RequestFlowValidationFailed: "flow.validation.failed",
+  RequestProviderSelected: "provider.selected",
+  RequestProviderSelectionFailed: "provider.selection_failed",
+  RequestBlueprintNotFound: "blueprint.not_found",
+  RequestBlueprintLoadedFallback: "blueprint.loaded_fallback",
+  RequestPlanSaveRejectedFailed: "plan.save_rejected_failed",
+
+  // MCP server events
+  McpPromptsExecutePlan: "mcp.prompts.execute_plan",
+  McpPromptsCreateReview: "mcp.prompts.create_review",
+  McpPromptsCommitMessage: "mcp.prompts.commit_message",
+  McpResourcesDiscovered: "mcp.resources.discovered",
+  McpServerStarted: "mcp.server.started",
+  McpServerStopped: "mcp.server.stopped",
+  McpInitialize: "mcp.initialize",
+  McpToolsList: "mcp.tools.list",
+  McpToolNotFound: "mcp.tool.not_found",
+  McpToolExecuted: "mcp.tool.executed",
+  McpPermissionDenied: "mcp.permission.denied",
+  McpToolFailed: "mcp.tool.failed",
+  McpResourcesRead: "mcp.resources.read",
+  McpHttpServerStarted: "mcp.http_server.started",
+
+  // Daemon / watcher lifecycle (additional)
+  DaemonRequestProcessorInitialized: "request_processor.initialized",
+  DaemonFileDetected: "file.detected",
+  PlanGenerated: "plan.generated",
+  PlanDetected: "plan.detected",
+  ShutdownWatchersStopped: "shutdown.watchers_stopped",
+  ShutdownAutoApprovalStopped: "shutdown.auto_approval_stopped",
+  ShutdownDatabaseClosed: "shutdown.database_closed",
+
+  // Error handling
+  SafeErrorInternalDetails: "safe_error.internal_details",
 
   // Database events
   DatabaseConnected: "database.connected",

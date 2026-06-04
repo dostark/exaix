@@ -19,6 +19,7 @@ import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
 import {
@@ -956,7 +957,7 @@ export class ToolRegistry implements IToolRegistry {
           identity_id: this.identityId ?? null,
         };
         if (this.logger) {
-          void this.logger.warn("security.path_traversal_attempted", path, payload, this.traceId);
+          void this.logger.warn(DomainEventType.SecurityPathTraversalAttempted, path, payload, this.traceId);
         }
 
         throw new Error(`Access denied: Path traversal detected`);
@@ -972,7 +973,7 @@ export class ToolRegistry implements IToolRegistry {
           identity_id: this.identityId ?? null,
         };
         if (this.logger) {
-          void this.logger.warn("security.path_access_denied", path, payload, this.traceId);
+          void this.logger.warn(DomainEventType.SecurityPathAccessDenied, path, payload, this.traceId);
         }
 
         const allowedRootsList = allowedRoots.join(", ");
@@ -987,7 +988,7 @@ export class ToolRegistry implements IToolRegistry {
         identity_id: this.identityId ?? null,
       };
       if (this.logger) {
-        void this.logger.warn("path.resolution_error", path, payload, this.traceId);
+        void this.logger.warn(DomainEventType.PathResolutionError, path, payload, this.traceId);
       }
 
       throw error;

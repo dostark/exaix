@@ -6,13 +6,8 @@
  * @related-files [packages/memory/src/bank/memory_bank.ts, packages/core/src/types/i_database_service.ts]
  */
 
-import {
-  DEFAULT_TITLE_PLACEHOLDER,
-  MEMORY_EVENT_AUTO_APPROVED,
-  MemoryOperation,
-  MemoryReferenceType,
-  MemoryScope,
-} from "@exaix/core";
+import { DEFAULT_TITLE_PLACEHOLDER, MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
@@ -102,7 +97,7 @@ export class MemoryExtractorService {
 
     // Log to IActivity Journal
     this.logger?.info(
-      "memory.proposal.created",
+      DomainEventType.MemoryProposalCreated,
       learning.project || MemoryScope.GLOBAL,
       {
         proposal_id: proposal.id,
@@ -210,7 +205,7 @@ export class MemoryExtractorService {
 
     // Log approval
     this.logger?.info(
-      autoApproved ? MEMORY_EVENT_AUTO_APPROVED : "memory.proposal.approved",
+      autoApproved ? DomainEventType.MemoryAutoApproved : DomainEventType.MemoryProposalApproved,
       proposal.target_project || MemoryScope.GLOBAL,
       {
         proposal_id: proposalId,
@@ -237,7 +232,7 @@ export class MemoryExtractorService {
 
     // Log rejection
     this.logger?.info(
-      "memory.proposal.rejected",
+      DomainEventType.MemoryProposalRejected,
       proposal.target_project || MemoryScope.GLOBAL,
       {
         proposal_id: proposalId,

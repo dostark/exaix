@@ -18,7 +18,7 @@ const PRE_COMMIT_CONTENT = `#!/bin/sh
 # ============================================
 # Gate 0: Block direct commits on 'main'
 #         Bypass: HOOK_BYPASS_MAIN=1 git commit ...
-# Gates 1-11: Format, lint, style, magic, docs, complexity, arch
+# Gates 1-13: Format, lint, style, magic, docs, complexity, parity, arch, event-strings
 # ============================================
 
 # --- Gate 0: Main branch guard ---
@@ -139,6 +139,21 @@ fi
 deno task docs-bench
 if [ $? -ne 0 ]; then
   echo "❌ Error: Hallucination benchmarks failed. Verify ground truth consistency."
+  exit 1
+fi
+
+# 12. Tool Result Parity Check
+deno task check:tool-result-parity
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Tool result parity check failed. TOOL_MANIFEST is out of sync with handler schemas."
+  exit 1
+fi
+
+# 13. Inline Event String Check
+deno task check:event-strings
+if [ $? -ne 0 ]; then
+  echo "❌ Error: Inline event string literals detected. Use DomainEventType members instead."
+  echo "    See CODE_STYLE.md#event-type-strings for guidance."
   exit 1
 fi
 

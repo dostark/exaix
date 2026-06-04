@@ -8,6 +8,7 @@
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ICliApplicationContext } from "@exaix/core/types";
+import { DomainEventType } from "@exaix/core/events";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
 import type { JSONValue } from "@exaix/core";
 import { JsonRpcErrorCode } from "@exaix/core";
@@ -203,7 +204,7 @@ export class MCPServer {
     // Log server start
     this.logActivity(
       "mcp.server",
-      "mcp.server.started",
+      DomainEventType.McpServerStarted,
       null,
       {
         transport: this.transport,
@@ -226,7 +227,7 @@ export class MCPServer {
     // Log server stop
     this.logActivity(
       "mcp.server",
-      "mcp.server.stopped",
+      DomainEventType.McpServerStopped,
       null,
       {
         server_name: this.serverName,
@@ -326,7 +327,7 @@ export class MCPServer {
     // Log initialization
     this.logActivity(
       "mcp.server",
-      "mcp.initialize",
+      DomainEventType.McpInitialize,
       clientInfo?.name || null,
       {
         client_version: clientInfo?.version || null,
@@ -364,7 +365,7 @@ export class MCPServer {
     // Log tools list request
     this.logActivity(
       "mcp.server",
-      "mcp.tools.list",
+      DomainEventType.McpToolsList,
       null,
       {
         tool_count: toolDefinitions.length,
@@ -398,7 +399,7 @@ export class MCPServer {
       // Log missing tool attempt
       this.logActivity(
         "mcp.server",
-        "mcp.tool.not_found",
+        DomainEventType.McpToolNotFound,
         params.name,
         { tool_name: params.name },
       );
@@ -491,7 +492,7 @@ export class MCPServer {
       try {
         this.logActivity(
           "mcp.server",
-          "mcp.tool.executed",
+          DomainEventType.McpToolExecuted,
           params.name,
           {
             tool_name: params.name,
@@ -516,7 +517,7 @@ export class MCPServer {
         try {
           this.logActivity(
             "mcp.server",
-            "mcp.permission.denied",
+            DomainEventType.McpPermissionDenied,
             params.name,
             {
               tool_name: params.name,
@@ -534,7 +535,7 @@ export class MCPServer {
       try {
         this.logActivity(
           "mcp.server",
-          "mcp.tool.failed",
+          DomainEventType.McpToolFailed,
           params.name,
           {
             tool_name: params.name,
@@ -755,7 +756,7 @@ export class MCPServer {
       // Log resource read
       this.logActivity(
         "mcp.resources",
-        "mcp.resources.read",
+        DomainEventType.McpResourcesRead,
         params.uri,
         {
           portal: parsed.portal,
@@ -984,7 +985,7 @@ export class MCPServer {
     // Log server start
     this.logActivity(
       "mcp.server",
-      "mcp.http_server.started",
+      DomainEventType.McpHttpServerStarted,
       null,
       {
         transport: this.transport,

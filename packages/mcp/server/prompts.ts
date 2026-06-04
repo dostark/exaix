@@ -8,6 +8,7 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import { MessageRole } from "@exaix/core";
 import { PORTAL_LABEL } from "@exaix/core";
 
@@ -119,7 +120,7 @@ export function generateExecutePlanPrompt(
 
   // Log prompt generation
   if (logger) {
-    logger.info("mcp.prompts.execute_plan", plan_id, {
+    logger.info(DomainEventType.McpPromptsExecutePlan, plan_id, {
       portal,
     });
   }
@@ -181,7 +182,7 @@ export function generateCreateReviewPrompt(
 
   // Log prompt generation
   if (logger) {
-    logger.info("mcp.prompts.create_review", trace_id, {
+    logger.info(DomainEventType.McpPromptsCreateReview, trace_id, {
       portal,
       description,
     });
@@ -286,7 +287,7 @@ export function generateCommitMessagePrompt(
 
   // Log prompt generation
   if (logger) {
-    logger.info("mcp.prompts.commit_message", null, {
+    logger.info(DomainEventType.McpPromptsCommitMessage, null, {
       portal,
     });
   }

@@ -6,6 +6,7 @@
  * @related-files ["packages/request/src/processor.ts", "packages/core/src/status/request_status.ts"]
  */
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { RequestStatusType } from "@exaix/core/status";
 import { RequestStatus } from "@exaix/core/status";
 
@@ -67,7 +68,7 @@ export class StatusManager {
 
       await Deno.writeTextFile(filePath, updatedContent);
     } catch (error) {
-      await this.logger.error("request.status_update_failed", filePath, {
+      await this.logger.error(DomainEventType.RequestStatusUpdateFailed, filePath, {
         new_status: newStatus,
         error: error instanceof Error ? error.message : String(error),
       });

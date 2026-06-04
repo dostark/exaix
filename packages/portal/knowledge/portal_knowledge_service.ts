@@ -28,6 +28,7 @@ import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./kn
 import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
 import type { ILogger, IMemoryBankService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IPortalKnowledge } from "@exaix/schemas";
 
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
@@ -376,7 +377,7 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
     // Log activity
     if (this._evLogger) {
-      void this._evLogger.info("portal.analyzed", portalAlias, {
+      void this._evLogger.info(DomainEventType.PortalAnalyzed, portalAlias, {
         mode: resolvedMode,
         filesScanned: fileList.length,
         durationMs: knowledge.metadata.durationMs,

@@ -10,6 +10,7 @@ import { relative } from "@std/path";
 import { walk } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 // ============================================================================
 // Types
@@ -184,7 +185,7 @@ export async function discoverAllResources(
 
   // Log resource discovery
   if (logger) {
-    logger.info("mcp.resources.discovered", null, {
+    logger.info(DomainEventType.McpResourcesDiscovered, null, {
       resource_count: allResources.length,
       portal_count: config.portals.length,
     });

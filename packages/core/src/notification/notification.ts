@@ -19,6 +19,7 @@ import type { IDatabaseService } from "@exaix/core/types";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import type { IMemoryNotification } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */
@@ -77,7 +78,7 @@ export class NotificationService implements INotificationService {
     // Log to IActivity Journal
     if (this.logger) {
       await this.logger.info(
-        "memory.update.pending",
+        DomainEventType.MemoryUpdatePending,
         proposal.target_project || MemoryScope.GLOBAL,
         {
           proposal_id: proposal.id,
@@ -133,7 +134,7 @@ export class NotificationService implements INotificationService {
   notifyApproval(proposalId: string, learningTitle: string): void {
     if (this.logger) {
       this.logger.info(
-        "memory.update.approved",
+        DomainEventType.MemoryUpdateApproved,
         proposalId,
         {
           proposal_id: proposalId,
@@ -152,7 +153,7 @@ export class NotificationService implements INotificationService {
   notifyRejection(proposalId: string, reason: string): void {
     if (this.logger) {
       this.logger.info(
-        "memory.update.rejected",
+        DomainEventType.MemoryUpdateRejected,
         proposalId,
         {
           proposal_id: proposalId,
@@ -256,7 +257,7 @@ export class NotificationService implements INotificationService {
 
     if (this.logger) {
       await this.logger.info(
-        "memory.update.pending.digest",
+        DomainEventType.MemoryUpdatePendingDigest,
         MemoryScope.GLOBAL,
         {
           pending_count: pendingCount,

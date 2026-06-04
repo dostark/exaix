@@ -1064,14 +1064,14 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       }
 
       if (error instanceof SubprocessTimeoutError) {
-        await this.logger.error("git.audit.timeout", portalPath, {
+        await this.logger.error(DomainEventType.GitAuditTimeout, portalPath, {
           error: error.message,
           timeout_ms: DEFAULT_GIT_STATUS_TIMEOUT_MS,
         });
         throw new AgentExecutionError(`Git audit timed out for portal: ${portalPath}`);
       }
 
-      await this.logger.error("git.audit.failed", portalPath, {
+      await this.logger.error(DomainEventType.GitAuditFailed, portalPath, {
         error: error instanceof Error ? error.message : String(error),
         stderr: (error instanceof Error && "stderr" in error ? (error as Error & { stderr?: string }).stderr : null) ??
           null,
@@ -1250,7 +1250,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     }
 
     // Log results
-    await this.logger.info("git.revert.completed", portalPath, {
+    await this.logger.info(DomainEventType.GitRevertCompleted, portalPath, {
       total_files: unauthorizedFiles.length,
       successful: results.successful.length,
       failed: results.failed.length,
@@ -1262,7 +1262,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       const errorMsg = `Failed to revert ${results.failed.length} unauthorized files: ${
         results.failed.map((f) => f.file).join(", ")
       }`;
-      await this.logger.error("git.revert.partial_failure", portalPath, {
+      await this.logger.error(DomainEventType.GitRevertPartialFailure, portalPath, {
         failed_count: results.failed.length,
         failed_files: results.failed,
       });

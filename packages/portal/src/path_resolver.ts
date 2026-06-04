@@ -10,6 +10,7 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";
 
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
@@ -42,7 +43,7 @@ export class PathResolver {
 
     try {
       if (!aliasPath.startsWith("@")) {
-        this.logSecurityViolation("path.invalid_alias", aliasPath, "Path must start with @ alias");
+        this.logSecurityViolation(DomainEventType.PathInvalidAlias, aliasPath, "Path must start with @ alias");
         throw new Error("Path must start with a portal alias (e.g., @Blueprints/)");
       }
 
@@ -60,7 +61,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log successful resolution
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolved", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolved, aliasPath, {
         alias,
         resolved_path: resolvedPath,
         duration_ms: duration,
@@ -71,7 +72,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log resolution failure
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolution_failed", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolutionFailed, aliasPath, {
         duration_ms: duration,
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
@@ -133,7 +134,7 @@ export class PathResolver {
 
     // If we reach here, it's not within any allowed root
     this.logSecurityViolation(
-      "path.access_denied",
+      DomainEventType.PathAccessDenied,
       path,
       `Path ${path} resolves to ${normalizedPath}, which is outside allowed roots`,
     );

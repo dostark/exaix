@@ -23,6 +23,7 @@ import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 export interface IRequestMetadata {
   requestId: string;
@@ -170,7 +171,7 @@ export class PlanWriter {
 
       // Log validation success
       await this.logPlanValidation(
-        "plan.validation.success",
+        DomainEventType.PlanValidationSuccess,
         metadata.requestId,
         metadata.traceId,
         {
@@ -183,7 +184,7 @@ export class PlanWriter {
       if (error instanceof PlanValidationError) {
         // Log validation failure
         await this.logPlanValidation(
-          "plan.validation.failed",
+          DomainEventType.PlanValidationFailed,
           metadata.requestId,
           metadata.traceId,
           {
@@ -195,7 +196,7 @@ export class PlanWriter {
         // Enrich error details with full raw response for debugging
         error.details.fullRawResponse = result.raw;
         await this.logPlanValidation(
-          "plan.validation.enriched",
+          DomainEventType.PlanValidationEnriched,
           metadata.requestId,
           metadata.traceId,
           { raw_length: result.raw.length },
@@ -217,7 +218,7 @@ export class PlanWriter {
 
     // Log successful parsing
     await this.logPlanValidation(
-      "plan.parsed",
+      DomainEventType.PlanParsed,
       metadata.requestId,
       metadata.traceId,
       { file_path: `${this.config.plansDirectory}/${this.generateFilename(metadata.requestId)}` },
@@ -492,7 +493,7 @@ export class PlanWriter {
 
     try {
       await this.config.logger.info(
-        "plan.created",
+        DomainEventType.PlanCreated,
         metadata.requestId,
         {
           plan_path: planPath,

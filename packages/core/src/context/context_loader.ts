@@ -15,6 +15,7 @@
 import type { IDatabaseService } from "@exaix/core/types";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 // ============================================================================
 // Types and Interfaces
@@ -377,7 +378,7 @@ export class ContextLoader {
 
     try {
       this.config.logger?.info(
-        "context.loaded",
+        DomainEventType.ContextLoaded,
         this.config.requestId || null,
         {
           total_tokens: metadata.totalTokens,
@@ -410,7 +411,7 @@ export class ContextLoader {
 
     try {
       this.config.logger?.info(
-        "context.file_load_error",
+        DomainEventType.ContextFileLoadError,
         filePath,
         {
           error_message: error instanceof Error ? error.message : String(error),

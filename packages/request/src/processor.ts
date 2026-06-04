@@ -556,7 +556,7 @@ export class RequestProcessor {
     if (this.flowValidator) {
       const validation = await this.flowValidator.validateFlow(frontmatter.flow!);
       if (!validation.valid) {
-        traceLogger.error("flow.validation.failed", frontmatter.flow!, {
+        traceLogger.error(DomainEventType.RequestFlowValidationFailed, frontmatter.flow!, {
           error: validation.error ?? null,
         });
         await this.statusManager.updateStatus(
@@ -654,7 +654,7 @@ export class RequestProcessor {
 
     if (this.testProvider) {
       selectedProvider = this.testProvider;
-      traceLogger.info("provider.selected", "test-provider", {
+      traceLogger.info(DomainEventType.RequestProviderSelected, "test-provider", {
         taskComplexity,
         trace_id: traceId,
       });
@@ -666,7 +666,9 @@ export class RequestProcessor {
           taskComplexity,
         );
       } catch (selErr) {
-        traceLogger.warn("provider.selection_failed", String(selErr), { fallback: ProviderType.MOCK });
+        traceLogger.warn(DomainEventType.RequestProviderSelectionFailed, String(selErr), {
+          fallback: ProviderType.MOCK,
+        });
         selectedProviderName = ProviderType.MOCK;
       }
 
@@ -684,7 +686,7 @@ export class RequestProcessor {
         halfOpenSuccessThreshold: 2,
       });
 
-      traceLogger.info("provider.selected", selectedProviderName, {
+      traceLogger.info(DomainEventType.RequestProviderSelected, selectedProviderName, {
         taskComplexity,
         trace_id: traceId,
         provider_wrapped: selectedProvider.id,
@@ -776,7 +778,7 @@ ${result.content}`,
     identityId: string,
     traceLogger: IEventLogger,
   ): Promise<string | null> {
-    traceLogger.error("blueprint.not_found", identityId, { request: filePath });
+    traceLogger.error(DomainEventType.RequestBlueprintNotFound, identityId, { request: filePath });
     await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Blueprint not found: ${identityId}`);
     traceLogger.error(DomainEventType.RequestFailed, filePath, { error: `Blueprint not found: ${identityId}` });
     return null;
@@ -813,7 +815,7 @@ ${result.content}`,
             const fallbackLoader = new BlueprintLoader({ blueprintsPath: candidatePath });
             const loadedBlueprint = await fallbackLoader.load(identityId);
             if (loadedBlueprint) {
-              traceLogger.info("blueprint.loaded_fallback", identityId, { from: candidatePath });
+              traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: candidatePath });
               return loadedBlueprint;
             }
           }
@@ -840,7 +842,7 @@ ${result.content}`,
     const fallbackLoader = new BlueprintLoader({ blueprintsPath: repoIdentitiesPath });
     const loadedBlueprint = await fallbackLoader.load(identityId);
     if (loadedBlueprint) {
-      traceLogger.info("blueprint.loaded_fallback", identityId, { from: repoIdentitiesPath });
+      traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoIdentitiesPath });
       return loadedBlueprint;
     }
 
@@ -851,7 +853,7 @@ ${result.content}`,
       const moduleLoader = new BlueprintLoader({ blueprintsPath: repoModuleIdentities });
       const moduleLoaded = await moduleLoader.load(identityId);
       if (moduleLoaded) {
-        traceLogger.info("blueprint.loaded_fallback", identityId, { from: repoModuleIdentities });
+        traceLogger.info(DomainEventType.RequestBlueprintLoadedFallback, identityId, { from: repoModuleIdentities });
         return moduleLoaded;
       }
     } catch {
@@ -931,7 +933,7 @@ ${result.content}`,
         });
         persistedRejectedPath = true;
       } catch (writeErr) {
-        traceLogger.warn("plan.save_rejected_failed", filePath, { error: String(writeErr) });
+        traceLogger.warn(DomainEventType.RequestPlanSaveRejectedFailed, filePath, { error: String(writeErr) });
       }
     }
 

@@ -129,6 +129,50 @@ pre-commit gates via `deno task check:magic` (or directly:
   Instead, define a TypeScript `enum` in the appropriate package or a shared named type alias.
   This rule is enforced as an error in production code.
 
+### Event Type Strings {#event-type-strings}
+
+Every event action argument passed to `IEventLogger.info()`, `.warn()`, `.error()`, `.fatal()`, or `.debug()` — and to `IEventRegistry.emit()` — **must** be a `DomainEventType` member imported from `@exaix/core/events`. Inline string literals are forbidden at these call sites.
+
+**Prohibited:**
+
+```ts
+await this.logger.info("execution.started", traceId, payload); // ← inline string
+```
+
+**Required:**
+
+```ts
+import { DomainEventType } from "@exaix/core/events";
+await this.logger.info(DomainEventType.ExecutionStarted, traceId, payload);
+```
+
+This is enforced by `deno task check:event-strings` (Gate 13 in the pre-commit pipeline). For the full event type table, see `docs/Reference_Data.md#event-taxonomy`.
+
+### Adding a New Event Type — Contributor Checklist {#add-event-type}
+
+Follow these steps every time a new event type is needed:
+
+1. **Add the member to `DomainEventType`** in `packages/core/src/events/domain_event_types.ts`.
+   - Use `DomainVerb` naming: `ExecutionStarted`, `FlowStepCompleted`, `GitCommitted`.
+   - Use `domain.subdomain.verb` string values: `"execution.started"`, `"flow.step.completed"`.
+   - Group it with related members using a comment block.
+
+2. **Register the publisher** at bootstrap (typically in the relevant `apps/` init file):
+
+   ```ts
+   registry.registerPublisher("my_service", [...existing, DomainEventType.MyNewEvent]);
+   ```
+
+3. **Emit at the call site** using `registry.emit()` for domain events or `logger.info()` for internal infrastructure events:
+
+   ```ts
+   await registry.emit("my_service", DomainEventType.MyNewEvent, { traceId, ...payload });
+   ```
+
+4. **Update `docs/Reference_Data.md#event-taxonomy`** — add a row with the member name, string value, and domain.
+
+5. **Run `deno task check:event-strings`** — must pass with zero violations.
+
 **What is skipped (not counted):**
 
 - Property/enum member names (e.g., `{ foo: "bar" }` — `"foo"` is a name, not a
