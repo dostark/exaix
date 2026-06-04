@@ -44,6 +44,7 @@ export abstract class ToolHandler {
       getActivitiesByTrace: (traceId: string) => db.getActivitiesByTrace(traceId),
       getActivitiesByTraceSafe: (traceId: string) => db.getActivitiesByTraceSafe(traceId),
       getRecentActivity: (limit?: number) => db.getRecentActivity(limit),
+      queryActivity: (filter) => db.queryActivity(filter),
     } as IEventJournalReader;
   }
 

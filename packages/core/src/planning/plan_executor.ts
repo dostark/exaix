@@ -11,12 +11,12 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
+import type { IEventLogger } from "@exaix/core/logger";
 import { SafeSubprocess } from "@exaix/core";
-import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "@exaix/execution";
-import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
+import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
@@ -84,8 +84,20 @@ export interface IPlanAction {
   description?: string;
 }
 
+function noopLogger(): IEventLogger {
+  return {
+    info: () => Promise.resolve(),
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => noopLogger(),
+  };
+}
+
 export class PlanExecutor {
-  private logger: EventLogger;
+  private logger: IEventLogger;
   private enableGit: boolean;
   private generateReport: boolean;
   private config: Config;
@@ -96,15 +108,13 @@ export class PlanExecutor {
     private llmProvider: IModelProvider,
     db: IDatabaseService,
     private repoPath: string,
+    logger?: IEventLogger,
     private options: IPlanExecutorOptions = {},
   ) {
     const ctx = options.context;
     this.config = ctx?.config.get() || config;
     this.db = ctx?.db || db;
-    this.logger = new EventLogger({
-      db: this.db,
-      defaultActor: ActivityActor.SYSTEM,
-    });
+    this.logger = logger ?? noopLogger();
     this.enableGit = options.enableGit ?? true;
     this.generateReport = options.generateReport ?? false;
   }

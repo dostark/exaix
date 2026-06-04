@@ -4,6 +4,10 @@
  * @description Manages analysis artifacts produced by agents, storing them as markdown files with frontmatter.
  * @architectural-layer Services
  * @related-files ["packages/execution/src/agent_runner.ts", "packages/execution/src/execution_loop.ts"]
+ * @todo Refactor to use a narrow IArtifactRepository interface instead of raw IDatabaseService.
+ *       This service performs CRUD on the `artifacts` table (INSERT, UPDATE, SELECT) — it does
+ *       NOT use the activity journal. A dedicated repository interface would encapsulate the
+ *       SQL and remove the direct IDatabaseService dependency, consistent with GAP-6 principles.
  */
 
 import { join } from "@std/path";

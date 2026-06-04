@@ -117,6 +117,7 @@ export function createPlanAmendmentExecutor(options: ICreatePlanAmendmentExecuto
     options.llm,
     createStubDb(),
     options.root,
+    undefined,
     {
       ...(options.scorer ? { confidenceScorer: options.scorer } : {}),
       enableGit: false,

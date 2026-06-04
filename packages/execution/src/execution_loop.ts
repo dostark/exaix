@@ -20,6 +20,7 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IEventJournalReader } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
@@ -788,6 +789,7 @@ export class ExecutionLoop {
       this.llmProvider,
       this.db,
       executionRoot,
+      this.logger,
       {
         ...options,
         context: this.context,
@@ -1261,7 +1263,15 @@ export class ExecutionLoop {
         DEFAULT_EXECUTION_MEMORY_PATH,
       ),
     };
-    return new MissionReporter(this.config, reportConfig, memoryBank, this.db);
+    const reader = this.db
+      ? {
+        getActivitiesByTrace: (id: string) => this.db!.getActivitiesByTrace(id),
+        getActivitiesByTraceSafe: (id: string) => this.db!.getActivitiesByTraceSafe(id),
+        getRecentActivity: (limit?: number) => this.db!.getRecentActivity(limit),
+        queryActivity: (filter) => this.db!.queryActivity(filter),
+      } as IEventJournalReader
+      : undefined;
+    return new MissionReporter(this.config, reportConfig, memoryBank, this.logger, reader);
   }
 
   /**
