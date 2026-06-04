@@ -18,6 +18,7 @@ import {
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
 import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
 
@@ -720,10 +721,54 @@ Deno.test(
         `helper.ts should be passed to SymbolExtractor; got: [${tracker.calls.join(", ")}]`,
       );
     } finally {
-      await Deno.remove(dir, { recursive: true });
+      await Deno.remove(tempDir, { recursive: true });
     }
   },
 );
+
+// ============================================================================
+// GAP-6 Remediation: EventLogger Integration Tests
+// ============================================================================
+
+type IEventLoggerSpy = IEventLogger & { actions: string[] };
+
+function makeEvLoggerSpy(): IEventLoggerSpy {
+  const actions: string[] = [];
+  const self: IEventLoggerSpy = {
+    actions,
+    info(action: string): Promise<void> {
+      actions.push(action);
+      return Promise.resolve();
+    },
+    warn(action: string): Promise<void> {
+      actions.push(action);
+      return Promise.resolve();
+    },
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => self,
+  };
+  return self;
+}
+
+Deno.test("[PortalKnowledgeService] routes portal.analyzed through IEventLogger when provided", async () => {
+  const tempDir = await makeTempPortal();
+  try {
+    const logger = makeEvLoggerSpy();
+    const svc = new PortalKnowledgeService({
+      config: makeConfig({ useLlmInference: false }),
+      memoryBank: makeMockMemoryBank(),
+      evLogger: logger,
+      runner: makeMockDocRunner(),
+    });
+    await svc.analyze("ev-portal", tempDir, PortalAnalysisMode.QUICK);
+    assertEquals(logger.actions.includes("portal.analyzed"), true);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
 
 Deno.test("[PortalKnowledgeService] metadata.symbolSourceFilesScanned equals TS/JS file count", async () => {
   const { dir, tsFileCount } = await makeTempPortalMultiFile();
