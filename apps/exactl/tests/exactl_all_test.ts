@@ -943,3 +943,17 @@ Deno.test("wait expire calls waitStateCommands.expire with token and message", a
     assert(called);
   });
 });
+
+Deno.test("wait cancel calls waitStateCommands.cancel with token and message", async () => {
+  await withTestMod(async (mod, ctx) => {
+    let called = false;
+    ctx.waitStateCommands.cancel = (token: string, message?: string) => {
+      called = true;
+      assertEquals(token, "tok-cancel");
+      assertEquals(message, "Cancel it");
+      return Promise.resolve({ waitStateId: "ws-5", status: "cancelled" } as any);
+    };
+    await mod.__test_command.parse(["wait", "cancel", "tok-cancel", "-m", "Cancel it"]);
+    assert(called);
+  });
+});

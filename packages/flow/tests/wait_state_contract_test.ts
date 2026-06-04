@@ -4,7 +4,7 @@
  * @description Tests for wait-state schemas, transition policy, and service contracts.
  */
 
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import {
   CreateWaitStateInputSchema,
   DefaultWaitStateTransitionPolicy,
@@ -306,4 +306,39 @@ Deno.test("WaitStateService full lifecycle: create → approve → getById refle
   const fetched = await service.getById(created.waitStateId);
   assertEquals(fetched?.status, "fulfilled");
   assertEquals(fetched?.resolutionSummary, "Approved by reviewer");
+});
+
+Deno.test("WaitStateService: concurrent transition on same wait state — second call fails", async () => {
+  const service = new WaitStateService();
+  const resumeToken = "00000000-0000-4000-8000-000000000031";
+
+  const created = await service.create({
+    kind: "plan_approval",
+    traceId: "trace-concurrent",
+    artifactPath: "Workspace/WaitStates/trace-concurrent/cc.json",
+    resumeToken,
+  });
+
+  const results = await Promise.allSettled([
+    service.transition({
+      waitStateId: created.waitStateId,
+      action: "approve",
+      resumeToken,
+    }),
+    service.transition({
+      waitStateId: created.waitStateId,
+      action: "approve",
+      resumeToken,
+    }),
+  ]);
+
+  assertEquals(results[0].status, "fulfilled");
+  if (results[0].status === "fulfilled") {
+    assertEquals(results[0].value.status, "fulfilled");
+  }
+
+  assertEquals(results[1].status, "rejected");
+  if (results[1].status === "rejected") {
+    assertStringIncludes(results[1].reason.message, "Transition fulfilled → approve is not allowed");
+  }
 });
