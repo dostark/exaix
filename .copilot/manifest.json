@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T18:06:47.168Z",
+  "generated_at": "2026-06-04T08:45:28.218Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -924,7 +924,7 @@
       "scope": "dev",
       "title": "Pre-Gap Analysis Skill (#pre-gap-analysis)",
       "short_summary": "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against.",
-      "version": "1.1",
+      "version": "1.2",
       "topics": [
         "planning",
         "gap-analysis",

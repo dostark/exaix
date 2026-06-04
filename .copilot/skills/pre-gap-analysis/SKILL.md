@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.1"
+version: "1.2"
 topics: ["planning", "gap-analysis", "architecture", "risk", "quality", "security", "tdd"]
 qwen_skill: pre-gap-analysis
 ---
@@ -27,11 +27,16 @@ Key points
   itself (appended after the last existing section), not just reported in chat.
 - Amendments to the plan text (e.g., adding missing schema fields, clarifying
   an interface signature) must also be written directly into the document.
-- A security feasibility check (Phase 5) is mandatory for every step that
+- An architectural alignment & necessity check (Phase 2) is mandatory for every
+  planning document. Before verifying source files, evaluate whether the plan
+  actually fills a gap or could be satisfied by existing infrastructure. If the
+  plan's core value is already covered by existing Phases, flag a 🟡 Feasibility
+  gap or recommend cancellation/postponement.
+- A security feasibility check (Phase 6) is mandatory for every step that
   touches input handling, auth, path resolution, secrets, or external data.
   Security gaps use the 🔒 severity symbol and are always prioritised above
   🟡 Feasibility.
-- A traceability & configurability check (Phase 6) is required for every step
+- A traceability & configurability check (Phase 7) is required for every step
   that introduces new EventLogger events, thresholds, timeouts, or opt-in
   features. Untyped events and hardcoded values are gaps.
 - When verifying more than ~20 source files, work in batches of 5–10: read a batch, record findings, then continue.
@@ -48,6 +53,9 @@ Examples
    Additional context: ARCHITECTURE.md, packages/flow/src/flow_runner.ts"
 
 Do / Don't
+- ✅ Do apply the architectural alignment checklist (Phase 2) to every planning
+  document before touching source files — verify the plan fills a real gap and
+  does not duplicate existing infrastructure.
 - ✅ Do read every source file cited in the planning document — never trust
   the plan's description of what a file contains.
 - ✅ Do follow every input/output data-flow chain end-to-end.
@@ -58,18 +66,20 @@ Do / Don't
 - ✅ Do classify every gap with a severity symbol (🔴 Critical / 🔒 Security /
   🟡 Feasibility / 🟠 Testing / 🔵 Conceptual) so the team can triage quickly.
 - ✅ Do include a numbered gap summary table before the detailed gap entries.
-- ✅ Do run Phase 5 security checks on every step touching input handling,
+- ✅ Do run Phase 6 security checks on every step touching input handling,
   auth/authorisation, path resolution, secrets, or external payloads.
 - ✅ Do write all gaps and a Pre-Implementation Actions list into the document.
 - ✅ Do bump the document version after writing gaps in.
 - ✅ Do use any additionally supplied documents as context.
-- ✅ Do run Phase 6 traceability & configurability checks on every step that
+- ✅ Do run Phase 7 traceability & configurability checks on every step that
   introduces new `EventLogger` events, thresholds, timeouts, or opt-in features.
-- ✅ Do run Phase 4 scenario framework coverage checks on every step that
+- ✅ Do run Phase 5 scenario framework coverage checks on every step that
   affects the request → plan → execution → review → memory → update flow.
 - ❌ Don't mark a step gap-free unless its data sources, types, and tests are
   fully specified.
-- ❌ Don't skip Phase 5 for steps that handle external data or file paths —
+- ❌ Don't skip Phase 2 architectural alignment for any planning document —
+  even if the plan seems straightforward.
+- ❌ Don't skip Phase 6 for steps that handle external data or file paths —
   even if the plan did not mention security.
 - ❌ Don't report gaps only in chat — they MUST be written into the document.
 - ❌ Don't skip the gap summary table — it is required for agent traceability.
@@ -122,7 +132,57 @@ document provided. Your output has two parts:
 
 ---
 
-### Phase 2 — Source Verification
+### Phase 2 — Architectural Alignment & Necessity Check
+
+Apply this phase **before** verifying source files. If the plan fails this
+check, flag 🟡 Feasibility gaps (or recommend cancellation) before proceeding
+to Phase 3.
+
+1. **Map every claimed improvement to existing infrastructure.**
+   For each stated goal or improvement in the plan, answer:
+   - Does this capability already exist in a shipped Phase? (check Phases 37,
+     64, 65, 82, 84, and any others relevant to the plan's domain.)
+   - If yes, can the existing capability achieve the stated goal with minimal
+     changes (e.g., adding a wait-state kind, extending a schema, adding a
+     flow-validator rule) — without introducing a new service or abstraction?
+   - Document each existing-vs-planned mapping as a table.
+
+1. **Apply the devil's advocate test.**
+   For each major new concept the plan introduces (new service, new abstraction,
+   new orchestration primitive), ask:
+   - "What does this buy us that a simpler approach cannot?"
+   - "Is this solving a real runtime problem, or a flow-author discipline
+     problem that validation or documentation would handle more cheaply?"
+   - "In a local-first single-user system, who would race / conflict / contend
+     on this resource?"
+   - "Can an operator with filesystem access bypass this mechanism? If so,
+     what security boundary does it actually provide?"
+
+1. **Check for architectural drift.**
+   - Does the concept align with Exaix's core patterns (file-driven,
+     artifact-centric, local-first, single-user, human-governed)?
+   - Does it introduce a concept that conflicts with or bypasses the existing
+     architecture (e.g., in-process locks over VCS-level isolation, global
+     mutexes over resource-scoped coordination)?
+   - Would the plan's approach work identically in both solo and multi-user
+     modes, or does it assume one runtime model?
+
+1. **Assess the complexity-to-value ratio.**
+   - Estimate the implementation surface: new files, interfaces, services,
+     config fields, event types, tests.
+   - Compare against the estimated value: how often will this feature be
+     exercised in normal operation?
+   - If the ratio is poor, flag a 🟡 Feasibility gap and propose a simpler
+     alternative or recommend postponement.
+
+A finding in Phase 2 that concludes the plan should not proceed is classified
+🟡 Feasibility with `Resolution: "Recommend cancellation — see analysis in
+Phase 2 findings"`. It must be written into the document alongside any other
+gaps.
+
+---
+
+### Phase 3 — Source Verification
 
 1. **Locate every referenced source file and read it.**
    For each file the plan mentions: confirm it exists, and that the symbols the
@@ -162,7 +222,7 @@ document provided. Your output has two parts:
 
 ---
 
-### Phase 3 — Standards Compliance Check
+### Phase 4 — Standards Compliance Check
 
 1. **Check plan structure against `.copilot/planning/README.md`.**
    For every step, verify it contains all four §F sub-sections:
@@ -196,7 +256,7 @@ document provided. Your output has two parts:
 
 ---
 
-### Phase 4 — Scenario Framework Coverage Check
+### Phase 5 — Scenario Framework Coverage Check
 
 For **every step** that affects the **request → plan → execution → review → memory → update**
 flow (or any sub-path of it), assess whether the scenario framework at
@@ -204,7 +264,7 @@ flow (or any sub-path of it), assess whether the scenario framework at
 
 ---
 
-### Phase 5 — Security Feasibility Check
+### Phase 6 — Security Feasibility Check
 
 For **every step** that touches input parsing, file-system access, auth, secrets,
 network calls, process execution, or shared mutable state — apply the security
@@ -215,7 +275,7 @@ A finding is classified 🔒 Security — always triaged above 🟡 Feasibility.
 
 ---
 
-### Phase 6 — Traceability & Configurability Check
+### Phase 7 — Traceability & Configurability Check
 
 For **every step** that introduces new behaviour, check:
 
@@ -225,7 +285,7 @@ For **every step** that introduces new behaviour, check:
 
 ---
 
-### Phase 7 — Gap Classification
+### Phase 8 — Gap Classification
 
 Classify every gap:
 
@@ -241,7 +301,7 @@ Build a gap summary table before detailed entries.
 
 ---
 
-### Phase 8 — Write Gaps Into the Document
+### Phase 9 — Write Gaps Into the Document
 
 Append at the end of the planning document using the exact format below.
 
@@ -279,7 +339,7 @@ Append at the end of the planning document using the exact format below.
 
 ---
 
-### Phase 9 — Finalize
+### Phase 10 — Finalize
 
 1. Bump the document version in frontmatter.
 1. Run `deno run --allow-read --allow-write scripts/markdown_lint.ts .copilot/planning/<doc>`.
