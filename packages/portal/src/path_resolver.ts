@@ -10,13 +10,17 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";
 
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 export interface IPathResolverConfig {
-  /** Optional: Database service for activity logging */
+  /** Optional: Database service for activity logging (deprecated — prefer logger) */
   db?: IDatabaseService;
+
+  /** Optional: Event logger for activity and security event routing */
+  logger?: IEventLogger;
 
   /** Optional: Trace ID for logging */
   traceId?: string;
@@ -25,11 +29,13 @@ export interface IPathResolverConfig {
 export class PathResolver {
   private config: Config;
   private db?: IDatabaseService;
+  private logger?: IEventLogger;
   private traceId?: string;
 
   constructor(config: Config, options?: IPathResolverConfig) {
     this.config = config;
     this.db = options?.db;
+    this.logger = options?.logger;
     this.traceId = options?.traceId;
   }
 
@@ -149,6 +155,11 @@ export class PathResolver {
     target: string | null,
     payload: Record<string, JSONValue>,
   ): void {
+    if (this.logger) {
+      void this.logger.info(actionType, target, payload, this.traceId);
+      return;
+    }
+
     if (!this.db) {
       return;
     }
@@ -168,6 +179,15 @@ export class PathResolver {
     path: string,
     reason: string,
   ): void {
+    if (this.logger) {
+      void this.logger.warn(actionType, path, {
+        reason,
+        severity: "high",
+        timestamp: new Date().toISOString(),
+      }, this.traceId);
+      return;
+    }
+
     if (!this.db) {
       console.warn(`[SECURITY] ${actionType}: ${path} - ${reason}`);
       return;

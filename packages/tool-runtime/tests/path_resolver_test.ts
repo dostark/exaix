@@ -12,6 +12,7 @@ import { initTestDbService } from "@exaix/testing";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
+import type { IEventLogger } from "@exaix/core/logger";
 
 /**
  * Tests for Step 2.3: Path Security & Portal Resolver
@@ -529,6 +530,93 @@ Deno.test("PathResolver: handles database logging errors gracefully", async () =
     }
   } finally {
     await cleanup();
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+// ============================================================================
+// GAP-6 Remediation: EventLogger Integration Tests
+// ============================================================================
+
+interface CapturedEvent {
+  action: string;
+  target: string | null;
+}
+
+Deno.test("PathResolver: routes successful resolution through IEventLogger when provided", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-ev-" });
+  try {
+    const blueprintsDir = join(tempDir, "Blueprints");
+    await Deno.mkdir(blueprintsDir);
+    const testFile = join(blueprintsDir, "agent.md");
+    await Deno.writeTextFile(testFile, "content");
+
+    const config = createMockConfig(tempDir);
+
+    const captured: CapturedEvent[] = [];
+    const logger: IEventLogger = {
+      info(action: string, target: string | null): Promise<void> {
+        captured.push({ action, target });
+        return Promise.resolve();
+      },
+      warn(action: string, target: string | null): Promise<void> {
+        captured.push({ action, target });
+        return Promise.resolve();
+      },
+      log: () => Promise.resolve(),
+      error: () => Promise.resolve(),
+      fatal: () => Promise.resolve(),
+      debug: () => Promise.resolve(),
+      child: () => logger,
+    };
+
+    const resolver = new PathResolver(config, { logger, traceId: "ev-trace" });
+
+    const resolved = await resolver.resolve("@Blueprints/agent.md");
+    assertEquals(resolved, testFile);
+
+    const ev = captured.find((e) => e.action === "path.resolved");
+    assertExists(ev, "path.resolved should be logged via IEventLogger");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+Deno.test("PathResolver: routes security violations through IEventLogger when provided", async () => {
+  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-ev-sec-" });
+  try {
+    const config = createMockConfig(tempDir);
+
+    const captured: CapturedEvent[] = [];
+    const logger: IEventLogger = {
+      info(action: string, target: string | null): Promise<void> {
+        captured.push({ action, target });
+        return Promise.resolve();
+      },
+      warn(action: string, target: string | null): Promise<void> {
+        captured.push({ action, target });
+        return Promise.resolve();
+      },
+      log: () => Promise.resolve(),
+      error: () => Promise.resolve(),
+      fatal: () => Promise.resolve(),
+      debug: () => Promise.resolve(),
+      child: () => logger,
+    };
+
+    const resolver = new PathResolver(config, { logger, traceId: "ev-sec-trace" });
+
+    await assertRejects(
+      async () => {
+        await resolver.resolve("@Unknown/file.txt");
+      },
+      Error,
+      "Unknown portal alias",
+    );
+
+    const ev = captured.find((e) => e.action === "path.resolution_failed");
+    assertExists(ev, "path.resolution_failed should be logged via IEventLogger");
+  } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
 });
