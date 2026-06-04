@@ -8,7 +8,8 @@
 import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { FrontmatterParser } from "@exaix/core/parsing";
-import { createLoggingTestDb } from "@exaix/testing";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ILogEvent } from "@exaix/core";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
 const loadFixture = async (name: string) => await Deno.readTextFile(join(FIXTURE_ROOT, name));
@@ -32,8 +33,25 @@ trace_id: !!!invalid yaml here!!!
 });
 
 Deno.test("FrontmatterParser: logs validation failure to activity journal", () => {
-  const { activities, db } = createLoggingTestDb();
-  const parser = new FrontmatterParser(db);
+  const calls: Array<{ action: string; target: string | null }> = [];
+  const logger: IEventLogger = {
+    info(action: string, target: string | null): Promise<void> {
+      calls.push({ action, target });
+      return Promise.resolve();
+    },
+    warn(action: string, target: string | null): Promise<void> {
+      calls.push({ action, target });
+      return Promise.resolve();
+    },
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: (_event: ILogEvent) => Promise.resolve(),
+    child: function () {
+      return logger;
+    },
+  };
+  const parser = new FrontmatterParser(logger);
   const markdown = `---
 identity_id: coder-agent
 status: pending
@@ -43,10 +61,9 @@ status: pending
 
   assertThrows(() => parser.parse(markdown, "bad.md"));
 
-  assertEquals(activities.length, 1);
-  assertEquals(activities[0].actor, "system");
-  assertEquals(activities[0].actionType, "request.validation_failed");
-  assertEquals(activities[0].target, "bad.md");
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].action, "request.validation_failed");
+  assertEquals(calls[0].target, "bad.md");
 });
 
 Deno.test("FrontmatterParser: handles partial content with valid frontmatter", async () => {

@@ -10,6 +10,9 @@
 
 import { initTestDbService } from "../init_db.ts";
 import { NotificationService } from "@exaix/core/notification";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { IDatabaseService } from "@exaix/core/types";
+import type { ILogEvent, LogMetadata } from "@exaix/core";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
 import {
   ConfidenceAssessmentLevel,
@@ -21,6 +24,25 @@ import {
 import { MemoryStatus } from "@exaix/core/status";
 import { TEST_AGENT_NAME, TEST_ID, TEST_PROJECT_NAME, TEST_TIMESTAMP } from "../constants.ts";
 
+/** Minimal IEventLogger adapter that writes directly to a DatabaseService. */
+function makeDbLogger(db: IDatabaseService): IEventLogger {
+  const write = (event: ILogEvent): Promise<void> => {
+    db.logActivity("test", event.action, event.target || null, event.payload ?? {}, event.traceId);
+    return Promise.resolve();
+  };
+  const shorthand = (action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> =>
+    write({ action, target: target ?? "", payload: payload ?? {}, traceId });
+  return {
+    log: write,
+    info: shorthand,
+    warn: shorthand,
+    error: shorthand,
+    fatal: shorthand,
+    debug: shorthand,
+    child: () => makeDbLogger(db),
+  };
+}
+
 /**
  * Creates test environment for notification tests
  */
@@ -31,7 +53,7 @@ export async function initNotificationTest(): Promise<{
   cleanup: () => Promise<void>;
 }> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
-  const notification = new NotificationService(config, db);
+  const notification = new NotificationService(config, db, makeDbLogger(db));
 
   const cleanup = async () => {
     await dbCleanup();

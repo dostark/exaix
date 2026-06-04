@@ -101,7 +101,7 @@ async function createMockPortalDir(baseDir: string): Promise<string> {
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const tempDir = await Deno.makeTempDir();
@@ -110,7 +110,6 @@ Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
     const service = new PortalKnowledgeService({
       config: makeConfig(),
       memoryBank: null as never,
-      db: db,
     });
     const knowledge = await service.analyze("test-portal", portalDir, PortalAnalysisMode.QUICK);
 
@@ -134,7 +133,7 @@ Deno.test("[E2E] portal knowledge pipeline with quick mode", async () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const tempDir = await Deno.makeTempDir();
@@ -143,7 +142,7 @@ Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async
     const service = new PortalKnowledgeService({
       config: makeConfig({ defaultMode: PortalAnalysisMode.STANDARD }),
       memoryBank: null as never,
-      db: db,
+
       runner: NULL_RUNNER,
     });
     const knowledge = await service.analyze("std-portal", portalDir, PortalAnalysisMode.STANDARD);
@@ -165,7 +164,7 @@ Deno.test("[E2E] portal knowledge pipeline with standard mode (mock LLM)", async
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const tempDir = await Deno.makeTempDir();
@@ -176,7 +175,6 @@ Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
     const service = new PortalKnowledgeService({
       config: makeConfig(),
       memoryBank: null as never,
-      db: db,
     });
     const knowledge = await service.analyze("persist-portal", portalDir);
 
@@ -215,7 +213,6 @@ Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
     const service = new PortalKnowledgeService({
       config: makeConfig(),
       memoryBank: null as never,
-      db: db,
     });
     const knowledge = await service.analyze("mem-portal", portalDir);
 
@@ -340,7 +337,7 @@ Deno.test(
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const tempDir = await Deno.makeTempDir();
@@ -350,7 +347,6 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
     const service = new PortalKnowledgeService({
       config: makeConfig({ staleness: -1 }),
       memoryBank: null as never,
-      db: db,
     });
     const first = await service.analyze("stale-portal", portalDir);
     assertEquals(first.version, 1);
@@ -379,7 +375,7 @@ Deno.test("[E2E] stale knowledge re-analyzed on request processing", async () =>
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
   try {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
@@ -390,7 +386,6 @@ Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields
         enableGitHistoryAnalysis: true,
       }),
       memoryBank: null as never,
-      db,
       runner: NULL_RUNNER,
     });
     const knowledge = await service.analyze("e2e-new-fields", portalDir, PortalAnalysisMode.STANDARD);
@@ -407,7 +402,7 @@ Deno.test("[E2E] standard mode populates licenses and gitHistory optional fields
 });
 
 Deno.test("[E2E] knowledge.json round-trip preserves new optional fields", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
   try {
     const tempDir = await Deno.makeTempDir();
     const portalDir = await createMockPortalDir(tempDir);
@@ -420,7 +415,6 @@ Deno.test("[E2E] knowledge.json round-trip preserves new optional fields", async
         enableGitHistoryAnalysis: true,
       }),
       memoryBank: null as never,
-      db,
       runner: NULL_RUNNER,
     });
     const knowledge = await service.analyze("round-trip", portalDir, PortalAnalysisMode.STANDARD);

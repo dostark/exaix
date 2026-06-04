@@ -32,7 +32,7 @@ import { getMemoryGlobalDir } from "@exaix/testing";
 // ===== Full Workflow Tests =====
 
 Deno.test("Integration: full workflow - execution → extract → approve → search", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
     const memoryBank = new MemoryBankService(config);
@@ -100,7 +100,7 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
 });
 
 Deno.test("Integration: execution failure extracts troubleshooting learning", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
     const memoryBank = new MemoryBankService(config);
@@ -303,7 +303,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
 // ===== CLI Workflow Tests =====
 
 Deno.test("Integration: CLI workflow - complete command sequence", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
     const context: ICliApplicationContext = {
@@ -362,7 +362,7 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
 });
 
 Deno.test("Integration: CLI pending workflow - list → approve → verify", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
     const context: ICliApplicationContext = {

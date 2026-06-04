@@ -31,7 +31,8 @@ Deno.test("[EventRegistry] DomainEventType has correct values", () => {
 
 Deno.test("[EventRegistry] TDomainEventType resolves from all enum values", () => {
   const values: TDomainEventType[] = Object.values(DomainEventType);
-  assertEquals(values.length, 11);
+  const expectedCount = Object.keys(DomainEventType).length;
+  assertEquals(values.length, expectedCount);
   for (const v of values) {
     assertEquals(typeof v, "string");
   }

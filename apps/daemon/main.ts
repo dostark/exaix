@@ -268,7 +268,7 @@ if (import.meta.main) {
       },
     });
 
-    await logger.info("request_processor.initialized", "RequestProcessor", {
+    await logger.info(DomainEventType.DaemonRequestProcessorInitialized, "RequestProcessor", {
       requestsDir: requestsPath,
       blueprints: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
     });
@@ -278,7 +278,7 @@ if (import.meta.main) {
 
     // Start file watcher for new requests (Workspace/Requests)
     const requestWatcher = new FileWatcher(config, async (event) => {
-      await watcherLogger.info("file.detected", event.path, {
+      await watcherLogger.info(DomainEventType.DaemonFileDetected, event.path, {
         size: event.content.length,
       });
 
@@ -286,16 +286,16 @@ if (import.meta.main) {
       try {
         const planPath = await requestProcessor.process(event.path);
         if (planPath) {
-          watcherLogger.info("plan.generated", planPath, {
+          watcherLogger.info(DomainEventType.PlanGenerated, planPath, {
             source: event.path,
           });
         } else {
-          watcherLogger.warn("request.skipped", event.path, {
+          watcherLogger.warn(DomainEventType.RequestSkipped, event.path, {
             reason: "processing returned null",
           });
         }
       } catch (error) {
-        watcherLogger.error("request.failed", event.path, {
+        watcherLogger.error(DomainEventType.RequestFailed, event.path, {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -337,7 +337,7 @@ if (import.meta.main) {
           return;
         }
 
-        watcherLogger.info("plan.detected", event.path, {
+        watcherLogger.info(DomainEventType.PlanDetected, event.path, {
           size: event.content.length,
         });
 
@@ -382,7 +382,7 @@ if (import.meta.main) {
     // Register cleanup tasks for graceful shutdown
     gracefulShutdown.registerCleanup("stop_request_watcher", async () => {
       await requestWatcher.stop();
-      await logger.info("shutdown.watchers_stopped", "request and plan watchers", {});
+      await logger.info(DomainEventType.ShutdownWatchersStopped, "request and plan watchers", {});
     });
 
     gracefulShutdown.registerCleanup("stop_plan_watcher", async () => {
@@ -395,12 +395,12 @@ if (import.meta.main) {
 
     gracefulShutdown.registerCleanup("stop_auto_approval", async () => {
       stopAutoApproval();
-      await logger.info("shutdown.auto_approval_stopped", "memory auto-approval cycle", {});
+      await logger.info(DomainEventType.ShutdownAutoApprovalStopped, "memory auto-approval cycle", {});
     });
 
     gracefulShutdown.registerCleanup("close_database", async () => {
       dbService.close();
-      await logger.info("shutdown.database_closed", "journal.db", {});
+      await logger.info(DomainEventType.ShutdownDatabaseClosed, "journal.db", {});
     });
 
     // Register signal handlers

@@ -17,7 +17,7 @@ import {
   type IKnowledgeInvalidationStrategy,
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
-import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
+import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IEmbeddingProvider, IModelProvider } from "@exaix/ai";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
@@ -25,30 +25,6 @@ import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } fr
 // ---------------------------------------------------------------------------
 // Mock helpers
 // ---------------------------------------------------------------------------
-
-type ILoggedActivity = {
-  actor: string;
-  actionType: string;
-  target: string | null;
-};
-
-function makeMockDb(): IDatabaseService & { activities: ILoggedActivity[] } {
-  const activities: ILoggedActivity[] = [];
-  return {
-    activities,
-    logActivity(actor: string, actionType: string, target: string | null) {
-      activities.push({ actor, actionType, target });
-    },
-    waitForFlush: () => Promise.resolve(),
-    queryActivity: () => Promise.resolve([]),
-    close: () => Promise.resolve(),
-    preparedGet: () => Promise.resolve(null),
-    preparedAll: () => Promise.resolve([]),
-    preparedRun: () => Promise.resolve(),
-    execute: () => Promise.resolve(),
-    transaction: <T>(fn: () => Promise<T>) => fn(),
-  } as Partial<IDatabaseService> as IDatabaseService & { activities: ILoggedActivity[] };
-}
 
 function makeMockMemoryBank(): IMemoryBankService {
   return {
@@ -146,7 +122,7 @@ Deno.test("[PortalKnowledgeService] quick mode avoids LLM calls", async () => {
       config: makeConfig({ defaultMode: PortalAnalysisMode.QUICK }),
       memoryBank: makeMockMemoryBank(),
       provider: provider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     await svc.analyze("test-portal", tempDir, PortalAnalysisMode.QUICK);
@@ -164,7 +140,7 @@ Deno.test("[PortalKnowledgeService] standard mode includes LLM architecture infe
       config: makeConfig({ useLlmInference: true }),
       memoryBank: makeMockMemoryBank(),
       provider: provider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("test-portal", tempDir, PortalAnalysisMode.STANDARD);
@@ -183,7 +159,7 @@ Deno.test("[PortalKnowledgeService] deep mode uses higher file read caps", async
       config: makeConfig({ maxFilesToRead: 5 }),
       memoryBank: makeMockMemoryBank(),
       provider: provider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("test-portal", tempDir, PortalAnalysisMode.DEEP);
@@ -202,7 +178,7 @@ Deno.test("[PortalKnowledgeService] merges all strategy results correctly", asyn
       config: makeConfig(),
       memoryBank: makeMockMemoryBank(),
       provider: provider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("test-portal", tempDir);
@@ -223,7 +199,7 @@ Deno.test("[PortalKnowledgeService] isStale returns false within threshold", asy
     const svc = new PortalKnowledgeService({
       config: makeConfig({ staleness: 24 }),
       memoryBank: makeMockMemoryBank(),
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     await svc.analyze("fresh-portal", tempDir, PortalAnalysisMode.QUICK);
@@ -239,7 +215,7 @@ Deno.test("[PortalKnowledgeService] isStale returns true beyond threshold", asyn
     const svc = new PortalKnowledgeService({
       config: makeConfig({ staleness: 0 }),
       memoryBank: makeMockMemoryBank(),
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     await svc.analyze("stale-portal", tempDir, PortalAnalysisMode.QUICK);
@@ -255,7 +231,6 @@ Deno.test("[PortalKnowledgeService] isStale returns true when no cache", async (
   const svc = new PortalKnowledgeService({
     config: makeConfig(),
     memoryBank: makeMockMemoryBank(),
-    db: makeMockDb(),
     runner: makeMockDocRunner(),
   });
   assertEquals(await svc.isStale("unknown-portal"), true);
@@ -269,7 +244,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze returns cached when fresh", asy
       config: makeConfig({ staleness: 24, useLlmInference: false }),
       memoryBank: makeMockMemoryBank(),
       provider: provider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     // First call populates cache
@@ -317,7 +292,7 @@ Deno.test(
         }),
         memoryBank: makeMockMemoryBank(),
         provider: slowProvider,
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       // Populate cache
@@ -368,7 +343,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze triggers async background re-an
       }),
       memoryBank: makeMockMemoryBank(),
       provider: trackingProvider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     // Populate cache
@@ -403,7 +378,7 @@ Deno.test(
       const svc = new PortalKnowledgeService({
         config: makeConfig({ useLlmInference: false }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       // No prior analyze — should run synchronously
@@ -419,16 +394,18 @@ Deno.test(
 Deno.test("[PortalKnowledgeService] logs portal.analyzed activity", async () => {
   const tempDir = await makeTempPortal();
   try {
-    const db = makeMockDb();
+    const logger = makeEvLoggerSpy();
     const svc = new PortalKnowledgeService({
       config: makeConfig({ useLlmInference: false }),
       memoryBank: makeMockMemoryBank(),
-      db: db,
+      evLogger: logger,
       runner: makeMockDocRunner(),
     });
     await svc.analyze("log-portal", tempDir, PortalAnalysisMode.QUICK);
-    const logged = db.activities.find((a) => a.actionType === "portal.analyzed");
-    assertExists(logged, "Should log portal.analyzed activity");
+    assertExists(
+      logger.actions.find((a) => a === "portal.analyzed"),
+      "Should log portal.analyzed activity",
+    );
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
@@ -440,7 +417,7 @@ Deno.test("[PortalKnowledgeService] populates metadata.durationMs", async () => 
     const svc = new PortalKnowledgeService({
       config: makeConfig({ useLlmInference: false }),
       memoryBank: makeMockMemoryBank(),
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("meta-portal", tempDir, PortalAnalysisMode.QUICK);
@@ -461,7 +438,7 @@ Deno.test("[PortalKnowledgeService] handles LLM failure in standard mode gracefu
       config: makeConfig({ useLlmInference: true }),
       memoryBank: makeMockMemoryBank(),
       provider: failingProvider,
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("fail-portal", tempDir, PortalAnalysisMode.STANDARD);
@@ -704,7 +681,7 @@ Deno.test(
       const svc = new PortalKnowledgeService({
         config: makeConfig({ useLlmInference: false, enableAstAnalysis: false, enableGitHistoryAnalysis: false }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: tracker,
       });
       await svc.analyze("multi-portal", dir, PortalAnalysisMode.STANDARD);
@@ -721,7 +698,7 @@ Deno.test(
         `helper.ts should be passed to SymbolExtractor; got: [${tracker.calls.join(", ")}]`,
       );
     } finally {
-      await Deno.remove(tempDir, { recursive: true });
+      await Deno.remove(dir, { recursive: true });
     }
   },
 );
@@ -776,7 +753,7 @@ Deno.test("[PortalKnowledgeService] metadata.symbolSourceFilesScanned equals TS/
     const svc = new PortalKnowledgeService({
       config: makeConfig({ useLlmInference: false, enableAstAnalysis: false, enableGitHistoryAnalysis: false }),
       memoryBank: makeMockMemoryBank(),
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("scanned-portal", dir, PortalAnalysisMode.STANDARD);
@@ -815,7 +792,7 @@ Deno.test(
           enableGitHistoryAnalysis: true,
         }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
         invalidationStrategy: mockStrategy,
       });
@@ -861,7 +838,7 @@ Deno.test(
           enableGitHistoryAnalysis: false,
         }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
         invalidationStrategy: mockStrategy,
       });
@@ -898,7 +875,7 @@ Deno.test("[PortalKnowledgeService] quick mode produces no new strategy fields",
     const svc = new PortalKnowledgeService({
       config: makeConfig({ useLlmInference: false }),
       memoryBank: makeMockMemoryBank(),
-      db: makeMockDb(),
+
       runner: makeMockDocRunner(),
     });
     const result = await svc.analyze("gate-quick", tempDir, PortalAnalysisMode.QUICK);
@@ -926,7 +903,7 @@ Deno.test(
           enableGitHistoryAnalysis: true,
         }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       const result = await svc.analyze("gate-std", tempDir, PortalAnalysisMode.STANDARD);
@@ -948,7 +925,7 @@ Deno.test(
       const svc = new PortalKnowledgeService({
         config: makeConfig({ useLlmInference: false, enableAstAnalysis: false }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       const result = await svc.analyze("gate-noast", tempDir, PortalAnalysisMode.STANDARD);
@@ -967,7 +944,7 @@ Deno.test(
       const svc = new PortalKnowledgeService({
         config: makeConfig({ useLlmInference: false, enableGitHistoryAnalysis: false }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       const result = await svc.analyze("gate-nogit", tempDir, PortalAnalysisMode.STANDARD);
@@ -992,7 +969,7 @@ Deno.test(
           enableVulnerabilityScan: false,
         }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       const result = await svc.analyze("gate-notest", tempDir, PortalAnalysisMode.DEEP);
@@ -1017,7 +994,7 @@ Deno.test(
           enableVulnerabilityScan: false,
         }),
         memoryBank: makeMockMemoryBank(),
-        db: makeMockDb(),
+
         runner: makeMockDocRunner(),
       });
       const result = await svc.analyze("gate-novuln", tempDir, PortalAnalysisMode.DEEP);

@@ -27,7 +27,7 @@ export interface IToolTestContext {
  */
 export async function setupToolTestContext(): Promise<IToolTestContext> {
   const tempDir = await Deno.makeTempDir({ prefix: "tool-test-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   const allowedPath = join(tempDir, "allowed");
   const forbiddenPath = join(tempDir, "forbidden");
@@ -37,7 +37,6 @@ export async function setupToolTestContext(): Promise<IToolTestContext> {
   const config = createMockConfig(tempDir);
   const registry = new ToolRegistry({
     config,
-    db,
     traceId: "test-trace",
     identityId: "test-agent",
   });

@@ -13,6 +13,7 @@ import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import { EventLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 
 /**
  * Tests for Step 2.3: Path Security & Portal Resolver
@@ -416,7 +417,7 @@ Deno.test("PathResolver: logs successful resolution to database", async () => {
     assertEquals(resolved, testFile);
 
     // Wait for batched logs
-    await logger.info("__flush__", null);
+    await logger.info("__flush__", "");
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("path-trace-123");
@@ -449,7 +450,7 @@ Deno.test("PathResolver: logs resolution failures to database", async () => {
     );
 
     // Wait for batched logs
-    await logger.info("__flush__", null);
+    await logger.info("__flush__", "");
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("path-fail-trace");
@@ -487,7 +488,7 @@ Deno.test("[security] PathResolver: logs security violations to database", async
     );
 
     // Wait for batched logs
-    await logger.info("__flush__", null);
+    await logger.info("__flush__", "");
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("security-trace");

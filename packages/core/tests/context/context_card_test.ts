@@ -11,6 +11,7 @@ import { assertEquals, assertExists } from "@std/assert";
 import { join } from "@std/path";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { ExaPathDefaults } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 
@@ -132,7 +133,7 @@ Deno.test("ContextCardGenerator: logs activity", async () => {
     const config = createMockConfig(tempDir);
     await Deno.mkdir(join(tempDir, ExaPathDefaults.memoryProjects), { recursive: true });
 
-    const generator = new ContextCardGenerator(config, db);
+    const generator = new ContextCardGenerator(config, new EventLogger({ db }));
     await generator.generate({
       alias: "LoggedApp",
       path: "/path",

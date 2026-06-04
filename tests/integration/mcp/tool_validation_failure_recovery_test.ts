@@ -17,6 +17,7 @@ import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 import { MCPServer } from "@exaix/mcp/server";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMCPRequest } from "@exaix/mcp/testing";
@@ -56,13 +57,15 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed va
       git: createStubGit(),
       provider: createStubProvider(),
       display: createStubDisplay(),
-      toolRegistry: new ToolRegistry({ config, db }),
+      toolRegistry: new ToolRegistry({ config }),
     };
+    const logger = new EventLogger({ db });
     const server = new MCPServer({
       context,
       transport: McpTransportType.STDIO,
       permissions: new AllowAllPermissionsService(),
       resultValidator: validator,
+      logger,
     });
     server.start();
 
@@ -130,13 +133,15 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP recovery write
       git: createStubGit(),
       provider: createStubProvider(),
       display: createStubDisplay(),
-      toolRegistry: new ToolRegistry({ config, db }),
+      toolRegistry: new ToolRegistry({ config }),
     };
+    const logger = new EventLogger({ db });
     const server = new MCPServer({
       context,
       transport: McpTransportType.STDIO,
       permissions: new AllowAllPermissionsService(),
       resultValidator: validator,
+      logger,
     });
     server.start();
 

@@ -54,7 +54,7 @@ Deno.test("MCP boundary validator: rawResult field is not included in client-fac
     git: createStubGit(),
     provider: createStubProvider(),
     display: createStubDisplay(),
-    toolRegistry: new ToolRegistry({ config, db }),
+    toolRegistry: new ToolRegistry({ config }),
   };
   const server = new MCPServer({
     context,

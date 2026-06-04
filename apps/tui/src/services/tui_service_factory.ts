@@ -141,7 +141,9 @@ export function createTuiServices(
   };
 
   // Create service adapters that implement TUI interfaces
-  const contextCardGenerator = new ContextCardAdapter(new ContextCardGenerator(config, databaseService));
+  const contextCardGenerator = new ContextCardAdapter(
+    new ContextCardGenerator(config, new EventLogger({ db: databaseService })),
+  );
   const portalService: IPortalService = new PortalAdapter(
     new PortalService(config, configService, contextCardGenerator, displayAdapter),
   );

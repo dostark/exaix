@@ -32,7 +32,7 @@ interface IPlanExecutorTestContext {
   writeBlueprint: (content: string) => Promise<void>;
   createExecutor: (
     provider: IModelProvider,
-    options?: ConstructorParameters<typeof PlanExecutor>[4],
+    options?: ConstructorParameters<typeof PlanExecutor>[5],
   ) => PlanExecutor;
 }
 

@@ -390,7 +390,7 @@ Deno.test("MemoryBankService: promoteLearning moves from project to global", asy
 });
 
 Deno.test("MemoryBankService: promoteLearning logs to IActivity Journal", async () => {
-  const { config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
     const logger = new EventLogger({ db });

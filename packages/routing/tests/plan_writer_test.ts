@@ -14,6 +14,7 @@ import { PlanWriter } from "@exaix/core/planning";
 import type { IAgentExecutionResult, IPlanWriterConfig, IRequestMetadata } from "@exaix/core/planning";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IActivityRecord } from "@exaix/core/types";
+import { EventLogger } from "@exaix/core/logger";
 
 /**
  * Helper: Retrieve calls from a spy
@@ -326,10 +327,12 @@ describe("PlanWriter - JSON Integration", () => {
 
   describe("Plan Validation Errors", () => {
     it("should log and throw PlanValidationError on invalid JSON", async () => {
-      const db: Partial<IDatabaseService> = {
+      const mockDb: Partial<IDatabaseService> = {
         logActivity: spy(() => Promise.resolve()),
+        waitForFlush: () => Promise.resolve(),
       };
-      const planWriterWithDb = new PlanWriter({ ...config, db: db as IDatabaseService });
+      const logger = new EventLogger({ db: mockDb as IDatabaseService });
+      const planWriterWithDb = new PlanWriter({ ...config, logger });
 
       const agentResult: IAgentExecutionResult = {
         thought: "bad plan",
@@ -360,7 +363,9 @@ describe("PlanWriter - JSON Integration", () => {
       }
 
       // Verify failure was logged
-      const failureLog = getSpyCalls(db.logActivity).find((c) => (c.args[1] as string) === "plan.validation.failed");
+      const failureLog = getSpyCalls(mockDb.logActivity).find((c) =>
+        (c.args[1] as string) === "plan.validation.failed"
+      );
       assert(failureLog, "Failure should be logged");
     });
   });

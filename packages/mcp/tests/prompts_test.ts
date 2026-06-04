@@ -10,6 +10,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { McpToolName } from "@exaix/mcp";
 import { MessageRole } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import {
@@ -54,8 +55,9 @@ Deno.test("getPrompt: returns null for unknown prompt", () => {
 
 Deno.test("generateExecutePlanPrompt: generates prompt with plan details", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
-    const result = generateExecutePlanPrompt({ plan_id: "test-plan-123", portal: "MyApp" }, db);
+    const result = generateExecutePlanPrompt({ plan_id: "test-plan-123", portal: "MyApp" }, logger);
 
     assertExists(result);
     assertExists(result.description);
@@ -76,8 +78,9 @@ Deno.test("generateExecutePlanPrompt: generates prompt with plan details", async
 
 Deno.test("generateExecutePlanPrompt: includes tool usage guidance", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
-    const result = generateExecutePlanPrompt({ plan_id: "plan-456", portal: "TestPortal" }, db);
+    const result = generateExecutePlanPrompt({ plan_id: "plan-456", portal: "TestPortal" }, logger);
     const text = result.messages[0].content.text;
 
     assertStringIncludes(text, McpToolName.READ_FILE);
@@ -93,8 +96,9 @@ Deno.test("generateExecutePlanPrompt: includes tool usage guidance", async () =>
 
 Deno.test("generateExecutePlanPrompt: logs to IActivity Journal", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
-    generateExecutePlanPrompt({ plan_id: "log-test-plan", portal: "TestPortal" }, db);
+    generateExecutePlanPrompt({ plan_id: "log-test-plan", portal: "TestPortal" }, logger);
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     const logs = db.instance.prepare("SELECT * FROM activity WHERE action_type = ?")
@@ -115,12 +119,13 @@ Deno.test("generateExecutePlanPrompt: logs to IActivity Journal", async () => {
 
 Deno.test("generateCreateReviewPrompt: generates prompt with review details", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     const result = generateCreateReviewPrompt({
       portal: "MyApp",
       description: "Add user authentication",
       trace_id: "trace-789",
-    }, db);
+    }, logger);
 
     assertExists(result);
     assertExists(result.description);
@@ -139,12 +144,13 @@ Deno.test("generateCreateReviewPrompt: generates prompt with review details", as
 
 Deno.test("generateCreateReviewPrompt: includes git workflow guidance", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     const result = generateCreateReviewPrompt({
       portal: "TestPortal",
       description: "Fix bug",
       trace_id: "trace-123",
-    }, db);
+    }, logger);
     const text = result.messages[0].content.text;
 
     assertStringIncludes(text, "feature branch");
@@ -159,12 +165,13 @@ Deno.test("generateCreateReviewPrompt: includes git workflow guidance", async ()
 
 Deno.test("generateCreateReviewPrompt: logs to IActivity Journal", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     generateCreateReviewPrompt({
       portal: "TestPortal",
       description: "Test review",
       trace_id: "log-trace-456",
-    }, db);
+    }, logger);
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     const logs = db.instance.prepare("SELECT * FROM activity WHERE action_type = ?")
@@ -188,8 +195,9 @@ Deno.test("generateCreateReviewPrompt: logs to IActivity Journal", async () => {
 
 Deno.test("generateCommitMessagePrompt: generates prompt with commit task details", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
-    const result = generatePrompt("commit_message", { portal: "MyApp" }, createMockConfig("/tmp/test"), db);
+    const result = generatePrompt("commit_message", { portal: "MyApp" }, createMockConfig("/tmp/test"), logger);
 
     assertExists(result);
     assertExists(result!.description);
@@ -213,9 +221,10 @@ Deno.test("generateCommitMessagePrompt: generates prompt with commit task detail
 
 Deno.test("generatePrompt: routes to execute_plan generator", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     const config = createMockConfig("/tmp/test");
-    const result = generatePrompt("execute_plan", { plan_id: "plan-999", portal: "TestPortal" }, config, db);
+    const result = generatePrompt("execute_plan", { plan_id: "plan-999", portal: "TestPortal" }, config, logger);
 
     assertExists(result);
     assertStringIncludes(result!.messages[0].content.text, "plan-999");
@@ -226,6 +235,7 @@ Deno.test("generatePrompt: routes to execute_plan generator", async () => {
 
 Deno.test("generatePrompt: routes to create_review generator", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     const config = createMockConfig("/tmp/test");
     const result = generatePrompt(
@@ -236,7 +246,7 @@ Deno.test("generatePrompt: routes to create_review generator", async () => {
         trace_id: "trace-888",
       },
       config,
-      db,
+      logger,
     );
 
     assertExists(result);
@@ -248,9 +258,10 @@ Deno.test("generatePrompt: routes to create_review generator", async () => {
 
 Deno.test("generatePrompt: returns null for unknown prompt", async () => {
   const { db, cleanup } = await initTestDbService();
+  const logger = new EventLogger({ db });
   try {
     const config = createMockConfig("/tmp/test");
-    const result = generatePrompt("unknown_prompt", {}, config, db);
+    const result = generatePrompt("unknown_prompt", {}, config, logger);
 
     assertEquals(result, null);
   } finally {
