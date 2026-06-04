@@ -14,7 +14,6 @@ import {
   WaitStateStatusSchema,
 } from "@exaix/flow";
 import type { IWaitState } from "@exaix/flow";
-import { FLOW_EVENT_WAIT_CREATED, FLOW_EVENT_WAIT_PENDING } from "@exaix/core";
 
 function validWaitState(overrides?: Partial<IWaitState>): IWaitState {
   return {
@@ -181,14 +180,6 @@ Deno.test("DefaultWaitStateTransitionPolicy: rejected rejects all transitions", 
     const result = policy.validate({ current: rejected, action });
     assertEquals(result.allowed, false, `rejected → ${action} should be denied`);
   }
-});
-
-Deno.test("FLOW_EVENT_WAIT_CREATED constant matches expected value", () => {
-  assertEquals(FLOW_EVENT_WAIT_CREATED, "flow.wait.created");
-});
-
-Deno.test("FLOW_EVENT_WAIT_PENDING constant matches expected value", () => {
-  assertEquals(FLOW_EVENT_WAIT_PENDING, "flow.wait.pending");
 });
 
 Deno.test("daemon onClarificationCreated: raw object is valid WaitStateSchema", () => {

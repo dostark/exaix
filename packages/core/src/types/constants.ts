@@ -804,14 +804,7 @@ export const FLOW_EVENT_ABORTED = "flow.aborted";
 export const FLOW_EVENT_FAILED = "flow.failed";
 export const FLOW_EVENT_VALIDATION_FAILED = "flow.validation.failed";
 
-// Flow step durability event names (Phase 82)
-export const FLOW_EVENT_STEP_REPLAYED = "flow.step.replayed";
 export const FLOW_EVENT_STEP_SKIPPED_BY_REUSE = "flow.step.skipped_by_reuse";
-
-// Flow wait state event names (Phase 84)
-export const FLOW_EVENT_WAIT_CREATED = "flow.wait.created";
-export const FLOW_EVENT_WAIT_PENDING = "flow.wait.pending";
-export const FLOW_EVENT_STEP_INVALIDATED = "flow.step.invalidated";
 
 // Step durability success metric thresholds (Phase 82)
 export const STEP_REPLAY_REUSE_TARGET_PERCENT = 80;

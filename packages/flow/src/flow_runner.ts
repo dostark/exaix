@@ -54,6 +54,7 @@ import {
   type IFlowNamespaceService,
 } from "@exaix/flow";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
+import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
@@ -75,13 +76,10 @@ import {
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
-  FLOW_EVENT_STEP_INVALIDATED,
   FLOW_EVENT_STEP_RETRY,
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
-  FLOW_EVENT_WAIT_CREATED,
-  FLOW_EVENT_WAIT_PENDING,
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
@@ -143,6 +141,7 @@ export interface IParallelGroupSummary {
 export interface IFlowRunnerConfig {
   agentExecutor: IAgentExecutor;
   eventLogger: IFlowEventLogger;
+  eventRegistry?: IEventRegistry;
   context?: IApplicationContext;
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;
@@ -432,7 +431,7 @@ export interface IFlowEventPayloadMap {
     error: string;
     errorType: string;
   };
-  "flow.step.replayed": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepReplayed]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     recordId: string;
@@ -445,7 +444,7 @@ export interface IFlowEventPayloadMap {
     priorRecordId: string;
     inputHash: string;
   };
-  "flow.step.invalidated": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepInvalidated]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     recordId: string;
@@ -468,7 +467,7 @@ export interface IFlowEventPayloadMap {
     requestId?: string;
   };
   "flow.token_summary.error": { flowRunId: string; flowId: string; error: string; traceId: string; requestId?: string };
-  "flow.wait.created": IFlowEventLogBase & {
+  [DomainEventType.WaitStateCreated]: IFlowEventLogBase & {
     flowRunId: string;
     stepId: string;
     waitStateId: string;
@@ -476,7 +475,7 @@ export interface IFlowEventPayloadMap {
     kind: string;
     traceId: string;
   };
-  "flow.wait.pending": IFlowEventLogBase & {
+  [DomainEventType.WaitStateResolved]: IFlowEventLogBase & {
     flowRunId: string;
     waitStateId: string;
     traceId: string;
@@ -644,6 +643,7 @@ export class FlowRunner implements IFlowRunner {
   private readonly migratedCheckpointTraceIds = new Set<string>();
   private waitStateService?: IWaitStateService;
   private pendingWaitStateId?: string;
+  private eventRegistry?: IEventRegistry;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -684,6 +684,16 @@ export class FlowRunner implements IFlowRunner {
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
     this.waitStateService = options.waitStateService;
+
+    if (options.eventRegistry) {
+      this.eventRegistry = options.eventRegistry;
+      options.eventRegistry.registerPublisher("flow_runner", [
+        DomainEventType.WaitStateCreated,
+        DomainEventType.WaitStateResolved,
+        DomainEventType.FlowStepReplayed,
+        DomainEventType.FlowStepInvalidated,
+      ]);
+    }
 
     const config = this.config;
     const db = this.db;
@@ -985,13 +995,18 @@ export class FlowRunner implements IFlowRunner {
       const pendingStepResults = [...stepResults.values()].filter((r) => r.waitStateId);
       const hasPendingWait = pendingStepResults.length > 0;
       if (hasPendingWait) {
-        await this.eventLogger.log(FLOW_EVENT_WAIT_PENDING, {
+        const waitPayload = {
           flowRunId,
           waitStateId: pendingStepResults[0].waitStateId!,
           traceId: request.traceId ?? "",
           stepIds: pendingStepResults.map((r) => r.stepId),
           ...this.getIFlowLogBase(flow, request),
-        });
+        };
+        if (this.eventRegistry) {
+          await this.eventRegistry.emit("flow_runner", DomainEventType.WaitStateResolved, waitPayload);
+        } else {
+          await this.eventLogger.log(DomainEventType.WaitStateResolved, waitPayload);
+        }
         await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
         break;
       }
@@ -2237,7 +2252,7 @@ export class FlowRunner implements IFlowRunner {
           deadlineAt: undefined,
         });
         this.pendingWaitStateId = ws.waitStateId;
-        await this.eventLogger.log(FLOW_EVENT_WAIT_CREATED, {
+        await this.eventLogger.log(DomainEventType.WaitStateCreated, {
           flowRunId,
           stepId: step.id,
           waitStateId: ws.waitStateId,
@@ -2936,7 +2951,7 @@ export class FlowRunner implements IFlowRunner {
       for (const stepId of Object.keys(checkpoint.completedSteps)) {
         const recordId = `stale:${request.traceId}:${stepId}`;
         await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
-        this.eventLogger.log(FLOW_EVENT_STEP_INVALIDATED, {
+        this.eventLogger.log(DomainEventType.FlowStepInvalidated, {
           traceId: request.traceId,
           requestId: request.requestId,
           flowRunId,
