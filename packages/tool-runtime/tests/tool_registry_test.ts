@@ -47,7 +47,7 @@ async function withToolRegistryContext(
 ): Promise<void> {
   const tempDir = options.workspaceRoot ? undefined : await Deno.makeTempDir({ prefix });
   const workspaceRoot = options.workspaceRoot ?? tempDir!;
-  const { cleanup } = await initTestDbService();
+  const { db, cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(workspaceRoot);

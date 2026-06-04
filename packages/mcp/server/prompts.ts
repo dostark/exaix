@@ -8,7 +8,7 @@
 
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { MessageRole } from "@exaix/core";
+import { MessageRole } from "@exaix/core";
 import { PORTAL_LABEL } from "@exaix/core";
 
 // ============================================================================
