@@ -149,6 +149,7 @@
     "@exaix/core/logger": "./packages/core/src/logger/mod.ts",
     "@exaix/core/config": "./packages/core/src/config/mod.ts",
     "@exaix/core/cost": "./packages/core/src/cost/mod.ts",
+    "@exaix/core/events": "./packages/core/src/events/mod.ts",
     "@exaix/core/": "./packages/core/src/",
     "@exaix/core/func": "./packages/core/src/func/mod.ts",
     "@exaix/core/parsing": "./packages/core/src/parsing/mod.ts",
