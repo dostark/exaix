@@ -35,12 +35,11 @@ import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
-import { ArtifactRegistry } from "@exaix/core/artifact";
+import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import {
-  ACTIVITY_ACTOR_AGENT,
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
   DEFAULT_EXECUTION_MEMORY_PATH,
@@ -883,12 +882,10 @@ export class ExecutionLoop {
     if (lease) {
       this.leases.delete(filePath);
 
-      if (this.db) {
-        this.logActivity("execution.lease_released", "unknown", {
-          file_path: filePath,
-          holder: lease.holder,
-        });
-      }
+      this.logActivity("execution.lease_released", "unknown", {
+        file_path: filePath,
+        holder: lease.holder,
+      });
     }
   }
 
@@ -939,7 +936,8 @@ export class ExecutionLoop {
 
     // Create a canonical review artifact for read-only agent executions.
     // This provides a single stable review surface (separate from git).
-    if (artifactContext?.isReadOnly && this.db && artifactContext.planAgentId) {
+    const artifactRepo = this.db ? new DatabaseArtifactRepository(this.db) : undefined;
+    if (artifactContext?.isReadOnly && artifactRepo && artifactContext.planAgentId) {
       try {
         const execDir = join(
           this.config.system.root,
@@ -987,7 +985,7 @@ export class ExecutionLoop {
           `**Trace directory:** ${traceDirRel}` +
           `${EXECUTION_ARTIFACT_SECTION_SEPARATOR}${summaryContent}${planSection}${analysisSection}`;
 
-        const artifactRegistry = new ArtifactRegistry(this.db, this.config.system.root);
+        const artifactRegistry = new ArtifactRegistry(artifactRepo, this.config.system.root);
         await artifactRegistry.createArtifact(
           requestId,
           artifactContext.planAgentId,
@@ -1279,7 +1277,7 @@ export class ExecutionLoop {
    * Loads the persisted execution record and delegates to analyzeExecution + createProposal.
    */
   private async extractExecutionLearnings(traceId: string): Promise<void> {
-    if (!this.context?.extractor || !this.db) return;
+    if (!this.context?.extractor) return;
 
     try {
       const memoryBank = new MemoryBankService(this.config, this.logger);
@@ -1485,26 +1483,8 @@ export class ExecutionLoop {
     traceId: string,
     payload: Record<string, JSONValue>,
   ): void {
-    if (this.logger) {
-      void this.logger.info(actionType, null, payload, traceId);
-      return;
-    }
-
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        actionType,
-        null,
-        payload,
-        traceId,
-        null, // actorType
-        this.identityId, // identityId
-      );
-    } catch (error) {
-      console.error("Failed to log execution activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, null, payload, traceId);
   }
 
   /**
