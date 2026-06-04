@@ -29,6 +29,7 @@ import {
   HEURISTIC_SCORE_BASELINE,
   HEURISTIC_SCORE_COMPLEXITY_BONUS,
 } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -123,6 +124,7 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
     private readonly provider?: IModelProvider,
     private readonly validator?: IOutputValidator,
     private readonly db?: Pick<IDatabaseService, "logActivity">,
+    private readonly logger?: IEventLogger,
   ) {
     this.threshold = config.actionabilityThreshold ?? DEFAULT_ACTIONABILITY_THRESHOLD;
     this.llmAnalyzer = provider && validator ? new LlmAnalyzer(provider, validator) : null;
@@ -207,23 +209,23 @@ export class RequestAnalyzer implements IRequestAnalyzerService {
   }
 
   private _logActivity(requestText: string, result: IRequestAnalysis, context?: IRequestAnalysisContext): void {
-    if (!this.db) return;
-    try {
-      this.db.logActivity(
-        "RequestAnalyzer",
-        "request.analyzed",
-        context?.requestFilePath ?? null,
-        {
-          mode: result.metadata.mode,
-          complexity: result.complexity,
-          taskType: result.taskType,
-          actionabilityScore: result.actionabilityScore,
-          durationMs: result.metadata.durationMs,
-          requestLength: requestText.length,
-        },
-      );
-    } catch {
-      // Non-fatal — analysis result is already produced
+    if (this.logger) {
+      try {
+        this.logger.info(
+          "request.analyzed",
+          context?.requestFilePath ?? null,
+          {
+            mode: result.metadata.mode,
+            complexity: result.complexity,
+            taskType: result.taskType,
+            actionabilityScore: result.actionabilityScore,
+            durationMs: result.metadata.durationMs,
+            requestLength: requestText.length,
+          },
+        );
+      } catch {
+        // Non-fatal — analysis result is already produced
+      }
     }
   }
 }

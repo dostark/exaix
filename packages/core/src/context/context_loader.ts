@@ -13,8 +13,8 @@
  */
 
 import type { IDatabaseService } from "@exaix/core/types";
-import { ActivityActor } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 // ============================================================================
 // Types and Interfaces
@@ -54,6 +54,9 @@ export interface IContextConfig {
 
   /** Optional: Database service for activity logging */
   db?: IDatabaseService;
+
+  /** Optional: Event logger for activity logging */
+  logger?: IEventLogger;
 }
 
 /**
@@ -373,8 +376,7 @@ export class ContextLoader {
     }
 
     try {
-      this.config.db.logActivity(
-        ActivityActor.SYSTEM,
+      this.config.logger?.info(
         "context.loaded",
         this.config.requestId || null,
         {
@@ -386,7 +388,6 @@ export class ContextLoader {
           is_local_agent: metadata.isLocalAgent,
         },
         this.config.traceId,
-        this.config.identityId || null,
       );
     } catch (error) {
       // Log to stderr but don't fail context loading
@@ -408,8 +409,7 @@ export class ContextLoader {
     }
 
     try {
-      this.config.db.logActivity(
-        ActivityActor.SYSTEM,
+      this.config.logger?.info(
         "context.file_load_error",
         filePath,
         {
@@ -417,7 +417,6 @@ export class ContextLoader {
           error_type: error instanceof Error ? error.name : DEFAULT_UNKNOWN_LABEL,
         },
         this.config.traceId,
-        this.config.identityId || null,
       );
     } catch (dbError) {
       // Log both errors to stderr

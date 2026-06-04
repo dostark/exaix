@@ -12,7 +12,7 @@
  * @related-files ["packages/core/src/planning/plan_adapter.ts", "packages/request/src/processor.ts"]
  */
 
-import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
+import { DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "@exaix/core/types";
@@ -22,6 +22,7 @@ import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IRequestMetadata {
   requestId: string;
@@ -44,6 +45,7 @@ export interface IPlanWriterConfig {
   generateWikiLinks: boolean;
   runtimeRoot: string;
   db?: IDatabaseService;
+  logger?: IEventLogger;
 }
 
 export interface IPlanWriteResult {
@@ -462,19 +464,13 @@ export class PlanWriter {
     traceId: string,
     metadata: Record<string, JSONValue>,
   ): Promise<void> {
-    if (!this.config.db) {
-      // If no database provided, skip logging (testing mode)
+    if (!this.config.logger) {
+      // If no logger provided, skip logging (testing mode)
       return;
     }
 
     try {
-      await this.config.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        actionType,
-        requestId,
-        metadata,
-        traceId,
-      );
+      await this.config.logger.info(actionType, requestId, metadata, traceId);
     } catch (error) {
       // Log to stderr but don't fail validation
       console.error(`[IActivity] Failed to log ${actionType}:`, error);
@@ -489,14 +485,13 @@ export class PlanWriter {
     traceId: string,
     metadata: IRequestMetadata,
   ): Promise<void> {
-    if (!this.config.db) {
-      // If no database provided, skip logging (testing mode)
+    if (!this.config.logger) {
+      // If no logger provided, skip logging (testing mode)
       return;
     }
 
     try {
-      await this.config.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
+      await this.config.logger.info(
         "plan.created",
         metadata.requestId,
         {

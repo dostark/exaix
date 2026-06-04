@@ -1,4 +1,3 @@
-// deno-lint-ignore-file no-explicit-any
 /**
  * @module RequestAnalyzerTest
  * @path packages/request/tests/request_analyzer_test.ts
@@ -16,7 +15,7 @@ import { createOutputValidator } from "@exaix/tool-runtime";
 import { RequestAnalyzer } from "@exaix/request";
 import { RequestAnalysisComplexity, RequestTaskType } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import { makeValidAnalysisJson as makeValidJson } from "./test_helpers.ts";
 
 // ---------------------------------------------------------------------------
@@ -160,16 +159,24 @@ Deno.test("[RequestAnalyzer] populates analyzedAt timestamp", async () => {
 
 Deno.test("[RequestAnalyzer] logs activity to database when db provided", async () => {
   const logged: string[] = [];
-  const mockDb = {
-    logActivity: (actor: string, _actionType: string, _target: string | null, _payload: any) => {
-      logged.push(actor);
+  const logger: IEventLogger = {
+    info(_action: string) {
+      logged.push("logged");
+      return Promise.resolve();
     },
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => logger,
   };
   const analyzerWithDb = new RequestAnalyzer(
     { mode: AnalysisMode.HEURISTIC },
     undefined,
     undefined,
-    mockDb as IDatabaseService,
+    undefined,
+    logger,
   );
 
   await analyzerWithDb.analyze("Implement webhook notification system.");
