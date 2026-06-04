@@ -710,7 +710,6 @@ export class ExecutionLoop {
   ): Promise<void> {
     const toolRegistry = new ToolRegistry({
       config: this.config,
-      db: this.db,
       traceId,
       identityId: this.identityId,
       baseDir: executionRoot,

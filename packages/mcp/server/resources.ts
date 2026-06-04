@@ -9,7 +9,7 @@
 import { relative } from "@std/path";
 import { walk } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 
 // ============================================================================
 // Types
@@ -163,7 +163,7 @@ export async function discoverPortalResources(
  */
 export async function discoverAllResources(
   config: Config,
-  db: IDatabaseService,
+  logger?: IEventLogger,
   options: {
     maxDepth?: number;
     includeHidden?: boolean;
@@ -183,15 +183,12 @@ export async function discoverAllResources(
   }
 
   // Log resource discovery
-  db.logActivity(
-    "mcp.resources",
-    "mcp.resources.discovered",
-    null,
-    {
+  if (logger) {
+    logger.info("mcp.resources.discovered", null, {
       resource_count: allResources.length,
       portal_count: config.portals.length,
-    },
-  );
+    });
+  }
 
   return allResources;
 }

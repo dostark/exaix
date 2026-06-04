@@ -208,7 +208,7 @@ export class AgentExecutor {
    */
   public get toolRegistry(): IToolRegistry | undefined {
     if (!this._toolRegistry && this.config?.system?.root) {
-      this._toolRegistry = new ToolRegistry({ config: this.config, db: this.db });
+      this._toolRegistry = new ToolRegistry({ config: this.config });
     }
     return this._toolRegistry;
   }

@@ -177,7 +177,6 @@ export async function initializeServices(
 
     const toolRegistry = new ToolRegistry({
       config: cfg,
-      db: dbLocal as DatabaseService,
     });
 
     const context: ICliApplicationContext = {

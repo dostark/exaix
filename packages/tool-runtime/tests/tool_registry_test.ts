@@ -13,6 +13,7 @@ import type { DatabaseService } from "@exaix/storage-sqlite";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { createToolRegistryTestContext } from "./helpers/tool_registry_test_helper.ts";
 
 /**
@@ -46,11 +47,12 @@ async function withToolRegistryContext(
 ): Promise<void> {
   const tempDir = options.workspaceRoot ? undefined : await Deno.makeTempDir({ prefix });
   const workspaceRoot = options.workspaceRoot ?? tempDir!;
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(workspaceRoot);
-    const registry = new ToolRegistry({ config, db, traceId: options.traceId });
+    const logger = new EventLogger({ db });
+    const registry = new ToolRegistry({ config, logger, traceId: options.traceId });
 
     await run({ workspaceRoot, tempDir, db, registry });
   } finally {
@@ -401,11 +403,11 @@ Deno.test("ToolRegistry: execute - validates required parameters", async () => {
 
 Deno.test("[security] ToolRegistry: read_file - blocks path traversal to /etc/passwd", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to read sensitive system file via path traversal
     const result = await registry.execute(ToolName.READ_FILE, {
@@ -426,7 +428,7 @@ Deno.test("[security] ToolRegistry: read_file - blocks path traversal to /etc/pa
 
 Deno.test("[security] ToolRegistry: write_file - blocks writing to System directory", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-db-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     // Create the System directory and journal.db
@@ -436,7 +438,7 @@ Deno.test("[security] ToolRegistry: write_file - blocks writing to System direct
     await Deno.writeTextFile(journalPath, "original content");
 
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to write to System directory (should be protected)
     // Test 1: Try path traversal to escape Memory and reach System
@@ -475,11 +477,11 @@ Deno.test("[security] ToolRegistry: write_file - blocks writing to System direct
 });
 
 Deno.test("[security] ToolRegistry: run_command - blocks shell injection with semicolon", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(Deno.cwd());
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt shell injection with command chaining
     const result = await registry.execute(ToolName.RUN_COMMAND, {
@@ -508,11 +510,11 @@ Deno.test("[security] ToolRegistry: run_command - blocks shell injection with se
 });
 
 Deno.test("[security] ToolRegistry: run_command - blocks backtick command substitution", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(Deno.cwd());
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt command substitution with backticks
     const result = await registry.execute(ToolName.RUN_COMMAND, {
@@ -536,11 +538,11 @@ Deno.test("[security] ToolRegistry: run_command - blocks backtick command substi
 });
 
 Deno.test("[security] ToolRegistry: run_command - blocks $() command substitution", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(Deno.cwd());
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt command substitution with $()
     const result = await registry.execute(ToolName.RUN_COMMAND, {
@@ -563,11 +565,11 @@ Deno.test("[security] ToolRegistry: run_command - blocks $() command substitutio
 });
 
 Deno.test("[security] ToolRegistry: run_command - blocks pipe to dangerous command", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(Deno.cwd());
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to pipe to a dangerous command
     const result = await registry.execute(ToolName.RUN_COMMAND, {
@@ -590,11 +592,11 @@ Deno.test("[security] ToolRegistry: run_command - blocks pipe to dangerous comma
 });
 
 Deno.test("[security] ToolRegistry: run_command - blocks curl/wget for data exfiltration", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(Deno.cwd());
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to use curl for exfiltration
     const curlResult = await registry.execute(ToolName.RUN_COMMAND, {
@@ -623,11 +625,11 @@ Deno.test("[security] ToolRegistry: run_command - blocks curl/wget for data exfi
 
 Deno.test("[security] ToolRegistry: list_directory - blocks listing /etc", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-list-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to list /etc directory
     const result = await registry.execute(ToolName.LIST_DIRECTORY, {
@@ -647,11 +649,11 @@ Deno.test("[security] ToolRegistry: list_directory - blocks listing /etc", async
 
 Deno.test("[security] ToolRegistry: write_file - blocks writing to /tmp outside workspace", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-write-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to write outside workspace
     const result = await registry.execute(ToolName.WRITE_FILE, {
@@ -668,11 +670,11 @@ Deno.test("[security] ToolRegistry: write_file - blocks writing to /tmp outside 
 
 Deno.test("[security] ToolRegistry: search_files - blocks search in /home", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "security-test-search-" });
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
 
   try {
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const registry = new ToolRegistry({ config });
 
     // Attempt to search in /home directory
     const result = await registry.execute(ToolName.SEARCH_FILES, {

@@ -6,7 +6,6 @@
  * @related-files [packages/mcp/server/tools.ts, packages/mcp/server/resources.ts, packages/mcp/server/prompts.ts]
  */
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import { MCPConfigSchema, type MCPTool } from "@exaix/schemas/mcp.ts";
@@ -68,6 +67,7 @@ type MCPHttpResponse = Response;
 interface MCPServerOptions {
   context: ICliApplicationContext;
   transport: McpTransportType;
+  logger?: IEventLogger;
   permissions?: IPortalPermissionsChecker;
   resultValidator?: IToolResultValidator;
   validationReportContext?: IValidationReportContext;
@@ -128,7 +128,7 @@ interface HasConstructor {
 export class MCPServer {
   private context: ICliApplicationContext;
   private config: Config;
-  private db: IDatabaseService;
+  private logger?: IEventLogger;
   private transport: McpTransportType;
   private running = false;
   private serverName: string;
@@ -146,7 +146,7 @@ export class MCPServer {
   constructor(options: MCPServerOptions) {
     this.context = options.context;
     this.config = options.context.config.getAll();
-    this.db = options.context.db;
+    this.logger = options.logger;
     this.transport = options.transport;
     this.resultValidator = options.resultValidator;
     this.validationReportContext = options.validationReportContext;
@@ -164,9 +164,22 @@ export class MCPServer {
     this.serverVersion = mcpConfig.version;
     this.permissions = options.permissions ?? new PortalPermissionsService(this.config.portals);
 
-    for (const handler of buildHandlers(this.context, this.permissions).values()) {
+    for (const handler of buildHandlers(this.context, this.permissions, this.logger).values()) {
       this.registerTool(handler);
     }
+  }
+
+  /**
+   * Log activity via IEventLogger (preferred) or fall back to db.logActivity
+   */
+  private logActivity(
+    _actor: string,
+    actionType: string,
+    target: string | null,
+    payload: Record<string, JSONValue>,
+  ): void {
+    if (!this.logger) return;
+    void this.logger.info(actionType, target, payload);
   }
 
   /**
@@ -188,7 +201,7 @@ export class MCPServer {
     this.running = true;
 
     // Log server start
-    this.db.logActivity(
+    this.logActivity(
       "mcp.server",
       "mcp.server.started",
       null,
@@ -211,7 +224,7 @@ export class MCPServer {
     this.running = false;
 
     // Log server stop
-    this.db.logActivity(
+    this.logActivity(
       "mcp.server",
       "mcp.server.stopped",
       null,
@@ -311,7 +324,7 @@ export class MCPServer {
     const clientInfo = params.clientInfo as { name: string; version: string } | undefined;
 
     // Log initialization
-    this.db.logActivity(
+    this.logActivity(
       "mcp.server",
       "mcp.initialize",
       clientInfo?.name || null,
@@ -349,7 +362,7 @@ export class MCPServer {
     const toolDefinitions = Array.from(this.tools.values()).map((tool) => tool.getToolDefinition());
 
     // Log tools list request
-    this.db.logActivity(
+    this.logActivity(
       "mcp.server",
       "mcp.tools.list",
       null,
@@ -383,7 +396,7 @@ export class MCPServer {
     const tool = this.tools.get(params.name);
     if (!tool) {
       // Log missing tool attempt
-      this.db.logActivity(
+      this.logActivity(
         "mcp.server",
         "mcp.tool.not_found",
         params.name,
@@ -476,7 +489,7 @@ export class MCPServer {
 
       // Log successful tool execution (sanitized)
       try {
-        this.db.logActivity(
+        this.logActivity(
           "mcp.server",
           "mcp.tool.executed",
           params.name,
@@ -501,7 +514,7 @@ export class MCPServer {
 
       if (classification.type === "permission_error") {
         try {
-          this.db.logActivity(
+          this.logActivity(
             "mcp.server",
             "mcp.permission.denied",
             params.name,
@@ -519,7 +532,7 @@ export class MCPServer {
 
       // Log error with context (do not include sensitive details)
       try {
-        this.db.logActivity(
+        this.logActivity(
           "mcp.server",
           "mcp.tool.failed",
           params.name,
@@ -577,7 +590,7 @@ export class MCPServer {
         toolName,
         policy,
         result,
-        createDbEventLogger(this.db),
+        this.logger ?? createNoopLogger(),
         this.validationReportContext,
       );
     } catch {
@@ -686,7 +699,7 @@ export class MCPServer {
   ): Promise<JSONRPCResponse> {
     try {
       // Discover resources from all portals
-      const resources = await discoverAllResources(this.config, this.db, {
+      const resources = await discoverAllResources(this.config, this.logger, {
         maxDepth: 3,
         includeHidden: false,
         extensions: ["ts", "tsx", "js", "jsx", "py", "rs", "go", "md", "json", "toml"],
@@ -740,7 +753,7 @@ export class MCPServer {
       });
 
       // Log resource read
-      this.db.logActivity(
+      this.logActivity(
         "mcp.resources",
         "mcp.resources.read",
         params.uri,
@@ -791,7 +804,7 @@ export class MCPServer {
         params.name,
         params.arguments,
         this.config,
-        this.db,
+        this.logger,
       );
 
       if (!result) {
@@ -969,7 +982,7 @@ export class MCPServer {
     this.running = true;
 
     // Log server start
-    this.db.logActivity(
+    this.logActivity(
       "mcp.server",
       "mcp.http_server.started",
       null,
@@ -994,39 +1007,14 @@ export class MCPServer {
   }
 }
 
-const LOGGER_ACTOR = "system";
-
-function createDbEventLogger(db: IDatabaseService): IEventLogger {
+function createNoopLogger(): IEventLogger {
   return {
-    log: async (event) => {
-      await db.logActivity(
-        LOGGER_ACTOR,
-        event.action,
-        event.target || "",
-        event.payload || {},
-        event.traceId,
-      );
-    },
-    info: (action, target, payload, traceId) => {
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
-      return Promise.resolve();
-    },
-    warn: (action, target, payload, traceId) => {
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
-      return Promise.resolve();
-    },
-    error: (action, target, payload, traceId) => {
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
-      return Promise.resolve();
-    },
-    fatal: (action, target, payload, traceId) => {
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
-      return Promise.resolve();
-    },
-    debug: (action, target, payload, traceId) => {
-      db.logActivity(LOGGER_ACTOR, action, target || "", payload || {}, traceId);
-      return Promise.resolve();
-    },
-    child: () => createDbEventLogger(db),
+    info: () => Promise.resolve(),
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => createNoopLogger(),
   };
 }

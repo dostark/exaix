@@ -7,8 +7,8 @@
  */
 
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core/types";
-import { ActivityActor, MessageRole } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { MessageRole } from "@exaix/core";
 import { PORTAL_LABEL } from "@exaix/core";
 
 // ============================================================================
@@ -113,19 +113,16 @@ export function getPrompt(name: string): IMCPPrompt | null {
  */
 export function generateExecutePlanPrompt(
   args: { plan_id: string; portal: string },
-  db: IDatabaseService,
+  logger?: IEventLogger,
 ): MCPPromptResult {
   const { plan_id, portal } = args;
 
   // Log prompt generation
-  db.logActivity(
-    "mcp.prompts",
-    "mcp.prompts.execute_plan",
-    plan_id,
-    {
+  if (logger) {
+    logger.info("mcp.prompts.execute_plan", plan_id, {
       portal,
-    },
-  );
+    });
+  }
 
   const messages: MCPPromptMessage[] = [
     {
@@ -178,20 +175,17 @@ Begin executing the plan.`,
  */
 export function generateCreateReviewPrompt(
   args: { portal: string; description: string; trace_id: string },
-  db: IDatabaseService,
+  logger?: IEventLogger,
 ): MCPPromptResult {
   const { portal, description, trace_id } = args;
 
   // Log prompt generation
-  db.logActivity(
-    "mcp.prompts",
-    "mcp.prompts.create_review",
-    trace_id,
-    {
+  if (logger) {
+    logger.info("mcp.prompts.create_review", trace_id, {
       portal,
       description,
-    },
-  );
+    });
+  }
 
   const messages: MCPPromptMessage[] = [
     {
@@ -258,23 +252,23 @@ export function generatePrompt(
   name: string,
   args: PromptArgs,
   _config: Config,
-  db: IDatabaseService,
+  logger?: IEventLogger,
 ): MCPPromptResult | null {
   switch (name) {
     case "execute_plan":
       return generateExecutePlanPrompt(
         args as { plan_id: string; portal: string },
-        db,
+        logger,
       );
     case "create_review":
       return generateCreateReviewPrompt(
         args as { portal: string; description: string; trace_id: string },
-        db,
+        logger,
       );
     case "commit_message":
       return generateCommitMessagePrompt(
         args as { portal: string },
-        db,
+        logger,
       );
     default:
       return null;
@@ -286,19 +280,16 @@ export function generatePrompt(
  */
 export function generateCommitMessagePrompt(
   args: { portal: string },
-  db: IDatabaseService,
+  logger?: IEventLogger,
 ): MCPPromptResult {
   const { portal } = args;
 
   // Log prompt generation
-  db.logActivity(
-    "mcp.prompts",
-    "mcp.prompts.commit_message",
-    ActivityActor.SYSTEM,
-    {
+  if (logger) {
+    logger.info("mcp.prompts.commit_message", null, {
       portal,
-    },
-  );
+    });
+  }
 
   const messages: MCPPromptMessage[] = [
     {

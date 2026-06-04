@@ -11,28 +11,13 @@ import { join, resolve } from "@std/path";
 import { expandGlob } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import { PathResolver } from "@exaix/portal";
-import {
-  ActivityActor,
-  BYTES_PER_KB,
-  JsonSchemaType,
-  LogLevel,
-  PORTAL_PREFIX_PATTERN,
-  SystemCommand,
-  ToolName,
-} from "@exaix/core";
+import { BYTES_PER_KB, JsonSchemaType, LogLevel, PORTAL_PREFIX_PATTERN, SystemCommand, ToolName } from "@exaix/core";
 import { GIT_CMD_BRANCH, GIT_CMD_REV_PARSE, GIT_CMD_STATUS, GitBranchName } from "@exaix/git";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { type IMiddlewarePipeline, type IPathSecurityOps, PathAccessError, PathTraversalError } from "./types.ts";
 import { createPathSecurity } from "./path_security.ts";
 import type { JSONValue } from "@exaix/core";
-import type {
-  IApplicationContext,
-  IDatabaseService,
-  IServiceContext,
-  ITool,
-  IToolRegistry,
-  IToolResult,
-} from "@exaix/core/types";
+import type { IApplicationContext, IServiceContext, ITool, IToolRegistry, IToolResult } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IToolResultRemediationPolicy } from "@exaix/schemas/tool_result.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
@@ -51,7 +36,7 @@ type RemediationPolicyResolver = (
 
 export interface IToolRegistryConfig {
   config: Config;
-  db?: IDatabaseService;
+  logger?: IEventLogger;
   traceId?: string;
   identityId?: string;
   baseDir?: string;
@@ -278,7 +263,7 @@ function validateGrepArguments(args: string[]): { valid: boolean; reason?: strin
 
 export class ToolRegistry implements IToolRegistry {
   private config: Config;
-  private db?: IDatabaseService;
+  private logger?: IEventLogger;
   private traceId?: string;
   private identityId?: string;
   private pathResolver: PathResolver;
@@ -323,7 +308,7 @@ export class ToolRegistry implements IToolRegistry {
       mcp: {},
     });
 
-    this.db = ctx?.db || resolvedOptions?.db;
+    this.logger = resolvedOptions?.logger;
 
     this.traceId = resolvedOptions?.traceId ?? "tool-registry";
     this.identityId = resolvedOptions?.identityId ?? DEFAULT_MCP_IDENTITY_ID;
@@ -336,8 +321,7 @@ export class ToolRegistry implements IToolRegistry {
     this.resultValidator = resolvedOptions?.resultValidator;
     this.validationReportContext = resolvedOptions?.validationReportContext;
     this.remediationPolicyResolver = resolvedOptions?.remediationPolicyResolver;
-    this.validationEventLogger = resolvedOptions?.validationEventLogger ??
-      (this.db ? createDbEventLogger(this.db, this.identityId) : undefined);
+    this.validationEventLogger = resolvedOptions?.validationEventLogger ?? this.logger;
 
     this.registerCoreTools();
     this.registerCoreExecutors();
@@ -965,58 +949,46 @@ export class ToolRegistry implements IToolRegistry {
     } catch (error) {
       if (error instanceof PathTraversalError) {
         // Log security event
-        this.db?.logActivity(
-          ActivityActor.SYSTEM,
-          "security.path_traversal_attempted",
-          path,
-          {
-            attempted_path: path,
-            error: error.message,
-            trace_id: this.traceId ?? null,
-            identity_id: this.identityId ?? null,
-          },
-          this.traceId,
-          this.identityId,
-        );
+        const payload = {
+          attempted_path: path,
+          error: error.message,
+          trace_id: this.traceId ?? null,
+          identity_id: this.identityId ?? null,
+        };
+        if (this.logger) {
+          void this.logger.warn("security.path_traversal_attempted", path, payload, this.traceId);
+        }
 
         throw new Error(`Access denied: Path traversal detected`);
       }
 
       if (error instanceof PathAccessError) {
         // Log access violation
-        this.db?.logActivity(
-          ActivityActor.SYSTEM,
-          "security.path_access_denied",
-          path,
-          {
-            attempted_path: path,
-            resolved_path: error.message.includes("->") ? error.message.split("->")[1]?.trim() : null,
-            error: error.message,
-            trace_id: this.traceId ?? null,
-            identity_id: this.identityId ?? null,
-          },
-          this.traceId,
-          this.identityId,
-        );
+        const payload = {
+          attempted_path: path,
+          resolved_path: error.message.includes("->") ? error.message.split("->")[1]?.trim() : null,
+          error: error.message,
+          trace_id: this.traceId ?? null,
+          identity_id: this.identityId ?? null,
+        };
+        if (this.logger) {
+          void this.logger.warn("security.path_access_denied", path, payload, this.traceId);
+        }
 
         const allowedRootsList = allowedRoots.join(", ");
         throw new Error(`Access denied: Path outside allowed directories. Allowed roots: ${allowedRootsList}`);
       }
 
       // Log generic path resolution errors
-      this.db?.logActivity(
-        ActivityActor.SYSTEM,
-        "path.resolution_error",
-        path,
-        {
-          input_path: path,
-          error: error instanceof Error ? error.message : String(error),
-          trace_id: this.traceId ?? null,
-          identity_id: this.identityId ?? null,
-        },
-        this.traceId,
-        this.identityId,
-      );
+      const payload = {
+        input_path: path,
+        error: error instanceof Error ? error.message : String(error),
+        trace_id: this.traceId ?? null,
+        identity_id: this.identityId ?? null,
+      };
+      if (this.logger) {
+        void this.logger.warn("path.resolution_error", path, payload, this.traceId);
+      }
 
       throw error;
     }
@@ -1082,22 +1054,10 @@ export class ToolRegistry implements IToolRegistry {
    * Log activity to database
    */
   private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ActivityActor.IDENTITY,
-        actionType,
-        (payload.params as Record<string, JSONValue>)?.path as string ||
-          (payload.params as Record<string, JSONValue>)?.command as string ||
-          null,
-        payload,
-        this.traceId,
-        this.identityId,
-      );
-    } catch (error) {
-      console.error("Failed to log tool activity:", error);
-    }
+    if (!this.logger) return;
+    const target = (payload.params as Record<string, JSONValue>)?.path as string ||
+      (payload.params as Record<string, JSONValue>)?.command as string || null;
+    void this.logger.info(actionType, target, payload, this.traceId);
   }
 
   /**
@@ -1577,43 +1537,6 @@ export class ToolRegistry implements IToolRegistry {
       return this.formatError(error);
     }
   }
-}
-
-function createDbEventLogger(db: IDatabaseService, identityId?: string): IEventLogger {
-  return {
-    log: (event) => {
-      db.logActivity(
-        ActivityActor.SYSTEM,
-        event.action,
-        event.target || "",
-        event.payload || {},
-        event.traceId,
-        identityId,
-      );
-      return Promise.resolve();
-    },
-    info: (action, target, payload, traceId) => {
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
-      return Promise.resolve();
-    },
-    warn: (action, target, payload, traceId) => {
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
-      return Promise.resolve();
-    },
-    error: (action, target, payload, traceId) => {
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
-      return Promise.resolve();
-    },
-    fatal: (action, target, payload, traceId) => {
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
-      return Promise.resolve();
-    },
-    debug: (action, target, payload, traceId) => {
-      db.logActivity(ActivityActor.SYSTEM, action, target || "", payload || {}, traceId, identityId);
-      return Promise.resolve();
-    },
-    child: () => createNoopEventLogger(),
-  };
 }
 
 function createNoopEventLogger(): IEventLogger {

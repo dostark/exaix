@@ -17,6 +17,7 @@ import { AllowAllPermissionsService } from "@exaix/mcp/testing";
 
 import { McpTransportType } from "@exaix/mcp";
 import { PortalOperation } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
 import { MCPServer } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { ToolRegistry } from "@exaix/tool-runtime";
@@ -157,7 +158,7 @@ function createTestContext(
     git: createStubGit(),
     provider: createStubProvider(),
     display: createStubDisplay(),
-    toolRegistry: new ToolRegistry({ config, db }),
+    toolRegistry: new ToolRegistry({ config }),
   };
 }
 
@@ -169,8 +170,10 @@ export async function initMCPTest(
 ): Promise<IMCPTestContext> {
   const env = await initTestEnv(options);
   const context = createTestContext(env.config, env.db);
+  const logger = new EventLogger({ db: env.db });
   const server = new MCPServer({
     context,
+    logger,
     transport: McpTransportType.STDIO,
     permissions: new AllowAllPermissionsService(),
   });
@@ -291,8 +294,10 @@ export async function initMCPTestWithoutPortal(): Promise<
 
   const config = createMockConfig(tempDir);
   const context = createTestContext(config, db);
+  const logger = new EventLogger({ db });
   const server = new MCPServer({
     context,
+    logger,
     transport: McpTransportType.STDIO,
     permissions: new AllowAllPermissionsService(),
   });
