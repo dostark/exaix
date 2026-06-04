@@ -4,7 +4,7 @@
  * @description Service layer for StructuredLogger TUI integration, enabling real-time log streaming, querying, and correlation tracking.
  * @architectural-layer TUI
  * @ungrounded
- * @related-files ["packages/core/src/logger/structured_logger.ts", apps/tui/src/structured_log_viewer.ts]
+ * @related-files ["packages/core/src/logger/structured_event_output.ts", apps/tui/src/structured_log_viewer.ts]
  */
 
 import { DEFAULT_LOG_BUFFER_SIZE } from "@exaix/core";

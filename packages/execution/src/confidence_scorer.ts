@@ -11,8 +11,9 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
-import { logDebug } from "@exaix/core/logger";
+
 import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IConfidenceScorerConfig {
   lowConfidenceThreshold?: number;
@@ -22,6 +23,7 @@ export interface IConfidenceScorerConfig {
   extractionPromptTemplate?: string;
   verbose?: boolean;
   db?: DatabaseService;
+  logger?: IEventLogger;
   existingScoreWeight?: number;
   goalAlignmentWeight?: number;
 }
@@ -166,6 +168,7 @@ export class ConfidenceScorer {
     extractionPromptTemplate: string;
     verbose: boolean;
     db?: DatabaseService;
+    logger?: IEventLogger;
     existingScoreWeight: number;
     goalAlignmentWeight: number;
   };
@@ -199,6 +202,7 @@ export class ConfidenceScorer {
       extractionPromptTemplate = DEFAULT_EXTRACTION_PROMPT,
       verbose = false,
       db,
+      logger,
       existingScoreWeight = EXISTING_SCORE_CONFIDENCE_WEIGHT,
       goalAlignmentWeight = GOAL_ALIGNMENT_CONFIDENCE_WEIGHT,
     } = config;
@@ -211,11 +215,12 @@ export class ConfidenceScorer {
       extractionPromptTemplate,
       verbose,
       db,
+      logger,
       existingScoreWeight,
       goalAlignmentWeight,
     };
 
-    this.agentRunner = new AgentRunner(modelProvider, { db });
+    this.agentRunner = new AgentRunner(modelProvider);
     this.outputValidator = createOutputValidator({ autoRepair: true });
   }
 
@@ -277,17 +282,19 @@ export class ConfidenceScorer {
     this.updateMetrics(confidence, flaggedForReview);
 
     if (this.config.verbose) {
-      logDebug(`Confidence score: ${confidence.score}, Level: ${confidence.level}, Flagged: ${flaggedForReview}`, {
-        confidence_score: confidence.score,
-        confidence_level: confidence.level,
-        flagged_for_review: flaggedForReview,
-        service: "confidence_scorer",
-      });
+      console.debug(
+        `[ConfidenceScorer] score=${confidence.score} level=${confidence.level} flagged=${flaggedForReview}`,
+        {
+          confidence_score: confidence.score,
+          confidence_level: confidence.level,
+          flagged_for_review: flaggedForReview,
+          service: "confidence_scorer",
+        },
+      );
     }
 
-    if (this.config.db && flaggedForReview) {
-      this.config.db.logActivity(
-        "confidence_scorer",
+    if (this.config.logger && flaggedForReview) {
+      this.config.logger.info(
         "confidence.flagged",
         null,
         {
@@ -297,7 +304,6 @@ export class ConfidenceScorer {
           uncertainty_areas: confidence.uncertainty_areas,
         },
         traceId,
-        "confidence-assessor",
       );
     }
 

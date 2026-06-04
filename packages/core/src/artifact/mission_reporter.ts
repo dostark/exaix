@@ -11,6 +11,7 @@
  * @architectural-layer Services
  * @related-files ["packages/execution/src/execution_loop.ts", "packages/memory/src/bank/memory_bank.ts"]
  */
+import { DomainEventType } from "@exaix/core/events";
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import {
@@ -19,10 +20,11 @@ import {
   DEFAULT_MEMORY_PATH,
   DEFAULT_PORTALS_PATH,
 } from "@exaix/core";
-import type { IDatabaseService } from "@exaix/storage-sqlite";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { IEventJournalReader } from "@exaix/core/events";
 import type { MemoryBankService } from "@exaix/memory";
 import type { IExecutionMemory } from "@exaix/schemas/memory_bank.ts";
-import { ActivityActor, ExecutionStatus } from "@exaix/core";
+import { ExecutionStatus } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import { ZPlanAmendmentPatch } from "@exaix/schemas/plan_amendment.ts";
 import { exists } from "@std/fs";
@@ -126,18 +128,21 @@ export class MissionReporter {
   private config: Config;
   private reportConfig: ReportConfig;
   private memoryBank: MemoryBankService;
-  private db?: IDatabaseService;
+  private logger?: IEventLogger;
+  private reader?: IEventJournalReader;
 
   constructor(
     config: Config,
     reportConfig: ReportConfig,
     memoryBank: MemoryBankService,
-    db?: IDatabaseService,
+    logger?: IEventLogger,
+    reader?: IEventJournalReader,
   ) {
     this.config = config;
     this.reportConfig = reportConfig;
     this.memoryBank = memoryBank;
-    this.db = db;
+    this.logger = logger;
+    this.reader = reader;
   }
 
   /**
@@ -186,7 +191,7 @@ export class MissionReporter {
 
       // Log success
       this.logActivity({
-        event_type: "report.generated",
+        event_type: DomainEventType.ReportGenerated,
         target: traceData.requestId,
         trace_id: traceData.traceId,
         metadata: {
@@ -209,7 +214,7 @@ export class MissionReporter {
     } catch (error) {
       // Log error
       this.logActivity({
-        event_type: "report.error",
+        event_type: DomainEventType.ReportError,
         target: traceData.requestId,
         trace_id: traceData.traceId,
         metadata: {
@@ -281,20 +286,8 @@ export class MissionReporter {
     trace_id: string;
     metadata: Record<string, JSONValue>;
   }): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ActivityActor.SYSTEM,
-        activityData.event_type,
-        activityData.target,
-        activityData.metadata,
-        activityData.trace_id,
-        "mission_reporter",
-      );
-    } catch (error) {
-      console.error("Failed to log activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(activityData.event_type, activityData.target, activityData.metadata, activityData.trace_id);
   }
 
   /**
@@ -447,12 +440,12 @@ export class MissionReporter {
   private async queryAmendmentDecisions(traceId: string): Promise<Map<string, string>> {
     const decisions = new Map<string, string>();
 
-    if (!this.db) {
+    if (!this.reader) {
       return decisions;
     }
 
     try {
-      const events = await this.db.queryActivity({
+      const events = await this.reader.queryActivity({
         traceId: traceId,
         orConditions: [
           { actionType: "plan.amendment.approved" },

@@ -21,7 +21,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types";
 import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
-import { logDebug } from "@exaix/core/logger";
+
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
@@ -37,6 +37,7 @@ import {
   type IBlueprint,
   type IParsedRequest,
 } from "./agent_runner.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IReflexiveAgentConvergenceConfig {
   qualityExitThreshold: number;
@@ -58,6 +59,7 @@ export interface IReflexiveAgentConfig extends IAgentRunnerConfig {
   verbose?: boolean;
   adaptiveIterationBudget?: boolean;
   convergenceConfig?: Partial<IReflexiveAgentConvergenceConfig>;
+  logger?: IEventLogger;
 }
 
 export interface IReflexionIteration {
@@ -195,6 +197,7 @@ export class ReflexiveAgent {
     adaptiveIterationBudget: boolean;
     convergenceConfig: IReflexiveAgentConvergenceConfig;
     agentRunnerConfig: IAgentRunnerConfig;
+    logger?: IEventLogger;
   };
 
   public metrics: IReflexionMetrics = this.emptyMetrics();
@@ -229,6 +232,7 @@ export class ReflexiveAgent {
       verbose = false,
       adaptiveIterationBudget = true,
       convergenceConfig = {},
+      logger,
       ...agentRunnerConfig
     } = config;
 
@@ -260,9 +264,9 @@ export class ReflexiveAgent {
         scoreEveryNIterations: effectiveScoreEveryNIterations,
       },
       agentRunnerConfig,
+      logger,
     };
 
-    this.db = agentRunnerConfig.db;
     this.confidenceScorer = new ConfidenceScorer(modelProvider, {
       lowConfidenceThreshold: confidenceThreshold,
       highConfidenceThreshold: 90,
@@ -732,15 +736,15 @@ export class ReflexiveAgent {
   }
 
   public logActivity(
-    actor: string,
+    _actor: string,
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: string,
   ): void {
     if (this.config.verbose) {
-      logDebug(`Reflexive agent activity: [${actor}] ${actionType}`, {
-        actor,
+      console.debug(`[ReflexiveAgent] ${_actor} ${actionType}`, {
+        actor: _actor,
         action_type: actionType,
         target,
         payload,
@@ -749,8 +753,8 @@ export class ReflexiveAgent {
       });
     }
 
-    if (this.db) {
-      this.db.logActivity(actor, actionType, target, payload, traceId, "reflexive-agent");
+    if (this.config.logger) {
+      this.config.logger.info(actionType, target, payload, traceId);
     }
   }
 }

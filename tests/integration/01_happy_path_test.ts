@@ -13,6 +13,7 @@ import { TestEnvironment } from "./helpers/test_environment.ts";
 import { ExecutionLoop } from "@exaix/execution";
 import { MissionReporter } from "@exaix/core/artifact";
 import { MemoryBankService } from "@exaix/memory";
+import { EventLogger } from "@exaix/core/logger";
 
 Deno.test("Integration: Happy Path - Request to Report", async (t) => {
   const env = await TestEnvironment.create();
@@ -174,8 +175,9 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
         memoryRoot: `${env.tempDir}/Memory`,
         db: env.db,
       };
-      const memoryBank = new MemoryBankService(env.config, env.db);
-      const reporter = new MissionReporter(env.config, reportConfig, memoryBank, env.db);
+      const memoryBank = new MemoryBankService(env.config);
+      const logger = new EventLogger({ db: env.db });
+      const reporter = new MissionReporter(env.config, reportConfig, memoryBank, logger);
 
       const reportResult = await reporter.generate({
         traceId,

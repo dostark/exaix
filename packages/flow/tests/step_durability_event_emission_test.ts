@@ -3,11 +3,12 @@
  * @path packages/flow/tests/step_durability_event_emission_test.ts
  * @description Tests verifying that FlowRunner emits the correct step durability
  * events: FLOW_EVENT_STEP_SKIPPED_BY_REUSE on reuse paths and
- * FLOW_EVENT_STEP_INVALIDATED when a stale checkpoint is detected. Regression
- * guard: FLOW_EVENT_STEP_REPLAYED must NOT be emitted on the current reuse path.
+ * DomainEventType.FlowStepInvalidated when a stale checkpoint is detected. Regression
+ * guard: DomainEventType.FlowStepReplayed must NOT be emitted on the current reuse path.
  */
 
 import { assertEquals, assertFalse } from "@std/assert";
+import { DomainEventType } from "@exaix/core/events";
 import {
   FlowRunner,
   type IAgentExecutor,
@@ -25,8 +26,6 @@ import {
   DEFAULT_FLOW_STEP_BACKOFF_MS,
   DEFAULT_FLOW_VERSION,
   FLOW_CHECKPOINT_SCHEMA_VERSION,
-  FLOW_EVENT_STEP_INVALIDATED,
-  FLOW_EVENT_STEP_REPLAYED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FlowInputSource,
   FlowOutputFormat,
@@ -228,7 +227,7 @@ Deno.test(
 );
 
 Deno.test(
-  "StepDurabilityEventEmission: does NOT emit FLOW_EVENT_STEP_REPLAYED on the reuse path",
+  "StepDurabilityEventEmission: does NOT emit DomainEventType.FlowStepReplayed on the reuse path",
   async () => {
     const flow = buildTwoStepFlow() as IFlow;
     const logger = new TrackingEventLogger();
@@ -245,14 +244,14 @@ Deno.test(
     await runner.execute(flow, { userPrompt: "test", traceId: "no-replayed-trace" });
 
     assertFalse(
-      logger.emittedEventNames().includes(FLOW_EVENT_STEP_REPLAYED),
-      "FLOW_EVENT_STEP_REPLAYED must NOT be emitted on the current byte-reuse path",
+      logger.emittedEventNames().includes(DomainEventType.FlowStepReplayed),
+      "DomainEventType.FlowStepReplayed must NOT be emitted on the current byte-reuse path",
     );
   },
 );
 
 Deno.test(
-  "StepDurabilityEventEmission: emits FLOW_EVENT_STEP_INVALIDATED when stale checkpoint detected",
+  "StepDurabilityEventEmission: emits DomainEventType.FlowStepInvalidated when stale checkpoint detected",
   async () => {
     const flow = buildTwoStepFlow() as IFlow;
     const logger = new TrackingEventLogger();
@@ -270,11 +269,11 @@ Deno.test(
 
     assertEquals(result.success, true);
 
-    const invalidatedEvents = logger.eventsFor(FLOW_EVENT_STEP_INVALIDATED);
+    const invalidatedEvents = logger.eventsFor(DomainEventType.FlowStepInvalidated);
     assertEquals(
       invalidatedEvents.length > 0,
       true,
-      "FLOW_EVENT_STEP_INVALIDATED must be emitted for stale checkpoint steps",
+      "DomainEventType.FlowStepInvalidated must be emitted for stale checkpoint steps",
     );
 
     const step1Inv = invalidatedEvents.filter((e) => e.payload["stepId"] === "step1");

@@ -121,7 +121,7 @@ export async function initializeServices(
       dbLocal = createDatabaseStub();
     }
 
-    const gitLocal = new GitService({ config: cfg, db: dbLocal });
+    const gitLocal = new GitService({ config: cfg });
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
     bootstrapProviderRegistry();
@@ -135,7 +135,7 @@ export async function initializeServices(
     };
 
     // Instantiate concrete services and group into adapters
-    const memoryBank = new MemoryBankService(cfg, dbLocal);
+    const memoryBank = new MemoryBankService(cfg, displayLogger);
     const extractor = new MemoryExtractorService(cfg, dbLocal, memoryBank);
     const embedding = new MemoryEmbeddingService(cfg);
     const skills = new SkillsService({
@@ -173,12 +173,10 @@ export async function initializeServices(
       config: portalKnowledgeConfig,
       memoryBank,
       provider: providerLocal,
-      db: dbLocal,
     });
 
     const toolRegistry = new ToolRegistry({
       config: cfg,
-      db: dbLocal as DatabaseService,
     });
 
     const context: ICliApplicationContext = {

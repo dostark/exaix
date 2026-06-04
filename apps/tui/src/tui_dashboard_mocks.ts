@@ -82,6 +82,8 @@ import type { IActivityRecord, IJournalFilterOptions, SqliteParam } from "@exaix
 
 /** Default identity ID used across all mock service implementations */
 const MOCK_IDENTITY_ID = "test-agent";
+/** Placeholder project name used in mock project lists */
+const MOCK_PROJECT_NAME = "test";
 
 /**
  * MockPortalService
@@ -774,7 +776,7 @@ export class MockMemoryService implements IMemoryBankService, IMemoryService {
 
   // TUI-specific methods
   getProjects(): Promise<string[]> {
-    return Promise.resolve([GitBranchName.MAIN, "test"]);
+    return Promise.resolve([GitBranchName.MAIN, MOCK_PROJECT_NAME]);
   }
 
   search(query: string, _options?: { portal?: string; limit?: number }): Promise<IMemorySearchResult[]> {

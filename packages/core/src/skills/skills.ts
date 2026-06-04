@@ -13,7 +13,6 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import {
-  ActivityActor,
   DEFAULT_SKILL_CONTEXT_CHAR_BUDGET,
   DEFAULT_SKILL_INDEX_VERSION,
   type MemoryBankSource,
@@ -31,10 +30,9 @@ import type {
   SkillIndexSchema as _SkillIndexSchema,
   SkillUpdates,
 } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "../types/mod.ts";
-import type { JSONValue } from "../../mod.ts";
 import type { ISkillsService } from "../types/mod.ts";
 import type { ISkillMatchRequest } from "../types/mod.ts";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface ISkillsConfig {
   autoMatch: boolean;
@@ -59,6 +57,7 @@ export class SkillsService implements ISkillsService {
     private config: { memoryDir: string; portal?: string },
     private db: IDatabaseService,
     skillsConfig?: Partial<ISkillsConfig>,
+    private logger?: IEventLogger,
   ) {
     this.skillsConfig = { ...DEFAULT_CONFIG, ...skillsConfig };
   }
@@ -177,11 +176,11 @@ export class SkillsService implements ISkillsService {
     index.updated_at = new Date().toISOString();
     await this.saveIndex(index);
 
-    this.logActivity({
-      event_type: "skill.created",
-      target: newSkill.skill_id,
-      metadata: { id: newSkill.id, name: newSkill.name, scope: newSkill.scope },
-    });
+    this.logger?.info(
+      "skill.created",
+      newSkill.skill_id,
+      { id: newSkill.id, name: newSkill.name, scope: newSkill.scope },
+    );
 
     return newSkill;
   }
@@ -217,11 +216,11 @@ export class SkillsService implements ISkillsService {
       await this.saveIndex(index);
     }
 
-    this.logActivity({
-      event_type: "skill.updated",
-      target: skillId,
-      metadata: { updates: Object.keys(updates) },
-    });
+    this.logger?.info(
+      "skill.updated",
+      skillId,
+      { updates: Object.keys(updates) },
+    );
 
     return updatedSkill;
   }
@@ -441,11 +440,11 @@ export class SkillsService implements ISkillsService {
       if (skill) {
         skill.usage_count = (skill.usage_count || 0) + 1;
         await this.writeSkillToFile(skill, skillPath);
-        this.logActivity({
-          event_type: "skill.used",
-          target: skillId,
-          metadata: { usage_count: skill.usage_count },
-        });
+        this.logger?.info(
+          "skill.used",
+          skillId,
+          { usage_count: skill.usage_count },
+        );
       }
     } catch (error) {
       console.error(`Failed to record usage for skill ${skillId}:`, error);
@@ -461,11 +460,11 @@ export class SkillsService implements ISkillsService {
       derived_from: learningIds,
     });
 
-    this.logActivity({
-      event_type: "skill.derived",
-      target: skill.skill_id,
-      metadata: { learning_ids: learningIds },
-    });
+    this.logger?.info(
+      "skill.derived",
+      skill.skill_id,
+      { learning_ids: learningIds },
+    );
 
     return skill;
   }
@@ -558,18 +557,5 @@ export class SkillsService implements ISkillsService {
 
   private async writeSkillToFile(skill: ISkill, path: string): Promise<void> {
     await Deno.writeTextFile(path, JSON.stringify(skill, null, 2));
-  }
-
-  private logActivity(event: {
-    event_type: string;
-    target: string;
-    metadata?: Record<string, JSONValue>;
-  }): void {
-    this.db.logActivity(
-      ActivityActor.SYSTEM,
-      event.event_type,
-      event.target,
-      toSafeJson(event.metadata || {}) as JSONObject,
-    );
   }
 }

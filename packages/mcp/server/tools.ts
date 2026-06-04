@@ -14,6 +14,7 @@
 import { McpToolName, TOOL_MANIFEST, ToolKind } from "@exaix/mcp";
 import type { ToolHandler } from "./tool_handler.ts";
 import type { ICliApplicationContext } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 
 import { CreateDirectoryTool } from "./handlers/create_directory_tool.ts";
@@ -33,30 +34,36 @@ import { WriteFileTool } from "./handlers/write_file_tool.ts";
 import { ApprovePlanTool, CreateRequestTool, ListPlansTool, QueryJournalTool } from "./domain_tools.ts";
 
 interface IMcpToolFactory {
-  (context: ICliApplicationContext, permissions: IPortalPermissionsChecker): ToolHandler;
+  (context: ICliApplicationContext, permissions: IPortalPermissionsChecker, logger?: IEventLogger): ToolHandler;
 }
 
 const LIVE_MCP_TOOL_KINDS = new Set<ToolKind>([ToolKind.MCP_HANDLER, ToolKind.MCP_DOMAIN]);
 
 export const LIVE_MCP_TOOL_FACTORIES: ReadonlyMap<McpToolName, IMcpToolFactory> = new Map([
-  [McpToolName.READ_FILE, (context, permissions) => new ReadFileTool(context, permissions)],
-  [McpToolName.WRITE_FILE, (context, permissions) => new WriteFileTool(context, permissions)],
-  [McpToolName.PATCH_FILE, (context, permissions) => new PatchFileTool(context, permissions)],
-  [McpToolName.DELETE_FILE, (context, permissions) => new DeleteFileTool(context, permissions)],
-  [McpToolName.MOVE_FILE, (context, permissions) => new MoveFileTool(context, permissions)],
-  [McpToolName.CREATE_DIRECTORY, (context, permissions) => new CreateDirectoryTool(context, permissions)],
-  [McpToolName.LIST_DIRECTORY, (context, permissions) => new ListDirectoryTool(context, permissions)],
-  [McpToolName.GIT_CREATE_BRANCH, (context, permissions) => new GitCreateBranchTool(context, permissions)],
-  [McpToolName.GIT_COMMIT, (context, permissions) => new GitCommitTool(context, permissions)],
-  [McpToolName.GIT_STATUS, (context, permissions) => new GitStatusTool(context, permissions)],
-  [McpToolName.GIT_LOG, (context, permissions) => new GitLogTool(context, permissions)],
-  [McpToolName.GIT_WORKTREE, (context, permissions) => new GitWorktreeTool(context, permissions)],
-  [McpToolName.RUN_COMMAND, (context, permissions) => new RunCommandTool(context, permissions)],
-  [McpToolName.SEARCH_FILES, (context, permissions) => new SearchFilesTool(context, permissions)],
-  [McpToolName.CREATE_REQUEST, (context, permissions) => new CreateRequestTool(context, permissions)],
-  [McpToolName.LIST_PLANS, (context, permissions) => new ListPlansTool(context, permissions)],
-  [McpToolName.APPROVE_PLAN, (context, permissions) => new ApprovePlanTool(context, permissions)],
-  [McpToolName.QUERY_JOURNAL, (context, permissions) => new QueryJournalTool(context, permissions)],
+  [McpToolName.READ_FILE, (context, permissions, logger) => new ReadFileTool(context, permissions, logger)],
+  [McpToolName.WRITE_FILE, (context, permissions, logger) => new WriteFileTool(context, permissions, logger)],
+  [McpToolName.PATCH_FILE, (context, permissions, logger) => new PatchFileTool(context, permissions, logger)],
+  [McpToolName.DELETE_FILE, (context, permissions, logger) => new DeleteFileTool(context, permissions, logger)],
+  [McpToolName.MOVE_FILE, (context, permissions, logger) => new MoveFileTool(context, permissions, logger)],
+  [
+    McpToolName.CREATE_DIRECTORY,
+    (context, permissions, logger) => new CreateDirectoryTool(context, permissions, logger),
+  ],
+  [McpToolName.LIST_DIRECTORY, (context, permissions, logger) => new ListDirectoryTool(context, permissions, logger)],
+  [
+    McpToolName.GIT_CREATE_BRANCH,
+    (context, permissions, logger) => new GitCreateBranchTool(context, permissions, logger),
+  ],
+  [McpToolName.GIT_COMMIT, (context, permissions, logger) => new GitCommitTool(context, permissions, logger)],
+  [McpToolName.GIT_STATUS, (context, permissions, logger) => new GitStatusTool(context, permissions, logger)],
+  [McpToolName.GIT_LOG, (context, permissions, logger) => new GitLogTool(context, permissions, logger)],
+  [McpToolName.GIT_WORKTREE, (context, permissions, logger) => new GitWorktreeTool(context, permissions, logger)],
+  [McpToolName.RUN_COMMAND, (context, permissions, logger) => new RunCommandTool(context, permissions, logger)],
+  [McpToolName.SEARCH_FILES, (context, permissions, logger) => new SearchFilesTool(context, permissions, logger)],
+  [McpToolName.CREATE_REQUEST, (context, permissions, logger) => new CreateRequestTool(context, permissions, logger)],
+  [McpToolName.LIST_PLANS, (context, permissions, logger) => new ListPlansTool(context, permissions, logger)],
+  [McpToolName.APPROVE_PLAN, (context, permissions, logger) => new ApprovePlanTool(context, permissions, logger)],
+  [McpToolName.QUERY_JOURNAL, (context, permissions, logger) => new QueryJournalTool(context, permissions, logger)],
 ]);
 
 function liveMcpManifestNames(): McpToolName[] {
@@ -74,6 +81,7 @@ function liveMcpManifestNames(): McpToolName[] {
 export function buildHandlers(
   context: ICliApplicationContext,
   permissions: IPortalPermissionsChecker,
+  logger?: IEventLogger,
 ): Map<McpToolName, ToolHandler> {
   const handlers: Map<McpToolName, ToolHandler> = new Map();
 
@@ -82,7 +90,7 @@ export function buildHandlers(
     if (!factory) {
       throw new Error(`Missing MCP tool factory for manifest entry '${name}'`);
     }
-    handlers.set(name, factory(context, permissions));
+    handlers.set(name, factory(context, permissions, logger));
   }
 
   return handlers;

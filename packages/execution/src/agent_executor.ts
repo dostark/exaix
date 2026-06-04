@@ -13,6 +13,7 @@ import { z } from "zod";
 import type { Config, IPortalConfig } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IWorkspaceExecutionContext, PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { ITokenizer } from "@exaix/core/func";
@@ -80,7 +81,6 @@ import type { ISnapshotStore } from "./context/snapshot_store.ts";
 import type { ContextCache } from "@exaix/core/context";
 import {
   COMPACT_SUMMARY_MAX_TOKENS,
-  CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_BUDGET_CONSUMED,
   CONTEXT_SECTION_TRUNCATED,
   DEFAULT_KEEP_LAST_N_STEPS,
@@ -208,7 +208,7 @@ export class AgentExecutor {
    */
   public get toolRegistry(): IToolRegistry | undefined {
     if (!this._toolRegistry && this.config?.system?.root) {
-      this._toolRegistry = new ToolRegistry({ config: this.config, db: this.db });
+      this._toolRegistry = new ToolRegistry({ config: this.config });
     }
     return this._toolRegistry;
   }
@@ -275,7 +275,7 @@ export class AgentExecutor {
     const preserved = this._loopHistory.slice(this._loopHistory.length - keepLastN);
     this._loopHistory = [compressedEntry, ...preserved];
 
-    this.logger.info(CONTEXT_BUDGET_COMPACTED_EVENT, "", {
+    this.logger.info(DomainEventType.ExecutionContextCompacted, "", {
       tokensBefore,
       tokensAfter,
       compressedCount: compressible.length,
@@ -1064,14 +1064,14 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       }
 
       if (error instanceof SubprocessTimeoutError) {
-        await this.logger.error("git.audit.timeout", portalPath, {
+        await this.logger.error(DomainEventType.GitAuditTimeout, portalPath, {
           error: error.message,
           timeout_ms: DEFAULT_GIT_STATUS_TIMEOUT_MS,
         });
         throw new AgentExecutionError(`Git audit timed out for portal: ${portalPath}`);
       }
 
-      await this.logger.error("git.audit.failed", portalPath, {
+      await this.logger.error(DomainEventType.GitAuditFailed, portalPath, {
         error: error instanceof Error ? error.message : String(error),
         stderr: (error instanceof Error && "stderr" in error ? (error as Error & { stderr?: string }).stderr : null) ??
           null,
@@ -1180,7 +1180,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     if (validatedFiles.length === 0) {
       // Log that all files were filtered out as potentially malicious
       await this.logger.log({
-        action: "security.file_validation_filtered_all",
+        action: DomainEventType.SecurityFileValidationFilteredAll,
         target: portalPath,
         payload: {
           original_count: unauthorizedFiles.length,
@@ -1250,7 +1250,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
     }
 
     // Log results
-    await this.logger.info("git.revert.completed", portalPath, {
+    await this.logger.info(DomainEventType.GitRevertCompleted, portalPath, {
       total_files: unauthorizedFiles.length,
       successful: results.successful.length,
       failed: results.failed.length,
@@ -1262,7 +1262,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
       const errorMsg = `Failed to revert ${results.failed.length} unauthorized files: ${
         results.failed.map((f) => f.file).join(", ")
       }`;
-      await this.logger.error("git.revert.partial_failure", portalPath, {
+      await this.logger.error(DomainEventType.GitRevertPartialFailure, portalPath, {
         failed_count: results.failed.length,
         failed_files: results.failed,
       });
@@ -1337,7 +1337,7 @@ Ensure your response contains ONLY valid JSON, no additional text.`;
         try {
           const stat = await Deno.lstat(join(portalPath, filename));
           if (stat.isSymlink) {
-            await this.logger.error("symlink_detected", portalPath, { filename });
+            await this.logger.error(DomainEventType.SecuritySymlinkDetected, portalPath, { filename });
             // Already added to results.failed
             continue;
           }

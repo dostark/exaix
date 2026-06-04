@@ -11,9 +11,9 @@ import type { Config } from "@exaix/schemas/config.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { IFlow } from "@exaix/schemas/flow.ts";
 import { ICON_FAILURE, ICON_SUCCESS } from "@exaix/core";
-import { ActivityActor } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
 import type { IAgentExecutionResult } from "@exaix/execution";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IFlowResult {
   flowRunId: string;
@@ -47,6 +47,7 @@ export interface IStepResult {
 export interface IFlowReportConfig {
   reportsDirectory: string;
   db?: DatabaseService;
+  logger?: IEventLogger;
 }
 
 export interface FlowReportResult {
@@ -275,12 +276,11 @@ export class FlowReporter {
     reportPath: string,
     duration: number,
   ): void {
-    if (!this.reportConfig.db) return;
+    if (!this.reportConfig.logger) return;
 
     const fileName = reportPath.split("/").pop() || reportPath;
 
-    this.reportConfig.db.logActivity(
-      ActivityActor.SYSTEM,
+    this.reportConfig.logger.info(
       "flow.report.generated",
       flow.id,
       {
@@ -300,10 +300,9 @@ export class FlowReporter {
     error: Error,
     duration: number,
   ): void {
-    if (!this.reportConfig.db) return;
+    if (!this.reportConfig.logger) return;
 
-    this.reportConfig.db.logActivity(
-      ActivityActor.SYSTEM,
+    this.reportConfig.logger.info(
       "flow.report.failed",
       flow.id,
       {

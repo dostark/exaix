@@ -127,7 +127,7 @@ insertion order (FIFO).
   for next-iteration benefit. The current prompt is not affected. Supply
   `provider: yourModelProvider` in `IContextBudgetManagerInput` to enable actual LLM
   summarisation; when `provider` is absent the async block still fires (snapshot save and
-  `CONTEXT_BUDGET_COMPACTED_EVENT` emission still occur) but `compactor.summarize()` is
+  `DomainEventType.ExecutionContextCompacted` emission still occur) but `compactor.summarize()` is
   skipped.
 
 ### Protected Segments

@@ -137,9 +137,9 @@ async function runMemorySearchTest(
   options: { includeLearnings?: boolean } = {},
   fn: (service: MemoryBankService) => Promise<void>,
 ) {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await setupTestProjectWithTags(service);
     if (options.includeLearnings) {
       await setupTestLearnings(service, config.system.root);

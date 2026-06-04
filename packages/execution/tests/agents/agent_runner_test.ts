@@ -16,6 +16,7 @@ import type { ISkillsService } from "@exaix/core/types";
 import type { ISkillMatchRequest } from "@exaix/core/types";
 import type { ISkill, ISkillMatch, SkillDefinition } from "@exaix/schemas/memory_bank.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
+import type { IEventLogger } from "@exaix/core/logger";
 // ============================================================================
 // Test Fixtures
 // ============================================================================
@@ -1151,4 +1152,30 @@ Deno.test("AgentRunner: skipSkills with explicit skills", async () => {
   assertExists(result);
   // skill-y should be filtered out from explicit list
   assertEquals(result.skillsApplied, ["skill-x", "skill-z"]);
+});
+
+// ============================================================================
+// GAP-6 Remediation: EventLogger Integration Tests
+// ============================================================================
+
+Deno.test("[AgentRunner] routes prompt_assembled through IEventLogger when provided", async () => {
+  const mockProvider = new MockProvider(wellFormedResponse);
+  const actions: string[] = [];
+  const logger: IEventLogger = {
+    info(action: string): Promise<void> {
+      actions.push(action);
+      return Promise.resolve();
+    },
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => logger,
+  };
+
+  const runner = new AgentRunner(undefined, mockProvider, { logger });
+  const result = await runner.run(sampleBlueprint, sampleRequest);
+  assertExists(result);
+  assertEquals(actions.includes("agent.prompt_assembled"), true);
 });

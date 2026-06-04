@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, it } from "@std/testing/bdd";
 import { join } from "@std/path";
 import { ReviewCommands } from "../src/commands/review_commands.ts";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
-import { ArtifactRegistry } from "@exaix/core/artifact";
+import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { createCliTestContext, initGitRepo, runGitCommand } from "./helpers/test_setup.ts";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
@@ -161,7 +161,8 @@ describe("ReviewCommands", () => {
     });
 
     it("should include artifact-backed reviews by default", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-artifact-001",
         "code-analyst",
@@ -181,7 +182,8 @@ describe("ReviewCommands", () => {
       await createFeatureBranch(tempDir, "request-ty-001", "ty-001");
 
       // Create an artifact review
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       await artifactRegistry.createArtifact(
         "request-ty-002",
         "code-analyst",
@@ -199,7 +201,8 @@ describe("ReviewCommands", () => {
     });
 
     it("should merge and sort code + artifacts by created_at", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       await artifactRegistry.createArtifact(
         "request-mixed001",
         "code-analyst",
@@ -226,7 +229,8 @@ describe("ReviewCommands", () => {
       await createFeatureBranch(tempDir, "request-901", "st-001");
 
       // Create an artifact (pending by default)
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-st-002",
         "code-analyst",
@@ -257,7 +261,8 @@ describe("ReviewCommands", () => {
 
       // Ensure artifact has a later timestamp
       await delay(1100);
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       await artifactRegistry.createArtifact(
         "request-sort-002",
         "code-analyst",
@@ -273,7 +278,8 @@ describe("ReviewCommands", () => {
     });
 
     it("artifact list entries should expose file_path", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-filepath-001",
         "code-analyst",
@@ -339,7 +345,8 @@ describe("ReviewCommands", () => {
     });
 
     it("should show artifact content for artifact IDs", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-artifact-002",
         "code-analyst",
@@ -409,7 +416,8 @@ describe("ReviewCommands", () => {
     });
 
     it("should mark artifact as approved (no git)", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-artifact-003",
         "code-analyst",
@@ -525,7 +533,8 @@ describe("ReviewCommands", () => {
     });
 
     it("should mark artifact as rejected with reason (no git)", async () => {
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         "request-artifact-004",
         "code-analyst",
@@ -552,7 +561,8 @@ describe("ReviewCommands", () => {
       }\ncreated_by: test-user\n---\n\nTest request body\n`;
       await Deno.writeTextFile(requestPath, requestFront);
 
-      const artifactRegistry = new ArtifactRegistry(db, config.system.root);
+      const repo = new DatabaseArtifactRepository(db);
+      const artifactRegistry = new ArtifactRegistry(repo, config.system.root);
       const artifactId = await artifactRegistry.createArtifact(
         requestId,
         "code-analyst",

@@ -11,12 +11,13 @@ import { join } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import { SafeSubprocess } from "@exaix/core";
-import { EventLogger } from "@exaix/core/logger";
 import { AgentExecutor } from "@exaix/execution";
 import { PathResolver, PortalPermissionsService } from "@exaix/portal";
 import type { ConfidenceScorer } from "@exaix/execution";
-import { ActivityActor, DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
+import { DEFAULT_AMENDMENT_THRESHOLD, ExecutionStatus, SecurityMode } from "@exaix/core";
 import {
   ACTIVITY_ACTOR_AGENT,
   AMENDMENT_ARTIFACTS_DIR,
@@ -84,8 +85,20 @@ export interface IPlanAction {
   description?: string;
 }
 
+function noopLogger(): IEventLogger {
+  return {
+    info: () => Promise.resolve(),
+    warn: () => Promise.resolve(),
+    log: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    child: () => noopLogger(),
+  };
+}
+
 export class PlanExecutor {
-  private logger: EventLogger;
+  private logger: IEventLogger;
   private enableGit: boolean;
   private generateReport: boolean;
   private config: Config;
@@ -96,15 +109,13 @@ export class PlanExecutor {
     private llmProvider: IModelProvider,
     db: IDatabaseService,
     private repoPath: string,
+    logger?: IEventLogger,
     private options: IPlanExecutorOptions = {},
   ) {
     const ctx = options.context;
     this.config = ctx?.config.get() || config;
     this.db = ctx?.db || db;
-    this.logger = new EventLogger({
-      db: this.db,
-      defaultActor: ActivityActor.SYSTEM,
-    });
+    this.logger = logger ?? noopLogger();
     this.enableGit = options.enableGit ?? true;
     this.generateReport = options.generateReport ?? false;
   }
@@ -117,7 +128,7 @@ export class PlanExecutor {
     const requestId = context.request_id;
     const actionReports: IPlanActionReport[] = [];
 
-    await this.logger.info("plan.execution_started", planPath, {
+    await this.logger.info(DomainEventType.PlanExecutionStarted, planPath, {
       trace_id: traceId,
       request_id: requestId,
       step_count: context.steps.length,
@@ -127,7 +138,6 @@ export class PlanExecutor {
       const git = this.enableGit
         ? new GitService({
           config: this.config,
-          db: this.db,
           repoPath: this.repoPath,
           traceId,
           identityId: context.identity,
@@ -157,7 +167,7 @@ export class PlanExecutor {
           await this.commitPlanCompletion(git, requestId, traceId, context.identity);
         }
 
-        await this.logger.info("plan.execution_completed", planPath, {
+        await this.logger.info(DomainEventType.PlanExecutionCompleted, planPath, {
           trace_id: traceId,
           status: ExecutionStatus.COMPLETED,
           last_commit: lastCommitSha === initialHeadSha ? null : lastCommitSha,
@@ -177,7 +187,7 @@ export class PlanExecutor {
         agentExecutor.dispose();
       }
     } catch (error) {
-      await this.logger.error("plan.execution_failed", planPath, {
+      await this.logger.error(DomainEventType.PlanExecutionFailed, planPath, {
         error: error instanceof Error ? error.message : String(error),
         trace_id: traceId,
       });
@@ -204,7 +214,6 @@ export class PlanExecutor {
    */
   private createAgentExecutor(traceId: string): AgentExecutor {
     const pathResolver = new PathResolver(this.config, {
-      db: this.db as DatabaseService,
       traceId,
     });
     const permissions = new PortalPermissionsService(this.config.portals);
@@ -378,7 +387,7 @@ export class PlanExecutor {
     const service = this.options.amendmentService || new PlanAmendmentService(this.config, this.llmProvider);
 
     if (await service.shouldAmend(trigger)) {
-      await this.logger.info("plan.amendment_triggered", context.trace_id, {
+      await this.logger.info(DomainEventType.PlanAmendmentTriggered, context.trace_id, {
         source: trigger.source,
         reason: trigger.reason,
         stepId: trigger.stepId,

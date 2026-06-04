@@ -13,7 +13,7 @@ import { assert, assertEquals, assertExists, assertStringIncludes } from "@std/a
 import { FlowInputSource, MemoryOperation, RequestSource } from "@exaix/core";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ArtifactRegistry } from "@exaix/core/artifact";
+import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { ReviewStatus } from "@exaix/core/status";
 import { withCliProcessMutex } from "../helpers/cli_process_mutex.ts";
 
@@ -281,7 +281,8 @@ cliTest("CLI: review show displays review details", async () => {
 cliTest("CLI: review show --diff displays artifact body for artifact IDs", async () => {
   const env = await TestEnvironment.create();
   try {
-    const artifactRegistry = new ArtifactRegistry(env.db, env.tempDir);
+    const repo = new DatabaseArtifactRepository(env.db);
+    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
     const artifactId = await artifactRegistry.createArtifact(
       "request-artifact-001",
       "code-analyst",
@@ -299,7 +300,8 @@ cliTest("CLI: review show --diff displays artifact body for artifact IDs", async
 cliTest("CLI: review approve marks artifact as approved (no git)", async () => {
   const env = await TestEnvironment.create();
   try {
-    const artifactRegistry = new ArtifactRegistry(env.db, env.tempDir);
+    const repo = new DatabaseArtifactRepository(env.db);
+    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
     const artifactId = await artifactRegistry.createArtifact(
       "request-artifact-002",
       "code-analyst",
@@ -320,7 +322,8 @@ cliTest("CLI: review list includes both code reviews and artifact-backed reviews
   const env = await TestEnvironment.create();
   try {
     // Create an artifact-backed review
-    const artifactRegistry = new ArtifactRegistry(env.db, env.tempDir);
+    const repo = new DatabaseArtifactRepository(env.db);
+    const artifactRegistry = new ArtifactRegistry(repo, env.tempDir);
     const artifactId = await artifactRegistry.createArtifact(
       "request-mixed-001",
       "code-analyst",

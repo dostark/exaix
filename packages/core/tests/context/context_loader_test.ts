@@ -13,6 +13,7 @@ import { ContextLoader } from "@exaix/core/context";
 import type { ContextLoadResult, IContextConfig } from "@exaix/core/context";
 import type { IActivityRecord } from "@exaix/core/types";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 
 // ============================================================================
 // Test Setup and Fixtures
@@ -983,6 +984,7 @@ describe("IActivity Logging with Database", () => {
         truncationStrategy: "smallest-first",
         isLocalAgent: false,
         db: db,
+        logger: new EventLogger({ db }),
         traceId: "test-context-trace",
         requestId: "test-request",
         identityId: "test-agent",
@@ -1018,6 +1020,7 @@ describe("IActivity Logging with Database", () => {
         truncationStrategy: "smallest-first",
         isLocalAgent: false,
         db: db,
+        logger: new EventLogger({ db }),
         traceId: "test-error-trace",
         requestId: "test-request",
         identityId: "test-agent",

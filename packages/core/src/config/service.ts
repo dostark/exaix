@@ -12,8 +12,6 @@ import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
 import { type Config, ConfigSchema } from "./config_schema.ts";
 import type { PortalExecutionStrategy } from "../types/portal.ts";
-import { logInfo } from "../logger/structured_logger.ts";
-
 import type { IPortalConfigEntry } from "../types/mod.ts";
 import { ExaPathDefaults } from "../types/constants.ts";
 
@@ -121,12 +119,7 @@ score_every_n_iterations = 1
 `;
     Deno.writeTextFileSync(this.configPath, defaultConfig.trim());
     try {
-      logInfo("Created default configuration file", {
-        audit_event: true,
-        event_type: "config_created",
-        config_path: this.configPath,
-        service: "config-service",
-      });
+      console.log("[ConfigService] Created default configuration file", this.configPath);
     } catch {
       // Logger may not be initialized yet in early CLI startup and tests.
     }

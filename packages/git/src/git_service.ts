@@ -14,6 +14,8 @@
  */
 
 import type { Config } from "@exaix/schemas";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 import {
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
@@ -35,7 +37,6 @@ import type {
   IBranchOptions,
   ICommitOptions,
   IGitCommandOptions,
-  IGitDatabaseService,
   IGitService,
   IGitServiceConfig,
   IWorktreeInfo,
@@ -44,7 +45,6 @@ import type {
 
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
-const ACTIVITY_ACTOR_IDENTITY = "identity";
 const DAEMON_IDENTITY_ID = "daemon";
 
 function getRandomString(length: number): string {
@@ -117,7 +117,7 @@ export class GitSecurityError extends GitError {
 
 export class GitService implements IGitService {
   private config: Config;
-  private db?: IGitDatabaseService;
+  private logger?: IEventLogger;
   private traceId?: string;
   private identityId?: string;
   private repoPath: string;
@@ -128,7 +128,9 @@ export class GitService implements IGitService {
     this.config = configSource && typeof (configSource as { get?: () => Config }).get === "function"
       ? (configSource as { get(): Config }).get()
       : options.config;
-    this.db = ctx?.db || options.db;
+    this.logger = options.logger && options.identityId
+      ? options.logger.child({ identityId: options.identityId })
+      : options.logger;
     this.traceId = options.traceId;
     this.identityId = options.identityId;
     this.repoPath = options.repoPath || this.config.system.root;
@@ -188,7 +190,7 @@ export class GitService implements IGitService {
         // Repository exists; ensure it has at least one commit.
         const headResult = await this.runGitCommand([GIT_CMD_REV_PARSE, "--verify", "HEAD"], { throwOnError: false });
         if (headResult.exitCode === 0) {
-          this.logActivity("git.check", { status: "exists", duration_ms: Date.now() - startTime });
+          this.logActivity(DomainEventType.GitCheck, { status: "exists", duration_ms: Date.now() - startTime });
           return;
         }
 
@@ -196,7 +198,7 @@ export class GitService implements IGitService {
         await this.ensureIdentity();
         await this.createInitialCommit();
 
-        this.logActivity("git.init", {
+        this.logActivity(DomainEventType.GitInit, {
           success: true,
           status: "initialized_existing_repo",
           duration_ms: Date.now() - startTime,
@@ -226,12 +228,12 @@ export class GitService implements IGitService {
       // Create initial commit
       await this.createInitialCommit();
 
-      this.logActivity("git.init", {
+      this.logActivity(DomainEventType.GitInit, {
         success: true,
         duration_ms: Date.now() - startTime,
       });
     } catch (error) {
-      this.logActivity("git.init", {
+      this.logActivity(DomainEventType.GitInit, {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         duration_ms: Date.now() - startTime,
@@ -276,7 +278,7 @@ export class GitService implements IGitService {
 
       if (nameResult.output.trim() && emailResult.output.trim()) {
         // Identity already configured
-        this.logActivity("git.identity_check", {
+        this.logActivity(DomainEventType.GitIdentityCheck, {
           status: "exists",
           duration_ms: Date.now() - startTime,
         });
@@ -287,14 +289,14 @@ export class GitService implements IGitService {
       await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.name", "Exaix Bot"]);
       await this.runGitCommand([GIT_CMD_CONFIG, "--local", "user.email", "bot@exaix.local"]);
 
-      this.logActivity("git.identity_configured", {
+      this.logActivity(DomainEventType.GitIdentityConfigured, {
         success: true,
         user: "Exaix Bot",
         email: "bot@exaix.local",
         duration_ms: Date.now() - startTime,
       });
     } catch (error) {
-      this.logActivity("git.identity_configured", {
+      this.logActivity(DomainEventType.GitIdentityConfigured, {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         duration_ms: Date.now() - startTime,
@@ -343,7 +345,7 @@ export class GitService implements IGitService {
           // Create and checkout branch
           await this.runGitCommand(["checkout", "-b", branchName]);
 
-          this.logActivity("git.branch_created", {
+          this.logActivity(DomainEventType.GitBranchCreated, {
             success: true,
             branch: branchName,
             request_id: options.requestId,
@@ -373,7 +375,7 @@ export class GitService implements IGitService {
 
       throw lastError || new Error("Failed to create branch after retries");
     } catch (error) {
-      this.logActivity("git.branch_created", {
+      this.logActivity(DomainEventType.GitBranchCreated, {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         duration_ms: Date.now() - startTime,
@@ -415,7 +417,7 @@ export class GitService implements IGitService {
       const shaResult = await this.runGitCommand([GIT_CMD_REV_PARSE, "HEAD"]);
       const sha = shaResult.output.trim();
 
-      this.logActivity("git.committed", {
+      this.logActivity(DomainEventType.GitCommitted, {
         success: true,
         message: options.message,
         trace_id: options.traceId,
@@ -425,7 +427,7 @@ export class GitService implements IGitService {
 
       return sha;
     } catch (error) {
-      this.logActivity("git.committed", {
+      this.logActivity(DomainEventType.GitCommitted, {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         duration_ms: Date.now() - startTime,
@@ -459,13 +461,13 @@ export class GitService implements IGitService {
     try {
       await this.runGitCommand(["checkout", branchName]);
 
-      this.logActivity("git.checkout", {
+      this.logActivity(DomainEventType.GitCheckout, {
         success: true,
         branch: branchName,
         duration_ms: Date.now() - startTime,
       });
     } catch (error) {
-      this.logActivity("git.checkout", {
+      this.logActivity(DomainEventType.GitCheckout, {
         success: false,
         branch: branchName,
         error: error instanceof Error ? error.message : String(error),
@@ -702,7 +704,7 @@ export class GitService implements IGitService {
         }
 
         // Log successful command
-        this.logActivity("git.command.success", {
+        this.logActivity(DomainEventType.GitCommandSuccess, {
           command: `git ${args.join(" ")}`,
           exit_code: result.code,
           duration_ms: Date.now() - startTime,
@@ -798,20 +800,7 @@ export class GitService implements IGitService {
    * Log activity to database
    */
   private logActivity(actionType: string, payload: Record<string, JsonValue>): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ACTIVITY_ACTOR_IDENTITY,
-        actionType,
-        null,
-        payload,
-        this.traceId,
-        null, // actorType
-        this.identityId, // identityId
-      );
-    } catch (error) {
-      console.error("Failed to log git activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, null, payload, this.traceId);
   }
 }

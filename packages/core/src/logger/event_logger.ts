@@ -16,9 +16,16 @@ import type { Actor } from "../types/actor.ts";
 import type { ILogEvent } from "../types/i_log_event.ts";
 import { EventBusService } from "../observability/event_bus_service.ts";
 import type { IEventBusService } from "../observability/event_bus_service.ts";
-import { SHARED_DEFAULT_ICONS } from "../types/constants.ts";
+import {
+  BYTES_PER_KB,
+  DEFAULT_LOG_MAX_FILES,
+  DEFAULT_LOG_MAX_SIZE_MB,
+  SHARED_DEFAULT_ICONS,
+} from "../types/constants.ts";
 import { type LogMetadata, toSafeJson } from "../types/json.ts";
 import type { IStreamingEvent } from "@exaix/schemas";
+import { dirname, join } from "@std/path";
+import { ensureDir } from "@std/fs";
 
 import {
   STREAMING_EVENT_FLOW_STATUS,
@@ -55,6 +62,17 @@ export interface IEventLoggerConfig {
    * obtained from git config (user.email) or OS username.
    */
   defaultActor?: Actor;
+
+  /** Optional output sinks for structured log formatting (console, file, etc.) */
+  outputs?: IEventLoggerOutput[];
+}
+
+/**
+ * Output sink interface for structured log formatting.
+ * Implementations can write to console, file, or other destinations.
+ */
+export interface IEventLoggerOutput {
+  write(event: ILogEvent): void | Promise<void>;
 }
 
 export interface IEventLogger {
@@ -92,6 +110,127 @@ const DEFAULT_ICONS: Record<LogLevel, string> = {
 /** Cached user identity to avoid repeated git calls */
 let cachedUserIdentity: string | null = null;
 
+// ============================================================================
+// Output Implementations
+// ============================================================================
+
+/**
+ * Console output with rich formatting (timestamp, level, context tags).
+ */
+class _ConsoleOutput implements IEventLoggerOutput {
+  write(event: ILogEvent): void {
+    const timestamp = new Date().toISOString();
+    const level = (event.level ?? "INFO").toUpperCase().padEnd(5);
+    const icon = SHARED_DEFAULT_ICONS[event.level as keyof typeof SHARED_DEFAULT_ICONS] ?? "·";
+    let line = `${timestamp} ${level} ${icon} ${event.action}`;
+    if (event.target) {
+      line += `: ${event.target}`;
+    }
+    if (event.payload && Object.keys(event.payload).length > 0) {
+      line += ` ${JSON.stringify(event.payload)}`;
+    }
+    const consoleFn = event.level === LogLevel.ERROR || event.level === LogLevel.FATAL
+      ? console.error
+      : event.level === LogLevel.WARN
+      ? console.warn
+      : console.log;
+    consoleFn(line);
+  }
+}
+
+/**
+ * File output with log rotation (size-based).
+ */
+class _RotatingFileOutput implements IEventLoggerOutput {
+  private currentFileSize = 0;
+  private dirEnsured = false;
+
+  constructor(
+    private basePath: string,
+    private options: { maxSizeMB?: number; maxFiles?: number } = {},
+  ) {}
+
+  async write(event: ILogEvent): Promise<void> {
+    const line = JSON.stringify(event) + "\n";
+    const lineSize = new TextEncoder().encode(line).length;
+
+    if (this.shouldRotate(lineSize)) {
+      await this.rotate();
+    }
+
+    try {
+      if (!this.dirEnsured) {
+        await ensureDir(dirname(this.basePath));
+        this.dirEnsured = true;
+      }
+      await Deno.writeTextFile(this.basePath, line, { append: true });
+      this.currentFileSize += lineSize;
+    } catch (error) {
+      console.error(`[RotatingFileOutput] Failed to write to ${this.basePath}:`, error);
+    }
+  }
+
+  private shouldRotate(newLineSize: number): boolean {
+    const maxSize = (this.options.maxSizeMB ?? DEFAULT_LOG_MAX_SIZE_MB) * BYTES_PER_KB * BYTES_PER_KB;
+    return this.currentFileSize + newLineSize > maxSize;
+  }
+
+  private async rotate(): Promise<void> {
+    const maxFiles = this.options.maxFiles ?? DEFAULT_LOG_MAX_FILES;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const rotatedPath = `${this.basePath}.${timestamp}`;
+    try {
+      await Deno.rename(this.basePath, rotatedPath);
+    } catch {
+      // File may not exist yet
+    }
+    this.cleanupOldFiles(maxFiles);
+    this.currentFileSize = 0;
+  }
+
+  private async cleanupOldFiles(maxFiles: number): Promise<void> {
+    try {
+      const dir = dirname(this.basePath);
+      const basename = this.basePath.split("/").pop() ?? "exaix";
+      const files: Array<{ name: string; mtime: Date }> = [];
+      for await (const entry of Deno.readDir(dir)) {
+        if (entry.isFile && entry.name.startsWith(`${basename}.`)) {
+          const stat = await Deno.stat(join(dir, entry.name));
+          files.push({ name: entry.name, mtime: stat.mtime! });
+        }
+      }
+      files.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+      for (let i = maxFiles; i < files.length; i++) {
+        await Deno.remove(join(dir, files[i].name));
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+/**
+ * Observable output that allows subscribing to log entries (for TUI, tests).
+ */
+class _ObservableOutput implements IEventLoggerOutput {
+  private subscribers: Set<(event: ILogEvent) => void> = new Set();
+
+  write(event: ILogEvent): void {
+    for (const subscriber of this.subscribers) {
+      try {
+        subscriber(event);
+      } catch (err) {
+        console.error("[ObservableOutput] Subscriber error:", err);
+      }
+    }
+  }
+
+  subscribe(callback: (event: ILogEvent) => void): () => void {
+    this.subscribers.add(callback);
+    return () => this.subscribers.delete(callback);
+  }
+}
+
 /**
  * Unified logging service that writes to both console and IActivity Journal.
  *
@@ -116,10 +255,12 @@ export class EventLogger implements IEventLogger {
   private readonly showTimestamp: boolean;
   private readonly defaultActor: Actor;
   private readonly defaults: Partial<ILogEvent>;
+  private readonly outputs?: IEventLoggerOutput[];
 
   constructor(config: IEventLoggerConfig, defaults: Partial<ILogEvent> = {}) {
     this.activityRepo = config.activityRepo;
     this.db = config.db; // DEPRECATED
+    this.outputs = config.outputs;
     // Use explicitly provided eventBus, or fall back to the global singleton
     this.eventBus = config.eventBus ?? EventBusService.getInstance();
     this.prefix = config.prefix ?? "";
@@ -177,6 +318,20 @@ export class EventLogger implements IEventLogger {
 
     // Log to console
     this.logToConsole(mergedEvent, level);
+
+    // Write to configured output sinks (file, observable, etc.)
+    if (this.outputs) {
+      for (const output of this.outputs) {
+        try {
+          const result = output.write(mergedEvent);
+          if (result instanceof Promise) {
+            result.catch((err) => console.error("[EventLogger] Output write failed:", err));
+          }
+        } catch (err) {
+          console.error("[EventLogger] Output write failed:", err);
+        }
+      }
+    }
 
     // Log to IActivity Journal
     await this.logToDatabase(mergedEvent);

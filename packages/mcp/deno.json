@@ -13,6 +13,7 @@
     "@exaix/ai/providers/": "../ai/src/providers/",
     "@exaix/ai/": "../ai/src/",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/status": "../core/src/status/mod.ts",
     "@exaix/core/request": "../core/src/request/mod.ts",

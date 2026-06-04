@@ -296,11 +296,12 @@ export class QueryJournalTool extends ToolHandler {
     const { trace_id, limit, identity_id } = validatedArgs;
 
     try {
+      const reader = this.getJournalReader();
       let activities;
       if (trace_id) {
-        activities = await this.db.getActivitiesByTraceSafe(trace_id);
+        activities = await reader.getActivitiesByTraceSafe(trace_id);
       } else {
-        activities = await this.db.getRecentActivity(limit);
+        activities = await reader.getRecentActivity(limit);
       }
 
       this.logToolExecution("query_journal", DEFAULT_MCP_IDENTITY_ID, identity_id, {

@@ -13,6 +13,7 @@ import { EvaluationCategory, MemoryReferenceType } from "@exaix/core";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { MemoryBankService } from "@exaix/memory";
+import { EventLogger } from "@exaix/core/logger";
 import { initTestDbService } from "@exaix/testing";
 import {
   GlobalMemorySchema,
@@ -198,10 +199,10 @@ Deno.test("GlobalMemorySchema: validates populated global memory", () => {
 // ===== MemoryBankService Global Memory Tests =====
 
 Deno.test("MemoryBankService: getGlobalMemory returns null for new installation", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     const result = await service.getGlobalMemory();
     assertEquals(result, null);
   } finally {
@@ -210,10 +211,10 @@ Deno.test("MemoryBankService: getGlobalMemory returns null for new installation"
 });
 
 Deno.test("MemoryBankService: initGlobalMemory creates Global directory structure", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await service.initGlobalMemory();
 
     const globalDir = getMemoryGlobalDir(config.system.root);
@@ -228,10 +229,10 @@ Deno.test("MemoryBankService: initGlobalMemory creates Global directory structur
 });
 
 Deno.test("MemoryBankService: getGlobalMemory returns initialized memory", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await service.initGlobalMemory();
 
     const globalMem = await service.getGlobalMemory();
@@ -340,10 +341,10 @@ Deno.test("MemoryBankService: addGlobalLearning logs to IActivity Journal", asyn
 // ===== Promote ILearning Tests =====
 
 Deno.test("MemoryBankService: promoteLearning moves from project to global", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create project with a pattern/decision that could be promoted
     const projectMem: IProjectMemory = {
@@ -389,10 +390,11 @@ Deno.test("MemoryBankService: promoteLearning moves from project to global", asy
 });
 
 Deno.test("MemoryBankService: promoteLearning logs to IActivity Journal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, db, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
 
     const projectMem: IProjectMemory = {
       portal: "my-app",
@@ -436,10 +438,10 @@ Deno.test("MemoryBankService: promoteLearning logs to IActivity Journal", async 
 });
 
 Deno.test("MemoryBankService: promoteLearning from non-existent project throws", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await service.initGlobalMemory();
 
     await assertRejects(
@@ -506,10 +508,10 @@ Deno.test("MemoryBankService: demoteLearning moves from global to project", asyn
 });
 
 Deno.test("MemoryBankService: demoteLearning removes from global index", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     const projectMem: IProjectMemory = {
       portal: "target-app",
@@ -564,10 +566,10 @@ Deno.test("MemoryBankService: demoteLearning removes from global index", async (
 });
 
 Deno.test("MemoryBankService: demoteLearning non-existent learning throws", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     const projectMem: IProjectMemory = {
       portal: "target-app",
@@ -624,10 +626,10 @@ Deno.test("MemoryBankService: demoteLearning to non-existent project throws", as
 // ===== Global Stats Tests =====
 
 Deno.test("MemoryBankService: getGlobalStats returns accurate statistics", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await service.initGlobalMemory();
 
     // Add learnings with different categories

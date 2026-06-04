@@ -100,7 +100,7 @@ Deno.test({
       baseUrl: OLLAMA_BASE_URL,
     });
 
-    const runner = new AgentRunner(provider, { db });
+    const runner = new AgentRunner(provider, {});
     const blueprint = createJSONPlanBlueprint();
     const request = createTestRequest();
 

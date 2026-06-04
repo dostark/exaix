@@ -6,6 +6,7 @@
  * @related-files ["apps/daemon/main.ts"]
  */
 
+import { DomainEventType } from "@exaix/core/events";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
@@ -51,12 +52,12 @@ export class DaemonCommands extends BaseCommand {
 
       const status = await this.status();
       if (status.running) {
-        await this.logger.info("daemon.already_running", DAEMON_ACTOR, { pid: status.pid ?? null });
+        await this.logger.info(DomainEventType.DaemonStarting, DAEMON_ACTOR, { pid: status.pid ?? null });
         console.log("daemon.already_running");
         return;
       }
 
-      await this.logger.info("daemon.starting", DAEMON_ACTOR);
+      await this.logger.info(DomainEventType.DaemonStarting, DAEMON_ACTOR);
 
       // Check if main.ts exists
       if (!await exists(mainScript)) {
@@ -111,7 +112,7 @@ export class DaemonCommands extends BaseCommand {
       const started = await this.waitForProcessState(pid, true, 3000);
 
       if (!started) {
-        await this.logDaemonActivity("daemon.start_failed", {
+        await this.logDaemonActivity(DomainEventType.DaemonStartFailed, {
           error: "Daemon failed to start within timeout",
           pid: pid,
         });
@@ -119,7 +120,7 @@ export class DaemonCommands extends BaseCommand {
       }
 
       // Log successful start (writes to both console and IActivity Journal)
-      await this.logDaemonActivity("daemon.started", {
+      await this.logDaemonActivity(DomainEventType.DaemonStarted, {
         pid: pid,
         log_file: logFile,
       });
@@ -140,12 +141,12 @@ export class DaemonCommands extends BaseCommand {
       const status = await this.status();
 
       if (!status.running) {
-        await this.logger.info("daemon.not_running", DAEMON_ACTOR);
+        await this.logger.info(DomainEventType.DaemonNotRunning, DAEMON_ACTOR);
         console.log("daemon.not_running");
         return;
       }
 
-      await this.logger.info("daemon.stopping", DAEMON_ACTOR, { pid: status.pid ?? null });
+      await this.logger.info(DomainEventType.DaemonStopping, DAEMON_ACTOR, { pid: status.pid ?? null });
 
       try {
         // Send SIGTERM
@@ -161,7 +162,7 @@ export class DaemonCommands extends BaseCommand {
         const stopped = await this.waitForProcessState(status.pid!, false, DAEMON_STOP_TIMEOUT_MS);
         if (stopped) {
           await Deno.remove(this.pidFile).catch(() => {});
-          await this.logDaemonActivity("daemon.stopped", {
+          await this.logDaemonActivity(DomainEventType.DaemonStopped, {
             pid: status.pid,
             method: "graceful",
           });
@@ -169,7 +170,7 @@ export class DaemonCommands extends BaseCommand {
         }
 
         // Force kill if still running
-        await this.logger.warn("daemon.force_stopping", DAEMON_ACTOR, { pid: status.pid ?? null });
+        await this.logger.warn(DomainEventType.DaemonForceStopping, DAEMON_ACTOR, { pid: status.pid ?? null });
         const forceKillCmd = new this.Command("kill", {
           args: ["-KILL", status.pid!.toString()],
           stdout: "piped",
@@ -178,7 +179,7 @@ export class DaemonCommands extends BaseCommand {
 
         await forceKillCmd.output();
         await Deno.remove(this.pidFile).catch(() => {});
-        await this.logDaemonActivity("daemon.stopped", {
+        await this.logDaemonActivity(DomainEventType.DaemonStopped, {
           pid: status.pid,
           method: "forced",
         });
@@ -200,14 +201,14 @@ export class DaemonCommands extends BaseCommand {
    */
   async restart(): Promise<void> {
     try {
-      await this.logger.info("daemon.restarting", DAEMON_ACTOR);
+      await this.logger.info(DomainEventType.DaemonRestarting, DAEMON_ACTOR);
       const beforeStatus = await this.status();
       await this.stop();
       // Brief pause to ensure port/resources are released
       await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
       await this.start();
       const afterStatus = await this.status();
-      await this.logDaemonActivity("daemon.restarted", {
+      await this.logDaemonActivity(DomainEventType.DaemonRestarted, {
         previous_pid: beforeStatus.pid,
         new_pid: afterStatus.pid,
       });
@@ -328,7 +329,7 @@ export class DaemonCommands extends BaseCommand {
       const logFile = join(this.config.system.root!, this.config.paths.runtime!, "daemon.log");
 
       if (!await exists(logFile)) {
-        await this.logger.info("daemon.no_logs", logFile, { hint: "Daemon may not have been started yet" });
+        await this.logger.info(DomainEventType.DaemonNoLogs, logFile, { hint: "Daemon may not have been started yet" });
         console.log("daemon.no_logs");
         return;
       }

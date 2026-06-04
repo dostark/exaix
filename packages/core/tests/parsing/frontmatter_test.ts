@@ -9,7 +9,8 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { dirname, fromFileUrl, join } from "@std/path";
 import { RequestStatus } from "@exaix/core/status";
 import { FrontmatterParser } from "@exaix/core/parsing";
-import { createLoggingTestDb } from "@exaix/testing";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ILogEvent, LogMetadata } from "@exaix/core";
 
 const FIXTURE_ROOT = join(dirname(fromFileUrl(import.meta.url)), "fixtures");
 const loadFixture = async (name: string) => await Deno.readTextFile(join(FIXTURE_ROOT, name));
@@ -38,23 +39,47 @@ No frontmatter here!`;
   assertEquals(error.message.includes("No frontmatter found"), true);
 });
 
+function createLoggerSpy(): IEventLogger & {
+  calls: Array<{ action: string; target: string | null; payload?: LogMetadata }>;
+} {
+  const calls: Array<{ action: string; target: string | null; payload?: LogMetadata }> = [];
+  const logger: ReturnType<typeof createLoggerSpy> = {
+    calls,
+    info(action: string, target: string | null, payload?: LogMetadata): Promise<void> {
+      calls.push({ action, target, payload });
+      return Promise.resolve();
+    },
+    warn(action: string, target: string | null, payload?: LogMetadata): Promise<void> {
+      calls.push({ action, target, payload });
+      return Promise.resolve();
+    },
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: (_event: ILogEvent) => Promise.resolve(),
+    child: function () {
+      return logger;
+    },
+  };
+  return logger;
+}
+
 Deno.test("FrontmatterParser: logs successful validation", async () => {
-  const { activities, db } = createLoggingTestDb();
-  const parser = new FrontmatterParser(db);
+  const logger = createLoggerSpy();
+  const parser = new FrontmatterParser(logger);
   const markdown = await loadFixture("validated-request.md");
 
   const result = parser.parse(markdown, "test.md");
   assertEquals(result.request.trace_id, "550e8400-e29b-41d4-a716-446655440000");
 
-  assertEquals(activities.length, 1);
-  assertEquals(activities[0].actor, "system");
-  assertEquals(activities[0].actionType, "request.validated");
-  assertEquals(activities[0].target, "test.md");
+  assertEquals(logger.calls.length, 1);
+  assertEquals(logger.calls[0].action, "request.validated");
+  assertEquals(logger.calls[0].target, "test.md");
 });
 
 Deno.test("FrontmatterParser: logs validation failure", () => {
-  const { activities, db } = createLoggingTestDb();
-  const parser = new FrontmatterParser(db);
+  const logger = createLoggerSpy();
+  const parser = new FrontmatterParser(logger);
   const markdown = `---
 identity_id: coder-agent
 status: pending
@@ -64,8 +89,7 @@ status: pending
 
   assertThrows(() => parser.parse(markdown, "bad.md"));
 
-  assertEquals(activities.length, 1);
-  assertEquals(activities[0].actor, "system");
-  assertEquals(activities[0].actionType, "request.validation_failed");
-  assertEquals(activities[0].target, "bad.md");
+  assertEquals(logger.calls.length, 1);
+  assertEquals(logger.calls[0].action, "request.validation_failed");
+  assertEquals(logger.calls[0].target, "bad.md");
 });

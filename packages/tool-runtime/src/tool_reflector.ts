@@ -10,10 +10,11 @@ import { z } from "zod";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IOutputValidator } from "./output_validator.ts";
 import type { IToolAgentExecutor } from "./types.ts";
-import { logDebug } from "@exaix/core/logger";
+
 import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IToolCall {
   id: string;
@@ -44,6 +45,7 @@ export interface IToolReflectorConfig {
   reflectionPromptTemplate?: string;
   verbose?: boolean;
   db?: IDatabaseService;
+  logger?: IEventLogger;
 }
 
 export interface IToolReflectorMetrics {
@@ -144,6 +146,7 @@ export class ToolReflector {
     reflectionPromptTemplate: string;
     verbose: boolean;
     db?: IDatabaseService;
+    logger?: IEventLogger;
   };
 
   private metrics: IToolReflectorMetrics = {
@@ -169,6 +172,7 @@ export class ToolReflector {
       reflectionPromptTemplate = DEFAULT_REFLECTION_PROMPT,
       verbose = false,
       db,
+      logger,
     } = config;
 
     this.config = {
@@ -178,6 +182,7 @@ export class ToolReflector {
       reflectionPromptTemplate,
       verbose,
       db,
+      logger,
     };
 
     this.agentRunner = agentRunner;
@@ -208,8 +213,8 @@ export class ToolReflector {
       this.updateMetrics(lastReflection);
 
       if (this.config.verbose) {
-        logDebug(
-          `Tool reflection: ${toolCall.name} - success=${lastReflection.success}, confidence=${lastReflection.confidence}, retry=${lastReflection.retry_suggested}`,
+        console.debug(
+          `[ToolReflector] Tool reflection: ${toolCall.name} - success=${lastReflection.success}, confidence=${lastReflection.confidence}, retry=${lastReflection.retry_suggested}`,
           {
             tool_name: toolCall.name,
             success: lastReflection.success,
@@ -427,20 +432,18 @@ export class ToolReflector {
   }
 
   private logActivity(
-    actor: string,
+    _actor: string,
     actionType: string,
     target: string,
     payload: Record<string, JSONValue>,
     traceId?: string,
   ): void {
-    if (this.config.db) {
-      this.config.db.logActivity(
-        actor,
+    if (this.config.logger) {
+      this.config.logger.info(
         actionType,
         target,
         toSafeJson(payload) as Record<string, JSONValue>,
         traceId,
-        "tool-reflector",
       );
     }
   }

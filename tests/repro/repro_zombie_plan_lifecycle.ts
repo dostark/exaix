@@ -11,9 +11,8 @@ import { ConfigService } from "@exaix/core/config";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { PlanExecutor } from "@exaix/core/planning";
 import { ProviderFactory } from "@exaix/ai";
-import { initializeGlobalLogger } from "@exaix/core/logger";
 import { ExecutionLoop } from "@exaix/execution";
-import { LogLevel, type ProviderType } from "@exaix/core";
+import type { ProviderType } from "@exaix/core";
 
 /**
  * Reproduction Test for Issue 001: Daemon Plan Lifecycle (Zombie Plans)
@@ -31,14 +30,6 @@ Deno.test("Reproduction: Zombie Plan Lifecycle in Manual Execution Mode", async 
   console.log("testRoot:", testRoot);
   console.log("configPath:", configPath);
   console.log("isAbsolute:", configPath.startsWith("/"));
-
-  initializeGlobalLogger({
-    minLevel: LogLevel.INFO,
-    outputs: [],
-    enablePerformanceTracking: false,
-    serviceName: "test",
-    version: "1.0.0",
-  });
 
   const configService = new ConfigService(configPath);
   const config = configService.get();

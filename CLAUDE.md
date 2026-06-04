@@ -84,7 +84,7 @@ Key facts about the Exaix system:
 
 - **Runtime:** Deno (strict TypeScript)
 - **Config:** `deno.json` (tasks, imports)
-- **Pre-commit:** Auto-runs gates 0-12. Gate 0 blocks direct commits to `main`. Gates 1-12:
+- **Pre-commit:** Auto-runs gates 0-13. Gate 0 blocks direct commits to `main`. Gates 1-13:
 
   | Gate | Check               | Task                                           |
   | ---- | ------------------- | ---------------------------------------------- |
@@ -100,6 +100,7 @@ Key facts about the Exaix system:
   | 10   | Architecture        | `deno task check:arch`                         |
   | 11   | Docs nervous system | `deno task docs-agent-validate`                |
   | 12   | Hallucination bench | `deno task docs-bench`                         |
+  | 13   | Event strings       | `deno task check:event-strings`                |
 
 ### Key Commands
 

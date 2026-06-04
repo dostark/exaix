@@ -21,6 +21,7 @@ import { type IProviderMetadata, ProviderRegistry } from "./provider_registry.ts
 import { MockProviderFactory } from "./factories/mock_factory.ts";
 import { AbstractKeyBasedProviderFactory } from "./factories/abstract_provider_factory.ts";
 import { RateLimitedProvider } from "./rate_limited_provider.ts";
+import { TracedProvider } from "./traced_provider.ts";
 import type { IModelProvider, IProviderInfo, IResolvedProviderOptions } from "./types.ts";
 import { ProviderFactoryError } from "./errors.ts";
 
@@ -339,7 +340,12 @@ export class ProviderFactory {
     _db?: IDatabaseService,
     costTracker?: ICostTracker,
   ): Promise<IModelProvider> {
-    const provider = await this.createProvider(options);
+    let provider = await this.createProvider(options);
+
+    // Apply LLM call tracing when a logger is available
+    if (options.logger) {
+      provider = new TracedProvider(provider, options.logger);
+    }
 
     // Apply rate limiting if enabled
     if (config.rate_limiting?.enabled) {

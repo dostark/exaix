@@ -12,7 +12,7 @@ import { FrontmatterParser } from "@exaix/core/parsing";
 
 Deno.test("Integration: Invalid Input - System stability after parser failures", async (t) => {
   const env = await TestEnvironment.create();
-  const parser = new FrontmatterParser(env.db);
+  const parser = new FrontmatterParser();
 
   try {
     await t.step("System remains stable after invalid request parsing", async () => {

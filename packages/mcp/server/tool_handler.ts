@@ -7,12 +7,13 @@
  */
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { IEventJournalReader } from "@exaix/core/events";
 import type { ICliApplicationContext } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalOperation, ToolErrorCode } from "@exaix/core";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types";
+import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /**
@@ -22,14 +23,29 @@ import type { JSONValue } from "@exaix/core";
 export abstract class ToolHandler {
   protected context: ICliApplicationContext;
   protected config: Config;
-  protected db: IDatabaseService;
+  protected logger?: IEventLogger;
   protected permissions: IPortalPermissionsChecker | null;
 
-  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker) {
+  constructor(context: ICliApplicationContext, permissions?: IPortalPermissionsChecker, logger?: IEventLogger) {
     this.context = context;
     this.config = context.config.getAll();
-    this.db = context.db;
+    this.logger = logger;
     this.permissions = permissions || null;
+  }
+
+  /**
+   * Returns a read-only journal reader backed by the application database.
+   * Subclasses that need to query the activity journal should call this method
+   * rather than accessing a database service directly.
+   */
+  protected getJournalReader(): IEventJournalReader {
+    const db = this.context.db;
+    return {
+      getActivitiesByTrace: (traceId: string) => db.getActivitiesByTrace(traceId),
+      getActivitiesByTraceSafe: (traceId: string) => db.getActivitiesByTraceSafe(traceId),
+      getRecentActivity: (limit?: number) => db.getRecentActivity(limit),
+      queryActivity: (filter) => db.queryActivity(filter),
+    } as IEventJournalReader;
   }
 
   /**
@@ -99,19 +115,11 @@ export abstract class ToolHandler {
   protected logToolExecution(
     toolName: string,
     portal: string,
-    identityId: string,
+    _identityId: string,
     metadata: LogMetadata,
   ): void {
-    const actor = `identity:${identityId}`;
-    this.db.logActivity(
-      actor,
-      `mcp.tool.${toolName}`,
-      portal,
-      toSafeJson(metadata) as Record<string, JSONValue>,
-      undefined,
-      "identity",
-      identityId,
-    );
+    if (!this.logger) return;
+    void this.logger.info(`mcp.tool.${toolName}`, portal, metadata);
   }
 
   /**

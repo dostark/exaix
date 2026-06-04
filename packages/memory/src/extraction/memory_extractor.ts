@@ -6,20 +6,14 @@
  * @related-files [packages/memory/src/bank/memory_bank.ts, packages/core/src/types/i_database_service.ts]
  */
 
-import {
-  DEFAULT_TITLE_PLACEHOLDER,
-  MEMORY_EVENT_AUTO_APPROVED,
-  MemoryOperation,
-  MemoryReferenceType,
-  MemoryScope,
-} from "@exaix/core";
+import { DEFAULT_TITLE_PLACEHOLDER, MemoryOperation, MemoryReferenceType, MemoryScope } from "@exaix/core";
+import { DomainEventType } from "@exaix/core/events";
 import { MemoryStatus } from "@exaix/core/status";
 import { join } from "@std/path";
 import { ensureDir, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IDatabaseService } from "@exaix/core";
 import type { IMemoryBankService } from "@exaix/core/types";
-import type { JSONObject } from "@exaix/core/types";
 import type {
   IExecutionMemory,
   ILearning,
@@ -29,8 +23,7 @@ import type {
 } from "@exaix/schemas/memory_bank.ts";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { LearningExtractor } from "./learning_extractor.ts";
-import { toSafeJson } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 /**
  * Memory Extractor Service
@@ -44,6 +37,7 @@ export class MemoryExtractorService {
     private config: Config,
     private db: IDatabaseService,
     private memoryBank: IMemoryBankService,
+    private logger?: IEventLogger,
   ) {
     this.pendingDir = join(config.system?.root || Deno.cwd(), config.paths?.memory || "Memory", "Pending");
   }
@@ -102,16 +96,16 @@ export class MemoryExtractorService {
     await Deno.writeTextFile(proposalPath, JSON.stringify(proposal, null, 2));
 
     // Log to IActivity Journal
-    this.logActivity({
-      event_type: "memory.proposal.created",
-      target: learning.project || MemoryScope.GLOBAL,
-      metadata: {
+    this.logger?.info(
+      DomainEventType.MemoryProposalCreated,
+      learning.project || MemoryScope.GLOBAL,
+      {
         proposal_id: proposal.id,
         learning_title: learning.title,
         category: learning.category,
         identity_id: identityId,
       },
-    });
+    );
 
     return proposal.id || "";
   }
@@ -210,14 +204,14 @@ export class MemoryExtractorService {
     await Deno.remove(proposalPath);
 
     // Log approval
-    this.logActivity({
-      event_type: autoApproved ? MEMORY_EVENT_AUTO_APPROVED : "memory.proposal.approved",
-      target: proposal.target_project || MemoryScope.GLOBAL,
-      metadata: {
+    this.logger?.info(
+      autoApproved ? DomainEventType.MemoryAutoApproved : DomainEventType.MemoryProposalApproved,
+      proposal.target_project || MemoryScope.GLOBAL,
+      {
         proposal_id: proposalId,
         learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
       },
-    });
+    );
   }
 
   /**
@@ -237,15 +231,15 @@ export class MemoryExtractorService {
     await Deno.remove(proposalPath);
 
     // Log rejection
-    this.logActivity({
-      event_type: "memory.proposal.rejected",
-      target: proposal.target_project || MemoryScope.GLOBAL,
-      metadata: {
+    this.logger?.info(
+      DomainEventType.MemoryProposalRejected,
+      proposal.target_project || MemoryScope.GLOBAL,
+      {
         proposal_id: proposalId,
         learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
         reason,
       },
-    });
+    );
   }
 
   /**
@@ -267,29 +261,5 @@ export class MemoryExtractorService {
     }
 
     return approved;
-  }
-
-  // ===== Private Helpers =====
-
-  /**
-   * Log activity to IActivity Journal
-   */
-  private logActivity(event: {
-    event_type: string;
-    target: string;
-    trace_id?: string;
-    metadata?: JSONObject;
-  }): void {
-    try {
-      this.db.logActivity(
-        "memory-extractor",
-        event.event_type,
-        event.target,
-        toSafeJson(event.metadata) as Record<string, JSONValue>,
-        event.trace_id,
-      );
-    } catch {
-      // Don't fail on logging errors
-    }
   }
 }

@@ -14,8 +14,8 @@ import type { IAgentExecutionResult, IAgentRunner, IBlueprint, IParsedRequest } 
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IOutputValidator, IValidationMetrics, IValidationResult, OutputValidator } from "@exaix/tool-runtime";
-import { createStubDb } from "@exaix/testing";
-import type { JSONValue } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ILogEvent, LogMetadata } from "@exaix/core";
 
 function createMockRunner(
   runFn: (blueprint: IBlueprint, request: IParsedRequest) => Promise<IAgentExecutionResult>,
@@ -102,47 +102,44 @@ Deno.test("createCodeReviewReflexiveAgent: applies stricter defaults", () => {
   assertEquals(cfg.confidenceThreshold, 80);
 });
 
-Deno.test("ReflexiveAgent.logActivity: writes to db when present", () => {
-  const calls: Array<unknown[]> = [];
-  const db = createStubDb({
-    logActivity: (
-      actor: string,
-      actionType: string,
-      target: string | null,
-      payload: Record<string, JSONValue>,
-      traceId?: string,
-      identityId?: string | null,
-    ) => {
-      calls.push([actor, actionType, target, payload, traceId, identityId]);
+function createMockLogger(): IEventLogger & { calls: Array<[string, string | null, LogMetadata?, string?]> } {
+  const calls: Array<[string, string | null, LogMetadata?, string?]> = [];
+  const logger: IEventLogger & { calls: typeof calls } = {
+    calls,
+    info(action: string, target: string | null, payload?: LogMetadata, traceId?: string): Promise<void> {
+      calls.push([action, target, payload, traceId]);
+      return Promise.resolve();
     },
-  });
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: (_event: ILogEvent) => Promise.resolve(),
+    child: function () {
+      return logger;
+    },
+  };
+  return logger;
+}
+
+Deno.test("ReflexiveAgent.logActivity: writes to logger when present", () => {
+  const logger = createMockLogger();
 
   const agent = new ReflexiveAgent(stubProvider, {
-    db,
+    logger,
     maxIterations: 1,
   });
   agent.logActivity("a", "t", null, { k: 1 }, "trace");
 
-  assertEquals(calls.length, 1);
+  assertEquals(logger.calls.length, 1);
+  assertEquals(logger.calls[0][0], "t");
 });
 
 Deno.test("ReflexiveAgent.run: emits reflexive observability events", async () => {
-  const calls: Array<unknown[]> = [];
-  const db = createStubDb({
-    logActivity: (
-      actor: string,
-      actionType: string,
-      target: string | null,
-      payload: Record<string, JSONValue>,
-      traceId?: string,
-      identityId?: string | null,
-    ) => {
-      calls.push([actor, actionType, target, payload, traceId, identityId]);
-    },
-  });
+  const logger = createMockLogger();
 
   const agent = new ReflexiveAgent(stubProvider, {
-    db,
+    logger,
     maxIterations: 3,
     confidenceThreshold: 70,
     scoreEveryNIterations: 1,
@@ -182,17 +179,18 @@ Deno.test("ReflexiveAgent.run: emits reflexive observability events", async () =
   assertEquals(result.earlyExit, true);
   assertEquals(result.totalIterations, 1);
 
-  const budgetEvent = calls.find((call) => call[1] === "agent.iteration_budget_computed");
+  // logger.calls entries are [action, target, payload, traceId]
+  const budgetEvent = logger.calls.find((call) => call[0] === "agent.iteration_budget_computed");
   assertExists(budgetEvent);
-  assertEquals((budgetEvent[3] as { effectiveMaxIterations: number }).effectiveMaxIterations, 3);
+  assertEquals((budgetEvent[2] as { effectiveMaxIterations: number }).effectiveMaxIterations, 3);
 
-  const scoredEvent = calls.find((call) => call[1] === "agent.iteration_scored");
+  const scoredEvent = logger.calls.find((call) => call[0] === "agent.iteration_scored");
   assertExists(scoredEvent);
-  assertEquals((scoredEvent[3] as { iteration: number }).iteration, 1);
+  assertEquals((scoredEvent[2] as { iteration: number }).iteration, 1);
 
-  const convergedEvent = calls.find((call) => call[1] === "agent.converged");
+  const convergedEvent = logger.calls.find((call) => call[0] === "agent.converged");
   assertExists(convergedEvent);
-  assertEquals((convergedEvent[3] as { reason: string }).reason, "quality_threshold_met");
+  assertEquals((convergedEvent[2] as { reason: string }).reason, "quality_threshold_met");
 });
 
 Deno.test("ReflexiveAgent.shouldAccept: accepts when confidence meets threshold", () => {

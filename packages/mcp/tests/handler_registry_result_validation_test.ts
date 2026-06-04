@@ -37,7 +37,7 @@ async function makeServerWithValidator(
     git: createStubGit(),
     provider: createStubProvider(),
     display: createStubDisplay(),
-    toolRegistry: new ToolRegistry({ config, db }),
+    toolRegistry: new ToolRegistry({ config }),
   };
   const server = new MCPServer({
     context,
@@ -112,7 +112,7 @@ Deno.test("handler_registry_result_validation: read-only MCP tool recovers throu
       git: createStubGit(),
       provider: createStubProvider(),
       display: createStubDisplay(),
-      toolRegistry: new ToolRegistry({ config, db }),
+      toolRegistry: new ToolRegistry({ config }),
     };
     const server = new MCPServer({
       context,

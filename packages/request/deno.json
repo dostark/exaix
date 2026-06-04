@@ -7,6 +7,7 @@
     "@std/path": "jsr:@std/path@^1.1.4",
     "@std/yaml": "jsr:@std/yaml@^1.0.2",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/types": "../core/src/types/mod.ts",
     "@exaix/core/func": "../core/src/func/mod.ts",

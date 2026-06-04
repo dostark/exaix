@@ -87,7 +87,7 @@ export class TestEnvironmentFactory {
       display: createStubDisplay(db),
     };
 
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const embedding = new MemoryEmbeddingService(config);
     const skills = new SkillsService({
       memoryDir: getMemoryDir(tempDir),
