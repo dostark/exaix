@@ -19,7 +19,6 @@ import { toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
-import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { IContextSegment } from "./context/context_segment.ts";
@@ -127,9 +126,6 @@ export interface IAgentExecutionResult {
  * Configuration for AgentRunner
  */
 export interface IAgentRunnerConfig {
-  /** Optional: Database service for activity logging */
-  db?: IDatabaseService;
-
   /** Optional: Event logger for activity routing (preferred over db) */
   logger?: IEventLogger;
 
@@ -199,7 +195,6 @@ export interface IPlanAdapter {
  * - Skill usage tracking
  */
 export class AgentRunner implements IAgentRunner {
-  private db?: IDatabaseService;
   private logger?: IEventLogger;
   private retryPolicy: IRetryPolicy;
   private disableRetry: boolean;
@@ -229,7 +224,6 @@ export class AgentRunner implements IAgentRunner {
       throw new Error("AgentRunner requires a model provider");
     }
     this.modelProvider = provider;
-    this.db = ctx?.db || this.config?.db;
     this.logger = this.config?.logger;
     this.disableRetry = this.config?.disableRetry ?? false;
     this.skillsService = ctx?.skills || this.config?.skillsService;
@@ -721,27 +715,15 @@ export class AgentRunner implements IAgentRunner {
    * Log activity to IActivity Journal (if database provided)
    */
   private logActivity(
-    actor: string,
+    _actor: string,
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
     traceId?: string,
-    identityId?: string | null,
+    _identityId?: string | null,
   ): void {
-    if (this.logger) {
-      void this.logger.info(actionType, target, payload, traceId);
-      return;
-    }
-
-    if (!this.db) {
-      return; // No database, skip logging
-    }
-
-    try {
-      this.db.logActivity(actor, actionType, target, payload, traceId, identityId || null);
-    } catch (error) {
-      console.error("[AgentRunner] Failed to log activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, target, payload, traceId);
   }
 }
 

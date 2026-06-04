@@ -14,6 +14,7 @@
  */
 
 import type { Config } from "@exaix/schemas";
+import type { IEventLogger } from "@exaix/core/logger";
 
 import {
   DEFAULT_GIT_BRANCH_NAME_COLLISION_MAX_RETRIES,
@@ -35,7 +36,6 @@ import type {
   IBranchOptions,
   ICommitOptions,
   IGitCommandOptions,
-  IGitDatabaseService,
   IGitService,
   IGitServiceConfig,
   IWorktreeInfo,
@@ -44,7 +44,6 @@ import type {
 
 type GitServiceError = Error | string | Record<string, JsonValue>;
 
-const ACTIVITY_ACTOR_IDENTITY = "identity";
 const DAEMON_IDENTITY_ID = "daemon";
 
 function getRandomString(length: number): string {
@@ -117,7 +116,7 @@ export class GitSecurityError extends GitError {
 
 export class GitService implements IGitService {
   private config: Config;
-  private db?: IGitDatabaseService;
+  private logger?: IEventLogger;
   private traceId?: string;
   private identityId?: string;
   private repoPath: string;
@@ -128,7 +127,9 @@ export class GitService implements IGitService {
     this.config = configSource && typeof (configSource as { get?: () => Config }).get === "function"
       ? (configSource as { get(): Config }).get()
       : options.config;
-    this.db = ctx?.db || options.db;
+    this.logger = options.logger && options.identityId
+      ? options.logger.child({ identityId: options.identityId })
+      : options.logger;
     this.traceId = options.traceId;
     this.identityId = options.identityId;
     this.repoPath = options.repoPath || this.config.system.root;
@@ -798,20 +799,7 @@ export class GitService implements IGitService {
    * Log activity to database
    */
   private logActivity(actionType: string, payload: Record<string, JsonValue>): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ACTIVITY_ACTOR_IDENTITY,
-        actionType,
-        null,
-        payload,
-        this.traceId,
-        null, // actorType
-        this.identityId, // identityId
-      );
-    } catch (error) {
-      console.error("Failed to log git activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, null, payload, this.traceId);
   }
 }

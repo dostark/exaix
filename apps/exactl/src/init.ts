@@ -121,7 +121,7 @@ export async function initializeServices(
       dbLocal = createDatabaseStub();
     }
 
-    const gitLocal = new GitService({ config: cfg, db: dbLocal });
+    const gitLocal = new GitService({ config: cfg });
     // For provider, ensure we have a valid model name or fallback
     const model = cfg.agents?.default_model || "mock:test";
     bootstrapProviderRegistry();
@@ -173,7 +173,6 @@ export async function initializeServices(
       config: portalKnowledgeConfig,
       memoryBank,
       provider: providerLocal,
-      db: dbLocal,
     });
 
     const toolRegistry = new ToolRegistry({

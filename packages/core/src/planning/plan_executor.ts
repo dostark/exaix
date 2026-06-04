@@ -127,7 +127,6 @@ export class PlanExecutor {
       const git = this.enableGit
         ? new GitService({
           config: this.config,
-          db: this.db,
           repoPath: this.repoPath,
           traceId,
           identityId: context.identity,
@@ -204,7 +203,6 @@ export class PlanExecutor {
    */
   private createAgentExecutor(traceId: string): AgentExecutor {
     const pathResolver = new PathResolver(this.config, {
-      db: this.db as DatabaseService,
       traceId,
     });
     const permissions = new PortalPermissionsService(this.config.portals);

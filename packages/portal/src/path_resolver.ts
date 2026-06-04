@@ -9,16 +9,12 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";
 
-import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 export interface IPathResolverConfig {
-  /** Optional: Database service for activity logging (deprecated — prefer logger) */
-  db?: IDatabaseService;
-
   /** Optional: Event logger for activity and security event routing */
   logger?: IEventLogger;
 
@@ -28,13 +24,11 @@ export interface IPathResolverConfig {
 
 export class PathResolver {
   private config: Config;
-  private db?: IDatabaseService;
   private logger?: IEventLogger;
   private traceId?: string;
 
   constructor(config: Config, options?: IPathResolverConfig) {
     this.config = config;
-    this.db = options?.db;
     this.logger = options?.logger;
     this.traceId = options?.traceId;
   }
@@ -150,25 +144,13 @@ export class PathResolver {
    * Log activity to IActivity Journal
    */
   private logActivity(
-    actor: string,
+    _actor: string,
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
   ): void {
-    if (this.logger) {
-      void this.logger.info(actionType, target, payload, this.traceId);
-      return;
-    }
-
-    if (!this.db) {
-      return;
-    }
-
-    try {
-      this.db.logActivity(actor, actionType, target, payload, this.traceId, null);
-    } catch (error) {
-      console.error("[PathResolver] Failed to log activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, target, payload, this.traceId);
   }
 
   /**
@@ -179,35 +161,14 @@ export class PathResolver {
     path: string,
     reason: string,
   ): void {
-    if (this.logger) {
-      void this.logger.warn(actionType, path, {
-        reason,
-        severity: "high",
-        timestamp: new Date().toISOString(),
-      }, this.traceId);
-      return;
-    }
-
-    if (!this.db) {
+    if (!this.logger) {
       console.warn(`[SECURITY] ${actionType}: ${path} - ${reason}`);
       return;
     }
-
-    try {
-      this.db.logActivity(
-        DEFAULT_MCP_IDENTITY_ID,
-        actionType,
-        path,
-        {
-          reason,
-          severity: "high",
-          timestamp: new Date().toISOString(),
-        },
-        this.traceId,
-        null,
-      );
-    } catch (error) {
-      console.error("[PathResolver] Failed to log security violation:", error);
-    }
+    void this.logger.warn(actionType, path, {
+      reason,
+      severity: "high",
+      timestamp: new Date().toISOString(),
+    }, this.traceId);
   }
 }

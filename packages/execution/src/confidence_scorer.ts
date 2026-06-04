@@ -215,7 +215,7 @@ export class ConfidenceScorer {
       goalAlignmentWeight,
     };
 
-    this.agentRunner = new AgentRunner(modelProvider, { db });
+    this.agentRunner = new AgentRunner(modelProvider);
     this.outputValidator = createOutputValidator({ autoRepair: true });
   }
 

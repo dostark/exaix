@@ -7,13 +7,12 @@
  */
 import { join, normalize, relative } from "@std/path";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
-import type { ICliApplicationContext } from "@exaix/core/types";
+import type { ICliApplicationContext, IDatabaseService } from "@exaix/core/types";
 import type { MCPContent, MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { PortalOperation, ToolErrorCode } from "@exaix/core";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types";
+import type { LogMetadata } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 
 /**
@@ -102,24 +101,11 @@ export abstract class ToolHandler {
   protected logToolExecution(
     toolName: string,
     portal: string,
-    identityId: string,
+    _identityId: string,
     metadata: LogMetadata,
   ): void {
-    const action = `mcp.tool.${toolName}`;
-    if (this.logger) {
-      void this.logger.info(action, portal, metadata);
-      return;
-    }
-    const actor = `identity:${identityId}`;
-    this.db.logActivity(
-      actor,
-      action,
-      portal,
-      toSafeJson(metadata) as Record<string, JSONValue>,
-      undefined,
-      "identity",
-      identityId,
-    );
+    if (!this.logger) return;
+    void this.logger.info(`mcp.tool.${toolName}`, portal, metadata);
   }
 
   /**

@@ -328,7 +328,6 @@ export class ExecutionLoop {
   private createGitService(repoPath: string, traceId: string): IGitService {
     return new GitService({
       config: this.config,
-      db: this.db,
       traceId,
       identityId: this.identityId,
       repoPath,

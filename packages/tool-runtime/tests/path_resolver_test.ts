@@ -12,7 +12,7 @@ import { initTestDbService } from "@exaix/testing";
 import { join } from "@std/path";
 import { PathResolver } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
-import type { IEventLogger } from "@exaix/core/logger";
+import { EventLogger } from "@exaix/core/logger";
 
 /**
  * Tests for Step 2.3: Path Security & Portal Resolver
@@ -409,13 +409,15 @@ Deno.test("PathResolver: logs successful resolution to database", async () => {
     await Deno.writeTextFile(testFile, "content");
 
     const config = createMockConfig(tempDir);
-    const resolver = new PathResolver(config, { db, traceId: "path-trace-123" });
+    const logger = new EventLogger({ db });
+    const resolver = new PathResolver(config, { logger, traceId: "path-trace-123" });
 
     const resolved = await resolver.resolve("@Blueprints/logged.md");
     assertEquals(resolved, testFile);
 
     // Wait for batched logs
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await logger.info("__flush__", null);
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("path-trace-123");
     const successLog = logs.find((l: ActivityRecord) => l.action_type === "path.resolved");
@@ -435,7 +437,8 @@ Deno.test("PathResolver: logs resolution failures to database", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
     const config = createMockConfig(tempDir);
-    const resolver = new PathResolver(config, { db, traceId: "path-fail-trace" });
+    const logger = new EventLogger({ db });
+    const resolver = new PathResolver(config, { logger, traceId: "path-fail-trace" });
 
     await assertRejects(
       async () => {
@@ -446,7 +449,8 @@ Deno.test("PathResolver: logs resolution failures to database", async () => {
     );
 
     // Wait for batched logs
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await logger.info("__flush__", null);
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("path-fail-trace");
     const failLog = logs.find((l: ActivityRecord) => l.action_type === "path.resolution_failed");
@@ -471,7 +475,8 @@ Deno.test("[security] PathResolver: logs security violations to database", async
     await Deno.writeTextFile(secretFile, "secret");
 
     const config = createMockConfig(tempDir);
-    const resolver = new PathResolver(config, { db, traceId: "security-trace" });
+    const logger = new EventLogger({ db });
+    const resolver = new PathResolver(config, { logger, traceId: "security-trace" });
 
     await assertRejects(
       async () => {
@@ -482,7 +487,8 @@ Deno.test("[security] PathResolver: logs security violations to database", async
     );
 
     // Wait for batched logs
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await logger.info("__flush__", null);
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const logs = db.getActivitiesByTrace("security-trace");
     const securityLog = logs.find((l: ActivityRecord) => l.action_type === "path.access_denied");
@@ -496,44 +502,8 @@ Deno.test("[security] PathResolver: logs security violations to database", async
   }
 });
 
-Deno.test("PathResolver: handles database logging errors gracefully", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "resolver-test-db-error-" });
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const blueprintsDir = join(tempDir, "Blueprints");
-    await Deno.mkdir(blueprintsDir);
-    const testFile = join(blueprintsDir, "test.md");
-    await Deno.writeTextFile(testFile, "content");
-
-    const config = createMockConfig(tempDir);
-
-    // Close DB to simulate logging failure
-    await db.close();
-
-    // Create resolver with closed DB - should not throw
-    const resolver = new PathResolver(config, { db, traceId: "error-trace" });
-
-    // Capture console.error
-    const originalError = console.error;
-    let _errorLogged = false;
-    console.error = () => {
-      _errorLogged = true;
-    };
-
-    try {
-      // This should still work even with DB errors
-      const resolved = await resolver.resolve("@Blueprints/test.md");
-      assertEquals(resolved, testFile);
-      // May or may not have logged error depending on timing
-    } finally {
-      console.error = originalError;
-    }
-  } finally {
-    await cleanup();
-    await Deno.remove(tempDir, { recursive: true });
-  }
-});
-
+// ============================================================================
+// GAP-6 Remediation: EventLogger Integration Tests
 // ============================================================================
 // GAP-6 Remediation: EventLogger Integration Tests
 // ============================================================================

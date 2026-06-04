@@ -8,6 +8,7 @@
  */
 
 import type { Config } from "@exaix/schemas";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IBranchOptions {
   requestId: string;
@@ -70,12 +71,11 @@ export interface IGitDatabaseService {
 
 export interface IGitServiceContext {
   config?: Config | { get(): Config };
-  db?: IGitDatabaseService;
 }
 
 export interface IGitServiceConfig {
   config: Config;
-  db?: IGitDatabaseService;
+  logger?: IEventLogger;
   traceId?: string;
   identityId?: string;
   repoPath?: string;

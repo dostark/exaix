@@ -719,7 +719,6 @@ export const __test_command = new Command()
 
                   const effectiveGit = new GitService({
                     config,
-                    db,
                     repoPath,
                   });
 
@@ -776,7 +775,6 @@ export const __test_command = new Command()
 
                   const effectiveGit = new GitService({
                     config,
-                    db,
                     repoPath,
                   });
 

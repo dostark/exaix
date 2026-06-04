@@ -262,7 +262,6 @@ export class ReflexiveAgent {
       agentRunnerConfig,
     };
 
-    this.db = agentRunnerConfig.db;
     this.confidenceScorer = new ConfidenceScorer(modelProvider, {
       lowConfidenceThreshold: confidenceThreshold,
       highConfidenceThreshold: 90,

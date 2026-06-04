@@ -26,13 +26,7 @@ import { TestRunner } from "./test_runner.ts";
 import { VulnerabilityScanner } from "./vulnerability_scanner.ts";
 import type { IKnowledgeInvalidationStrategy, KnowledgeAnalysisMode } from "./knowledge_invalidation_strategy.ts";
 import { KnowledgeInvalidationStrategy } from "./knowledge_invalidation_strategy.ts";
-import type {
-  IDatabaseService,
-  ILogger,
-  IMemoryBankService,
-  IPortalKnowledgeConfig,
-  IPortalKnowledgeService,
-} from "@exaix/core/types";
+import type { ILogger, IMemoryBankService, IPortalKnowledgeConfig, IPortalKnowledgeService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { IPortalKnowledge } from "@exaix/schemas";
 
@@ -55,7 +49,6 @@ export interface IPortalKnowledgeServiceOptions {
   memoryBank: IMemoryBankService;
   provider?: IModelProvider;
   validator?: IArchitectureValidator;
-  db?: IDatabaseService;
   evLogger?: IEventLogger;
   runner?: IDocCommandRunner;
   gitHeadResolver?: IGitHeadResolver;
@@ -107,7 +100,6 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
   private readonly _memoryBank: IMemoryBankService;
   private readonly _provider?: IModelProvider;
   private readonly _validator?: IArchitectureValidator;
-  private readonly _db?: IDatabaseService;
   private readonly _evLogger?: IEventLogger;
   private readonly _symbolRunner: IDocCommandRunner | undefined;
   private readonly _gitHeadResolver: IGitHeadResolver;
@@ -141,7 +133,6 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
     this._memoryBank = optionsWithDefaults.memoryBank;
     this._provider = optionsWithDefaults.provider;
     this._validator = optionsWithDefaults.validator;
-    this._db = optionsWithDefaults.db;
     this._evLogger = optionsWithDefaults.evLogger;
     this._symbolRunner = optionsWithDefaults.runner;
     this._gitHeadResolver = optionsWithDefaults.gitHeadResolver ?? new GitHeadResolver();
@@ -390,17 +381,6 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
         filesScanned: fileList.length,
         durationMs: knowledge.metadata.durationMs,
       });
-    } else {
-      this._db?.logActivity(
-        "portal-knowledge-service",
-        "portal.analyzed",
-        portalAlias,
-        {
-          mode: resolvedMode,
-          filesScanned: fileList.length,
-          durationMs: knowledge.metadata.durationMs,
-        },
-      );
     }
 
     return knowledge;
@@ -442,16 +422,6 @@ export class PortalKnowledgeService implements IPortalKnowledgeService {
 
     if (this._evLogger) {
       void this._evLogger.info(
-        this._mapValidityEventType(validity.analysisMode),
-        portalAlias,
-        {
-          ...validity,
-          elapsedMs,
-        },
-      );
-    } else {
-      this._db?.logActivity(
-        "portal-knowledge-service",
         this._mapValidityEventType(validity.analysisMode),
         portalAlias,
         {

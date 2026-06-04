@@ -690,7 +690,7 @@ export class RequestProcessor {
       });
     }
 
-    const agentRunner = new AgentRunner(selectedProvider, { db: this.db });
+    const agentRunner = new AgentRunner(selectedProvider);
     const metadata: IRequestMetadata = {
       requestId,
       traceId,

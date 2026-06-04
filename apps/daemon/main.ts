@@ -142,7 +142,6 @@ if (import.meta.main) {
     // Initialize Git orchestration service
     const gitService = new GitService({
       config,
-      db: dbService,
     });
 
     const notificationService = new NotificationService(config, dbService);
@@ -208,7 +207,6 @@ if (import.meta.main) {
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
-      db: dbService,
       embeddingProvider,
     });
 
