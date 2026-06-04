@@ -6,11 +6,12 @@
  * @related-files ["packages/storage-sqlite/src/database_service.ts", "packages/core/src/types/enums.ts"]
  */
 
-import type { DatabaseService } from "@exaix/storage-sqlite";
 import { dirname, join } from "@std/path";
 
+import type { IEventLogger } from "../logger/mod.ts";
 import type { JSONValue } from "../types/json.ts";
 import type { IAuditLogger, ISecurityEvent } from "../types/mod.ts";
+import { DomainEventType } from "../events/mod.ts";
 
 // ============================================================================
 // Types and Interfaces
@@ -20,8 +21,8 @@ import type { IAuditLogger, ISecurityEvent } from "../types/mod.ts";
  * Configuration for AuditLogger
  */
 export interface IAuditLoggerConfig {
-  /** DatabaseService instance (optional - allows file-only mode) */
-  db?: DatabaseService;
+  /** Event logger for primary security event routing */
+  logger?: IEventLogger;
 
   /** Base configuration for audit paths */
   config?: { paths?: { runtime?: string } };
@@ -34,43 +35,37 @@ export interface IAuditLoggerConfig {
 /**
  * Specialized audit logger for security-critical operations.
  * Provides tamper-evident logging with alerting capabilities.
+ * Primary event transport goes through IEventLogger; tamper-evident
+ * JSONL file is a secondary append-only sink.
  */
 export class AuditLogger implements IAuditLogger {
-  private readonly db?: DatabaseService;
+  private readonly logger?: IEventLogger;
   private readonly config: IAuditLoggerConfig;
   private currentSessionId: string;
 
   constructor(config: IAuditLoggerConfig = {}) {
-    this.db = config.db;
+    this.logger = config.logger;
     this.config = config;
     this.currentSessionId = crypto.randomUUID();
   }
 
   /**
-   * Log a security event to database and tamper-evident audit file
+   * Log a security event through IEventLogger and to tamper-evident audit file
    */
   async logSecurityEvent(event: ISecurityEvent): Promise<void> {
     const auditEntry = this.createAuditEntry(event);
 
-    // Log to database (if available)
-    if (this.db) {
-      try {
-        // Use the existing logActivity method with audit-specific action type
-        this.db.logActivity(
-          auditEntry.actor as string,
-          `audit.${auditEntry.type}.${auditEntry.action}`,
-          auditEntry.resource as string,
-          auditEntry as Record<string, JSONValue>,
-          auditEntry.trace_id as string,
-          null, // identityId
-        );
-      } catch (error) {
-        console.warn("[AuditLogger] Failed to write to audit database:", error);
-        // Continue with file logging even if DB fails
-      }
+    // Route through IEventLogger for visibility in console, journal, and event bus
+    if (this.logger) {
+      void this.logger.info(DomainEventType.SecurityViolation, auditEntry.resource as string, {
+        ...auditEntry,
+        event_type: event.type,
+        event_action: event.action,
+        severity: event.severity,
+      });
     }
 
-    // Write to tamper-evident audit file
+    // Write to tamper-evident audit file (secondary append-only sink)
     await this.appendToAuditFile(auditEntry);
 
     // Send alert for critical events
