@@ -32,10 +32,10 @@ import { getMemoryGlobalDir } from "@exaix/testing";
 // ===== Full Workflow Tests =====
 
 Deno.test("Integration: full workflow - execution → extract → approve → search", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const extractor = new MemoryExtractorService(config, db, memoryBank);
     const _embedding = new MemoryEmbeddingService(config);
 
@@ -100,10 +100,10 @@ Deno.test("Integration: full workflow - execution → extract → approve → se
 });
 
 Deno.test("Integration: execution failure extracts troubleshooting learning", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const extractor = new MemoryExtractorService(config, db, memoryBank);
 
     // Create project
@@ -150,10 +150,10 @@ Deno.test("Integration: execution failure extracts troubleshooting learning", as
 });
 
 Deno.test("Integration: promote workflow - project → global", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
 
     // Create project with a pattern
     await memoryBank.createProjectMemory({
@@ -199,10 +199,10 @@ Deno.test("Integration: promote workflow - project → global", async () => {
 // ===== Search Workflow Tests =====
 
 Deno.test("Integration: search workflow - tag + keyword + embedding combined", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const embedding = new MemoryEmbeddingService(config);
 
     // Create diverse test data
@@ -303,7 +303,7 @@ Deno.test("Integration: search workflow - tag + keyword + embedding combined", a
 // ===== CLI Workflow Tests =====
 
 Deno.test("Integration: CLI workflow - complete command sequence", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
     const context: ICliApplicationContext = {
@@ -313,7 +313,7 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
       provider: createStubProvider(),
       display: createStubDisplay(db),
     };
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const extractor = new MemoryExtractorService(config, db, memoryBank);
     const embedding = new MemoryEmbeddingService(config);
     context.memoryBank = new MemoryBankAdapter(memoryBank);
@@ -362,7 +362,7 @@ Deno.test("Integration: CLI workflow - complete command sequence", async () => {
 });
 
 Deno.test("Integration: CLI pending workflow - list → approve → verify", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
     const context: ICliApplicationContext = {
@@ -372,7 +372,7 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
       provider: createStubProvider(),
       display: createStubDisplay(db),
     };
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const extractor = new MemoryExtractorService(config, db, memoryBank);
     context.memoryBank = new MemoryBankAdapter(memoryBank);
     context.extractor = new MemoryExtractorAdapter(extractor);
@@ -436,10 +436,10 @@ Deno.test("Integration: CLI pending workflow - list → approve → verify", asy
 // ===== Performance Tests =====
 
 Deno.test("Integration: performance - search completes under 100ms", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
 
     // Create some test data
     await memoryBank.createProjectMemory({

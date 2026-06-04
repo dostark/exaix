@@ -88,7 +88,7 @@ async function initExtractorTest() {
   await Deno.mkdir(getMemoryIndexDir(config.system.root), { recursive: true });
   await Deno.mkdir(getMemoryGlobalDir(config.system.root), { recursive: true });
 
-  const memoryBank = new MemoryBankService(config, db);
+  const memoryBank = new MemoryBankService(config);
   const extractor = new MemoryExtractorService(config, db, memoryBank);
 
   const cleanup = async () => {

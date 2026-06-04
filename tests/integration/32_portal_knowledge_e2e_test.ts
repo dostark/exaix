@@ -203,7 +203,7 @@ Deno.test("[E2E] knowledge persisted as knowledge.json", async () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
     const tempDir = await Deno.makeTempDir();
@@ -211,7 +211,7 @@ Deno.test("[E2E] knowledge mapped to IProjectMemory files", async () => {
     const projectsDir = join(tempDir, "Memory", "Projects");
     await ensureDir(projectsDir);
 
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const service = new PortalKnowledgeService({
       config: makeConfig(),
       memoryBank: null as never,

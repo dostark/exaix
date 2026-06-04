@@ -174,7 +174,7 @@ Deno.test("Integration: Happy Path - Request to Report", async (t) => {
         memoryRoot: `${env.tempDir}/Memory`,
         db: env.db,
       };
-      const memoryBank = new MemoryBankService(env.config, env.db);
+      const memoryBank = new MemoryBankService(env.config);
       const reporter = new MissionReporter(env.config, reportConfig, memoryBank, env.db);
 
       const reportResult = await reporter.generate({

@@ -148,7 +148,7 @@ if (import.meta.main) {
     const notificationService = new NotificationService(config, dbService);
 
     // Initialize Memory Services (needed for context and request processing)
-    const memoryBank = new MemoryBankService(config, dbService);
+    const memoryBank = new MemoryBankService(config, logger);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
     const embCfg = config.memory?.embedding;

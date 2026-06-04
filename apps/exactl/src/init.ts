@@ -135,7 +135,7 @@ export async function initializeServices(
     };
 
     // Instantiate concrete services and group into adapters
-    const memoryBank = new MemoryBankService(cfg, dbLocal);
+    const memoryBank = new MemoryBankService(cfg, displayLogger);
     const extractor = new MemoryExtractorService(cfg, dbLocal, memoryBank);
     const embedding = new MemoryEmbeddingService(cfg);
     const skills = new SkillsService({

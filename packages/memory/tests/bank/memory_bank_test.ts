@@ -12,6 +12,7 @@ import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { MemoryBankService } from "@exaix/memory";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import type { IDecision, ILearning, IPattern } from "@exaix/schemas/memory_bank.ts";
 import {
   ActivityType,
@@ -36,10 +37,10 @@ function generateTestUUID(): string {
 // ===== Project Memory Tests =====
 
 Deno.test("MemoryBankService: getProjectMemory returns null for non-existent portal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     const result = await service.getProjectMemory("non-existent-portal");
     assertEquals(result, null);
   } finally {
@@ -48,10 +49,10 @@ Deno.test("MemoryBankService: getProjectMemory returns null for non-existent por
 });
 
 Deno.test("MemoryBankService: createProjectMemory creates directory structure", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     const projectMem = createMinimalProjectMemory({
       portal: "test-project",
       overview: "A test project for memory banks",
@@ -76,10 +77,10 @@ Deno.test("MemoryBankService: createProjectMemory creates directory structure", 
 });
 
 Deno.test("MemoryBankService: getProjectMemory reads existing project", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create project first
     const projectMem = createSampleProjectMemory({
@@ -160,10 +161,10 @@ Deno.test("MemoryBankService: addDecision appends to existing decisions", async 
 });
 
 Deno.test("MemoryBankService: updateProjectMemory merges updates", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create project
     await service.createProjectMemory(createMinimalProjectMemory({
@@ -188,10 +189,10 @@ Deno.test("MemoryBankService: updateProjectMemory merges updates", async () => {
 // ===== Execution Memory Tests =====
 
 Deno.test("MemoryBankService: createExecutionRecord creates directory structure", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     const traceId = "550e8400-e29b-41d4-a716-446655440000";
     const execution = createMinimalExecutionMemory({
@@ -231,10 +232,10 @@ Deno.test("MemoryBankService: createExecutionRecord creates directory structure"
 });
 
 Deno.test("MemoryBankService: getExecutionByTraceId retrieves execution", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     const traceId = "550e8400-e29b-41d4-a716-446655440001";
     const execution = createMinimalExecutionMemory({
@@ -261,10 +262,10 @@ Deno.test("MemoryBankService: getExecutionByTraceId retrieves execution", async 
 });
 
 Deno.test("MemoryBankService: getExecutionHistory returns all executions", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create multiple executions
     const execution1 = createMinimalExecutionMemory({
@@ -304,10 +305,10 @@ Deno.test("MemoryBankService: getExecutionHistory returns all executions", async
 });
 
 Deno.test("MemoryBankService: getExecutionHistory filters by portal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create executions for different portals
     await service.createExecutionRecord(createMinimalExecutionMemory({
@@ -336,10 +337,10 @@ Deno.test("MemoryBankService: getExecutionHistory filters by portal", async () =
 });
 
 Deno.test("MemoryBankService: getExecutionHistory respects limit", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create 5 executions
     for (let i = 0; i < 5; i++) {
@@ -361,10 +362,10 @@ Deno.test("MemoryBankService: getExecutionHistory respects limit", async () => {
 });
 
 Deno.test("MemoryBankService: createExecutionRecord handles failed execution with error", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     const traceId = "550e8400-e29b-41d4-a716-446655440040";
     const execution = createMinimalExecutionMemory({
@@ -392,10 +393,10 @@ Deno.test("MemoryBankService: createExecutionRecord handles failed execution wit
 // ===== Search & Query Tests =====
 
 Deno.test("MemoryBankService: searchMemory finds matching content", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create project with authentication-related content
     await service.createProjectMemory(createMinimalProjectMemory({
@@ -428,10 +429,11 @@ Deno.test("MemoryBankService: searchMemory finds matching content", async () => 
 // ===== IActivity Journal Integration Tests =====
 
 Deno.test("MemoryBankService: createProjectMemory logs to IActivity Journal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
 
     await service.createProjectMemory(createMinimalProjectMemory({
       portal: "test-portal",
@@ -454,10 +456,11 @@ Deno.test("MemoryBankService: createProjectMemory logs to IActivity Journal", as
 });
 
 Deno.test("MemoryBankService: addPattern logs to IActivity Journal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
 
     await service.createProjectMemory(createMinimalProjectMemory({
       portal: "test-portal",
@@ -486,10 +489,11 @@ Deno.test("MemoryBankService: addPattern logs to IActivity Journal", async () =>
 });
 
 Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const logger = new EventLogger({ db });
+    const service = new MemoryBankService(config, logger);
 
     const traceId = "550e8400-e29b-41d4-a716-446655440060";
     await service.createExecutionRecord({
@@ -522,10 +526,10 @@ Deno.test("MemoryBankService: createExecutionRecord logs to IActivity Journal", 
 // ===== Index Management Tests =====
 
 Deno.test("MemoryBankService: rebuildIndices generates index files", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create some memory content
     await service.createProjectMemory(createMinimalProjectMemory({
@@ -562,10 +566,10 @@ Deno.test("MemoryBankService: rebuildIndices generates index files", async () =>
 });
 
 Deno.test("MemoryBankService: getRecentActivity combines execution history", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Create execution
     await service.createExecutionRecord({
@@ -595,10 +599,10 @@ Deno.test("MemoryBankService: getRecentActivity combines execution history", asy
 // ===== Concurrency and File Locking Tests =====
 
 Deno.test("MemoryBankService: concurrent project memory updates maintain data integrity", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     const portal = "concurrent-test";
 
     // Create initial project memory
@@ -641,10 +645,10 @@ Deno.test("MemoryBankService: concurrent project memory updates maintain data in
 });
 
 Deno.test("MemoryBankService: file locking serializes global learning updates", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Add learnings sequentially to verify serialization works
     for (let i = 0; i < 5; i++) {
@@ -677,10 +681,10 @@ Deno.test("MemoryBankService: file locking serializes global learning updates", 
 });
 
 Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Test that file locking works with timeout by attempting to acquire the same lock twice
     // First operation should succeed
@@ -723,10 +727,10 @@ Deno.test("MemoryBankService: lock timeout prevents indefinite blocking", async 
 });
 
 Deno.test("MemoryBankService: lock files are cleaned up on success", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Perform an operation that uses file locking
     await service.addGlobalLearning({
@@ -754,10 +758,10 @@ Deno.test("MemoryBankService: lock files are cleaned up on success", async () =>
 });
 
 Deno.test("MemoryBankService: lock files are cleaned up on failure", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Attempt an operation that will fail (duplicate ID)
     try {

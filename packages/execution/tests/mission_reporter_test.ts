@@ -95,7 +95,7 @@ async function withMissionReporter(
       const mockDb = {
         logActivity: () => {},
       } as Partial<IDatabaseService> as IDatabaseService;
-      const memoryBank = new MemoryBankService(config, mockDb);
+      const memoryBank = new MemoryBankService(config);
       const reporter = new MissionReporter(config, reportConfig, memoryBank);
 
       await testFn({ db: mockDb, tempDir, memoryBank, reporter });
@@ -116,7 +116,7 @@ async function withMissionReporter(
     const reportConfig: ReportConfig = {
       reportsDirectory: getMemoryExecutionDir(tempDir),
     };
-    const memoryBank = new MemoryBankService(config, db);
+    const memoryBank = new MemoryBankService(config);
     const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
 
     await testFn({ db, tempDir, memoryBank, reporter });
@@ -250,7 +250,7 @@ Deno.test("MissionReporter: handles generation errors gracefully", async () => {
     };
 
     // Create a mock MemoryBankService that throws
-    const mockMemoryBank = new MemoryBankService(config, db);
+    const mockMemoryBank = new MemoryBankService(config);
     mockMemoryBank.createExecutionRecord = () => Promise.reject(new Error("Storage failure"));
 
     const reporter = new MissionReporter(config, reportConfig, mockMemoryBank, db);

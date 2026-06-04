@@ -14,7 +14,7 @@
 import { join } from "@std/path";
 import { ensureDir, ensureDirSync, exists } from "@std/fs";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { IDatabaseService } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 import {
   ActivityActor,
   ActivityType,
@@ -88,7 +88,7 @@ export class MemoryBankService implements IMemoryBankService {
    * @param config - Exaix configuration
    * @param db - Database service for IActivity Journal integration
    */
-  constructor(private config: Config, private db: IDatabaseService) {
+  constructor(private config: Config, private logger?: IEventLogger) {
     this.memoryRoot = join(config.system.root!, config.paths.memory!);
     // Use subdirectory names directly, not full paths (which already include Memory/)
     this.projectsDir = join(this.memoryRoot, DEFAULT_PROJECTS_MEMORY_PATH);
@@ -1125,20 +1125,7 @@ export class MemoryBankService implements IMemoryBankService {
     trace_id?: string;
     metadata?: Record<string, JSONValue>;
   }): void {
-    try {
-      this.db.logActivity(
-        "service:memory-bank",
-        event.event_type,
-        event.target,
-        event.metadata || {},
-        event.trace_id,
-        null,
-        "service",
-        "memory-bank",
-      );
-    } catch (error) {
-      console.error("Failed to log activity:", error);
-      // Don't throw - logging failure shouldn't break memory operations
-    }
+    if (!this.logger) return;
+    void this.logger.info(event.event_type, event.target, event.metadata, event.trace_id);
   }
 }

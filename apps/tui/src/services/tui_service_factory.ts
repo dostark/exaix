@@ -163,7 +163,7 @@ export function createTuiServices(
   const structuredLoggerService: ILogService = new LogServiceAdapter(logger);
 
   // Initialize memory services
-  const memoryBank = new MemoryBankService(config, databaseService);
+  const memoryBank = new MemoryBankService(config);
   const extractor = new MemoryExtractorService(config, databaseService, memoryBank);
   const memoryService: IMemoryService = new MemoryServiceAdapter(memoryBank, extractor);
 
