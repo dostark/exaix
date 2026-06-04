@@ -48,6 +48,7 @@ import type {
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
 import { ProviderSelector } from "@exaix/ai/provider_selector.ts";
@@ -208,7 +209,7 @@ export class RequestProcessor {
   }
 
   async process(filePath: string): Promise<string | null> {
-    this.logger.info("request.process.started", filePath, {});
+    this.logger.info(DomainEventType.RequestProcessStarted, filePath, {});
     const parsed = await this.requestParser.parse(filePath);
     if (!parsed) {
       return null;
@@ -219,14 +220,14 @@ export class RequestProcessor {
     const requestId = basename(filePath, ".md");
     const traceLogger = this.logger.child({ traceId });
 
-    traceLogger.info("request.processing", filePath, {
+    traceLogger.info(DomainEventType.RequestProcessing, filePath, {
       flow: frontmatter.flow ?? null,
       agent: frontmatter.identity ?? null,
       priority: frontmatter.priority ?? null,
     });
 
     if (this.shouldSkipRequest(frontmatter, traceLogger, filePath)) {
-      traceLogger.info("request.skipped", filePath, {
+      traceLogger.info(DomainEventType.RequestSkipped, filePath, {
         reason: `Request already has status '${frontmatter.status}'`,
       });
       return null;
@@ -262,7 +263,7 @@ export class RequestProcessor {
     // Enhance request with session memory context before analysis
     const memoryContext = this.sessionMemory
       ? await this.sessionMemory.enhanceRequest(assessedBody).catch((err) => {
-        this.logger.warn("memory.enhance_failed", "Session memory enhancement failed", {
+        this.logger.warn(DomainEventType.RequestMemoryEnhanceFailed, "Session memory enhancement failed", {
           error: String(err),
         });
         return undefined;
@@ -403,7 +404,7 @@ export class RequestProcessor {
         : undefined;
       return { earlyReturn: false, specification };
     } catch {
-      traceLogger.warn("request.quality_gate.failed", filePath, { requestId });
+      traceLogger.warn(DomainEventType.RequestQualityGateFailed, filePath, { requestId });
     }
     return { earlyReturn: false };
   }
@@ -454,7 +455,7 @@ export class RequestProcessor {
     const hasAgent = !!frontmatter.identity || !!frontmatter.identity;
 
     if (hasFlow && hasAgent) {
-      traceLogger.error("request.invalid", filePath, {
+      traceLogger.error(DomainEventType.RequestInvalid, filePath, {
         error: "Request cannot specify both 'flow' and 'agent' fields",
       });
       await this.statusManager.updateStatus(
@@ -466,7 +467,7 @@ export class RequestProcessor {
     }
 
     if (!hasAgent && !hasFlow) {
-      traceLogger.error("request.invalid", filePath, {
+      traceLogger.error(DomainEventType.RequestInvalid, filePath, {
         error: "Request must specify either 'flow' or 'agent' field",
       });
       await this.statusManager.updateStatus(
@@ -488,7 +489,7 @@ export class RequestProcessor {
         await next();
       } catch (err) {
         try {
-          ctx.traceLogger?.error("request.processing.error", ctx.filePath, {
+          ctx.traceLogger?.error(DomainEventType.RequestProcessingError, ctx.filePath, {
             error: err instanceof Error ? err.message : String(err),
           });
         } catch {
@@ -503,7 +504,7 @@ export class RequestProcessor {
       await next();
       const duration = Math.round(((typeof performance !== "undefined") ? performance.now() : Date.now()) - start);
       try {
-        ctx.traceLogger?.info("request.processing.duration", ctx.filePath, { duration_ms: duration });
+        ctx.traceLogger?.info(DomainEventType.RequestProcessingDuration, ctx.filePath, { duration_ms: duration });
       } catch {
         // Ignore logging errors
       }
@@ -716,7 +717,7 @@ export class RequestProcessor {
       } catch (error) {
         if (error instanceof PlanValidationError && attempts < maxRetries) {
           attempts++;
-          traceLogger.info("plan.validation.retry", requestId, {
+          traceLogger.info(DomainEventType.RequestValidationRetry, requestId, {
             attempt: attempts,
             error: error.message,
           });
@@ -777,7 +778,7 @@ ${result.content}`,
   ): Promise<string | null> {
     traceLogger.error("blueprint.not_found", identityId, { request: filePath });
     await this.statusManager.updateStatus(filePath, RequestStatus.FAILED, `Blueprint not found: ${identityId}`);
-    traceLogger.error("request.failed", filePath, { error: `Blueprint not found: ${identityId}` });
+    traceLogger.error(DomainEventType.RequestFailed, filePath, { error: `Blueprint not found: ${identityId}` });
     return null;
   }
 
@@ -874,7 +875,7 @@ ${result.content}`,
       const rawDetails = validationError.details?.rawContent;
       const fullRawResponse = validationError.details?.fullRawResponse;
 
-      traceLogger.info("plan.validation.error.detected", requestId, {
+      traceLogger.info(DomainEventType.RequestValidationErrorDetected, requestId, {
         error_message: errorMessage,
         hasDetails: !!validationError.details,
         detailsKeys: validationError.details ? Object.keys(validationError.details) : [],
@@ -915,7 +916,7 @@ ${result.content}`,
         // Log the saved path for debugging, but keep the original error message
         // unchanged for storage in the request frontmatter (tests expect the
         // raw error string without appended path info).
-        traceLogger.info("plan.saved_rejected", rejectedPath, { reason: "validation_failed" });
+        traceLogger.info(DomainEventType.RequestSavedRejected, rejectedPath, { reason: "validation_failed" });
 
         // Persist rejected_path into the request frontmatter so CLI/TUI can
         // expose the location to users for manual review. Use workspace-relative
@@ -934,7 +935,7 @@ ${result.content}`,
       }
     }
 
-    traceLogger.error("request.failed", filePath, {
+    traceLogger.error(DomainEventType.RequestFailed, filePath, {
       error: errorMessage,
     });
 
@@ -984,7 +985,7 @@ Raw Details: ${args.rawDetails}
     await this.statusManager.updateStatus(filePath, RequestStatus.PLANNED, undefined, extraRequestFields);
 
     const logObj: LogMetadata = { plan_path: planResult.planPath, ...(extra ?? {}) };
-    traceLogger.info("request.planned", filePath, logObj);
+    traceLogger.info(DomainEventType.RequestPlanned, filePath, logObj);
     return planResult.planPath;
   }
 
