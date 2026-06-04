@@ -36,7 +36,7 @@ Deno.test("Phase 71 Integration: End-to-end memory auto-approval cycle", async (
   });
 
   try {
-    const memoryBank = new MemoryBankService(env.config, env.db);
+    const memoryBank = new MemoryBankService(env.config);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(env.config, env.db, memoryAdapter);
     const autoApprovalService = new MemoryAutoApprovalService(env.config, memoryExtractor);

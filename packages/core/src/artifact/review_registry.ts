@@ -9,6 +9,7 @@
 
 import type { IDatabaseService, SqliteParam } from "@exaix/storage-sqlite";
 import type { EventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import {
   type IRegisterReviewInput,
   type IReview,
@@ -90,7 +91,7 @@ export class ReviewRegistry {
     }
 
     // Log to IActivity Journal
-    await this.logger.info("review.created", validated.branch, {
+    await this.logger.info(DomainEventType.ReviewCreated, validated.branch, {
       review_id: id,
       trace_id: validated.trace_id,
       portal: validated.portal ?? null,
@@ -245,7 +246,7 @@ export class ReviewRegistry {
       params.push(timestamp, user || null, id);
 
       // Log approval
-      await this.logger.info("review.approved", review.branch, {
+      await this.logger.info(DomainEventType.ReviewApproved, review.branch, {
         review_id: id,
         trace_id: review.trace_id,
         portal: review.portal ?? null,
@@ -258,7 +259,7 @@ export class ReviewRegistry {
       params.push(timestamp, user || null, reason || null, id);
 
       // Log rejection
-      await this.logger.info("review.rejected", review.branch, {
+      await this.logger.info(DomainEventType.ReviewRejected, review.branch, {
         review_id: id,
         trace_id: review.trace_id,
         portal: review.portal ?? null,

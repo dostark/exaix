@@ -145,7 +145,7 @@ instance prevents double-backfill when `execute()` is called more than once
 with the same `traceId`.
 
 When a **stale** checkpoint is detected (schema version or flow content hash
-mismatch), it is discarded and `FLOW_EVENT_STEP_INVALIDATED` is emitted for
+mismatch), it is discarded and `DomainEventType.FlowStepInvalidated` is emitted for
 each step that was in the stale checkpoint, then `store.invalidate()` is
 called with a synthetic record ID (`stale:<traceId>:<stepId>`).
 

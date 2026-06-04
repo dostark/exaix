@@ -8,7 +8,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { join } from "@std/path";
-import { ArtifactRegistry } from "@exaix/core/artifact";
+import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { initTestDbService } from "@exaix/testing";
 import { ReviewStatus } from "@exaix/core/status";
 
@@ -20,7 +20,8 @@ async function createTestContext(): Promise<{ tempDir: string; db: DatabaseServi
 Deno.test("[artifact] createArtifact() creates file with frontmatter in Memory/Execution/", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const artifactId = await registry.createArtifact(
       "request-123",
@@ -50,7 +51,8 @@ Deno.test("[artifact] createArtifact() creates file with frontmatter in Memory/E
 Deno.test("[artifact] createArtifact() stores artifact in database", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const artifactId = await registry.createArtifact(
       "request-456",
@@ -74,7 +76,8 @@ Deno.test("[artifact] createArtifact() stores artifact in database", async () =>
 Deno.test("[artifact] updateStatus() changes status from pending to approved", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const artifactId = await registry.createArtifact(
       "request-789",
@@ -99,7 +102,8 @@ Deno.test("[artifact] updateStatus() changes status from pending to approved", a
 Deno.test("[artifact] updateStatus() changes status from pending to rejected with reason", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const artifactId = await registry.createArtifact(
       "request-999",
@@ -125,7 +129,8 @@ Deno.test("[artifact] updateStatus() changes status from pending to rejected wit
 Deno.test("[artifact] listArtifacts() filters by status", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     // Create multiple artifacts
     const id1 = await registry.createArtifact("req-1", "agent1", "Content 1");
@@ -152,7 +157,8 @@ Deno.test("[artifact] listArtifacts() filters by status", async () => {
 Deno.test("[artifact] listArtifacts() filters by agent", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     await registry.createArtifact("req-1", "code-analyst", "Content 1");
     await registry.createArtifact("req-2", "code-analyst", "Content 2");
@@ -171,7 +177,8 @@ Deno.test("[artifact] listArtifacts() filters by agent", async () => {
 Deno.test("[artifact] listArtifacts() filters by portal", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     await registry.createArtifact("req-1", "agent1", "Content 1", "portal-a");
     await registry.createArtifact("req-2", "agent2", "Content 2", "portal-a");
@@ -191,7 +198,8 @@ Deno.test("[artifact] listArtifacts() filters by portal", async () => {
 Deno.test("[artifact] getArtifact() returns artifact with content", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const content = "# Test Analysis\n\nThis is the analysis body.";
     const artifactId = await registry.createArtifact(
@@ -213,7 +221,8 @@ Deno.test("[artifact] getArtifact() returns artifact with content", async () => 
 Deno.test("[artifact] createArtifact() without portal creates artifact with null portal", async () => {
   const { tempDir, db, cleanup } = await createTestContext();
   try {
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     const artifactId = await registry.createArtifact(
       "request-no-portal",
@@ -244,7 +253,8 @@ Deno.test("[artifact] Memory/Execution directory is created if missing", async (
       // Ignore if doesn't exist
     }
 
-    const registry = new ArtifactRegistry(db, tempDir);
+    const repo = new DatabaseArtifactRepository(db);
+    const registry = new ArtifactRegistry(repo, tempDir);
 
     await registry.createArtifact(
       "request-dir-test",

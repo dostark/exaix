@@ -22,6 +22,7 @@ import {
 import { DEFAULT_GIT_EXIT_CODE_FATAL } from "@exaix/git";
 import { createGitTestContext, GitTestHelper } from "@exaix/git/testing";
 import { createMockConfig } from "@exaix/git/testing";
+import { EventLogger } from "@exaix/core/logger";
 
 /**
  * Tests for Step 4.2: Git Integration (Identity Aware)
@@ -172,14 +173,15 @@ Deno.test("GitService: logs all git operations", async () => {
 
   try {
     const config = createMockConfig(tempDir);
-    const git = new GitService({ config, db, traceId: "test-trace-456", identityId: "git-agent" });
+    const logger = new EventLogger({ db });
+    const git = new GitService({ config, logger, traceId: "test-trace-456", identityId: "git-agent" });
 
     await git.ensureRepository();
     await git.ensureIdentity();
     await git.createBranch({ requestId: "test", traceId: "abc" });
 
     // Allow time for batched logging
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await db.waitForFlush();
 
     // Verify operations logged
     const logs = db.getActivitiesByTrace("test-trace-456");
@@ -472,7 +474,8 @@ Deno.test("GitService: checkoutBranch - logs successful checkout", async () => {
 
   try {
     const config = createMockConfig(repoDir);
-    const git = new GitService({ config, db, traceId: "checkout-trace" });
+    const logger = new EventLogger({ db });
+    const git = new GitService({ config, logger, traceId: "checkout-trace" });
 
     await git.ensureRepository();
     await git.ensureIdentity();
@@ -512,7 +515,8 @@ Deno.test("GitService: checkoutBranch - logs checkout failure", async () => {
 
   try {
     const config = createMockConfig(tempDir);
-    const git = new GitService({ config, db, traceId: "checkout-fail-trace" });
+    const logger = new EventLogger({ db });
+    const git = new GitService({ config, logger, traceId: "checkout-fail-trace" });
 
     await git.ensureRepository();
     await git.ensureIdentity();
@@ -575,7 +579,8 @@ Deno.test("GitService: branch operations preserve traceId context", async () => 
     const traceId = "preserved-trace-id-123";
     const identityId = "test-agent";
     const config = createMockConfig(repoDir);
-    const git = new GitService({ config, db, traceId, identityId });
+    const logger = new EventLogger({ db });
+    const git = new GitService({ config, logger, traceId, identityId });
 
     await git.ensureRepository();
     await git.ensureIdentity();
@@ -588,7 +593,7 @@ Deno.test("GitService: branch operations preserve traceId context", async () => 
     });
 
     // Allow time for batched logging
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await db.waitForFlush();
 
     // Verify all operations have the service-level traceId
     const logs = db.getActivitiesByTrace(traceId);

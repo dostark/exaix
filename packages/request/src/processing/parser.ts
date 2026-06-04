@@ -8,6 +8,7 @@
 import { parse as parseYaml } from "@std/yaml";
 import { exists } from "@std/fs";
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { IRequestFrontmatter, ParsedRequestFile } from "@exaix/core/request";
 import { coerceRequestStatus } from "@exaix/core/status";
 
@@ -20,7 +21,7 @@ export class RequestParser {
   async parse(filePath: string): Promise<ParsedRequestFile | null> {
     // Check file exists
     if (!await exists(filePath)) {
-      await this.logger.error("file.not_found", filePath, {});
+      await this.logger.error(DomainEventType.FrontmatterNotFound, filePath, {});
       return null;
     }
 
@@ -30,7 +31,7 @@ export class RequestParser {
       // Extract YAML frontmatter between --- delimiters
       const yamlMatch = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
       if (!yamlMatch) {
-        await this.logger.error("frontmatter.invalid", filePath, {
+        await this.logger.error(DomainEventType.FrontmatterInvalid, filePath, {
           error: "Missing or malformed --- delimiters",
         });
         return null;
@@ -52,7 +53,7 @@ export class RequestParser {
 
       // Validate required fields
       if (!frontmatter.trace_id) {
-        await this.logger.error("frontmatter.missing_trace_id", filePath, {});
+        await this.logger.error(DomainEventType.FrontmatterMissingTraceId, filePath, {});
         return null;
       }
 
@@ -62,7 +63,7 @@ export class RequestParser {
         rawContent: content,
       };
     } catch (error) {
-      await this.logger.error("file.parse_failed", filePath, {
+      await this.logger.error(DomainEventType.FrontmatterParseFailed, filePath, {
         error: error instanceof Error ? error.message : String(error),
       });
       return null;
@@ -75,7 +76,7 @@ export class RequestParser {
     if (value === undefined) return;
     const valid = Array.isArray(value) && (value as unknown[]).every((v) => typeof v === "string");
     if (!valid) {
-      await this.logger.warn("frontmatter.acceptance_criteria.malformed", filePath, {});
+      await this.logger.warn(DomainEventType.FrontmatterAcceptanceCriteriaMalformed, filePath, {});
       fm.acceptance_criteria = undefined;
     }
   }
@@ -86,7 +87,7 @@ export class RequestParser {
     if (value === undefined) return;
     const valid = Array.isArray(value) && (value as unknown[]).every((v) => typeof v === "string");
     if (!valid) {
-      await this.logger.warn("frontmatter.expected_outcomes.malformed", filePath, {});
+      await this.logger.warn(DomainEventType.FrontmatterExpectedOutcomesMalformed, filePath, {});
       fm.expected_outcomes = undefined;
     }
   }
@@ -96,7 +97,7 @@ export class RequestParser {
     const value = fm.scope;
     if (value === undefined) return;
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      await this.logger.warn("frontmatter.scope.malformed", filePath, {});
+      await this.logger.warn(DomainEventType.FrontmatterScopeMalformed, filePath, {});
       fm.scope = undefined;
     }
   }

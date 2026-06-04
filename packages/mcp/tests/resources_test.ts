@@ -10,6 +10,7 @@
 import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
+import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -195,7 +196,7 @@ Deno.test("discoverAllResources: discovers from multiple portals", async () => {
       ],
     });
 
-    const resources = await discoverAllResources(config, db);
+    const resources = await discoverAllResources(config, new EventLogger({ db }));
 
     assertEquals(resources.length >= 2, true);
 

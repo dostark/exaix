@@ -19,6 +19,8 @@ import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
 import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType, type IEventJournalReader } from "@exaix/core/events";
 import type { IModelProvider } from "@exaix/ai/types.ts";
 import { GIT_CMD_WORKTREE, GitService, type IGitService } from "@exaix/git";
 import { PlanFrontmatterSchema } from "@exaix/schemas/plan_schema.ts";
@@ -33,12 +35,11 @@ import { ExecutionStatus, PortalExecutionStrategy } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { type IStructuredPlan, parseStructuredPlanFromMarkdown } from "@exaix/core/planning";
 import { isReadOnlyAgentCapabilities } from "@exaix/core/func";
-import { ArtifactRegistry } from "@exaix/core/artifact";
+import { ArtifactRegistry, DatabaseArtifactRepository } from "@exaix/core/artifact";
 import { PlanAmendmentPendingError } from "@exaix/core/planning";
 import { ConfidenceScorer } from "./confidence_scorer.ts";
 import { PlanAmendmentService } from "@exaix/core/planning";
 import {
-  ACTIVITY_ACTOR_AGENT,
   DEFAULT_AMENDMENT_EXPIRY_MS,
   DEFAULT_AMENDMENT_ON_TIMEOUT,
   DEFAULT_EXECUTION_MEMORY_PATH,
@@ -64,6 +65,7 @@ interface RawFrontmatter {
 export interface IExecutionLoopConfig {
   config: Config;
   db?: IDatabaseService;
+  logger?: IEventLogger;
   identityId: string;
   llmProvider?: IModelProvider;
   reviewRegistry?: ReviewRegistry;
@@ -109,6 +111,7 @@ export interface IExecuteOptions {
 export class ExecutionLoop {
   private config: Config;
   private db?: IDatabaseService;
+  private logger?: IEventLogger;
   private identityId: string;
   private plansDir: string;
   private leases = new Map<string, ITaskLease>();
@@ -126,6 +129,7 @@ export class ExecutionLoop {
     const ctx = config.context;
     this.config = ctx?.config.get() || config.config;
     this.db = ctx?.db || config.db;
+    this.logger = config.logger;
     this.identityId = config.identityId;
     this.llmProvider = ctx?.provider || config.llmProvider;
     this.reviewRegistry = config.reviewRegistry;
@@ -212,7 +216,7 @@ export class ExecutionLoop {
       // Parse plan frontmatter first (validates before lease)
       frontmatter = await this.parsePlan(planPath);
       if (frontmatter.status === PlanStatus.AMENDMENT_PENDING) {
-        this.logActivity("execution.skipped", frontmatter.trace_id, {
+        this.logActivity(DomainEventType.ExecutionSkipped, frontmatter.trace_id, {
           request_id: frontmatter.request_id,
           reason: "Plan is pending amendment approval",
         });
@@ -226,7 +230,7 @@ export class ExecutionLoop {
       leaseAcquired = true;
 
       // Log execution start
-      this.logActivity("execution.started", traceId, {
+      this.logActivity(DomainEventType.ExecutionStarted, traceId, {
         request_id: requestId,
         plan_path: planPath,
       });
@@ -324,7 +328,6 @@ export class ExecutionLoop {
   private createGitService(repoPath: string, traceId: string): IGitService {
     return new GitService({
       config: this.config,
-      db: this.db,
       traceId,
       identityId: this.identityId,
       repoPath,
@@ -514,7 +517,7 @@ export class ExecutionLoop {
   }): Promise<{ didExecuteWork: boolean; didMutateRepo: boolean; report?: string }> {
     if (args.structuredPlan) {
       if (args.isReadOnly && (!this.llmProvider || !this.db)) {
-        this.logActivity("execution.readonly_structured_plan_skipped", args.traceId, {
+        this.logActivity(DomainEventType.ExecutionReadonlyPlanSkipped, args.traceId, {
           request_id: args.requestId,
           identity_id: args.planAgentId ?? null,
         });
@@ -530,7 +533,7 @@ export class ExecutionLoop {
       );
 
       if (args.isReadOnly) {
-        this.logActivity("execution.readonly_structured_plan_executed", args.traceId, {
+        this.logActivity(DomainEventType.ExecutionReadonlyPlanExecuted, args.traceId, {
           request_id: args.requestId,
           identity_id: args.planAgentId ?? null,
         });
@@ -707,7 +710,6 @@ export class ExecutionLoop {
   ): Promise<void> {
     const toolRegistry = new ToolRegistry({
       config: this.config,
-      db: this.db,
       traceId,
       identityId: this.identityId,
       baseDir: executionRoot,
@@ -718,7 +720,7 @@ export class ExecutionLoop {
     for (const action of actions) {
       actionIndex++;
 
-      this.logActivity("execution.action_started", traceId, {
+      this.logActivity(DomainEventType.ExecutionActionStarted, traceId, {
         request_id: requestId,
         action_index: actionIndex,
         tool: action.tool,
@@ -731,7 +733,7 @@ export class ExecutionLoop {
         if (!result.success) {
           const errorMessage = result.error ?? "Unknown tool error";
 
-          this.logActivity("execution.action_failed", traceId, {
+          this.logActivity(DomainEventType.ExecutionActionFailed, traceId, {
             request_id: requestId,
             action_index: actionIndex,
             tool: action.tool,
@@ -741,7 +743,7 @@ export class ExecutionLoop {
           throw new Error(`Action ${actionIndex} (${action.tool}) failed: ${errorMessage}`);
         }
 
-        this.logActivity("execution.action_completed", traceId, {
+        this.logActivity(DomainEventType.ExecutionActionCompleted, traceId, {
           request_id: requestId,
           action_index: actionIndex,
           tool: action.tool,
@@ -750,7 +752,7 @@ export class ExecutionLoop {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
-        this.logActivity("execution.action_failed", traceId, {
+        this.logActivity(DomainEventType.ExecutionActionFailed, traceId, {
           request_id: requestId,
           action_index: actionIndex,
           tool: action.tool,
@@ -786,6 +788,7 @@ export class ExecutionLoop {
       this.llmProvider,
       this.db,
       executionRoot,
+      this.logger,
       {
         ...options,
         context: this.context,
@@ -865,7 +868,7 @@ export class ExecutionLoop {
       acquiredAt: new Date(),
     });
 
-    this.logActivity("execution.lease_acquired", traceId, {
+    this.logActivity(DomainEventType.ExecutionLeaseAcquired, traceId, {
       file_path: filePath,
       holder: this.identityId,
     });
@@ -879,12 +882,10 @@ export class ExecutionLoop {
     if (lease) {
       this.leases.delete(filePath);
 
-      if (this.db) {
-        this.logActivity("execution.lease_released", "unknown", {
-          file_path: filePath,
-          holder: lease.holder,
-        });
-      }
+      this.logActivity(DomainEventType.ExecutionLeaseReleased, "unknown", {
+        file_path: filePath,
+        holder: lease.holder,
+      });
     }
   }
 
@@ -935,7 +936,8 @@ export class ExecutionLoop {
 
     // Create a canonical review artifact for read-only agent executions.
     // This provides a single stable review surface (separate from git).
-    if (artifactContext?.isReadOnly && this.db && artifactContext.planAgentId) {
+    const artifactRepo = this.db ? new DatabaseArtifactRepository(this.db) : undefined;
+    if (artifactContext?.isReadOnly && artifactRepo && artifactContext.planAgentId) {
       try {
         const execDir = join(
           this.config.system.root,
@@ -983,7 +985,7 @@ export class ExecutionLoop {
           `**Trace directory:** ${traceDirRel}` +
           `${EXECUTION_ARTIFACT_SECTION_SEPARATOR}${summaryContent}${planSection}${analysisSection}`;
 
-        const artifactRegistry = new ArtifactRegistry(this.db, this.config.system.root);
+        const artifactRegistry = new ArtifactRegistry(artifactRepo, this.config.system.root);
         await artifactRegistry.createArtifact(
           requestId,
           artifactContext.planAgentId,
@@ -1013,7 +1015,7 @@ export class ExecutionLoop {
     await this.archiveRequest(requestId, ExecutionStatus.COMPLETED, archiveDir);
 
     // Log completion
-    this.logActivity("execution.completed", traceId, {
+    this.logActivity(DomainEventType.ExecutionCompleted, traceId, {
       request_id: requestId,
       archived_to: archivePath,
     });
@@ -1112,7 +1114,7 @@ export class ExecutionLoop {
     }
 
     // Log failure
-    this.logActivity("execution.failed", traceId, {
+    this.logActivity(DomainEventType.ExecutionFailed, traceId, {
       request_id: requestId,
       error,
       moved_to: targetRejectedPath,
@@ -1151,7 +1153,7 @@ export class ExecutionLoop {
       console.error("Failed to update plan status for amendment:", e);
     }
 
-    this.logActivity("execution.amendment_pending", traceId, {
+    this.logActivity(DomainEventType.ExecutionAmendmentPending, traceId, {
       request_id: requestId,
       amendment_id: error.amendmentId,
     });
@@ -1250,7 +1252,8 @@ export class ExecutionLoop {
    * Create a MissionReporter instance with Memory Bank integration
    */
   private createMissionReporter(): MissionReporter {
-    const memoryBank = (this.context?.memoryBank ?? new MemoryBankService(this.config, this.db!)) as MemoryBankService;
+    const memoryBank =
+      (this.context?.memoryBank ?? new MemoryBankService(this.config, this.logger)) as MemoryBankService;
     const reportConfig = {
       reportsDirectory: join(
         this.config.system.root,
@@ -1258,7 +1261,15 @@ export class ExecutionLoop {
         DEFAULT_EXECUTION_MEMORY_PATH,
       ),
     };
-    return new MissionReporter(this.config, reportConfig, memoryBank, this.db);
+    const reader = this.db
+      ? {
+        getActivitiesByTrace: (id: string) => this.db!.getActivitiesByTrace(id),
+        getActivitiesByTraceSafe: (id: string) => this.db!.getActivitiesByTraceSafe(id),
+        getRecentActivity: (limit?: number) => this.db!.getRecentActivity(limit),
+        queryActivity: (filter) => this.db!.queryActivity(filter),
+      } as IEventJournalReader
+      : undefined;
+    return new MissionReporter(this.config, reportConfig, memoryBank, this.logger, reader);
   }
 
   /**
@@ -1266,10 +1277,10 @@ export class ExecutionLoop {
    * Loads the persisted execution record and delegates to analyzeExecution + createProposal.
    */
   private async extractExecutionLearnings(traceId: string): Promise<void> {
-    if (!this.context?.extractor || !this.db) return;
+    if (!this.context?.extractor) return;
 
     try {
-      const memoryBank = new MemoryBankService(this.config, this.db);
+      const memoryBank = new MemoryBankService(this.config, this.logger);
       const executionMemory = await memoryBank.getExecutionByTraceId(traceId);
       if (!executionMemory) return;
 
@@ -1309,7 +1320,7 @@ export class ExecutionLoop {
       // If no changes to commit, that's actually a success (nothing needed to be done)
       if (error instanceof Error && error.message.includes("nothing to commit")) {
         // Log but don't fail
-        this.logActivity("execution.no_changes", traceId, {
+        this.logActivity(DomainEventType.ExecutionNoChanges, traceId, {
           request_id: requestId,
         });
         return null;
@@ -1387,13 +1398,13 @@ export class ExecutionLoop {
 
       await reporter.generate(traceData);
 
-      this.logActivity("report.generated", traceId, {
+      this.logActivity(DomainEventType.ReportGenerated, traceId, {
         request_id: requestId,
         report_type: "mission",
         reporter: "memory_banks",
       });
     } catch (error) {
-      this.logActivity("report.error", traceId, {
+      this.logActivity(DomainEventType.ReportError, traceId, {
         request_id: requestId,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -1450,14 +1461,14 @@ export class ExecutionLoop {
         // Non-fatal - logging already handled below
       }
 
-      this.logActivity("report.generated", traceId, {
+      this.logActivity(DomainEventType.ReportGenerated, traceId, {
         request_id: requestId,
         report_type: "failure",
         reporter: "memory_banks",
         error,
       });
     } catch (reportError) {
-      this.logActivity("report.error", traceId, {
+      this.logActivity(DomainEventType.ReportError, traceId, {
         request_id: requestId,
         error: reportError instanceof Error ? reportError.message : String(reportError),
       });
@@ -1472,21 +1483,8 @@ export class ExecutionLoop {
     traceId: string,
     payload: Record<string, JSONValue>,
   ): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        actionType,
-        null,
-        payload,
-        traceId,
-        null, // actorType
-        this.identityId, // identityId
-      );
-    } catch (error) {
-      console.error("Failed to log execution activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, null, payload, traceId);
   }
 
   /**

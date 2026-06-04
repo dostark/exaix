@@ -8,6 +8,7 @@
  */
 
 import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 /**
  * Safe error that prevents information leakage
@@ -29,7 +30,7 @@ export class SafeError extends Error {
 
     // Log internal error details securely if logger is provided
     if (logger && internalError) {
-      logger.error("safe_error.internal_details", "SafeError", {
+      logger.error(DomainEventType.SafeErrorInternalDetails, "SafeError", {
         errorCode,
         userMessage,
         internalMessage: internalError.message,

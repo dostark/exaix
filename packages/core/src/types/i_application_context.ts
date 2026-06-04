@@ -111,7 +111,6 @@ export type {
   IConfigService,
   IContextCardGeneratorService,
   ICostTracker,
-  IDatabaseService,
   IDisplayService,
   IFlowValidatorService,
   IGateEvaluator,

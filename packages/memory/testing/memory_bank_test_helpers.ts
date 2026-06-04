@@ -12,6 +12,7 @@ import type { ILearning, IPattern } from "@exaix/schemas/memory_bank.ts";
 import type { IExecutionMemory, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import type { IDecision } from "@exaix/schemas/memory_bank.ts";
 import { MemoryBankService } from "@exaix/memory";
+import { EventLogger } from "@exaix/core/logger";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { initTestDbService } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
@@ -102,7 +103,8 @@ async function createTestMemoryBankBase(
 }> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
 
-  const service = new MemoryBankService(config, db);
+  const logger = includeDb ? new EventLogger({ db }) : undefined;
+  const service = new MemoryBankService(config, logger);
   await setupFn(service);
 
   const cleanup = async () => {

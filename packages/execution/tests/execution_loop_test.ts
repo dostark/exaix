@@ -12,6 +12,7 @@ import { getDefaultPaths } from "@exaix/core/config";
 import { ExecutionLoop } from "@exaix/execution";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { setupGitRepo, TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
 import {
   getMemoryExecutionDir,
@@ -81,9 +82,11 @@ async function withExecutionLoopTestContext(
       await ensureDir(paths.activeDir);
     }
 
+    const logger = new EventLogger({ db });
     const loop = new ExecutionLoop({
       config,
       db,
+      logger,
       identityId: options.identityId ?? "test-identity",
       llmProvider: options.llmProvider,
     });

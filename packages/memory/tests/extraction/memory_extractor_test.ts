@@ -11,6 +11,7 @@ import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { MemoryUpdateProposalSchema } from "@exaix/schemas/memory_bank.ts";
 import { MemoryExtractorService } from "@exaix/memory";
 import { MemoryBankService } from "@exaix/memory";
@@ -88,8 +89,9 @@ async function initExtractorTest() {
   await Deno.mkdir(getMemoryIndexDir(config.system.root), { recursive: true });
   await Deno.mkdir(getMemoryGlobalDir(config.system.root), { recursive: true });
 
-  const memoryBank = new MemoryBankService(config, db);
-  const extractor = new MemoryExtractorService(config, db, memoryBank);
+  const memoryBank = new MemoryBankService(config);
+  const logger = new EventLogger({ db });
+  const extractor = new MemoryExtractorService(config, db, memoryBank, logger);
 
   const cleanup = async () => {
     await dbCleanup();

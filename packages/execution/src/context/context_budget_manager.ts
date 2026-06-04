@@ -21,8 +21,8 @@ import {
   type IContextBudgetDecision,
   type IContextBudgetSnapshot,
 } from "@exaix/schemas/execution/context_budget.ts";
+import { DomainEventType } from "@exaix/core/events";
 import {
-  CONTEXT_BUDGET_COMPACTED_EVENT,
   CONTEXT_PRIORITY_ACCEPTANCE_CRITERIA,
   CONTEXT_SECTION_LOOP_HISTORY,
   CONTEXT_SECTION_MEMORY,
@@ -272,7 +272,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
             }
           }
           await snapshotStore?.save(snapshot);
-          void logger?.info(CONTEXT_BUDGET_COMPACTED_EVENT, null, {
+          void logger?.info(DomainEventType.ExecutionContextCompacted, null, {
             traceId: snapshot.traceId as string,
             stepId: snapshot.stepId as string,
             tokensBefore: tokensBefore as number,

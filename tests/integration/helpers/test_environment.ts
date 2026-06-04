@@ -27,6 +27,7 @@ import { McpToolName } from "@exaix/mcp";
 import { RequestProcessor } from "@exaix/request";
 import type { IApplicationContext } from "@exaix/core/types";
 import { ExecutionLoop } from "@exaix/execution";
+import { EventLogger } from "@exaix/core/logger";
 import {
   getBlueprintsIdentitiesDir,
   getMemoryDir,
@@ -712,9 +713,11 @@ This plan will accomplish the requested task.
    * Create an ExecutionLoop instance for testing
    */
   createExecutionLoop(identityId: string = "test-agent"): ExecutionLoop {
+    const logger = new EventLogger({ db: this.db });
     return new ExecutionLoop({
       config: this.config,
       db: this.db,
+      logger,
       identityId,
     });
   }

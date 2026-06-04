@@ -32,7 +32,7 @@ interface IPlanExecutorTestContext {
   writeBlueprint: (content: string) => Promise<void>;
   createExecutor: (
     provider: IModelProvider,
-    options?: ConstructorParameters<typeof PlanExecutor>[4],
+    options?: ConstructorParameters<typeof PlanExecutor>[5],
   ) => PlanExecutor;
 }
 
@@ -64,8 +64,8 @@ async function withPlanExecutorTestContext(
 
     const createExecutor = (
       provider: IModelProvider,
-      executorOptions?: ConstructorParameters<typeof PlanExecutor>[4],
-    ): PlanExecutor => new PlanExecutor(config, provider, db, repoDir, executorOptions);
+      executorOptions?: ConstructorParameters<typeof PlanExecutor>[5],
+    ): PlanExecutor => new PlanExecutor(config, provider, db, repoDir, undefined, executorOptions);
 
     await run({ tempDir, repoDir, db, config, git, helper, writeBlueprint, createExecutor });
   } finally {

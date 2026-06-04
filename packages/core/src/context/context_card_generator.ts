@@ -8,10 +8,8 @@
 import { DEFAULT_PROJECTS_MEMORY_PATH } from "@exaix/core";
 import { dirname, join } from "@std/path";
 import { ensureDir } from "@std/fs/ensure-dir";
-import type { IDatabaseService } from "@exaix/core/types";
-import { ActivityActor } from "@exaix/core";
 import type { Config } from "@exaix/schemas/config.ts";
-import type { JSONValue } from "@exaix/core";
+import type { IEventLogger } from "@exaix/core/logger";
 
 export interface IPortalInfo {
   alias: string;
@@ -21,11 +19,11 @@ export interface IPortalInfo {
 
 export class ContextCardGenerator {
   private config: Config;
-  private db?: IDatabaseService;
+  private logger?: IEventLogger;
 
-  constructor(config: Config, db?: IDatabaseService) {
+  constructor(config: Config, logger?: IEventLogger) {
     this.config = config;
-    this.db = db;
+    this.logger = logger;
   }
 
   async generate(info: IPortalInfo): Promise<void> {
@@ -75,27 +73,14 @@ export class ContextCardGenerator {
     await Deno.writeTextFile(cardPath, content);
 
     // Log activity
-    this.logActivity(isUpdate ? "context_card.updated" : "context_card.created", {
-      alias: info.alias,
-      file_path: cardPath,
-      tech_stack: info.techStack,
-    });
-  }
-
-  private logActivity(actionType: string, payload: Record<string, JSONValue>): void {
-    if (!this.db) return;
-
-    try {
-      this.db.logActivity(
-        ActivityActor.SYSTEM,
-        actionType,
-        payload.alias as string,
-        payload,
-        undefined, // No specific trace_id for context card operations
-        null, // No identity_id (system operation)
-      );
-    } catch (error) {
-      console.error("Failed to log activity:", error);
-    }
+    this.logger?.info(
+      isUpdate ? "context_card.updated" : "context_card.created",
+      info.alias,
+      {
+        alias: info.alias,
+        file_path: cardPath,
+        tech_stack: info.techStack,
+      },
+    );
   }
 }

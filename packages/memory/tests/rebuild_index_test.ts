@@ -96,10 +96,10 @@ async function setupTestData(
 // ===== rebuildIndices Tests =====
 
 Deno.test("MemoryBankService: rebuildIndices regenerates all indices", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await setupTestData(service, config.system.root);
 
     // Rebuild indices
@@ -128,10 +128,10 @@ Deno.test("MemoryBankService: rebuildIndices regenerates all indices", async () 
 });
 
 Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings includes embeddings", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryService = new MemoryBankService(config, db);
+    const memoryService = new MemoryBankService(config);
     const embeddingService = new MemoryEmbeddingService(config);
     await setupTestData(memoryService, config.system.root);
 
@@ -156,10 +156,10 @@ Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings includes embeddings",
 // ===== Index Content Verification =====
 
 Deno.test("MemoryBankService: rebuildIndices indexes learnings tags", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await setupTestData(service, config.system.root);
 
     // Rebuild indices
@@ -180,10 +180,10 @@ Deno.test("MemoryBankService: rebuildIndices indexes learnings tags", async () =
 });
 
 Deno.test("MemoryBankService: rebuildIndices preserves existing data on rebuild", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
     await setupTestData(service, config.system.root);
 
     // First rebuild
@@ -216,10 +216,10 @@ Deno.test("MemoryBankService: rebuildIndices preserves existing data on rebuild"
 // ===== Edge Cases =====
 
 Deno.test("MemoryBankService: rebuildIndices handles empty memory banks", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const service = new MemoryBankService(config, db);
+    const service = new MemoryBankService(config);
 
     // Rebuild without any data
     await service.rebuildIndices();
@@ -239,10 +239,10 @@ Deno.test("MemoryBankService: rebuildIndices handles empty memory banks", async 
 });
 
 Deno.test("MemoryBankService: rebuildIndicesWithEmbeddings handles no learnings", async () => {
-  const { db, config, cleanup } = await initTestDbService();
+  const { config, cleanup } = await initTestDbService();
 
   try {
-    const memoryService = new MemoryBankService(config, db);
+    const memoryService = new MemoryBankService(config);
     const embeddingService = new MemoryEmbeddingService(config);
 
     // Create project memory without learnings

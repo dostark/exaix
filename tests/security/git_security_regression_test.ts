@@ -18,7 +18,7 @@ Deno.test("Git Security: blocks destructive git reset --hard in PlanExecutor", a
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-reset-");
   const repoDir = join(tempDir, "repo");
   await Deno.mkdir(repoDir, { recursive: true });
-  const git = new GitService({ config, db, repoPath: repoDir });
+  const git = new GitService({ config, repoPath: repoDir });
 
   try {
     await git.ensureRepository();
@@ -74,7 +74,7 @@ Deno.test("Git Security: blocks checkout to main branch", async () => {
   const { tempDir, db, cleanup, config } = await createGitTestContext("security-checkout-");
   const repoDir = join(tempDir, "repo");
   await Deno.mkdir(repoDir, { recursive: true });
-  const git = new GitService({ config, db, repoPath: repoDir });
+  const git = new GitService({ config, repoPath: repoDir });
 
   try {
     await git.ensureRepository();

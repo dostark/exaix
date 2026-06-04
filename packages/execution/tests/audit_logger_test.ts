@@ -6,13 +6,14 @@
  */
 
 import { assertEquals, assertFalse, assertStringIncludes } from "@std/assert";
+import type { JSONValue } from "@exaix/core/types";
 
-import { assertSpyCalls, spy, stub } from "@std/testing/mock";
+import { assertSpyCalls, spy } from "@std/testing/mock";
 import { initTestDbService } from "@exaix/testing";
-import { AuditLogger } from "@exaix/core/logger";
+import { AuditLogger, EventLogger } from "@exaix/core/logger";
 import { SecurityEventResult, SecurityEventType, SecuritySeverity } from "@exaix/core";
-import { join } from "@std/path";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
+import { join } from "@std/path";
 
 /**
  * Clean up audit folder created during tests
@@ -29,8 +30,9 @@ async function cleanupAuditFolder(): Promise<void> {
 Deno.test("AuditLogger: logs security events to database", async () => {
   const { db, cleanup } = await initTestDbService();
   try {
-    const auditLogger = new AuditLogger({ db });
-    const logSpy = spy(db, "logActivity");
+    const logger = new EventLogger({ db });
+    const auditLogger = new AuditLogger({ logger });
+    const logSpy = spy(logger, "info");
 
     const event = {
       type: SecurityEventType.PERMISSION,
@@ -46,52 +48,34 @@ Deno.test("AuditLogger: logs security events to database", async () => {
 
     assertSpyCalls(logSpy, 1);
     const args = logSpy.calls[0].args;
-    // actor, action, target, payload
-    assertEquals(args[0], "agent123");
-    assertEquals(args[1], "audit.permission.portal_access_check");
+    assertEquals(args[0], "security.violation"); // DomainEventType.SecurityViolation value
+    assertEquals(args[1], "/portal/secure");
+    const payload = args[2] as Record<string, JSONValue>;
+    assertEquals(payload.event_type, SecurityEventType.PERMISSION);
+    assertEquals(payload.severity, SecuritySeverity.HIGH);
   } finally {
     await cleanup();
-    await cleanupAuditFolder();
   }
 });
 
-Deno.test("AuditLogger: fallback to file only on DB failure", async () => {
-  const { db, cleanup } = await initTestDbService();
-  try {
-    const auditLogger = new AuditLogger({ db });
-    // Mock db to throw
-    const logStub = stub(db, "logActivity", () => {
-      throw new Error("DB Error");
-    });
+Deno.test("AuditLogger: writes to tamper-evident file without logger", async () => {
+  const auditLogger = new AuditLogger({}); // No logger
+  const event = {
+    type: SecurityEventType.AUTH,
+    action: "login_fail",
+    actor: "user",
+    resource: "system",
+    result: SecurityEventResult.ERROR,
+    severity: SecuritySeverity.LOW,
+  };
 
-    const consoleSpy = spy(console, "warn");
+  await auditLogger.logSecurityEvent(event);
 
-    const event = {
-      type: SecurityEventType.AUTH,
-      action: "login_fail",
-      actor: "user",
-      resource: "system",
-      result: SecurityEventResult.ERROR,
-      severity: SecuritySeverity.LOW,
-    };
-
-    await auditLogger.logSecurityEvent(event);
-
-    // Should verify console warning
-    assertSpyCalls(consoleSpy, 1);
-    assertStringIncludes(consoleSpy.calls[0].args[0], "Failed to write to audit database");
-
-    // File verification
-    const auditFile = `audit/${new Date().toISOString().split("T")[0]}.jsonl`;
-    const content = await Deno.readTextFile(auditFile);
-    assertStringIncludes(content, "login_fail");
-
-    logStub.restore();
-    consoleSpy.restore();
-  } finally {
-    await cleanup();
-    await cleanupAuditFolder();
-  }
+  // File verification — tamper-evident audit file always written
+  const auditFile = `audit/${new Date().toISOString().split("T")[0]}.jsonl`;
+  const content = await Deno.readTextFile(auditFile);
+  assertStringIncludes(content, "login_fail");
+  await cleanupAuditFolder();
 });
 
 Deno.test("AuditLogger: works without DB configured", async () => {
@@ -117,9 +101,9 @@ Deno.test("AuditLogger: works without DB configured", async () => {
 });
 
 Deno.test("AuditLogger: sends alerts for critical events", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
   try {
-    const auditLogger = new AuditLogger({ db });
+    const auditLogger = new AuditLogger({});
     const alertSpy = spy(auditLogger, "sendSecurityAlert");
 
     const criticalEvent = {
@@ -145,9 +129,9 @@ Deno.test("AuditLogger: sends alerts for critical events", async () => {
 });
 
 Deno.test("AuditLogger: masks sensitive data in logs (comprehensive)", async () => {
-  const { db, cleanup } = await initTestDbService();
+  const { cleanup } = await initTestDbService();
   try {
-    const auditLogger = new AuditLogger({ db });
+    const auditLogger = new AuditLogger({});
     const event = {
       type: SecurityEventType.AUTH,
       action: "test_masking",

@@ -8,7 +8,6 @@
 
 import { join } from "@std/path";
 import { parse as parseYaml, stringify as stringifyYaml } from "@std/yaml";
-import type { IDatabaseService } from "@exaix/storage-sqlite";
 import type {
   IArtifact,
   IArtifactFilters,
@@ -16,22 +15,9 @@ import type {
   IArtifactWithContent,
 } from "@exaix/schemas/artifact.ts";
 import { coerceReviewStatus, ReviewStatus } from "@exaix/core/status";
-import { DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
+import { ArtifactSubtype as ArtifactType, DEFAULT_EXECUTION_MEMORY_PATH, DEFAULT_MEMORY_PATH } from "@exaix/core";
 import type { IReviewStatus } from "@exaix/core/status";
-
-interface IArtifactRow {
-  id: string;
-  status: string;
-  type: string;
-  identity: string;
-  portal: string | null;
-  target_branch: string | null;
-  created: string;
-  updated: string | null;
-  request_id: string;
-  file_path: string;
-  rejection_reason: string | null;
-}
+import type { IArtifactRepository, IArtifactRow } from "./artifact_repository.ts";
 
 /**
  * Generate short ID for artifacts
@@ -39,8 +25,6 @@ interface IArtifactRow {
 function shortId(): string {
   return crypto.randomUUID().split("-")[0];
 }
-
-import { ArtifactSubtype as ArtifactType } from "@exaix/core";
 
 /**
  * Service for managing read-only agent artifacts
@@ -65,7 +49,7 @@ export class ArtifactRegistry {
   private rootDir: string;
 
   constructor(
-    private db: IDatabaseService,
+    private repo: IArtifactRepository,
     rootDir: string = Deno.cwd(),
   ) {
     this.rootDir = rootDir;
@@ -105,20 +89,16 @@ export class ArtifactRegistry {
     await Deno.writeTextFile(absoluteFilePath, fileContent);
 
     // Save to database
-    await this.db.preparedRun(
-      `INSERT INTO artifacts (id, status, type, identity, portal, target_branch, created, request_id, file_path)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        artifactId,
-        ReviewStatus.PENDING,
-        "analysis",
-        identity,
-        portal || null,
-        targetBranch?.trim() ? targetBranch.trim() : null,
-        created,
-        requestId,
-        relativeFilePath,
-      ],
+    await this.repo.createArtifactRecord(
+      artifactId,
+      ReviewStatus.PENDING,
+      "analysis",
+      identity,
+      portal || null,
+      targetBranch?.trim() ? targetBranch.trim() : null,
+      created,
+      requestId,
+      relativeFilePath,
     );
 
     return artifactId;
@@ -155,10 +135,7 @@ export class ArtifactRegistry {
 
     // Update database
     const now = new Date().toISOString();
-    await this.db.preparedRun(
-      `UPDATE artifacts SET status = ?, updated = ?, rejection_reason = ? WHERE id = ?`,
-      [status, now, reason || null, artifactId],
-    );
+    await this.repo.updateArtifactStatus(artifactId, status, now, reason || null);
   }
 
   /**
@@ -185,52 +162,20 @@ export class ArtifactRegistry {
    * Get artifact database record
    */
   private async getArtifactRecord(artifactId: string): Promise<IArtifact> {
-    const rows = await this.db.preparedAll<IArtifactRow>(
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
-       FROM artifacts WHERE id = ?`,
-      [artifactId],
-    );
+    const row = await this.repo.getArtifactRecord(artifactId);
 
-    if (rows.length === 0) {
+    if (!row) {
       throw new Error(`Artifact not found: ${artifactId}`);
     }
 
-    return this.mapArtifactRow(rows[0]);
+    return this.mapArtifactRow(row);
   }
 
   /**
    * List artifacts with filters
    */
   async listArtifacts(filters?: IArtifactFilters): Promise<IArtifact[]> {
-    let query =
-      `SELECT id, status, type, identity, portal, target_branch, created, updated, request_id, file_path, rejection_reason
-                 FROM artifacts WHERE 1=1`;
-    const params: (string | null)[] = [];
-
-    if (filters?.status) {
-      query += ` AND status = ?`;
-      params.push(filters.status);
-    }
-
-    if (filters?.identity) {
-      query += ` AND identity = ?`;
-      params.push(filters.identity);
-    }
-
-    if (filters?.portal !== undefined) {
-      query += ` AND portal = ?`;
-      params.push(filters.portal);
-    }
-
-    if (filters?.type) {
-      query += ` AND type = ?`;
-      params.push(filters.type);
-    }
-
-    query += ` ORDER BY created DESC`;
-
-    const rows = await this.db.preparedAll<IArtifactRow>(query, params);
-
+    const rows = await this.repo.listArtifactRecords(filters);
     return rows.map((row) => this.mapArtifactRow(row));
   }
 }

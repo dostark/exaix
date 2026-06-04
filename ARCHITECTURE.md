@@ -446,6 +446,14 @@ For the daemon state diagram with all transitions and notes, see `docs/Reference
 
 For the component table, event flow mermaid diagram, database schema details, and retrieval commands, see `docs/Reference_Data.md#activity-journal`.
 
+### Event Taxonomy {#event-taxonomy}
+
+All event type strings are defined as members of the `DomainEventType` const object in `packages/core/src/events/domain_event_types.ts`. Inline string literals for event actions are prohibited — every emission site must reference a `DomainEventType` member.
+
+Event sources register with `EventRegistry` (`packages/core/src/events/event_registry.ts`) before emitting, which validates the source + event type combination before delegating to `EventLogger`. `EventLogger` is the single delivery gate: console → DB → event bus, in that order.
+
+For the full event type table grouped by domain, see `docs/Reference_Data.md#event-taxonomy`.
+
 ---
 
 ## Live Execution Streaming
@@ -513,7 +521,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `packages/mcp/README.md` — MCP tool handlers, ReAct engine, security
   - `apps/tui/README.md` — Terminal UI views, layout, keyboard reference
   - `packages/memory/README.md` — Memory bank architecture, schemas, CLI commands
-  - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle
+  - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle, event taxonomy
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
 

@@ -9,6 +9,7 @@
 
 import { assert, assertEquals } from "@std/assert";
 import { FlowStepType, MemoryOperation, PortalOperation } from "@exaix/core";
+import { EventLogger } from "@exaix/core/logger";
 import { join } from "@std/path";
 import { GIT_CMD_CONFIG, GitService } from "@exaix/git";
 import type { Config } from "@exaix/schemas";
@@ -92,9 +93,10 @@ export async function createGitTestContext(prefix = "git-test-"): Promise<IGitTe
     }],
   });
 
+  const logger = new EventLogger({ db });
   const git = new GitService({
     config,
-    db,
+    logger,
     repoPath: repoDir,
   });
 

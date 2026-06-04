@@ -141,7 +141,9 @@ export function createTuiServices(
   };
 
   // Create service adapters that implement TUI interfaces
-  const contextCardGenerator = new ContextCardAdapter(new ContextCardGenerator(config, databaseService));
+  const contextCardGenerator = new ContextCardAdapter(
+    new ContextCardGenerator(config, new EventLogger({ db: databaseService })),
+  );
   const portalService: IPortalService = new PortalAdapter(
     new PortalService(config, configService, contextCardGenerator, displayAdapter),
   );
@@ -163,7 +165,7 @@ export function createTuiServices(
   const structuredLoggerService: ILogService = new LogServiceAdapter(logger);
 
   // Initialize memory services
-  const memoryBank = new MemoryBankService(config, databaseService);
+  const memoryBank = new MemoryBankService(config);
   const extractor = new MemoryExtractorService(config, databaseService, memoryBank);
   const memoryService: IMemoryService = new MemoryServiceAdapter(memoryBank, extractor);
 

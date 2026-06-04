@@ -7,6 +7,7 @@
  * @architectural-layer Application
  * @related-files ["packages/execution/src/execution_loop.ts", "../../apps/daemon/src/watcher.ts", "../../apps/exactl/src/commands/daemon_commands.ts"]
  */
+import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
 import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
@@ -94,7 +95,7 @@ if (import.meta.main) {
     const gracefulShutdown = new GracefulShutdown(getGlobalLogger());
 
     await logger.log({
-      action: "daemon.starting",
+      action: DomainEventType.DaemonStarting,
       target: "exaix",
       payload: {
         config_checksum: checksum.slice(0, 8),
@@ -118,13 +119,13 @@ if (import.meta.main) {
       }) as LogMetadata,
     );
 
-    await logger.info("config.loaded", "", {
+    await logger.info(DomainEventType.ConfigLoaded, "", {
       checksum: checksum.slice(0, 8),
       root: config.system.root,
       log_level: config.system.log_level,
     });
 
-    await logger.info("database.connected", "journal.db", { mode: "WAL" });
+    await logger.info(DomainEventType.DatabaseConnected, "journal.db", { mode: "WAL" });
 
     // Initialize LLM Provider
     bootstrapProviderRegistry();
@@ -132,7 +133,7 @@ if (import.meta.main) {
     const providerInfo = ProviderFactory.getProviderInfoByName(config, defaultModelName);
     const llmProvider = await ProviderFactory.createByName(config, defaultModelName);
 
-    await logger.info("llm.provider.initialized", providerInfo.id, {
+    await logger.info(DomainEventType.LlmProviderInitialized, providerInfo.id, {
       type: providerInfo.type,
       model: providerInfo.model,
       source: providerInfo.source,
@@ -142,13 +143,12 @@ if (import.meta.main) {
     // Initialize Git orchestration service
     const gitService = new GitService({
       config,
-      db: dbService,
     });
 
     const notificationService = new NotificationService(config, dbService);
 
     // Initialize Memory Services (needed for context and request processing)
-    const memoryBank = new MemoryBankService(config, dbService);
+    const memoryBank = new MemoryBankService(config, logger);
     const memoryAdapter = new MemoryBankAdapter(memoryBank);
     const memoryExtractor = new MemoryExtractorService(config, dbService, memoryAdapter);
     const embCfg = config.memory?.embedding;
@@ -208,7 +208,6 @@ if (import.meta.main) {
     const portalKnowledge = new PortalKnowledgeService({
       config: portalKnowledgeConfig,
       memoryBank,
-      db: dbService,
       embeddingProvider,
     });
 
@@ -269,7 +268,7 @@ if (import.meta.main) {
       },
     });
 
-    await logger.info("request_processor.initialized", "RequestProcessor", {
+    await logger.info(DomainEventType.DaemonRequestProcessorInitialized, "RequestProcessor", {
       requestsDir: requestsPath,
       blueprints: join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH),
     });
@@ -279,7 +278,7 @@ if (import.meta.main) {
 
     // Start file watcher for new requests (Workspace/Requests)
     const requestWatcher = new FileWatcher(config, async (event) => {
-      await watcherLogger.info("file.detected", event.path, {
+      await watcherLogger.info(DomainEventType.DaemonFileDetected, event.path, {
         size: event.content.length,
       });
 
@@ -287,16 +286,16 @@ if (import.meta.main) {
       try {
         const planPath = await requestProcessor.process(event.path);
         if (planPath) {
-          watcherLogger.info("plan.generated", planPath, {
+          watcherLogger.info(DomainEventType.PlanGenerated, planPath, {
             source: event.path,
           });
         } else {
-          watcherLogger.warn("request.skipped", event.path, {
+          watcherLogger.warn(DomainEventType.RequestSkipped, event.path, {
             reason: "processing returned null",
           });
         }
       } catch (error) {
-        watcherLogger.error("request.failed", event.path, {
+        watcherLogger.error(DomainEventType.RequestFailed, event.path, {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -338,7 +337,7 @@ if (import.meta.main) {
           return;
         }
 
-        watcherLogger.info("plan.detected", event.path, {
+        watcherLogger.info(DomainEventType.PlanDetected, event.path, {
           size: event.content.length,
         });
 
@@ -383,7 +382,7 @@ if (import.meta.main) {
     // Register cleanup tasks for graceful shutdown
     gracefulShutdown.registerCleanup("stop_request_watcher", async () => {
       await requestWatcher.stop();
-      await logger.info("shutdown.watchers_stopped", "request and plan watchers", {});
+      await logger.info(DomainEventType.ShutdownWatchersStopped, "request and plan watchers", {});
     });
 
     gracefulShutdown.registerCleanup("stop_plan_watcher", async () => {
@@ -396,12 +395,12 @@ if (import.meta.main) {
 
     gracefulShutdown.registerCleanup("stop_auto_approval", async () => {
       stopAutoApproval();
-      await logger.info("shutdown.auto_approval_stopped", "memory auto-approval cycle", {});
+      await logger.info(DomainEventType.ShutdownAutoApprovalStopped, "memory auto-approval cycle", {});
     });
 
     gracefulShutdown.registerCleanup("close_database", async () => {
       dbService.close();
-      await logger.info("shutdown.database_closed", "journal.db", {});
+      await logger.info(DomainEventType.ShutdownDatabaseClosed, "journal.db", {});
     });
 
     // Register signal handlers
@@ -411,7 +410,7 @@ if (import.meta.main) {
     gracefulShutdown.registerErrorHandlers();
 
     await logger.log({
-      action: "daemon.started",
+      action: DomainEventType.DaemonStarted,
       target: "exaix",
       payload: {
         provider: providerInfo.id,

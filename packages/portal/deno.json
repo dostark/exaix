@@ -9,6 +9,8 @@
     "@exaix/portal/knowledge/": "./knowledge/",
     "@exaix/portal/": "./src/",
     "@exaix/core": "../core/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts",
     "@exaix/core/": "../core/src/",
     "@exaix/core/func": "../core/src/func/mod.ts",
     "@exaix/core/types": "../core/src/types/mod.ts",

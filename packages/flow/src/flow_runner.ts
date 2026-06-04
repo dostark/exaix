@@ -54,6 +54,7 @@ import {
   type IFlowNamespaceService,
 } from "@exaix/flow";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
+import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
   DEFAULT_FLOW_STEP_BACKOFF_MS,
@@ -75,13 +76,10 @@ import {
   FLOW_EVENT_STEP_COMPENSATED,
   FLOW_EVENT_STEP_COMPENSATION_FAILED,
   FLOW_EVENT_STEP_FALLBACK,
-  FLOW_EVENT_STEP_INVALIDATED,
   FLOW_EVENT_STEP_RETRY,
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
-  FLOW_EVENT_WAIT_CREATED,
-  FLOW_EVENT_WAIT_PENDING,
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
@@ -143,6 +141,7 @@ export interface IParallelGroupSummary {
 export interface IFlowRunnerConfig {
   agentExecutor: IAgentExecutor;
   eventLogger: IFlowEventLogger;
+  eventRegistry?: IEventRegistry;
   context?: IApplicationContext;
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;
@@ -254,29 +253,33 @@ interface IFlowWaveErrorPayload {
 }
 
 export interface IFlowEventPayloadMap {
-  "flow.validating": IFlowEventLogBase & { stepCount: number };
+  [DomainEventType.FlowValidating]: IFlowEventLogBase & { stepCount: number };
   "flow.validation.failed": IFlowEventLogBase & { error: string };
-  "flow.validated": IFlowEventLogBase & { stepCount: number; maxParallelism: number; failFast: boolean };
-  "flow.started": IFlowEventLogBase & {
+  [DomainEventType.FlowValidated]: IFlowEventLogBase & { stepCount: number; maxParallelism: number; failFast: boolean };
+  [DomainEventType.FlowStarted]: IFlowEventLogBase & {
     flowRunId: string;
     stepCount: number;
     maxParallelism: number;
     failFast: boolean;
   };
-  "flow.dependencies.resolving": IFlowEventLogBase & { flowRunId: string };
-  "flow.dependencies.resolved": IFlowEventLogBase & { flowRunId: string; waveCount: number; totalSteps: number };
-  "flow.wave.started": IFlowEventRequestContext & {
+  [DomainEventType.FlowDependenciesResolving]: IFlowEventLogBase & { flowRunId: string };
+  [DomainEventType.FlowDependenciesResolved]: IFlowEventLogBase & {
+    flowRunId: string;
+    waveCount: number;
+    totalSteps: number;
+  };
+  [DomainEventType.FlowWaveStarted]: IFlowEventRequestContext & {
     flowRunId: string;
     waveNumber: number;
     waveSize: number;
     stepIds: string[];
   };
-  "flow.wave.resume.skipped": IFlowEventRequestContext & {
+  [DomainEventType.FlowWaveResumeSkipped]: IFlowEventRequestContext & {
     flowRunId: string;
     waveNumber: number;
     skippedStepIds: string[];
   };
-  "flow.wave.completed": IFlowEventRequestContext & {
+  [DomainEventType.FlowWaveCompleted]: IFlowEventRequestContext & {
     flowRunId: string;
     waveNumber: number;
     waveSize: number;
@@ -309,21 +312,29 @@ export interface IFlowEventPayloadMap {
     mergeMode: string;
     error: string;
   };
-  "flow.wave.errors": IFlowEventRequestContext & {
+  [DomainEventType.FlowWaveErrors]: IFlowEventRequestContext & {
     flowRunId: string;
     waveNumber: number;
     errorCount: number;
     errors: IFlowWaveErrorPayload[];
   };
-  "flow.step.processing_error": IFlowEventRequestContext & { flowRunId: string; stepId: string; error: string };
-  "flow.output.aggregating": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepProcessingError]: IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    error: string;
+  };
+  [DomainEventType.FlowOutputAggregating]: IFlowEventRequestContext & {
     flowRunId: string;
     flowId: string;
     outputFrom: IFlow["output"]["from"];
     outputFormat: IFlow["output"]["format"];
     totalSteps: number;
   };
-  "flow.output.aggregated": IFlowEventRequestContext & { flowRunId: string; flowId: string; outputLength: number };
+  [DomainEventType.FlowOutputAggregated]: IFlowEventRequestContext & {
+    flowRunId: string;
+    flowId: string;
+    outputLength: number;
+  };
   "flow.completed": IFlowEventRequestContext & {
     flowRunId: string;
     flowId: string;
@@ -344,14 +355,18 @@ export interface IFlowEventPayloadMap {
     successfulSteps: number;
     failedSteps: number;
   };
-  "flow.step.queued": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepQueued]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     identityId: string;
     dependencies: string[];
     inputSource: IFlowStep["input"]["source"];
   };
-  "flow.step.started": IFlowEventRequestContext & { flowRunId: string; stepId: string; identityId: string };
+  [DomainEventType.FlowStepStarted]: IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    identityId: string;
+  };
   "flow.step.retry": IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
@@ -386,7 +401,7 @@ export interface IFlowEventPayloadMap {
     args: Record<string, JSONValue>;
     error: string;
   };
-  "flow.step.condition.evaluated": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepConditionEvaluated]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     condition: string;
@@ -399,8 +414,8 @@ export interface IFlowEventPayloadMap {
     condition: string;
     reason: string;
   };
-  "flow.gate.criteria.no_analysis": IFlowEventRequestContext & { flowRunId: string; stepId: string };
-  "flow.step.completed": IFlowEventRequestContext & {
+  [DomainEventType.FlowGateCriteriaNoAnalysis]: IFlowEventRequestContext & { flowRunId: string; stepId: string };
+  [DomainEventType.FlowStepCompleted]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     identityId: string;
@@ -409,7 +424,7 @@ export interface IFlowEventPayloadMap {
     outputLength: number;
     hasThought: boolean;
   };
-  "flow.step.failed": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepFailed]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     identityId: string;
@@ -417,7 +432,7 @@ export interface IFlowEventPayloadMap {
     errorType: string;
     duration: number;
   };
-  "flow.step.transform.applied": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepTransformApplied]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     transformName: string;
@@ -425,14 +440,18 @@ export interface IFlowEventPayloadMap {
     outputSize: number;
     duration: number;
   };
-  "flow.step.input.prepared": IFlowEventRequestContext & { flowRunId: string; stepId: string; hasSkills: boolean };
-  "flow.step.unexpected_error": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepInputPrepared]: IFlowEventRequestContext & {
+    flowRunId: string;
+    stepId: string;
+    hasSkills: boolean;
+  };
+  [DomainEventType.FlowStepUnexpectedError]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     error: string;
     errorType: string;
   };
-  "flow.step.replayed": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepReplayed]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     recordId: string;
@@ -445,7 +464,7 @@ export interface IFlowEventPayloadMap {
     priorRecordId: string;
     inputHash: string;
   };
-  "flow.step.invalidated": IFlowEventRequestContext & {
+  [DomainEventType.FlowStepInvalidated]: IFlowEventRequestContext & {
     flowRunId: string;
     stepId: string;
     recordId: string;
@@ -455,7 +474,7 @@ export interface IFlowEventPayloadMap {
   "flow.checkpoint.loaded": IFlowEventRequestContext & { flowRunId: string; flowId: string; restoredSteps: number };
   "flow.checkpoint.saved": IFlowEventRequestContext & { flowRunId: string; flowId: string; completedSteps: number };
   "flow.checkpoint.cleared": IFlowEventRequestContext & { flowRunId: string; flowId: string };
-  "flow.token_summary": {
+  [DomainEventType.FlowTokenSummary]: {
     flowRunId: string;
     flowId: string;
     totalLlmCalls: number;
@@ -467,8 +486,14 @@ export interface IFlowEventPayloadMap {
     traceId: string;
     requestId?: string;
   };
-  "flow.token_summary.error": { flowRunId: string; flowId: string; error: string; traceId: string; requestId?: string };
-  "flow.wait.created": IFlowEventLogBase & {
+  [DomainEventType.FlowTokenSummaryError]: {
+    flowRunId: string;
+    flowId: string;
+    error: string;
+    traceId: string;
+    requestId?: string;
+  };
+  [DomainEventType.WaitStateCreated]: IFlowEventLogBase & {
     flowRunId: string;
     stepId: string;
     waitStateId: string;
@@ -476,7 +501,7 @@ export interface IFlowEventPayloadMap {
     kind: string;
     traceId: string;
   };
-  "flow.wait.pending": IFlowEventLogBase & {
+  [DomainEventType.WaitStateResolved]: IFlowEventLogBase & {
     flowRunId: string;
     waitStateId: string;
     traceId: string;
@@ -644,6 +669,7 @@ export class FlowRunner implements IFlowRunner {
   private readonly migratedCheckpointTraceIds = new Set<string>();
   private waitStateService?: IWaitStateService;
   private pendingWaitStateId?: string;
+  private eventRegistry?: IEventRegistry;
 
   private createNoOpDurabilityStore(): IStepDurabilityStore {
     return {
@@ -684,6 +710,16 @@ export class FlowRunner implements IFlowRunner {
     this.stepDurabilityStore = options.stepDurabilityStore ?? this.createNoOpDurabilityStore();
     this.stepReplayPolicy = options.stepReplayPolicy ?? new DefaultStepReplayPolicy();
     this.waitStateService = options.waitStateService;
+
+    if (options.eventRegistry) {
+      this.eventRegistry = options.eventRegistry;
+      options.eventRegistry.registerPublisher("flow_runner", [
+        DomainEventType.WaitStateCreated,
+        DomainEventType.WaitStateResolved,
+        DomainEventType.FlowStepReplayed,
+        DomainEventType.FlowStepInvalidated,
+      ]);
+    }
 
     const config = this.config;
     const db = this.db;
@@ -822,7 +858,7 @@ export class FlowRunner implements IFlowRunner {
     flowRunId: string,
   ): Promise<void> {
     // Log flow validation start
-    await this.eventLogger.log("flow.validating", {
+    await this.eventLogger.log(DomainEventType.FlowValidating, {
       ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
     });
 
@@ -855,7 +891,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     // Log flow validation success
-    await this.eventLogger.log("flow.validated", {
+    await this.eventLogger.log(DomainEventType.FlowValidated, {
       maxParallelism: flow.settings?.maxParallelism ?? 3,
       failFast: flow.settings?.failFast ?? true,
       ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
@@ -950,7 +986,7 @@ export class FlowRunner implements IFlowRunner {
     stepResults: Map<string, IStepResult>,
   ): Promise<void> {
     // Log flow start
-    await this.eventLogger.log("flow.started", {
+    await this.eventLogger.log(DomainEventType.FlowStarted, {
       flowRunId,
       maxParallelism: flow.settings?.maxParallelism ?? 3,
       failFast: flow.settings?.failFast ?? true,
@@ -958,7 +994,7 @@ export class FlowRunner implements IFlowRunner {
     });
 
     // Resolve dependency graph
-    await this.eventLogger.log("flow.dependencies.resolving", {
+    await this.eventLogger.log(DomainEventType.FlowDependenciesResolving, {
       flowRunId,
       ...this.getIFlowLogBase(flow, request),
     });
@@ -966,7 +1002,7 @@ export class FlowRunner implements IFlowRunner {
     const resolver = new DependencyResolver(flow.steps);
     const waves = resolver.groupIntoWaves();
 
-    await this.eventLogger.log("flow.dependencies.resolved", {
+    await this.eventLogger.log(DomainEventType.FlowDependenciesResolved, {
       flowRunId,
       waveCount: waves.length,
       totalSteps: flow.steps.length,
@@ -985,13 +1021,18 @@ export class FlowRunner implements IFlowRunner {
       const pendingStepResults = [...stepResults.values()].filter((r) => r.waitStateId);
       const hasPendingWait = pendingStepResults.length > 0;
       if (hasPendingWait) {
-        await this.eventLogger.log(FLOW_EVENT_WAIT_PENDING, {
+        const waitPayload = {
           flowRunId,
           waitStateId: pendingStepResults[0].waitStateId!,
           traceId: request.traceId ?? "",
           stepIds: pendingStepResults.map((r) => r.stepId),
           ...this.getIFlowLogBase(flow, request),
-        });
+        };
+        if (this.eventRegistry) {
+          await this.eventRegistry.emit("flow_runner", DomainEventType.WaitStateResolved, waitPayload);
+        } else {
+          await this.eventLogger.log(DomainEventType.WaitStateResolved, waitPayload);
+        }
         await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
         break;
       }
@@ -1056,7 +1097,7 @@ export class FlowRunner implements IFlowRunner {
     waveNumber: number,
     wave: string[],
   ): Promise<void> {
-    await this.eventLogger.log("flow.wave.started", {
+    await this.eventLogger.log(DomainEventType.FlowWaveStarted, {
       flowRunId,
       waveNumber,
       waveSize: wave.length,
@@ -1073,7 +1114,7 @@ export class FlowRunner implements IFlowRunner {
     wave: string[],
     stepResults: Map<string, IStepResult>,
   ): Promise<void> {
-    await this.eventLogger.log("flow.wave.resume.skipped", {
+    await this.eventLogger.log(DomainEventType.FlowWaveResumeSkipped, {
       flowRunId,
       waveNumber,
       skippedStepIds: wave.filter((stepId) => stepResults.has(stepId)),
@@ -1088,7 +1129,7 @@ export class FlowRunner implements IFlowRunner {
     waveNumber: number,
     waveSize: number,
   ): Promise<void> {
-    await this.eventLogger.log("flow.wave.completed", {
+    await this.eventLogger.log(DomainEventType.FlowWaveCompleted, {
       flowRunId,
       waveNumber,
       waveSize,
@@ -1332,7 +1373,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     // Log wave completion
-    await this.eventLogger.log("flow.wave.completed", {
+    await this.eventLogger.log(DomainEventType.FlowWaveCompleted, {
       flowRunId,
       waveNumber,
       waveSize: wave.length,
@@ -1345,7 +1386,7 @@ export class FlowRunner implements IFlowRunner {
 
     // Log any wave-level errors
     if (waveErrors.length > 0) {
-      await this.eventLogger.log("flow.wave.errors", {
+      await this.eventLogger.log(DomainEventType.FlowWaveErrors, {
         flowRunId,
         waveNumber,
         errorCount: waveErrors.length,
@@ -1510,7 +1551,7 @@ export class FlowRunner implements IFlowRunner {
       });
     }
 
-    await this.eventLogger.log("flow.step.processing_error", {
+    await this.eventLogger.log(DomainEventType.FlowStepProcessingError, {
       flowRunId,
       stepId,
       error: processingErrorMessage,
@@ -1532,7 +1573,7 @@ export class FlowRunner implements IFlowRunner {
     startedAt: Date,
   ): Promise<IFlowResult> {
     // Aggregate output
-    await this.eventLogger.log("flow.output.aggregating", {
+    await this.eventLogger.log(DomainEventType.FlowOutputAggregating, {
       flowRunId,
       flowId: flow.id,
       outputFrom: flow.output?.from,
@@ -1544,7 +1585,7 @@ export class FlowRunner implements IFlowRunner {
 
     const output = this.aggregateOutput(flow, stepResults);
 
-    await this.eventLogger.log("flow.output.aggregated", {
+    await this.eventLogger.log(DomainEventType.FlowOutputAggregated, {
       flowRunId,
       flowId: flow.id,
       outputLength: output.length,
@@ -1652,7 +1693,7 @@ export class FlowRunner implements IFlowRunner {
     }
 
     // Log step queued (ready for execution)
-    await this.eventLogger.log("flow.step.queued", {
+    await this.eventLogger.log(DomainEventType.FlowStepQueued, {
       flowRunId,
       stepId,
       identityId: step.identity,
@@ -1663,7 +1704,7 @@ export class FlowRunner implements IFlowRunner {
     });
 
     // Log step start
-    await this.eventLogger.log("flow.step.started", {
+    await this.eventLogger.log(DomainEventType.FlowStepStarted, {
       flowRunId,
       stepId,
       identityId: step.identity,
@@ -2131,7 +2172,7 @@ export class FlowRunner implements IFlowRunner {
 
     const conditionResult = this.conditionEvaluator.evaluateStepCondition(step, stepResults, request, flow);
 
-    await this.eventLogger.log("flow.step.condition.evaluated", {
+    await this.eventLogger.log(DomainEventType.FlowStepConditionEvaluated, {
       flowRunId,
       stepId: step.id,
       condition: step.condition,
@@ -2208,7 +2249,7 @@ export class FlowRunner implements IFlowRunner {
     const effectiveGateConfig: IGateConfig = { ...gateConfig, includeRequestCriteria: effectiveInclude };
 
     if (effectiveGateConfig.includeRequestCriteria && !stepRequest.requestAnalysis) {
-      await this.eventLogger.log("flow.gate.criteria.no_analysis", {
+      await this.eventLogger.log(DomainEventType.FlowGateCriteriaNoAnalysis, {
         flowRunId,
         stepId: step.id,
         traceId: request.traceId,
@@ -2237,7 +2278,7 @@ export class FlowRunner implements IFlowRunner {
           deadlineAt: undefined,
         });
         this.pendingWaitStateId = ws.waitStateId;
-        await this.eventLogger.log(FLOW_EVENT_WAIT_CREATED, {
+        await this.eventLogger.log(DomainEventType.WaitStateCreated, {
           flowRunId,
           stepId: step.id,
           waitStateId: ws.waitStateId,
@@ -2330,7 +2371,7 @@ export class FlowRunner implements IFlowRunner {
     const completedAt = new Date();
     const duration = completedAt.getTime() - startedAt.getTime();
 
-    this.eventLogger.log("flow.step.completed", {
+    this.eventLogger.log(DomainEventType.FlowStepCompleted, {
       flowRunId,
       stepId: step.id,
       identityId: step.identity,
@@ -2373,7 +2414,7 @@ export class FlowRunner implements IFlowRunner {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorType = error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL;
 
-    this.eventLogger.log("flow.step.failed", {
+    this.eventLogger.log(DomainEventType.FlowStepFailed, {
       flowRunId,
       stepId: step.id,
       identityId: step.identity,
@@ -2411,7 +2452,7 @@ export class FlowRunner implements IFlowRunner {
     const skills = step.skills ?? flow.defaultSkills;
 
     // Log input.prepared event for test visibility
-    await this.eventLogger.log("flow.step.input.prepared", {
+    await this.eventLogger.log(DomainEventType.FlowStepInputPrepared, {
       flowRunId,
       stepId: step.id,
       hasSkills: !!skills && Array.isArray(skills) ? skills.length > 0 : !!skills,
@@ -2507,7 +2548,7 @@ export class FlowRunner implements IFlowRunner {
       originalRequest.userPrompt,
     );
 
-    await this.eventLogger.log("flow.step.transform.applied", {
+    await this.eventLogger.log(DomainEventType.FlowStepTransformApplied, {
       flowRunId,
       stepId: step.id,
       transformName: typeof step.input.transform === "string" ? step.input.transform : "custom",
@@ -2840,7 +2881,7 @@ export class FlowRunner implements IFlowRunner {
 
       // Log unexpected error and return a safe failure IStepResult
       try {
-        await this.eventLogger.log("flow.step.unexpected_error", {
+        await this.eventLogger.log(DomainEventType.FlowStepUnexpectedError, {
           flowRunId,
           stepId,
           error: error instanceof Error ? error.message : String(error),
@@ -2936,7 +2977,7 @@ export class FlowRunner implements IFlowRunner {
       for (const stepId of Object.keys(checkpoint.completedSteps)) {
         const recordId = `stale:${request.traceId}:${stepId}`;
         await this.stepDurabilityStore.invalidate(recordId, "stale-checkpoint");
-        this.eventLogger.log(FLOW_EVENT_STEP_INVALIDATED, {
+        this.eventLogger.log(DomainEventType.FlowStepInvalidated, {
           traceId: request.traceId,
           requestId: request.requestId,
           flowRunId,
@@ -3115,7 +3156,7 @@ export class FlowRunner implements IFlowRunner {
 
       if (tokenEvents.length === 0) {
         // No token usage found, log zero summary
-        await this.eventLogger.log("flow.token_summary", {
+        await this.eventLogger.log(DomainEventType.FlowTokenSummary, {
           flowRunId,
           flowId,
           totalLlmCalls: 0,
@@ -3181,7 +3222,7 @@ export class FlowRunner implements IFlowRunner {
       }
 
       // Log aggregated token summary
-      await this.eventLogger.log("flow.token_summary", {
+      await this.eventLogger.log(DomainEventType.FlowTokenSummary, {
         flowRunId,
         flowId,
         totalLlmCalls: tokenEvents.length,
@@ -3206,7 +3247,7 @@ export class FlowRunner implements IFlowRunner {
       // Log error but don't fail the flow
       console.warn(`Failed to aggregate token usage for flow ${flowRunId}:`, error);
       try {
-        await this.eventLogger.log("flow.token_summary.error", {
+        await this.eventLogger.log(DomainEventType.FlowTokenSummaryError, {
           flowRunId,
           flowId,
           error: error instanceof Error ? error.message : String(error),

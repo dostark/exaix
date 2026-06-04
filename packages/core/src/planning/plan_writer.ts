@@ -12,7 +12,7 @@
  * @related-files ["packages/core/src/planning/plan_adapter.ts", "packages/request/src/processor.ts"]
  */
 
-import { ACTIVITY_ACTOR_AGENT, DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
+import { DEFAULT_COST_PRECISION_FACTOR } from "@exaix/core";
 import { PlanStatus } from "@exaix/core/status";
 import { stringify as stringifyYaml } from "@std/yaml";
 import type { IDatabaseService } from "@exaix/core/types";
@@ -22,6 +22,8 @@ import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
 export interface IRequestMetadata {
   requestId: string;
@@ -44,6 +46,7 @@ export interface IPlanWriterConfig {
   generateWikiLinks: boolean;
   runtimeRoot: string;
   db?: IDatabaseService;
+  logger?: IEventLogger;
 }
 
 export interface IPlanWriteResult {
@@ -168,7 +171,7 @@ export class PlanWriter {
 
       // Log validation success
       await this.logPlanValidation(
-        "plan.validation.success",
+        DomainEventType.PlanValidationSuccess,
         metadata.requestId,
         metadata.traceId,
         {
@@ -181,7 +184,7 @@ export class PlanWriter {
       if (error instanceof PlanValidationError) {
         // Log validation failure
         await this.logPlanValidation(
-          "plan.validation.failed",
+          DomainEventType.PlanValidationFailed,
           metadata.requestId,
           metadata.traceId,
           {
@@ -193,7 +196,7 @@ export class PlanWriter {
         // Enrich error details with full raw response for debugging
         error.details.fullRawResponse = result.raw;
         await this.logPlanValidation(
-          "plan.validation.enriched",
+          DomainEventType.PlanValidationEnriched,
           metadata.requestId,
           metadata.traceId,
           { raw_length: result.raw.length },
@@ -215,7 +218,7 @@ export class PlanWriter {
 
     // Log successful parsing
     await this.logPlanValidation(
-      "plan.parsed",
+      DomainEventType.PlanParsed,
       metadata.requestId,
       metadata.traceId,
       { file_path: `${this.config.plansDirectory}/${this.generateFilename(metadata.requestId)}` },
@@ -462,19 +465,13 @@ export class PlanWriter {
     traceId: string,
     metadata: Record<string, JSONValue>,
   ): Promise<void> {
-    if (!this.config.db) {
-      // If no database provided, skip logging (testing mode)
+    if (!this.config.logger) {
+      // If no logger provided, skip logging (testing mode)
       return;
     }
 
     try {
-      await this.config.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        actionType,
-        requestId,
-        metadata,
-        traceId,
-      );
+      await this.config.logger.info(actionType, requestId, metadata, traceId);
     } catch (error) {
       // Log to stderr but don't fail validation
       console.error(`[IActivity] Failed to log ${actionType}:`, error);
@@ -489,15 +486,14 @@ export class PlanWriter {
     traceId: string,
     metadata: IRequestMetadata,
   ): Promise<void> {
-    if (!this.config.db) {
-      // If no database provided, skip logging (testing mode)
+    if (!this.config.logger) {
+      // If no logger provided, skip logging (testing mode)
       return;
     }
 
     try {
-      await this.config.db.logActivity(
-        ACTIVITY_ACTOR_AGENT,
-        "plan.created",
+      await this.config.logger.info(
+        DomainEventType.PlanCreated,
         metadata.requestId,
         {
           plan_path: planPath,

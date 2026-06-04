@@ -109,7 +109,7 @@ async function createTestMemoryBankBase(
 }> {
   const { db, config, cleanup: dbCleanup } = await initTestDbService();
 
-  const service = new MemoryBankService(config, db);
+  const service = new MemoryBankService(config);
   await setupFn(service);
 
   const cleanup = async () => {

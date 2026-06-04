@@ -16,6 +16,7 @@ import { join } from "@std/path";
 import { ensureDir } from "@std/fs";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { MCPServer } from "@exaix/mcp/server";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
@@ -66,10 +67,12 @@ async function createTestServer(portals: Array<{ alias: string; files: Record<st
     display: createStubDisplay(),
   };
 
+  const logger = new EventLogger({ db });
   const server = new MCPServer({
     context,
     transport: McpTransportType.STDIO,
     permissions: new AllowAllPermissionsService(),
+    logger,
   });
   await server.start();
 
@@ -176,10 +179,12 @@ Deno.test("MCP Server: resources/read rejects invalid URI", async () => {
     provider: createStubProvider(),
     display: createStubDisplay(),
   };
+  const logger = new EventLogger({ db });
   const server = new MCPServer({
     context,
     transport: McpTransportType.STDIO,
     permissions: new AllowAllPermissionsService(),
+    logger,
   });
   await server.start();
 

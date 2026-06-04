@@ -39,7 +39,7 @@ Deno.test("GitService: pruneWorktrees removes stale worktree metadata", async ()
   assertStringIncludes(before, `worktree ${worktreeDir}`);
 
   const config = createMockConfig(tempDir);
-  const gitService = new GitService({ config, db: dbService.db, repoPath: repoDir });
+  const gitService = new GitService({ config, repoPath: repoDir });
 
   await gitService.pruneWorktrees({ expire: "now" });
 
@@ -66,7 +66,7 @@ Deno.test("GitService: listWorktrees returns structured entries", async () => {
   await helper.runGit(["worktree", "add", "-b", "wt-list-test", worktreeDir, TEST_DEFAULT_BRANCH]);
 
   const config = createMockConfig(tempDir);
-  const gitService = new GitService({ config, db: dbService.db, repoPath: repoDir });
+  const gitService = new GitService({ config, repoPath: repoDir });
   const worktrees = await gitService.listWorktrees();
 
   assert(worktrees.length >= 2, `Expected >=2 worktrees, got ${worktrees.length}`);

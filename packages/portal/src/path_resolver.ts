@@ -9,14 +9,15 @@
 import { join } from "@std/path";
 import type { Config } from "@exaix/schemas";
 
-import type { IDatabaseService } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 import type { JSONValue } from "@exaix/core";
 import { DEFAULT_UNKNOWN_LABEL } from "@exaix/core";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 
 export interface IPathResolverConfig {
-  /** Optional: Database service for activity logging */
-  db?: IDatabaseService;
+  /** Optional: Event logger for activity and security event routing */
+  logger?: IEventLogger;
 
   /** Optional: Trace ID for logging */
   traceId?: string;
@@ -24,12 +25,12 @@ export interface IPathResolverConfig {
 
 export class PathResolver {
   private config: Config;
-  private db?: IDatabaseService;
+  private logger?: IEventLogger;
   private traceId?: string;
 
   constructor(config: Config, options?: IPathResolverConfig) {
     this.config = config;
-    this.db = options?.db;
+    this.logger = options?.logger;
     this.traceId = options?.traceId;
   }
 
@@ -42,7 +43,7 @@ export class PathResolver {
 
     try {
       if (!aliasPath.startsWith("@")) {
-        this.logSecurityViolation("path.invalid_alias", aliasPath, "Path must start with @ alias");
+        this.logSecurityViolation(DomainEventType.PathInvalidAlias, aliasPath, "Path must start with @ alias");
         throw new Error("Path must start with a portal alias (e.g., @Blueprints/)");
       }
 
@@ -60,7 +61,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log successful resolution
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolved", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolved, aliasPath, {
         alias,
         resolved_path: resolvedPath,
         duration_ms: duration,
@@ -71,7 +72,7 @@ export class PathResolver {
       const duration = Date.now() - startTime;
 
       // Log resolution failure
-      this.logActivity(DEFAULT_MCP_IDENTITY_ID, "path.resolution_failed", aliasPath, {
+      this.logActivity(DEFAULT_MCP_IDENTITY_ID, DomainEventType.PathResolutionFailed, aliasPath, {
         duration_ms: duration,
         error_type: error instanceof Error ? error.constructor.name : DEFAULT_UNKNOWN_LABEL,
         error_message: error instanceof Error ? error.message : String(error),
@@ -133,7 +134,7 @@ export class PathResolver {
 
     // If we reach here, it's not within any allowed root
     this.logSecurityViolation(
-      "path.access_denied",
+      DomainEventType.PathAccessDenied,
       path,
       `Path ${path} resolves to ${normalizedPath}, which is outside allowed roots`,
     );
@@ -144,20 +145,13 @@ export class PathResolver {
    * Log activity to IActivity Journal
    */
   private logActivity(
-    actor: string,
+    _actor: string,
     actionType: string,
     target: string | null,
     payload: Record<string, JSONValue>,
   ): void {
-    if (!this.db) {
-      return;
-    }
-
-    try {
-      this.db.logActivity(actor, actionType, target, payload, this.traceId, null);
-    } catch (error) {
-      console.error("[PathResolver] Failed to log activity:", error);
-    }
+    if (!this.logger) return;
+    void this.logger.info(actionType, target, payload, this.traceId);
   }
 
   /**
@@ -168,26 +162,14 @@ export class PathResolver {
     path: string,
     reason: string,
   ): void {
-    if (!this.db) {
+    if (!this.logger) {
       console.warn(`[SECURITY] ${actionType}: ${path} - ${reason}`);
       return;
     }
-
-    try {
-      this.db.logActivity(
-        DEFAULT_MCP_IDENTITY_ID,
-        actionType,
-        path,
-        {
-          reason,
-          severity: "high",
-          timestamp: new Date().toISOString(),
-        },
-        this.traceId,
-        null,
-      );
-    } catch (error) {
-      console.error("[PathResolver] Failed to log security violation:", error);
-    }
+    void this.logger.warn(actionType, path, {
+      reason,
+      severity: "high",
+      timestamp: new Date().toISOString(),
+    }, this.traceId);
   }
 }

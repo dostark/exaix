@@ -17,9 +17,9 @@ import { DEFAULT_TITLE_PLACEHOLDER } from "@exaix/core";
 import { MemoryScope } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IMemoryUpdateProposal } from "@exaix/schemas/memory_bank.ts";
-import { type JSONObject, toSafeJson } from "@exaix/core/types";
-import type { JSONValue } from "@exaix/core";
 import type { IMemoryNotification } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 /**
  * Interface for Notification Service to support mocks and strict typing
  */
@@ -51,6 +51,7 @@ export class NotificationService implements INotificationService {
   constructor(
     private config: Config,
     private db: IDatabaseService,
+    private logger?: IEventLogger,
   ) {
     // No file path needed - using database only!
   }
@@ -75,16 +76,18 @@ export class NotificationService implements INotificationService {
     );
 
     // Log to IActivity Journal
-    this.logActivity({
-      event_type: "memory.update.pending",
-      target: proposal.target_project || MemoryScope.GLOBAL,
-      metadata: {
-        proposal_id: proposal.id,
-        identity_id: proposal.identity_id,
-        learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
-        reason: proposal.reason,
-      },
-    });
+    if (this.logger) {
+      await this.logger.info(
+        DomainEventType.MemoryUpdatePending,
+        proposal.target_project || MemoryScope.GLOBAL,
+        {
+          proposal_id: proposal.id,
+          identity_id: proposal.identity_id,
+          learning_title: proposal.learning?.title || DEFAULT_TITLE_PLACEHOLDER,
+          reason: proposal.reason,
+        },
+      );
+    }
   }
 
   /**
@@ -129,14 +132,16 @@ export class NotificationService implements INotificationService {
    * @param learningTitle - Title of the learning
    */
   notifyApproval(proposalId: string, learningTitle: string): void {
-    this.logActivity({
-      event_type: "memory.update.approved",
-      target: proposalId,
-      metadata: {
-        proposal_id: proposalId,
-        learning_title: learningTitle,
-      },
-    });
+    if (this.logger) {
+      this.logger.info(
+        DomainEventType.MemoryUpdateApproved,
+        proposalId,
+        {
+          proposal_id: proposalId,
+          learning_title: learningTitle,
+        },
+      );
+    }
   }
 
   /**
@@ -146,14 +151,16 @@ export class NotificationService implements INotificationService {
    * @param reason - Rejection reason
    */
   notifyRejection(proposalId: string, reason: string): void {
-    this.logActivity({
-      event_type: "memory.update.rejected",
-      target: proposalId,
-      metadata: {
-        proposal_id: proposalId,
-        reason,
-      },
-    });
+    if (this.logger) {
+      this.logger.info(
+        DomainEventType.MemoryUpdateRejected,
+        proposalId,
+        {
+          proposal_id: proposalId,
+          reason,
+        },
+      );
+    }
   }
 
   /**
@@ -248,13 +255,15 @@ export class NotificationService implements INotificationService {
       JSON.stringify({ pendingCount }),
     );
 
-    this.logActivity({
-      event_type: "memory.update.pending.digest",
-      target: MemoryScope.GLOBAL,
-      metadata: {
-        pending_count: pendingCount,
-      },
-    });
+    if (this.logger) {
+      await this.logger.info(
+        DomainEventType.MemoryUpdatePendingDigest,
+        MemoryScope.GLOBAL,
+        {
+          pending_count: pendingCount,
+        },
+      );
+    }
 
     return true;
   }
@@ -271,29 +280,5 @@ export class NotificationService implements INotificationService {
     `,
       [new Date().toISOString()],
     );
-  }
-
-  // ===== Private Helpers =====
-
-  /**
-   * Log activity to IActivity Journal
-   */
-  private logActivity(event: {
-    event_type: string;
-    target: string;
-    trace_id?: string;
-    metadata?: JSONObject;
-  }): void {
-    try {
-      this.db.logActivity(
-        "notification-service",
-        event.event_type,
-        event.target,
-        toSafeJson(event.metadata) as Record<string, JSONValue>,
-        event.trace_id,
-      );
-    } catch {
-      // Don't fail on logging errors
-    }
   }
 }

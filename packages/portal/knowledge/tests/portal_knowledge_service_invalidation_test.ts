@@ -14,7 +14,9 @@ import {
   PortalKnowledgeService,
 } from "@exaix/portal/knowledge";
 import { KnowledgeAnalysisMode, KnowledgeValidityReason, PortalAnalysisMode } from "@exaix/core";
-import type { IDatabaseService, IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
+import type { IMemoryBankService, IPortalKnowledgeConfig } from "@exaix/core/types";
+import type { IEventLogger } from "@exaix/core/logger";
+import type { ILogEvent, LogMetadata } from "@exaix/core";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 
 class FakeInvalidationStrategy implements IKnowledgeInvalidationStrategy {
@@ -119,31 +121,27 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze returns cached knowledge when i
 Deno.test("[PortalKnowledgeService] getOrAnalyze uses quick mode on incremental invalidation and logs incremental event", async () => {
   const config = makeConfig();
   const memoryBank = makeFakeMemoryBank();
-  type IPortalKnowledgeLogPayload = {
-    analysisMode: string;
-  };
 
   const logCalls: Array<{
-    actor: string;
-    actionType: string;
+    action: string;
     target: string | null;
-    payload: IPortalKnowledgeLogPayload;
+    payload?: LogMetadata;
   }> = [];
 
-  const fakeDb: any = {
-    logActivity(actor: string, actionType: string, target: string | null, payload: IPortalKnowledgeLogPayload) {
-      logCalls.push({ actor, actionType, target, payload });
+  const fakeLogger: IEventLogger = {
+    info(action: string, target: string | null, payload?: LogMetadata): Promise<void> {
+      logCalls.push({ action, target, payload });
+      return Promise.resolve();
     },
-    waitForFlush: () => Promise.resolve(),
-    queryActivity: () => Promise.resolve([]),
-    close: () => Promise.resolve(),
-    preparedGet: () => Promise.resolve(null),
-    preparedAll: () => Promise.resolve([]),
-    preparedRun: () => Promise.resolve(),
-    execute: () => Promise.resolve(),
-    transaction: <T>(fn: () => Promise<T>) => fn(),
+    warn: () => Promise.resolve(),
+    error: () => Promise.resolve(),
+    fatal: () => Promise.resolve(),
+    debug: () => Promise.resolve(),
+    log: (_event: ILogEvent) => Promise.resolve(),
+    child: function () {
+      return fakeLogger;
+    },
   };
-  const fakeDbService = fakeDb as IDatabaseService;
 
   const strategy = new FakeInvalidationStrategy({
     analysisMode: KnowledgeAnalysisMode.INCREMENTAL,
@@ -157,7 +155,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze uses quick mode on incremental 
   const service = new PortalKnowledgeService({
     config,
     memoryBank,
-    db: fakeDbService,
+    evLogger: fakeLogger,
     invalidationStrategy: strategy,
   });
 
@@ -178,7 +176,7 @@ Deno.test("[PortalKnowledgeService] getOrAnalyze uses quick mode on incremental 
 
   assertEquals(analyzeCalled, true);
   assertEquals(logCalls.length, 1);
-  assertEquals(logCalls[0].actionType, "portal.knowledge.incremental");
+  assertEquals(logCalls[0].action, "portal.knowledge.incremental");
   assertEquals(logCalls[0].target, "test-portal");
-  assertEquals(logCalls[0].payload.analysisMode, "incremental");
+  assertEquals((logCalls[0].payload as { analysisMode?: string })?.analysisMode, "incremental");
 });

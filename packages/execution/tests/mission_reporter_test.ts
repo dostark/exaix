@@ -11,6 +11,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
 import { getMemoryExecutionDir } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import type { IDatabaseService } from "@exaix/storage-sqlite";
 import { type ITraceData, MissionReporter, type ReportConfig } from "@exaix/core/artifact";
 import { join } from "@std/path";
@@ -95,7 +96,7 @@ async function withMissionReporter(
       const mockDb = {
         logActivity: () => {},
       } as Partial<IDatabaseService> as IDatabaseService;
-      const memoryBank = new MemoryBankService(config, mockDb);
+      const memoryBank = new MemoryBankService(config);
       const reporter = new MissionReporter(config, reportConfig, memoryBank);
 
       await testFn({ db: mockDb, tempDir, memoryBank, reporter });
@@ -116,8 +117,9 @@ async function withMissionReporter(
     const reportConfig: ReportConfig = {
       reportsDirectory: getMemoryExecutionDir(tempDir),
     };
-    const memoryBank = new MemoryBankService(config, db);
-    const reporter = new MissionReporter(config, reportConfig, memoryBank, db);
+    const memoryBank = new MemoryBankService(config);
+    const logger = new EventLogger({ db });
+    const reporter = new MissionReporter(config, reportConfig, memoryBank, logger);
 
     await testFn({ db, tempDir, memoryBank, reporter });
   } finally {
@@ -250,10 +252,11 @@ Deno.test("MissionReporter: handles generation errors gracefully", async () => {
     };
 
     // Create a mock MemoryBankService that throws
-    const mockMemoryBank = new MemoryBankService(config, db);
+    const mockMemoryBank = new MemoryBankService(config);
     mockMemoryBank.createExecutionRecord = () => Promise.reject(new Error("Storage failure"));
 
-    const reporter = new MissionReporter(config, reportConfig, mockMemoryBank, db);
+    const logger = new EventLogger({ db });
+    const reporter = new MissionReporter(config, reportConfig, mockMemoryBank, logger);
     const traceData = createTestTraceData();
 
     const result = await reporter.generate(traceData);

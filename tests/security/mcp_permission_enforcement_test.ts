@@ -12,6 +12,7 @@ import { MCPServer } from "@exaix/mcp/server";
 import { PortalPermissionsService } from "@exaix/portal";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
+import { EventLogger } from "@exaix/core/logger";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createToolCallRequest } from "@exaix/mcp/testing";
 
@@ -43,10 +44,12 @@ Deno.test("[security] MCPServer: denies unauthorized portal writes and logs perm
       display: createStubDisplay(),
     };
 
+    const logger = new EventLogger({ db });
     const server = new MCPServer({
       context,
       transport: McpTransportType.STDIO,
       permissions: new PortalPermissionsService(config.portals),
+      logger,
     });
 
     server.start();

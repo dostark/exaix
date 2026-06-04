@@ -10,6 +10,7 @@
 
 import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
+import { EventLogger } from "@exaix/core/logger";
 import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
 import { createMockConfig } from "@exaix/testing";
 import { initTestDbService } from "@exaix/testing";
@@ -50,7 +51,8 @@ export class ToolRegistryTestHelper {
     const tempDir = await Deno.makeTempDir({ prefix });
     const { db, cleanup } = await initTestDbService();
     const config = createMockConfig(tempDir);
-    const registry = new ToolRegistry({ config, db });
+    const logger = new EventLogger({ db });
+    const registry = new ToolRegistry({ config, logger });
 
     return new ToolRegistryTestHelper(tempDir, registry, db, config, cleanup);
   }

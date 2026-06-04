@@ -13,8 +13,6 @@ import { join } from "@std/path";
 import { ToolRegistry } from "@exaix/tool-runtime";
 import { ExaPathDefaults } from "@exaix/core";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import type { DatabaseService as DatabaseService } from "@exaix/storage-sqlite";
-
 // Mock dependencies
 const mockConfig = ConfigSchema.parse({
   system: { root: "/tmp/test", log_level: "info" },
@@ -37,10 +35,6 @@ const mockConfig = ConfigSchema.parse({
   mcp: {},
 });
 
-const mockDb = {
-  logActivity: () => Promise.resolve(),
-} as Partial<DatabaseService> as DatabaseService;
-
 function createRegistry(root?: string): ToolRegistry {
   const config = root
     ? ConfigSchema.parse({
@@ -59,7 +53,7 @@ function createRegistry(root?: string): ToolRegistry {
     }
   }
 
-  return new ToolRegistry({ config, db: mockDb });
+  return new ToolRegistry({ config });
 }
 
 Deno.test("ToolRegistry: should allow safe commands", async () => {
