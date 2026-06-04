@@ -172,6 +172,9 @@ export const DomainEventType = {
 
   // LLM provider events
   LlmProviderInitialized: "llm.provider.initialized",
+  LlmCallStarted: "llm.call.started",
+  LlmCallCompleted: "llm.call.completed",
+  LlmCallFailed: "llm.call.failed",
 
   // Reserved for future use (Phase 85 — postponed)
   ChildRunSpawned: "child_run.spawned",
