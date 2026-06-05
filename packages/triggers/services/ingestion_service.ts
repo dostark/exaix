@@ -22,7 +22,7 @@ import type {
 import type { IEventLogger } from "@exaix/core/logger";
 import { DomainEventType } from "@exaix/core/events";
 import type { IWaitStateService } from "@exaix/flow/wait_states/wait_state_service.ts";
-import { TriggerDisposition } from "@exaix/core/types";
+import { RequestSource, TriggerDisposition } from "@exaix/core/types";
 
 export interface ITriggerIngestionConfig {
   policyGate: ITriggerPolicyGate;
@@ -46,6 +46,7 @@ export class TriggerIngestionService implements ITriggerIngestionService {
     // 2. Evaluate policy gate
     const decision = await this.config.policyGate.evaluate(trigger);
     if (!decision.accepted) {
+      const isDuplicate = decision.rejectionReason === "duplicate_idempotency_key";
       await this.config.eventLogger.info(
         DomainEventType.TriggerRejected,
         trigger.subject,
@@ -54,7 +55,7 @@ export class TriggerIngestionService implements ITriggerIngestionService {
       return {
         triggerId: trigger.triggerId,
         accepted: false,
-        disposition: TriggerDisposition.REJECTED,
+        disposition: isDuplicate ? TriggerDisposition.DEDUPLICATED : TriggerDisposition.REJECTED,
       };
     }
 
@@ -72,7 +73,12 @@ export class TriggerIngestionService implements ITriggerIngestionService {
       return await this.dispatchAppendSignal(trigger);
     }
 
-    // Unknown action — reject
+    // Unknown action — emit rejection and return
+    await this.config.eventLogger.info(
+      DomainEventType.TriggerRejected,
+      trigger.subject,
+      { triggerId: trigger.triggerId, rejectionReason: "unknown_action" },
+    );
     return {
       triggerId: trigger.triggerId,
       accepted: false,
@@ -90,6 +96,7 @@ export class TriggerIngestionService implements ITriggerIngestionService {
       "---",
       `trigger_id: ${trigger.triggerId}`,
       `source: ${trigger.source}`,
+      `request_source: ${RequestSource.TRIGGER}`,
       `action: start_flow`,
       `subject: ${trigger.subject}`,
       `idempotency_key: ${trigger.idempotencyKey}`,
@@ -117,7 +124,25 @@ export class TriggerIngestionService implements ITriggerIngestionService {
   }
 
   private async dispatchResumeFlow(trigger: ExecutionTriggerEnvelope): Promise<ITriggerDispatchResult> {
-    if (!this.config.waitStateService || !trigger.targetFlowId) {
+    if (!this.config.waitStateService) {
+      await this.config.eventLogger.info(
+        DomainEventType.TriggerRejected,
+        trigger.subject,
+        { triggerId: trigger.triggerId, rejectionReason: "no_wait_state_service" },
+      );
+      return {
+        triggerId: trigger.triggerId,
+        accepted: false,
+        disposition: TriggerDisposition.REJECTED,
+      };
+    }
+
+    if (!trigger.targetFlowId) {
+      await this.config.eventLogger.info(
+        DomainEventType.TriggerRejected,
+        trigger.subject,
+        { triggerId: trigger.triggerId, rejectionReason: "missing_target_flow_id" },
+      );
       return {
         triggerId: trigger.triggerId,
         accepted: false,
@@ -127,6 +152,11 @@ export class TriggerIngestionService implements ITriggerIngestionService {
 
     const waitState = await this.config.waitStateService.getByToken(trigger.targetFlowId);
     if (!waitState) {
+      await this.config.eventLogger.info(
+        DomainEventType.TriggerRejected,
+        trigger.subject,
+        { triggerId: trigger.triggerId, rejectionReason: "no_matching_wait_state" },
+      );
       return {
         triggerId: trigger.triggerId,
         accepted: false,
@@ -153,11 +183,16 @@ export class TriggerIngestionService implements ITriggerIngestionService {
     };
   }
 
-  private dispatchAppendSignal(_trigger: ExecutionTriggerEnvelope): Promise<ITriggerDispatchResult> {
-    return Promise.resolve({
-      triggerId: _trigger.triggerId,
+  private async dispatchAppendSignal(trigger: ExecutionTriggerEnvelope): Promise<ITriggerDispatchResult> {
+    await this.config.eventLogger.info(
+      DomainEventType.TriggerAccepted,
+      trigger.subject,
+      { triggerId: trigger.triggerId, disposition: "queued" },
+    );
+    return {
+      triggerId: trigger.triggerId,
       accepted: true,
       disposition: TriggerDisposition.QUEUED,
-    });
+    };
   }
 }

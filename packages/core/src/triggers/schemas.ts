@@ -10,6 +10,7 @@
  */
 
 import { z } from "zod";
+import { MAX_IDEMPOTENCY_KEY_LENGTH } from "./idempotency.ts";
 
 export const TriggerSourceSchema = z.enum([
   "cli",
@@ -30,7 +31,7 @@ export const ExecutionTriggerEnvelopeSchema = z.object({
   triggerId: z.string().uuid().default(() => crypto.randomUUID()),
   source: TriggerSourceSchema,
   action: TriggerActionSchema,
-  idempotencyKey: z.string().min(1).max(1024),
+  idempotencyKey: z.string().min(1).max(MAX_IDEMPOTENCY_KEY_LENGTH),
   subject: z.string().min(1),
   traceId: z.string().optional(),
   targetFlowId: z.string().optional(),

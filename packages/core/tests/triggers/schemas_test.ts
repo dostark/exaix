@@ -154,3 +154,25 @@ Deno.test("[IdempotencyKey] accepts valid keys", () => {
   assertEquals(validateIdempotencyKey("my-key"), true);
   assertEquals(validateIdempotencyKey("x".repeat(MAX_IDEMPOTENCY_KEY_LENGTH)), true);
 });
+
+Deno.test("[TriggerEnvelopeSchema] idempotencyKey max length matches MAX_IDEMPOTENCY_KEY_LENGTH", () => {
+  // Key at exactly the limit should pass
+  const atLimit = ExecutionTriggerEnvelopeSchema.safeParse({
+    source: "cli",
+    action: "start_flow",
+    idempotencyKey: "x".repeat(MAX_IDEMPOTENCY_KEY_LENGTH),
+    subject: "test",
+    occurredAt: "2026-06-05T00:00:00Z",
+  });
+  assertEquals(atLimit.success, true);
+
+  // Key one over the limit must be rejected
+  const overLimit = ExecutionTriggerEnvelopeSchema.safeParse({
+    source: "cli",
+    action: "start_flow",
+    idempotencyKey: "x".repeat(MAX_IDEMPOTENCY_KEY_LENGTH + 1),
+    subject: "test",
+    occurredAt: "2026-06-05T00:00:00Z",
+  });
+  assertEquals(overLimit.success, false);
+});
