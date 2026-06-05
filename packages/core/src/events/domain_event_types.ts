@@ -253,6 +253,11 @@ export const DomainEventType = {
   ResourceLockBlocked: "resource_lock.blocked",
   ResourceLockReleased: "resource_lock.released",
 
+  // Trigger lifecycle events (Phase 88)
+  TriggerIngested: "trigger.ingested",
+  TriggerAccepted: "trigger.accepted",
+  TriggerRejected: "trigger.rejected",
+
   // Shutdown lifecycle
   DaemonShutdownSignal: "shutdown.signal_received",
   DaemonShutdownStarting: "shutdown.starting",

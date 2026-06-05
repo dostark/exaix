@@ -10,3 +10,7 @@
 
 export * from "./adapters/cli_adapter.ts";
 export * from "./adapters/internal_event_adapter.ts";
+export { TriggerIngestionService } from "./services/ingestion_service.ts";
+export type { ITriggerIngestionConfig } from "./services/ingestion_service.ts";
+export { TriggerPolicyGate } from "./services/policy_gate.ts";
+export { InMemoryIdempotencyLedger } from "./services/idempotency_ledger.ts";

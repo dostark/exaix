@@ -50,3 +50,12 @@ export interface ITriggerDispatchResult {
   resultingRequestId?: string;
   disposition: TriggerDisposition;
 }
+
+/**
+ * Ledger for idempotency-key deduplication.
+ * Implementations may use SQLite (production) or in-memory Map (testing).
+ */
+export interface IIdempotencyLedger {
+  isDuplicate(keyHash: string): Promise<boolean>;
+  record(keyHash: string, triggerId: string, accepted: boolean): Promise<void>;
+}

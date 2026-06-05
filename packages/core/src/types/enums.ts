@@ -330,6 +330,18 @@ export enum RequestSource {
   INTERACTIVE = "interactive",
   TUI = "tui",
   MCP = "mcp",
+  TRIGGER = "trigger",
+}
+
+/**
+ * Disposition outcomes for trigger dispatch results.
+ */
+export enum TriggerDisposition {
+  STARTED = "started",
+  RESUMED = "resumed",
+  QUEUED = "queued",
+  REJECTED = "rejected",
+  DEDUPLICATED = "deduplicated",
 }
 
 /**
