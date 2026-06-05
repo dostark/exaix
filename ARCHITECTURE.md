@@ -485,6 +485,26 @@ The scenario framework provides comprehensive end-to-end testing for Exaix featu
 
 ---
 
+## Trigger Adapter Layer
+
+The trigger adapter layer defines how external signals (webhooks, cron schedules, filesystem events, CLI invocations, internal daemon events) are translated into a canonical `ExecutionTriggerEnvelope` before entering the ingestion pipeline. All adapters implement `ITriggerAdapter<TRawInput>` from `@exaix/core/triggers`.
+
+<!-- AGENT_LOGIC: {
+  "flow": "Trigger Ingestion",
+  "steps": [
+    "External signal arrives at a source-specific adapter (WebhookAdapter, ScheduleAdapter, FilesystemAdapter, CliAdapter, InternalEventAdapter)",
+    "Adapter validates source-specific constraints (HMAC signature, cron syntax, path boundary)",
+    "Adapter produces a typed ExecutionTriggerEnvelope with triggerId, source, action, idempotencyKey, subject, payload, metadata, occurredAt",
+    "AdapterRegistry dispatches rawInput to the correct registered adapter by TTriggerSource",
+    "TriggerIngestionService receives the envelope, applies policy via TriggerPolicyGate, checks idempotency via InMemoryIdempotencyLedger",
+    "Accepted envelopes are forwarded to RequestProcessor; rejected envelopes emit TriggerRejected domain events"
+  ]
+} -->
+
+For operator configuration, adapter-by-adapter reference, HMAC setup, cron rules, path traversal protection, and `AdapterRegistry` usage examples, see `packages/triggers/README.md`.
+
+---
+
 ## Developer Tooling Architecture
 
 Exaix includes repository tooling under `scripts/` to keep development workflows deterministic, along with a developer-facing knowledge base under `.copilot/`.
@@ -521,6 +541,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
   - `packages/mcp/README.md` — MCP tool handlers, ReAct engine, security
   - `apps/tui/README.md` — Terminal UI views, layout, keyboard reference
   - `packages/memory/README.md` — Memory bank architecture, schemas, CLI commands
+  - `packages/triggers/README.md` — Trigger adapter layer, adapter sources, HMAC setup, cron rules, path traversal protection
   - `docs/Reference_Data.md` — Edition matrix, scenario packs, scripts, module index, live streaming, component responsibilities, activity journal, daemon lifecycle, event taxonomy
 - **[Test Directory Guide](tests/README.md)** — Test structure and package-local test mapping
 - **[Testing Helpers](packages/testing/README.md)** - Shared test helpers (`@exaix/testing`)
