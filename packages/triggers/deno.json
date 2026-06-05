@@ -1,0 +1,16 @@
+{
+  "name": "@exaix/triggers",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/triggers": "../core/src/triggers/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}
