@@ -1,23 +1,27 @@
 /**
  * @module ExternalAdaptersTest
  * @path packages/triggers/tests/external_adapters_test.ts
- * @description Step 3 — Contract and integration tests for optional external trigger adapters:
- * WebhookAdapter (HMAC, payload size), ScheduleAdapter (cron validation),
- * FilesystemAdapter (path traversal guard), and AdapterRegistry.
+ * @description Steps 3 & 5 — Contract, integration, and security tests for optional external
+ * trigger adapters: WebhookAdapter (HMAC, payload size), ScheduleAdapter (cron validation),
+ * FilesystemAdapter (path traversal + symlink guard), AdapterRegistry, and
+ * InternalEventAdapter allow-list (GAP-5, GAP-6).
  * @architectural-layer Triggers
  * @related-files [
  *   packages/triggers/adapters/webhook_adapter.ts,
  *   packages/triggers/adapters/schedule_adapter.ts,
  *   packages/triggers/adapters/filesystem_adapter.ts,
- *   packages/triggers/adapters/adapter_registry.ts
+ *   packages/triggers/adapters/adapter_registry.ts,
+ *   packages/triggers/adapters/internal_event_adapter.ts
  * ]
  */
 
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
+import { join } from "@std/path";
 import { FilesystemEventKind } from "@exaix/core/types";
 import { WebhookAdapter } from "../adapters/webhook_adapter.ts";
 import { ScheduleAdapter } from "../adapters/schedule_adapter.ts";
 import { FilesystemAdapter } from "../adapters/filesystem_adapter.ts";
+import { InternalEventAdapter } from "../adapters/internal_event_adapter.ts";
 import { AdapterRegistry, UnsupportedTriggerSourceError } from "../adapters/adapter_registry.ts";
 
 // ---------------------------------------------------------------------------
@@ -258,6 +262,57 @@ Deno.test("[AdapterRegistry] register overwrites existing adapter for same sourc
   assertExists(resolved);
   // Both have same source; second registration wins
   assertEquals(resolved.source, "webhook");
+});
+
+// ---------------------------------------------------------------------------
+// Step 5 — Security: FilesystemAdapter symlink bypass (GAP-5)
+// ---------------------------------------------------------------------------
+
+Deno.test("[FilesystemAdapter] rejects symlink pointing outside allowed directory", async () => {
+  const allowedDir = await Deno.makeTempDir({ prefix: "exaix-allowed-" });
+  const outsideDir = await Deno.makeTempDir({ prefix: "exaix-outside-" });
+  const symlinkPath = join(allowedDir, "evil-link");
+  await Deno.symlink(outsideDir, symlinkPath);
+
+  try {
+    const adapter = new FilesystemAdapter({ allowedDir });
+    await assertRejects(
+      () => adapter.parse({ path: symlinkPath }),
+      Error,
+      "outside allowed directory",
+    );
+  } finally {
+    await Deno.remove(symlinkPath);
+    await Deno.remove(allowedDir, { recursive: true });
+    await Deno.remove(outsideDir, { recursive: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Step 5 — Security: InternalEventAdapter allow-list (GAP-6)
+// ---------------------------------------------------------------------------
+
+Deno.test("[InternalEventAdapter] rejects unknown eventType string", async () => {
+  const adapter = new InternalEventAdapter();
+  await assertRejects(
+    () => adapter.parse({ eventType: "totally.made.up.event" }),
+    Error,
+    "unknown eventType",
+  );
+});
+
+Deno.test("[InternalEventAdapter] accepts known DomainEventType value", async () => {
+  const adapter = new InternalEventAdapter();
+  const envelope = await adapter.parse({ eventType: "flow.step.completed" });
+  assertEquals(envelope.source, "internal_event");
+  assertEquals(envelope.subject, "flow.step.completed");
+});
+
+Deno.test("[InternalEventAdapter] accepts absent eventType as unknown", async () => {
+  const adapter = new InternalEventAdapter();
+  const envelope = await adapter.parse({});
+  assertEquals(envelope.source, "internal_event");
+  assertEquals(envelope.subject, "unknown");
 });
 
 // ---------------------------------------------------------------------------

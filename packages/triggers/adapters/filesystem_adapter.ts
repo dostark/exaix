@@ -7,8 +7,8 @@
  * @ungrounded
  * @description Optional trigger adapter for filesystem-change signals. Guards against
  * path traversal attacks by rejecting paths containing ".." and paths that resolve
- * outside the configured `allowedDir`. Only paths within a known portal or workspace
- * directory produce a valid ExecutionTriggerEnvelope.
+ * outside the configured `allowedDir`. Uses `Deno.realpath()` to resolve symlinks
+ * before the boundary check, preventing symlink-based traversal attacks.
  */
 
 import { resolve } from "@std/path";
@@ -35,33 +35,37 @@ export class FilesystemAdapter implements ITriggerAdapter<IFilesystemInput> {
     this.allowedDir = resolve(config.allowedDir);
   }
 
-  parse(rawInput: IFilesystemInput): Promise<ExecutionTriggerEnvelope> {
+  async parse(rawInput: IFilesystemInput): Promise<ExecutionTriggerEnvelope> {
     if (!rawInput.path) {
-      return Promise.reject(new Error("FilesystemAdapter: path must not be empty"));
+      throw new Error("FilesystemAdapter: path must not be empty");
     }
 
     if (rawInput.path.includes("..")) {
-      return Promise.reject(
-        new Error(`FilesystemAdapter: path traversal detected in "${rawInput.path}"`),
-      );
+      throw new Error(`FilesystemAdapter: path traversal detected in "${rawInput.path}"`);
     }
 
-    const resolved = resolve(rawInput.path);
+    // Use Deno.realpath() when the path exists so symlinks are followed before
+    // the boundary check. Fall back to pure path-math for paths that don't
+    // exist yet (e.g., a create event received before the file is visible).
+    let resolved: string;
+    try {
+      resolved = await Deno.realPath(rawInput.path);
+    } catch {
+      resolved = resolve(rawInput.path);
+    }
 
     const normalizedAllowed = this.allowedDir.endsWith("/") ? this.allowedDir : `${this.allowedDir}/`;
 
     if (!resolved.startsWith(normalizedAllowed) && resolved !== this.allowedDir) {
-      return Promise.reject(
-        new Error(
-          `FilesystemAdapter: path "${resolved}" is outside allowed directory "${this.allowedDir}"`,
-        ),
+      throw new Error(
+        `FilesystemAdapter: path "${resolved}" is outside allowed directory "${this.allowedDir}"`,
       );
     }
 
     const kind = rawInput.kind ?? FilesystemEventKind.CREATE;
     const now = new Date().toISOString();
 
-    return Promise.resolve({
+    return {
       triggerId: crypto.randomUUID(),
       source: "filesystem",
       action: "start_flow",
@@ -70,6 +74,6 @@ export class FilesystemAdapter implements ITriggerAdapter<IFilesystemInput> {
       payload: { path: resolved, kind },
       metadata: {},
       occurredAt: now,
-    });
+    };
   }
 }
