@@ -546,6 +546,11 @@ export const LOG_FILE_PREFIX = "structured-log";
 export const LOG_FILE_EXTENSION = ".jsonl";
 
 // ============================================================================
+// Trigger Adapter Constants
+// ============================================================================
+export const TRIGGER_PAYLOAD_MAX_BYTES = 1_048_576; // 1 MB
+
+// ============================================================================
 // CLI Display and Validation Constants
 // ============================================================================
 export const PORTAL_ALIAS_MAX_LENGTH = 50;

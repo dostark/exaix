@@ -345,6 +345,16 @@ export enum TriggerDisposition {
 }
 
 /**
+ * Filesystem event kinds emitted by Deno.watchFs — mirrors Deno.FsEvent["kind"].
+ */
+export enum FilesystemEventKind {
+  CREATE = "create",
+  MODIFY = "modify",
+  REMOVE = "remove",
+  ACCESS = "access",
+}
+
+/**
  * Direction for database migrations.
  */
 export enum MigrationDirection {
