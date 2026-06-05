@@ -1,0 +1,23 @@
+{
+  "name": "@exaix/triggers",
+  "version": "0.1.0",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.23",
+    "@std/path": "jsr:@std/path@^1.1.4",
+    "@exaix/core": "../core/mod.ts",
+    "@exaix/core/triggers": "../core/src/triggers/mod.ts",
+    "@exaix/core/events": "../core/src/events/mod.ts",
+    "@exaix/core/logger": "../core/src/logger/mod.ts",
+    "@exaix/core/": "../core/src/",
+    "@exaix/core/types": "../core/src/types/mod.ts",
+    "@exaix/flow": "../flow/mod.ts",
+    "@exaix/flow/": "../flow/src/"
+  },
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
+  }
+}

@@ -1,0 +1,10 @@
+schema_version: "1.0.0"
+id: "triggers-basic"
+title: "Triggers basic — webhook adapter → ingestion service → request file"
+pack: "triggers-basic"
+tags: ["triggers", "webhook", "ingestion", "unit"]
+mode_support: ["auto"]
+portals: []
+# This scenario exercises the trigger boundary without a daemon or FileWatcher.
+# All assertions are performed in tests/scenario_framework/tests/triggers_basic_scenario_test.ts.
+steps: []
