@@ -11,8 +11,7 @@ import { DatabaseService } from "@exaix/storage-sqlite";
 import { ConfigService } from "@exaix/core/config";
 import { join } from "@std/path";
 import type { IApplicationContext } from "@exaix/core/types";
-import { ConsoleOutput, initializeGlobalLogger, resetGlobalLogger } from "@exaix/core/logger";
-import { LogLevel } from "@exaix/core";
+
 import { RequestStatus } from "@exaix/core/status";
 import { createStubDisplay, createStubGit, createStubProvider, readFixtureTextSync, REPO_ROOT } from "@exaix/testing";
 
@@ -23,13 +22,6 @@ import { createStubDisplay, createStubGit, createStubProvider, readFixtureTextSy
  */
 Deno.test("[regression] RequestProcessor uses ProviderSelector when no testProvider is passed", async () => {
   const tmpDir = await Deno.makeTempDir({ prefix: "exaix-regression-" });
-
-  // Initialize global logger for ConfigService
-  initializeGlobalLogger({
-    minLevel: LogLevel.ERROR,
-    outputs: [new ConsoleOutput()],
-    enablePerformanceTracking: false,
-  });
 
   try {
     const configService = new ConfigService(join(tmpDir, "exa.config.toml"));
@@ -133,7 +125,6 @@ Test body`;
     const updatedContent = await Deno.readTextFile(requestPath);
     assert(!updatedContent.includes(`status: "${RequestStatus.PENDING}"`), "Status should have been updated");
   } finally {
-    resetGlobalLogger();
     await Deno.remove(tmpDir, { recursive: true }).catch(() => {});
   }
 });

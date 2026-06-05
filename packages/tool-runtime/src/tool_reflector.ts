@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IOutputValidator } from "./output_validator.ts";
 import type { IToolAgentExecutor } from "./types.ts";
-import { logDebug } from "@exaix/core/logger";
+
 import { ToolReflectionIssueType, ToolReflectionSeverity } from "@exaix/core";
 import { JSONValueSchema, type LogMetadata, toSafeJson } from "@exaix/core/types";
 import type { JSONValue } from "@exaix/core";
@@ -213,8 +213,8 @@ export class ToolReflector {
       this.updateMetrics(lastReflection);
 
       if (this.config.verbose) {
-        logDebug(
-          `Tool reflection: ${toolCall.name} - success=${lastReflection.success}, confidence=${lastReflection.confidence}, retry=${lastReflection.retry_suggested}`,
+        console.debug(
+          `[ToolReflector] Tool reflection: ${toolCall.name} - success=${lastReflection.success}, confidence=${lastReflection.confidence}, retry=${lastReflection.retry_suggested}`,
           {
             tool_name: toolCall.name,
             success: lastReflection.success,

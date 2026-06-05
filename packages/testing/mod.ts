@@ -12,6 +12,7 @@ export type { ILoggedActivity, TestDatabaseService } from "./src/helpers/db.ts";
 export { createLoggingTestDb } from "./src/helpers/db.ts";
 export { createMockConfig, writeTestConfigFile } from "./src/helpers/config.ts";
 export { createMockLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
+export type { IMockEventLogger } from "./src/helpers/services/graceful_shutdown_test_helpers.ts";
 export { createMockProvider } from "./src/helpers/mock_provider.ts";
 export { createTestLearning, createTestProposal } from "./src/helpers/services/memory_test_helpers.ts";
 export { getFixturePath, readFixtureTextSync } from "./src/helpers/fixtures.ts";

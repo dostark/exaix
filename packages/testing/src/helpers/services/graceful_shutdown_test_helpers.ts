@@ -1,46 +1,32 @@
 /**
  * @module GracefulShutdownTestHelpers
  * @path packages/testing/src/helpers/services/graceful_shutdown_test_helpers.ts
- * @related-files []
+ * @description Provides mock logger utilities for testing graceful shutdown behavior,
+ * including IMockEventLogger interface and createMockLogger factory function.
  * @architectural-layer Testing
- * @ungrounded
- * @description Provides common utilities for verifying process termination logic,
- * coordinating mock signal emission and LIFO task execution checks.
+ * @related-files ["apps/daemon/src/graceful_shutdown.ts", "packages/core/src/logger/event_logger.ts"]
  */
-
 import { type Spy, spy } from "@std/testing/mock";
-import type { IStructuredLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
 
-/**
- * Interface that combines IStructuredLogger with Spies for testing
- */
-export interface IMockStructuredLogger extends IStructuredLogger {
-  setContext: Spy;
-  child: Spy;
-  debug: Spy;
-  info: Spy;
-  warn: Spy;
-  error: Spy;
-  fatal: Spy;
-  time: Spy;
+export interface IMockEventLogger extends IEventLogger {
+  log: Spy<IEventLogger["log"]>;
+  info: Spy<IEventLogger["info"]>;
+  warn: Spy<IEventLogger["warn"]>;
+  error: Spy<IEventLogger["error"]>;
+  fatal: Spy<IEventLogger["fatal"]>;
+  debug: Spy<IEventLogger["debug"]>;
+  child: Spy<IEventLogger["child"]>;
 }
 
-/**
- * Helper functions for GracefulShutdown tests
- */
-
-/**
- * Creates a mock logger with spy methods for testing
- */
-export function createMockLogger(): IMockStructuredLogger {
+export function createMockLogger(): IMockEventLogger {
   return {
-    setContext: spy(() => {}),
-    child: spy(() => ({} as IStructuredLogger)),
-    debug: spy(() => {}),
-    info: spy(() => {}),
-    warn: spy(() => {}),
-    error: spy(() => {}),
-    fatal: spy(() => {}),
-    time: spy((_op: string, fn: () => Promise<unknown>) => fn()),
-  } as IMockStructuredLogger;
+    log: spy(() => Promise.resolve()),
+    info: spy(() => Promise.resolve()),
+    warn: spy(() => Promise.resolve()),
+    error: spy(() => Promise.resolve()),
+    fatal: spy(() => Promise.resolve()),
+    debug: spy(() => Promise.resolve()),
+    child: spy(() => ({} as IEventLogger)),
+  } as IMockEventLogger;
 }

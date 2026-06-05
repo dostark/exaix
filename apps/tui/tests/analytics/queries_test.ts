@@ -8,7 +8,7 @@
  */
 
 import { assertEquals } from "@std/assert";
-import type { IStructuredLogEntry } from "@exaix/core/logger";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 import {
   findAgentLogs,

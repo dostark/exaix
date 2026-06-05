@@ -8,10 +8,10 @@
 
 import { assertEquals, assertExists, assertStringIncludes, assertThrows } from "@std/assert";
 import { parse as parseToml } from "@std/toml";
-import { LogLevel, ProviderCostTier } from "@exaix/core";
+import { ProviderCostTier } from "@exaix/core";
 import { ConfigService } from "@exaix/core/config";
 import { ConfigSchema } from "@exaix/schemas/config.ts";
-import { initializeGlobalLogger, resetGlobalLogger } from "@exaix/core/logger";
+
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExaPathDefaults } from "@exaix/core";
 import { readFixtureTextSync } from "@exaix/testing";
@@ -194,42 +194,24 @@ Deno.test("ConfigSchema accepts routing policy configuration", () => {
 Deno.test("ConfigService computes checksum", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "config-checksum-test-" });
 
-  initializeGlobalLogger({
-    minLevel: LogLevel.INFO,
-    outputs: [],
-    enablePerformanceTracking: false,
-    serviceName: "test",
-    version: DEFAULT_MCP_VERSION,
-  });
-
   try {
     const configPath = `${tempDir}/exa.config.toml`;
     const service = new ConfigService(configPath);
     const checksum = service.getChecksum();
 
     assertExists(checksum);
-    assertEquals(checksum.length, 64); // SHA-256 produces 64 hex chars
+    assertEquals(checksum.length, 64);
   } finally {
-    // Clean up after test
     try {
       await Deno.remove(tempDir, { recursive: true });
     } catch {
-      // Ignore
+      // ignore cleanup errors
     }
-    resetGlobalLogger();
   }
 });
 
 Deno.test("ConfigService loads config successfully", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "config-load-test-" });
-
-  initializeGlobalLogger({
-    minLevel: LogLevel.INFO,
-    outputs: [],
-    enablePerformanceTracking: false,
-    serviceName: "test",
-    version: DEFAULT_MCP_VERSION,
-  });
 
   try {
     const configPath = `${tempDir}/exa.config.toml`;
@@ -240,13 +222,11 @@ Deno.test("ConfigService loads config successfully", async () => {
     assertExists(config.paths);
     assertEquals(config.system.log_level, "info");
   } finally {
-    // Clean up after test
     try {
       await Deno.remove(tempDir, { recursive: true });
     } catch {
-      // Ignore
+      // ignore cleanup errors
     }
-    resetGlobalLogger();
   }
 });
 
@@ -256,15 +236,6 @@ Deno.test("ConfigService loads config successfully", async () => {
 
 Deno.test("ConfigService handles missing config file", async (t) => {
   const tempDir = await Deno.makeTempDir({ prefix: "config-missing-test-" });
-
-  // Initialize global logger for tests
-  initializeGlobalLogger({
-    minLevel: LogLevel.INFO,
-    outputs: [],
-    enablePerformanceTracking: false,
-    serviceName: "test",
-    version: DEFAULT_MCP_VERSION,
-  });
 
   try {
     await t.step("should create default config when file not found", () => {
@@ -302,13 +273,11 @@ Deno.test("ConfigService handles missing config file", async (t) => {
       assertEquals(checksum.length > 0, true);
     });
   } finally {
-    // Clean up temp directory
     try {
       await Deno.remove(tempDir, { recursive: true });
     } catch {
-      // Ignore cleanup errors
+      // ignore cleanup errors
     }
-    resetGlobalLogger();
   }
 });
 

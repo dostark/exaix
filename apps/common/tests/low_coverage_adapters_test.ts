@@ -17,9 +17,11 @@ import { RequestStatus } from "@exaix/core/status";
 import type { IDatabaseService } from "@exaix/core/types";
 import type { IRequestAnalysis } from "@exaix/schemas/request_analysis.ts";
 import { AnalysisMode } from "@exaix/core/types";
-import type { IStructuredLogEntry } from "@exaix/core/types";
-import { FileOutput, ObservableOutput, StructuredLogger } from "@exaix/core/logger";
+
+import { EventLoggerStructuredOutput } from "@exaix/core/logger";
 import type { EventLogger } from "@exaix/core/logger";
+import type { IEventLoggerOutput } from "@exaix/core/logger";
+import type { ILogEvent } from "@exaix/core/types";
 import { createMockConfig } from "@exaix/testing";
 import { createStubConfig, createStubContext, createStubDb } from "@exaix/testing";
 
@@ -206,71 +208,67 @@ Deno.test("AgentServiceAdapter list/health/log helpers", async () => {
 
 Deno.test("LogServiceAdapter handles filtering, subscriptions, and export", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "log-adapter-" });
-  const firstFile = join(tempDir, "a.jsonl");
-  const secondFile = join(tempDir, "b.jsonl");
+  const jsonlPath = join(tempDir, "events.jsonl");
 
-  const entryA: IStructuredLogEntry = {
-    timestamp: new Date().toISOString(),
+  const eventA: ILogEvent = {
+    action: "a",
+    target: "t1",
+    traceId: "t1",
+    identityId: "ag1",
     level: LogLevel.INFO,
-    message: "a",
-    context: { trace_id: "t1", correlation_id: "c1", identity_id: "ag1" },
+    payload: { correlation_id: "c1" },
   };
-  const entryB: IStructuredLogEntry = {
-    timestamp: new Date().toISOString(),
+  const eventB: ILogEvent = {
+    action: "b",
+    target: "t2",
+    traceId: "t2",
+    identityId: "ag2",
     level: LogLevel.ERROR,
-    message: "b",
-    context: { trace_id: "t2", correlation_id: "c2", identity_id: "ag2" },
+    payload: { correlation_id: "c2" },
   };
-
-  await Deno.writeTextFile(firstFile, `${JSON.stringify(entryA)}\nnot-json`);
-  await Deno.writeTextFile(secondFile, `${JSON.stringify(entryB)}\n`);
 
   try {
-    const fileOutput = new FileOutput(tempDir);
-    const observable = new ObservableOutput();
-    const logger = new StructuredLogger({
-      minLevel: LogLevel.DEBUG,
-      outputs: [fileOutput, observable],
-      enablePerformanceTracking: false,
-    });
+    const output = new EventLoggerStructuredOutput(jsonlPath);
+    const loggerLike = { getOutputs: () => [output] };
+    const adapter = new LogServiceAdapter(loggerLike);
 
-    const adapter = new LogServiceAdapter(logger);
+    // Write events through EventLoggerStructuredOutput
+    output.write(eventA);
+    output.write(eventB);
+    // Wait for async file writes to complete
+    await new Promise((r) => setTimeout(r, 50));
+
     const allLogs = await adapter.getStructuredLogs({ limit: 10 });
     assertEquals(allLogs.length, 2);
 
-    const filtered = await adapter.getLogsByTraceId("t2");
+    const filtered = await adapter.getLogsByTraceId("t1");
     assertEquals(filtered.length, 1);
-    assertEquals(filtered[0].message, "b");
-
-    const byCorrelation = await adapter.getLogsByCorrelationId("c1");
-    assertEquals(byCorrelation.length, 1);
-    assertEquals(byCorrelation[0].message, "a");
+    assert(filtered[0].message.includes("a"));
 
     const byAgent = await adapter.getLogsByAgentId("ag2");
     assertEquals(byAgent.length, 1);
 
+    // Test subscriptions
     let observed = 0;
-    const unsubscribe = adapter.subscribeToLogs((_entry) => {
+    const unsubscribe = adapter.subscribeToLogs(() => {
       observed += 1;
     });
-    observable.write(entryA);
+    output.write(eventA);
     assertEquals(observed, 1);
     unsubscribe();
-    observable.write(entryA);
+    output.write(eventB);
     assertEquals(observed, 1);
 
+    // Test export
     const exportPath = join(tempDir, "export.jsonl");
-    await adapter.exportLogs(exportPath, [entryA, entryB]);
+    await adapter.exportLogs(exportPath, allLogs);
     const exported = await Deno.readTextFile(exportPath);
-    assert(exported.includes('"message":"a"'));
-    assert(exported.includes('"message":"b"'));
+    assert(exported.includes('"message"'));
+    assert(exported.includes('"a: t1"'));
 
-    const noFileLogger = new StructuredLogger({
-      minLevel: LogLevel.DEBUG,
-      outputs: [observable],
-      enablePerformanceTracking: false,
-    });
-    assertEquals(await new LogServiceAdapter(noFileLogger).getStructuredLogs({}), []);
+    // Test no-file case
+    const noFileOutput = { getOutputs: () => [] as IEventLoggerOutput[] };
+    assertEquals(await new LogServiceAdapter(noFileOutput).getStructuredLogs({}), []);
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
   }

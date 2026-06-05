@@ -1,107 +1,94 @@
 /**
  * @module GracefulShutdown
  * @path apps/daemon/src/graceful_shutdown.ts
- * @description Handles SIGINT/SIGTERM signal registration and LIFO cleanup task execution
- * for the daemon process. Owned by apps/daemon; not a shared package surface.
- * @architectural-layer Application
- * @related-files [apps/daemon/main.ts, "packages/core/src/logger/structured_logger.ts"]
+ * @description Manages graceful shutdown of the daemon process, including cleanup task
+ * registration, signal handling, and LIFO cleanup execution with timeouts.
+ * @architectural-layer Services
+ * @related-files ["apps/daemon/main.ts", "packages/core/src/logger/event_logger.ts"]
  */
-
 import { DEFAULT_AI_TIMEOUT_MS } from "@exaix/ai/constants.ts";
-import type { IStructuredLogger } from "@exaix/core/logger";
+import type { IEventLogger } from "@exaix/core/logger";
+import { DomainEventType } from "@exaix/core/events";
 
-/**
- * Cleanup task interface for graceful shutdown
- */
 export interface ICleanupTask {
   name: string;
   handler: () => Promise<void>;
   timeout: number;
 }
+
 export class GracefulShutdown {
-  private readonly logger: IStructuredLogger;
+  private readonly logger: IEventLogger;
   private readonly cleanupTasks: ICleanupTask[] = [];
   private shuttingDown = false;
 
-  constructor(logger: IStructuredLogger) {
+  constructor(logger: IEventLogger) {
     this.logger = logger;
   }
 
-  /**
-   * Register a cleanup task to be executed during shutdown
-   * @param name - Unique name for the cleanup task
-   * @param handler - Async function to execute during shutdown
-   * @param timeout - Timeout in milliseconds (default: 30000)
-   */
   registerCleanup(name: string, handler: () => Promise<void>, timeout = DEFAULT_AI_TIMEOUT_MS): void {
     this.cleanupTasks.push({ name, handler, timeout });
   }
 
-  /**
-   * Register signal handlers for SIGINT and SIGTERM
-   */
   registerSignalHandlers(): void {
     const shutdownHandler = () => {
-      this.logger.info("Received termination signal, initiating graceful shutdown");
+      this.logger.info(
+        DomainEventType.DaemonShutdownSignal,
+        "Received termination signal, initiating graceful shutdown",
+      );
       this.shutdown(0).catch((error) => {
-        this.logger.fatal("Failed to execute graceful shutdown", error as Error);
+        this.logger.fatal(DomainEventType.DaemonShutdownCleanupFailed, "Failed to execute graceful shutdown", {
+          error: (error as Error).message,
+        });
         Deno.exit(1);
       });
     };
 
-    // Register signal listeners
     Deno.addSignalListener("SIGINT", shutdownHandler);
     Deno.addSignalListener("SIGTERM", shutdownHandler);
 
-    this.logger.info("Signal handlers registered for graceful shutdown");
+    this.logger.info(DomainEventType.DaemonShutdownSignal, "Signal handlers registered for graceful shutdown");
   }
 
-  /**
-   * Register handlers for unhandled errors and promise rejections
-   */
   registerErrorHandlers(): void {
-    // Handle unhandled promise rejections
     globalThis.addEventListener("unhandledrejection", (event) => {
-      this.logger.fatal("Unhandled promise rejection", event.reason as Error);
+      this.logger.fatal(DomainEventType.DaemonUnhandledRejection, event.reason as string, {
+        error: (event.reason as Error)?.message ?? String(event.reason),
+      });
       this.shutdown(1).catch(() => {
-        // If shutdown fails, force exit
         Deno.exit(1);
       });
     });
 
-    // Handle uncaught errors
     globalThis.addEventListener(DOM_ERROR_EVENT, (event) => {
-      this.logger.fatal("Uncaught error", event.error as Error);
+      this.logger.fatal(DomainEventType.DaemonUncaughtError, (event.error as Error)?.message ?? "Unknown error", {
+        error: (event.error as Error)?.message ?? String(event.error),
+      });
       this.shutdown(1).catch(() => {
-        // If shutdown fails, force exit
         Deno.exit(1);
       });
     });
 
-    this.logger.info("Error handlers registered for graceful shutdown");
+    this.logger.info(DomainEventType.DaemonErrorHandlersRegistered, "Error handlers registered for graceful shutdown");
   }
 
-  /**
-   * Execute graceful shutdown sequence
-   * @param exitCode - The exit code to use when shutting down
-   * @param shouldExit - Whether to actually exit the process (default: true)
-   */
   async shutdown(exitCode: number, shouldExit = true): Promise<void> {
     if (this.shuttingDown) {
-      this.logger.warn("Shutdown already in progress, ignoring duplicate shutdown request");
+      this.logger.warn(
+        DomainEventType.DaemonShutdownDuplicate,
+        "Shutdown already in progress, ignoring duplicate shutdown request",
+      );
       return;
     }
 
     this.shuttingDown = true;
-    this.logger.info("Starting graceful shutdown");
+    this.logger.info(DomainEventType.DaemonShutdownStarting, "Starting graceful shutdown");
 
     let hasErrors = false;
 
-    // Execute cleanup tasks in reverse order (LIFO)
     for (let i = this.cleanupTasks.length - 1; i >= 0; i--) {
       const task = this.cleanupTasks[i];
       try {
-        this.logger.info(`Running cleanup: ${task.name}`);
+        this.logger.info(DomainEventType.DaemonShutdownCleanupRunning, task.name);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
           controller.abort();
@@ -116,26 +103,30 @@ export class GracefulShutdown {
               });
             }),
           ]);
-          this.logger.info(`Cleanup completed: ${task.name}`);
+          this.logger.info(DomainEventType.DaemonShutdownCleanupCompleted, task.name);
         } finally {
           clearTimeout(timeoutId);
         }
       } catch (error) {
         const err = error as Error;
         if (err.message.includes("Cleanup timeout")) {
-          this.logger.error(`Cleanup timed out: ${task.name}`, err);
+          this.logger.error(DomainEventType.DaemonShutdownCleanupTimedOut, task.name, {
+            error: err.message,
+          });
         } else {
-          this.logger.error(`Cleanup failed: ${task.name}`, err);
+          this.logger.error(DomainEventType.DaemonShutdownCleanupFailed, task.name, {
+            error: err.message,
+          });
         }
         hasErrors = true;
       }
     }
 
     if (hasErrors) {
-      this.logger.error("Graceful shutdown completed with errors");
+      this.logger.error(DomainEventType.DaemonShutdownErrors, "Graceful shutdown completed with errors");
       if (shouldExit) Deno.exit(1);
     } else {
-      this.logger.info("Graceful shutdown completed successfully");
+      this.logger.info(DomainEventType.DaemonShutdownComplete, "Graceful shutdown completed successfully");
       if (shouldExit) Deno.exit(exitCode);
     }
   }

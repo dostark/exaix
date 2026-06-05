@@ -21,8 +21,8 @@ import { MemoryServiceAdapter } from "../../../common/adapters/memory_adapter.ts
 import { JournalServiceAdapter } from "../../../common/adapters/journal_adapter.ts";
 import { LogServiceAdapter } from "../../../common/adapters/log_adapter.ts";
 import { ContextCardAdapter } from "../../../common/adapters/context_card_adapter.ts";
-import { getGlobalLogger } from "@exaix/core/logger";
-import { EventLogger } from "@exaix/core/logger";
+import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
+import type { IEventLoggerOutput } from "@exaix/core/logger";
 import { DisplayAdapter } from "../../../common/adapters/display_adapter.ts";
 import { ContextCardGenerator } from "@exaix/core/context";
 import { PortalService } from "@exaix/portal";
@@ -40,14 +40,9 @@ import type {
   IRequestService,
   ISkillsService,
 } from "@exaix/core/types";
-import type {
-  IDaemonService,
-  IDatabaseService,
-  IJournalService,
-  ILogService,
-  IMemoryService,
-  IStructuredLogger,
-} from "@exaix/core/types";
+import type { IDaemonService, IDatabaseService, IJournalService, ILogService, IMemoryService } from "@exaix/core/types";
+import type { IStructuredLogger } from "@exaix/core/types";
+import type { JSONValue } from "@exaix/core/types";
 import type { Config } from "@exaix/schemas";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";
 import type { IModelProvider } from "@exaix/ai/types.ts";
@@ -159,10 +154,45 @@ export function createTuiServices(
   );
   const agentService: IAgentService = new AgentServiceAdapter(context);
 
-  // Initialize structured logger
-  const logger = getGlobalLogger();
-  const structuredLogger: IStructuredLogger = logger;
-  const structuredLoggerService: ILogService = new LogServiceAdapter(logger);
+  // Initialize EventLogger with viewer-compatible output
+  const viewerLogDir = join(config.system.root!, "logs", "event-viewer");
+  const logOutput = new EventLoggerStructuredOutput(viewerLogDir);
+  const eventLogger = new EventLogger({
+    db: databaseService,
+    outputs: [logOutput],
+  });
+
+  // Adapter: IStructuredLogger (ILogger) from EventLogger for backward compat
+  const structuredLogger: IStructuredLogger = {
+    setContext: () => {},
+    child: () => structuredLogger,
+    debug: (message, metadata) => {
+      eventLogger.debug(message, "", metadata as Record<string, JSONValue>);
+    },
+    info: (message, metadata) => {
+      eventLogger.info(message, "", metadata as Record<string, JSONValue>);
+    },
+    warn: (message, metadata) => {
+      eventLogger.warn(message, "", metadata as Record<string, JSONValue>);
+    },
+    error: (message, error, metadata) => {
+      eventLogger.error(message, "", {
+        ...metadata as Record<string, JSONValue>,
+        error: (error as Error)?.message ?? String(error),
+      });
+    },
+    fatal: (message, error, metadata) => {
+      eventLogger.fatal(message, "", {
+        ...metadata as Record<string, JSONValue>,
+        error: (error as Error)?.message ?? String(error),
+      });
+    },
+    time: async <T>(_op: string, fn: () => Promise<T>, _metadata?: Record<string, JSONValue>): Promise<T> => await fn(),
+  };
+
+  // Wrap the output in a logger-like object for LogServiceAdapter
+  const outputLogger = { getOutputs: () => [logOutput] as IEventLoggerOutput[] };
+  const structuredLoggerService: ILogService = new LogServiceAdapter(outputLogger);
 
   // Initialize memory services
   const memoryBank = new MemoryBankService(config);

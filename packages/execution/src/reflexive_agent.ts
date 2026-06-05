@@ -21,7 +21,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { JSONValue } from "@exaix/core";
 import type { IDatabaseService } from "@exaix/core/types";
 import { createOutputValidator, type IOutputValidator } from "@exaix/tool-runtime";
-import { logDebug } from "@exaix/core/logger";
+
 import { CircuitBreaker } from "@exaix/ai/circuit_breaker.ts";
 import { MiddlewarePipeline } from "@exaix/core/func";
 import type { IServiceContext } from "@exaix/core/types";
@@ -743,7 +743,7 @@ export class ReflexiveAgent {
     traceId?: string,
   ): void {
     if (this.config.verbose) {
-      logDebug(`Reflexive agent activity: [${_actor}] ${actionType}`, {
+      console.debug(`[ReflexiveAgent] ${_actor} ${actionType}`, {
         actor: _actor,
         action_type: actionType,
         target,

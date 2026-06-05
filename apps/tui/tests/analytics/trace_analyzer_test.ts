@@ -10,7 +10,7 @@
 import { assertEquals, assertExists } from "@std/assert";
 
 import { analyzeTrace } from "../../src/analytics/trace_analyzer.ts";
-import type { IStructuredLogEntry } from "@exaix/core/logger";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 
 function entry(params: {

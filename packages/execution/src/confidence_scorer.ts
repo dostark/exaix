@@ -11,7 +11,7 @@ import type { IModelProvider } from "@exaix/ai/types.ts";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import { AgentRunner, type IBlueprint, type IParsedRequest } from "@exaix/execution";
 import { createOutputValidator, type OutputValidator } from "@exaix/tool-runtime";
-import { logDebug } from "@exaix/core/logger";
+
 import { ConfidenceAssessmentLevel, FactorImpact } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 
@@ -282,12 +282,15 @@ export class ConfidenceScorer {
     this.updateMetrics(confidence, flaggedForReview);
 
     if (this.config.verbose) {
-      logDebug(`Confidence score: ${confidence.score}, Level: ${confidence.level}, Flagged: ${flaggedForReview}`, {
-        confidence_score: confidence.score,
-        confidence_level: confidence.level,
-        flagged_for_review: flaggedForReview,
-        service: "confidence_scorer",
-      });
+      console.debug(
+        `[ConfidenceScorer] score=${confidence.score} level=${confidence.level} flagged=${flaggedForReview}`,
+        {
+          confidence_score: confidence.score,
+          confidence_level: confidence.level,
+          flagged_for_review: flaggedForReview,
+          service: "confidence_scorer",
+        },
+      );
     }
 
     if (this.config.logger && flaggedForReview) {

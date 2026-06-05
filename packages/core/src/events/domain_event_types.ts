@@ -252,6 +252,20 @@ export const DomainEventType = {
   ResourceLockAcquired: "resource_lock.acquired",
   ResourceLockBlocked: "resource_lock.blocked",
   ResourceLockReleased: "resource_lock.released",
+
+  // Shutdown lifecycle
+  DaemonShutdownSignal: "shutdown.signal_received",
+  DaemonShutdownStarting: "shutdown.starting",
+  DaemonShutdownCleanupRunning: "shutdown.cleanup.running",
+  DaemonShutdownCleanupCompleted: "shutdown.cleanup.completed",
+  DaemonShutdownCleanupTimedOut: "shutdown.cleanup.timed_out",
+  DaemonShutdownCleanupFailed: "shutdown.cleanup.failed",
+  DaemonShutdownDuplicate: "shutdown.duplicate",
+  DaemonShutdownErrors: "shutdown.completed_with_errors",
+  DaemonShutdownComplete: "shutdown.complete",
+  DaemonUnhandledRejection: "daemon.unhandled_rejection",
+  DaemonUncaughtError: "daemon.uncaught_error",
+  DaemonErrorHandlersRegistered: "daemon.error_handlers_registered",
 } as const;
 
 export type TDomainEventType = typeof DomainEventType[keyof typeof DomainEventType];

@@ -19,7 +19,7 @@ import { SseHandler } from "./sse_handler.ts";
 import { buildHandlers } from "./tools.ts";
 import { discoverAllResources, parsePortalURI } from "./resources.ts";
 import { generatePrompt, getPrompts } from "./prompts.ts";
-import { logInfo } from "@exaix/core/logger";
+
 import { PortalPermissionsService } from "@exaix/portal";
 import type { IPortalPermissionsChecker } from "@exaix/schemas/portal_permissions.ts";
 import type { IToolResultValidator } from "@exaix/schemas/tool_result_validator.ts";
@@ -995,14 +995,7 @@ export class MCPServer {
       },
     );
 
-    logInfo("MCP HTTP Server starting", {
-      audit_event: true,
-      event_type: "server_startup",
-      server_type: "mcp-http",
-      port,
-      protocol: "http",
-      service: "mcp-server",
-    });
+    // Event already logged via logActivity above
 
     await Deno.serve({ port, hostname: "localhost" }, (request: Request) => this.handleHTTPRequest(request));
   }

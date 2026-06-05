@@ -13,7 +13,7 @@ import { analyzeTrace } from "../src/analytics/trace_analyzer.ts";
 import { calculatePerformanceStats } from "../src/analytics/performance_analyzer.ts";
 import { detectErrorPatterns } from "../src/analytics/error_analyzer.ts";
 import { findRelatedLogs, findTraceLogs, groupByCorrelation } from "../src/analytics/queries.ts";
-import type { IStructuredLogEntry } from "@exaix/core/logger";
+import type { IStructuredLogEntry } from "@exaix/core/types";
 import { LogLevel } from "@exaix/core";
 
 // Helper to create mock log entries

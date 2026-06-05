@@ -9,13 +9,13 @@
  */
 import { DomainEventType } from "@exaix/core/events";
 import { ConfigService } from "@exaix/core/config";
-import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, type LogLevel, ProviderType } from "@exaix/core";
+import { DAEMON_IDENTITY_ID, DaemonStatus, DEFAULT_IDENTITIES_PATH, ProviderType } from "@exaix/core";
 import { FileWatcher } from "../../apps/daemon/src/watcher.ts";
 import { DatabaseService } from "@exaix/storage-sqlite";
 import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
-import { EventLogger } from "@exaix/core/logger";
+import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
 import { ExecutionLoop } from "@exaix/execution";
 import {
   initializeMemoryAutoApprovalMaintenance,
@@ -33,15 +33,13 @@ import { MemoryBankAdapter } from "../../apps/common/adapters/memory_bank_adapte
 import { PortalKnowledgeService } from "@exaix/portal/knowledge";
 import type { IPortalKnowledgeConfig, PortalAnalysisMode } from "@exaix/core/types";
 import { createConfigReloadHandler } from "@exaix/core/config";
-import { ConsoleOutput, FileOutput, getGlobalLogger, initializeGlobalLogger, logInfo } from "@exaix/core/logger";
 import { GracefulShutdown } from "./src/graceful_shutdown.ts";
 import { ensureDir } from "@std/fs";
 import { WaitStateSchema } from "@exaix/flow";
 import { join } from "@std/path";
-import type { ILogOutput } from "@exaix/core/types";
-import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { GitService } from "@exaix/git";
 import type { IApplicationContext } from "@exaix/core/types";
+import { type LogMetadata, toSafeJson } from "@exaix/core/types";
 import { DEFAULT_MCP_IDENTITY_ID } from "@exaix/mcp";
 import { bootstrapProviderRegistry } from "../../apps/common/registry_bootstrap.ts";
 
@@ -65,34 +63,21 @@ if (import.meta.main) {
     // Initialize Database Service first (needed for EventLogger)
     const dbService = new DatabaseService(config);
 
-    // Create main EventLogger with database connection
+    // Add EventLoggerStructuredOutput for TUI viewer compatibility
+    const logsDir = join(config.system.root, "logs");
+    const viewerLogDir = join(logsDir, "event-viewer");
+    const viewerOutput = new EventLoggerStructuredOutput(viewerLogDir);
+
+    // Create main EventLogger with database connection and viewer output
     const logger = new EventLogger({
       db: dbService,
       prefix: "",
       defaultActor: DEFAULT_MCP_IDENTITY_ID,
-    });
-
-    // Initialize StructuredLogger for audit and performance tracking
-    const logsDir = join(config.system.root, "logs");
-    const structuredLogsDir = join(logsDir, "structured");
-
-    const structuredOutputs: ILogOutput[] = [new FileOutput(structuredLogsDir)];
-
-    // Add console output for debug level to help with development
-    if (config.system.log_level === "debug") {
-      structuredOutputs.unshift(new ConsoleOutput());
-    }
-
-    initializeGlobalLogger({
-      minLevel: config.system.log_level as LogLevel,
-      outputs: structuredOutputs,
-      enablePerformanceTracking: true,
-      serviceName: "exaix-daemon",
-      version: config.system.version,
+      outputs: [viewerOutput],
     });
 
     // Initialize GracefulShutdown service
-    const gracefulShutdown = new GracefulShutdown(getGlobalLogger());
+    const gracefulShutdown = new GracefulShutdown(logger);
 
     await logger.log({
       action: DomainEventType.DaemonStarting,
@@ -104,20 +89,6 @@ if (import.meta.main) {
       },
       icon: "🚀",
     });
-
-    // Log daemon startup as audit event
-    logInfo(
-      "Exaix daemon starting",
-      toSafeJson({
-        audit_event: true,
-        event_type: "daemon_startup",
-        config_checksum: checksum.slice(0, 8),
-        root: config.system.root,
-        log_level: config.system.log_level,
-        service: "exaix-daemon",
-        version: config.system.version,
-      }) as LogMetadata,
-    );
 
     await logger.info(DomainEventType.ConfigLoaded, "", {
       checksum: checksum.slice(0, 8),
