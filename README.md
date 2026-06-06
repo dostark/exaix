@@ -3,10 +3,11 @@ title: "Exaix Overview & Quickstart"
 description: Exaix Orchestration Platform - Overview and Quickstart
 agent_priority: critical
 copilot_knowledge_base: true
-version: 2.2
+version: 2.3
 capabilities: [system_overview, installation, initial_setup]
 links:
   - "ARCHITECTURE.md"
+  - "GLOSSARY.md"
   - "docs/dev/Exaix_Developer_Setup.md"
 copilot_instructions: .copilot/blueprints/senior-coder.md
 ---
@@ -54,6 +55,8 @@ Beyond the three-tier model:
 Exaix isn't trying to out-complete your IDE agent or out-orchestrate every framework — it occupies the niche those tools leave open: governed, auditable, asynchronous execution that a human can trust to run unattended and inspect after the fact.
 
 ## Key Concepts
+
+> See [GLOSSARY.md](./GLOSSARY.md) for full definitions of these and other Exaix concepts (Identity, Agent, Actor, Gate Evaluate, and more).
 
 | Term               | Description                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------------- |
@@ -179,6 +182,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_STYLE.md](CODE_STYLE.md), [AGENTS.
 
 ## Documentation
 
+- **Glossary**: [GLOSSARY.md](./GLOSSARY.md)
 - **Tools**: [TOOLS.md](./TOOLS.md)
 - **Architecture**: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
