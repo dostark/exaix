@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-06T17:04:57.353Z",
+  "generated_at": "2026-06-06T17:23:26.658Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1149,8 +1149,8 @@
     {
       "path": "GLOSSARY.md",
       "title": "Exaix Glossary",
-      "short_summary": "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Review, Blueprint, Flow, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works.",
-      "version": "1.1",
+      "short_summary": "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works.",
+      "version": "1.2",
       "topics": [
         "glossary",
         "terminology",

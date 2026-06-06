@@ -3,10 +3,10 @@ title: "Exaix Glossary"
 description: Concept-level glossary of Exaix terminology for newcomers and operators
 agent_priority: high
 copilot_knowledge_base: true
-version: "1.1"
+version: "1.2"
 capabilities: [terminology, system_overview]
 topics: ["glossary", "terminology", "concepts", "onboarding"]
-short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Review, Blueprint, Flow, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
+short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
 links:
   - "README.md"
   - "ARCHITECTURE.md"
@@ -76,9 +76,17 @@ The YAML metadata block at the top of a request file that configures how Exaix s
 
 An agent-generated proposal — written to `Workspace/Plans/` — describing the steps and file changes the agent intends to make in order to satisfy a Request. A human reviews and approves, rejects, or amends the plan before Exaix executes a single step; this is the approval gate that turns autonomous execution into something a human can trust to run unattended.
 
+### Plan Amendment
+
+A structural revision to an in-flight Plan — proposed when a step fails, new information surfaces, or some other trigger fires mid-execution — that is routed back through human approval before the agent resumes. A Plan Amendment lets Exaix replan without ever stepping outside the gated pipeline: a changed intention gets the same scrutiny as the original one.
+
+### Changeset
+
+The actual file modifications an agent produces while executing an approved Plan, captured as a Git branch, a commit, and a structured description of what changed and why. Where a Plan describes what the agent _intends_ to do, a Changeset is the record of what it _actually did_ — the artifact a human inspects during Review before deciding whether to merge it.
+
 ### Review
 
-The human-in-the-loop gate that closes out execution: once an agent finishes applying an approved Plan's changes — typically as a Git branch — a human reviews the resulting diff and either merges it or sends it back for revision. Review is the last link in the chain the README describes as "file → plan → approve → execute → review → merge," the point where a human, not the agent, decides whether the work is actually done.
+The human-in-the-loop gate that closes out execution: once an agent finishes producing a Changeset from an approved Plan, a human reviews the resulting diff and either merges it or sends it back for revision. Review is the last link in the chain the README describes as "file → plan → approve → execute → review → merge," the point where a human, not the agent, decides whether the work is actually done.
 
 ### Blueprint
 
@@ -95,6 +103,22 @@ A single unit of work within a flow, mapped to a specific identity. Each step ha
 ### Gate Evaluate
 
 A flow block that performs a quality or acceptance check using a "judge" identity against a list of criteria — the mechanism flows use to validate their own output before proceeding.
+
+### Wait State
+
+The durable, resumable pause point underneath every gate described above — Plan approval, Plan Amendment approval, Review, Gate Evaluate. Whenever Exaix needs a human decision before continuing, it writes a Wait State artifact to disk carrying a deadline and a resume token, so the run can sit untouched for hours or days and pick back up exactly where it left off the moment someone acts — or expire safely if no one does. This is what turns Exaix's approval gates from session-bound prompts into durable, inspectable artifacts in their own right.
+
+---
+
+## Observability and Audit
+
+### Activity Journal
+
+Exaix's permanent, append-only audit trail: a typed, trace-linked record of every significant action the system takes — who initiated it, which Agent and Identity carried it out, what it touched, and when. Every Request, Plan, Changeset, Review, and Wait State transition is logged here, which is what makes an Exaix run independently inspectable after the fact — you don't have to have watched it live to trust what happened.
+
+### Trace ID
+
+A unique identifier that threads every event belonging to one unit of work — a Request's Trigger, its Plan, each execution step, its Review, and the final commit — into a single followable chain through the Activity Journal. Pass a Trace ID to `exactl watch <trace_id>` to stream a run's progress live, or look it up later to replay its full history end to end.
 
 ---
 
