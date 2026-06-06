@@ -14,7 +14,7 @@ links:
 
 ## Exaix Glossary
 
-Plain-language definitions of the concepts you need to read the rest of Exaix's documentation and operate the system. For implementation-level detail — code identifiers, journal field maps, and naming conventions that keep code, journal payloads, and schemas consistent — contributors should consult the project's internal developer glossary (not part of this public documentation set).
+Plain-language definitions of the concepts you need to read the rest of Exaix's documentation and operate the system. For implementation-level detail — code identifiers, journal field maps, and naming conventions that keep code, journal payloads, and schemas consistent — contributors should consult the [Developer Glossary](docs/GLOSSARY.md), this document's contributor-facing companion.
 
 ---
 
