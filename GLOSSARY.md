@@ -3,10 +3,10 @@ title: "Exaix Glossary"
 description: Concept-level glossary of Exaix terminology for newcomers and operators
 agent_priority: high
 copilot_knowledge_base: true
-version: "1.2"
+version: "1.3"
 capabilities: [terminology, system_overview]
 topics: ["glossary", "terminology", "concepts", "onboarding"]
-short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
+short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
 links:
   - "README.md"
   - "ARCHITECTURE.md"
@@ -35,6 +35,10 @@ Any entity that can initiate, receive, or process a request or event in Exaix �
 ### Agent (Runtime Agent)
 
 The code-level execution unit that orchestrates one or more identities to complete a task — it owns the control flow (calling identities, invoking tools, coordinating services), while the identities it runs supply the actual LLM behavior. `AgentRunner`, `FlowRunner`, and `RequestRouter` are examples of runtime agents.
+
+### Tool
+
+A discrete capability — reading or writing files, running git operations, querying external systems — that an agent invokes on an identity's behalf to act on the world beyond LLM reasoning. Tools are implemented as handlers under `packages/mcp/server/handlers/` (see [TOOLS.md](TOOLS.md) for the full agent-accessible index), validated and executed by the `ToolRegistry` within an identity's permitted capabilities and a portal's security boundaries, and exposed to MCP clients through the MCP Server.
 
 ---
 
