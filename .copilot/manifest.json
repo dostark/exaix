@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-05T18:51:40.614Z",
+  "generated_at": "2026-06-06T14:15:37.794Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1115,7 +1115,7 @@
       "path": "README.md",
       "title": "Exaix Overview & Quickstart",
       "short_summary": "Exaix Orchestration Platform - Overview and Quickstart",
-      "version": 2.1,
+      "version": 2.2,
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
         ".copilot/chunks/README.md.chunk1.txt",
