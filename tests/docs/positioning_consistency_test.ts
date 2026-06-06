@@ -53,7 +53,7 @@ function extractTermHeadings(content: string): string[] {
     .map((line) => line.slice(4).trim());
 }
 
-Deno.test("No-vaporware regression — Phases 85/86/89/90 are never framed as delivered capability", async () => {
+Deno.test("[hallucination-bench] No-vaporware regression — Phases 85/86/89/90 are never framed as delivered capability", async () => {
   for (const docPath of POSITIONING_DOC_PATHS) {
     const content = await readDoc(docPath);
     for (const rawLine of content.split("\n")) {
@@ -74,7 +74,7 @@ Deno.test("No-vaporware regression — Phases 85/86/89/90 are never framed as de
   }
 });
 
-Deno.test("Three-tier reliability narrative — ARCHITECTURE.md and the white paper tell the same story", async () => {
+Deno.test("[hallucination-bench] Three-tier reliability narrative — ARCHITECTURE.md and the white paper tell the same story", async () => {
   const architecture = await readDoc("ARCHITECTURE.md");
   const whitePaper = await readDoc("exaix-dev-docs/dev/Exaix_White_Paper.md");
 
@@ -111,7 +111,7 @@ Deno.test("Three-tier reliability narrative — ARCHITECTURE.md and the white pa
   }
 });
 
-Deno.test("Differentiation material — README, white paper, and the comparative analysis name the same example competitors", async () => {
+Deno.test("[hallucination-bench] Differentiation material — README, white paper, and the comparative analysis name the same example competitors", async () => {
   const readme = await readDoc("README.md");
   const whitePaper = await readDoc("exaix-dev-docs/dev/Exaix_White_Paper.md");
   const comparative = await readDoc("exaix-dev-docs/dev/Exaix_Comparative_Analysis.md");
@@ -139,7 +139,7 @@ Deno.test("Differentiation material — README, white paper, and the comparative
   }
 });
 
-Deno.test("GLOSSARY.md split — concept and implementation definitions stay disjoint and complete", async () => {
+Deno.test("[hallucination-bench] GLOSSARY.md split — concept and implementation definitions stay disjoint and complete", async () => {
   const rootGlossary = await readDoc("GLOSSARY.md");
   // Relocated out of the exaix-dev-docs submodule to docs/GLOSSARY.md after this
   // plan was written (the plan assumes exaix-dev-docs/dev/GLOSSARY.md — see commit
@@ -201,7 +201,7 @@ Deno.test("GLOSSARY.md split — concept and implementation definitions stay dis
   }
 });
 
-Deno.test("GLOSSARY.md cross-link — README and the white paper both link to the root glossary", async () => {
+Deno.test("[hallucination-bench] GLOSSARY.md cross-link — README and the white paper both link to the root glossary", async () => {
   const readme = await readDoc("README.md");
   const whitePaper = await readDoc("exaix-dev-docs/dev/Exaix_White_Paper.md");
 
@@ -213,7 +213,7 @@ Deno.test("GLOSSARY.md cross-link — README and the white paper both link to th
   );
 });
 
-Deno.test("Exaix_Weaknesses.md stale-path regression — src/services/ only appears as corrected history", async () => {
+Deno.test("[hallucination-bench] Exaix_Weaknesses.md stale-path regression — src/services/ only appears as corrected history", async () => {
   const weaknesses = await readDoc("exaix-dev-docs/dev/Exaix_Weaknesses.md");
 
   // Step 6 removed stale `src/services/` citations that pointed at the
@@ -251,7 +251,7 @@ interface IManifest {
   docs: IManifestDocEntry[];
 }
 
-Deno.test("Manifest registration — .copilot/manifest.json registers the root GLOSSARY.md", async () => {
+Deno.test("[hallucination-bench] Manifest registration — .copilot/manifest.json registers the root GLOSSARY.md", async () => {
   const manifestRaw = await readDoc(".copilot/manifest.json");
   const manifest = JSON.parse(manifestRaw) as IManifest;
 
