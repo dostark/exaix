@@ -37,7 +37,7 @@ The pipeline processes work through a gated pipeline (file → plan → approve 
 
 ## Edition Model Overview
 
-> **Current Status (May 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions describe aspirational features (Web UI, PostgreSQL, immudb, SSO/SAML, governance dashboard) that are planned but not yet present in the codebase. See `exaix-dev-docs/dev/Exaix_White_Paper.md` for the full product vision.
+> **Current Status (May 2026):** The **Solo edition** is fully implemented in this repository. Team and Enterprise editions describe aspirational features (Web UI, PostgreSQL, immudb, SSO/SAML, governance dashboard) that are planned but not yet present in the codebase.
 
 Exaix follows a **three-tier edition model** to serve different organizational needs:
 
@@ -89,6 +89,7 @@ For the pipeline gate diagram with ASCII art and TOML configuration sample, see 
 - Trace ID links: request → plan → review → commit
 - Immutable event stream for compliance (🟣 Enterprise: WORM storage)
 - Explicit approval gates: plans and reviews require human authorization
+- Durable, resumable wait states for approval gates — explicit lifecycle transitions, resume tokens, and time-based expiry via `exactl wait approve|reject|amend|expire`
 
 ### 4. **Multi-Provider Support**
 
@@ -113,6 +114,18 @@ For the pipeline gate diagram with ASCII art and TOML configuration sample, see 
 - Collaboration features in Team+ (🔵 Team)
 - Governance and compliance features in Enterprise (🟣 Enterprise)
 - Transparent feature tiering with upgrade path
+
+---
+
+## Execution Semantics
+
+Exaix's reliability rests on three layered guarantees — each inspectable through the Activity Journal, CLI, and flow artifacts rather than asserted as marketing language:
+
+1. **Visibility** — Every significant runtime transition emits a typed, versioned, trace-linked domain event (`DomainEventType`; see the `Event Taxonomy` subsection below). Operators can inspect what happened at any point in a run's lifecycle without reading raw runtime state.
+1. **Recoverability** — Step results are persisted with idempotency keys so a failed run can resume from the last successful step rather than recompute from scratch; this resumption path is still maturing and should not yet be relied on as a complete guarantee. Long-running execution context is managed and compacted automatically by the Context Budget Manager (see the `Context Budget Management` subsection below).
+1. **Governance** — Human approval gates are first-class durable wait states with explicit lifecycle transitions, resume tokens, and operator-driven resolution via `exactl wait approve|reject|amend|expire` (see `Request Quality Gate` below and `packages/flow/README.md` for the full wait-state lifecycle).
+
+Together these three tiers answer the question every operator asks before trusting an agent with a codebase: _what is it doing right now, can it recover from a transient failure without starting over, and can a human stop it before it commits to something irreversible?_
 
 ---
 
@@ -222,7 +235,7 @@ For frontmatter YAML examples, request type samples, flow validation rules, rout
 
 The **Request Quality Gate** is a pre-execution filter that assesses every incoming request body before routing. It prevents vague or unactionable requests from consuming LLM budget and provides an iterative Q&A loop to improve request quality.
 
-When a quality gate step fails during flow execution and a `waitStateService` is configured, the `FlowRunner` creates a **durable wait state** that pauses the flow until an operator resolves it via `exactl wait approve|reject|amend`. This replaces the previous feedback-loop retry model with an explicit asynchronous approval workflow.
+When a quality gate step fails during flow execution and a `waitStateService` is configured, the `FlowRunner` creates a **durable wait state** that pauses the flow until an operator resolves it via `exactl wait approve|reject|amend|expire`. This replaces the previous feedback-loop retry model with an explicit asynchronous approval workflow with resume tokens and time-based expiry.
 
 The gate produces one of four recommendations: **PROCEED**, **AUTO_ENRICH**, **NEEDS_CLARIFICATION**, or **REJECT** — each with configurable score thresholds. Assessment runs in `heuristic`, `llm`, or `hybrid` mode.
 
@@ -268,12 +281,17 @@ For the step table, sequence diagram, component hierarchy, MCP server implementa
 
 ---
 
-For flow namespace coordination, error recovery, parallel execution groups, step
-durability, and wait states, see `packages/flow/README.md`.
+For flow namespace coordination, error recovery, parallel execution groups, and
+wait states, see `packages/flow/README.md`. Step-level durability and replay —
+idempotency-keyed step persistence enabling resumption from the last successful
+step rather than recomputation from scratch — is still maturing and should not
+yet be relied on as a complete guarantee.
 
 ---
 
 ## AI Provider Architecture {#ai-provider-architecture}
+
+Provider integrations are organized as independent packages (`@exaix/ai-anthropic`, `@exaix/ai-openai`, `@exaix/ai-google`, `@exaix/ai-vertex`, `@exaix/ai-openrouter`, `@exaix/ai-ollama`), selected via `ProviderSelector` → `CircuitBreaker` → `ProviderFactory` and registered at bootstrap by `apps/common/registry_bootstrap.ts`.
 
 For the provider component table and edition availability matrix, see `packages/ai/README.md#provider-components`.
 
@@ -285,9 +303,8 @@ Advanced agent orchestration capabilities provide improved output quality, relia
 
 ### Orchestration Components
 
-For the agent orchestration flow diagram (request → session memory → reflexive
-agent → output validation → retry/confidence → tool reflection → response), see
-`exaix-dev-docs/dev/System_Architecture_Diagram.md#6-agent-orchestration`.
+The agent orchestration flow runs: request → session memory → reflexive
+agent → output validation → retry/confidence → tool reflection → response.
 
 ### Service Responsibilities
 
@@ -308,11 +325,10 @@ Exaix implements a ReAct (Reasoning + Acting) reasoning engine for dynamic flow 
 
 ### ReAct Loop Architecture
 
-For the ReAct loop diagram (step objective → blueprint → MCP client → LLM
-reasoning → tool call → permission check → observe → iterate/complete), see
-`exaix-dev-docs/dev/System_Architecture_Diagram.md#7-react-loop-architecture`.
+The ReAct loop runs: step objective → blueprint → MCP client → LLM
+reasoning → tool call → permission check → observe → iterate/complete.
 
-### Context Budget Management (Phase 83)
+### Context Budget Management
 
 Dynamic execution is bounded by a two-layer context budget system:
 
@@ -331,8 +347,8 @@ Every compaction decision is persisted to `Memory/Execution/{traceId}/` as an
 prompt-state hygiene observable and auditable. Protected segment classes (`"system"`,
 `"request"`, `"acceptance_criteria"`, `metadata.nonCompactable = true`) are never dropped.
 
-Phase 83 is activated by injecting `contextBudgetManager` and (optionally) `snapshotStore`
-as the 12th and 13th constructor parameters of `AgentExecutor`. Without that injection the
+Context budget management is activated by injecting `contextBudgetManager` and (optionally)
+`snapshotStore` as the 12th and 13th constructor parameters of `AgentExecutor`. Without that injection the
 `_contextBudgetManager` field is `undefined` and budget compaction is silently skipped on
 every ReAct iteration. `ReActLoopStrategy` reads both values via `IReActLoopExecutor`.
 
@@ -527,10 +543,7 @@ For the full 60+ entry component responsibilities table with file paths and edit
 
 ## Related Documentation
 
-- **[System_Architecture_Diagram](exaix-dev-docs/dev/System_Architecture_Diagram.md)** - full architecture
-  with focused Mermaid diagrams broken down by subsystem layer.
 - **[User Guide](docs/Exaix_User_Guide.md)** — End-user documentation
-- **[White Paper](exaix-dev-docs/dev/Exaix_White_Paper.md)** — Vision and philosophy
 - **Package and App READMEs** — Implementation reference (formerly `docs/dev/`):
   - `packages/flow/README.md` — Flow engine, orchestration services, session tool integration
   - `packages/request/README.md` — Request processing, analysis, routing

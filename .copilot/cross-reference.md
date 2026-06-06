@@ -54,6 +54,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Agent Instructions | [../CLAUDE.md](../CLAUDE.md) | |
 | Exaix Overview & Quickstart | [../README.md](../README.md) | |
 | MCP Agent Tool Index | [../TOOLS.md](../TOOLS.md) | |
+| Exaix Glossary | [../GLOSSARY.md](../GLOSSARY.md) | |
 | Code Style & Standards | [../CODE_STYLE.md](../CODE_STYLE.md) | |
 | CONTRIBUTING.md | [../CONTRIBUTING.md](../CONTRIBUTING.md) | |
 
@@ -77,6 +78,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`coding-standards`** → [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`commit`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`commits`** → [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md)
+- **`concepts`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`configurability`** → [skills/plan/SKILL.md](skills/plan/SKILL.md)
 - **`configuration`** → [skills/infra/SKILL.md](skills/infra/SKILL.md)
 - **`constants`** → [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md)
@@ -96,6 +98,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`gap-analysis`** → [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`gemini`** → [providers/google-long-context.md](providers/google-long-context.md)
 - **`git`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md), [skills/commit/SKILL.md](skills/commit/SKILL.md)
+- **`glossary`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`governance`** → [guidelines/process-README.md](guidelines/process-README.md)
 - **`guidelines`** → [guidelines/README.md](guidelines/README.md), [../LLM_GUIDE.md](../LLM_GUIDE.md)
 - **`helpers`** → [guidelines/testing.md](guidelines/testing.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md)
@@ -113,6 +116,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`methodology`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [guidelines/README.md](guidelines/README.md), [guidelines/process-README.md](guidelines/process-README.md)
 - **`migration`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`navigation`** → [skills/explore/SKILL.md](skills/explore/SKILL.md)
+- **`onboarding`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`owasp`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`packages`** → [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md)
 - **`parallel-tool-calls`** → [providers/google.md](providers/google.md)
@@ -151,6 +155,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`style`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`submodule`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
 - **`tdd`** → [guidelines/testing.md](guidelines/testing.md), [guidelines/exaix-development.md](guidelines/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md), [providers/claude.md](providers/claude.md)
+- **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`testing`** → [guidelines/README.md](guidelines/README.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md)
 - **`tests`** → [guidelines/testing.md](guidelines/testing.md)
 - **`thinking-protocol`** → [providers/openai.md](providers/openai.md)

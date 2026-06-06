@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-05T18:51:40.614Z",
+  "generated_at": "2026-06-06T18:31:58.903Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -1115,7 +1115,7 @@
       "path": "README.md",
       "title": "Exaix Overview & Quickstart",
       "short_summary": "Exaix Orchestration Platform - Overview and Quickstart",
-      "version": 2.1,
+      "version": 2.3,
       "chunks": [
         ".copilot/chunks/README.md.chunk0.txt",
         ".copilot/chunks/README.md.chunk1.txt",
@@ -1144,6 +1144,28 @@
         ".copilot/chunks/TOOLS.md.chunk1.txt",
         ".copilot/chunks/TOOLS.md.chunk2.txt",
         ".copilot/chunks/TOOLS.md.chunk3.txt"
+      ]
+    },
+    {
+      "path": "GLOSSARY.md",
+      "title": "Exaix Glossary",
+      "short_summary": "Plain-language definitions of the core Exaix concepts — Identity, Agent, Tool, Actor, Artifact, Trigger, Request, Plan, Plan Amendment, Changeset, Review, Wait State, Blueprint, Flow, Activity Journal, Trace ID, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works.",
+      "version": "1.3",
+      "topics": [
+        "glossary",
+        "terminology",
+        "concepts",
+        "onboarding"
+      ],
+      "chunks": [
+        ".copilot/chunks/GLOSSARY.md.chunk0.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk1.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk2.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk3.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk4.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk5.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk6.txt",
+        ".copilot/chunks/GLOSSARY.md.chunk7.txt"
       ]
     },
     {
