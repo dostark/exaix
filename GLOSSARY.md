@@ -3,10 +3,10 @@ title: "Exaix Glossary"
 description: Concept-level glossary of Exaix terminology for newcomers and operators
 agent_priority: high
 copilot_knowledge_base: true
-version: "1.0"
+version: "1.1"
 capabilities: [terminology, system_overview]
 topics: ["glossary", "terminology", "concepts", "onboarding"]
-short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Request, Blueprint, Flow, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
+short_summary: "Plain-language definitions of the core Exaix concepts — Identity, Agent, Actor, Artifact, Trigger, Request, Plan, Review, Blueprint, Flow, Portal, Memory, Skills, MCP, and more — for anyone building a mental model of how Exaix works."
 links:
   - "README.md"
   - "ARCHITECTURE.md"
@@ -54,15 +54,31 @@ Actors are "who", agents are "how", identities are "what and with which voice".
 
 ---
 
-## Requests, Blueprints, and Flows
+## Work Artifacts and the Gated Pipeline
+
+### Artifact
+
+A discrete, file-based unit of work or output that Exaix persists to disk and tracks through the Activity Journal — Requests, Plans, flow run records, wait-state records, and reports are all artifacts. Unlike session-oriented tools where the conversation _is_ the state, Exaix models every stage of work as an inspectable artifact you can read, diff, version with Git, and audit independently of any running process — this is what the phrase "files-as-API" refers to.
+
+### Trigger
+
+An external or internal signal that starts Exaix processing — a webhook call, a cron schedule, a filesystem event, a CLI invocation, or an internal daemon event. Exaix's trigger adapter layer translates each of these source-specific signals into a canonical envelope before handing it to the request pipeline, so work can originate from outside systems (CI, monitoring, schedules) as naturally as from a human writing a request by hand.
 
 ### Request
 
-The top-level unit of work submitted to Exaix — a markdown file with YAML frontmatter, dropped into `Workspace/Requests/` (or submitted via the CLI or MCP). Exaix picks it up asynchronously, routes it to the right identity, and processes it through the gated pipeline: file → plan → approve → execute → review → merge.
+The top-level unit of work submitted to Exaix — a markdown file with YAML frontmatter, dropped into `Workspace/Requests/` (or submitted via the CLI, MCP, or a Trigger). Exaix picks it up asynchronously, routes it to the right identity, and processes it through the gated pipeline: file → plan → approve → execute → review → merge.
 
 ### Request Frontmatter
 
 The YAML metadata block at the top of a request file that configures how Exaix should process it — including which `identity` to use, an optional `flow_id`, and execution options. Validated against a schema before processing begins.
+
+### Plan
+
+An agent-generated proposal — written to `Workspace/Plans/` — describing the steps and file changes the agent intends to make in order to satisfy a Request. A human reviews and approves, rejects, or amends the plan before Exaix executes a single step; this is the approval gate that turns autonomous execution into something a human can trust to run unattended.
+
+### Review
+
+The human-in-the-loop gate that closes out execution: once an agent finishes applying an approved Plan's changes — typically as a Git branch — a human reviews the resulting diff and either merges it or sends it back for revision. Review is the last link in the chain the README describes as "file → plan → approve → execute → review → merge," the point where a human, not the agent, decides whether the work is actually done.
 
 ### Blueprint
 
