@@ -10,7 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { ProviderType } from "@exaix/core";
+import { BlueprintStatus, ProviderType } from "@exaix/core";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
 import { STDIO_INHERIT } from "./constants.ts";
@@ -36,11 +36,22 @@ export interface IBlueprintFrontmatterData {
   name?: string;
   model?: string;
   capabilities?: string[];
+  deprecated?: boolean | string;
   created?: string;
   created_by?: string;
   version?: string;
   description?: string;
-  [key: string]: string | string[] | undefined;
+  [key: string]: string | string[] | boolean | undefined;
+}
+
+/**
+ * Filters for the blueprint list command (Phase 93 Solo salvage).
+ */
+export interface BlueprintListOptions {
+  /** Only return blueprints whose `capabilities` array contains this identifier. */
+  capability?: string;
+  /** Only return blueprints in this lifecycle status. */
+  status?: BlueprintStatus;
 }
 
 export interface BlueprintCreateOptions {
@@ -520,10 +531,22 @@ export class BlueprintCommands extends BaseCommand {
       name: frontmatter.name as string,
       model: frontmatter.model as string,
       capabilities: frontmatter.capabilities as string[] | undefined,
+      status: this.deriveStatus(frontmatter),
       created: frontmatter.created as string,
       created_by: frontmatter.created_by as string,
       version: (frontmatter.version as string) || "1.0.0",
     };
+  }
+
+  /**
+   * Derive the lifecycle status from the `deprecated` flag — the single source
+   * of truth that routing/capability matching consumes. The value may arrive as
+   * a real boolean (TOML) or the string "true" (loose YAML parsing).
+   */
+  private deriveStatus(frontmatter: IBlueprintFrontmatterData): BlueprintStatus {
+    const deprecated = frontmatter.deprecated;
+    const isDeprecated = deprecated === true || deprecated === "true";
+    return isDeprecated ? BlueprintStatus.DEPRECATED : BlueprintStatus.ACTIVE;
   }
 
   /**
@@ -733,9 +756,10 @@ ${systemPrompt}
   }
 
   /**
-   * List all blueprints
+   * List all blueprints, optionally filtered by lifecycle status and/or a
+   * declared capability (Phase 93 Solo salvage).
    */
-  async list(): Promise<IBlueprintMetadata[]> {
+  async list(options: BlueprintListOptions = {}): Promise<IBlueprintMetadata[]> {
     const blueprintsDir = this.getBlueprintsDir();
     const results: IBlueprintMetadata[] = [];
 
@@ -752,6 +776,9 @@ ${systemPrompt}
               // Skip malformed blueprint files rather than crashing list output.
               continue;
             }
+            if (!this.matchesListFilters(metadata, options)) {
+              continue;
+            }
             results.push(metadata);
           }
         }
@@ -764,6 +791,77 @@ ${systemPrompt}
     }
 
     return results.sort((a, b) => (a.identity_id ?? "").localeCompare(b.identity_id ?? ""));
+  }
+
+  private matchesListFilters(metadata: IBlueprintMetadata, options: BlueprintListOptions): boolean {
+    if (options.status && metadata.status !== options.status) {
+      return false;
+    }
+    if (options.capability && !(metadata.capabilities ?? []).includes(options.capability)) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Mark a blueprint as deprecated (Phase 93 Solo salvage). Sets the
+   * `deprecated` frontmatter flag — the field that routing/capability matching
+   * (`packages/routing/src/capability_matcher.ts`) reads to exclude a blueprint
+   * from selection — so deprecation has a real runtime effect. The blueprint
+   * file remains the source of truth: this rewrites the flag in place,
+   * preserving the original format, field order, and comments, via an atomic
+   * write. The file is not deleted.
+   */
+  async deprecate(identityId: string): Promise<void> {
+    try {
+      const blueprintPath = await this.getExistingBlueprintPath(identityId);
+      const content = await Deno.readTextFile(blueprintPath);
+      const updated = this.setFrontmatterDeprecated(content, identityId);
+
+      // Atomic write: temp file + rename, to avoid partial-write corruption.
+      const tmpPath = `${blueprintPath}.${crypto.randomUUID()}.tmp`;
+      await Deno.writeTextFile(tmpPath, updated);
+      await Deno.rename(tmpPath, blueprintPath);
+
+      await this.display.info("blueprint.deprecated", identityId, { via: "cli" });
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "BlueprintCommands.deprecate",
+        args: { identityId },
+        error: error as Error | string | object | null | undefined,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Surgically set `deprecated = true` inside a blueprint's frontmatter block,
+   * preserving the original delimiter style (TOML `+++` or YAML `---`) and all
+   * other lines. Replaces an existing `deprecated` entry or appends one.
+   */
+  private setFrontmatterDeprecated(content: string, identityId: string): string {
+    const isToml = /^\+\+\+\n/.test(content);
+    const isYaml = /^---\n/.test(content);
+    if (!isToml && !isYaml) {
+      throw new Error(`Invalid blueprint format: ${identityId}`);
+    }
+
+    const fmPattern = isToml ? /^(\+\+\+\n)([\s\S]*?)(\n\+\+\+\n?)/ : /^(---\n)([\s\S]*?)(\n---\n?)/;
+    const match = content.match(fmPattern);
+    if (!match) {
+      throw new Error(`Invalid blueprint format: ${identityId}`);
+    }
+
+    const deprecatedLine = isToml ? "deprecated = true" : "deprecated: true";
+    const deprecatedRegex = isToml ? /^deprecated\s*=.*$/m : /^deprecated\s*:.*$/m;
+
+    const [, open, fmBody, close] = match;
+    const newFmBody = deprecatedRegex.test(fmBody)
+      ? fmBody.replace(deprecatedRegex, deprecatedLine)
+      : `${fmBody}\n${deprecatedLine}`;
+
+    // Function replacer avoids `$`-pattern interpretation in the replacement.
+    return content.replace(fmPattern, () => `${open}${newFmBody}${close}`);
   }
 
   /**

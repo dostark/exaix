@@ -11,6 +11,7 @@ import { assertEquals, assertExists, assertRejects, assertStringIncludes } from 
 import { exists } from "@std/fs";
 import { join } from "@std/path";
 import { BlueprintCommands } from "../src/commands/blueprint_commands.ts";
+import { BlueprintStatus } from "@exaix/core";
 import type { ICommandContext } from "@exaix/cli/base.ts";
 import { TestEnvironment } from "../../../tests/integration/helpers/test_environment.ts";
 import { TEST_MODEL_ANTHROPIC } from "@exaix/testing";
@@ -888,6 +889,129 @@ Deno.test("[blueprint] show - throws on blueprint with invalid frontmatter", asy
       Error,
       "Invalid blueprint format",
     );
+  } finally {
+    await teardownTest();
+  }
+});
+
+// ============================================================================
+// Test Suite: Blueprint Status Lifecycle & Filters (Phase 93 Solo salvage)
+// ============================================================================
+
+Deno.test("[blueprint] list - includes status defaulting to active", async () => {
+  await setupTest();
+  try {
+    await commands.create("active-default", { name: "Active Default", model: "ollama:llama3.2" });
+
+    const [blueprint] = await commands.list();
+    assertEquals(blueprint.status, BlueprintStatus.ACTIVE);
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] deprecate - sets status to deprecated", async () => {
+  await setupTest();
+  try {
+    await commands.create("to-deprecate", { name: "To Deprecate", model: "ollama:llama3.2" });
+
+    await commands.deprecate("to-deprecate");
+
+    const detail = await commands.show("to-deprecate");
+    assertEquals(detail.status, BlueprintStatus.DEPRECATED);
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] deprecate - logs blueprint.deprecated activity", async () => {
+  await setupTest();
+  try {
+    await commands.create("journal-deprecate", { name: "Journal Deprecate", model: "ollama:llama3.2" });
+
+    await commands.deprecate("journal-deprecate");
+
+    await testEnv.db.waitForFlush();
+
+    const activities = testEnv.db.getActivitiesByActionType("blueprint.deprecated");
+    assertEquals(activities.length >= 1, true);
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] deprecate - rejects unknown blueprint", async () => {
+  await setupTest();
+  try {
+    await assertRejects(
+      async () => {
+        await commands.deprecate("does-not-exist");
+      },
+      Error,
+    );
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] list - filters by status", async () => {
+  await setupTest();
+  try {
+    await commands.create("stays-active", { name: "Stays Active", model: "ollama:llama3.2" });
+    await commands.create("gets-deprecated", { name: "Gets Deprecated", model: "ollama:llama3.2" });
+    await commands.deprecate("gets-deprecated");
+
+    const deprecated = await commands.list({ status: BlueprintStatus.DEPRECATED });
+    assertEquals(deprecated.length, 1);
+    assertEquals(deprecated[0].identity_id, "gets-deprecated");
+
+    const active = await commands.list({ status: BlueprintStatus.ACTIVE });
+    assertEquals(active.length, 1);
+    assertEquals(active[0].identity_id, "stays-active");
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] list - filters by capability", async () => {
+  await setupTest();
+  try {
+    await commands.create("can-push", {
+      name: "Can Push",
+      model: "ollama:llama3.2",
+      capabilities: "git_push,testing",
+    });
+    await commands.create("read-only", {
+      name: "Read Only",
+      model: "ollama:llama3.2",
+      capabilities: "general",
+    });
+
+    const pushers = await commands.list({ capability: "git_push" });
+    assertEquals(pushers.length, 1);
+    assertEquals(pushers[0].identity_id, "can-push");
+  } finally {
+    await teardownTest();
+  }
+});
+
+Deno.test("[blueprint] deprecate - writes the `deprecated` flag that routing consumes", async () => {
+  await setupTest();
+  try {
+    await commands.create("routing-deprecate", { name: "Routing Deprecate", model: "ollama:llama3.2" });
+
+    await commands.deprecate("routing-deprecate");
+
+    // The capability matcher reads frontmatter.deprecated; deprecate must set it
+    // (not a separate status label) for deprecation to have a runtime effect.
+    const blueprintPath = join(
+      testEnv.config.system.root,
+      testEnv.config.paths.blueprints,
+      "Identities",
+      "routing-deprecate.md",
+    );
+    const raw = await Deno.readTextFile(blueprintPath);
+    assertEquals(/deprecated\s*[:=]\s*true/.test(raw), true);
   } finally {
     await teardownTest();
   }

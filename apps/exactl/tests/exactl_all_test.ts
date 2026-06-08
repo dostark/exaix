@@ -14,6 +14,7 @@ import { join } from "@std/path";
 import { BINARY_VERSION } from "@exaix/core";
 import { ExaPathDefaults } from "@exaix/core";
 import {
+  BlueprintStatus,
   FlowInputSource,
   MemoryBankSource,
   MemoryOperation,
@@ -302,6 +303,7 @@ Deno.test("blueprint list prints hint when empty and list when present", async (
         name: "A",
         model: "mock",
         capabilities: ["c1"],
+        status: BlueprintStatus.ACTIVE,
         created: "now",
         created_by: "tester",
         version: "1.0.0",

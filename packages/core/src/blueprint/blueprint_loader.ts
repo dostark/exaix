@@ -133,7 +133,7 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Tools the agent is permitted to use in DYNAMIC execution mode */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
 
-  /** Deprecation flag for outdated blueprints */
+  /** Deprecation flag for outdated blueprints; consumed by routing/capability matching */
   deprecated: z.boolean().default(false),
 
   /** Prefer this agent locally for routing fallback */

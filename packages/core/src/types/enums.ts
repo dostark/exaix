@@ -637,6 +637,17 @@ export enum SkillStatus {
 }
 
 /**
+ * Derived lifecycle view for a blueprint (Phase 93 Solo salvage). Projected from
+ * the `deprecated` frontmatter flag — the single source of truth consumed by
+ * routing/capability matching — rather than stored independently: a blueprint is
+ * `deprecated` when its `deprecated` flag is set, otherwise `active`.
+ */
+export enum BlueprintStatus {
+  ACTIVE = GeneralStatus.ACTIVE,
+  DEPRECATED = GeneralStatus.DEPRECATED,
+}
+
+/**
  * Status for dialog lifecycle.
  */
 export enum DialogStatus {

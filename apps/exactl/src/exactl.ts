@@ -45,6 +45,7 @@ import { GitService } from "@exaix/git";
 import type { OutputFormat } from "@exaix/cli/types/memory_types.ts";
 import {
   BINARY_VERSION,
+  type BlueprintStatus,
   DAEMON_IDENTITY_ID,
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   PORTAL_LABEL,
@@ -1230,9 +1231,14 @@ export const __test_command = new Command()
         RequestOperation.LIST,
         new Command()
           .description("List all agent blueprints")
-          .action(async () => {
+          .option("--capability <capability:string>", "Only show blueprints that declare this capability")
+          .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
+          .action(async (options: { capability?: string; status?: string }) => {
             try {
-              const blueprints = await blueprintCommands.list();
+              const blueprints = await blueprintCommands.list({
+                capability: options.capability,
+                status: options.status as BlueprintStatus | undefined,
+              });
               if (blueprints.length === 0) {
                 display.info("blueprint.list", DISPLAY_CATEGORY_BLUEPRINTS, {
                   count: 0,
@@ -1246,6 +1252,7 @@ export const __test_command = new Command()
                 display.info(blueprint.identity_id, blueprint.name, {
                   model: blueprint.model,
                   capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+                  status: blueprint.status,
                   created: blueprint.created,
                 });
               }
@@ -1366,6 +1373,23 @@ export const __test_command = new Command()
           }),
       )
       .command(
+        "deprecate <agent-id>",
+        new Command()
+          .description("Mark a blueprint as deprecated (retires it without deleting the file)")
+          .action(async (_options, ...args: string[]) => {
+            const identityId = args[0];
+            try {
+              await blueprintCommands.deprecate(identityId);
+              display.info("blueprint.deprecated", identityId, { status: "Deprecated ✓" });
+            } catch (error) {
+              display.error("cli.error", "blueprint deprecate", {
+                message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+              });
+              Deno.exit(1);
+            }
+          }),
+      )
+      .command(
         "ls",
         new Command().description("Alias for 'list'").action(async () => {
           const blueprints = await blueprintCommands.list();
@@ -1440,9 +1464,17 @@ export const __test_command = new Command()
             RequestOperation.LIST,
             new Command()
               .description("List all identity blueprints")
-              .action(async () => {
+              .option("--capability <capability:string>", "Only show blueprints that declare this capability")
+              .option(
+                "--status <status:string>",
+                "Only show blueprints in this lifecycle status (active|deprecated)",
+              )
+              .action(async (options: { capability?: string; status?: string }) => {
                 try {
-                  const blueprints = await blueprintCommands.list();
+                  const blueprints = await blueprintCommands.list({
+                    capability: options.capability,
+                    status: options.status as BlueprintStatus | undefined,
+                  });
                   if (blueprints.length === 0) {
                     display.info("blueprint.list", "identities", {
                       count: 0,
@@ -1456,6 +1488,7 @@ export const __test_command = new Command()
                     display.info(blueprint.identity_id, blueprint.name, {
                       model: blueprint.model,
                       capabilities: blueprint.capabilities?.join(", ") || DEFAULT_CAPABILITIES_LABEL,
+                      status: blueprint.status,
                       created: blueprint.created,
                     });
                   }
@@ -1548,6 +1581,23 @@ export const __test_command = new Command()
                   display.info("blueprint.removed", identityId, { status: "Removed ✓" });
                 } catch (error) {
                   display.error("cli.error", "blueprint remove", {
+                    message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
+                  });
+                  Deno.exit(1);
+                }
+              }),
+          )
+          .command(
+            "deprecate <identity-id>",
+            new Command()
+              .description("Mark an identity blueprint as deprecated (retires it without deleting the file)")
+              .action(async (_options, ...args: string[]) => {
+                const identityId = args[0];
+                try {
+                  await blueprintCommands.deprecate(identityId);
+                  display.info("blueprint.deprecated", identityId, { status: "Deprecated ✓" });
+                } catch (error) {
+                  display.error("cli.error", "blueprint deprecate", {
                     message: error instanceof Error ? error.message : DEFAULT_UNKNOWN_ERROR_MESSAGE,
                   });
                   Deno.exit(1);

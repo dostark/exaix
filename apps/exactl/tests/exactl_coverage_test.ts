@@ -10,6 +10,7 @@
 import "./helpers/set_test_mode.ts";
 import { assert, assertEquals } from "@std/assert";
 import {
+  BlueprintStatus,
   FlowInputSource,
   MemoryBankSource,
   MemoryOperation,
@@ -875,6 +876,7 @@ Deno.test("blueprint show displays content preview", async () => {
         name: "Test Agent",
         model: "mock:test",
         capabilities: ["coding", "review"],
+        status: BlueprintStatus.ACTIVE,
         version: "1.0.0",
         created: "2026-01-04",
         created_by: "tester",
