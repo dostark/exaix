@@ -36,12 +36,12 @@ export interface IBlueprintFrontmatterData {
   name?: string;
   model?: string;
   capabilities?: string[];
-  status?: string;
+  deprecated?: boolean | string;
   created?: string;
   created_by?: string;
   version?: string;
   description?: string;
-  [key: string]: string | string[] | undefined;
+  [key: string]: string | string[] | boolean | undefined;
 }
 
 /**
@@ -531,7 +531,7 @@ export class BlueprintCommands extends BaseCommand {
       name: frontmatter.name as string,
       model: frontmatter.model as string,
       capabilities: frontmatter.capabilities as string[] | undefined,
-      status: this.coerceStatus(frontmatter.status),
+      status: this.deriveStatus(frontmatter),
       created: frontmatter.created as string,
       created_by: frontmatter.created_by as string,
       version: (frontmatter.version as string) || "1.0.0",
@@ -539,12 +539,14 @@ export class BlueprintCommands extends BaseCommand {
   }
 
   /**
-   * Coerce a raw frontmatter status value to a known BlueprintStatus, defaulting
-   * to active for legacy blueprints authored before the field existed.
+   * Derive the lifecycle status from the `deprecated` flag — the single source
+   * of truth that routing/capability matching consumes. The value may arrive as
+   * a real boolean (TOML) or the string "true" (loose YAML parsing).
    */
-  private coerceStatus(value: string | string[] | undefined): BlueprintStatus {
-    const known = Object.values(BlueprintStatus) as string[];
-    return (typeof value === "string" && known.includes(value)) ? value as BlueprintStatus : BlueprintStatus.ACTIVE;
+  private deriveStatus(frontmatter: IBlueprintFrontmatterData): BlueprintStatus {
+    const deprecated = frontmatter.deprecated;
+    const isDeprecated = deprecated === true || deprecated === "true";
+    return isDeprecated ? BlueprintStatus.DEPRECATED : BlueprintStatus.ACTIVE;
   }
 
   /**
@@ -802,16 +804,19 @@ ${systemPrompt}
   }
 
   /**
-   * Mark a blueprint as deprecated (Phase 93 Solo salvage). The blueprint file
-   * is the source of truth, so this rewrites the `status` field in the
-   * frontmatter in place — preserving the original format, field order, and
-   * comments — using an atomic write. The file is not deleted.
+   * Mark a blueprint as deprecated (Phase 93 Solo salvage). Sets the
+   * `deprecated` frontmatter flag — the field that routing/capability matching
+   * (`packages/routing/src/capability_matcher.ts`) reads to exclude a blueprint
+   * from selection — so deprecation has a real runtime effect. The blueprint
+   * file remains the source of truth: this rewrites the flag in place,
+   * preserving the original format, field order, and comments, via an atomic
+   * write. The file is not deleted.
    */
   async deprecate(identityId: string): Promise<void> {
     try {
       const blueprintPath = await this.getExistingBlueprintPath(identityId);
       const content = await Deno.readTextFile(blueprintPath);
-      const updated = this.setFrontmatterStatus(content, BlueprintStatus.DEPRECATED, identityId);
+      const updated = this.setFrontmatterDeprecated(content, identityId);
 
       // Atomic write: temp file + rename, to avoid partial-write corruption.
       const tmpPath = `${blueprintPath}.${crypto.randomUUID()}.tmp`;
@@ -830,11 +835,11 @@ ${systemPrompt}
   }
 
   /**
-   * Surgically set the `status` field inside a blueprint's frontmatter block,
+   * Surgically set `deprecated = true` inside a blueprint's frontmatter block,
    * preserving the original delimiter style (TOML `+++` or YAML `---`) and all
-   * other lines. Replaces an existing `status` entry or appends one.
+   * other lines. Replaces an existing `deprecated` entry or appends one.
    */
-  private setFrontmatterStatus(content: string, status: BlueprintStatus, identityId: string): string {
+  private setFrontmatterDeprecated(content: string, identityId: string): string {
     const isToml = /^\+\+\+\n/.test(content);
     const isYaml = /^---\n/.test(content);
     if (!isToml && !isYaml) {
@@ -847,11 +852,13 @@ ${systemPrompt}
       throw new Error(`Invalid blueprint format: ${identityId}`);
     }
 
-    const statusLine = isToml ? `status = "${status}"` : `status: "${status}"`;
-    const statusRegex = isToml ? /^status\s*=.*$/m : /^status\s*:.*$/m;
+    const deprecatedLine = isToml ? "deprecated = true" : "deprecated: true";
+    const deprecatedRegex = isToml ? /^deprecated\s*=.*$/m : /^deprecated\s*:.*$/m;
 
     const [, open, fmBody, close] = match;
-    const newFmBody = statusRegex.test(fmBody) ? fmBody.replace(statusRegex, statusLine) : `${fmBody}\n${statusLine}`;
+    const newFmBody = deprecatedRegex.test(fmBody)
+      ? fmBody.replace(deprecatedRegex, deprecatedLine)
+      : `${fmBody}\n${deprecatedLine}`;
 
     // Function replacer avoids `$`-pattern interpretation in the replacement.
     return content.replace(fmPattern, () => `${open}${newFmBody}${close}`);

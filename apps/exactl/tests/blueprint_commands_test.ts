@@ -994,3 +994,25 @@ Deno.test("[blueprint] list - filters by capability", async () => {
     await teardownTest();
   }
 });
+
+Deno.test("[blueprint] deprecate - writes the `deprecated` flag that routing consumes", async () => {
+  await setupTest();
+  try {
+    await commands.create("routing-deprecate", { name: "Routing Deprecate", model: "ollama:llama3.2" });
+
+    await commands.deprecate("routing-deprecate");
+
+    // The capability matcher reads frontmatter.deprecated; deprecate must set it
+    // (not a separate status label) for deprecation to have a runtime effect.
+    const blueprintPath = join(
+      testEnv.config.system.root,
+      testEnv.config.paths.blueprints,
+      "Identities",
+      "routing-deprecate.md",
+    );
+    const raw = await Deno.readTextFile(blueprintPath);
+    assertEquals(/deprecated\s*[:=]\s*true/.test(raw), true);
+  } finally {
+    await teardownTest();
+  }
+});

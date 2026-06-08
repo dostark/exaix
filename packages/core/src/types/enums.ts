@@ -637,12 +637,12 @@ export enum SkillStatus {
 }
 
 /**
- * Status for blueprint lifecycle (Phase 93 Solo salvage).
- * `draft` is reserved for scaffolded-but-unpublished blueprints; new blueprints
- * default to `active`; `deprecated` marks a blueprint retired without deleting it.
+ * Derived lifecycle view for a blueprint (Phase 93 Solo salvage). Projected from
+ * the `deprecated` frontmatter flag — the single source of truth consumed by
+ * routing/capability matching — rather than stored independently: a blueprint is
+ * `deprecated` when its `deprecated` flag is set, otherwise `active`.
  */
 export enum BlueprintStatus {
-  DRAFT = GeneralStatus.DRAFT,
   ACTIVE = GeneralStatus.ACTIVE,
   DEPRECATED = GeneralStatus.DEPRECATED,
 }

@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { DEFAULT_BLUEPRINT_VERSION } from "@exaix/core";
-import { ActivityActor, BlueprintStatus, McpToolName, TaskType } from "@exaix/core";
+import { ActivityActor, type BlueprintStatus, McpToolName, TaskType } from "@exaix/core";
 
 // ============================================================================
 // Blueprint Interfaces
@@ -83,10 +83,13 @@ export const BlueprintFrontmatterSchema = z.object({
   capabilities: z.array(z.string()).optional().default([]),
 
   /**
-   * Lifecycle status (Phase 93 Solo salvage). Defaults to `active` so existing
-   * blueprints authored before this field was introduced remain valid.
+   * Deprecation flag (Phase 93 Solo salvage). When true, routing/capability
+   * matching excludes the blueprint from selection (see
+   * `packages/routing/src/capability_matcher.ts`). Optional; absent means active.
+   * This is the single source of truth for lifecycle; the derived `status` view
+   * on `IBlueprintMetadata` projects it to `active` | `deprecated`.
    */
-  status: z.nativeEnum(BlueprintStatus).default(BlueprintStatus.ACTIVE),
+  deprecated: z.boolean().optional(),
 
   /** ISO 8601 timestamp */
   created: z.string().datetime(),

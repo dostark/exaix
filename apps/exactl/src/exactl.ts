@@ -1232,7 +1232,7 @@ export const __test_command = new Command()
         new Command()
           .description("List all agent blueprints")
           .option("--capability <capability:string>", "Only show blueprints that declare this capability")
-          .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|draft|deprecated)")
+          .option("--status <status:string>", "Only show blueprints in this lifecycle status (active|deprecated)")
           .action(async (options: { capability?: string; status?: string }) => {
             try {
               const blueprints = await blueprintCommands.list({
@@ -1467,7 +1467,7 @@ export const __test_command = new Command()
               .option("--capability <capability:string>", "Only show blueprints that declare this capability")
               .option(
                 "--status <status:string>",
-                "Only show blueprints in this lifecycle status (active|draft|deprecated)",
+                "Only show blueprints in this lifecycle status (active|deprecated)",
               )
               .action(async (options: { capability?: string; status?: string }) => {
                 try {
