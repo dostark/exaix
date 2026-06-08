@@ -33,6 +33,7 @@ import {
   DEFAULT_MCP_SERVER_NAME,
   DEFAULT_MCP_TRANSPORT,
   DEFAULT_MCP_VERSION,
+  DEFAULT_MILESTONE_STREAMING_ENABLED,
   DEFAULT_MOCK_STRATEGY,
   DEFAULT_PORTAL_DEFAULT_BRANCH,
   MOCK_DELAY_MS,
@@ -710,6 +711,11 @@ export const ConfigSchema = z.object({
   execution: z.object({
     /** Model to use for step summarization. Falls back to agent provider if unset. */
     summarization_model: z.string().optional(),
+    /** Whether semantic progress milestone streaming is enabled (Phase 92) */
+    milestone_streaming_enabled: z.boolean().default(DEFAULT_MILESTONE_STREAMING_ENABLED),
+    /** Optional: file path for milestone NDJSON journal (Phase 92 E2E test / debugging). When set,
+     * milestones are persisted to this path alongside any streaming emitter. */
+    milestone_journal_path: z.string().optional(),
   }).optional().default({ summarization_model: undefined }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   const configData = data as z.infer<typeof ConfigSchema>;

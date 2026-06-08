@@ -249,13 +249,14 @@ Core infrastructure modules for architecture validation:
 
 ### Component Responsibilities
 
-| Component             | Purpose                                      | Key File                                                   |
-| --------------------- | -------------------------------------------- | ---------------------------------------------------------- |
-| **EventBusService**   | In-memory pub/sub routed by `traceId`        | `packages/core/src/observability/event_bus_service.ts`     |
-| **EventLogger**       | Publishes `IStreamingEvent` to event bus     | `packages/core/src/logger/event_logger.ts`                 |
-| **ReActLoopStrategy** | Emits heartbeat via `setInterval` during LLM | `packages/execution/src/strategies/react_loop_strategy.ts` |
-| **SseHandler**        | Bridges HTTP SSE to `EventBusService`        | `packages/mcp/server/sse_handler.ts`                       |
-| **WatchCommand**      | CLI `exactl watch <trace_id>` with colors    | `apps/exactl/src/commands/watch.ts`                        |
+| Component                    | Purpose                                      | Key File                                                   |
+| ---------------------------- | -------------------------------------------- | ---------------------------------------------------------- |
+| **EventBusService**          | In-memory pub/sub routed by `traceId`        | `packages/core/src/observability/event_bus_service.ts`     |
+| **EventLogger**              | Publishes `IStreamingEvent` to event bus     | `packages/core/src/logger/event_logger.ts`                 |
+| **ReActLoopStrategy**        | Emits heartbeat via `setInterval` during LLM | `packages/execution/src/strategies/react_loop_strategy.ts` |
+| **SseHandler**               | Bridges HTTP SSE to `EventBusService`        | `packages/mcp/server/sse_handler.ts`                       |
+| **WatchCommand**             | CLI `exactl watch <trace_id>` with colors    | `apps/exactl/src/commands/watch.ts`                        |
+| **MilestoneEventBusEmitter** | Bridges IMilestoneEmitter to EventBusService | `packages/core/src/observability/milestone_emitter.ts`     |
 
 ### Key Design Decisions
 
@@ -264,6 +265,7 @@ Core infrastructure modules for architecture validation:
 - **Heartbeat interval**: `EXECUTION_HEARTBEAT_INTERVAL_MS` (5 000 ms) fires only while `provider.generate()` is in flight.
 - **Security**: SSE endpoint validates `traceId` against UUID schema; bound to `127.0.0.1` only; client disconnect triggers unsubscription via `AbortController`.
 - **Fallback**: `watch` command queries historical DB events when SSE server is unavailable.
+- **Milestone streaming**: optional feature; `MilestoneEventBusEmitter` bridges `IMilestoneEmitter` to `EventBusService`. No-op emitter when milestone streaming is disabled.
 
 ---
 
@@ -607,6 +609,63 @@ All event type strings are defined in `packages/core/src/events/domain_event_typ
 | `ResourceLockReleased` _(reserved)_      | `resource_lock.released`                      | Reserved (Phase 86) |
 
 Reserved members exist in the enum but have no active emission site — their phases were postponed or cancelled. They are excluded from `EventRegistry.registeredPublishers()` assertions.
+
+### Milestone Event Types
+
+Milestone events are higher-level projections of domain events for operator-facing UX surfaces (CLI `watch`, TUI, SSE consumers). They are defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`. Constants live in `packages/core/src/types/constants.ts`.
+
+| Milestone Type Constant                        | String Value                 | Projected From (Domain Event)               |
+| ---------------------------------------------- | ---------------------------- | ------------------------------------------- |
+| `MILESTONE_FLOW_STARTED`                       | `flow.started`               | `FlowStarted`                               |
+| `MILESTONE_FLOW_STEP_STARTED`                  | `flow.step.started`          | `FlowStepStarted`                           |
+| `MILESTONE_FLOW_STEP_COMPLETED`                | `flow.step.completed`        | `FlowStepCompleted`                         |
+| `MILESTONE_FLOW_STEP_REPLAYED`                 | `flow.step.replayed`         | `FlowStepReplayed`                          |
+| `MILESTONE_FLOW_STEP_SKIPPED`                  | `flow.step.skipped`          | `FlowStepSkipped`                           |
+| `MILESTONE_LLM_CALL_STARTED`                   | `llm.call.started`           | `LlmCallStarted`                            |
+| `MILESTONE_LLM_CALL_COMPLETED`                 | `llm.call.completed`         | `LlmCallCompleted`                          |
+| `MILESTONE_TOOL_CALL_STARTED`                  | `tool.call.started`          | `ExecutionActionStarted`                    |
+| `MILESTONE_TOOL_CALL_COMPLETED`                | `tool.call.completed`        | `ExecutionActionCompleted`                  |
+| `MILESTONE_CONTEXT_COMPACTION_APPLIED`         | `context.compaction.applied` | `ExecutionContextCompacted`                 |
+| `MILESTONE_APPROVAL_GATE_ENTERED`              | `approval.gate.entered`      | `WaitStateCreated`                          |
+| `MILESTONE_APPROVAL_GATE_RESOLVED`             | `approval.gate.resolved`     | `WaitStateResolved`                         |
+| `MILESTONE_CHILD_RUN_SPAWNED` _(reserved)_     | `child_run.spawned`          | `ChildRunSpawned` (Phase 85 postponed)      |
+| `MILESTONE_CHILD_RUN_COMPLETED` _(reserved)_   | `child_run.completed`        | `ChildRunCompleted` (Phase 85 postponed)    |
+| `MILESTONE_RESOURCE_LOCK_WAITING` _(reserved)  | `resource_lock.waiting`      | `ResourceLockBlocked` (Phase 86 cancelled)  |
+| `MILESTONE_RESOURCE_LOCK_ACQUIRED` _(reserved) | `resource_lock.acquired`     | `ResourceLockAcquired` (Phase 86 cancelled) |
+| `MILESTONE_FLOW_COMPLETED`                     | `flow.completed`             | `FlowCompleted`                             |
+| `MILESTONE_FLOW_FAILED`                        | `flow.failed`                | `FlowFailed`                                |
+
+Active milestone types are wired to emission sites across `FlowRunner`, `AgentRunner`, `DynamicStepExecutor`, and `ContextBudgetManager`. Reserved types are defined in the schema for backward compatibility but have no emission sites.
+
+Emission site map (post-Phase 92 gap remediation):
+
+- `FlowRunner` — `flow.*`, `approval.gate.*`
+- `AgentRunner` — `llm.call.*`
+- `DynamicStepExecutor` — `tool.call.*`
+- `ContextBudgetManager` — `context.compaction.applied`
+- `child_run.*` and `resource_lock.*` — no emission sites (reserved)
+
+### Milestone Rendering in CLI `watch`
+
+The `exactl watch` command renders milestone events (`type: "milestone"`) with:
+
+| Element                 | Rendering                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Stage indicator**     | Milestone type string (e.g., `flow.step.started`) and summary                                           |
+| **Progress hint**       | `[N/M label]` suffix when `progressHint` is present (e.g., `[2/5 Build feature]`)                       |
+| **Attention indicator** | Bold yellow with `⚠ ATTENTION` prefix when `requiresAttention` is `true`, followed by `attentionReason` |
+
+Example output:
+
+```
+[14:30:00] ★ milestone: flow.started — Flow started
+[14:30:01] ★ milestone: flow.step.started — Step 1 started [0/2 Step 1]
+[14:30:02] ★ milestone: flow.step.completed — Step 1 completed [1/2 Step 1]
+[14:30:03] ⚠ ATTENTION — approval.gate.entered: Operator approval needed [1/2]
+[14:30:04] ★ milestone: flow.completed — Flow completed successfully [2/2]
+```
+
+The SSE endpoint is served by `packages/mcp/server/sse_handler.ts` on the MCP HTTP server (default port `8765`, binds to `127.0.0.1` only). When the SSE server is unavailable, the command falls back to querying the Activity Journal via `queryActivity`.
 
 ---
 

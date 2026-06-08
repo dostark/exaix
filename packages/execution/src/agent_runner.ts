@@ -20,6 +20,8 @@ import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IExecutionMilestone } from "@exaix/schemas";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { IContextSegment } from "./context/context_segment.ts";
 import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
@@ -36,6 +38,8 @@ import {
   DEFAULT_UNKNOWN_ERROR_MESSAGE,
   DEFAULT_UNKNOWN_LABEL,
   MEMORY_CONTEXT_KEY,
+  MILESTONE_LLM_CALL_COMPLETED,
+  MILESTONE_LLM_CALL_STARTED,
   PORTAL_CONTEXT_KEY,
   PORTAL_KNOWLEDGE_KEY,
 } from "@exaix/core";
@@ -153,6 +157,9 @@ export interface IAgentRunnerConfig {
   /** Optional: Segment-level context budget manager (Phase 83). When present, called in
    * constructPrompt() after all prompt parts are collected, before joining. */
   contextBudgetManager?: IContextBudgetManager;
+
+  /** Optional: Milestone emitter for semantic progress events (Phase 92). No-op when omitted. */
+  milestoneEmitter?: IMilestoneEmitter;
 }
 
 /**
@@ -250,6 +257,23 @@ export class AgentRunner implements IAgentRunner {
     });
   }
 
+  private async emitMilestone(
+    milestoneType: IExecutionMilestone["milestoneType"],
+    traceId: string | undefined,
+    summary: string,
+  ): Promise<void> {
+    const emitter = this.config?.milestoneEmitter;
+    if (!emitter) return;
+    await emitter.emit({
+      milestoneId: crypto.randomUUID(),
+      traceId: traceId ?? "",
+      milestoneType,
+      requiresAttention: false,
+      occurredAt: new Date().toISOString(),
+      summary,
+    });
+  }
+
   /**
    * Run the agent with a blueprint and request
    * @param blueprint - The agent's blueprint (system prompt)
@@ -292,6 +316,7 @@ export class AgentRunner implements IAgentRunner {
     );
 
     // Step 2: Execute via the model provider (with retry if enabled)
+    await this.emitMilestone(MILESTONE_LLM_CALL_STARTED, traceId, `LLM call started for ${identityId}`);
     const retryResult = await this.executeWithRetry(combinedPrompt, startTime);
 
     const duration = Date.now() - startTime;
@@ -303,6 +328,7 @@ export class AgentRunner implements IAgentRunner {
 
     // Step 3: Parse the response to extract thought and content
     const generateResult = retryResult.value;
+    await this.emitMilestone(MILESTONE_LLM_CALL_COMPLETED, traceId, `LLM call completed for ${identityId}`);
     const rawResponse = generateResult?.content || "";
     const result = this.parseResponse(rawResponse);
 

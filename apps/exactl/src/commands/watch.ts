@@ -17,6 +17,7 @@ import {
   STREAMING_EVENT_FLOW_STATUS,
   STREAMING_EVENT_HEARTBEAT,
   STREAMING_EVENT_LLM_STREAM,
+  STREAMING_EVENT_MILESTONE,
   STREAMING_EVENT_TOOL_END,
   STREAMING_EVENT_TOOL_START,
 } from "@exaix/core";
@@ -140,6 +141,37 @@ export class WatchCommand extends BaseCommand {
           `[${timestamp}] ♥ heartbeat step="${event.payload.step}" elapsed=${event.payload.elapsed_ms}ms`,
         );
         break;
+      case STREAMING_EVENT_MILESTONE: {
+        const payload = event.payload;
+        const milestoneType = String(payload.milestoneType ?? "");
+        const summary = String(payload.summary ?? "");
+        const requiresAttention = payload.requiresAttention === true;
+        const progressHint = payload.progressHint as
+          | { stepsCompleted?: number; stepsTotal?: number; currentStepLabel?: string }
+          | undefined;
+        const attentionReason = payload.attentionReason ? String(payload.attentionReason) : undefined;
+
+        let progress = "";
+        if (progressHint?.stepsTotal && progressHint?.stepsCompleted !== undefined) {
+          progress = ` [${progressHint.stepsCompleted}/${progressHint.stepsTotal}`;
+          if (progressHint.currentStepLabel) {
+            progress += ` ${progressHint.currentStepLabel}`;
+          }
+          progress += "]";
+        }
+
+        if (requiresAttention) {
+          const reason = attentionReason ? `: ${attentionReason}` : "";
+          formatted = colors.bold(colors.yellow(
+            `[${timestamp}] ⚠ ATTENTION — ${milestoneType}${reason}${progress}`,
+          ));
+        } else {
+          formatted = colors.cyan(
+            `[${timestamp}] ★ milestone: ${milestoneType} — ${summary}${progress}`,
+          );
+        }
+        break;
+      }
       case STREAMING_EVENT_TOOL_START:
         formatted = colors.cyan(
           `[${timestamp}] ▶ tool.start tool="${event.payload.tool}"`,

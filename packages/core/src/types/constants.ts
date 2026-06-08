@@ -79,8 +79,29 @@ export const STREAMING_EVENT_TOOL_START = "tool.start";
 export const STREAMING_EVENT_TOOL_END = "tool.end";
 export const STREAMING_EVENT_LLM_STREAM = "llm.stream";
 export const STREAMING_EVENT_FLOW_STATUS = "flow.status";
+export const STREAMING_EVENT_MILESTONE = "milestone";
 export const EXECUTION_HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds
 export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE = 1000; // events before backpressure drop
+
+// Milestone type constants (Phase 92)
+export const MILESTONE_FLOW_STARTED = "flow.started";
+export const MILESTONE_FLOW_STEP_STARTED = "flow.step.started";
+export const MILESTONE_FLOW_STEP_COMPLETED = "flow.step.completed";
+export const MILESTONE_FLOW_STEP_REPLAYED = "flow.step.replayed";
+export const MILESTONE_FLOW_STEP_SKIPPED = "flow.step.skipped";
+export const MILESTONE_LLM_CALL_STARTED = "llm.call.started";
+export const MILESTONE_LLM_CALL_COMPLETED = "llm.call.completed";
+export const MILESTONE_TOOL_CALL_STARTED = "tool.call.started";
+export const MILESTONE_TOOL_CALL_COMPLETED = "tool.call.completed";
+export const MILESTONE_CONTEXT_COMPACTION_APPLIED = "context.compaction.applied";
+export const MILESTONE_APPROVAL_GATE_ENTERED = "approval.gate.entered";
+export const MILESTONE_APPROVAL_GATE_RESOLVED = "approval.gate.resolved";
+export const MILESTONE_CHILD_RUN_SPAWNED = "child_run.spawned";
+export const MILESTONE_CHILD_RUN_COMPLETED = "child_run.completed";
+export const MILESTONE_RESOURCE_LOCK_WAITING = "resource_lock.waiting";
+export const MILESTONE_RESOURCE_LOCK_ACQUIRED = "resource_lock.acquired";
+export const MILESTONE_FLOW_COMPLETED = "flow.completed";
+export const MILESTONE_FLOW_FAILED = "flow.failed";
 
 // ============================================================================
 // Database Validation Limits
@@ -515,6 +536,12 @@ export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
   "fast": ["google", "openai"],
   "local_first": ["ollama", "openai"],
 };
+
+// ============================================================================
+// Milestone Streaming Defaults
+// ============================================================================
+/** Whether milestone streaming is enabled by default (Phase 92) */
+export const DEFAULT_MILESTONE_STREAMING_ENABLED = true;
 
 // ============================================================================
 // Provider Validation Limits

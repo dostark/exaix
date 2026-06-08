@@ -4,7 +4,15 @@ title: "Triggers basic — webhook adapter → ingestion service → request fil
 pack: "triggers-basic"
 tags: ["triggers", "webhook", "ingestion", "unit"]
 mode_support: ["auto"]
+request_fixture: "fixtures/requests/framework_test/smoke.md"
 portals: []
 # This scenario exercises the trigger boundary without a daemon or FileWatcher.
 # All assertions are performed in tests/scenario_framework/tests/triggers_basic_scenario_test.ts.
-steps: []
+steps:
+  - id: noop
+    type: shell
+    name: "Placeholder"
+    command: "true"
+    args: []
+    input_criteria: []
+    output_criteria: []

@@ -36,6 +36,7 @@ Deno.test("[ScenarioFrameworkPackGeneralization] runner can load two unrelated p
     "mcp_tools_extended",
     "provider_live",
     "smoke",
+    "triggers-basic",
   ]);
   assertEquals(smokePack.map((scenario: IScenario) => scenario.id), ["workspace-health-smoke"]);
 });

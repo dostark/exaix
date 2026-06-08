@@ -54,6 +54,8 @@ import {
   type IFlowNamespaceService,
 } from "@exaix/flow";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
+import type { IExecutionMilestone } from "@exaix/schemas";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
@@ -80,6 +82,15 @@ import {
   FLOW_EVENT_STEP_SKIPPED,
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
+  MILESTONE_APPROVAL_GATE_ENTERED,
+  MILESTONE_APPROVAL_GATE_RESOLVED,
+  MILESTONE_FLOW_COMPLETED,
+  MILESTONE_FLOW_FAILED,
+  MILESTONE_FLOW_STARTED,
+  MILESTONE_FLOW_STEP_COMPLETED,
+  MILESTONE_FLOW_STEP_REPLAYED,
+  MILESTONE_FLOW_STEP_SKIPPED,
+  MILESTONE_FLOW_STEP_STARTED,
 } from "@exaix/core";
 import type { IStepDurabilityStore, IStepExecutionRecord, IStepReplayPolicy } from "./contracts/step_durability.ts";
 import { DefaultStepReplayPolicy } from "./contracts/step_durability.ts";
@@ -142,6 +153,7 @@ export interface IFlowRunnerConfig {
   agentExecutor: IAgentExecutor;
   eventLogger: IFlowEventLogger;
   eventRegistry?: IEventRegistry;
+  milestoneEmitter?: IMilestoneEmitter;
   context?: IApplicationContext;
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;
@@ -771,8 +783,31 @@ export class FlowRunner implements IFlowRunner {
         llmClient,
         activityJournal,
         confirmationInterceptor,
+        this.options.milestoneEmitter,
       );
     }
+  }
+
+  private async emitMilestone(
+    milestoneType: IExecutionMilestone["milestoneType"],
+    traceId: string | undefined,
+    summary: string,
+    progressHint?: { stepsCompleted?: number; stepsTotal?: number; currentStepLabel?: string },
+    requiresAttention = false,
+    attentionReason?: string,
+  ): Promise<void> {
+    const emitter = this.options.milestoneEmitter;
+    if (!emitter) return;
+    await emitter.emit({
+      milestoneId: crypto.randomUUID(),
+      traceId: traceId ?? "",
+      milestoneType,
+      requiresAttention,
+      attentionReason,
+      progressHint,
+      occurredAt: new Date().toISOString(),
+      summary,
+    });
   }
 
   private getIFlowLogBase(
@@ -993,6 +1028,11 @@ export class FlowRunner implements IFlowRunner {
       ...this.getIFlowLogBase(flow, request, { includeStepCount: true }),
     });
 
+    await this.emitMilestone(MILESTONE_FLOW_STARTED, request.traceId, `Flow ${flow.id} started`, {
+      stepsCompleted: 0,
+      stepsTotal: flow.steps.length,
+    });
+
     // Resolve dependency graph
     await this.eventLogger.log(DomainEventType.FlowDependenciesResolving, {
       flowRunId,
@@ -1033,6 +1073,11 @@ export class FlowRunner implements IFlowRunner {
         } else {
           await this.eventLogger.log(DomainEventType.WaitStateResolved, waitPayload);
         }
+        await this.emitMilestone(
+          MILESTONE_APPROVAL_GATE_RESOLVED,
+          request.traceId,
+          `Approval gate resolved for flow ${flow.id}`,
+        );
         await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
         break;
       }
@@ -1617,6 +1662,16 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
+    await this.emitMilestone(
+      MILESTONE_FLOW_COMPLETED,
+      request.traceId,
+      success ? "Flow completed successfully" : "Flow completed with failures",
+      {
+        stepsCompleted: stepResults.size,
+        stepsTotal: flow.steps.length,
+      },
+    );
+
     // Aggregate and log token usage summary
     const tokenSummary = (this.db && request.traceId)
       ? await this.aggregateAndLogTokenUsage(flowRunId, flow.id, request.traceId, request.requestId)
@@ -1670,6 +1725,15 @@ export class FlowRunner implements IFlowRunner {
       requestId: request.requestId,
     });
 
+    await this.emitMilestone(
+      MILESTONE_FLOW_FAILED,
+      request.traceId,
+      `Flow failed: ${error instanceof Error ? error.message : String(error)}`,
+      { stepsCompleted: stepResults.size, stepsTotal: flow.steps.length },
+      true,
+      "Flow execution encountered an unrecoverable error",
+    );
+
     throw error;
   }
 
@@ -1710,6 +1774,10 @@ export class FlowRunner implements IFlowRunner {
       identityId: step.identity,
       traceId: request.traceId,
       requestId: request.requestId,
+    });
+
+    await this.emitMilestone(MILESTONE_FLOW_STEP_STARTED, request.traceId, `Step ${step.name || step.id} started`, {
+      currentStepLabel: step.name || step.id,
     });
 
     try {
@@ -1782,6 +1850,8 @@ export class FlowRunner implements IFlowRunner {
           priorRecordId: priorRecord.recordId,
           inputHash,
         });
+
+        void this.emitMilestone(MILESTONE_FLOW_STEP_REPLAYED, traceId, `Step ${step.name || step.id} replayed`);
 
         return {
           result: {
@@ -2195,6 +2265,12 @@ export class FlowRunner implements IFlowRunner {
         requestId: request.requestId,
       });
 
+      await this.emitMilestone(
+        MILESTONE_FLOW_STEP_SKIPPED,
+        request.traceId,
+        `Step ${step.name || step.id} skipped: ${conditionResult.error || "Condition not met"}`,
+      );
+
       return {
         stepId: step.id,
         success: true,
@@ -2287,6 +2363,15 @@ export class FlowRunner implements IFlowRunner {
           traceId: request.traceId!,
           ...this.getIFlowLogBase(flow, request),
         });
+
+        await this.emitMilestone(
+          MILESTONE_APPROVAL_GATE_ENTERED,
+          request.traceId,
+          `Approval gate entered for step ${step.id}`,
+          undefined,
+          true,
+          "Operator approval needed to continue",
+        );
       } catch {
         // Non-critical: wait state creation failure should not break the flow
         this.pendingWaitStateId = undefined;
@@ -2381,6 +2466,10 @@ export class FlowRunner implements IFlowRunner {
       hasThought: !!result.thought,
       traceId: request.traceId,
       requestId: request.requestId,
+    });
+
+    void this.emitMilestone(MILESTONE_FLOW_STEP_COMPLETED, request.traceId, `Step ${step.name || step.id} completed`, {
+      currentStepLabel: step.name || step.id,
     });
 
     const waitStateId = this.pendingWaitStateId;

@@ -127,6 +127,15 @@ Exaix's reliability rests on three layered guarantees — each inspectable throu
 
 Together these three tiers answer the question every operator asks before trusting an agent with a codebase: _what is it doing right now, can it recover from a transient failure without starting over, and can a human stop it before it commits to something irreversible?_
 
+### Semantic Progress Milestones
+
+Milestone events are higher-level projections of domain events for operator-facing UX surfaces. They follow a stable enumerated taxonomy defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and are emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`.
+
+- **Schema**: `ExecutionMilestoneSchema` (Zod) validates `milestoneId` (UUID), `traceId`, `milestoneType` (18-value enum), `requiresAttention` flag, `attentionReason`, `progressHint` (steps completed/total/current label), `occurredAt` timestamp, and `summary` (printable ASCII).
+- **Emitter interface**: `IMilestoneEmitter` exposes `emit(milestone: IExecutionMilestone): Promise<void>`. A `NoopMilestoneEmitter` provides a no-op default when milestone streaming is disabled.
+- **Bridge to SSE**: `MilestoneEventBusEmitter` implements `IMilestoneEmitter` and publishes milestones as `IStreamingEvent` with type `"milestone"` via `EventBusService`, making them available to the SSE endpoint and CLI `watch` command.
+- **Design invariant**: Milestones are projections of existing domain events — they do not replace domain events or change execution semantics. The `requiresAttention` flag enables operator notification for approval gates and other human-in-the-loop scenarios.
+
 ---
 
 ## Storage & Data Flow
@@ -479,16 +488,25 @@ Real-time execution observability via an in-memory event bus, execution heartbea
 ### Architecture
 
 ```text
+                           ┌─ MilestoneEventBusEmitter ──┐
+                           │  IMilestoneEmitter ──────►  │
+                           │  FlowRunner / AgentRunner   │
+                           └─────────────┬───────────────┘
+                                         │ milestone events
+                                         ▼
 ReActLoopStrategy ──heartbeat──▶ EventBusService ◀── EventLogger.publish()
-                                        │
-                                        ▼
-                                  SseHandler (GET /api/v1/traces/:id/stream)
-                                        │
-                                        ▼
-                                  WatchCommand (exactl watch <trace_id>)
-                                        │
-                                        ▼
-                              Color-coded terminal output
+                                         │
+                                         ▼
+                                   SseHandler (GET /api/v1/traces/:id/stream)
+                                         │
+                                         ▼
+                                   WatchCommand (exactl watch <trace_id>)
+                                         │
+                                         ▼
+                               Color-coded terminal output
+                               (milestones render as stage
+                                indicators + progress hints
+                                + attention markers)
 ```
 
 For the component responsibilities table, key design decisions, and configuration constants, see `docs/Reference_Data.md#live-execution-streaming`.
