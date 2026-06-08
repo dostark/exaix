@@ -38,6 +38,7 @@ Default commit scope and batching
 - Always work on a feature branch: `git checkout -b <branch> main`.
 - For CI hotfixes, create a `hotfix/<name>` branch from main, fix, PR, and merge.
 - Only bypass the guard when main is already broken: `HOOK_BYPASS_MAIN=1 git commit -m "..."`
+- Always merge feature branches with `--no-ff` to preserve branch topology: `git checkout main && git merge --no-ff <branch>`. Do NOT use fast-forward merges — a merge commit must mark every feature boundary.
 
 Required validation before commit
 - Run the relevant quality gates for the touched changes before finalizing a commit proposal.
