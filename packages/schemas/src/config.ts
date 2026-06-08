@@ -778,6 +778,10 @@ export const ConfigSchema = z.object({
   execution: z.object({
     /** Model to use for step summarization. Falls back to agent provider if unset. */
     summarization_model: z.string().optional(),
+    /** Whether semantic progress milestone streaming is enabled (Phase 92) */
+    milestone_streaming_enabled: z.boolean().default(DEFAULTS.DEFAULT_MILESTONE_STREAMING_ENABLED),
+    /** Optional: file path for milestone NDJSON journal (Phase 92 E2E test / debugging). */
+    milestone_journal_path: z.string().optional(),
   }).optional().default({ summarization_model: undefined }),
 }).superRefine((data, ctx: z.RefinementCtx) => {
   // Type assertion to avoid circular reference

@@ -8,3 +8,5 @@
 
 export * from "./event_bus_service.ts";
 export * from "./milestone_emitter.ts";
+export * from "./composite_milestone_emitter.ts";
+export * from "./file_append_milestone_emitter.ts";

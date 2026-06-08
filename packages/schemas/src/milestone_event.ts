@@ -33,7 +33,6 @@ import {
 export const ExecutionMilestoneSchema = z.object({
   milestoneId: z.string().uuid(),
   traceId: z.string().min(1),
-  parentEventId: z.string().uuid().optional(),
   milestoneType: z.enum([
     MILESTONE_FLOW_STARTED,
     MILESTONE_FLOW_STEP_STARTED,

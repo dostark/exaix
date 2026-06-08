@@ -127,7 +127,7 @@ Exaix's reliability rests on three layered guarantees — each inspectable throu
 
 Together these three tiers answer the question every operator asks before trusting an agent with a codebase: _what is it doing right now, can it recover from a transient failure without starting over, and can a human stop it before it commits to something irreversible?_
 
-### Semantic Progress Milestones (Phase 92)
+### Semantic Progress Milestones
 
 Milestone events are higher-level projections of domain events for operator-facing UX surfaces. They follow a stable enumerated taxonomy defined in `packages/schemas/src/milestone_event.ts:ExecutionMilestoneSchema` and are emitted via `packages/core/src/observability/milestone_emitter.ts:IMilestoneEmitter`.
 

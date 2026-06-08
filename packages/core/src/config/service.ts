@@ -116,6 +116,10 @@ base_max_iterations = 10
 complexity_scale_factor = 1.0
 absolute_max_iterations = 12
 score_every_n_iterations = 1
+
+[execution]
+summarization_model = ""
+milestone_streaming_enabled = true
 `;
     Deno.writeTextFileSync(this.configPath, defaultConfig.trim());
     try {

@@ -635,7 +635,37 @@ Milestone events are higher-level projections of domain events for operator-faci
 | `MILESTONE_FLOW_COMPLETED`                     | `flow.completed`             | `FlowCompleted`                             |
 | `MILESTONE_FLOW_FAILED`                        | `flow.failed`                | `FlowFailed`                                |
 
-All active milestone types are wired to emission sites in `FlowRunner` and `AgentRunner`. Reserved types are defined in the schema for backward compatibility but have no emission sites.
+Active milestone types are wired to emission sites across `FlowRunner`, `AgentRunner`, `DynamicStepExecutor`, and `ContextBudgetManager`. Reserved types are defined in the schema for backward compatibility but have no emission sites.
+
+Emission site map (post-Phase 92 gap remediation):
+
+- `FlowRunner` — `flow.*`, `approval.gate.*`
+- `AgentRunner` — `llm.call.*`
+- `DynamicStepExecutor` — `tool.call.*`
+- `ContextBudgetManager` — `context.compaction.applied`
+- `child_run.*` and `resource_lock.*` — no emission sites (reserved)
+
+### Milestone Rendering in CLI `watch`
+
+The `exactl watch` command renders milestone events (`type: "milestone"`) with:
+
+| Element                 | Rendering                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Stage indicator**     | Milestone type string (e.g., `flow.step.started`) and summary                                           |
+| **Progress hint**       | `[N/M label]` suffix when `progressHint` is present (e.g., `[2/5 Build feature]`)                       |
+| **Attention indicator** | Bold yellow with `⚠ ATTENTION` prefix when `requiresAttention` is `true`, followed by `attentionReason` |
+
+Example output:
+
+```
+[14:30:00] ★ milestone: flow.started — Flow started
+[14:30:01] ★ milestone: flow.step.started — Step 1 started [0/2 Step 1]
+[14:30:02] ★ milestone: flow.step.completed — Step 1 completed [1/2 Step 1]
+[14:30:03] ⚠ ATTENTION — approval.gate.entered: Operator approval needed [1/2]
+[14:30:04] ★ milestone: flow.completed — Flow completed successfully [2/2]
+```
+
+The SSE endpoint is served by `packages/mcp/server/sse_handler.ts` on the MCP HTTP server (default port `8765`, binds to `127.0.0.1` only). When the SSE server is unavailable, the command falls back to querying the Activity Journal via `queryActivity`.
 
 ---
 

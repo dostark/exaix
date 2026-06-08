@@ -538,6 +538,12 @@ export const DEFAULT_PROVIDER_STRATEGY_FALLBACK_CHAINS = {
 };
 
 // ============================================================================
+// Milestone Streaming Defaults
+// ============================================================================
+/** Whether milestone streaming is enabled by default (Phase 92) */
+export const DEFAULT_MILESTONE_STREAMING_ENABLED = true;
+
+// ============================================================================
 // Provider Validation Limits
 // ============================================================================
 export const PROVIDER_FREE_QUOTA_REQUESTS_PER_DAY_MIN = 0;

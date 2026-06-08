@@ -33,6 +33,8 @@ import {
 } from "@exaix/core";
 import type { IEventLogger } from "@exaix/core/logger";
 import type { ITokenizer } from "@exaix/core/func";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
+import { MILESTONE_CONTEXT_COMPACTION_APPLIED } from "@exaix/core";
 import type { IContextSegment } from "./context_segment.ts";
 import type { IContextCompactor } from "./context_compactor.ts";
 import type { ISnapshotStore } from "./snapshot_store.ts";
@@ -141,6 +143,7 @@ export class ContextBudgetManager implements IContextBudgetManager {
     private readonly compactor?: IContextCompactor,
     private readonly snapshotStore?: ISnapshotStore,
     private readonly logger?: IEventLogger,
+    private readonly milestoneEmitter?: IMilestoneEmitter,
   ) {}
 
   prepare(input: IContextBudgetManagerInput): Promise<IContextBudgetManagerOutput> {
@@ -278,6 +281,16 @@ export class ContextBudgetManager implements IContextBudgetManager {
             tokensBefore: tokensBefore as number,
             tokensAfter: 0 as number,
             compressedSegmentCount: droppedCompactable.length as number,
+          });
+          void this.milestoneEmitter?.emit({
+            milestoneId: crypto.randomUUID(),
+            traceId: snapshot.traceId as string,
+            milestoneType: MILESTONE_CONTEXT_COMPACTION_APPLIED,
+            requiresAttention: false,
+            occurredAt: new Date().toISOString(),
+            summary:
+              `Context compaction: ${droppedCompactable.length} segment(s) compacted, ~${tokensBefore} tokens recovered`,
+            progressHint: { currentStepLabel: "Compacting context" },
           });
         })();
       });

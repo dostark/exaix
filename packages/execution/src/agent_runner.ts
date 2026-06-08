@@ -267,7 +267,6 @@ export class AgentRunner implements IAgentRunner {
     await emitter.emit({
       milestoneId: crypto.randomUUID(),
       traceId: traceId ?? "",
-      parentEventId: undefined,
       milestoneType,
       requiresAttention: false,
       occurredAt: new Date().toISOString(),

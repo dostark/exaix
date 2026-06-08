@@ -20,9 +20,12 @@ import {
 import type { IToolConfirmationInterceptor, IToolManifestResolver } from "@exaix/core/types";
 import { DYNAMIC_MODE_APPROVAL_TOOLS, DYNAMIC_MODE_TOOLS, type McpToolName } from "@exaix/mcp";
 import type { JSONValue } from "@exaix/core";
+import { MILESTONE_TOOL_CALL_COMPLETED, MILESTONE_TOOL_CALL_STARTED } from "@exaix/core";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { ILlmClient, ToolArgs } from "@exaix/ai";
 import type { IMcpClient } from "@exaix/mcp";
 import type { ToolConfirmationRequest } from "@exaix/schemas/tool_confirmation.ts";
+import type { IExecutionMilestone } from "@exaix/schemas";
 
 /**
  * Journal entry for activity logging
@@ -81,12 +84,33 @@ export interface IActivityJournal {
  * This is enforced at load time by FlowLoader and validated here defensively.
  */
 export class DynamicStepExecutor {
+  private emitMilestoneFn?: (milestone: IExecutionMilestone) => Promise<void>;
+
   constructor(
     private readonly mcpClient: IMcpClient & IToolManifestResolver,
     private readonly llmClient: ILlmClient,
     private readonly activityJournal: IActivityJournal,
     readonly confirmationInterceptor?: IToolConfirmationInterceptor,
-  ) {}
+    milestoneEmitter?: IMilestoneEmitter,
+  ) {
+    this.emitMilestoneFn = milestoneEmitter?.emit.bind(milestoneEmitter);
+  }
+
+  private async emitMilestone(
+    milestoneType: IExecutionMilestone["milestoneType"],
+    traceId: string,
+    summary: string,
+  ): Promise<void> {
+    if (!this.emitMilestoneFn) return;
+    await this.emitMilestoneFn({
+      milestoneId: crypto.randomUUID(),
+      traceId,
+      milestoneType,
+      requiresAttention: false,
+      occurredAt: new Date().toISOString(),
+      summary,
+    });
+  }
 
   async execute(
     step: IFlowStep,
@@ -196,10 +220,12 @@ export class DynamicStepExecutor {
       }
 
       // Execute the tool call
+      await this.emitMilestone(MILESTONE_TOOL_CALL_STARTED, opts.traceId, `Tool call started: ${decision.tool}`);
       const toolResult = await this.mcpClient.callTool(
         decision.tool,
         decision.args ?? {},
       );
+      await this.emitMilestone(MILESTONE_TOOL_CALL_COMPLETED, opts.traceId, `Tool call completed: ${decision.tool}`);
 
       const call: IDynamicToolCall = {
         tool: decision.tool,

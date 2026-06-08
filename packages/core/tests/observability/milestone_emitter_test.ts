@@ -51,13 +51,6 @@ Deno.test("NoopMilestoneEmitter - emit handles progressHint milestone", async ()
   }));
 });
 
-Deno.test("NoopMilestoneEmitter - emit handles parentEventId", async () => {
-  const emitter = new NoopMilestoneEmitter();
-  await emitter.emit(validMilestone({
-    parentEventId: crypto.randomUUID(),
-  }));
-});
-
 Deno.test("NoopMilestoneEmitter - multiple emits all succeed", async () => {
   const emitter = new NoopMilestoneEmitter();
   for (let i = 0; i < 10; i++) {

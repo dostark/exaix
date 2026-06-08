@@ -158,22 +158,6 @@ Deno.test("ExecutionMilestoneSchema - accepts progressHint", () => {
   }
 });
 
-Deno.test("ExecutionMilestoneSchema - accepts parentEventId", () => {
-  const eventId = crypto.randomUUID();
-  const result = ExecutionMilestoneSchema.safeParse({
-    milestoneId: crypto.randomUUID(),
-    traceId: "trace-1",
-    parentEventId: eventId,
-    milestoneType: MILESTONE_FLOW_STEP_COMPLETED,
-    occurredAt: new Date().toISOString(),
-    summary: "Step completed",
-  });
-  assertEquals(result.success, true);
-  if (result.success) {
-    assertEquals(result.data.parentEventId, eventId);
-  }
-});
-
 Deno.test("ExecutionMilestoneSchema - rejects invalid milestoneType string", () => {
   const result = ExecutionMilestoneSchema.safeParse({
     milestoneId: crypto.randomUUID(),

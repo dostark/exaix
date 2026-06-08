@@ -83,6 +83,7 @@ import {
   FLOW_EVENT_STEP_SKIPPED_BY_REUSE,
   FLOW_EVENT_VALIDATION_FAILED,
   MILESTONE_APPROVAL_GATE_ENTERED,
+  MILESTONE_APPROVAL_GATE_RESOLVED,
   MILESTONE_FLOW_COMPLETED,
   MILESTONE_FLOW_FAILED,
   MILESTONE_FLOW_STARTED,
@@ -782,6 +783,7 @@ export class FlowRunner implements IFlowRunner {
         llmClient,
         activityJournal,
         confirmationInterceptor,
+        this.options.milestoneEmitter,
       );
     }
   }
@@ -799,7 +801,6 @@ export class FlowRunner implements IFlowRunner {
     await emitter.emit({
       milestoneId: crypto.randomUUID(),
       traceId: traceId ?? "",
-      parentEventId: undefined,
       milestoneType,
       requiresAttention,
       attentionReason,
@@ -1072,6 +1073,11 @@ export class FlowRunner implements IFlowRunner {
         } else {
           await this.eventLogger.log(DomainEventType.WaitStateResolved, waitPayload);
         }
+        await this.emitMilestone(
+          MILESTONE_APPROVAL_GATE_RESOLVED,
+          request.traceId,
+          `Approval gate resolved for flow ${flow.id}`,
+        );
         await this.saveCheckpointIfEnabled(flow, request, flowRunId, flowContentHash, stepResults);
         break;
       }

@@ -36,7 +36,6 @@ export class MilestoneEventBusEmitter implements IMilestoneEmitter {
       payload: {
         milestoneId: milestone.milestoneId,
         traceId: milestone.traceId,
-        parentEventId: milestone.parentEventId,
         milestoneType: milestone.milestoneType,
         requiresAttention: milestone.requiresAttention,
         attentionReason: milestone.attentionReason,

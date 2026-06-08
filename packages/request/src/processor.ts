@@ -65,6 +65,13 @@ import { RequestAnalyzer, saveAnalysis } from "./analysis/mod.ts";
 import { type IRequestAnalysis, RequestAnalysisComplexity } from "@exaix/schemas/request_analysis.ts";
 import { ProviderType, RequestKind, TaskComplexity } from "@exaix/core";
 import type { ILogEvent } from "@exaix/core";
+import {
+  CompositeMilestoneEmitter,
+  EventBusService,
+  FileAppendMilestoneEmitter,
+  MilestoneEventBusEmitter,
+} from "@exaix/core/observability";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
 
 import type { AnalysisMode } from "@exaix/core/types";
 import { buildQualityGateConfig, loadClarification, RequestQualityGate, saveClarification } from "@exaix/quality-gate";
@@ -134,6 +141,7 @@ export class RequestProcessor {
   private readonly portalKnowledgeService?: IPortalKnowledgeService;
   private readonly sessionMemory?: SessionMemoryService;
   private readonly testProvider?: IModelProvider;
+  private readonly milestoneEmitter?: IMilestoneEmitter;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
     const ctx = processorConfig.context;
@@ -147,6 +155,20 @@ export class RequestProcessor {
     } else {
       throw new Error("Application context database is not a DatabaseService");
     }
+
+    // Initialize milestone emitter(s): bus streaming + optional journal file (Phase 92)
+    const emitters: IMilestoneEmitter[] = [];
+    if (this.config.execution?.milestone_streaming_enabled) {
+      emitters.push(new MilestoneEventBusEmitter(EventBusService.getInstance()));
+    }
+    if (this.config.execution?.milestone_journal_path) {
+      emitters.push(
+        new FileAppendMilestoneEmitter(
+          join(this.config.system.root, this.config.execution.milestone_journal_path),
+        ),
+      );
+    }
+    this.milestoneEmitter = emitters.length > 0 ? new CompositeMilestoneEmitter(emitters) : undefined;
 
     // Initialize services
     this.costTracker = processorConfig.costTracker ?? new CostTracker(this.db, this.config);
@@ -693,7 +715,10 @@ export class RequestProcessor {
       });
     }
 
-    const agentRunner = new AgentRunner(selectedProvider);
+    const agentRunner = new AgentRunner(
+      selectedProvider,
+      { milestoneEmitter: this.milestoneEmitter },
+    );
     const metadata: IRequestMetadata = {
       requestId,
       traceId,
