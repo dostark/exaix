@@ -10,6 +10,9 @@
  */
 
 import type { IExecutionMilestone } from "@exaix/schemas";
+import { STREAMING_EVENT_MILESTONE } from "../types/constants.ts";
+import type { IEventBusService } from "./event_bus_service.ts";
+import type { IStreamingEvent } from "@exaix/schemas";
 
 export interface IMilestoneEmitter {
   emit(milestone: IExecutionMilestone): Promise<void>;
@@ -18,5 +21,31 @@ export interface IMilestoneEmitter {
 export class NoopMilestoneEmitter implements IMilestoneEmitter {
   async emit(_milestone: IExecutionMilestone): Promise<void> {
     // No-op: milestone streaming is disabled or not configured
+  }
+}
+
+export class MilestoneEventBusEmitter implements IMilestoneEmitter {
+  constructor(private bus: IEventBusService) {}
+
+  emit(milestone: IExecutionMilestone): Promise<void> {
+    const streamingEvent = {
+      eventId: crypto.randomUUID(),
+      traceId: milestone.traceId,
+      timestamp: new Date().toISOString(),
+      type: STREAMING_EVENT_MILESTONE,
+      payload: {
+        milestoneId: milestone.milestoneId,
+        traceId: milestone.traceId,
+        parentEventId: milestone.parentEventId,
+        milestoneType: milestone.milestoneType,
+        requiresAttention: milestone.requiresAttention,
+        attentionReason: milestone.attentionReason,
+        progressHint: milestone.progressHint,
+        occurredAt: milestone.occurredAt,
+        summary: milestone.summary,
+      },
+    } satisfies IStreamingEvent;
+    this.bus.publish(streamingEvent);
+    return Promise.resolve();
   }
 }

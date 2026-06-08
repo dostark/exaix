@@ -79,6 +79,7 @@ export const STREAMING_EVENT_TOOL_START = "tool.start";
 export const STREAMING_EVENT_TOOL_END = "tool.end";
 export const STREAMING_EVENT_LLM_STREAM = "llm.stream";
 export const STREAMING_EVENT_FLOW_STATUS = "flow.status";
+export const STREAMING_EVENT_MILESTONE = "milestone";
 export const EXECUTION_HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds
 export const EVENT_BUS_MAX_SUBSCRIBER_QUEUE = 1000; // events before backpressure drop
 
