@@ -54,6 +54,7 @@ import {
   type IFlowNamespaceService,
 } from "@exaix/flow";
 import { CliConfirmationInterceptor, NotificationQueueConfirmationInterceptor } from "@exaix/tool-runtime";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
 import { DomainEventType, type IEventRegistry } from "@exaix/core/events";
 import {
   DEFAULT_COST_PRECISION_FACTOR,
@@ -142,6 +143,7 @@ export interface IFlowRunnerConfig {
   agentExecutor: IAgentExecutor;
   eventLogger: IFlowEventLogger;
   eventRegistry?: IEventRegistry;
+  milestoneEmitter?: IMilestoneEmitter;
   context?: IApplicationContext;
   db?: IDatabaseService;
   gateEvaluator?: IGateEvaluator;

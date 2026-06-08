@@ -20,6 +20,7 @@ import type { JSONValue } from "@exaix/core";
 import type { ISkill, ISkillMatch } from "@exaix/schemas/memory_bank.ts";
 import type { IApplicationContext, ISkillsContext, ISkillsService } from "@exaix/core/types";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IMilestoneEmitter } from "@exaix/core/observability";
 import type { IContextBudgetManager } from "./context/context_budget_manager.ts";
 import type { IContextSegment } from "./context/context_segment.ts";
 import { ContextSegmentKindSchema } from "@exaix/schemas/execution/context_budget.ts";
@@ -153,6 +154,9 @@ export interface IAgentRunnerConfig {
   /** Optional: Segment-level context budget manager (Phase 83). When present, called in
    * constructPrompt() after all prompt parts are collected, before joining. */
   contextBudgetManager?: IContextBudgetManager;
+
+  /** Optional: Milestone emitter for semantic progress events (Phase 92). No-op when omitted. */
+  milestoneEmitter?: IMilestoneEmitter;
 }
 
 /**

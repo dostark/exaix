@@ -7,3 +7,4 @@
  */
 
 export * from "./event_bus_service.ts";
+export * from "./milestone_emitter.ts";
