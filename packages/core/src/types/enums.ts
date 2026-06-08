@@ -637,6 +637,17 @@ export enum SkillStatus {
 }
 
 /**
+ * Status for blueprint lifecycle (Phase 93 Solo salvage).
+ * `draft` is reserved for scaffolded-but-unpublished blueprints; new blueprints
+ * default to `active`; `deprecated` marks a blueprint retired without deleting it.
+ */
+export enum BlueprintStatus {
+  DRAFT = GeneralStatus.DRAFT,
+  ACTIVE = GeneralStatus.ACTIVE,
+  DEPRECATED = GeneralStatus.DEPRECATED,
+}
+
+/**
  * Status for dialog lifecycle.
  */
 export enum DialogStatus {

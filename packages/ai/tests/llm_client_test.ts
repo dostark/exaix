@@ -9,7 +9,7 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { LlmClient } from "../src/llm_client.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
-import { McpToolName, ToolName } from "@exaix/core";
+import { BlueprintStatus, McpToolName, ToolName } from "@exaix/core";
 import { ModelFactory } from "../src/providers.ts";
 import type { IModelProvider } from "../src/types.ts";
 import type { IGenerateResult } from "../src/providers/common.ts";
@@ -23,6 +23,7 @@ const mockIdentity: IBlueprintFrontmatter = {
   created_by: "system",
   version: "1.0.0",
   capabilities: [],
+  status: BlueprintStatus.ACTIVE,
 };
 
 const mockTools = [

@@ -13,7 +13,7 @@ import { parse as parseYaml } from "@std/yaml";
 import { z } from "zod";
 import { DataFormat } from "@exaix/core";
 import type { JSONValue } from "@exaix/core";
-import { DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
+import { BlueprintStatus, DEFAULT_BLUEPRINT_VERSION, DEFAULT_IDENTITIES_PATH, McpToolName } from "@exaix/core";
 
 /**
  * Fully loaded and validated blueprint
@@ -133,8 +133,11 @@ export const RuntimeBlueprintFrontmatterSchema = z.object({
   /** Tools the agent is permitted to use in DYNAMIC execution mode */
   permitted_tools: z.array(z.nativeEnum(McpToolName)).optional(),
 
-  /** Deprecation flag for outdated blueprints */
+  /** Deprecation flag for outdated blueprints (legacy boolean; prefer `status`) */
   deprecated: z.boolean().default(false),
+
+  /** Lifecycle status (Phase 93 Solo salvage); defaults to active for legacy blueprints */
+  status: z.nativeEnum(BlueprintStatus).default(BlueprintStatus.ACTIVE),
 
   /** Prefer this agent locally for routing fallback */
   routing_prefer_local: z.boolean().optional(),

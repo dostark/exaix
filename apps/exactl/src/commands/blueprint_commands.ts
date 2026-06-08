@@ -10,7 +10,7 @@ import { ensureDir, exists } from "@std/fs";
 import { join } from "@std/path";
 import { parse as parseToml, stringify as stringifyToml } from "@std/toml";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
-import { ProviderType } from "@exaix/core";
+import { BlueprintStatus, ProviderType } from "@exaix/core";
 import { ValidationChain } from "@exaix/cli/validation/validation_chain.ts";
 import { DefaultErrorStrategy } from "@exaix/cli/errors/error_strategy.ts";
 import { STDIO_INHERIT } from "./constants.ts";
@@ -36,11 +36,22 @@ export interface IBlueprintFrontmatterData {
   name?: string;
   model?: string;
   capabilities?: string[];
+  status?: string;
   created?: string;
   created_by?: string;
   version?: string;
   description?: string;
   [key: string]: string | string[] | undefined;
+}
+
+/**
+ * Filters for the blueprint list command (Phase 93 Solo salvage).
+ */
+export interface BlueprintListOptions {
+  /** Only return blueprints whose `capabilities` array contains this identifier. */
+  capability?: string;
+  /** Only return blueprints in this lifecycle status. */
+  status?: BlueprintStatus;
 }
 
 export interface BlueprintCreateOptions {
@@ -520,10 +531,20 @@ export class BlueprintCommands extends BaseCommand {
       name: frontmatter.name as string,
       model: frontmatter.model as string,
       capabilities: frontmatter.capabilities as string[] | undefined,
+      status: this.coerceStatus(frontmatter.status),
       created: frontmatter.created as string,
       created_by: frontmatter.created_by as string,
       version: (frontmatter.version as string) || "1.0.0",
     };
+  }
+
+  /**
+   * Coerce a raw frontmatter status value to a known BlueprintStatus, defaulting
+   * to active for legacy blueprints authored before the field existed.
+   */
+  private coerceStatus(value: string | string[] | undefined): BlueprintStatus {
+    const known = Object.values(BlueprintStatus) as string[];
+    return (typeof value === "string" && known.includes(value)) ? value as BlueprintStatus : BlueprintStatus.ACTIVE;
   }
 
   /**
@@ -733,9 +754,10 @@ ${systemPrompt}
   }
 
   /**
-   * List all blueprints
+   * List all blueprints, optionally filtered by lifecycle status and/or a
+   * declared capability (Phase 93 Solo salvage).
    */
-  async list(): Promise<IBlueprintMetadata[]> {
+  async list(options: BlueprintListOptions = {}): Promise<IBlueprintMetadata[]> {
     const blueprintsDir = this.getBlueprintsDir();
     const results: IBlueprintMetadata[] = [];
 
@@ -752,6 +774,9 @@ ${systemPrompt}
               // Skip malformed blueprint files rather than crashing list output.
               continue;
             }
+            if (!this.matchesListFilters(metadata, options)) {
+              continue;
+            }
             results.push(metadata);
           }
         }
@@ -764,6 +789,72 @@ ${systemPrompt}
     }
 
     return results.sort((a, b) => (a.identity_id ?? "").localeCompare(b.identity_id ?? ""));
+  }
+
+  private matchesListFilters(metadata: IBlueprintMetadata, options: BlueprintListOptions): boolean {
+    if (options.status && metadata.status !== options.status) {
+      return false;
+    }
+    if (options.capability && !(metadata.capabilities ?? []).includes(options.capability)) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Mark a blueprint as deprecated (Phase 93 Solo salvage). The blueprint file
+   * is the source of truth, so this rewrites the `status` field in the
+   * frontmatter in place — preserving the original format, field order, and
+   * comments — using an atomic write. The file is not deleted.
+   */
+  async deprecate(identityId: string): Promise<void> {
+    try {
+      const blueprintPath = await this.getExistingBlueprintPath(identityId);
+      const content = await Deno.readTextFile(blueprintPath);
+      const updated = this.setFrontmatterStatus(content, BlueprintStatus.DEPRECATED, identityId);
+
+      // Atomic write: temp file + rename, to avoid partial-write corruption.
+      const tmpPath = `${blueprintPath}.${crypto.randomUUID()}.tmp`;
+      await Deno.writeTextFile(tmpPath, updated);
+      await Deno.rename(tmpPath, blueprintPath);
+
+      await this.display.info("blueprint.deprecated", identityId, { via: "cli" });
+    } catch (error) {
+      await DefaultErrorStrategy.handle({
+        commandName: "BlueprintCommands.deprecate",
+        args: { identityId },
+        error: error as Error | string | object | null | undefined,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Surgically set the `status` field inside a blueprint's frontmatter block,
+   * preserving the original delimiter style (TOML `+++` or YAML `---`) and all
+   * other lines. Replaces an existing `status` entry or appends one.
+   */
+  private setFrontmatterStatus(content: string, status: BlueprintStatus, identityId: string): string {
+    const isToml = /^\+\+\+\n/.test(content);
+    const isYaml = /^---\n/.test(content);
+    if (!isToml && !isYaml) {
+      throw new Error(`Invalid blueprint format: ${identityId}`);
+    }
+
+    const fmPattern = isToml ? /^(\+\+\+\n)([\s\S]*?)(\n\+\+\+\n?)/ : /^(---\n)([\s\S]*?)(\n---\n?)/;
+    const match = content.match(fmPattern);
+    if (!match) {
+      throw new Error(`Invalid blueprint format: ${identityId}`);
+    }
+
+    const statusLine = isToml ? `status = "${status}"` : `status: "${status}"`;
+    const statusRegex = isToml ? /^status\s*=.*$/m : /^status\s*:.*$/m;
+
+    const [, open, fmBody, close] = match;
+    const newFmBody = statusRegex.test(fmBody) ? fmBody.replace(statusRegex, statusLine) : `${fmBody}\n${statusLine}`;
+
+    // Function replacer avoids `$`-pattern interpretation in the replacement.
+    return content.replace(fmPattern, () => `${open}${newFmBody}${close}`);
   }
 
   /**
