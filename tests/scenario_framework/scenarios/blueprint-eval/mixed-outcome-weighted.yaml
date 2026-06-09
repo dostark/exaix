@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+id: "blueprint-eval-mixed-outcome"
+title: "Mixed outcome with weighted criteria — verifies partial credit scoring"
+pack: "blueprint-eval"
+tags: ["eval", "scoring", "mixed"]
+request_fixture: "fixtures/requests/blueprint-eval/mixed-outcome.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-partial-artifacts"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          mkdir -p $WORKSPACE_ROOT/artifacts
+          echo "present" > $WORKSPACE_ROOT/artifacts/existing-file.txt
+          echo '{"key":"value"}' > $WORKSPACE_ROOT/artifacts/data.json
+    input_criteria: []
+    output_criteria:
+      - id: "check-existing-file"
+        kind: "file-exists"
+        path: "artifacts/existing-file.txt"
+        score_weight: 0.4
+      - id: "check-missing-file"
+        kind: "file-exists"
+        path: "artifacts/non-existent-file.txt"
+        score_weight: 0.6

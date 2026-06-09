@@ -54,6 +54,7 @@ import {
 import type { IReviewStatus } from "@exaix/core/status";
 import { GIT_CMD_STATUS } from "@exaix/git";
 import { WatchCommand } from "./commands/watch.ts";
+import { EvalCommands } from "./commands/eval_commands.ts";
 
 // Extracted action handlers
 import {
@@ -124,6 +125,7 @@ const dashboardCommands = new DashboardCommands(fullContext);
 const memoryCommands = new MemoryCommands(fullContext);
 const watchCommandInstance = new WatchCommand(fullContext);
 const waitStateCommands = new WaitStateCommands(fullContext);
+const evalCommands = new EvalCommands(fullContext);
 
 // Export test helper for unit tests to inspect module-internal context when running in test mode.
 export function __test_getContext(): {
@@ -147,6 +149,7 @@ export function __test_getContext(): {
   memoryCommands: typeof memoryCommands;
   watchCommand: typeof watchCommandInstance;
   waitStateCommands: typeof waitStateCommands;
+  evalCommands: typeof evalCommands;
 } {
   return {
     IN_TEST_MODE: isTestMode(),
@@ -169,6 +172,7 @@ export function __test_getContext(): {
     memoryCommands,
     watchCommand: watchCommandInstance,
     waitStateCommands,
+    evalCommands,
   };
 }
 
@@ -2290,6 +2294,82 @@ const watchCommand = new Command()
   });
 
 __test_command.command("watch", watchCommand);
+
+// ---------------------------------------------------------------------------
+// eval subcommand (Phase 100: Evaluation Framework)
+// ---------------------------------------------------------------------------
+
+const evalCommand = new Command()
+  .description("Run evaluations and query evaluation history")
+  .command(
+    "run",
+    new Command()
+      .description("Run evaluation scenarios")
+      .option("-P, --pack <pack:string>", "Run scenarios in a named pack (repeatable)", { collect: true })
+      .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
+      .option("-s, --scenario <id:string>", "Run a single named scenario (repeatable)", { collect: true })
+      .option("--score-threshold <threshold:number>", "Minimum suite score to pass", { default: 0.5 })
+      .option("--trials <n:number>", "Number of trials per scenario", { default: 1 })
+      .option("--history-format <format:string>", "History storage: sqlite+jsonl or jsonl", { default: "sqlite+jsonl" })
+      .option("-v, --verbose", "Show detailed output")
+      .action(async (options) => {
+        try {
+          await evalCommands.run({
+            pack: options.pack,
+            tag: options.tag,
+            scenario: options.scenario,
+            scoreThreshold: options.scoreThreshold,
+            trials: options.trials,
+            historyFormat: options.historyFormat,
+            verbose: options.verbose,
+          });
+        } catch (error) {
+          console.error("eval run failed:", error instanceof Error ? error.message : String(error));
+          Deno.exit(1);
+        }
+      }),
+  )
+  .command(
+    "history",
+    new Command()
+      .description("Query evaluation history")
+      .option("-l, --last <n:number>", "Show last N entries")
+      .option("--scenario <id:string>", "Filter by scenario ID")
+      .option("--pack <name:string>", "Filter by pack name")
+      .option("--since <date:string>", "Filter to runs since date (ISO 8601)")
+      .option("--format <format:string>", "Output format: table, json", { default: "table" })
+      .action(async (options) => {
+        try {
+          await evalCommands.history({
+            last: options.last,
+            scenario: options.scenario,
+            pack: options.pack,
+            since: options.since,
+            format: options.format,
+          });
+        } catch (error) {
+          console.error("eval history failed:", error instanceof Error ? error.message : String(error));
+          Deno.exit(1);
+        }
+      }),
+  )
+  .command(
+    "compare",
+    new Command()
+      .description("Compare two evaluation runs side-by-side")
+      .option("--run-a <id:string>", "First run ID to compare", { required: true })
+      .option("--run-b <id:string>", "Second run ID to compare", { required: true })
+      .action((options) => {
+        try {
+          evalCommands.compare(options.runA, options.runB);
+        } catch (error) {
+          console.error("eval compare failed:", error instanceof Error ? error.message : String(error));
+          Deno.exit(1);
+        }
+      }),
+  );
+
+__test_command.command("eval", evalCommand);
 
 export async function run(): Promise<void> {
   await __test_command.parse(Deno.args);

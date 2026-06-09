@@ -22,6 +22,7 @@ export interface IRunManifestStep {
   stepType: IScenarioStep["type"];
   executionStatus: string;
   criterionResults: ICriterionResult[];
+  score?: number;
 }
 
 export interface IRunManifest {
@@ -30,6 +31,7 @@ export interface IRunManifest {
   mode: string;
   outcome: string;
   steps: IRunManifestStep[];
+  suite_score?: number;
 }
 
 export interface IWriteRunManifestOptions {

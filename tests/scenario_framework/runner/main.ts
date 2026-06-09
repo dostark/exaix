@@ -12,8 +12,11 @@ import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfil
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
+import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
+import { writeEvalHistoryEntry } from "./history_writer.ts";
+import { EvalSqliteStore } from "./history_sqlite.ts";
 
 const modeType = new EnumType(ScenarioExecutionMode);
 const profileType = new EnumType(ScenarioCiProfile);
@@ -34,6 +37,10 @@ await new Command()
   .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
   .option("-d, --dry-run", "Validate configuration and scenario definitions without executing any steps")
   .option("-v, --verbose", "Show full CLI commands executed in each step")
+  .option("--eval-mode", "Enable eval history writing for evaluation runs")
+  .option("--score-threshold <threshold:number>", "Minimum suite score to pass (default: 0.5)")
+  .option("--trials <n:number>", "Number of trials per scenario (default: 1)")
+  .option("--history-format <format:string>", "History storage format: sqlite+jsonl or jsonl (default: sqlite+jsonl)")
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
@@ -99,6 +106,7 @@ await new Command()
     // 7. Execute scenarios
     console.log(`Executing ${selectedEntries.length} scenarios...`);
     let hasFailure = false;
+    const manifests = new Map<string, IRunManifest>();
 
     for (const entry of selectedEntries) {
       console.log(`\nScenario: ${entry.id}`);
@@ -115,6 +123,8 @@ await new Command()
             ? `${Deno.env.get("EXA_BIN_PATH")}/exactl`
             : resolve(frameworkHome, "bin/exactl"),
         });
+
+        manifests.set(entry.id, result.manifest);
 
         console.log(`Outcome: ${result.manifest.outcome}`);
         if (result.manifest.outcome !== "success" && result.manifest.outcome !== "paused") {
@@ -134,6 +144,54 @@ await new Command()
       }
     }
 
+    // 8. Write eval history entries if in eval mode
+    if (options.evalMode) {
+      const historyFormat = options.historyFormat ?? "sqlite+jsonl";
+      let sqliteStore: EvalSqliteStore | undefined;
+      if (historyFormat !== "jsonl") {
+        const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
+        sqliteStore = new EvalSqliteStore(dbPath);
+        try {
+          sqliteStore.initialize();
+        } catch (error) {
+          console.error("Failed to initialize SQLite history store:", error);
+          sqliteStore = undefined;
+        }
+      }
+
+      for (const [scenarioId, manifest] of manifests) {
+        try {
+          const entry = await writeEvalHistoryEntry({
+            outputDir: runtimeConfig.output_dir,
+            scenarioId,
+            manifest,
+          });
+
+          if (sqliteStore) {
+            try {
+              sqliteStore.writeRun(
+                entry,
+                manifest.steps.map((s) => ({
+                  stepId: s.stepId,
+                  stepType: s.stepType,
+                  score: s.score ?? computeStepScoreFromCriterionResults(s.criterionResults, s.executionStatus),
+                  executionStatus: s.executionStatus,
+                })),
+              );
+            } catch (error) {
+              console.error(`Failed to write SQLite history for ${scenarioId}:`, error);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to write eval history for ${scenarioId}:`, error);
+        }
+      }
+
+      if (sqliteStore) {
+        sqliteStore.close();
+      }
+    }
+
     if (hasFailure) {
       Deno.exit(1);
     } else {
@@ -142,3 +200,20 @@ await new Command()
     }
   })
   .parse(Deno.args);
+
+function computeStepScoreFromCriterionResults(
+  results: { status: string; score_weight?: number }[],
+  executionStatus?: string,
+): number {
+  // Execution failures score 0 regardless of criteria
+  if (executionStatus === "execution-failed") return 0;
+  if (results.length === 0) return 1.0;
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const r of results) {
+    const w = r.score_weight ?? 1.0;
+    totalWeight += w;
+    if (r.status === "passed") weightedSum += w;
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 0.0;
+}

@@ -1,14 +1,19 @@
-# Scenario Framework
+# Scenario Framework — Implementation Guide
 
-The Scenario Framework is a reusable tool designed to validate Exaix behavior through real deployed workspaces. It executes declarative scenarios, captures evidence, and enforces measurable criteria at each step.
+The Scenario Framework is the execution engine behind `exactl eval`. This document
+covers architecture, schema contracts, and extension patterns. For **user-facing
+evaluation workflow, CLI reference, and tutorials**, see
+**[`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)**.
 
-## Quick Start
+## Quick Start (Development)
 
-For a complete step-by-step tutorial on deploying a sandbox, configuring LLM providers (including real LLMs like Google Gemini), and running the framework externally, please refer to the **[`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md)**.
+For a complete step-by-step tutorial on deploying a sandbox, configuring LLM providers
+(including real LLMs like Google Gemini), and running the framework externally, please
+refer to the **[`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md)**.
 
-### Running Scenarios (CLI Reference)
+### Running Scenarios (Direct Runner)
 
-Once you have a workspace set up (or deployed the framework), you can run scenarios using the `run-scenarios` script.
+For development and debugging, scenarios can be run directly via the `run-scenarios` script:
 
 ```bash
 ./bin/run-scenarios --workspace /path/to/workspace --output /path/to/output
@@ -26,6 +31,9 @@ Once you have a workspace set up (or deployed the framework), you can run scenar
 - `-d, --dry-run`: Validate selection and config without executing.
 - `-c, --config <path>`: Load configuration from a YAML/JSON file.
 - `-v, --verbose`: Show full CLI commands being executed in terminal.
+
+> **Note:** For production evaluation use `exactl eval run` instead.
+> See [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md) for the full CLI reference.
 
 ### Useful Option Values & Compatible Modes
 

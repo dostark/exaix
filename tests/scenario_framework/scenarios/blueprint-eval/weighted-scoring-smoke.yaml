@@ -1,0 +1,28 @@
+schema_version: "1.0.0"
+id: "blueprint-eval-weighted-scoring"
+title: "Weighted scoring smoke — verifies that score_weight produces non-binary scores"
+pack: "blueprint-eval"
+tags: ["eval", "scoring"]
+request_fixture: "fixtures/requests/blueprint-eval/weighted-scoring.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-artifacts"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          mkdir -p $WORKSPACE_ROOT/artifacts
+          echo "important data" > $WORKSPACE_ROOT/artifacts/result.txt
+          echo '{"status":"ok","score":85}' > $WORKSPACE_ROOT/artifacts/report.json
+    input_criteria: []
+    output_criteria:
+      - id: "result-txt-created"
+        kind: "file-exists"
+        path: "artifacts/result.txt"
+        score_weight: 0.3
+      - id: "report-json-created"
+        kind: "file-exists"
+        path: "artifacts/report.json"
+        score_weight: 0.7

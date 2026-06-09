@@ -31,6 +31,7 @@ export enum ScenarioStepType {
   JSON_ASSERT = "json-assert",
   MANUAL_REVIEW = "manual-review",
   CLEANUP = "cleanup",
+  TRAJECTORY_ASSERT = "trajectory-assert",
 }
 
 export enum CriterionKind {
@@ -55,6 +56,7 @@ export enum CriterionKind {
   VERSION_LTE = "version-lte",
   DIR_EXISTS = "dir-exists",
   COMMAND_OUTPUT_CONTAINS = "command-output-contains",
+  LLM_JUDGE = "llm-judge",
 }
 
 export enum CriterionPhase {
@@ -88,7 +90,8 @@ const BaseCriterionSchema = z.object({
   id: NON_EMPTY_STRING,
   kind: CriterionKindSchema,
   message: z.string().min(1).optional(),
-}).strict();
+  score_weight: z.number().min(0).max(1).optional(),
+});
 
 const FileExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.FILE_EXISTS),
@@ -220,6 +223,23 @@ const VersionLteCriterionSchema = BaseCriterionSchema.extend({
   source: z.enum(["binary", "workspace"]).default("binary"),
 }).strict();
 
+export const ExpectedSequenceEntrySchema = z.object({
+  tool: NON_EMPTY_STRING,
+  args_contains: z.array(z.string().min(1)).optional(),
+  min_args: z.number().int().min(0).optional(),
+  max_args: z.number().int().min(0).optional(),
+}).strict();
+
+export type IExpectedSequenceEntry = z.infer<typeof ExpectedSequenceEntrySchema>;
+
+const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.LLM_JUDGE),
+  evidence_path: z.string().min(1).optional(),
+  preset: z.string().min(1).optional(),
+  rubric: z.string().min(1).optional(),
+  score_threshold: z.number().min(0).max(1).default(0.7),
+}).strict();
+
 export const CriterionSchema = z.discriminatedUnion("kind", [
   FileExistsCriterionSchema,
   FileFoundCriterionSchema,
@@ -242,6 +262,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   VersionGteCriterionSchema,
   VersionLteCriterionSchema,
   CommandOutputContainsCriterionSchema,
+  LlmJudgeCriterionSchema,
 ]);
 
 export type ICriterion = z.infer<typeof CriterionSchema>;
@@ -255,6 +276,7 @@ export const CriterionResultSchema = z.object({
   evidence_refs: z.array(z.string().min(1)),
   observed_value: z.unknown().optional(),
   expected_value: z.unknown().optional(),
+  score_weight: z.number().min(0).max(1).optional(),
 }).strict();
 
 export type ICriterionResult = z.infer<typeof CriterionResultSchema>;
@@ -275,7 +297,13 @@ export const ScenarioStepSchema = z.object({
   file_pattern: z.string().min(1).optional(),
   input_criteria: z.array(CriterionSchema).optional().default([]),
   output_criteria: z.array(CriterionSchema).optional().default([]),
-}).strict().superRefine((step, ctx) => {
+  step_weight: z.number().min(0).max(1).optional(),
+  source_step: z.string().min(1).optional(),
+  expected_sequence: z.array(ExpectedSequenceEntrySchema).optional(),
+  order_matters: z.boolean().optional(),
+  allow_extra_tools: z.boolean().optional(),
+  partial_credit: z.boolean().optional(),
+}).superRefine((step, ctx) => {
   if (step.type === ScenarioStepType.MANUAL_REVIEW && !step.instructions) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -290,6 +318,34 @@ export const ScenarioStepSchema = z.object({
       message: "exactl steps require a command",
       path: ["command"],
     });
+  }
+
+  if (step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
+    if (!step.source_step) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "trajectory-assert steps require source_step",
+        path: ["source_step"],
+      });
+    }
+    if (!step.expected_sequence || step.expected_sequence.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "trajectory-assert steps require non-empty expected_sequence",
+        path: ["expected_sequence"],
+      });
+    }
+  }
+
+  // Validate llm-judge criteria have preset or rubric
+  for (const criterion of [...(step.input_criteria ?? []), ...(step.output_criteria ?? [])]) {
+    if (criterion.kind === CriterionKind.LLM_JUDGE && !criterion.preset && !criterion.rubric) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "llm-judge criteria require either 'preset' or 'rubric'",
+        path: [criterion.id],
+      });
+    }
   }
 });
 

@@ -21,7 +21,13 @@ import {
 } from "../../runner/config.ts";
 import { ScenarioSchema } from "../../schema/scenario_schema.ts";
 import { SCHEMA_VERSION } from "../../schema/version.ts";
-import { CriterionResultSchema, CriterionStatus } from "../../schema/step_schema.ts";
+import {
+  CriterionKind,
+  CriterionResultSchema,
+  CriterionStatus,
+  ScenarioStepSchema,
+  ScenarioStepType,
+} from "../../schema/step_schema.ts";
 
 Deno.test("[ScenarioFrameworkContract] accepts a valid scenario document", () => {
   const result = ScenarioSchema.parse({
@@ -315,4 +321,69 @@ Deno.test("[ScenarioFrameworkContract] portal lifecycle planner reuses exact mat
 
   assertEquals(plan.action, PortalLifecycleAction.REUSE_EXISTING);
   assertEquals(plan.frameworkOwned, false);
+});
+
+Deno.test("[ScenarioFrameworkContract] llm-judge criterion without preset or rubric fails validation", () => {
+  const result = ScenarioStepSchema.safeParse({
+    id: "llm-judge-step",
+    type: ScenarioStepType.SHELL,
+    command: "echo",
+    input_criteria: [],
+    output_criteria: [
+      {
+        id: "judge-missing-fields",
+        kind: CriterionKind.LLM_JUDGE,
+      },
+    ],
+    continue_on_failure: false,
+  });
+
+  assertEquals(result.success, false);
+  if (!result.success) {
+    const issues = result.error.issues;
+    assertEquals(issues.length > 0, true);
+    assertStringIncludes(
+      issues.map((i) => i.message).join(" "),
+      "preset",
+      "error should mention missing preset/rubric",
+    );
+  }
+});
+
+Deno.test("[ScenarioFrameworkContract] llm-judge criterion with preset passes validation", () => {
+  const result = ScenarioStepSchema.safeParse({
+    id: "llm-judge-step",
+    type: ScenarioStepType.SHELL,
+    command: "echo",
+    input_criteria: [],
+    output_criteria: [
+      {
+        id: "judge-with-preset",
+        kind: CriterionKind.LLM_JUDGE,
+        preset: "goal_alignment",
+      },
+    ],
+    continue_on_failure: false,
+  });
+
+  assertEquals(result.success, true, "llm-judge with preset should pass validation");
+});
+
+Deno.test("[ScenarioFrameworkContract] llm-judge criterion with rubric passes validation", () => {
+  const result = ScenarioStepSchema.safeParse({
+    id: "llm-judge-step",
+    type: ScenarioStepType.SHELL,
+    command: "echo",
+    input_criteria: [],
+    output_criteria: [
+      {
+        id: "judge-with-rubric",
+        kind: CriterionKind.LLM_JUDGE,
+        rubric: "Check that the output is well-formatted",
+      },
+    ],
+    continue_on_failure: false,
+  });
+
+  assertEquals(result.success, true, "llm-judge with rubric should pass validation");
 });

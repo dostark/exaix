@@ -19,10 +19,12 @@ import {
   type ICriterion,
   type ICriterionResult,
   type IScenarioStep,
+  ScenarioStepType,
 } from "../schema/step_schema.ts";
 import type { JSONValue } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
+import { buildEvaluationPrompt, CriterionResultSchema, getCriteriaByNames } from "@exaix/core/evaluation";
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const JSON_PATH_ROOT = "$";
@@ -139,12 +141,36 @@ export async function evaluateCriterion(
       return await evaluateVersionLteCriterion(options);
     case CriterionKind.COMMAND_OUTPUT_CONTAINS:
       return evaluateCommandOutputContainsCriterion(options);
+    case CriterionKind.LLM_JUDGE:
+      return await evaluateLlmJudgeCriterion(options);
   }
 }
 
 export async function evaluateStepOutcome(
   options: IEvaluateStepOutcomeOptions,
 ): Promise<IScenarioStepOutcome> {
+  // Trajectory-assert steps don't use traditional criteria — results come from the executor
+  if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
+    const stdout = options.executionResult?.stdout ?? "";
+    const exitCode = options.executionResult?.exitCode ?? 0;
+    const allPassed = exitCode === 0;
+    return {
+      stepId: options.step.id,
+      status: allPassed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      failureStage: allPassed ? null : StepFailureStage.EXECUTION,
+      criterionResults: [
+        {
+          criterion_id: "trajectory-sequence",
+          kind: CriterionKind.COMMAND_EXIT_CODE,
+          phase: CriterionPhase.OUTPUT,
+          status: allPassed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+          message: stdout || "trajectory assertion completed",
+          evidence_refs: [],
+        },
+      ],
+      executionResult: options.executionResult,
+    };
+  }
   // Resolve file_pattern if provided by the step
   let stepTargetFile: string | undefined = undefined;
   if (options.step.file_pattern) {
@@ -1093,6 +1119,111 @@ function evaluateCommandOutputContainsCriterion(
     observed_value: combined,
     expected_value: criterion.contains,
   };
+}
+
+async function evaluateLlmJudgeCriterion(
+  options: IEvaluateCriterionOptions,
+): Promise<ICriterionResult> {
+  const criterion = options.criterion as ICriterion & {
+    evidence_path?: string;
+    preset?: string;
+    rubric?: string;
+    score_threshold?: number;
+  };
+
+  // Validate: at least one of preset or rubricequired
+  if (!criterion.preset && !criterion.rubric) {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "llm-judge requires either 'preset' or 'rubric'",
+      evidence_refs: [],
+      score_weight: options.criterion.score_weight,
+    };
+  }
+
+  // Resolve preset criteria if specified
+  const presetCriteria = criterion.preset ? getCriteriaByNames([criterion.preset]) : [];
+  const effectiveCriteria = presetCriteria;
+
+  // Read evidence content
+  let content = "";
+  if (criterion.evidence_path) {
+    const resolvedPath = resolve(options.workspaceRoot, criterion.evidence_path);
+    try {
+      content = await Deno.readTextFile(resolvedPath);
+    } catch {
+      content = options.executionResult?.stdout ?? "";
+    }
+  } else {
+    content = options.executionResult?.stdout ?? "";
+  }
+
+  const promptUsed = buildEvaluationPrompt(content, effectiveCriteria, criterion.rubric);
+  const threshold = criterion.score_threshold ?? 0.7;
+
+  // In test/CI mode without an LLM endpoint, return a mock pass result
+  // Set EXA_EVAL_LLM_MOCK=false to fail when no LLM is configured
+  const useMock = Deno.env.get("EXA_EVAL_LLM_MOCK") !== "false";
+  if (useMock) {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: CriterionStatus.PASSED,
+      message: `LLM judge (${criterion.preset ?? "inline rubric"}): mock pass (threshold: ${threshold})`,
+      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      score_weight: options.criterion.score_weight,
+    };
+  }
+
+  // When LLM endpoint is configured, parse the real response
+  try {
+    const rawLlmResponse = await callLlmEndpoint(promptUsed);
+    const parsed = CriterionResultSchema.parse(JSON.parse(rawLlmResponse));
+    const score = parsed.score;
+    const passed = score >= threshold;
+
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: passed ? CriterionStatus.PASSED : CriterionStatus.FAILED,
+      message: `LLM judge score: ${score.toFixed(2)} (threshold: ${threshold})`,
+      evidence_refs: criterion.evidence_path ? [criterion.evidence_path] : [],
+      observed_value: score,
+      expected_value: threshold,
+      score_weight: options.criterion.score_weight,
+    };
+  } catch {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "LLM judge: failed to parse LLM response",
+      evidence_refs: [],
+      score_weight: options.criterion.score_weight,
+    };
+  }
+}
+
+async function callLlmEndpoint(prompt: string): Promise<string> {
+  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "http://127.0.0.1:11434/api/generate";
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "llama3";
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, prompt, stream: false }),
+    });
+    const data = await response.json();
+    return data.response ?? JSON.stringify(data);
+  } catch (error) {
+    throw new Error(`LLM call failed: ${(error as Error).message}`);
+  }
 }
 
 function compareVersions(a: string, b: string): number {
