@@ -174,7 +174,7 @@ await new Command()
                 manifest.steps.map((s) => ({
                   stepId: s.stepId,
                   stepType: s.stepType,
-                  score: computeStepScoreFromCriterionResults(s.criterionResults),
+                  score: s.score ?? computeStepScoreFromCriterionResults(s.criterionResults, s.executionStatus),
                   executionStatus: s.executionStatus,
                 })),
               );
@@ -201,7 +201,12 @@ await new Command()
   })
   .parse(Deno.args);
 
-function computeStepScoreFromCriterionResults(results: { status: string; score_weight?: number }[]): number {
+function computeStepScoreFromCriterionResults(
+  results: { status: string; score_weight?: number }[],
+  executionStatus?: string,
+): number {
+  // Execution failures score 0 regardless of criteria
+  if (executionStatus === "execution-failed") return 0;
   if (results.length === 0) return 1.0;
   let weightedSum = 0;
   let totalWeight = 0;

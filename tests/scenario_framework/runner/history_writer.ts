@@ -55,9 +55,10 @@ function buildEvalHistoryEntry(manifest: IRunManifest): IEvalHistoryEntry {
     step_count: manifest.steps.length,
     step_results: manifest.steps.map((s) => ({
       step_id: s.stepId,
-      score: s.criterionResults.length > 0
-        ? s.criterionResults.filter((c) => c.status === "passed").length / s.criterionResults.length
-        : 1.0,
+      score: s.score ??
+        (s.criterionResults.length > 0
+          ? s.criterionResults.filter((c) => c.status === "passed").length / s.criterionResults.length
+          : 1.0),
       criteria_passed: s.criterionResults.filter((c) => c.status === "passed").length,
       criteria_total: s.criterionResults.length,
     })),

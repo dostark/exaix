@@ -22,6 +22,7 @@ export interface IRunManifestStep {
   stepType: IScenarioStep["type"];
   executionStatus: string;
   criterionResults: ICriterionResult[];
+  score?: number;
 }
 
 export interface IRunManifest {

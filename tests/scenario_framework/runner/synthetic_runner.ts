@@ -249,19 +249,24 @@ interface IBuildRunManifestOptions {
 }
 
 function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
-  const steps = options.stepOutcomes.map((outcome) => ({
-    stepId: outcome.stepId,
-    stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
-    executionStatus: mapExecutionStatus(outcome),
-    criterionResults: outcome.criterionResults,
-  }));
+  const steps = options.stepOutcomes.map((outcome) => {
+    // Execution failures score 0 regardless of input criteria results
+    const stepScore = outcome.failureStage === "execution" ? 0 : computeStepScore(outcome.criterionResults);
+    return {
+      stepId: outcome.stepId,
+      stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
+      executionStatus: mapExecutionStatus(outcome),
+      criterionResults: outcome.criterionResults,
+      score: stepScore,
+    };
+  });
 
-  // Compute step scores from criterion results
+  // Build step-score inputs for suite score computation
   const stepScores: IStepScoreInput[] = steps.map((s) => {
     const stepDef = options.loadedScenario.steps.find((st) => st.id === s.stepId);
     return {
       stepId: s.stepId,
-      score: computeStepScore(s.criterionResults),
+      score: s.score ?? computeStepScore(s.criterionResults),
       step: stepDef ??
         {
           id: s.stepId,
