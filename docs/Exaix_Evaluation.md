@@ -457,7 +457,7 @@ exactl eval compare --run-a aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa \
 
 Example output:
 
-```
+```text
 Comparing run A (aaaa...) vs run B (bbbb...):
   Score delta: +0.15
   Run A: scenario=workspace-health-smoke, score=0.80
