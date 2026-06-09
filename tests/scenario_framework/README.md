@@ -1,14 +1,19 @@
-# Scenario Framework
+# Scenario Framework — Implementation Guide
 
-The Scenario Framework is a reusable tool designed to validate Exaix behavior through real deployed workspaces. It executes declarative scenarios, captures evidence, and enforces measurable criteria at each step.
+The Scenario Framework is the execution engine behind `exactl eval`. This document
+covers architecture, schema contracts, and extension patterns. For **user-facing
+evaluation workflow, CLI reference, and tutorials**, see
+**[`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md)**.
 
-## Quick Start
+## Quick Start (Development)
 
-For a complete step-by-step tutorial on deploying a sandbox, configuring LLM providers (including real LLMs like Google Gemini), and running the framework externally, please refer to the **[`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md)**.
+For a complete step-by-step tutorial on deploying a sandbox, configuring LLM providers
+(including real LLMs like Google Gemini), and running the framework externally, please
+refer to the **[`VALIDATION_GUIDE.md`](./VALIDATION_GUIDE.md)**.
 
-### Running Scenarios (CLI Reference)
+### Running Scenarios (Direct Runner)
 
-Once you have a workspace set up (or deployed the framework), you can run scenarios using the `run-scenarios` script.
+For development and debugging, scenarios can be run directly via the `run-scenarios` script:
 
 ```bash
 ./bin/run-scenarios --workspace /path/to/workspace --output /path/to/output
@@ -27,83 +32,8 @@ Once you have a workspace set up (or deployed the framework), you can run scenar
 - `-c, --config <path>`: Load configuration from a YAML/JSON file.
 - `-v, --verbose`: Show full CLI commands being executed in terminal.
 
-### LLM-as-Judge Criterion (`llm-judge`)
-
-The framework supports LLM-graded evaluation via the `llm-judge` criterion kind.
-It uses a preset from Exaix's 14 built-in evaluation criteria or an inline natural-language rubric:
-
-```yaml
-output_criteria:
-  - id: "blueprint-quality"
-    kind: "llm-judge"
-    preset: "goal_alignment" # uses built-in criterion definition
-    evidence_path: "output/plan.md"
-    score_threshold: 0.8
-    score_weight: 2.0
-```
-
-Or with an inline rubric:
-
-```yaml
-output_criteria:
-  - id: "custom-eval"
-    kind: "llm-judge"
-    rubric: "Check that the output follows Exaix formatting conventions"
-    score_threshold: 0.7
-```
-
-When no LLM endpoint is configured (test/CI mode), all `llm-judge` criteria return
-`PASSED` by default. Set `EXA_EVAL_LLM_MOCK=false` to require a real LLM endpoint.
-
-### Trajectory Assert Step Type (`trajectory-assert`)
-
-Validates the agent's tool-call sequence during a step:
-
-```yaml
-steps:
-  - id: "check-trajectory"
-    type: "trajectory-assert"
-    source_step: "submit-request"
-    expected_sequence:
-      - tool: "read_file"
-        args_contains: ["config.ts"]
-      - tool: "edit_file"
-    order_matters: true
-    allow_extra_tools: false
-    partial_credit: true
-```
-
-Trajectories are captured from the journal and compared using Levenshtein distance
-(when `order_matters=true`) or multiset matching (when `order_matters=false`).
-
-### Multi-Trial Mode (`--trials N`)
-
-When running with `exactl eval run --trials N`, each scenario runs N times.
-Metrics include `pass_at_1`, `pass^k`, mean, min, max, and stdev.
-
-```bash
-exactl eval run --pack smoke --trials 5 --score-threshold 0.7
-```
-
-### Scoring with `score_weight`
-
-Criteria and steps support optional `score_weight` (0.0–1.0) for graded evaluation.
-When `score_weight` is omitted, all criteria weigh equally (default 1.0).
-Steps with `score_weight` contribute proportionally to the overall `suite_score`.
-
-```yaml
-output_criteria:
-  - id: "critical-check"
-    kind: "file-exists"
-    path: "important/file.txt"
-    score_weight: 0.7
-  - id: "nice-to-have"
-    kind: "dir-exists"
-    path: "optional/dir"
-    score_weight: 0.3
-```
-
-Run with `--eval-mode` to write scored results to `output/history/eval-history.jsonl`.
+> **Note:** For production evaluation use `exactl eval run` instead.
+> See [`docs/Exaix_Evaluation.md`](../docs/Exaix_Evaluation.md) for the full CLI reference.
 
 ### Useful Option Values & Compatible Modes
 
