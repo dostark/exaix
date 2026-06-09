@@ -48,9 +48,19 @@ function buildEvalHistoryEntry(manifest: IRunManifest): IEvalHistoryEntry {
   return {
     run_id: crypto.randomUUID(),
     scenario_id: manifest.scenarioId,
+    pack: manifest.pack,
     outcome: manifest.outcome,
     mode: manifest.mode,
     suite_score: manifest.suite_score,
+    step_count: manifest.steps.length,
+    step_results: manifest.steps.map((s) => ({
+      step_id: s.stepId,
+      score: s.criterionResults.length > 0
+        ? s.criterionResults.filter((c) => c.status === "passed").length / s.criterionResults.length
+        : 1.0,
+      criteria_passed: s.criterionResults.filter((c) => c.status === "passed").length,
+      criteria_total: s.criterionResults.length,
+    })),
     passed: manifest.outcome === "success",
     timestamp: new Date().toISOString(),
     component_versions: getDefaultComponentVersions(),

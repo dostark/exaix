@@ -69,9 +69,17 @@ export class EvalSqliteStore {
         passed INTEGER NOT NULL,
         mode TEXT NOT NULL DEFAULT 'auto',
         score_threshold REAL,
+        step_count INTEGER,
         trials INTEGER DEFAULT 1,
+        suite_score_mean REAL,
+        suite_score_stdev REAL,
+        pass_at_1 REAL,
+        pass_k INTEGER,
+        blueprint_id TEXT,
+        blueprint_version TEXT,
         exactl_version TEXT,
         schema_version TEXT,
+        trial_scores TEXT,
         metadata TEXT
       )
     `);
@@ -141,8 +149,10 @@ export class EvalSqliteStore {
 
     const insertRun = this.db.prepare(
       `INSERT OR REPLACE INTO eval_runs
-        (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, trials, exactl_version, schema_version, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode, score_threshold,
+         step_count, trials, suite_score_mean, suite_score_stdev, pass_at_1, pass_k,
+         blueprint_id, blueprint_version, exactl_version, schema_version, trial_scores, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
     const insertStep = this.db.prepare(
@@ -156,13 +166,22 @@ export class EvalSqliteStore {
         entry.run_id,
         entry.timestamp,
         entry.scenario_id,
-        "",
+        entry.pack ?? "",
         entry.suite_score ?? 0,
         entry.passed ? 1 : 0,
         entry.mode,
-        1,
+        entry.score_threshold ?? null,
+        entry.step_count ?? null,
+        entry.trials ?? 1,
+        entry.suite_score_mean ?? null,
+        entry.suite_score_stdev ?? null,
+        entry.pass_at_1 ?? null,
+        entry.pass_k ?? null,
+        entry.blueprint_id ?? null,
+        entry.blueprint_version ?? null,
         entry.component_versions?.binary_version ?? null,
         entry.component_versions?.schema_version ?? null,
+        entry.trial_scores ? JSON.stringify(entry.trial_scores) : null,
         null,
       );
 

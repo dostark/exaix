@@ -8,7 +8,7 @@
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { EvalCommands } from "../src/commands/eval_commands.ts";
+import { buildRunArgs, EvalCommands } from "../src/commands/eval_commands.ts";
 import { createCliTestContext } from "./helpers/test_setup.ts";
 
 interface IConsoleArgs extends Array<string | number | boolean | object | undefined | null> {}
@@ -149,6 +149,37 @@ Deno.test("[EvalCommands] history --format json outputs valid JSON array", async
   } finally {
     await cleanup();
   }
+});
+
+Deno.test("[EvalCommands] buildRunArgs forwards score-threshold, trials, and history-format flags", () => {
+  const args = buildRunArgs({
+    scenario: ["test-scenario"],
+    scoreThreshold: 0.8,
+    trials: 5,
+    historyFormat: "jsonl",
+    verbose: true,
+  });
+
+  const argsStr = args.join(" ");
+  assertEquals(argsStr.includes("--score-threshold"), true, "should include --score-threshold");
+  assertEquals(argsStr.includes("0.8"), true, "should include threshold value 0.8");
+  assertEquals(argsStr.includes("--trials"), true, "should include --trials");
+  assertEquals(argsStr.includes("5"), true, "should include trials value 5");
+  assertEquals(argsStr.includes("--history-format"), true, "should include --history-format");
+  assertEquals(argsStr.includes("jsonl"), true, "should include history format jsonl");
+  assertEquals(argsStr.includes("--verbose"), true, "should include --verbose");
+  assertEquals(argsStr.includes("--eval-mode"), true, "should include --eval-mode");
+  assertEquals(argsStr.includes("--scenario"), true, "should include --scenario");
+  assertEquals(argsStr.includes("test-scenario"), true, "should include scenario id");
+});
+
+Deno.test("[EvalCommands] buildRunArgs omits flags not provided", () => {
+  const args = buildRunArgs({});
+  const argsStr = args.join(" ");
+  assertEquals(argsStr.includes("--score-threshold"), false, "should NOT include --score-threshold");
+  assertEquals(argsStr.includes("--trials"), false, "should NOT include --trials");
+  assertEquals(argsStr.includes("--history-format"), false, "should NOT include --history-format");
+  assertEquals(argsStr.includes("--eval-mode"), true, "should always include --eval-mode");
 });
 
 Deno.test("[EvalCommands] history with no history file shows empty message", async () => {

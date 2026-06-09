@@ -223,6 +223,15 @@ const VersionLteCriterionSchema = BaseCriterionSchema.extend({
   source: z.enum(["binary", "workspace"]).default("binary"),
 }).strict();
 
+export const ExpectedSequenceEntrySchema = z.object({
+  tool: NON_EMPTY_STRING,
+  args_contains: z.array(z.string().min(1)).optional(),
+  min_args: z.number().int().min(0).optional(),
+  max_args: z.number().int().min(0).optional(),
+}).strict();
+
+export type IExpectedSequenceEntry = z.infer<typeof ExpectedSequenceEntrySchema>;
+
 const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.LLM_JUDGE),
   evidence_path: z.string().min(1).optional(),
@@ -290,7 +299,7 @@ export const ScenarioStepSchema = z.object({
   output_criteria: z.array(CriterionSchema).optional().default([]),
   step_weight: z.number().min(0).max(1).optional(),
   source_step: z.string().min(1).optional(),
-  expected_sequence: z.array(z.string().min(1)).optional(),
+  expected_sequence: z.array(ExpectedSequenceEntrySchema).optional(),
   order_matters: z.boolean().optional(),
   allow_extra_tools: z.boolean().optional(),
   partial_credit: z.boolean().optional(),
@@ -324,6 +333,17 @@ export const ScenarioStepSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "trajectory-assert steps require non-empty expected_sequence",
         path: ["expected_sequence"],
+      });
+    }
+  }
+
+  // Validate llm-judge criteria have preset or rubric
+  for (const criterion of [...(step.input_criteria ?? []), ...(step.output_criteria ?? [])]) {
+    if (criterion.kind === CriterionKind.LLM_JUDGE && !criterion.preset && !criterion.rubric) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "llm-judge criteria require either 'preset' or 'rubric'",
+        path: [criterion.id],
       });
     }
   }

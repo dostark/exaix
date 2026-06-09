@@ -27,6 +27,64 @@ Once you have a workspace set up (or deployed the framework), you can run scenar
 - `-c, --config <path>`: Load configuration from a YAML/JSON file.
 - `-v, --verbose`: Show full CLI commands being executed in terminal.
 
+### LLM-as-Judge Criterion (`llm-judge`)
+
+The framework supports LLM-graded evaluation via the `llm-judge` criterion kind.
+It uses a preset from Exaix's 14 built-in evaluation criteria or an inline natural-language rubric:
+
+```yaml
+output_criteria:
+  - id: "blueprint-quality"
+    kind: "llm-judge"
+    preset: "goal_alignment" # uses built-in criterion definition
+    evidence_path: "output/plan.md"
+    score_threshold: 0.8
+    score_weight: 2.0
+```
+
+Or with an inline rubric:
+
+```yaml
+output_criteria:
+  - id: "custom-eval"
+    kind: "llm-judge"
+    rubric: "Check that the output follows Exaix formatting conventions"
+    score_threshold: 0.7
+```
+
+When no LLM endpoint is configured (test/CI mode), all `llm-judge` criteria return
+`PASSED` by default. Set `EXA_EVAL_LLM_MOCK=false` to require a real LLM endpoint.
+
+### Trajectory Assert Step Type (`trajectory-assert`)
+
+Validates the agent's tool-call sequence during a step:
+
+```yaml
+steps:
+  - id: "check-trajectory"
+    type: "trajectory-assert"
+    source_step: "submit-request"
+    expected_sequence:
+      - tool: "read_file"
+        args_contains: ["config.ts"]
+      - tool: "edit_file"
+    order_matters: true
+    allow_extra_tools: false
+    partial_credit: true
+```
+
+Trajectories are captured from the journal and compared using Levenshtein distance
+(when `order_matters=true`) or multiset matching (when `order_matters=false`).
+
+### Multi-Trial Mode (`--trials N`)
+
+When running with `exactl eval run --trials N`, each scenario runs N times.
+Metrics include `pass_at_1`, `pass^k`, mean, min, max, and stdev.
+
+```bash
+exactl eval run --pack smoke --trials 5 --score-threshold 0.7
+```
+
 ### Scoring with `score_weight`
 
 Criteria and steps support optional `score_weight` (0.0–1.0) for graded evaluation.

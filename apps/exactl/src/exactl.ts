@@ -2335,16 +2335,35 @@ const evalCommand = new Command()
       .description("Query evaluation history")
       .option("-l, --last <n:number>", "Show last N entries")
       .option("--scenario <id:string>", "Filter by scenario ID")
+      .option("--pack <name:string>", "Filter by pack name")
+      .option("--since <date:string>", "Filter to runs since date (ISO 8601)")
       .option("--format <format:string>", "Output format: table, json", { default: "table" })
       .action(async (options) => {
         try {
           await evalCommands.history({
             last: options.last,
             scenario: options.scenario,
+            pack: options.pack,
+            since: options.since,
             format: options.format,
           });
         } catch (error) {
           console.error("eval history failed:", error instanceof Error ? error.message : String(error));
+          Deno.exit(1);
+        }
+      }),
+  )
+  .command(
+    "compare",
+    new Command()
+      .description("Compare two evaluation runs side-by-side")
+      .option("--run-a <id:string>", "First run ID to compare", { required: true })
+      .option("--run-b <id:string>", "Second run ID to compare", { required: true })
+      .action(async (options) => {
+        try {
+          await evalCommands.compare(options.runA, options.runB);
+        } catch (error) {
+          console.error("eval compare failed:", error instanceof Error ? error.message : String(error));
           Deno.exit(1);
         }
       }),

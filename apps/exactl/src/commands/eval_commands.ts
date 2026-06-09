@@ -8,6 +8,7 @@
 
 import { resolve } from "@std/path";
 import { BaseCommand, type ICommandContext } from "@exaix/cli/base.ts";
+import { EvalSqliteStore } from "../../../../tests/scenario_framework/runner/history_sqlite.ts";
 
 interface IRunManifest {
   scenarioId: string;
@@ -17,6 +18,7 @@ interface IRunManifest {
 interface IHistoryEntry {
   run_id: string;
   scenario_id: string;
+  pack?: string;
   outcome: string;
   mode: string;
   suite_score?: number;
@@ -40,26 +42,7 @@ export class EvalCommands extends BaseCommand {
     historyFormat?: string;
     verbose?: boolean;
   }): Promise<void> {
-    const frameworkPath = resolveFrameworkPath();
-    const outputDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output");
-
-    const args = [
-      "run",
-      "--allow-all",
-      frameworkPath,
-      "--output",
-      outputDir,
-      "--mode",
-      "auto",
-    ];
-
-    if (options.verbose) args.push("--verbose");
-    if (options.pack) { for (const p of options.pack) args.push("--pack", p); }
-    if (options.tag) { for (const t of options.tag) args.push("--tag", t); }
-    if (options.scenario) { for (const s of options.scenario) args.push("--scenario", s); }
-
-    // Always enable eval mode for the CLI
-    args.push("--eval-mode");
+    const args = buildRunArgs(options);
 
     const cmd = new Deno.Command("deno", { args, cwd: Deno.cwd() });
     const proc = cmd.spawn();
@@ -73,6 +56,8 @@ export class EvalCommands extends BaseCommand {
   async history(options: {
     last?: number;
     scenario?: string;
+    pack?: string;
+    since?: string;
     format?: string;
   }): Promise<void> {
     const historyDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output", "history");
@@ -96,6 +81,13 @@ export class EvalCommands extends BaseCommand {
     if (options.scenario) {
       filtered = filtered.filter((e) => e.scenario_id === options.scenario);
     }
+    if (options.pack) {
+      filtered = filtered.filter((e) => e.pack === options.pack);
+    }
+    if (options.since) {
+      const sinceDate = new Date(options.since).getTime();
+      filtered = filtered.filter((e) => new Date(e.timestamp).getTime() >= sinceDate);
+    }
     if (options.last && options.last > 0) {
       filtered = filtered.slice(-options.last);
     }
@@ -112,6 +104,49 @@ export class EvalCommands extends BaseCommand {
       renderHistoryTable(filtered);
     }
   }
+
+  async compare(runA: string, runB: string): Promise<void> {
+    const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
+    const store = new EvalSqliteStore(dbPath);
+    try {
+      store.initialize();
+      const result = store.compareRuns(runA, runB);
+      if (!result.runA && !result.runB) {
+        console.log("Neither run found in SQLite history.");
+        return;
+      }
+      console.log(`Comparing run A (${runA}) vs run B (${runB}):`);
+      console.log(`  Score delta: ${result.scoreDelta > 0 ? "+" : ""}${result.scoreDelta.toFixed(3)}`);
+      if (result.runA) {
+        console.log(
+          `  Run A: scenario=${result.runA.scenario_id}, score=${result.runA.suite_score}, timestamp=${result.runA.run_timestamp}`,
+        );
+      }
+      if (result.runB) {
+        console.log(
+          `  Run B: scenario=${result.runB.scenario_id}, score=${result.runB.suite_score}, timestamp=${result.runB.run_timestamp}`,
+        );
+      }
+      if (result.stepsA.length > 0 || result.stepsB.length > 0) {
+        console.log(`\nSteps comparison:`);
+        const maxSteps = Math.max(result.stepsA.length, result.stepsB.length);
+        for (let i = 0; i < maxSteps; i++) {
+          const stepA = result.stepsA[i];
+          const stepB = result.stepsB[i];
+          const stepId = stepA?.step_id ?? stepB?.step_id ?? `step-${i}`;
+          const scoreA = stepA?.score ?? 0;
+          const scoreB = stepB?.score ?? 0;
+          console.log(
+            `  ${stepId}: ${scoreA.toFixed(2)} → ${scoreB.toFixed(2)} (${(scoreB - scoreA > 0 ? "+" : "")}${
+              (scoreB - scoreA).toFixed(2)
+            })`,
+          );
+        }
+      }
+    } finally {
+      store.close();
+    }
+  }
 }
 
 function resolveFrameworkPath(): string {
@@ -120,6 +155,41 @@ function resolveFrameworkPath(): string {
     return resolve(envPath, "runner/main.ts");
   }
   return resolve(new URL(".", import.meta.url).pathname, FRAMEWORK_RELATIVE_PATH);
+}
+
+export function buildRunArgs(options: {
+  pack?: string[];
+  tag?: string[];
+  scenario?: string[];
+  scoreThreshold?: number;
+  trials?: number;
+  historyFormat?: string;
+  verbose?: boolean;
+}): string[] {
+  const frameworkPath = resolveFrameworkPath();
+  const outputDir = resolve(Deno.cwd(), "tests", "scenario_framework", "output");
+
+  const args = [
+    "run",
+    "--allow-all",
+    frameworkPath,
+    "--output",
+    outputDir,
+    "--mode",
+    "auto",
+  ];
+
+  if (options.verbose) args.push("--verbose");
+  if (options.pack) { for (const p of options.pack) args.push("--pack", p); }
+  if (options.tag) { for (const t of options.tag) args.push("--tag", t); }
+  if (options.scenario) { for (const s of options.scenario) args.push("--scenario", s); }
+  if (options.scoreThreshold !== undefined) args.push("--score-threshold", String(options.scoreThreshold));
+  if (options.trials !== undefined && options.trials > 1) args.push("--trials", String(options.trials));
+  if (options.historyFormat !== undefined) args.push("--history-format", options.historyFormat);
+
+  args.push("--eval-mode");
+
+  return args;
 }
 
 function renderHistoryTable(entries: IHistoryEntry[]): void {

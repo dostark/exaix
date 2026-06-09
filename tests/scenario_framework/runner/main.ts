@@ -37,6 +37,9 @@ await new Command()
   .option("-d, --dry-run", "Validate configuration and scenario definitions without executing any steps")
   .option("-v, --verbose", "Show full CLI commands executed in each step")
   .option("--eval-mode", "Enable eval history writing for evaluation runs")
+  .option("--score-threshold <threshold:number>", "Minimum suite score to pass (default: 0.5)")
+  .option("--trials <n:number>", "Number of trials per scenario (default: 1)")
+  .option("--history-format <format:string>", "History storage format: sqlite+jsonl or jsonl (default: sqlite+jsonl)")
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");

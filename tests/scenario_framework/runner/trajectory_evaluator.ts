@@ -7,10 +7,16 @@
  * @related-files [tests/scenario_framework/schema/step_schema.ts, tests/scenario_framework/runner/assertions.ts]
  */
 
-import { CriterionKind, CriterionPhase, CriterionStatus, type ICriterionResult } from "../schema/step_schema.ts";
+import {
+  CriterionKind,
+  CriterionPhase,
+  CriterionStatus,
+  type ICriterionResult,
+  type IExpectedSequenceEntry,
+} from "../schema/step_schema.ts";
 
 export interface IExpectedTrajectory {
-  expectedSequence: string[];
+  expectedSequence: IExpectedSequenceEntry[];
   orderMatters: boolean;
   allowExtraTools: boolean;
   partialCredit: boolean;
@@ -58,7 +64,7 @@ export function scoreTrajectory(
     message: `trajectory: matched ${matched}/${matched + unmatched} expected tools (score: ${score.toFixed(2)})`,
     evidence_refs: [],
     observed_value: observed.sequence,
-    expected_value: expected.expectedSequence,
+    expected_value: expectedToolNames(expected),
   });
 
   if (observed.extraCount > 0 && !expected.allowExtraTools) {
@@ -167,14 +173,31 @@ function extractToolCalls(events: IJournalEvent[]): ITrajectoryResult {
   };
 }
 
+function expectedToolNames(expected: IExpectedTrajectory): string[] {
+  return expected.expectedSequence.map((e) => e.tool);
+}
+
+function entryMatches(entry: IExpectedSequenceEntry, actualToolName: string): boolean {
+  // Tool name must match
+  if (entry.tool !== actualToolName) return false;
+
+  // Check args_contains if specified (each must be present in actual tool name)
+  if (entry.args_contains) {
+    for (const arg of entry.args_contains) {
+      if (!actualToolName.includes(arg)) return false;
+    }
+  }
+  return true;
+}
+
 function matchTrajectory(
   observed: ITrajectoryResult,
   expected: IExpectedTrajectory,
 ): { matched: number; unmatched: number; score: number } {
   const actual = observed.sequence;
-  const expectedSeq = expected.expectedSequence;
+  const expectedSeq = expectedToolNames(expected);
 
-  if (expectedSeq.length === 0) {
+  if (expected.expectedSequence.length === 0) {
     return { matched: 0, unmatched: 0, score: 1.0 };
   }
 

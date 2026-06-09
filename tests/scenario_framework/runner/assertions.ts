@@ -1131,6 +1131,19 @@ async function evaluateLlmJudgeCriterion(
     score_threshold?: number;
   };
 
+  // Validate: at least one of preset or rubricequired
+  if (!criterion.preset && !criterion.rubric) {
+    return {
+      criterion_id: criterion.id,
+      kind: CriterionKind.LLM_JUDGE,
+      phase: options.phase,
+      status: CriterionStatus.ERROR,
+      message: "llm-judge requires either 'preset' or 'rubric'",
+      evidence_refs: [],
+      score_weight: options.criterion.score_weight,
+    };
+  }
+
   // Resolve preset criteria if specified
   const presetCriteria = criterion.preset ? getCriteriaByNames([criterion.preset]) : [];
   const effectiveCriteria = presetCriteria;
