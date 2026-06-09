@@ -26,7 +26,7 @@ interface IHistoryEntry {
   timestamp: string;
 }
 
-const FRAMEWORK_RELATIVE_PATH = "../../../tests/scenario_framework/runner/main.ts";
+const FRAMEWORK_RELATIVE_PATH = "../../../../tests/scenario_framework/runner/main.ts";
 
 export class EvalCommands extends BaseCommand {
   constructor(context: ICommandContext) {

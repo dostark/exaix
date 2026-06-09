@@ -11,6 +11,7 @@
 import { join } from "@std/path";
 import { evaluateCriterion, evaluateStepOutcome, type IScenarioStepOutcome, StepFailureStage } from "./assertions.ts";
 import { type IRunManifest, writeExecutionLog, writeRunManifest } from "./evidence_collector.ts";
+import { computeStepScore, computeSuiteScore, type IStepScoreInput } from "./scoring.ts";
 import { type IRunScenarioInModeResult, runScenarioInMode } from "./modes.ts";
 import { type ILoadedScenario, loadScenarioFromYamlFile } from "./scenario_loader.ts";
 import { executeScenarioStep, type IScenarioStepExecutionResult } from "./step_executor.ts";
@@ -248,17 +249,37 @@ interface IBuildRunManifestOptions {
 }
 
 function buildRunManifest(options: IBuildRunManifestOptions): IRunManifest {
+  const steps = options.stepOutcomes.map((outcome) => ({
+    stepId: outcome.stepId,
+    stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
+    executionStatus: mapExecutionStatus(outcome),
+    criterionResults: outcome.criterionResults,
+  }));
+
+  // Compute step scores from criterion results
+  const stepScores: IStepScoreInput[] = steps.map((s) => {
+    const stepDef = options.loadedScenario.steps.find((st) => st.id === s.stepId);
+    return {
+      stepId: s.stepId,
+      score: computeStepScore(s.criterionResults),
+      step: stepDef ??
+        {
+          id: s.stepId,
+          type: s.stepType as IScenarioStep["type"],
+          continue_on_failure: false,
+          input_criteria: [],
+          output_criteria: [],
+        },
+    };
+  });
+
   return {
     scenarioId: options.loadedScenario.scenario.id,
     pack: options.loadedScenario.scenario.pack,
     mode: options.mode,
     outcome: mapScenarioOutcome(options.runResult),
-    steps: options.stepOutcomes.map((outcome) => ({
-      stepId: outcome.stepId,
-      stepType: resolveStepType(options.loadedScenario.steps, outcome.stepId),
-      executionStatus: mapExecutionStatus(outcome),
-      criterionResults: outcome.criterionResults,
-    })),
+    suite_score: computeSuiteScore(stepScores),
+    steps,
   };
 }
 

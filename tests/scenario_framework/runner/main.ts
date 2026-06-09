@@ -16,6 +16,7 @@ import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
 import { writeEvalHistoryEntry } from "./history_writer.ts";
+import { EvalSqliteStore } from "./history_sqlite.ts";
 
 const modeType = new EnumType(ScenarioExecutionMode);
 const profileType = new EnumType(ScenarioCiProfile);
@@ -145,16 +146,49 @@ await new Command()
 
     // 8. Write eval history entries if in eval mode
     if (options.evalMode) {
+      const historyFormat = options.historyFormat ?? "sqlite+jsonl";
+      let sqliteStore: EvalSqliteStore | undefined;
+      if (historyFormat !== "jsonl") {
+        const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
+        sqliteStore = new EvalSqliteStore(dbPath);
+        try {
+          sqliteStore.initialize();
+        } catch (error) {
+          console.error("Failed to initialize SQLite history store:", error);
+          sqliteStore = undefined;
+        }
+      }
+
       for (const [scenarioId, manifest] of manifests) {
         try {
-          await writeEvalHistoryEntry({
+          const entry = await writeEvalHistoryEntry({
             outputDir: runtimeConfig.output_dir,
             scenarioId,
             manifest,
           });
+
+          if (sqliteStore) {
+            try {
+              sqliteStore.writeRun(
+                entry,
+                manifest.steps.map((s) => ({
+                  stepId: s.stepId,
+                  stepType: s.stepType,
+                  score: computeStepScoreFromCriterionResults(s.criterionResults),
+                  executionStatus: s.executionStatus,
+                })),
+              );
+            } catch (error) {
+              console.error(`Failed to write SQLite history for ${scenarioId}:`, error);
+            }
+          }
         } catch (error) {
           console.error(`Failed to write eval history for ${scenarioId}:`, error);
         }
+      }
+
+      if (sqliteStore) {
+        sqliteStore.close();
       }
     }
 
@@ -166,3 +200,15 @@ await new Command()
     }
   })
   .parse(Deno.args);
+
+function computeStepScoreFromCriterionResults(results: { status: string; score_weight?: number }[]): number {
+  if (results.length === 0) return 1.0;
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const r of results) {
+    const w = r.score_weight ?? 1.0;
+    totalWeight += w;
+    if (r.status === "passed") weightedSum += w;
+  }
+  return totalWeight > 0 ? weightedSum / totalWeight : 0.0;
+}
