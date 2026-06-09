@@ -30,6 +30,7 @@ export interface IRunManifest {
   mode: string;
   outcome: string;
   steps: IRunManifestStep[];
+  suite_score?: number;
 }
 
 export interface IWriteRunManifestOptions {

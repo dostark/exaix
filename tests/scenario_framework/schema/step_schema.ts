@@ -88,7 +88,8 @@ const BaseCriterionSchema = z.object({
   id: NON_EMPTY_STRING,
   kind: CriterionKindSchema,
   message: z.string().min(1).optional(),
-}).strict();
+  score_weight: z.number().min(0).max(1).optional(),
+});
 
 const FileExistsCriterionSchema = BaseCriterionSchema.extend({
   kind: z.literal(CriterionKind.FILE_EXISTS),
@@ -255,6 +256,7 @@ export const CriterionResultSchema = z.object({
   evidence_refs: z.array(z.string().min(1)),
   observed_value: z.unknown().optional(),
   expected_value: z.unknown().optional(),
+  score_weight: z.number().min(0).max(1).optional(),
 }).strict();
 
 export type ICriterionResult = z.infer<typeof CriterionResultSchema>;
@@ -275,7 +277,8 @@ export const ScenarioStepSchema = z.object({
   file_pattern: z.string().min(1).optional(),
   input_criteria: z.array(CriterionSchema).optional().default([]),
   output_criteria: z.array(CriterionSchema).optional().default([]),
-}).strict().superRefine((step, ctx) => {
+  step_weight: z.number().min(0).max(1).optional(),
+}).superRefine((step, ctx) => {
   if (step.type === ScenarioStepType.MANUAL_REVIEW && !step.instructions) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
