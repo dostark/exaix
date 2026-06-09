@@ -12,8 +12,10 @@ import { type IRuntimeConfig, resolveRuntimeConfigForExecution, ScenarioCiProfil
 import { ScenarioExecutionMode } from "../schema/step_schema.ts";
 import { type IScenarioCatalogEntry, loadScenarioCatalog } from "./scenario_catalog.ts";
 import { runSyntheticScenario } from "./synthetic_runner.ts";
+import type { IRunManifest } from "./evidence_collector.ts";
 import { reportScenarioFailure } from "./reporter.ts";
 import { selectScenariosForExecution } from "./modes.ts";
+import { writeEvalHistoryEntry } from "./history_writer.ts";
 
 const modeType = new EnumType(ScenarioExecutionMode);
 const profileType = new EnumType(ScenarioCiProfile);
@@ -34,6 +36,7 @@ await new Command()
   .option("-t, --tag <tag:string>", "Filter by tag (repeatable)", { collect: true })
   .option("-d, --dry-run", "Validate configuration and scenario definitions without executing any steps")
   .option("-v, --verbose", "Show full CLI commands executed in each step")
+  .option("--eval-mode", "Enable eval history writing for evaluation runs")
   .action(async (options) => {
     // 1. Resolve framework home (directory containing the runner entry point)
     const frameworkHome = resolve(new URL(".", import.meta.url).pathname, "..");
@@ -99,6 +102,7 @@ await new Command()
     // 7. Execute scenarios
     console.log(`Executing ${selectedEntries.length} scenarios...`);
     let hasFailure = false;
+    const manifests = new Map<string, IRunManifest>();
 
     for (const entry of selectedEntries) {
       console.log(`\nScenario: ${entry.id}`);
@@ -116,6 +120,8 @@ await new Command()
             : resolve(frameworkHome, "bin/exactl"),
         });
 
+        manifests.set(entry.id, result.manifest);
+
         console.log(`Outcome: ${result.manifest.outcome}`);
         if (result.manifest.outcome !== "success" && result.manifest.outcome !== "paused") {
           reportScenarioFailure(result);
@@ -130,6 +136,21 @@ await new Command()
         hasFailure = true;
         if (runtimeConfig.mode === ScenarioExecutionMode.AUTO) {
           break;
+        }
+      }
+    }
+
+    // 8. Write eval history entries if in eval mode
+    if (options.evalMode) {
+      for (const [scenarioId, manifest] of manifests) {
+        try {
+          await writeEvalHistoryEntry({
+            outputDir: runtimeConfig.output_dir,
+            scenarioId,
+            manifest,
+          });
+        } catch (error) {
+          console.error(`Failed to write eval history for ${scenarioId}:`, error);
         }
       }
     }
