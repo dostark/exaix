@@ -10,7 +10,7 @@ scope: dev
 title: "Pre-Gap Analysis Skill (#pre-gap-analysis)"
 description: Pre-implementation gap analysis of a phase planning document — finds ambiguities, missing contracts, and security risks before coding starts
 short_summary: "Deep gap analysis of a phase planning document before implementation begins: verifies the plan is complete, unambiguous, and safe to code against."
-version: "1.2"
+version: "1.3"
 topics: ["planning", "gap-analysis", "architecture", "risk", "quality", "security", "tdd"]
 qwen_skill: pre-gap-analysis
 ---
@@ -32,6 +32,11 @@ Key points
   actually fills a gap or could be satisfied by existing infrastructure. If the
   plan's core value is already covered by existing Phases, flag a 🟡 Feasibility
   gap or recommend cancellation/postponement.
+- The necessity check must be grounded in an INDEPENDENT survey of the existing
+  subsystem (its real handlers, the canonical catalog/schema/registry for that
+  domain, and same-domain components) — not in the plan's own references or your
+  memory. Redundancy lives in what a plan never cites, so verifying its
+  citations (Phase 3) can never reveal it.
 - A security feasibility check (Phase 6) is mandatory for every step that
   touches input handling, auth, path resolution, secrets, or external data.
   Security gaps use the 🔒 severity symbol and are always prioritised above
@@ -56,6 +61,10 @@ Do / Don't
 - ✅ Do apply the architectural alignment checklist (Phase 2) to every planning
   document before touching source files — verify the plan fills a real gap and
   does not duplicate existing infrastructure.
+- ✅ Do independently survey the subsystem the plan touches BEFORE accepting its
+  problem statement — its real handlers, the canonical catalog/schema/registry
+  for that domain (e.g. `DomainEventType` for an events plan), and same-domain
+  components grepped by capability (`*reflect*`, `*validat*`, `*diagnos*`).
 - ✅ Do read every source file cited in the planning document — never trust
   the plan's description of what a file contains.
 - ✅ Do follow every input/output data-flow chain end-to-end.
@@ -79,6 +88,9 @@ Do / Don't
   fully specified.
 - ❌ Don't skip Phase 2 architectural alignment for any planning document —
   even if the plan seems straightforward.
+- ❌ Don't satisfy Phase 2 by checking only the symbols the plan names or by
+  trusting its problem statement — redundancy hides in the negative space (the
+  existing components the plan fails to cite). Survey the subsystem independently.
 - ❌ Don't skip Phase 6 for steps that handle external data or file paths —
   even if the plan did not mention security.
 - ❌ Don't report gaps only in chat — they MUST be written into the document.
@@ -138,10 +150,34 @@ Apply this phase **before** verifying source files. If the plan fails this
 check, flag 🟡 Feasibility gaps (or recommend cancellation) before proceeding
 to Phase 3.
 
+1. **Independently survey the subsystem first (before any "does it already exist?" answer).**
+   Do NOT answer the necessity question from the plan's own references or from
+   memory. Run a fresh codebase survey of the area the plan touches, mapping
+   where its target capability would ALREADY be represented if it existed:
+   - The canonical catalog / schema / registry for the plan's domain — e.g. the
+     event taxonomy (`DomainEventType`) for an events or signals plan, the
+     storage schema + migrations for a persistence plan, the Zod schemas for a
+     validation plan, or the tool/command registries for a tooling plan.
+   - The real handlers along the plan's flow (whichever of request / plan /
+     execution / review / memory / MCP / git it touches) — what is already
+     validated, logged, retried, persisted, or diagnosed **at the point of
+     occurrence**.
+   - Existing same-domain components found by capability, not by the plan's
+     names — grep patterns such as `*reflect*`, `*validat*`, `*diagnos*`,
+     `*circuit*`, `*registry*`, reporters — including built-but-dormant ones
+     defined but not yet wired in.
+   - **Redundancy lives in the negative space** — the components a plan never
+     references. Confirming the plan's named symbols resolve (Phase 3) can never
+     reveal what the plan failed to reference; only this survey can. Treat it as
+     a precondition, not a formality. (A whole phase has been cancelled at this
+     step after the survey found the capability already shipped.)
+
 1. **Map every claimed improvement to existing infrastructure.**
    For each stated goal or improvement in the plan, answer:
-   - Does this capability already exist in a shipped Phase? (check Phases 37,
-     64, 65, 82, 84, and any others relevant to the plan's domain.)
+   - Does this capability already exist in a shipped Phase **or in existing
+     runtime infrastructure surfaced by the survey above**? (check Phases 37,
+     64, 65, 82, 84, the event taxonomy, and any handlers/components relevant
+     to the plan's domain.)
    - If yes, can the existing capability achieve the stated goal with minimal
      changes (e.g., adding a wait-state kind, extending a schema, adding a
      flow-validator rule) — without introducing a new service or abstraction?
