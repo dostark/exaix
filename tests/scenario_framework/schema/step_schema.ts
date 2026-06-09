@@ -31,6 +31,7 @@ export enum ScenarioStepType {
   JSON_ASSERT = "json-assert",
   MANUAL_REVIEW = "manual-review",
   CLEANUP = "cleanup",
+  TRAJECTORY_ASSERT = "trajectory-assert",
 }
 
 export enum CriterionKind {
@@ -55,6 +56,7 @@ export enum CriterionKind {
   VERSION_LTE = "version-lte",
   DIR_EXISTS = "dir-exists",
   COMMAND_OUTPUT_CONTAINS = "command-output-contains",
+  LLM_JUDGE = "llm-judge",
 }
 
 export enum CriterionPhase {
@@ -221,6 +223,14 @@ const VersionLteCriterionSchema = BaseCriterionSchema.extend({
   source: z.enum(["binary", "workspace"]).default("binary"),
 }).strict();
 
+const LlmJudgeCriterionSchema = BaseCriterionSchema.extend({
+  kind: z.literal(CriterionKind.LLM_JUDGE),
+  evidence_path: z.string().min(1).optional(),
+  preset: z.string().min(1).optional(),
+  rubric: z.string().min(1).optional(),
+  score_threshold: z.number().min(0).max(1).default(0.7),
+}).strict();
+
 export const CriterionSchema = z.discriminatedUnion("kind", [
   FileExistsCriterionSchema,
   FileFoundCriterionSchema,
@@ -243,6 +253,7 @@ export const CriterionSchema = z.discriminatedUnion("kind", [
   VersionGteCriterionSchema,
   VersionLteCriterionSchema,
   CommandOutputContainsCriterionSchema,
+  LlmJudgeCriterionSchema,
 ]);
 
 export type ICriterion = z.infer<typeof CriterionSchema>;
@@ -278,6 +289,11 @@ export const ScenarioStepSchema = z.object({
   input_criteria: z.array(CriterionSchema).optional().default([]),
   output_criteria: z.array(CriterionSchema).optional().default([]),
   step_weight: z.number().min(0).max(1).optional(),
+  source_step: z.string().min(1).optional(),
+  expected_sequence: z.array(z.string().min(1)).optional(),
+  order_matters: z.boolean().optional(),
+  allow_extra_tools: z.boolean().optional(),
+  partial_credit: z.boolean().optional(),
 }).superRefine((step, ctx) => {
   if (step.type === ScenarioStepType.MANUAL_REVIEW && !step.instructions) {
     ctx.addIssue({
@@ -293,6 +309,23 @@ export const ScenarioStepSchema = z.object({
       message: "exactl steps require a command",
       path: ["command"],
     });
+  }
+
+  if (step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
+    if (!step.source_step) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "trajectory-assert steps require source_step",
+        path: ["source_step"],
+      });
+    }
+    if (!step.expected_sequence || step.expected_sequence.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "trajectory-assert steps require non-empty expected_sequence",
+        path: ["expected_sequence"],
+      });
+    }
   }
 });
 

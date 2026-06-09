@@ -16,6 +16,15 @@ export interface IStepScoreInput {
   step: IScenarioStep;
 }
 
+export interface IMultiTrialMetrics {
+  mean: number;
+  min: number;
+  max: number;
+  stdev: number;
+  pass_at_1: number;
+  pass_k: number;
+}
+
 const DEFAULT_CRITERION_WEIGHT = 1.0;
 const DEFAULT_STEP_WEIGHT = 1.0;
 
@@ -66,4 +75,39 @@ export function computeSuiteScore(
 
   if (totalWeight === 0) return 0.0;
   return weightedSum / totalWeight;
+}
+
+/**
+ * Computes multi-trial metrics from an array of trial scores.
+ * Pure function — no side effects.
+ */
+export function computeMultiTrialMetrics(
+  trialScores: number[],
+  scoreThreshold: number = 0.5,
+): IMultiTrialMetrics {
+  if (trialScores.length === 0) {
+    return { mean: 0, min: 0, max: 0, stdev: 0, pass_at_1: 0, pass_k: 0 };
+  }
+
+  const n = trialScores.length;
+  const mean = trialScores.reduce((a, b) => a + b, 0) / n;
+  const min = Math.min(...trialScores);
+  const max = Math.max(...trialScores);
+
+  const variance = trialScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / n;
+  const stdev = Math.sqrt(variance);
+
+  const passCount = trialScores.filter((s) => s >= scoreThreshold).length;
+  const pass_at_1 = passCount / n;
+
+  let pass_k = 0;
+  for (const score of trialScores) {
+    if (score >= scoreThreshold) {
+      pass_k++;
+    } else {
+      break;
+    }
+  }
+
+  return { mean, min, max, stdev, pass_at_1, pass_k };
 }

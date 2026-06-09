@@ -11,6 +11,7 @@
 
 import { type IScenarioStep, ScenarioStepType } from "../schema/step_schema.ts";
 import { globToRegExp, relative, resolve } from "@std/path";
+import { captureTrajectory, type IExpectedTrajectory, scoreTrajectory } from "./trajectory_evaluator.ts";
 
 export interface IExecuteScenarioStepOptions {
   step: IScenarioStep;
@@ -45,6 +46,41 @@ export async function executeScenarioStep(
   // Handle wait-for-file step type with polling
   if (options.step.type === ScenarioStepType.WAIT_FOR_FILE) {
     return await executeWaitForFileStep(options, startedAt, startedAtEpochMs);
+  }
+
+  // Handle trajectory-assert — reads journal instead of executing a command
+  if (options.step.type === ScenarioStepType.TRAJECTORY_ASSERT) {
+    const trajectoryObserved = await captureTrajectory({
+      workspaceRoot: options.cwd ?? Deno.cwd(),
+      sourceStep: options.step.source_step ?? options.step.id,
+      exactlExecutable: options.exactlExecutable,
+    });
+
+    const trajectoryExpected: IExpectedTrajectory = {
+      expectedSequence: options.step.expected_sequence ?? [],
+      orderMatters: options.step.order_matters ?? true,
+      allowExtraTools: options.step.allow_extra_tools ?? false,
+      partialCredit: options.step.partial_credit ?? true,
+    };
+
+    const results = scoreTrajectory(trajectoryObserved, trajectoryExpected);
+    const allPassed = results.every((r) => r.status === "passed");
+    const stdout = results.map((r) => r.message).join("\n");
+
+    const completedAtEpochMs = Date.now();
+    const completedAt = new Date(completedAtEpochMs).toISOString();
+
+    return {
+      stepId: options.step.id,
+      stepType: options.step.type,
+      startedAt,
+      completedAt,
+      durationMs: completedAtEpochMs - startedAtEpochMs,
+      exitCode: allPassed ? 0 : 1,
+      stdout,
+      stderr: "",
+      combinedOutput: stdout,
+    };
   }
 
   const commandSpec = buildCommandSpec(options);

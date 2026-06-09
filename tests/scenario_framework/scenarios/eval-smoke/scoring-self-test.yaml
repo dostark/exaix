@@ -1,0 +1,35 @@
+schema_version: "1.0.0"
+id: "eval-smoke-scoring-self-test"
+title: "Eval scoring self-test — verifies the scoring pipeline end-to-end"
+pack: "eval-smoke"
+tags: ["eval", "self-test"]
+request_fixture: "fixtures/requests/eval-smoke/scoring-self-test.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-smoke-artifacts"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          mkdir -p $WORKSPACE_ROOT/eval-test
+          echo "smoke test data" > $WORKSPACE_ROOT/eval-test/output.txt
+          echo '{"smoke":true,"value":42}' > $WORKSPACE_ROOT/eval-test/metrics.json
+    input_criteria: []
+    output_criteria:
+      - id: "output-file-exists"
+        kind: "file-exists"
+        path: "eval-test/output.txt"
+      - id: "metrics-file-exists"
+        kind: "file-exists"
+        path: "eval-test/metrics.json"
+      - id: "metrics-content-valid"
+        kind: "json-path-exists"
+        path: "$.smoke"
+        target_file: "eval-test/metrics.json"
+      - id: "metrics-value-correct"
+        kind: "json-path-equals"
+        path: "$.value"
+        equals: 42
+        target_file: "eval-test/metrics.json"

@@ -27,6 +27,26 @@ Once you have a workspace set up (or deployed the framework), you can run scenar
 - `-c, --config <path>`: Load configuration from a YAML/JSON file.
 - `-v, --verbose`: Show full CLI commands being executed in terminal.
 
+### Scoring with `score_weight`
+
+Criteria and steps support optional `score_weight` (0.0–1.0) for graded evaluation.
+When `score_weight` is omitted, all criteria weigh equally (default 1.0).
+Steps with `score_weight` contribute proportionally to the overall `suite_score`.
+
+```yaml
+output_criteria:
+  - id: "critical-check"
+    kind: "file-exists"
+    path: "important/file.txt"
+    score_weight: 0.7
+  - id: "nice-to-have"
+    kind: "dir-exists"
+    path: "optional/dir"
+    score_weight: 0.3
+```
+
+Run with `--eval-mode` to write scored results to `output/history/eval-history.jsonl`.
+
 ### Useful Option Values & Compatible Modes
 
 When running or filtering scenarios, it is important to match the target environment (e.g., automated vs manual) with the proper execution mode.
