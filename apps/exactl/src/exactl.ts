@@ -2359,9 +2359,9 @@ const evalCommand = new Command()
       .description("Compare two evaluation runs side-by-side")
       .option("--run-a <id:string>", "First run ID to compare", { required: true })
       .option("--run-b <id:string>", "Second run ID to compare", { required: true })
-      .action(async (options) => {
+      .action((options) => {
         try {
-          await evalCommands.compare(options.runA, options.runB);
+          evalCommands.compare(options.runA, options.runB);
         } catch (error) {
           console.error("eval compare failed:", error instanceof Error ? error.message : String(error));
           Deno.exit(1);

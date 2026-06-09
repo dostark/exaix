@@ -105,7 +105,7 @@ export class EvalCommands extends BaseCommand {
     }
   }
 
-  async compare(runA: string, runB: string): Promise<void> {
+  compare(runA: string, runB: string): void {
     const dbPath = resolve(Deno.cwd(), ".exa", "eval.db");
     const store = new EvalSqliteStore(dbPath);
     try {

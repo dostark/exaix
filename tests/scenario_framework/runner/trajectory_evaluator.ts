@@ -177,19 +177,6 @@ function expectedToolNames(expected: IExpectedTrajectory): string[] {
   return expected.expectedSequence.map((e) => e.tool);
 }
 
-function entryMatches(entry: IExpectedSequenceEntry, actualToolName: string): boolean {
-  // Tool name must match
-  if (entry.tool !== actualToolName) return false;
-
-  // Check args_contains if specified (each must be present in actual tool name)
-  if (entry.args_contains) {
-    for (const arg of entry.args_contains) {
-      if (!actualToolName.includes(arg)) return false;
-    }
-  }
-  return true;
-}
-
 function matchTrajectory(
   observed: ITrajectoryResult,
   expected: IExpectedTrajectory,

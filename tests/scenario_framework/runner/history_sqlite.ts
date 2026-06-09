@@ -50,6 +50,7 @@ export class EvalSqliteStore {
 
     Deno.mkdirSync(dirname(resolve(this.dbPath)), { recursive: true });
 
+    // Always create all tables and indexes with latest schema (IF NOT EXISTS for idempotency)
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS eval_schema_version (
         version INTEGER PRIMARY KEY,
@@ -63,7 +64,7 @@ export class EvalSqliteStore {
         run_id TEXT PRIMARY KEY,
         run_timestamp TEXT NOT NULL,
         scenario_id TEXT NOT NULL,
-        pack TEXT NOT NULL,
+        pack TEXT NOT NULL DEFAULT '',
         tags TEXT,
         suite_score REAL NOT NULL,
         passed INTEGER NOT NULL,
@@ -84,15 +85,9 @@ export class EvalSqliteStore {
       )
     `);
 
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_runs_scenario ON eval_runs(scenario_id)
-    `);
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_runs_pack ON eval_runs(pack)
-    `);
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_runs_timestamp ON eval_runs(run_timestamp)
-    `);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_scenario ON eval_runs(scenario_id)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_pack ON eval_runs(pack)`);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_runs_timestamp ON eval_runs(run_timestamp)`);
 
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS eval_run_steps (
@@ -121,18 +116,70 @@ export class EvalSqliteStore {
       )
     `);
 
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_criteria_run ON eval_criteria_results(run_id, step_index)
-    `);
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_criteria_run ON eval_criteria_results(run_id, step_index)`);
 
-    // Insert schema version if not exists
-    const existingVersion = this.db.prepare(
-      "SELECT version FROM eval_schema_version WHERE version = 1",
-    ).get<{ version: number }>();
+    // ---- Schema migration logic ----
+    // Detect current version from the schema_version table.
+    // v1 was the original release (bare eval_runs: run_id, run_timestamp, scenario_id,
+    //   pack, suite_score, passed, mode).
+    // v2 added: score_threshold, step_count, trials, suite_score_mean/stdev,
+    //   pass_at_1/k, blueprint_id/version, exactl_version, schema_version, trial_scores, metadata.
+    // Because CREATE TABLE IF NOT EXISTS is a no-op when the table already exists,
+    // old databases won't have the v2 columns.  We run ALTER TABLE ADD COLUMN for
+    // each v2 column, tolerating "duplicate column name" (column already added).
 
-    if (!existingVersion) {
+    const currentVersion = this.db.prepare(
+      "SELECT COALESCE(MAX(version), 0) as v FROM eval_schema_version",
+    ).get<{ v: number }>()?.v ?? 0;
+
+    if (currentVersion < 2) {
+      // Columns added to eval_runs in v2
+      const v2EvalRunsColumns = [
+        "step_count INTEGER",
+        "suite_score_mean REAL",
+        "suite_score_stdev REAL",
+        "pass_at_1 REAL",
+        "pass_k INTEGER",
+        "blueprint_id TEXT",
+        "blueprint_version TEXT",
+        "trial_scores TEXT",
+        "score_threshold REAL",
+        "trials INTEGER DEFAULT 1",
+        "exactl_version TEXT",
+        "schema_version TEXT",
+        "metadata TEXT",
+      ];
+      for (const colDef of v2EvalRunsColumns) {
+        try {
+          this.db.exec(`ALTER TABLE eval_runs ADD COLUMN ${colDef}`);
+        } catch (error) {
+          const msg = (error as Error).message;
+          if (msg.includes("duplicate column name")) continue;
+          throw error;
+        }
+      }
+
+      // Columns added to eval_run_steps in v2
+      const v2EvalRunStepsColumns = [
+        "step_type TEXT",
+        "criteria_passed INTEGER",
+        "criteria_total INTEGER",
+        "execution_status TEXT",
+      ];
+      for (const colDef of v2EvalRunStepsColumns) {
+        try {
+          this.db.exec(`ALTER TABLE eval_run_steps ADD COLUMN ${colDef}`);
+        } catch (error) {
+          const msg = (error as Error).message;
+          if (msg.includes("duplicate column name")) continue;
+          throw error;
+        }
+      }
+
       this.db.exec(
-        "INSERT INTO eval_schema_version (version, description) VALUES (1, 'Initial eval history schema: runs, steps, criteria')",
+        "INSERT OR IGNORE INTO eval_schema_version (version, description) VALUES " +
+          "(1, 'Initial eval history schema: runs, steps, criteria'), " +
+          "(2, 'Add step_count, multi-trial metrics, blueprint fields to eval_runs')",
       );
     }
 

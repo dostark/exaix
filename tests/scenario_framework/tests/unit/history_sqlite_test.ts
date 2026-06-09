@@ -8,6 +8,7 @@
 
 import { assertEquals } from "@std/assert";
 import { join } from "@std/path";
+import { Database } from "@db/sqlite";
 import { EvalSqliteStore } from "../../runner/history_sqlite.ts";
 import type { IEvalHistoryEntry } from "../../schema/history_schema.ts";
 
@@ -39,11 +40,11 @@ function withStore(fn: (store: EvalSqliteStore, dbPath: string) => void): void {
   }
 }
 
-Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all three tables and version row", () => {
+Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all tables and applies all migrations", () => {
   withStore((store) => {
     store.initialize();
 
-    // Verify tables exist by querying sqlite_master
+    // Verify tables exist
     const tables = store["db"].prepare(
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
     ).all<{ name: string }>();
@@ -54,10 +55,19 @@ Deno.test("[ScenarioFrameworkHistorySqlite] initialize creates all three tables 
     assertEquals(tableNames.includes("eval_criteria_results"), true);
     assertEquals(tableNames.includes("eval_schema_version"), true);
 
-    const versionRow = store["db"].prepare(
-      "SELECT version, description FROM eval_schema_version WHERE version = 1",
-    ).get<{ version: number; description: string }>();
-    assertEquals(versionRow?.version, 1);
+    // Verify both migrations applied
+    const versions = store["db"].prepare(
+      "SELECT version, description FROM eval_schema_version ORDER BY version",
+    ).all<{ version: number; description: string }>();
+    assertEquals(versions.length, 2);
+    assertEquals(versions[0].version, 1);
+    assertEquals(versions[1].version, 2);
+
+    // Verify v2 columns exist
+    const hasBlueprintId = store["db"].prepare(
+      "SELECT blueprint_id FROM eval_runs LIMIT 0",
+    );
+    hasBlueprintId.run(); // does not throw
   });
 });
 
@@ -68,8 +78,62 @@ Deno.test("[ScenarioFrameworkHistorySqlite] re-initialization is idempotent", ()
     const versionCount = store["db"].prepare(
       "SELECT COUNT(*) as cnt FROM eval_schema_version",
     ).get<{ cnt: number }>();
-    assertEquals(versionCount?.cnt, 1);
+    // Both migrations applied once, second initialize does not duplicate them
+    assertEquals(versionCount?.cnt, 2);
   });
+});
+
+Deno.test("[ScenarioFrameworkHistorySqlite] upgrades from v1 schema to v2 without data loss", () => {
+  // Simulate a v1 database by creating schema manually, writing data, then upgrading
+  const dbDir = Deno.makeTempDirSync({ prefix: "scenario-framework-sqlite-migrate-" });
+  const dbPath = join(dbDir, "eval.db");
+  const legacyDb = new Database(dbPath);
+
+  // Manually create v1 schema (simulate old database from initial release)
+  legacyDb.exec(`CREATE TABLE IF NOT EXISTS eval_runs (
+    run_id TEXT PRIMARY KEY, run_timestamp TEXT NOT NULL, scenario_id TEXT NOT NULL,
+    pack TEXT NOT NULL DEFAULT '', suite_score REAL NOT NULL, passed INTEGER NOT NULL,
+    mode TEXT NOT NULL DEFAULT 'auto'
+  )`);
+  legacyDb.exec(`CREATE TABLE IF NOT EXISTS eval_run_steps (
+    run_id TEXT NOT NULL, step_index INTEGER NOT NULL, step_id TEXT NOT NULL,
+    score REAL NOT NULL, PRIMARY KEY (run_id, step_index)
+  )`);
+  legacyDb.exec(`CREATE TABLE IF NOT EXISTS eval_schema_version (
+    version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+    description TEXT NOT NULL
+  )`);
+  legacyDb.exec(`INSERT INTO eval_schema_version (version, description) VALUES (1, 'v1')`);
+  legacyDb.exec(`INSERT INTO eval_runs (run_id, run_timestamp, scenario_id, pack, suite_score, passed, mode)
+    VALUES ('legacy-run', '2026-01-01T00:00:00Z', 'old-scenario', 'smoke', 0.75, 1, 'auto')`);
+  legacyDb.close();
+
+  // Re-open via store and upgrade via initialize()
+  const upgradedStore = new EvalSqliteStore(dbPath);
+  try {
+    upgradedStore.initialize();
+
+    // Verify legacy data survived
+    const runs = upgradedStore.queryRuns({});
+    assertEquals(runs.length, 1);
+    assertEquals(runs[0].suite_score, 0.75);
+    assertEquals(runs[0].passed, 1);
+
+    // Verify v2 version recorded (query before write to test migration completed)
+    upgradedStore.writeRun(makeTestEntry({
+      run_id: "new-run",
+      suite_score: 0.9,
+    }));
+
+    const newRun = upgradedStore.queryRuns({ scenario: "test-scenario" });
+    assertEquals(newRun.length, 1);
+    assertEquals(newRun[0].suite_score, 0.9);
+  } finally {
+    upgradedStore.close();
+    try {
+      Deno.removeSync(dbDir, { recursive: true });
+    } catch { /* ok */ }
+  }
 });
 
 Deno.test("[ScenarioFrameworkHistorySqlite] write and read-back preserves run fields", () => {

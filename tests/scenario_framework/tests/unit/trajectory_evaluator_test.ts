@@ -94,7 +94,6 @@ Deno.test("[TrajectoryEvaluator] extra tool with allow_extra_tools=true does not
 });
 
 Deno.test("[TrajectoryEvaluator] extra tool with allow_extra_tools=false adds failing criterion", () => {
-  const observed = makeObserved(["read_file", "edit_file"]);
   const extraObserved: ITrajectoryResult = {
     matchedCount: 0,
     unmatchedCount: 0,
