@@ -18,6 +18,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "test-files-created"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "/tmp/sample-project/src/*.ts"
 
@@ -28,6 +29,7 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "flow-execution-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -40,6 +42,7 @@ steps:
       - "echo '$FLOW_OUTPUT' | grep -c '.test.ts' || true"
     output_criteria:
       - id: "test-files-found"
+        score_weight: 0.6
         kind: "text-contains"
         path: "/dev/stdin"
         contains: ".test.ts"

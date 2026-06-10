@@ -18,6 +18,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "file-created"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "/tmp/sample-project/src/utils.ts"
 
@@ -28,6 +29,7 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "flow-execution-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -38,6 +40,7 @@ steps:
     args: ["-f", "/tmp/sample-project/src/helpers/utils.ts"]
     output_criteria:
       - id: "file-moved"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 

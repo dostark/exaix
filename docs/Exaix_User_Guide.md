@@ -3367,4 +3367,26 @@ expiry_ms = 86400000       # How long an amendment can stay pending (default: 24
 
 ---
 
+## 13. Evaluation & Scoring
+
+Exaix includes a built-in evaluation framework for measuring agent behaviour
+quantitatively. It provides weighted scoring, history tracking, and CI-gated
+quality thresholds.
+
+```bash
+# Run self-contained evaluation packs (no sandbox needed)
+exactl eval run --pack blueprint-eval
+
+# Run with a score threshold
+exactl eval run --pack blueprint-eval --score-threshold 0.7
+
+# View run history
+exactl eval history --last 10
+```
+
+For the complete CLI reference, scoring model, scenario authoring guide, and
+CI integration, see **[`docs/Exaix_Evaluation.md`](Exaix_Evaluation.md)**.
+
+---
+
 ### End of User Guide

@@ -1,0 +1,18 @@
+schema_version: "1.0.0"
+id: "eval-edge-empty-criteria"
+title: "Empty criteria list — verifies step with no output criteria scores 1.0"
+pack: "eval-edge-cases"
+tags: ["eval", "scoring", "edge"]
+request_fixture: "fixtures/requests/eval-edge-cases/empty-criteria.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-file"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          echo "test" > $WORKSPACE_ROOT/edge-empty.txt
+    input_criteria: []
+    output_criteria: []

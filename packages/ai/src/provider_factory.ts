@@ -247,7 +247,8 @@ export class ProviderFactory {
       : undefined;
     const envProvider = this.safeEnvGet("EXA_LLM_PROVIDER");
     const envModel = this.safeEnvGet("EXA_LLM_MODEL");
-    const envBaseUrl = this.safeEnvGet("EXA_LLM_BASE_URL");
+    // Backward compat: EXA_LLM_ENDPOINT → EXA_LLM_BASE_URL
+    const envBaseUrl = this.safeEnvGet("EXA_LLM_BASE_URL") ?? this.safeEnvGet("EXA_LLM_ENDPOINT");
     const envTimeout = this.safeEnvGet("EXA_LLM_TIMEOUT_MS");
 
     // Base ai config from global config or sensible defaults

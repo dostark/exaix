@@ -101,10 +101,13 @@ Deno.test("[ScenarioFrameworkSyntheticRunner] synthetic failing scenario emits t
       mode: ScenarioExecutionMode.AUTO,
     });
 
-    assertEquals(run.runResult.status, "failed");
-    assertEquals(run.manifest.outcome, "scenario-failure");
+    // With partial scoring, criterion failures no longer halt the scenario.
+    // The scenario completes with a partial score reflecting fail/pass rates.
+    assertEquals(run.runResult.status, "completed");
+    assertEquals(run.manifest.outcome, "success");
     assertEquals(run.manifest.steps[0].criterionResults[0].criterion_id, "result-status-ok");
     assertEquals(run.manifest.steps[0].criterionResults[0].status, "failed");
+    assertEquals(run.manifest.suite_score, 0);
   });
 });
 

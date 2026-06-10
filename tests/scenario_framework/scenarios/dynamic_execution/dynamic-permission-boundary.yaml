@@ -15,6 +15,7 @@ steps:
     args: ["-p", "$WORKSPACE_ROOT/Blueprints/Flows"]
     output_criteria:
       - id: "flows-dir-created"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -25,6 +26,7 @@ steps:
     args: ["$FLOW_FIXTURE", "$WORKSPACE_ROOT/Blueprints/Flows/approval-required.flow.yaml"]
     output_criteria:
       - id: "flow-copied"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -35,12 +37,15 @@ steps:
     args: ["validate", "approval-required"]
     input_criteria:
       - id: "flow-file-exists"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "fixtures/flows/dynamic_execution/approval_required.flow.yaml"
     output_criteria:
       - id: "validation-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
       - id: "validation-ok-message"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["approval-required", "valid"]

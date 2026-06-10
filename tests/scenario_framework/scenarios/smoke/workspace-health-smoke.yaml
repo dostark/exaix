@@ -13,9 +13,11 @@ steps:
     args: ["--file", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "workspace-health-fixture-exists"
+        score_weight: 0.4
         kind: "file-exists"
         path: "$REQUEST_FIXTURE"
     output_criteria:
       - id: "workspace-health-request-exit-code"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0

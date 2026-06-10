@@ -33,6 +33,10 @@ cov_profile/
 .duplication_report/
 tests/scenario_framework/output/
 
+# Scenario execution leftovers (self-contained eval scenarios)
+/artifacts/
+/eval-test/
+
 # Allow duplication report artifacts
 .duplication_report*/
 

@@ -15,10 +15,12 @@ steps:
     args: ["validate", "$FLOW_FIXTURE"]
     input_criteria:
       - id: "flow-file-exists"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "fixtures/flows/integration_e2e/permission_escalation.flow.yaml"
     output_criteria:
       - id: "validation-failed"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["write_file", "not allowed", "dynamic"]
 
@@ -30,6 +32,7 @@ steps:
     expect_failure: true
     output_criteria:
       - id: "execution-blocked"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["write tool", "dynamic mode", "not permitted", "security"]
 
@@ -40,6 +43,7 @@ steps:
     args: ["query", "--format", "json"]
     output_criteria:
       - id: "security-event-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
         contains: ["security.validation_failed"]

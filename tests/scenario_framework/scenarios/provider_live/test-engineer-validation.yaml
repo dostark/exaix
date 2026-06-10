@@ -29,5 +29,6 @@ steps:
     file_pattern: "**/*_plan.yaml"
     output_criteria:
       - id: "has-steps"
+        score_weight: 0.8
         kind: "json-path-exists"
         path: "$.steps[0]"

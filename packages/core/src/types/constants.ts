@@ -256,16 +256,6 @@ export const PROVIDER_ANTHROPIC = ProviderType.ANTHROPIC;
 export const PROVIDER_GOOGLE = ProviderType.GOOGLE;
 export const PROVIDER_VERTEX = ProviderType.VERTEX;
 export const PROVIDER_OPENROUTER = ProviderType.OPENROUTER;
-export const KNOWN_PROVIDERS = [
-  ProviderType.MOCK,
-  ProviderType.OLLAMA,
-  ProviderType.ANTHROPIC,
-  ProviderType.OPENAI,
-  ProviderType.GOOGLE,
-  ProviderType.VERTEX,
-  ProviderType.OPENROUTER,
-  ProviderType.LLAMACPP,
-] as const;
 
 // ============================================================================
 // UI/Preview Validation Limits

@@ -18,18 +18,21 @@ steps:
     input_criteria: []
     output_criteria:
       - id: regex-case-insensitive
+        score_weight: 0.6
         kind: text-matches
         path: "README.md"
         flags: "i"
         matches:
           - "exa-test" # Should pass even if LLM writes "Exa-Test"
       - id: regex-dotall
+        score_weight: 0.6
         kind: text-matches
         path: "README.md"
         flags: "s"
         matches:
           - "Features.*bullet points" # Should pass across multiple lines
       - id: fuzzy-body-match
+        score_weight: 0.5
         kind: text-contains
         path: "README.md"
         contains: "Exa-Test README for project features"

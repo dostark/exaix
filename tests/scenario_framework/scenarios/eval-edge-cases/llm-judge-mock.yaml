@@ -1,0 +1,23 @@
+schema_version: "1.0.0"
+id: "eval-edge-llm-judge"
+title: "LLM judge in mock mode — verifies llm-judge criterion passes by default"
+pack: "eval-edge-cases"
+tags: ["eval", "llm-judge", "edge"]
+request_fixture: "fixtures/requests/eval-edge-cases/llm-judge-mock.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-artifact"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          echo "test output for LLM judge" > $WORKSPACE_ROOT/llm-judge-input.txt
+    input_criteria: []
+    output_criteria:
+      - id: "llm-judge-preset"
+        kind: "llm-judge"
+        preset: "task_fulfillment"
+        evidence_path: "llm-judge-input.txt"
+        score_threshold: 0.5

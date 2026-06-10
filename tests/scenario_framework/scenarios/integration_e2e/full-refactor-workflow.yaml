@@ -20,6 +20,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "project-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-project"
 
@@ -31,6 +32,7 @@ steps:
     checkpoint: true
     output_criteria:
       - id: "flow-completed"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -41,10 +43,12 @@ steps:
     args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
     output_criteria:
       - id: "exploration-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
         contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
       - id: "patch-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
         contains: ["mcp.tool.patch_file"]
@@ -57,6 +61,7 @@ steps:
     expect_failure: true
     output_criteria:
       - id: "refactor-applied"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 1
 

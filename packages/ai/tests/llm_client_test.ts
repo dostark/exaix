@@ -10,7 +10,6 @@ import { LlmClient } from "../src/llm_client.ts";
 import type { IBlueprintFrontmatter } from "@exaix/schemas";
 
 import { McpToolName, ToolName } from "@exaix/core";
-import { ModelFactory } from "../src/providers.ts";
 import type { IModelProvider } from "../src/types.ts";
 import type { IGenerateResult } from "../src/providers/common.ts";
 
@@ -53,37 +52,22 @@ class TestProvider implements IModelProvider {
   }
 }
 
-// Intercept ModelFactory.create via a property descriptor (avoids cast violations)
-const originalDescriptor = Object.getOwnPropertyDescriptor(ModelFactory, "create")!;
-let currentProvider: TestProvider;
-
-function injectMockProvider(response: string) {
-  currentProvider = new TestProvider(response);
-  Object.defineProperty(ModelFactory, "create", {
-    value: async () => {
-      await Promise.resolve();
-      return currentProvider;
-    },
-    writable: true,
-    configurable: true,
-  });
-}
-
-function restoreMockProvider() {
-  Object.defineProperty(ModelFactory, "create", originalDescriptor);
+function makeClient(response: string): LlmClient {
+  return new LlmClient(undefined, new TestProvider(response));
 }
 
 Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_call", async () => {
-  injectMockProvider(JSON.stringify({
+  const mockResponse = JSON.stringify({
     reasoning: "I need to read the file",
     action: {
       type: "tool_call",
       tool: "read_file",
       args: { path: "src/main.ts" },
     },
-  }));
+  });
 
-  const client = new LlmClient();
+  const provider = new TestProvider(mockResponse);
+  const client = new LlmClient(undefined, provider);
   const result = await client.reasonNextAction({
     identity: mockIdentity,
     stepObjective: "Test Objective",
@@ -97,7 +81,7 @@ Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_ca
   assertEquals(result.tool, McpToolName.READ_FILE);
   assertEquals(result.args, { path: "src/main.ts" });
 
-  const prompt = currentProvider.lastPrompt;
+  const prompt = provider.lastPrompt;
   assertEquals(prompt.includes("Test Agent"), true);
   assertEquals(prompt.includes("test description"), true);
   assertEquals(prompt.includes("Test Objective"), true);
@@ -105,12 +89,10 @@ Deno.test("LlmClient - builds correct reasoning prompt and handles valid tool_ca
   assertEquals(prompt.includes("Iteration: 2 of 10"), true);
   assertEquals(prompt.includes("read_file"), true);
   assertEquals(prompt.includes('"path":{"type":"string"}'), true);
-
-  restoreMockProvider();
 });
 
 Deno.test("LlmClient - handles complete action", async () => {
-  injectMockProvider(JSON.stringify({
+  const client = makeClient(JSON.stringify({
     reasoning: "I am done",
     action: {
       type: "complete",
@@ -118,7 +100,6 @@ Deno.test("LlmClient - handles complete action", async () => {
     },
   }));
 
-  const client = new LlmClient();
   const result = await client.reasonNextAction({
     identity: mockIdentity,
     stepObjective: "Test Objective",
@@ -130,19 +111,16 @@ Deno.test("LlmClient - handles complete action", async () => {
 
   assertEquals(result.done, true);
   assertEquals(result.output, "Final answer");
-
-  restoreMockProvider();
 });
 
 Deno.test("LlmClient - parses code blocks containing JSON", async () => {
-  injectMockProvider(
+  const client = makeClient(
     "```json\n" + JSON.stringify({
       reasoning: "code block",
       action: { type: "tool_call", tool: ToolName.LIST_DIRECTORY, args: {} },
     }) + "\n```",
   );
 
-  const client = new LlmClient();
   const result = await client.reasonNextAction({
     identity: mockIdentity,
     stepObjective: "Test",
@@ -155,14 +133,11 @@ Deno.test("LlmClient - parses code blocks containing JSON", async () => {
   });
 
   assertEquals(result.tool, McpToolName.LIST_DIRECTORY);
-
-  restoreMockProvider();
 });
 
 Deno.test("LlmClient - handles invalid JSON", async () => {
-  injectMockProvider("This is not JSON");
+  const client = makeClient("This is not JSON");
 
-  const client = new LlmClient();
   await assertRejects(
     () =>
       client.reasonNextAction({
@@ -176,6 +151,4 @@ Deno.test("LlmClient - handles invalid JSON", async () => {
     Error,
     "Failed to parse LLM response",
   );
-
-  restoreMockProvider();
 });

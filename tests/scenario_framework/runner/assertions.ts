@@ -25,6 +25,9 @@ import type { JSONValue } from "@exaix/core/types";
 import type { IScenarioStepExecutionResult } from "./step_executor.ts";
 import { BINARY_VERSION, WORKSPACE_SCHEMA_VERSION } from "@exaix/core";
 import { buildEvaluationPrompt, CriterionResultSchema, getCriteriaByNames } from "@exaix/core/evaluation";
+import { ProviderFactory } from "@exaix/ai";
+import { createMockConfig } from "@exaix/testing";
+import "../../../apps/common/registry_bootstrap.ts";
 
 const FRONTMATTER_PATTERN = /^---\n([\s\S]*?)\n---\n?/;
 const JSON_PATH_ROOT = "$";
@@ -685,6 +688,7 @@ function buildPassedResult(
     status: CriterionStatus.PASSED,
     message: options.criterion.message ?? `${options.criterion.id} passed`,
     evidence_refs: evidenceRefs,
+    score_weight: options.criterion.score_weight,
   };
 }
 
@@ -701,6 +705,7 @@ function buildFailedResult(
     evidence_refs: failure.evidenceRefs ?? [],
     observed_value: failure.observedValue,
     expected_value: failure.expectedValue,
+    score_weight: options.criterion.score_weight,
   };
 }
 
@@ -1210,20 +1215,11 @@ async function evaluateLlmJudgeCriterion(
   }
 }
 
-async function callLlmEndpoint(prompt: string): Promise<string> {
-  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "http://127.0.0.1:11434/api/generate";
-  const model = Deno.env.get("EXA_LLM_MODEL") ?? "llama3";
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model, prompt, stream: false }),
-    });
-    const data = await response.json();
-    return data.response ?? JSON.stringify(data);
-  } catch (error) {
-    throw new Error(`LLM call failed: ${(error as Error).message}`);
-  }
+export async function callLlmEndpoint(prompt: string): Promise<string> {
+  const config = createMockConfig("/tmp/exa-eval");
+  const provider = await ProviderFactory.createByName(config, "default");
+  const result = await provider.generate(prompt);
+  return result.content;
 }
 
 function compareVersions(a: string, b: string): number {

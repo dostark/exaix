@@ -13,10 +13,12 @@ steps:
     args: ["--file", "$FRAMEWORK_HOME/fixtures/requests/agent_flows/quality_gate_clarification.md"]
     input_criteria:
       - id: "request-fixture-exists"
+        score_weight: 0.4
         kind: "file-exists"
         path: "$FRAMEWORK_HOME/fixtures/requests/agent_flows/quality_gate_clarification.md"
     output_criteria:
       - id: "request-create-exit-code"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
   - id: "wait-for-clarification"
@@ -31,10 +33,12 @@ steps:
     instructions: "Review the clarification prompts and confirm the request remains blocked pending answers."
     input_criteria:
       - id: "clarification-artifact"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "**/*_clarification.json"
     output_criteria:
       - id: "review-ready"
+        score_weight: 0.6
         kind: "text-contains"
         path: "$FRAMEWORK_HOME/fixtures/requests/agent_flows/quality_gate_clarification.md"
         contains: "underspecified"

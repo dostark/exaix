@@ -1,0 +1,32 @@
+schema_version: "1.0.0"
+id: "eval-edge-mixed-multi"
+title: "Mixed multi-criteria — multiple criteria with different weights, some pass, some fail"
+pack: "eval-edge-cases"
+tags: ["eval", "scoring", "edge"]
+request_fixture: "fixtures/requests/eval-edge-cases/mixed-multi-criteria.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-artifacts"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          mkdir -p $WORKSPACE_ROOT/multi
+          echo '{"a":1}' > $WORKSPACE_ROOT/multi/data.json
+          echo "content" > $WORKSPACE_ROOT/multi/notes.txt
+    input_criteria: []
+    output_criteria:
+      - id: "json-exists"
+        kind: "file-exists"
+        path: "multi/data.json"
+        score_weight: 0.5
+      - id: "notes-exists"
+        kind: "file-exists"
+        path: "multi/notes.txt"
+        score_weight: 0.3
+      - id: "missing-file"
+        kind: "file-exists"
+        path: "multi/missing.log"
+        score_weight: 0.2

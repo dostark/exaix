@@ -485,7 +485,49 @@ if [ $? -ne 0 ]; then
 fi
 ```
 
-### 11.2 Nightly Regression
+### 11.2 Sandbox Deploy + Full Evaluation (CI Job)
+
+For packs that require a running daemon and mounted portal (`agent_flows`,
+`integration_e2e`, `dynamic_execution`, etc.), deploy a sandbox first:
+
+```bash
+#!/bin/bash
+# CI job: deploy sandbox → run all non-live packs with eval scoring
+
+export EXAIX_VALIDATION_ROOT="$HOME/exa-validation-sandbox"
+
+# Deploy sandbox (mock provider — no API keys needed)
+deno run -A scripts/setup_sandbox.ts \
+  --dir "$EXAIX_VALIDATION_ROOT" \
+  --provider "mock" \
+  --model "test"
+
+export PATH="$EXAIX_VALIDATION_ROOT/bin:$PATH"
+export EXA_CONFIG_PATH="$EXAIX_VALIDATION_ROOT/workspace/exa.config.toml"
+
+# Start daemon
+exactl daemon start
+
+# Mount portal (Exaix dev repo for flow fixtures)
+exactl portal add "$PWD" portal-exaix
+exactl daemon stop && exactl daemon start
+
+# Run evaluation with scoring
+exactl eval run --pack agent_flows \
+  --pack dynamic_execution \
+  --pack framework_test \
+  --pack integration_e2e \
+  --pack mcp_tools_extended \
+  --pack smoke \
+  --pack triggers-basic \
+  --score-threshold 0.5 \
+  --trials 1
+```
+
+For the full sandbox setup reference, see
+`tests/scenario_framework/README.md` §2 (Validation).
+
+### 11.3 Nightly Regression
 
 ```bash
 #!/bin/bash
@@ -496,7 +538,7 @@ exactl eval run --profile ci-core --score-threshold 0.6 --trials 3
 cp -r tests/scenario_framework/output/history/ archive/$(date +%Y-%m-%d)/
 ```
 
-### 11.3 Trend Detection
+### 11.4 Trend Detection
 
 ```bash
 #!/bin/bash
@@ -514,5 +556,4 @@ exactl eval compare --run-a $RUN_A --run-b $RUN_B | grep "delta"
 ## 12. Extending the Framework
 
 See `tests/scenario_framework/README.md` for architectural documentation,
-schema contracts, and implementation guidelines for adding new criterion
-kinds, step types, or scenario packs.
+schema contracts, extension patterns, and validation sandbox setup.

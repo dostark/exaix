@@ -16,6 +16,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "dir-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-project/src"
 
@@ -36,10 +37,12 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "flow-file-exists"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "fixtures/flows/mcp_tools_extended/patch_file.flow.yaml"
     output_criteria:
       - id: "flow-execution-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -50,6 +53,7 @@ steps:
     args: ["-c", "newFunctionName", "/tmp/sample-project/src/main.ts"]
     output_criteria:
       - id: "function-renamed"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 

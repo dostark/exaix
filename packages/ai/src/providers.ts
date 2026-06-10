@@ -149,6 +149,14 @@ class OpenAIShim implements IModelProvider {
 
 /**
  * Factory for creating model provider instances based on configuration.
+ *
+ * @deprecated Use {@link ProviderFactory} instead. ModelFactory bypasses
+ * `EXA_LLM_PROVIDER`, `EXA_LLM_MODEL`, and `EXA_LLM_BASE_URL` env vars,
+ * relying on a flat `IProviderConfig` that doesn't participate in the
+ * standard provider resolution chain. The only remaining consumer was
+ * `LlmClient`, which now delegates to `ProviderFactory.createByName()`.
+ * New callers should use `ProviderFactory.createByName()` or
+ * `ProviderFactory.create()` directly.
  */
 export class ModelFactory {
   /**
