@@ -17,7 +17,6 @@ import {
   AI_RETRY_TIMEOUT_PER_REQUEST_MS_MIN,
   AI_TIMEOUT_MS_MAX,
   AI_TIMEOUT_MS_MIN,
-  DEFAULT_AI_MODEL,
   DEFAULT_AI_RETRY_BACKOFF_BASE_MS,
   DEFAULT_AI_RETRY_MAX_ATTEMPTS,
   DEFAULT_AI_RETRY_TIMEOUT_PER_REQUEST_MS,
@@ -34,7 +33,6 @@ import {
   DEFAULT_MCP_TRANSPORT,
   DEFAULT_MCP_VERSION,
   DEFAULT_MILESTONE_STREAMING_ENABLED,
-  DEFAULT_MOCK_STRATEGY,
   DEFAULT_PORTAL_DEFAULT_BRANCH,
   MOCK_DELAY_MS,
   MOCK_DELAY_MS_MAX,
@@ -58,7 +56,6 @@ import {
   LogLevel,
   McpTransportType,
   MemoryBankSource,
-  MockStrategy,
   PermissionAction,
   ProviderCostTier,
   ProviderType,
@@ -70,48 +67,8 @@ import {
 import { PortalAnalysisMode, PortalOperation } from "../types/portal.ts";
 import { WORKSPACE_SCHEMA_VERSION } from "../version.ts";
 import { AnalysisMode } from "../request/mod.ts";
-
-export interface IPortalConfig {
-  alias: string;
-  target_path: string;
-  description?: string;
-  default_branch?: string;
-  identities_allowed?: string[];
-  operations?: PortalOperation[];
-  created?: string;
-}
-
-export const ProviderTypeSchema = z.string().min(1).refine(
-  (_val) => true,
-  { message: "Provider type must be a non-empty string" },
-);
-
-export const MockStrategySchema = z.nativeEnum(MockStrategy);
-
-export const MockConfigSchema = z.object({
-  strategy: MockStrategySchema.default(DEFAULT_MOCK_STRATEGY),
-  fixtures_dir: z.string().optional(),
-  error_message: z.string().optional(),
-  delay_ms: z.number().positive().optional(),
-}).default({
-  strategy: DEFAULT_MOCK_STRATEGY,
-});
-
-export const AiConfigSchema = z.object({
-  provider: ProviderTypeSchema.default(ProviderType.GOOGLE),
-  model: z.string().default(DEFAULT_AI_MODEL),
-  base_url: z.string().refine(
-    (val) => val === "" || z.string().url().safeParse(val).success,
-    { message: "Invalid url" },
-  ).optional(),
-  timeout_ms: z.number().positive().default(DEFAULT_AI_TIMEOUT_MS),
-  max_tokens: z.number().positive().optional(),
-  temperature: z.number().min(DEFAULT_AI_TEMPERATURE_MIN).max(DEFAULT_AI_TEMPERATURE_MAX).optional(),
-  mock: MockConfigSchema.optional(),
-}).default({
-  provider: ProviderType.GOOGLE,
-  timeout_ms: DEFAULT_AI_TIMEOUT_MS,
-});
+import { AiConfigSchema, ProviderTypeSchema } from "@exaix/schemas/ai_config.ts";
+import { ToolsConfigSchema } from "@exaix/schemas/config.ts";
 
 export const MCPConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -215,25 +172,6 @@ const RoutingConfigSchema = z.object({
   experiment_salt: z.string().min(1).default("exaix-routing-experiments"),
   enable_dynamic_routing: z.boolean().default(false),
 }).optional().default({});
-
-export const ToolsConfigSchema = z.object({
-  fetch_url: z.object({
-    enabled: z.boolean().default(false),
-    allowed_domains: z.array(z.string()).default([
-      "deno.land",
-      "docs.deno.com",
-      "npmjs.com",
-      "github.com",
-      "stackoverflow.com",
-    ]),
-    timeout_ms: z.number().default(5000),
-    max_response_size_kb: z.number().default(50),
-  }).default({}),
-  grep_search: z.object({
-    max_results: z.number().default(50),
-    exclude_dirs: z.array(z.string()).default([".git", "node_modules", "dist", "coverage"]),
-  }).default({}),
-});
 
 export const ConfigSchema = z.object({
   tools: ToolsConfigSchema.optional().default({}),
