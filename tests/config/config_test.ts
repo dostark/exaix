@@ -1001,18 +1001,16 @@ Deno.test("[regression] Sample config includes required provider strategy entrie
   assertEquals(Array.isArray(allowedPrefixes), true);
 
   if (Array.isArray(simpleRouting)) {
+    assertEquals(simpleRouting.includes("small"), true);
     assertEquals(simpleRouting.includes("ollama"), true);
-    assertEquals(simpleRouting.includes("google"), true);
   }
 
   if (Array.isArray(mediumRouting)) {
-    assertEquals(mediumRouting.includes("google"), true);
-    assertEquals(mediumRouting.includes("anthropic"), true);
+    assertEquals(mediumRouting.includes("medium"), true);
   }
 
   if (Array.isArray(complexRouting)) {
-    assertEquals(complexRouting.includes("anthropic"), true);
-    assertEquals(complexRouting.includes("openai"), true);
+    assertEquals(complexRouting.includes("large"), true);
   }
 
   if (Array.isArray(allowedPrefixes)) {

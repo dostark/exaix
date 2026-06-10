@@ -19,7 +19,8 @@ import type { MCPToolResponse } from "@exaix/schemas/mcp.ts";
 import type { IFlow, IFlowInput, IFlowStepInput } from "@exaix/schemas/flow.ts";
 import type { IGenerateResult } from "@exaix/ai/providers";
 import type { IModelProvider } from "../../packages/ai/src/types.ts";
-import { ModelFactory } from "../../packages/ai/src/providers.ts";
+import { ProviderFactory } from "../../packages/ai/src/provider_factory.ts";
+import type { Config } from "@exaix/schemas";
 import { FlowRunner, type IAgentExecutor, type IFlowEventLogger, type IFlowStepRequest } from "@exaix/flow";
 import { ToolHandler } from "@exaix/mcp/server";
 import { initTestDbService } from "@exaix/testing";
@@ -86,7 +87,7 @@ class DecisionWritingNotificationService extends StubNotificationServiceBase {
 }
 
 function installMockProvider(responses: string[]) {
-  const originalDescriptor = Object.getOwnPropertyDescriptor(ModelFactory, "create")!;
+  const originalDescriptor = Object.getOwnPropertyDescriptor(ProviderFactory, "createByName")!;
   let callCount = 0;
 
   const provider: IModelProvider = {
@@ -104,8 +105,8 @@ function installMockProvider(responses: string[]) {
     },
   };
 
-  Object.defineProperty(ModelFactory, "create", {
-    value: async () => {
+  Object.defineProperty(ProviderFactory, "createByName", {
+    value: async (_config: Config, _name: string) => {
       await Promise.resolve();
       return provider;
     },
@@ -114,7 +115,7 @@ function installMockProvider(responses: string[]) {
   });
 
   return () => {
-    Object.defineProperty(ModelFactory, "create", originalDescriptor);
+    Object.defineProperty(ProviderFactory, "createByName", originalDescriptor);
   };
 }
 

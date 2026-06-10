@@ -8,7 +8,8 @@
 
 export * from "./service.ts";
 export * from "./paths.ts";
-export * from "./env_schema.ts";
+
 export * from "./config_reload_handler.ts";
 export { ConfigSchema } from "./config_schema.ts";
 export type { Config } from "./config_schema.ts";
+export * from "./env_schema.ts";

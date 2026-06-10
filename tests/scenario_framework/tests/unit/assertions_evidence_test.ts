@@ -494,118 +494,106 @@ Deno.test("[ScenarioFrameworkAssertionsEvidence] version criteria can check work
 });
 
 // ---------------------------------------------------------------------------
-// LLM Endpoint Dispatch Tests (TDD: will fail until EXA_LLM_PROVIDER dispatch is implemented)
+// LLM Endpoint Dispatch Tests — via ProviderFactory
 // ---------------------------------------------------------------------------
 
+const DISABLED_OPTS = { sanitizeResources: false, sanitizeOps: false };
+
+// Helper: delete all backward-compat API keys so only EXA_LLM_PROVIDER controls routing
+const NO_BACKWARD_KEYS: Record<string, null> = {
+  ANTHROPIC_API_KEY: null,
+  OPENAI_API_KEY: null,
+  GOOGLE_API_KEY: null,
+  OPENROUTER_API_KEY: null,
+};
+
 Deno.test({
-  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Ollama when EXA_LLM_PROVIDER is unset",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint uses Mock provider when EXA_LLM_PROVIDER is unset",
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv(
-      { EXA_LLM_PROVIDER: null, EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
-      async () => {
-        try {
-          await callLlmEndpoint("test prompt");
-          fail("Expected error to be thrown");
-        } catch (err) {
-          assertStringIncludes((err as Error).message, "LLM call failed");
-        }
-      },
-    );
+    // Must also delete ANTHROPIC_API_KEY to prevent backward compat routing to Anthropic
+    await withEnv({ EXA_LLM_PROVIDER: null, ...NO_BACKWARD_KEYS }, async () => {
+      const result = await callLlmEndpoint("test prompt");
+      assertEquals(typeof result, "string");
+    });
   },
 });
 
 Deno.test({
-  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Ollama when EXA_LLM_PROVIDER=ollama",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint uses Ollama when EXA_LLM_PROVIDER=ollama",
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv(
-      { EXA_LLM_PROVIDER: "ollama", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
-      async () => {
-        try {
-          await callLlmEndpoint("test prompt");
-          fail("Expected error to be thrown");
-        } catch (err) {
-          assertStringIncludes((err as Error).message, "LLM call failed");
-        }
-      },
-    );
+    // Ollama has no API key requirement — connect to port 1 to force a connection error
+    await withEnv({
+      EXA_LLM_PROVIDER: "ollama",
+      EXA_LLM_BASE_URL: "http://127.0.0.1:1",
+      ...NO_BACKWARD_KEYS,
+    }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected connection error");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "/api/generate");
+      }
+    });
   },
 });
 
 Deno.test({
   name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Anthropic when EXA_LLM_PROVIDER=anthropic",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv(
-      { EXA_LLM_PROVIDER: "anthropic", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
-      async () => {
-        try {
-          await callLlmEndpoint("test prompt");
-          fail("Expected error to be thrown");
-        } catch (err) {
-          assertStringIncludes((err as Error).message, "Anthropic");
-        }
-      },
-    );
+    // Delete ANTHROPIC_API_KEY so getApiKey() throws
+    await withEnv({ EXA_LLM_PROVIDER: "anthropic", ANTHROPIC_API_KEY: null }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected missing API key error");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "ANTHROPIC_API_KEY");
+      }
+    });
   },
 });
 
 Deno.test({
   name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to OpenAI when EXA_LLM_PROVIDER=openai",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv(
-      { EXA_LLM_PROVIDER: "openai", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
-      async () => {
-        try {
-          await callLlmEndpoint("test prompt");
-          fail("Expected error to be thrown");
-        } catch (err) {
-          assertStringIncludes((err as Error).message, "OpenAI");
-        }
-      },
-    );
+    await withEnv({ EXA_LLM_PROVIDER: "openai", OPENAI_API_KEY: null }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected missing API key error");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "OPENAI_API_KEY");
+      }
+    });
   },
 });
 
 Deno.test({
   name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Google when EXA_LLM_PROVIDER=google",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv(
-      { EXA_LLM_PROVIDER: "google", EXA_EVAL_LLM_MOCK: "false", EXA_LLM_ENDPOINT: "http://127.0.0.1:1" },
-      async () => {
-        try {
-          await callLlmEndpoint("test prompt");
-          fail("Expected error to be thrown");
-        } catch (err) {
-          assertStringIncludes((err as Error).message, "Google");
-        }
-      },
-    );
+    await withEnv({ EXA_LLM_PROVIDER: "google", GOOGLE_API_KEY: null }, async () => {
+      try {
+        await callLlmEndpoint("test prompt");
+        fail("Expected missing API key error");
+      } catch (err) {
+        assertStringIncludes((err as Error).message, "GOOGLE_API_KEY");
+      }
+    });
   },
 });
 
 Deno.test({
   name:
     "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to OpenRouter when EXA_LLM_PROVIDER=openrouter",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv({
-      EXA_LLM_PROVIDER: "openrouter",
-      EXA_EVAL_LLM_MOCK: "false",
-      EXA_LLM_ENDPOINT: "http://127.0.0.1:1",
-    }, async () => {
+    await withEnv({ EXA_LLM_PROVIDER: "openrouter", OPENROUTER_API_KEY: null }, async () => {
       try {
         await callLlmEndpoint("test prompt");
-        fail("Expected error to be thrown");
+        fail("Expected missing API key error");
       } catch (err) {
         assertStringIncludes((err as Error).message, "OPENROUTER_API_KEY");
       }
@@ -615,38 +603,29 @@ Deno.test({
 
 Deno.test({
   name:
-    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint dispatches to Anthropic when ANTHROPIC_API_KEY is set without EXA_LLM_PROVIDER (backward compat)",
-  sanitizeResources: false,
-  sanitizeOps: false,
+    "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint falls back to Mock when ANTHROPIC_API_KEY is set without EXA_LLM_PROVIDER (backward compat removed)",
+  ...DISABLED_OPTS,
   fn: async () => {
+    // Without the old backward-compat block in callLlmEndpoint, setting
+    // ANTHROPIC_API_KEY alone no longer routes to Anthropic — it falls through to Mock.
     await withEnv({
       EXA_LLM_PROVIDER: null,
       ANTHROPIC_API_KEY: "sk-test-key",
-      EXA_EVAL_LLM_MOCK: "false",
-      EXA_LLM_ENDPOINT: "http://127.0.0.1:1",
+      ...NO_BACKWARD_KEYS,
     }, async () => {
-      try {
-        await callLlmEndpoint("test prompt");
-        fail("Expected error to be thrown");
-      } catch (err) {
-        assertStringIncludes((err as Error).message, "Anthropic");
-      }
+      const result = await callLlmEndpoint("test prompt");
+      assertEquals(typeof result, "string");
     });
   },
 });
 
 Deno.test({
-  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint throws for invalid EXA_LLM_PROVIDER value",
-  sanitizeResources: false,
-  sanitizeOps: false,
+  name: "[ScenarioFrameworkAssertionsEvidence] callLlmEndpoint falls back to Mock for invalid EXA_LLM_PROVIDER",
+  ...DISABLED_OPTS,
   fn: async () => {
-    await withEnv({ EXA_LLM_PROVIDER: "invalid-provider" }, async () => {
-      try {
-        await callLlmEndpoint("test prompt");
-        fail("Expected error to be thrown");
-      } catch (err) {
-        assertStringIncludes((err as Error).message, "EXA_LLM_PROVIDER");
-      }
+    await withEnv({ EXA_LLM_PROVIDER: "invalid-provider", ...NO_BACKWARD_KEYS }, async () => {
+      const result = await callLlmEndpoint("test prompt");
+      assertEquals(typeof result, "string");
     });
   },
 });

@@ -70,7 +70,7 @@ The llm-judge criterion dispatches to different providers via the `EXA_LLM_PROVI
 | OpenRouter     | `openrouter`       | `OPENROUTER_API_KEY` | `openrouter/auto`           | `https://openrouter.ai/api/v1/chat/completions` |
 | Ollama (local) | `ollama`           | _(none)_             | `llama3`                    | `http://127.0.0.1:11434/api/generate`           |
 
-Override the endpoint or model for any provider via `EXA_LLM_ENDPOINT` and `EXA_LLM_MODEL`. Backward compatibility: setting `ANTHROPIC_API_KEY` without `EXA_LLM_PROVIDER` routes to Anthropic. Unset `EXA_LLM_PROVIDER` with no API key defaults to Ollama.
+Override the endpoint or model for any provider via `EXA_LLM_BASE_URL` and `EXA_LLM_MODEL`. Backward compatibility: `EXA_LLM_ENDPOINT` is mapped to `EXA_LLM_BASE_URL` if the latter is unset. Unset `EXA_LLM_PROVIDER` defaults to the Mock provider (no external call).
 
 ```bash
 # Example: test with OpenAI

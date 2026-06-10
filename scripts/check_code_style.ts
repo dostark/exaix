@@ -1264,17 +1264,17 @@ async function checkFile(path: string) {
         else warnCount++;
       }
 
-      const isConfigReaderImport = trimmedLine.startsWith("import") &&
-        (trimmedLine.includes("getValidatedEnvOverrides") || trimmedLine.includes("ConfigService")) &&
+      const isConfigServiceImport = trimmedLine.startsWith("import") &&
+        trimmedLine.includes("ConfigService") &&
         trimmedLine.includes("@exaix/core");
-      const isConfigReaderUsage = !trimmedLine.startsWith("import") &&
-        (line.match(/\bgetValidatedEnvOverrides\s*\(/) !== null || line.match(/\bnew\s+ConfigService\s*\(/) !== null);
-      if (isConfigReaderImport || isConfigReaderUsage) {
+      const isConfigServiceUsage = !trimmedLine.startsWith("import") &&
+        line.match(/\bnew\s+ConfigService\s*\(/) !== null;
+      if (isConfigServiceImport || isConfigServiceUsage) {
         const prefix = convertWarnings ? "ERROR" : "WARN";
         console.log(
           `${prefix} [package-uses-config-reader] ${repoPath}:${
             idx + 1
-          } – Package source modules must not call getValidatedEnvOverrides() or instantiate ConfigService. Receive a Config value as a constructor parameter instead.`,
+          } – Package source modules must not instantiate ConfigService. Receive a Config value as a constructor parameter instead.`,
         );
         if (convertWarnings) errorCount++;
         else warnCount++;

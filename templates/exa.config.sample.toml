@@ -28,7 +28,7 @@
 #
 # Production Variables (Runtime):
 # ---------------------------------------------------------------------------
-# EXA_LLM_PROVIDER    : Override AI provider (e.g. "ollama", "openai", "mock")
+# EXA_LLM_PROVIDER    : Override AI provider (default: mock; e.g. "anthropic", "openai", "google", "ollama")
 # EXA_LLM_MODEL       : Override AI model name (e.g. "llama3.2", "gpt-4")
 # EXA_LLM_BASE_URL    : Override provider base URL (e.g. "http://localhost:11434")
 # EXA_LLM_TIMEOUT_MS  : Override AI request timeout (1000 - 300000 ms)
@@ -130,9 +130,9 @@ target_path = "/home/me/projects/my-repo"
 #   - gemini-2.5-flash (Stable 2025 release)
 # ---------------------------------------------------------------------------
 [ai]
-provider = "anthropic"     # Overridden by EXA_LLM_PROVIDER
+provider = "mock"          # Overridden by EXA_LLM_PROVIDER
 # Provider-specific model name (optional)
-model = "claude-haiku-4-5-20251001"    # Overridden by EXA_LLM_MODEL
+model = "gpt-5.2-pro"      # Overridden by EXA_LLM_MODEL
 # Base URL for custom provider endpoints (optional)
 base_url = ""           # Overridden by EXA_LLM_BASE_URL
 # Request timeout (ms)
@@ -213,11 +213,39 @@ site_url = "https://exaix.dev"
 # ---------------------------------------------------------------------------
 
 [models.default]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-timeout_ms = 30000         # Request timeout for this model preset
+provider = "mock"
+model = "gpt-5.2-pro"
+timeout_ms = 30000
 max_tokens = 2048
 temperature = 0.2
+
+# Three-size model presets for complexity-based routing.
+# Each provider has small/fast, medium/balanced, and large/premium tiers.
+# Used by ProviderSelector via [provider_strategy.task_routing].
+#
+# Provider   Small              Medium               Large
+# ────────   ─────              ──────               ─────
+# Anthropic  claude-haiku-*     claude-sonnet-*      claude-opus-*
+# OpenAI     gpt-5-mini         gpt-5                gpt-5-pro
+# Google     gemini-flash-*     gemini-pro-*         gemini-ultra-*
+#
+# For OpenRouter, each size maps to a router model ID:
+#   e.g. "openrouter" + "qwen-2.5-7b" (small) / "deepseek-v3" (medium) / "anthropic/claude-opus-*" (large)
+
+[models.small]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+timeout_ms = 15000
+
+[models.medium]
+provider = "anthropic"
+model = "claude-sonnet-4-5-20250929"
+timeout_ms = 30000
+
+[models.large]
+provider = "anthropic"
+model = "claude-opus-4-5-20251101"
+timeout_ms = 60000
 
 [models.fast]
 provider = "anthropic"
@@ -288,11 +316,13 @@ health_check_enabled = true
 fallback_enabled = true
 
 [provider_strategy.task_routing]
-# Route tasks by complexity/type (optional)
-simple = ["ollama", "google"]
-medium = ["google", "anthropic"]
-complex = ["anthropic", "openai"]
-code_generation = ["anthropic", "openai"]
+# Route tasks by complexity/type (optional).
+# Values reference model preset names ([models.small], [models.medium], [models.large])
+# or provider names ("mock", "ollama") for direct routing.
+simple = ["small", "ollama"]
+medium = ["medium"]
+complex = ["large"]
+code_generation = ["medium", "large"]
 
 [provider_strategy.budgets]
 # Per-provider daily budgets in USD (optional)
