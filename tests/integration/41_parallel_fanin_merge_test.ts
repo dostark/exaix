@@ -12,7 +12,11 @@ import { FlowRunner } from "@exaix/flow";
 import type { IFlow, IFlowInput } from "@exaix/schemas/flow.ts";
 import { DEFAULT_FLOW_STEP_BACKOFF_MS, DEFAULT_FLOW_VERSION } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
-import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
+import {
+  makeStartAndWritersSteps,
+  RecordingFlowLogger,
+  ScriptedAgentExecutor,
+} from "../helpers/flow_namespace_test_helper.ts";
 
 Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downstream fan-in steps", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -36,32 +40,7 @@ Deno.test("[Step65.3] FlowRunner passes JSON-safe parallelGroupResults to downst
       description: "Downstream fan-in requests should receive JSON-safe group summaries",
       version: DEFAULT_FLOW_VERSION,
       steps: [
-        {
-          id: "start",
-          name: "Start",
-          identity: "starter",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "draft-a",
-          name: "Draft A",
-          identity: "writerA",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "writers" },
-        },
-        {
-          id: "draft-b",
-          name: "Draft B",
-          identity: "writerB",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "writers" },
-        },
+        ...makeStartAndWritersSteps(),
         {
           id: "merge",
           name: "Merge",

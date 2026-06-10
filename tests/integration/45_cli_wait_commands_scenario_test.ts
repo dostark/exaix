@@ -121,126 +121,71 @@ function cliTest(name: string, fn: () => Promise<void>): void {
   Deno.test({ name, ignore: skipInParallel, fn });
 }
 
-cliTest("WaitScenario: exactl wait list returns wait states created as files on disk", async () => {
+/** Creates a temp workspace with one wait-state file, runs fn, and cleans up. */
+async function withWaitState(
+  overrides: object,
+  fn: (tempDir: string, waitDir: string) => Promise<void>,
+): Promise<void> {
   const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
   try {
     const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
     await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson());
+    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson(overrides));
+    await fn(tempDir, waitDir);
+  } finally {
+    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
+  }
+}
 
+/** Runs `exactl wait <command>` on a pending wait state and asserts the resulting status. */
+async function assertWaitTransition(command: string, message: string, expectedStatus: string): Promise<void> {
+  await withWaitState({}, async (tempDir, waitDir) => {
+    const result = await runExactl(["wait", command, TOKEN_UUID, "-m", message], tempDir);
+    assertEquals(result.code, 0, `expected exit 0, got ${result.code}: ${result.stderr}`);
+
+    const updated = JSON.parse(await Deno.readTextFile(join(waitDir, `${WAIT_UUID}.json`)));
+    assertEquals(updated.status, expectedStatus);
+    assertEquals(updated.resolutionSummary, message);
+  });
+}
+
+cliTest("WaitScenario: exactl wait list returns wait states created as files on disk", async () => {
+  await withWaitState({}, async (tempDir) => {
     const result = await runExactl(["wait", "list"], tempDir);
     assertEquals(result.code, 0, `expected exit 0, got ${result.code}: ${result.stderr}`);
     assertStringIncludes(result.stdout, WAIT_UUID.substring(0, 8));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  });
 });
 
 cliTest("WaitScenario: exactl wait list --status filters by status", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(waitDir, `${WAIT_UUID}.json`),
-      makeWaitStateJson({ status: "fulfilled" }),
-    );
-
+  await withWaitState({ status: "fulfilled" }, async (tempDir) => {
     const result = await runExactl(["wait", "list", "--status", "fulfilled"], tempDir);
     assertEquals(result.code, 0);
     assertStringIncludes(result.stdout, WAIT_UUID.substring(0, 8));
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  });
 });
 
 cliTest("WaitScenario: exactl wait approve transitions wait state to fulfilled", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson());
-
-    const result = await runExactl(["wait", "approve", TOKEN_UUID, "-m", "Approved in scenario"], tempDir);
-    assertEquals(result.code, 0, `expected exit 0, got ${result.code}: ${result.stderr}`);
-
-    const updated = JSON.parse(await Deno.readTextFile(join(waitDir, `${WAIT_UUID}.json`)));
-    assertEquals(updated.status, "fulfilled");
-    assertEquals(updated.resolutionSummary, "Approved in scenario");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  await assertWaitTransition("approve", "Approved in scenario", "fulfilled");
 });
 
 cliTest("WaitScenario: exactl wait reject transitions wait state to rejected", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson());
-
-    const result = await runExactl(["wait", "reject", TOKEN_UUID, "-m", "Rejected in scenario"], tempDir);
-    assertEquals(result.code, 0);
-
-    const updated = JSON.parse(await Deno.readTextFile(join(waitDir, `${WAIT_UUID}.json`)));
-    assertEquals(updated.status, "rejected");
-    assertEquals(updated.resolutionSummary, "Rejected in scenario");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  await assertWaitTransition("reject", "Rejected in scenario", "rejected");
 });
 
 cliTest("WaitScenario: exactl wait amend transitions wait state to amended", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson());
-
-    const result = await runExactl(["wait", "amend", TOKEN_UUID, "-m", "Please revise"], tempDir);
-    assertEquals(result.code, 0);
-
-    const updated = JSON.parse(await Deno.readTextFile(join(waitDir, `${WAIT_UUID}.json`)));
-    assertEquals(updated.status, "amended");
-    assertEquals(updated.resolutionSummary, "Please revise");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  await assertWaitTransition("amend", "Please revise", "amended");
 });
 
 cliTest("WaitScenario: exactl wait expire transitions wait state to expired", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(join(waitDir, `${WAIT_UUID}.json`), makeWaitStateJson());
-
-    const result = await runExactl(["wait", "expire", TOKEN_UUID, "-m", "Timed out"], tempDir);
-    assertEquals(result.code, 0);
-
-    const updated = JSON.parse(await Deno.readTextFile(join(waitDir, `${WAIT_UUID}.json`)));
-    assertEquals(updated.status, "expired");
-    assertEquals(updated.resolutionSummary, "Timed out");
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  await assertWaitTransition("expire", "Timed out", "expired");
 });
 
 cliTest("WaitScenario: exactl wait approve on non-pending wait state errors gracefully", async () => {
-  const tempDir = await Deno.makeTempDir({ prefix: "wait-scenario-" });
-  try {
-    const waitDir = join(tempDir, "Workspace", "WaitStates", TRACE_ID);
-    await Deno.mkdir(waitDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(waitDir, `${WAIT_UUID}.json`),
-      makeWaitStateJson({ status: "fulfilled" }),
-    );
-
+  await withWaitState({ status: "fulfilled" }, async (tempDir) => {
     const result = await runExactl(["wait", "approve", TOKEN_UUID, "-m", "Should fail"], tempDir);
     assertEquals(result.code, 1);
-  } finally {
-    await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-  }
+  });
 });
 
 cliTest("WaitScenario: exactl wait list returns empty when no wait states", async () => {

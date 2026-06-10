@@ -5,62 +5,17 @@
  */
 
 import { assert, assertEquals } from "@std/assert";
-import { join } from "@std/path";
 import { AgentExecutor } from "@exaix/execution";
 import { StrategyRegistry } from "@exaix/execution";
-import { EventLogger } from "@exaix/core/logger";
-import { PathResolver, PortalPermissionsService } from "@exaix/portal";
-import { ExecutionStrategyName, PortalOperation, SecurityMode } from "@exaix/core";
+import { ExecutionStrategyName, SecurityMode } from "@exaix/core";
 import type { IAgentExecutionOptions, IExecutionContext } from "@exaix/schemas/agent_executor.ts";
 import { TOKEN_ESTIMATION_CHARS_PER_TOKEN } from "@exaix/core";
-import { createTestConfig } from "../../../packages/ai/tests/helpers/test_config.ts";
-import { TEST_DEFAULT_BRANCH } from "@exaix/git/testing";
-import { initTestDbService } from "@exaix/testing";
+import { setupAgentExecutorFixture } from "../helpers/agent_executor_fixture.ts";
 
 Deno.test("Integration: context overflow recovers by truncating prompt via allocator budget", async () => {
-  const { db, tempDir, cleanup } = await initTestDbService();
+  const { db, config, logger, pathResolver, permissions, cleanup } = await setupAgentExecutorFixture();
 
   try {
-    const portalDir = join(tempDir, "TestPortal");
-    const blueprintsDir = join(tempDir, "Blueprints", "Identities");
-    await Deno.mkdir(portalDir, { recursive: true });
-    await Deno.mkdir(blueprintsDir, { recursive: true });
-
-    await new Deno.Command("git", { args: ["init"], cwd: portalDir }).output();
-    await new Deno.Command("git", { args: ["config", "user.name", "Test User"], cwd: portalDir }).output();
-    await new Deno.Command("git", { args: ["config", "user.email", "test@exaix.local"], cwd: portalDir }).output();
-    await Deno.writeTextFile(join(portalDir, "README.md"), "# Test\n");
-    await new Deno.Command("git", { args: ["add", "README.md"], cwd: portalDir }).output();
-    await new Deno.Command("git", { args: ["commit", "-m", "init"], cwd: portalDir }).output();
-
-    await Deno.writeTextFile(
-      join(blueprintsDir, "test-agent.md"),
-      "---\nname: test-agent\nmodel: gpt-4o-mini\nprovider: openai\ncapabilities: []\n---\nYou are a test agent.",
-    );
-
-    const config = createTestConfig();
-    config.system.root = tempDir;
-    config.paths = {
-      ...config.paths,
-      workspace: join(tempDir, "Workspace"),
-      memory: join(tempDir, "Memory"),
-      runtime: join(tempDir, ".exa"),
-      blueprints: join(tempDir, "Blueprints"),
-    };
-    config.portals = [
-      {
-        alias: "TestPortal",
-        target_path: portalDir,
-        default_branch: TEST_DEFAULT_BRANCH,
-        identities_allowed: ["*"],
-        operations: [PortalOperation.READ, PortalOperation.WRITE, PortalOperation.GIT],
-      },
-    ];
-
-    const logger = new EventLogger({ db });
-    const pathResolver = new PathResolver(config);
-    const permissions = new PortalPermissionsService(config.portals);
-
     let promptLengthSeen = 0;
     let skillsBlockLengthSeen = 0;
     let allocatorCalls = 0;

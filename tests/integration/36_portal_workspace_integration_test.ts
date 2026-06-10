@@ -35,40 +35,32 @@ Deno.test("[integration] Portal execution context points to portal workspace", a
   }
 });
 
-Deno.test("[integration] Read-only agent capabilities detected correctly", async () => {
+/** Sets up a portal and asserts its git repository directory was initialised. */
+async function assertPortalGitDirInitialized(): Promise<void> {
   const env = await TestEnvironment.create();
   try {
     const { portalDir: portalPath } = await env.setupPortal({
       alias: "test-portal",
     });
 
-    // Verify portal git repo exists
     const gitDir = join(portalPath, ".git");
     const stat = await Deno.stat(gitDir);
     assertEquals(stat.isDirectory, true);
-
-    // Note: IAgentExecutor as AgentExecutor.requiresGitTracking() and isReadOnlyAgent()
-    // are tested in unit tests (tests/services/agent_capability_test.ts)
-    // This integration test verifies the portal git repo infrastructure is initialized by setupPortal
   } finally {
     await env.cleanup();
   }
+}
+
+Deno.test("[integration] Read-only agent capabilities detected correctly", async () => {
+  // Note: IAgentExecutor as AgentExecutor.requiresGitTracking() and isReadOnlyAgent()
+  // are tested in unit tests (tests/services/agent_capability_test.ts)
+  // This integration test verifies the portal git repo infrastructure is initialized by setupPortal
+  await assertPortalGitDirInitialized();
 });
 
 Deno.test("[integration] Write-capable agent git repository structure", async () => {
-  const env = await TestEnvironment.create();
-  try {
-    const { portalDir: portalPath } = await env.setupPortal({
-      alias: "test-portal",
-    });
-
-    // Verify portal has proper git structure for write operations
-    const gitDir = join(portalPath, ".git");
-    const stat = await Deno.stat(gitDir);
-    assertEquals(stat.isDirectory, true);
-  } finally {
-    await env.cleanup();
-  }
+  // Verify portal has proper git structure for write operations
+  await assertPortalGitDirInitialized();
 });
 
 Deno.test("[integration] Multi-portal contexts are isolated", async () => {

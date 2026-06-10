@@ -17,7 +17,11 @@ import {
   FLOW_EVENT_PARALLEL_GROUP_STARTED,
 } from "@exaix/core";
 import { initTestDbService } from "@exaix/testing";
-import { RecordingFlowLogger, ScriptedAgentExecutor } from "../helpers/flow_namespace_test_helper.ts";
+import {
+  makeStartAndWritersSteps,
+  RecordingFlowLogger,
+  ScriptedAgentExecutor,
+} from "../helpers/flow_namespace_test_helper.ts";
 
 Deno.test("[Step65.2] FlowRunner logs grouped wave lifecycle before downstream join execution", async () => {
   const { config, cleanup } = await initTestDbService();
@@ -38,32 +42,7 @@ Deno.test("[Step65.2] FlowRunner logs grouped wave lifecycle before downstream j
       description: "Downstream join step should run after grouped wave completion",
       version: DEFAULT_FLOW_VERSION,
       steps: [
-        {
-          id: "start",
-          name: "Start",
-          identity: "starter",
-          dependsOn: [],
-          input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-        },
-        {
-          id: "draft-a",
-          name: "Draft A",
-          identity: "writerA",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "writers" },
-        },
-        {
-          id: "draft-b",
-          name: "Draft B",
-          identity: "writerB",
-          dependsOn: ["start"],
-          input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
-          retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
-          parallel: { group: "writers" },
-        },
+        ...makeStartAndWritersSteps(),
         {
           id: "merge",
           name: "Merge",
