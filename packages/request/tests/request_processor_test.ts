@@ -622,5 +622,37 @@ Review this pull request for security issues.`;
 
       assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
     });
+
+    it("should return null when FlowRunner throws", async () => {
+      const { traceId, requestPath } = createTestRequestPath(testDir);
+
+      const throwingFlowRunner: IFlowRunner = {
+        execute(
+          _flow: IFlow,
+          _request: { userPrompt: string; traceId?: string; requestId?: string },
+        ) {
+          return Promise.reject(new Error("Flow execution failed"));
+        },
+      };
+
+      const requestContent = `---
+trace_id: "${traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: high
+flow: code-review
+source: cli
+created_by: "test@example.com"
+---
+
+Test flow error handling.`;
+
+      await Deno.writeTextFile(requestPath, requestContent);
+
+      const processor = createProcessor(undefined, throwingFlowRunner);
+      const result = await processor.process(requestPath);
+
+      assertEquals(result, null, "Should return null when FlowRunner throws");
+    });
   });
 });

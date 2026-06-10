@@ -210,8 +210,8 @@ if (import.meta.main) {
 
     // Create flow event logger adapter (EventLogger → IFlowEventLogger)
     const flowLogger: IFlowEventLogger = {
-      log: <TEvent extends string>(_event: TEvent, _payload: IFlowEventPayload<TEvent>): void => {
-        // FlowRunner events are logged through the daemon's main logger
+      log: <TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void => {
+        logger.info(event, "flow-runner", payload as Record<string, string | number | boolean | null | undefined>);
       },
     };
 
