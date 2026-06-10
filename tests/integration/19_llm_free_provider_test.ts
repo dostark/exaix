@@ -11,11 +11,9 @@
 import { assert, assertExists, assertStringIncludes } from "@std/assert";
 import { EvaluationCategory } from "@exaix/core";
 import { TestEnvironment } from "./helpers/test_environment.ts";
-import { ModelFactory } from "@exaix/ai/providers.ts";
+import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
-import { getTestModel } from "../../packages/ai/tests/helpers/test_model.ts";
 import { getWorkspaceDir, getWorkspaceRequestsDir } from "@exaix/testing";
-import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai-openai";
 import type { IApplicationContext } from "@exaix/core/types";
 import { createStubConfig, createStubDisplay, createStubGit } from "@exaix/testing";
 import { readFixtureTextSync } from "@exaix/testing";
@@ -55,9 +53,8 @@ Deno.test(
         fixture_1,
       );
 
-      // Create a real provider using ModelFactory
-      const model = getTestModel();
-      const provider = await ModelFactory.create(model, { apiKey, baseUrl: DEFAULT_OPENAI_BASE_URL });
+      // Create a real provider using ProviderFactory
+      const provider = await ProviderFactory.createByName(env.config, "default");
 
       // Create RequestProcessor using real provider
       const context: IApplicationContext = {
