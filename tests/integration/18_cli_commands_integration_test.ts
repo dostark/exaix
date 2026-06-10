@@ -427,27 +427,36 @@ cliTest("[regression] CLI: request --target-branch writes target_branch frontmat
   }
 });
 
+/** Adds a dummy worktree-strategy portal via the CLI and returns its identifying values. */
+async function addWorktreePortal(
+  env: TestEnvironment,
+): Promise<{ portalAlias: string; defaultBranch: string; executionStrategy: string }> {
+  const portalAlias = "TestPortal";
+  const defaultBranch = "release_1.2";
+  const executionStrategy = "worktree";
+
+  // Create a dummy project to add as portal
+  await env.writeFile("ExternalProjects/TestPortal/README.md", "# Test Portal");
+
+  const add = await runExactl([
+    "portal",
+    MemoryOperation.ADD,
+    "./ExternalProjects/TestPortal",
+    portalAlias,
+    "--default-branch",
+    defaultBranch,
+    "--execution-strategy",
+    executionStrategy,
+  ], env.tempDir);
+  assertEquals(add.code, 0);
+
+  return { portalAlias, defaultBranch, executionStrategy };
+}
+
 cliTest("[regression] CLI: portal add persists default_branch and execution_strategy", async () => {
   const env = await TestEnvironment.create();
   try {
-    const portalAlias = "TestPortal";
-    const defaultBranch = "release_1.2";
-    const executionStrategy = "worktree";
-
-    // Create a dummy project to add as portal
-    await env.writeFile("ExternalProjects/TestPortal/README.md", "# Test Portal");
-
-    const add = await runExactl([
-      "portal",
-      MemoryOperation.ADD,
-      "./ExternalProjects/TestPortal",
-      portalAlias,
-      "--default-branch",
-      defaultBranch,
-      "--execution-strategy",
-      executionStrategy,
-    ], env.tempDir);
-    assertEquals(add.code, 0);
+    const { portalAlias, defaultBranch, executionStrategy } = await addWorktreePortal(env);
 
     const configText = await Deno.readTextFile(join(env.tempDir, "exa.config.toml"));
     assertStringIncludes(configText, `alias = "${portalAlias}"`);
@@ -464,23 +473,7 @@ cliTest("[regression] CLI: portal add persists default_branch and execution_stra
 Deno.test.ignore("[regression] CLI: portal show includes default_branch and execution_strategy", async () => {
   const env = await TestEnvironment.create();
   try {
-    const portalAlias = "TestPortal";
-    const defaultBranch = "release_1.2";
-    const executionStrategy = "worktree";
-
-    await env.writeFile("ExternalProjects/TestPortal/README.md", "# Test Portal");
-
-    const add = await runExactl([
-      "portal",
-      MemoryOperation.ADD,
-      "./ExternalProjects/TestPortal",
-      portalAlias,
-      "--default-branch",
-      defaultBranch,
-      "--execution-strategy",
-      executionStrategy,
-    ], env.tempDir);
-    assertEquals(add.code, 0);
+    const { portalAlias, defaultBranch, executionStrategy } = await addWorktreePortal(env);
 
     const show = await runExactl(["portal", "show", portalAlias], env.tempDir);
     assertEquals(show.code, 0);

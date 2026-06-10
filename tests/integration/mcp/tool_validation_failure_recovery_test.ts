@@ -21,24 +21,64 @@ import { EventLogger } from "@exaix/core/logger";
 import { createMockConfig } from "@exaix/testing";
 import { createStubConfig, createStubDisplay, createStubGit, createStubProvider } from "@exaix/testing";
 import { createMCPRequest } from "@exaix/mcp/testing";
+import type { DatabaseService } from "@exaix/storage-sqlite";
+
+interface IValidationServerFixture {
+  db: DatabaseService;
+  server: MCPServer;
+  stop: () => Promise<void>;
+}
+
+/** Creates a portal dir, test DB, mock config, and a started MCPServer wired with the given validator. */
+async function startValidationServer(
+  tempDir: string,
+  portalAlias: string,
+  validator: IToolResultValidator,
+): Promise<IValidationServerFixture> {
+  const portalPath = `${tempDir}/${portalAlias}`;
+  await Deno.mkdir(portalPath, { recursive: true });
+  const { db, cleanup: dbCleanup } = await initTestDbService();
+  const config = createMockConfig(tempDir, {
+    portals: [{
+      alias: portalAlias,
+      target_path: portalPath,
+      default_branch: "main",
+      identities_allowed: ["*"],
+      operations: [],
+    }],
+  });
+  const context = {
+    config: createStubConfig(config),
+    db,
+    git: createStubGit(),
+    provider: createStubProvider(),
+    display: createStubDisplay(),
+    toolRegistry: new ToolRegistry({ config }),
+  };
+  const logger = new EventLogger({ db });
+  const server = new MCPServer({
+    context,
+    transport: McpTransportType.STDIO,
+    permissions: new AllowAllPermissionsService(),
+    resultValidator: validator,
+    logger,
+  });
+  server.start();
+  return {
+    db,
+    server,
+    stop: async () => {
+      server.stop();
+      await dbCleanup();
+    },
+  };
+}
 
 Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed validation writes event to journal", async () => {
   const tempDir = await Deno.makeTempDir({ prefix: "mcp-validation-fail-closed-" });
   const portalAlias = "TestPortal";
-  const portalPath = `${tempDir}/${portalAlias}`;
 
   try {
-    await Deno.mkdir(portalPath, { recursive: true });
-    const { db, cleanup: dbCleanup } = await initTestDbService();
-    const config = createMockConfig(tempDir, {
-      portals: [{
-        alias: portalAlias,
-        target_path: portalPath,
-        default_branch: "main",
-        identities_allowed: ["*"],
-        operations: [],
-      }],
-    });
     const validator: IToolResultValidator = {
       validateEnvelope: () => null,
       validateMCPResponse: (toolName, response) => ({
@@ -51,23 +91,7 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed va
         rawResult: response as IToolResultValidationFailure["rawResult"],
       }),
     };
-    const context = {
-      config: createStubConfig(config),
-      db,
-      git: createStubGit(),
-      provider: createStubProvider(),
-      display: createStubDisplay(),
-      toolRegistry: new ToolRegistry({ config }),
-    };
-    const logger = new EventLogger({ db });
-    const server = new MCPServer({
-      context,
-      transport: McpTransportType.STDIO,
-      permissions: new AllowAllPermissionsService(),
-      resultValidator: validator,
-      logger,
-    });
-    server.start();
+    const { db, server, stop } = await startValidationServer(tempDir, portalAlias, validator);
 
     try {
       const response = await server.handleRequest(createMCPRequest("tools/call", {
@@ -82,8 +106,7 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP fail_closed va
       assertExists(event, "live MCP validation failure should emit fail_closed event");
       assertEquals(event.target, "write_file");
     } finally {
-      server.stop();
-      await dbCleanup();
+      await stop();
     }
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});
@@ -97,18 +120,6 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP recovery write
   let validationCalls = 0;
 
   try {
-    await Deno.mkdir(portalPath, { recursive: true });
-    await Deno.writeTextFile(`${portalPath}/file.txt`, "content");
-    const { db, cleanup: dbCleanup } = await initTestDbService();
-    const config = createMockConfig(tempDir, {
-      portals: [{
-        alias: portalAlias,
-        target_path: portalPath,
-        default_branch: "main",
-        identities_allowed: ["*"],
-        operations: [],
-      }],
-    });
     const validator: IToolResultValidator = {
       validateEnvelope: () => null,
       validateMCPResponse: (toolName, response) => {
@@ -127,23 +138,8 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP recovery write
         return validateMCPToolResponse(toolName, response);
       },
     };
-    const context = {
-      config: createStubConfig(config),
-      db,
-      git: createStubGit(),
-      provider: createStubProvider(),
-      display: createStubDisplay(),
-      toolRegistry: new ToolRegistry({ config }),
-    };
-    const logger = new EventLogger({ db });
-    const server = new MCPServer({
-      context,
-      transport: McpTransportType.STDIO,
-      permissions: new AllowAllPermissionsService(),
-      resultValidator: validator,
-      logger,
-    });
-    server.start();
+    const { db, server, stop } = await startValidationServer(tempDir, portalAlias, validator);
+    await Deno.writeTextFile(`${portalPath}/file.txt`, "content");
 
     try {
       const response = await server.handleRequest(createMCPRequest("tools/call", {
@@ -159,8 +155,7 @@ Deno.test("tool_validation_failure_recovery_integration: live MCP recovery write
       const payload = JSON.parse(event.payload);
       assertEquals(payload.metricName, TOOL_VALIDATION_EVENT_NORMALIZATION_SUCCESS);
     } finally {
-      server.stop();
-      await dbCleanup();
+      await stop();
     }
   } finally {
     await Deno.remove(tempDir, { recursive: true }).catch(() => {});

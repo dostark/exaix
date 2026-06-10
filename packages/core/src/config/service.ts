@@ -10,7 +10,7 @@ import { parse } from "@std/toml";
 import { dirname, isAbsolute, join } from "@std/path";
 import { crypto } from "@std/crypto";
 import { encodeHex } from "@std/encoding/hex";
-import { type Config, ConfigSchema } from "./config_schema.ts";
+import { type Config, ConfigSchema } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy } from "../types/portal.ts";
 import type { IPortalConfigEntry } from "../types/mod.ts";
 import { ExaPathDefaults } from "../types/constants.ts";

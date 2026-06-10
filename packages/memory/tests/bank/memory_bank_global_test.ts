@@ -24,8 +24,9 @@ import {
 } from "@exaix/schemas/memory_bank.ts";
 import { ConfidenceAssessmentLevel, LearningCategory, MemoryBankSource, MemoryScope, MemoryType } from "@exaix/core";
 import { MemoryStatus } from "@exaix/core/status";
-import { getMemoryGlobalDir } from "@exaix/memory/testing";
-import { createSampleLearning, createTestMemoryBankWithGlobal } from "@exaix/memory/testing";
+import { getMemoryGlobalDir } from "@exaix/testing";
+import { createSampleLearning } from "@exaix/testing";
+import { createTestMemoryBankWithGlobal } from "../helpers/memory_bank_harness.ts";
 import { DEFAULT_GLOBAL_MEMORY_VERSION } from "@exaix/core";
 
 // ===== ILearning Schema Tests =====

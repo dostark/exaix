@@ -9,6 +9,43 @@
 import type { IAgentExecutor, IFlowEventLogger, IFlowStepRequest } from "@exaix/flow";
 import type { IAgentExecutionResult } from "@exaix/execution";
 import type { JSONValue } from "@exaix/core/types";
+import type { IFlowInput } from "@exaix/schemas/flow.ts";
+import { DEFAULT_FLOW_STEP_BACKOFF_MS, FlowInputSource } from "@exaix/core";
+
+/**
+ * Steps shared by the parallel-group integration flows: a start step fanned out
+ * to two writer steps in the "writers" parallel group.
+ */
+export function makeStartAndWritersSteps(): IFlowInput["steps"] {
+  return [
+    {
+      id: "start",
+      name: "Start",
+      identity: "starter",
+      dependsOn: [],
+      input: { source: FlowInputSource.REQUEST, transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+    },
+    {
+      id: "draft-a",
+      name: "Draft A",
+      identity: "writerA",
+      dependsOn: ["start"],
+      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      parallel: { group: "writers" },
+    },
+    {
+      id: "draft-b",
+      name: "Draft B",
+      identity: "writerB",
+      dependsOn: ["start"],
+      input: { source: FlowInputSource.STEP, stepId: "start", transform: "passthrough" },
+      retry: { maxAttempts: 1, backoffMs: DEFAULT_FLOW_STEP_BACKOFF_MS },
+      parallel: { group: "writers" },
+    },
+  ];
+}
 
 export type ScriptedExecutorResponse =
   | IAgentExecutionResult

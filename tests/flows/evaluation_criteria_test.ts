@@ -129,41 +129,46 @@ Deno.test("getCriteriaByNames: returns empty array for all unknown", () => {
 // calculateWeightedScore Tests
 // ============================================================
 
-Deno.test("calculateWeightedScore: calculates simple average", () => {
-  const criteriaResults: Record<string, CriterionResult> = {
-    code_correctness: {
-      name: "code_correctness",
-      score: 0.8,
-      reasoning: "Good",
-      issues: [],
-      passed: true,
-    },
-    code_completeness: {
-      name: "code_completeness",
-      score: 0.6,
-      reasoning: "Acceptable",
-      issues: [],
-      passed: true,
-    },
-  };
+function makeCriterionResult(
+  name: string,
+  score: number,
+  reasoning: string,
+  passed: boolean,
+  issues: string[] = [],
+): CriterionResult {
+  return { name, score, reasoning, issues, passed };
+}
 
-  // Assuming both have weight 1.0
-  const criteria: EvaluationCriterion[] = [
+function makeCorrectnessCompletenessCriteria(
+  correctnessWeight: number,
+  completenessWeight: number,
+): EvaluationCriterion[] {
+  return [
     {
       name: "code_correctness",
       description: "Test",
-      weight: 1.0,
+      weight: correctnessWeight,
       required: false,
       category: EvaluationCategory.CORRECTNESS,
     },
     {
       name: "code_completeness",
       description: "Test",
-      weight: 1.0,
+      weight: completenessWeight,
       required: false,
       category: EvaluationCategory.COMPLETENESS,
     },
   ];
+}
+
+Deno.test("calculateWeightedScore: calculates simple average", () => {
+  const criteriaResults: Record<string, CriterionResult> = {
+    code_correctness: makeCriterionResult("code_correctness", 0.8, "Good", true),
+    code_completeness: makeCriterionResult("code_completeness", 0.6, "Acceptable", true),
+  };
+
+  // Assuming both have weight 1.0
+  const criteria = makeCorrectnessCompletenessCriteria(1.0, 1.0);
 
   const score = calculateWeightedScore(criteriaResults, criteria);
   assertEquals(score, 0.7); // (0.8 + 0.6) / 2
@@ -171,38 +176,11 @@ Deno.test("calculateWeightedScore: calculates simple average", () => {
 
 Deno.test("calculateWeightedScore: applies weights correctly", () => {
   const criteriaResults: Record<string, CriterionResult> = {
-    code_correctness: {
-      name: "code_correctness",
-      score: 1.0,
-      reasoning: "Perfect",
-      issues: [],
-      passed: true,
-    },
-    code_completeness: {
-      name: "code_completeness",
-      score: 0.0,
-      reasoning: "Missing",
-      issues: ["Everything missing"],
-      passed: false,
-    },
+    code_correctness: makeCriterionResult("code_correctness", 1.0, "Perfect", true),
+    code_completeness: makeCriterionResult("code_completeness", 0.0, "Missing", false, ["Everything missing"]),
   };
 
-  const criteria: EvaluationCriterion[] = [
-    {
-      name: "code_correctness",
-      description: "Test",
-      weight: 0.8,
-      required: false,
-      category: EvaluationCategory.CORRECTNESS,
-    },
-    {
-      name: "code_completeness",
-      description: "Test",
-      weight: 0.2,
-      required: false,
-      category: EvaluationCategory.COMPLETENESS,
-    },
-  ];
+  const criteria = makeCorrectnessCompletenessCriteria(0.8, 0.2);
 
   const score = calculateWeightedScore(criteriaResults, criteria);
   // (1.0 * 0.8 + 0.0 * 0.2) / (0.8 + 0.2) = 0.8
@@ -211,32 +189,11 @@ Deno.test("calculateWeightedScore: applies weights correctly", () => {
 
 Deno.test("calculateWeightedScore: handles missing results", () => {
   const criteriaResults: Record<string, CriterionResult> = {
-    code_correctness: {
-      name: "code_correctness",
-      score: 0.9,
-      reasoning: "Great",
-      issues: [],
-      passed: true,
-    },
+    code_correctness: makeCriterionResult("code_correctness", 0.9, "Great", true),
     // code_completeness is missing
   };
 
-  const criteria: EvaluationCriterion[] = [
-    {
-      name: "code_correctness",
-      description: "Test",
-      weight: 1.0,
-      required: false,
-      category: EvaluationCategory.CORRECTNESS,
-    },
-    {
-      name: "code_completeness",
-      description: "Test",
-      weight: 1.0,
-      required: false,
-      category: EvaluationCategory.COMPLETENESS,
-    },
-  ];
+  const criteria = makeCorrectnessCompletenessCriteria(1.0, 1.0);
 
   const score = calculateWeightedScore(criteriaResults, criteria);
   // Only code_correctness counted: 0.9 * 1.0 / 1.0 = 0.9

@@ -10,7 +10,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { ProviderEmbeddingService } from "@exaix/memory";
 import type { IEmbeddingProvider } from "@exaix/ai";
-import { createTestLearning } from "@exaix/memory/testing";
+import { createTestLearning } from "@exaix/testing";
 import type { Config } from "@exaix/schemas/config.ts";
 
 const TEST_VECTOR_1 = [0.1, 0.2, 0.3, 0.4, 0.5];

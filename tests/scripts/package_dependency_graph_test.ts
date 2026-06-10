@@ -20,6 +20,32 @@ import {
 } from "../../scripts/package_dependency_graph.ts";
 import type { BoundaryReport, DenoInfoJson } from "../../scripts/package_dependency_graph.ts";
 
+function fileHref(repo: string, path: string): string {
+  return toFileUrl(`${repo}/${path}`).href;
+}
+
+function dep(specifier: string): { specifier: string; code: { specifier: string } } {
+  return { specifier, code: { specifier } };
+}
+
+/** DenoInfoJson fixture: packages/core/mod.ts plus a src module importing the @exaix/core alias. */
+function makeCoreAliasInfo(repo: string, extraModules: DenoInfoJson["modules"] = []): DenoInfoJson {
+  return {
+    version: 1,
+    roots: [fileHref(repo, "src/main.ts")],
+    modules: [
+      {
+        specifier: fileHref(repo, "packages/core/mod.ts"),
+      },
+      {
+        specifier: fileHref(repo, "src/shared/types/json.ts"),
+        dependencies: [dep("@exaix/core")],
+      },
+      ...(extraModules ?? []),
+    ],
+  };
+}
+
 Deno.test("selectPackageRoot chooses the deepest matching workspace root", () => {
   const roots = ["src", "packages/core", "packages/core/src"];
   assertEquals(selectPackageRoot("packages/core/src/constants.ts", roots), "packages/core/src");
@@ -70,33 +96,12 @@ Deno.test("buildPackageGraph assembles package edges from deno info output", () 
 
 Deno.test("findCandidateSrcModules identifies src modules that import @exaix/core", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
-    version: 1,
-    roots: [toFileUrl(`${repo}/src/main.ts`).href],
-    modules: [
-      {
-        specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
-      },
-      {
-        specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href,
-        dependencies: [
-          {
-            specifier: "@exaix/core",
-            code: { specifier: "@exaix/core" },
-          },
-        ],
-      },
-      {
-        specifier: toFileUrl(`${repo}/src/shared/types/json_shim.ts`).href,
-        dependencies: [
-          {
-            specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href,
-            code: { specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href },
-          },
-        ],
-      },
-    ],
-  };
+  const info = makeCoreAliasInfo(repo, [
+    {
+      specifier: fileHref(repo, "src/shared/types/json_shim.ts"),
+      dependencies: [dep(fileHref(repo, "src/shared/types/json.ts"))],
+    },
+  ]);
 
   const report = findCandidateSrcModules(info, ["src", "packages/core"], "packages/core", {
     importAliases: { "@exaix/core": "packages/core/mod.ts" },
@@ -111,19 +116,14 @@ Deno.test("buildPackageGraph prefers canonical package aliases when import alias
   const repo = Deno.cwd();
   const info: DenoInfoJson = {
     version: 1,
-    roots: [toFileUrl(`${repo}/src/main.ts`).href],
+    roots: [fileHref(repo, "src/main.ts")],
     modules: [
       {
-        specifier: toFileUrl(`${repo}/src/main.ts`).href,
-        dependencies: [
-          {
-            specifier: "@exaix/core",
-            code: { specifier: "@exaix/core" },
-          },
-        ],
+        specifier: fileHref(repo, "src/main.ts"),
+        dependencies: [dep("@exaix/core")],
       },
       {
-        specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
+        specifier: fileHref(repo, "packages/core/mod.ts"),
       },
     ],
   };
@@ -140,24 +140,7 @@ Deno.test("buildPackageGraph prefers canonical package aliases when import alias
 
 Deno.test("findCandidateSrcModules accepts canonical package alias names", () => {
   const repo = Deno.cwd();
-  const info: DenoInfoJson = {
-    version: 1,
-    roots: [toFileUrl(`${repo}/src/main.ts`).href],
-    modules: [
-      {
-        specifier: toFileUrl(`${repo}/packages/core/mod.ts`).href,
-      },
-      {
-        specifier: toFileUrl(`${repo}/src/shared/types/json.ts`).href,
-        dependencies: [
-          {
-            specifier: "@exaix/core",
-            code: { specifier: "@exaix/core" },
-          },
-        ],
-      },
-    ],
-  };
+  const info = makeCoreAliasInfo(repo);
 
   const report = findCandidateSrcModules(info, ["src", "packages/core"], "@exaix/core", {
     importAliases: { "@exaix/core": "packages/core/mod.ts" },

@@ -20,7 +20,7 @@ import { MemoryBankService } from "@exaix/memory";
 import { initTestDbService } from "@exaix/testing";
 import type { ILearning, IProjectMemory } from "@exaix/schemas/memory_bank.ts";
 import { MemoryStatus } from "@exaix/core/status";
-import { getMemoryGlobalDir } from "@exaix/memory/testing";
+import { getMemoryGlobalDir } from "@exaix/testing";
 
 // ===== Test Setup Helpers =====
 

@@ -15,6 +15,51 @@ import { ConfigSchema } from "@exaix/schemas/config.ts";
 import { DEFAULT_MCP_VERSION } from "@exaix/mcp";
 import { ExaPathDefaults } from "@exaix/core";
 import { readFixtureTextSync } from "@exaix/testing";
+import type { JSONValue } from "@exaix/core/types";
+
+/** Loosely-typed raw config object used to exercise ConfigSchema parsing. */
+type RawConfigCandidate = Record<string, JSONValue>;
+
+/** Loads the config at configPath, asserts the basic system fields, and removes tempDir. */
+async function assertLoadsBasicSystemConfig(configPath: string, tempDir: string): Promise<void> {
+  try {
+    const service = new ConfigService(configPath);
+    const config = service.get();
+
+    assertEquals(config.system.version, "1.0.0");
+    assertEquals(config.system.log_level, "info");
+  } finally {
+    try {
+      await Deno.remove(tempDir, { recursive: true });
+    } catch {
+      // Ignore
+    }
+  }
+}
+
+/** Parses config and asserts the default provider_strategy values are present. */
+function parseAndAssertProviderStrategyDefaults(config: RawConfigCandidate): void {
+  const result = ConfigSchema.safeParse(config);
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.provider_strategy?.prefer_free, true);
+    assertEquals(result.data.provider_strategy?.allow_local, true);
+    assertEquals(result.data.provider_strategy?.max_daily_cost_usd, 5.00);
+    assertEquals(result.data.provider_strategy?.health_check_enabled, true);
+    assertEquals(result.data.provider_strategy?.fallback_enabled, true);
+  }
+}
+
+/** Parses config, asserts failure, and checks the Zod error path/message. */
+function assertParseFailsWith(config: RawConfigCandidate, pathKey: string, messagePart: string): void {
+  const result = ConfigSchema.safeParse(config);
+  assertEquals(result.success, false);
+  if (!result.success) {
+    const error = result.error.errors.find((e) => e.path.includes(pathKey));
+    assertExists(error);
+    assertStringIncludes(error.message, messagePart);
+  }
+}
 
 Deno.test("ConfigSchema accepts valid minimal config", () => {
   const validConfig = {
@@ -430,19 +475,7 @@ Deno.test("ConfigService handles edge cases", async (t) => {
       fixture_1.trim(),
     );
 
-    try {
-      const service = new ConfigService(configPath);
-      const config = service.get();
-
-      assertEquals(config.system.version, "1.0.0");
-      assertEquals(config.system.log_level, "info");
-    } finally {
-      try {
-        await Deno.remove(tempDir, { recursive: true });
-      } catch {
-        // Ignore
-      }
-    }
+    await assertLoadsBasicSystemConfig(configPath, tempDir);
   });
 
   await t.step("should handle config with extra unknown fields", async () => {
@@ -467,20 +500,8 @@ foo = "bar"
     `.trim(),
     );
 
-    try {
-      const service = new ConfigService(configPath);
-      const config = service.get();
-
-      // Should load successfully, extra fields ignored
-      assertEquals(config.system.version, "1.0.0");
-      assertEquals(config.system.log_level, "info");
-    } finally {
-      try {
-        await Deno.remove(tempDir, { recursive: true });
-      } catch {
-        // Ignore
-      }
-    }
+    // Should load successfully, extra fields ignored
+    await assertLoadsBasicSystemConfig(configPath, tempDir);
   });
 
   await t.step("should handle config with unicode in paths", async () => {
@@ -764,15 +785,7 @@ Deno.test("ConfigSchema accepts provider_strategy section", () => {
     },
   };
 
-  const result = ConfigSchema.safeParse(config);
-  assertEquals(result.success, true);
-  if (result.success) {
-    assertEquals(result.data.provider_strategy?.prefer_free, true);
-    assertEquals(result.data.provider_strategy?.allow_local, true);
-    assertEquals(result.data.provider_strategy?.max_daily_cost_usd, 5.00);
-    assertEquals(result.data.provider_strategy?.health_check_enabled, true);
-    assertEquals(result.data.provider_strategy?.fallback_enabled, true);
-  }
+  parseAndAssertProviderStrategyDefaults(config);
 });
 
 Deno.test("ConfigSchema accepts provider_strategy.fallback_chains", () => {
@@ -1060,16 +1073,8 @@ Deno.test("ConfigSchema provides defaults for provider_strategy", () => {
     paths: { ...ExaPathDefaults },
   };
 
-  const result = ConfigSchema.safeParse(config);
-  assertEquals(result.success, true);
-  if (result.success) {
-    // Check that defaults are applied
-    assertEquals(result.data.provider_strategy?.prefer_free, true);
-    assertEquals(result.data.provider_strategy?.allow_local, true);
-    assertEquals(result.data.provider_strategy?.max_daily_cost_usd, 5.00);
-    assertEquals(result.data.provider_strategy?.health_check_enabled, true);
-    assertEquals(result.data.provider_strategy?.fallback_enabled, true);
-  }
+  // Check that defaults are applied
+  parseAndAssertProviderStrategyDefaults(config);
 });
 
 Deno.test("ConfigSchema rejects unknown provider names in fallback_chains", () => {
@@ -1135,14 +1140,7 @@ Deno.test("ConfigSchema validation: rejects invalid default_model", () => {
     },
   };
 
-  const result = ConfigSchema.safeParse(config);
-  assertEquals(result.success, false);
-  if (!result.success) {
-    // Zod error path
-    const error = result.error.errors.find((e) => e.path.includes("default_model"));
-    assertExists(error);
-    assertStringIncludes(error.message, "not found");
-  }
+  assertParseFailsWith(config, "default_model", "not found");
 });
 
 Deno.test("ConfigSchema validation: rejects invalid fallback_chain target (with message check)", () => {
@@ -1159,11 +1157,5 @@ Deno.test("ConfigSchema validation: rejects invalid fallback_chain target (with 
     },
   };
 
-  const result = ConfigSchema.safeParse(config);
-  assertEquals(result.success, false);
-  if (!result.success) {
-    const error = result.error.errors.find((e) => e.path.includes("fallback_chains"));
-    assertExists(error);
-    assertStringIncludes(error.message, "unknown target");
-  }
+  assertParseFailsWith(config, "fallback_chains", "unknown target");
 });
