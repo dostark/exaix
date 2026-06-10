@@ -219,9 +219,8 @@ timeout_ms = 30000
 max_tokens = 2048
 temperature = 0.2
 
-# Three-size model presets for complexity-based routing.
-# Each provider has small/fast, medium/balanced, and large/premium tiers.
-# Used by ProviderSelector via [provider_strategy.task_routing].
+# Three-size model presets for complexity-based routing via
+# [provider_strategy.task_routing].
 #
 # Provider   Small              Medium               Large
 # ────────   ─────              ──────               ─────
@@ -230,7 +229,13 @@ temperature = 0.2
 # Google     gemini-flash-*     gemini-pro-*         gemini-ultra-*
 #
 # For OpenRouter, each size maps to a router model ID:
-#   e.g. "openrouter" + "qwen-2.5-7b" (small) / "deepseek-v3" (medium) / "anthropic/claude-opus-*" (large)
+#   e.g. "openrouter" + "qwen-2.5-7b" (small) / "deepseek-v3" (medium) /
+#        "anthropic/claude-opus-*" (large)
+#
+# Note [models.fast] below serves a different purpose — it is used by
+# RequestAnalyzer for request clarification calls (DEFAULT_CLARIFICATION_MODEL_KEY).
+# It happens to match [models.small] here for simplicity but is independently
+# configurable.
 
 [models.small]
 provider = "anthropic"
