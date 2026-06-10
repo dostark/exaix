@@ -22,6 +22,8 @@ import { CostTracker } from "@exaix/core/cost";
 import type { DatabaseService } from "@exaix/storage-sqlite";
 import type { Config } from "@exaix/schemas/config.ts";
 import type { IApplicationContext } from "@exaix/core/types";
+import type { IFlowRunner } from "@exaix/flow";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 import {
   createStubConfig,
   createStubDisplay,
@@ -102,7 +104,7 @@ describe("RequestProcessor", () => {
   let processorConfig: IRequestProcessorConfig;
   let cleanup: () => Promise<void>;
   let costTracker: CostTracker;
-  let createProcessor: (provider?: IModelProvider) => RequestProcessor;
+  let createProcessor: (provider?: IModelProvider, flowRunner?: IFlowRunner) => RequestProcessor;
 
   beforeEach(async () => {
     // Initialize database with initTestDbService (creates temp dir with activity table)
@@ -143,7 +145,7 @@ describe("RequestProcessor", () => {
       strengths: ["fast", "reliable", "deterministic"],
     });
 
-    createProcessor = (provider?: IModelProvider) => {
+    createProcessor = (provider?: IModelProvider, flowRunner?: IFlowRunner) => {
       const context: IApplicationContext = {
         config: createStubConfig(config),
         db,
@@ -156,6 +158,7 @@ describe("RequestProcessor", () => {
         context,
         testProvider: provider,
         costTracker,
+        flowRunner,
       });
     };
   });
@@ -576,6 +579,48 @@ Conflicting request.`;
 
       const result = await processor.process(requestPath);
       assertEquals(result, null, "Should reject conflicting flow/agent fields");
+    });
+
+    it("should delegate flow requests to FlowRunner when configured", async () => {
+      const { traceId, requestPath } = createTestRequestPath(testDir);
+      let flowRunnerCalled = false;
+
+      const mockFlowRunner: IFlowRunner = {
+        execute(
+          _flow: IFlow,
+          _request: { userPrompt: string; traceId?: string; requestId?: string },
+        ) {
+          flowRunnerCalled = true;
+          return Promise.resolve({
+            flowRunId: "test-run",
+            success: true,
+            stepResults: new Map<string, never>(),
+            output: "Flow executed successfully",
+            duration: 100,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          });
+        },
+      };
+
+      const requestContent = `---
+trace_id: "${traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: high
+flow: code-review
+source: cli
+created_by: "test@example.com"
+---
+
+Review this pull request for security issues.`;
+
+      await Deno.writeTextFile(requestPath, requestContent);
+
+      const processor = createProcessor(undefined, mockFlowRunner);
+      await processor.process(requestPath);
+
+      assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
     });
   });
 });

@@ -225,9 +225,10 @@ For analysis mode details, data flow steps, and hardening additions, see `packag
     "File Watcher triggers RequestProcessor",
     "RequestProcessor validates and initializes context",
     "RequestAnalyzer extracts intent and requirements",
-    "RequestRouter selects Agent or Flow runner",
-    "Agent/Flow Runner generates Plan via AI Provider",
-    "PlanAdapter materializes Plan to Workspace/Plans",
+    "RequestProcessor routes internally: agent requests to AgentRunner, flow requests to FlowRunner",
+    "AgentRunner executes agent task and generates Plan via AI Provider (ProviderFactory chain)",
+    "FlowRunner executes multi-agent flow with declared/dynamic steps via AgentExecutorAdapter",
+    "PlanWriter materializes Plan to Workspace/Plans",
     "FlowRunner pauses on failing quality gates, creating durable wait states for operator resolution",
     "Operator approves, rejects, or amends wait states via `exactl wait` CLI commands",
     "Activity Journal records lifecycle events (including wait-state events)"

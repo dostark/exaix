@@ -21,10 +21,10 @@ topics: ["planning", "architecture", "tdd"]
 
 | File | Role | Status |
 |------|------|--------|
-| `packages/flow/src/flow_runner.ts` | Multi-agent flow orchestrator | Complete, UNWIRED |
-| `packages/request/src/processor.ts:569-625` | Flow request handler (stub plan) | BROKEN — writes dead stub |
-| `packages/request/src/router.ts` | Request routing hub | UNWIRED |
-| `apps/daemon/main.ts:278-286` | Production execution loop | Uses ExecutionLoop only |
+| `packages/flow/src/flow_runner.ts` | Multi-agent flow orchestrator | ✅ WIRED in daemon |
+| `packages/request/src/processor.ts:569-625` | Flow request handler | ✅ Delegates to FlowRunner when configured |
+| `packages/request/src/router.ts` | Request routing hub | Still not wired (separate concern) |
+| `apps/daemon/main.ts:278-286` | Production execution loop | Now also creates FlowRunner for flow requests |
 | `packages/flow/src/dynamic_step_executor.ts` | ReAct engine for dynamic steps | Uses LlmClient → ProviderFactory ✅ |
 | `packages/ai/src/llm_client.ts` | Provider resolution for dynamic steps | Now uses ProviderFactory ✅ |
 
