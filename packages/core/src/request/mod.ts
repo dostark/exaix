@@ -6,6 +6,6 @@
  * @description Shim module for request-related core exports.
  */
 
-export * from "./request.ts";
+export * from "../types/request.ts";
 export * from "./request_frontmatter.ts";
 export * from "./retry_policy.ts";
