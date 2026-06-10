@@ -371,23 +371,12 @@ Then provide an overall assessment.
 
 ### Required Output Format
 
-Respond with valid JSON only:
+Respond with valid JSON only — no markdown fences, no extra text:
 
-\`\`\`json
 {
-  "overallScore": 0.85,
-  "criteriaScores": {
-    "criterion_name": {
-      "name": "criterion_name",
-      "score": 0.9,
-      "reasoning": "Brief explanation",
-      "issues": ["issue 1", "issue 2"],
-      "passed": true
-    }
-  },
-  "pass": true,
-  "feedback": "Overall assessment summary",
-  "suggestions": ["suggestion 1", "suggestion 2"]
-}
-\`\`\``;
+  "score": 0.85,
+  "reasoning": "Brief explanation of the score",
+  "issues": ["issue 1", "issue 2"],
+  "passed": true
+}`;
 }

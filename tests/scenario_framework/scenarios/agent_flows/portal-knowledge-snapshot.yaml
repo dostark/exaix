@@ -14,10 +14,12 @@ steps:
     command: "portal analyze portal-sample-app"
     input_criteria:
       - id: "portal-available"
+        score_weight: 0.4
         kind: "portal-mounted"
         alias: "portal-sample-app"
     output_criteria:
       - id: "portal-analyze-exit-code"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
   - id: "knowledge-artifact"
@@ -25,5 +27,6 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "knowledge-json-found"
+        score_weight: 0.5
         kind: "file-found"
         path_pattern: "Memory/Projects/*/knowledge.json"

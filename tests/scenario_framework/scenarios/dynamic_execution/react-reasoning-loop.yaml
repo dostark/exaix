@@ -18,6 +18,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "portal-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-ts-project"
 
@@ -29,6 +30,7 @@ steps:
     checkpoint: true
     output_criteria:
       - id: "flow-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -39,10 +41,12 @@ steps:
     args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--action", "dynamic_step_event", "--format", "json"]
     output_criteria:
       - id: "multiple-iterations"
+        score_weight: 0.6
         kind: "json-query"
         query: "length"
         min: 3
       - id: "tool-calls-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].tool_name"
         unique_count_min: 2
@@ -55,6 +59,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "dynamic-step-completed"
+        score_weight: 0.6
         kind: "json-query"
         query: ".steps[?@.execution_mode=='dynamic'].completed"
         equals: true

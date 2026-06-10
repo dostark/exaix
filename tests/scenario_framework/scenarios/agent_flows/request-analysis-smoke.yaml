@@ -21,6 +21,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "request-command-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
   - id: "analysis-artifact"
@@ -30,5 +31,6 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "analysis-file-found"
+        score_weight: 0.5
         kind: "file-found"
         path_pattern: "**/*_analysis.json"

@@ -27,6 +27,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: request-created
+        score_weight: 0.7
         kind: command-exit-code
         equals: 0
 
@@ -38,6 +39,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: analysis-file-created
+        score_weight: 0.5
         kind: file-found
         path_pattern: "**/*_analysis.json"
 
@@ -47,10 +49,12 @@ steps:
     file_pattern: "**/*_analysis.json"
     input_criteria:
       - id: analysis-file-exists
+        score_weight: 0.4
         kind: file-found
         path_pattern: "**/*_analysis.json"
     output_criteria:
       - id: verify-goal-extraction
+        score_weight: 0.8
         kind: json-path-equals
         path: "$.goals[0].description"
         equals: "Analyze the core architecture of the Exaix Scenario Framework"
@@ -62,5 +66,6 @@ steps:
     input_criteria: []
     output_criteria:
       - id: event-logged
+        score_weight: 0.6
         kind: journal-event-exists
         event_type: "request.analyzed"

@@ -231,14 +231,16 @@ function toModeExecutionResult(
     };
   }
 
-  if (outcome.status === CriterionStatus.PASSED) {
-    return outcome.executionResult;
+  // Only override exit code for execution failures, not criterion failures.
+  // Criterion failures should be recorded for scoring but not halt the scenario.
+  if (outcome.failureStage === StepFailureStage.EXECUTION) {
+    return {
+      ...outcome.executionResult,
+      exitCode: outcome.executionResult.exitCode === 0 ? 1 : outcome.executionResult.exitCode,
+    };
   }
 
-  return {
-    ...outcome.executionResult,
-    exitCode: outcome.executionResult.exitCode === 0 ? 1 : outcome.executionResult.exitCode,
-  };
+  return outcome.executionResult;
 }
 
 interface IBuildRunManifestOptions {

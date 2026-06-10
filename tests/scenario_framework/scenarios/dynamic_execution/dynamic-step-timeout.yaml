@@ -16,6 +16,7 @@ steps:
     expect_failure: true
     output_criteria:
       - id: "timeout-error"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["timeout", "max iterations"]
 
@@ -26,6 +27,7 @@ steps:
     args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
     output_criteria:
       - id: "some-events-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: "length"
         min: 1

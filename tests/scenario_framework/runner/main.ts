@@ -130,7 +130,7 @@ await new Command()
         if (result.manifest.outcome !== "success" && result.manifest.outcome !== "paused") {
           reportScenarioFailure(result);
           hasFailure = true;
-          if (runtimeConfig.mode === ScenarioExecutionMode.AUTO) {
+          if (runtimeConfig.mode === ScenarioExecutionMode.AUTO && !options.evalMode) {
             console.error(`Scenario ${entry.id} failed in AUTO mode. Halting.`);
             break;
           }

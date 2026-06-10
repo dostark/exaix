@@ -18,6 +18,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "portal-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-ts-project"
 
@@ -28,10 +29,12 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "flow-file-exists"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "fixtures/flows/dynamic_execution/explore.flow.yaml"
     output_criteria:
       - id: "flow-execution-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -42,10 +45,12 @@ steps:
     args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
     output_criteria:
       - id: "tool-calls-logged"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
         contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
       - id: "trace-id-present"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].trace_id"
         not_empty: true
@@ -58,6 +63,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "dynamic-step-completed"
+        score_weight: 0.6
         kind: "json-query"
         query: ".steps[?@.execution_mode=='dynamic'].completed"
         equals: true

@@ -537,7 +537,7 @@ const fixCommand = new Command()
   });
 
 const scenariosCommand = new Command()
-  .description("Run scenario framework validation")
+  .description("Run scenario framework validation (deploy sandbox + run integration packs)")
   .option("-p, --profile <profile:string>", "Scenario profile to run", { default: "ci-smoke" })
   .option("--workspace <path:string>", "Optional workspace override")
   .action(async (options) => {
@@ -613,11 +613,9 @@ strategy = "pattern"
     if (!deploySuccess) Deno.exit(1);
 
     // 4. Create dummy portals and mount them
-    // Create portal-sample-app directory if it doesn't exist (required for some scenarios)
     const samplePortalDir = "/tmp/portal-sample-app";
     try {
       await Deno.mkdir(samplePortalDir, { recursive: true });
-      // Minor hack: also ensure a .git dir exists so exactl thinks it's a repo
       await Deno.mkdir(join(samplePortalDir, ".git"), { recursive: true });
       console.log(`✅ Created dummy portal at: ${samplePortalDir}`);
     } catch {
@@ -627,7 +625,6 @@ strategy = "pattern"
     const configPath = join(workspaceDest, "exa.config.toml");
     const portalEnv = { ...Deno.env.toObject(), EXA_CONFIG_PATH: configPath };
 
-    // 3. Initialize Database Schema
     console.log("🗄️ Initializing database...");
     await run(
       [
@@ -642,7 +639,6 @@ strategy = "pattern"
     );
 
     console.log("🔗 Mounting portals...");
-    // Mount portal-sample-app
     await run(
       [
         "deno",
@@ -658,7 +654,6 @@ strategy = "pattern"
       { env: portalEnv },
     );
 
-    // Mount portal-exaix pointing to THIS repo
     await run(
       [
         "deno",
@@ -675,7 +670,6 @@ strategy = "pattern"
     );
 
     // 5. Run Scenarios with Mock AI Provider
-    // We set EXA_LLM_PROVIDER=mock to ensure no real LLM calls are made in CI
     const env = {
       ...Deno.env.toObject(),
       EXA_LLM_PROVIDER: "mock",
@@ -701,7 +695,6 @@ strategy = "pattern"
       ],
       env: {
         ...env,
-        // Inform the scenario runner how to run exactl
         EXA_BIN_PATH: binDir,
       },
       stdout: "inherit",
@@ -715,6 +708,56 @@ strategy = "pattern"
       console.log(`✅ Scenarios passed: ${options.profile} in ${duration}ms`);
     } else {
       console.error(`❌ Scenarios failed: ${options.profile} (Exit code: ${code})`);
+      Deno.exit(1);
+    }
+  });
+
+const evalCommand = new Command()
+  .description("Run self-contained evaluation packs (no sandbox deploy needed)")
+  .option("-t, --threshold <threshold:number>", "Minimum suite score to pass", { default: 0.5 })
+  .option("--anthropic", "Include LLM-calling packs (requires ANTHROPIC_API_KEY)", { default: false })
+  .action(async (options) => {
+    console.log("🧪 Running self-contained evaluation packs...");
+    const start = Date.now();
+
+    const baseArgs = [
+      "deno",
+      "run",
+      "-A",
+      "apps/exactl/main.ts",
+      "eval",
+      "run",
+    ];
+
+    const packs = ["blueprint-eval", "eval-smoke", "eval-edge-cases"];
+
+    if (options.anthropic) {
+      packs.push(
+        "agent_flows",
+        "dynamic_execution",
+        "framework_test",
+        "integration_e2e",
+        "mcp_tools_extended",
+        "smoke",
+      );
+    }
+
+    for (const pack of packs) {
+      baseArgs.push("--pack", pack);
+    }
+    baseArgs.push("--score-threshold", String(options.threshold));
+
+    const desc = options.anthropic
+      ? `Eval: all packs with Anthropic LLM (threshold: ${options.threshold})`
+      : `Eval: ${packs.join(" + ")} (threshold: ${options.threshold})`;
+
+    const success = await run(baseArgs, desc);
+
+    const duration = Date.now() - start;
+    if (success) {
+      console.log(`✅ Eval passed (threshold: ${options.threshold}) in ${duration}ms`);
+    } else {
+      console.error(`❌ Eval failed (threshold: ${options.threshold})`);
       Deno.exit(1);
     }
   });
@@ -736,4 +779,5 @@ await new Command()
   .command("all", allCommand)
   .command("fix", fixCommand)
   .command("scenarios", scenariosCommand)
+  .command("eval", evalCommand)
   .parse(Deno.args);

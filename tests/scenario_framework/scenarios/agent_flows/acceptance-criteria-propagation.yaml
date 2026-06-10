@@ -13,10 +13,12 @@ steps:
     args: ["--file", "$REQUEST_FIXTURE"]
     input_criteria:
       - id: "request-fixture-exists"
+        score_weight: 0.4
         kind: "file-exists"
         path: "$REQUEST_FIXTURE"
     output_criteria:
       - id: "request-create-exit-code"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
   - id: "wait-for-analysis"
@@ -30,9 +32,11 @@ steps:
     file_pattern: "**/*_analysis.json"
     input_criteria:
       - id: "analysis-json-available"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "**/*_analysis.json"
     output_criteria:
       - id: "goal-propagation-present"
+        score_weight: 0.8
         kind: "json-path-exists"
         path: "$.goals[0]"

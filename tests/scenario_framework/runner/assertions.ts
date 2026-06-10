@@ -685,6 +685,7 @@ function buildPassedResult(
     status: CriterionStatus.PASSED,
     message: options.criterion.message ?? `${options.criterion.id} passed`,
     evidence_refs: evidenceRefs,
+    score_weight: options.criterion.score_weight,
   };
 }
 
@@ -701,6 +702,7 @@ function buildFailedResult(
     evidence_refs: failure.evidenceRefs ?? [],
     observed_value: failure.observedValue,
     expected_value: failure.expectedValue,
+    score_weight: options.criterion.score_weight,
   };
 }
 
@@ -1211,6 +1213,10 @@ async function evaluateLlmJudgeCriterion(
 }
 
 async function callLlmEndpoint(prompt: string): Promise<string> {
+  const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (anthropicKey) {
+    return callAnthropicEndpoint(prompt, anthropicKey);
+  }
   const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "http://127.0.0.1:11434/api/generate";
   const model = Deno.env.get("EXA_LLM_MODEL") ?? "llama3";
   try {
@@ -1223,6 +1229,34 @@ async function callLlmEndpoint(prompt: string): Promise<string> {
     return data.response ?? JSON.stringify(data);
   } catch (error) {
     throw new Error(`LLM call failed: ${(error as Error).message}`);
+  }
+}
+
+async function callAnthropicEndpoint(prompt: string, apiKey: string): Promise<string> {
+  const endpoint = Deno.env.get("EXA_LLM_ENDPOINT") ?? "https://api.anthropic.com/v1/messages";
+  const model = Deno.env.get("EXA_LLM_MODEL") ?? "claude-haiku-4-5-20251001";
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`Anthropic API error: ${data.error?.message ?? response.statusText}`);
+    }
+    const text = data.content?.[0]?.text ?? JSON.stringify(data);
+    return text;
+  } catch (error) {
+    throw new Error(`Anthropic LLM call failed: ${(error as Error).message}`);
   }
 }
 

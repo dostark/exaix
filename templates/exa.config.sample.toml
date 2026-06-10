@@ -130,9 +130,9 @@ target_path = "/home/me/projects/my-repo"
 #   - gemini-2.5-flash (Stable 2025 release)
 # ---------------------------------------------------------------------------
 [ai]
-provider = "google"     # Overridden by EXA_LLM_PROVIDER
+provider = "anthropic"     # Overridden by EXA_LLM_PROVIDER
 # Provider-specific model name (optional)
-model = "gemini-flash-latest"    # Overridden by EXA_LLM_MODEL
+model = "claude-haiku-4-5-20251001"    # Overridden by EXA_LLM_MODEL
 # Base URL for custom provider endpoints (optional)
 base_url = ""           # Overridden by EXA_LLM_BASE_URL
 # Request timeout (ms)
@@ -213,15 +213,15 @@ site_url = "https://exaix.dev"
 # ---------------------------------------------------------------------------
 
 [models.default]
-provider = "google"
-model = "gemini-flash-latest"
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
 timeout_ms = 30000         # Request timeout for this model preset
 max_tokens = 2048
 temperature = 0.2
 
 [models.fast]
-provider = "google"
-model = "gemini-flash-latest"
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
 timeout_ms = 15000         # Faster timeout for quick responses
 
 [models.local]

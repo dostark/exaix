@@ -16,6 +16,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "base-dir-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-project/src"
 
@@ -26,6 +27,7 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "flow-execution-succeeded"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -36,6 +38,7 @@ steps:
     args: ["-d", "/tmp/sample-project/src/modules/new-feature/components"]
     output_criteria:
       - id: "nested-dirs-created"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -46,6 +49,7 @@ steps:
     args: ["-p", "/tmp/sample-project/src/modules/new-feature/components"]
     output_criteria:
       - id: "idempotent-success"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 

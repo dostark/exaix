@@ -38,5 +38,6 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "budget-compacted-event-present"
+        score_weight: 0.6
         kind: "journal-event-exists"
         event_type: "context.budget.compacted"

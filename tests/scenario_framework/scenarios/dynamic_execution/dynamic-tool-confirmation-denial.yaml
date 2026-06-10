@@ -14,6 +14,7 @@ steps:
     args: ["run", "-A", "--config", "$FRAMEWORK_HOME/../../deno.json", "$FRAMEWORK_HOME/../../scripts/setup_db.ts"]
     output_criteria:
       - id: "db-ready"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -32,6 +33,7 @@ steps:
       ]
     output_criteria:
       - id: "confirmation-seeded"
+        score_weight: 0.5
         kind: "command-output-contains"
         contains: ["seeded", "123e4567-e89b-42d3-a456-426614174000", "exaix_create_request"]
 
@@ -42,6 +44,7 @@ steps:
     args: ["pending"]
     output_criteria:
       - id: "pending-entry-visible"
+        score_weight: 0.5
         kind: "command-output-contains"
         contains: ["123e4567-e89b-42d3-a456-426614174000", "exaix_create_request", "dynamic-create-request"]
 
@@ -52,6 +55,7 @@ steps:
     args: ["deny", "123e4567-e89b-42d3-a456-426614174000", "--reason", "Denied by scenario framework"]
     output_criteria:
       - id: "denial-confirmed"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["Tool confirmation denied", "123e4567-e89b-42d3-a456-426614174000"]
 
@@ -62,5 +66,6 @@ steps:
     args: ["pending"]
     output_criteria:
       - id: "no-pending-left"
+        score_weight: 0.7
         kind: "command-output-contains"
         contains: ["No pending tool confirmations."]

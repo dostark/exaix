@@ -1,0 +1,22 @@
+schema_version: "1.0.0"
+id: "eval-edge-zero-weight"
+title: "Zero-weight criteria — verifies score_weight: 0 contribution"
+pack: "eval-edge-cases"
+tags: ["eval", "scoring", "edge"]
+request_fixture: "fixtures/requests/eval-edge-cases/zero-weight-criteria.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "create-file"
+    type: "shell"
+    command: "sh"
+    args:
+      - "-c"
+      - |
+          echo "test" > $WORKSPACE_ROOT/edge-test.txt
+    input_criteria: []
+    output_criteria:
+      - id: "zero-weight"
+        kind: "file-exists"
+        path: "edge-test.txt"
+        score_weight: 0

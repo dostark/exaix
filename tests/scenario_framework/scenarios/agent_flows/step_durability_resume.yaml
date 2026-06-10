@@ -50,6 +50,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "step2-skipped-by-reuse-event"
+        score_weight: 0.6
         kind: "journal-event-exists"
         event_type: "flow.step.skipped_by_reuse"
 

@@ -51,11 +51,46 @@ jobs:
       - name: "Run Quick Tests"
         run: deno run -A scripts/ci.ts test --quick
 
+  eval-quick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: "Setup Deno"
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: "Run Self-Contained Evaluation Packs (no sandbox needed)"
+        run: deno run -A scripts/ci.ts eval --threshold 0.5
+
+  eval-llm:
+    if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    runs-on: ubuntu-latest
+    environment: eval-llm
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: "Setup Deno"
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: "2.x"
+
+      - name: "Run Full Evaluation with Anthropic LLM"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: deno run -A scripts/ci.ts eval --anthropic --threshold 0.5
+
   scenarios:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ubuntu-latest
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4

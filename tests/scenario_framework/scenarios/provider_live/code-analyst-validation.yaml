@@ -22,10 +22,12 @@ steps:
       - "$REQUEST_FIXTURE"
     input_criteria:
       - id: "request-fixture-exists"
+        score_weight: 0.4
         kind: "file-exists"
         path: "$REQUEST_FIXTURE"
     output_criteria:
       - id: "request-created"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
   - id: "wait-for-plan"
@@ -35,6 +37,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "plan-json-found"
+        score_weight: 0.5
         kind: "file-found"
         path_pattern: "**/*_analysis.json"
   - id: "validate-analysis-content"
@@ -42,12 +45,15 @@ steps:
     file_pattern: "**/*_analysis.json"
     input_criteria:
       - id: "analysis-found"
+        score_weight: 0.4
         kind: "file-found"
         path_pattern: "**/*_analysis.json"
     output_criteria:
       - id: "has-goals"
+        score_weight: 0.8
         kind: "json-path-exists"
         path: "$.goals"
       - id: "has-complexity"
+        score_weight: 0.6
         kind: "json-path-exists"
         path: "$.complexity"

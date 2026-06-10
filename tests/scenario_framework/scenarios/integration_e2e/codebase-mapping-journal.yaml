@@ -20,6 +20,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "project-created"
+        score_weight: 0.4
         kind: "dir-exists"
         path: "/tmp/sample-project"
 
@@ -30,6 +31,7 @@ steps:
     args: ["run", "$FLOW_FIXTURE", "--request", "$REQUEST_FIXTURE"]
     output_criteria:
       - id: "flow-completed"
+        score_weight: 0.7
         kind: "command-exit-code"
         equals: 0
 
@@ -40,14 +42,17 @@ steps:
     args: ["query", "--trace-id", "$FLOW_TRACE_ID", "--format", "json"]
     output_criteria:
       - id: "multiple-events"
+        score_weight: 0.6
         kind: "json-query"
         query: "length"
         min: 3
       - id: "all-have-trace-id"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].trace_id"
         not_empty: true
       - id: "tool-calls-present"
+        score_weight: 0.6
         kind: "json-query"
         query: ".[].action_type"
         contains: ["mcp.tool.read_file", "mcp.tool.list_directory"]
@@ -60,6 +65,7 @@ steps:
     input_criteria: []
     output_criteria:
       - id: "dynamic-step-completed"
+        score_weight: 0.6
         kind: "json-query"
         query: ".steps[?@.execution_mode=='dynamic'].completed"
         equals: true
