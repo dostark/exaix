@@ -1,0 +1,17 @@
+schema_version: "1.0.0"
+id: "flowrunner-execution"
+title: "FlowRunner executes flow request and produces a plan"
+pack: "agent_flows"
+tags: ["smoke"]
+request_fixture: "fixtures/requests/agent_flows/flowrunner_execution.md"
+mode_support: ["auto"]
+portals: []
+steps:
+  - id: "submit-flow-request"
+    type: "exactl"
+    args: ["request", "--file", "$REQUEST_FIXTURE"]
+    output_criteria:
+      - id: "plan-produced"
+        kind: "file-found"
+        pattern: "**/_plan.md"
+        score_weight: 1.0
