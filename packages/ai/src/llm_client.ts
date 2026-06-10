@@ -6,10 +6,12 @@
  * @related-files [packages/flow/src/dynamic_step_executor.ts, packages/ai/src/providers.ts]
  */
 import type { ILlmClient, ToolArgs } from "./types.ts";
-import type { Config, IBlueprintFrontmatter } from "@exaix/schemas";
+import type { IBlueprintFrontmatter } from "@exaix/schemas";
+import { type Config, ConfigSchema } from "@exaix/schemas";
 
 import { McpToolName, ReActActionType } from "@exaix/core";
-import { ModelFactory } from "./providers.ts";
+import { ProviderFactory } from "./provider_factory.ts";
+import type { IModelProvider } from "./types.ts";
 
 import { z } from "zod";
 import type { JSONValue } from "@exaix/core";
@@ -65,7 +67,55 @@ Respond in JSON format:
 `;
 
 export class LlmClient implements ILlmClient {
-  constructor(private readonly config?: Config) {}
+  constructor(
+    private readonly config?: Config,
+    private readonly testProvider?: IModelProvider,
+  ) {}
+
+  /**
+   * Parse a blueprint model string into provider and model components.
+   * Supports formats: "provider:model", "gpt-*" (implicit OpenAI), plain model name.
+   */
+  private static parseModelString(model: string | undefined): { provider?: string; model?: string } {
+    if (!model) return {};
+
+    if (model.includes(":")) {
+      const [provider, ...rest] = model.split(":");
+      return { provider: provider.trim().toLowerCase(), model: rest.join(":").trim() };
+    }
+
+    const normalized = model.trim();
+    if (normalized.startsWith("gpt-")) {
+      return { provider: "openai", model: normalized };
+    }
+
+    return { model: normalized };
+  }
+
+  /**
+   * Resolve an IModelProvider from the blueprint model string.
+   * Blueprint overrides (provider:model) take priority over env/config.
+   * Falls back to the standard ProviderFactory resolution when no model is specified.
+   */
+  private async resolveProvider(model?: string): Promise<IModelProvider> {
+    const overrides = LlmClient.parseModelString(model);
+
+    // Scoped env var override so blueprint model takes priority
+    const oldProvider = Deno.env.get("EXA_LLM_PROVIDER");
+    const oldModel = Deno.env.get("EXA_LLM_MODEL");
+    if (overrides.provider) Deno.env.set("EXA_LLM_PROVIDER", overrides.provider);
+    if (overrides.model) Deno.env.set("EXA_LLM_MODEL", overrides.model);
+
+    try {
+      const config = this.config ?? ConfigSchema.parse({});
+      return await ProviderFactory.createByName(config, "default");
+    } finally {
+      if (oldProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", oldProvider);
+      else Deno.env.delete("EXA_LLM_PROVIDER");
+      if (oldModel !== undefined) Deno.env.set("EXA_LLM_MODEL", oldModel);
+      else Deno.env.delete("EXA_LLM_MODEL");
+    }
+  }
 
   async reasonNextAction(params: {
     identity: IBlueprintFrontmatter;
@@ -86,8 +136,7 @@ export class LlmClient implements ILlmClient {
   }> {
     const { identity, stepObjective, accumulatedContext, availableTools, iteration, maxIterations } = params;
 
-    const providerModel = identity.model ?? "gpt-4o";
-    const provider = await ModelFactory.create(providerModel, this.config?.models?.[providerModel]);
+    const provider = this.testProvider ?? await this.resolveProvider(identity.model);
 
     // Provide detailed tools description with JSON schemas
     const toolsDesc = availableTools
