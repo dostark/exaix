@@ -70,6 +70,7 @@ export class LlmClient implements ILlmClient {
   constructor(
     private readonly config?: Config,
     private readonly testProvider?: IModelProvider,
+    private readonly defaultModel: string = "default",
   ) {}
 
   /**
@@ -108,7 +109,7 @@ export class LlmClient implements ILlmClient {
 
     try {
       const config = this.config ?? ConfigSchema.parse({});
-      return await ProviderFactory.createByName(config, "default");
+      return await ProviderFactory.createByName(config, this.defaultModel);
     } finally {
       if (oldProvider !== undefined) Deno.env.set("EXA_LLM_PROVIDER", oldProvider);
       else Deno.env.delete("EXA_LLM_PROVIDER");

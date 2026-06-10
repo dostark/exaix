@@ -1,0 +1,120 @@
+/**
+ * @module FlowRunnerExecutionIntegrationTest
+ * @path tests/integration/109_flowrunner_execution_test.ts
+ * @description Integration test: flow request → RequestProcessor delegates to
+ * FlowRunner when configured in processor config.
+ */
+
+import { assert } from "@std/assert";
+import { join } from "@std/path";
+import {
+  createStubConfig,
+  createStubDisplay,
+  createStubGit,
+  createStubProvider,
+  getWorkspaceDir,
+  getWorkspaceRequestsDir,
+  initTestDbService,
+} from "@exaix/testing";
+import { ProviderRegistry } from "@exaix/ai";
+import { MockProviderFactory } from "@exaix/ai/factories/mock_factory.ts";
+import { PricingTier, ProviderCostTier } from "@exaix/core";
+import { RequestProcessor } from "@exaix/request";
+import { CostTracker } from "@exaix/core/cost";
+import type { IApplicationContext } from "@exaix/core/types";
+import type { IFlowRunner } from "@exaix/flow";
+import type { IFlow } from "@exaix/schemas/flow.ts";
+
+Deno.test({
+  name: "[integration] Flow request delegates to FlowRunner when configured",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    const { db, config, tempDir, cleanup } = await initTestDbService();
+    ProviderRegistry.registerWithMetadata("mock", new MockProviderFactory(), {
+      name: "mock",
+      costTier: ProviderCostTier.FREE,
+      pricingTier: PricingTier.FREE,
+      capabilities: ["chat"],
+      description: "Mock provider for testing",
+      strengths: ["fast", "reliable", "deterministic"],
+    });
+
+    try {
+      const identitiesDir = join(tempDir, "Blueprints", "Identities");
+      const requestsDir = getWorkspaceRequestsDir(tempDir);
+      await Deno.mkdir(identitiesDir, { recursive: true });
+      await Deno.mkdir(requestsDir, { recursive: true });
+
+      await Deno.writeTextFile(
+        join(identitiesDir, "default.md"),
+        `---
+identity_id: "default"
+name: "Default Agent"
+model: "mock:gpt-5.2-pro"
+---\nYou are a helpful assistant.`,
+      );
+
+      let flowRunnerCalled = false;
+      const mockFlowRunner: IFlowRunner = {
+        execute(
+          _flow: IFlow,
+          _request: { userPrompt: string; traceId?: string; requestId?: string },
+        ) {
+          flowRunnerCalled = true;
+          return Promise.resolve({
+            flowRunId: "test-run",
+            success: true,
+            stepResults: new Map<string, never>(),
+            output: "Flow execution result",
+            duration: 50,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          });
+        },
+      };
+
+      const provider = createStubProvider();
+      const costTracker = new CostTracker(db, config);
+      const context: IApplicationContext = {
+        config: createStubConfig(config),
+        db,
+        provider,
+        git: createStubGit(),
+        display: createStubDisplay(db),
+      };
+
+      const requestProcessor = new RequestProcessor({
+        workspacePath: getWorkspaceDir(tempDir),
+        requestsDir,
+        blueprintsPath: identitiesDir,
+        includeReasoning: true,
+        context,
+        costTracker,
+        flowRunner: mockFlowRunner,
+      });
+
+      const traceId = crypto.randomUUID();
+      const requestPath = join(requestsDir, `${traceId}.md`);
+      await Deno.writeTextFile(
+        requestPath,
+        `---
+trace_id: "${traceId}"
+created: "${new Date().toISOString()}"
+status: pending
+priority: high
+flow: code-review
+source: cli
+created_by: "test@example.com"
+---
+
+Review pull request #42.`,
+      );
+
+      await requestProcessor.process(requestPath);
+      assert(flowRunnerCalled, "FlowRunner.execute should be called for flow requests");
+    } finally {
+      await cleanup();
+    }
+  },
+});

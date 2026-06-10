@@ -4,43 +4,15 @@
  * @path packages/ai/tests/providers/model_adapter_test.ts
  * @related-files []
  * @architectural-layer AI
- * @description Verifies the ModelAdapter logic, ensuring it correctly wraps various
- * LLM providers and handles response configuration overrides.
+ * @description Verifies provider correctness for MockProvider and OllamaProvider.
  */
 
 import { assertEquals, assertExists, assertRejects, assertStringIncludes } from "@std/assert";
-import { OLLAMA_PROVIDER_METADATA, OllamaProvider, OllamaProviderFactory, PROVIDER_OLLAMA } from "@exaix/ai-ollama";
-import { MockProvider, ModelFactory } from "../../src/providers.ts";
+import { OllamaProvider } from "@exaix/ai-ollama";
+import { MockProvider } from "../../src/providers.ts";
 import type { IModelProvider } from "../../src/types.ts";
 import { ConnectionError, ModelProviderError, TimeoutError } from "../../src/providers/common.ts";
-import { type JSONObject, PricingTier } from "@exaix/core";
-import { ProviderRegistry } from "../../src/provider_registry.ts";
-import { setProviderRegistryBootstrap } from "../../src/provider_factory.ts";
-
-function registerOllamaProvider(): void {
-  if (!ProviderRegistry.getSupportedProviders().includes(PROVIDER_OLLAMA)) {
-    ProviderRegistry.registerWithMetadata(PROVIDER_OLLAMA, new OllamaProviderFactory(), {
-      name: OLLAMA_PROVIDER_METADATA.name,
-      description: OLLAMA_PROVIDER_METADATA.description,
-      capabilities: [...OLLAMA_PROVIDER_METADATA.capabilities],
-      costTier: OLLAMA_PROVIDER_METADATA.costTier,
-      pricingTier: PricingTier.LOCAL,
-      strengths: [...OLLAMA_PROVIDER_METADATA.strengths],
-    });
-  }
-}
-
-async function withOllamaProvider<T>(fn: () => Promise<T> | T): Promise<T> {
-  ProviderRegistry.clear();
-  setProviderRegistryBootstrap(registerOllamaProvider);
-
-  try {
-    return await fn();
-  } finally {
-    setProviderRegistryBootstrap(undefined);
-    ProviderRegistry.clear();
-  }
-}
+import type { JSONObject } from "@exaix/core";
 
 // ============================================================================
 // Test 1: MockProvider returns configured response
@@ -176,73 +148,7 @@ Deno.test("OllamaProvider accepts custom baseUrl", async () => {
 });
 
 // ============================================================================
-// Test 3: ModelFactory returns correct provider based on config
-// ============================================================================
-
-Deno.test("ModelFactory creates MockProvider for 'mock' type", async () => {
-  const provider = await ModelFactory.create("mock", { response: "Test" });
-
-  assertExists(provider);
-  assertEquals(provider.id, "mock-provider");
-  // Verify it implements IModelProvider interface
-  assertExists(provider.generate);
-  assertExists(provider.id);
-});
-
-Deno.test("ModelFactory creates OllamaProvider for 'ollama' type", async () => {
-  await withOllamaProvider(async () => {
-    const provider = await ModelFactory.create("ollama", { model: "llama3.2" });
-
-    assertExists(provider);
-    assertStringIncludes(provider.id, "ollama");
-    assertExists(provider.generate);
-  });
-});
-
-Deno.test("ModelFactory is case-insensitive", async () => {
-  const provider1 = await ModelFactory.create("MOCK");
-  const provider2 = await ModelFactory.create("Mock");
-  const provider3 = await ModelFactory.create("mock");
-
-  assertExists(provider1);
-  assertExists(provider2);
-  assertExists(provider3);
-});
-
-Deno.test("ModelFactory handles whitespace in provider type", async () => {
-  await withOllamaProvider(async () => {
-    const provider = await ModelFactory.create("  ollama  ");
-
-    assertExists(provider);
-    assertStringIncludes(provider.id, "ollama");
-  });
-});
-
-Deno.test("ModelFactory throws error for unknown provider type", async () => {
-  try {
-    await ModelFactory.create("unknown-provider");
-    throw new Error("Should have thrown an error");
-  } catch (error) {
-    assertExists(error);
-    assertStringIncludes((error as Error).message, "Unknown provider type");
-    assertStringIncludes((error as Error).message, "unknown-provider");
-  }
-});
-
-Deno.test("ModelFactory passes config to providers", async () => {
-  const customResponse = "Custom mock response";
-  const provider = await ModelFactory.create("mock", {
-    response: customResponse,
-    id: "custom-id",
-  }) as MockProvider;
-
-  assertEquals(provider.id, "custom-id");
-  const result = await provider.generate("test");
-  assertEquals(result.content, customResponse);
-});
-
-// ============================================================================
-// Test 4: Provider handles connection errors gracefully
+// Test 3: Provider handles connection errors gracefully
 // ============================================================================
 
 Deno.test("OllamaProvider throws ConnectionError on network failure", async () => {

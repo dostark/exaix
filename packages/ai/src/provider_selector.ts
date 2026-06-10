@@ -121,6 +121,14 @@ export class ProviderSelector {
    * @throws Error if no suitable provider is found
    */
   async selectProviderForTask(config: Config, taskType: string): Promise<string> {
+    // 1. EXA_LLM_PROVIDER env var takes highest priority (over config file)
+    const exaLlmProvider = Deno.env.get("EXA_LLM_PROVIDER");
+    if (exaLlmProvider) {
+      const envProvider = await this.trySelectEnvProvider(exaLlmProvider);
+      if (envProvider) return envProvider;
+    }
+
+    // 2. config.ai.provider (config file value)
     const envProvider = await this.trySelectEnvProvider(config.ai?.provider);
     if (envProvider) return envProvider;
 

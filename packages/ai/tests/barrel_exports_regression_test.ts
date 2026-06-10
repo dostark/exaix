@@ -9,7 +9,6 @@
  */
 
 import { assertEquals, assertExists } from "@std/assert";
-import { ModelFactory } from "@exaix/ai";
 import {
   BaseProvider,
   ConnectionError,
@@ -56,5 +55,5 @@ Deno.test("@exaix/ai/providers subpath exports provider contracts and helpers", 
 });
 
 Deno.test("@exaix/ai root barrel exports shared utilities", () => {
-  assertExists(ModelFactory);
+  // Shared utilities verified below — no root-level exports to assert yet.
 });

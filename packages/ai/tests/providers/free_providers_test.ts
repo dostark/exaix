@@ -8,36 +8,11 @@
  * correct model mapping and payload formatting for budget-conscious execution.
  */
 
-import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
-import { ModelFactory } from "../../src/providers.ts";
+import { assertEquals, assertExists } from "@std/assert";
 import { OpenAIProvider } from "@exaix/ai-openai";
 import { getTestModel, getTestModelDisplay } from "../helpers/test_model.ts";
-import { isCi } from "@exaix/testing";
 
 import type { JSONObject } from "@exaix/core";
-
-function isCiGuardActive(): boolean {
-  // In CI, the code intentionally prevents accidental paid calls unless
-  // explicitly opted-in.
-  return isCi() && Deno.env.get("EXA_ENABLE_PAID_LLM") !== "1";
-}
-
-Deno.test("ModelFactory creates OpenAIProvider for default test model", async () => {
-  const model = getTestModel();
-  const provider = await ModelFactory.create(model, { apiKey: "test-key", baseUrl: "https://api.test" });
-
-  assertExists(provider);
-
-  if (isCiGuardActive()) {
-    // In CI without opt-in, ModelFactory returns a mock provider.
-    assertStringIncludes(provider.id, "mock-provider");
-    return;
-  }
-
-  // The provider should be an OpenAIProvider with model reflected in id
-  assertStringIncludes(provider.id, `openai-${model}`);
-  assertExists(provider.generate);
-});
 
 Deno.test("OpenAIProvider sends correct payload and returns content for default test model", async () => {
   const model = getTestModel();
@@ -75,18 +50,4 @@ Deno.test("OpenAIProvider sends correct payload and returns content for default 
   } finally {
     globalThis.fetch = originalFetch;
   }
-});
-
-Deno.test("ModelFactory creates provider for 'gpt-5-mini' and 'gpt-4o' types", async () => {
-  const p1 = await ModelFactory.create("gpt-5-mini", { apiKey: "k" });
-  const p2 = await ModelFactory.create("gpt-4o", { apiKey: "k" });
-
-  if (isCiGuardActive()) {
-    assertStringIncludes(p1.id, "mock-provider");
-    assertStringIncludes(p2.id, "mock-provider");
-    return;
-  }
-
-  assertStringIncludes(p1.id, "openai-gpt-5-mini");
-  assertStringIncludes(p2.id, "openai-gpt-4o");
 });

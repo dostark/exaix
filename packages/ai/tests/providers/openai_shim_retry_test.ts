@@ -9,26 +9,13 @@
 
 import { assertEquals, assertExists } from "@std/assert";
 import { DEFAULT_OPENAI_BASE_URL } from "@exaix/ai-openai";
-import { ModelFactory } from "../../src/providers.ts";
+import { OpenAIShim } from "../../src/providers.ts";
 import { getTestModel } from "../helpers/test_model.ts";
-import { isCi } from "@exaix/testing";
-
-function isCiGuardActive(): boolean {
-  return isCi() && Deno.env.get("EXA_ENABLE_PAID_LLM") !== "1";
-}
 
 Deno.test("OpenAIShim retries on 429 and returns content", async () => {
-  // Arrange: Use ModelFactory to create the shim instance
   const model = getTestModel();
-  const provider = await ModelFactory.create(model, { apiKey: "test-key", baseUrl: "https://api.test" });
-
-  if (isCiGuardActive()) {
-    // In CI without opt-in, ModelFactory intentionally returns a mock provider.
-    const res = (await provider.generate("Hello")).content;
-    const ok = res === "CI-protectedmock" || res === "CI-protected mock";
-    assertEquals(ok, true);
-    return;
-  }
+  const apiKey = "test-key";
+  const provider = new OpenAIShim({ apiKey, model, baseUrl: "https://api.test" });
 
   let calls = 0;
   const originalFetch = globalThis.fetch;
@@ -67,7 +54,7 @@ Deno.test({ name: "OpenAIShim: sanity check against real LLM (manual)", ignore: 
   }
 
   const model = getTestModel();
-  const provider = await ModelFactory.create(model, { apiKey, baseUrl: DEFAULT_OPENAI_BASE_URL });
+  const provider = new OpenAIShim({ apiKey, model, baseUrl: DEFAULT_OPENAI_BASE_URL });
 
   try {
     const res = await provider.generate("Sanity check: are you available? Reply with 'ok'.");

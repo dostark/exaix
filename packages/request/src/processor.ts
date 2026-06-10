@@ -45,9 +45,11 @@ import type {
   IRequestAnalyzerService,
   IRequestQualityGateService,
 } from "@exaix/core/types";
+import type { IFlow } from "@exaix/schemas/flow.ts";
 import type { IPortalKnowledge } from "@exaix/schemas/portal_knowledge.ts";
 import { buildPortalContextBlock } from "@exaix/core/func";
 import type { IEventLogger } from "@exaix/core/logger";
+import type { IFlowRunner } from "@exaix/flow";
 import { DomainEventType } from "@exaix/core/events";
 import type { IFlowValidatorService } from "@exaix/core/types";
 import { ProviderFactory, ProviderRegistry } from "@exaix/ai";
@@ -118,6 +120,12 @@ export interface IRequestProcessorConfig {
   onClarificationCreated?: (traceId: string, requestId: string) => Promise<void>;
   /** Optional callback invoked when a clarification wait state should be resolved. */
   onClarificationResolved?: (traceId: string) => Promise<void>;
+  /**
+   * Optional FlowRunner for executing flow requests.
+   * When set, processFlowRequest delegates to flowRunner.execute()
+   * instead of generating a stub plan.
+   */
+  flowRunner?: IFlowRunner;
 }
 
 // ============================================================================
@@ -141,6 +149,7 @@ export class RequestProcessor {
   private readonly portalKnowledgeService?: IPortalKnowledgeService;
   private readonly sessionMemory?: SessionMemoryService;
   private readonly testProvider?: IModelProvider;
+  private readonly flowRunner?: IFlowRunner;
   private readonly milestoneEmitter?: IMilestoneEmitter;
 
   constructor(private readonly processorConfig: IRequestProcessorConfig) {
@@ -192,6 +201,7 @@ export class RequestProcessor {
 
     const _flowsDir = join(this.config.system.root, this.config.paths.flows);
     this.flowValidator = ctx.flowValidator ?? null;
+    this.flowRunner = processorConfig.flowRunner;
 
     this.requestParser = new RequestParser(this.logger);
     this.statusManager = new StatusManager(this.logger);
@@ -590,6 +600,41 @@ export class RequestProcessor {
       }
     }
 
+    // If a FlowRunner is configured, delegate to real multi-agent execution
+    if (this.flowRunner) {
+      const flow = { id: frontmatter.flow } as IFlow;
+      const body = await Deno.readTextFile(filePath);
+      const flowResult = await this.flowRunner.execute(flow, {
+        userPrompt: body,
+        traceId,
+        requestId,
+        portal: frontmatter.portal,
+      });
+
+      const result = {
+        thought: `Flow ${frontmatter.flow} executed (${flowResult.duration}ms)`,
+        content: flowResult.output,
+        raw: flowResult.output,
+      };
+
+      const metadata: IRequestMetadata = {
+        requestId,
+        traceId,
+        createdAt: new Date(frontmatter.created),
+        contextFiles: [],
+        contextWarnings: [],
+        model: frontmatter.model,
+        portal: frontmatter.portal,
+        targetBranch: frontmatter.target_branch,
+        requestAnalysis: analysis,
+      };
+
+      return await this.writePlanAndReturnPath(result, metadata, filePath, traceLogger, {
+        flow: frontmatter.flow ?? null,
+      });
+    }
+
+    // Fallback: generate a stub plan (legacy path, used when no FlowRunner is configured)
     const planContent = JSON.stringify({
       subject: `Flow Execution: ${frontmatter.flow}`,
       description: `Execute the ${frontmatter.flow} flow`,

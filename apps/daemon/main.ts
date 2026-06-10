@@ -16,7 +16,8 @@ import { ProviderFactory } from "@exaix/ai";
 import { RequestProcessor } from "@exaix/request";
 import { ReviewRegistry } from "@exaix/core/artifact";
 import { EventLogger, EventLoggerStructuredOutput } from "@exaix/core/logger";
-import { ExecutionLoop } from "@exaix/execution";
+import { AgentRunner, ExecutionLoop } from "@exaix/execution";
+import { AgentExecutorAdapter, FlowRunner, type IFlowEventLogger, type IFlowEventPayload } from "@exaix/flow";
 import {
   initializeMemoryAutoApprovalMaintenance,
   MemoryAutoApprovalService,
@@ -207,6 +208,23 @@ if (import.meta.main) {
     // Initialize wait state storage path for clarification lifecycle
     const waitStatesRoot = join(config.system.root, config.paths.workspace, config.paths.waitStates ?? "WaitStates");
 
+    // Create flow event logger adapter (EventLogger → IFlowEventLogger)
+    const flowLogger: IFlowEventLogger = {
+      log: <TEvent extends string>(event: TEvent, payload: IFlowEventPayload<TEvent>): void => {
+        logger.info(event, "flow-runner", payload as Record<string, string | number | boolean | null | undefined>);
+      },
+    };
+
+    // Create FlowRunner for multi-agent flow execution
+    const blueprintsPath = join(config.system.root, config.paths.blueprints, DEFAULT_IDENTITIES_PATH);
+    const agentRunner = new AgentRunner(llmProvider);
+    const agentExecutorAdapter = new AgentExecutorAdapter(agentRunner, blueprintsPath);
+    const flowRunner = new FlowRunner({
+      agentExecutor: agentExecutorAdapter,
+      config,
+      eventLogger: flowLogger,
+    });
+
     // Initialize Request Processor
     const requestProcessor = new RequestProcessor({
       workspacePath: join(config.system.root, config.paths.workspace),
@@ -215,6 +233,7 @@ if (import.meta.main) {
       includeReasoning: true,
       context, // Support unified DI
       sessionMemory,
+      flowRunner,
       onClarificationCreated: async (traceId: string, _requestId: string) => {
         const waitStateId = crypto.randomUUID();
         const resumeToken = crypto.randomUUID();

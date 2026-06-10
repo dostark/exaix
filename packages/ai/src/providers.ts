@@ -6,8 +6,7 @@
  * @related-files [packages/ai/src/provider_registry.ts, packages/ai/src/factories/abstract_provider_factory.ts]
  */
 
-import { ProviderRegistry } from "./provider_registry.ts";
-import type { IModelOptions, IModelProvider, IResolvedProviderOptions } from "./types.ts";
+import type { IModelOptions, IModelProvider } from "./types.ts";
 import type { IGenerateResult } from "./providers/common.ts";
 import {
   createOpenAIChatCompletionsRequestInit,
@@ -17,10 +16,7 @@ import {
   tokenMapperOpenAI,
 } from "./provider_common_utils.ts";
 
-import { ensureProviderRegistryInitialized } from "./provider_factory.ts";
 import { DEFAULT_AI_TIMEOUT_MS, DEFAULT_MOCK_MODEL, DEFAULT_MOCK_PROVIDER_ID, MOCK_DELAY_MS } from "@exaix/ai";
-
-import { type MockStrategy, ProviderType } from "@exaix/core";
 import { ModelProviderError } from "./providers/common.ts";
 
 /**
@@ -80,22 +76,11 @@ export class MockProvider implements IModelProvider {
 // ============================================================================
 
 /**
- * Safe environment accessor that returns undefined if env access is not permitted in test environments.
- */
-function safeGetEnv(key: string): string | undefined {
-  try {
-    return Deno.env.get(key);
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Minimal OpenAI-compatible shim used by the factory to create quick model-specific adapters
+ * Minimal OpenAI-compatible shim used to create quick model-specific adapters
  * without importing the full `OpenAIProvider` implementation (avoids circular imports).
  */
 
-class OpenAIShim implements IModelProvider {
+export class OpenAIShim implements IModelProvider {
   public readonly id: string;
   private readonly apiKey: string;
   private readonly model: string;
@@ -144,82 +129,5 @@ class OpenAIShim implements IModelProvider {
       provider: "openai-shim",
       cost_usd: 0,
     };
-  }
-}
-
-/**
- * Factory for creating model provider instances based on configuration.
- *
- * @deprecated Use {@link ProviderFactory} instead. ModelFactory bypasses
- * `EXA_LLM_PROVIDER`, `EXA_LLM_MODEL`, and `EXA_LLM_BASE_URL` env vars,
- * relying on a flat `IProviderConfig` that doesn't participate in the
- * standard provider resolution chain. The only remaining consumer was
- * `LlmClient`, which now delegates to `ProviderFactory.createByName()`.
- * New callers should use `ProviderFactory.createByName()` or
- * `ProviderFactory.create()` directly.
- */
-export class ModelFactory {
-  /**
-   * Create a model provider instance.
-   * @param providerType Type of provider ("mock", "ollama", etc.)
-   * @param config Provider-specific configuration
-   * @returns An instance implementing IModelProvider
-   */
-  static async create(
-    providerType: string,
-    config?: IProviderConfig,
-  ): Promise<IModelProvider> {
-    const normalizedType = providerType.toLowerCase().trim();
-
-    // Initialize registry if needed
-    if (ProviderRegistry.getSupportedProviders().length === 0) {
-      ensureProviderRegistryInitialized();
-    }
-
-    // Check if this is a registered provider type
-    if (ProviderRegistry.getSupportedProviders().includes(normalizedType)) {
-      // Use registry-based factory creation
-      const factory = ProviderRegistry.getFactory(normalizedType);
-      if (factory) {
-        const options: IResolvedProviderOptions = {
-          provider: normalizedType as ProviderType,
-          model: (config?.model as string) ?? "default-model",
-          baseUrl: config?.baseUrl as string,
-          timeoutMs: (config?.timeoutMs as number) ?? DEFAULT_AI_TIMEOUT_MS,
-          apiKey: config?.apiKey as string,
-          id: (config?.id as string) ?? (normalizedType === ProviderType.MOCK ? "mock-provider" : undefined),
-          mockStrategy: (config?.mockStrategy ?? config?.strategy ?? (config?.response ? "scripted" : undefined)) as
-            | MockStrategy
-            | undefined,
-          mockFixturesDir: config?.mockFixturesDir as string,
-          // Support 'response' for backward compatibility with tests
-          responses: config?.response ? [config.response as string] : undefined,
-        };
-        return await factory.create(options);
-      }
-    }
-
-    // Handle convenience aliases for OpenAI-compatible models
-    if (normalizedType.startsWith("gpt-")) {
-      // In CI, prevent accidental calls to paid endpoints unless explicitly opted-in
-      if (safeGetEnv("CI") && safeGetEnv("EXA_ENABLE_PAID_LLM") !== "1") {
-        return new MockProvider("CI-protected mock", (config?.id as string) ?? "mock-provider");
-      }
-
-      return new OpenAIShim({
-        apiKey: config?.apiKey as string ?? "",
-        // Use the original providerType (preserve exact model id) when contacting the API
-        model: providerType,
-        baseUrl: config?.baseUrl as string | undefined,
-        id: (config?.id as string) ?? `openai-${providerType}`,
-      });
-    }
-
-    // If we reach here, the provider type is unknown
-    throw new Error(
-      `Unknown provider type: '${providerType}'. Supported types: ${
-        ProviderRegistry.getSupportedProviders().join(", ")
-      }`,
-    );
   }
 }

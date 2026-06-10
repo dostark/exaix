@@ -174,6 +174,13 @@ export interface IFlowRunnerConfig {
   checkpointService?: IFlowCheckpointService;
   /** Optional wait-state service for durable approval/pause gates. No-op when omitted. */
   waitStateService?: IWaitStateService;
+  /**
+   * Model preset name for dynamic steps (e.g. "small", "medium", "large").
+   * When omitted, LlmClient defaults to "default" (models.default).
+   * Set this to match the preset chosen by ProviderSelector for consistency
+   * between declared and dynamic step provider resolution.
+   */
+  dynamicModel?: string;
 }
 
 /**
@@ -772,7 +779,7 @@ export class FlowRunner implements IFlowRunner {
         ? new McpClient(context, dynamicHandlers)
         : new McpClient(context, mcpHandlers!);
       this.mcpClient = mcpClient;
-      const llmClient = new LlmClient(config);
+      const llmClient = new LlmClient(config, undefined, this.options.dynamicModel);
       const confirmationTimeoutMs = (config.tools?.confirmation_timeout_s ?? DEFAULT_TOOL_CONFIRMATION_TIMEOUT_S) *
         1000;
       const confirmationInterceptor = context.notificationService
