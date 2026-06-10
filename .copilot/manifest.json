@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-10T14:30:17.107Z",
+  "generated_at": "2026-06-10T15:47:49.162Z",
   "docs": [
     {
       "path": ".copilot/prompts/infra.prompt.md",
@@ -159,6 +159,27 @@
       "short_summary": "",
       "chunks": [
         ".copilot/chunks/refactor-check-magic.prompt.md.chunk0.txt"
+      ]
+    },
+    {
+      "path": ".copilot/planning/phase-109-wire-flowrunner.md",
+      "agent": "senior-coder",
+      "scope": "dev",
+      "title": "Phase 109: Wire FlowRunner into production execution pipeline",
+      "short_summary": "Connect the existing FlowRunner orchestrator to the daemon's request processing path, replacing the current stub-plan dead end with real multi-agent flow execution.",
+      "version": "1.0",
+      "topics": [
+        "planning",
+        "architecture",
+        "tdd"
+      ],
+      "chunks": [
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk0.txt",
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk1.txt",
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk2.txt",
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk3.txt",
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk4.txt",
+        ".copilot/chunks/phase-109-wire-flowrunner.md.chunk5.txt"
       ]
     },
     {
