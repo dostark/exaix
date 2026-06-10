@@ -8,7 +8,7 @@
  * This is a published support API surface — never import from packages/cli/tests/.
  */
 
-import { ConfigSchema } from "@exaix/core/config";
+import { ConfigSchema } from "@exaix/schemas/config.ts";
 import type { IConfigService, IDatabaseService, IDisplayService, IGitService } from "@exaix/core/types";
 import type { IModelProvider } from "@exaix/ai";
 import type { ICliApplicationContext } from "@exaix/cli/types/cli_context.ts";

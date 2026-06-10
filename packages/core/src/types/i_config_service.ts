@@ -6,7 +6,7 @@
  * @related-files ["packages/schemas/src/config.ts"]
  */
 
-import type { Config } from "../config/config_schema.ts";
+import type { Config } from "@exaix/schemas/config.ts";
 import type { PortalExecutionStrategy, PortalOperation } from "@exaix/core";
 
 export interface IPortalConfigEntry {

@@ -1,16 +1,15 @@
 /**
  * @module ConfigProviderOptionsTest
  * @path packages/schemas/tests/config_provider_options_test.ts
- * @related-files ["packages/schemas/src/config.ts", "packages/core/src/config/config_schema.ts"]
+ * @related-files ["packages/schemas/src/config.ts"]
  * @architectural-layer Config
  * @description Phase 80 Step 5 — validates the ai_vertex / ai_openrouter config blocks
- * (defaults, overrides, invalid-URL rejection) and asserts the schemas and core config
- * schema files agree on them (parity guard against drift between the two definitions).
+ * (defaults, overrides, invalid-URL rejection). The former core/schemas parity guard
+ * is obsolete: @exaix/schemas/config.ts is the single ConfigSchema definition.
  */
 
 import { assertEquals } from "@std/assert";
 import { ConfigSchema } from "@exaix/schemas";
-import { ConfigSchema as CoreConfigSchema } from "@exaix/core/config";
 import { ExaPathDefaults, LogLevel } from "@exaix/core";
 
 interface IBaseConfig {
@@ -54,18 +53,15 @@ Deno.test("[ConfigSchema] rejects a non-URL ai_openrouter.site_url", () => {
   assertEquals(result.success, false);
 });
 
-Deno.test("[ConfigSchema] schemas and core config files agree on the new provider options (parity)", () => {
-  const input = {
+Deno.test("[ConfigSchema] accepts the combined ai_vertex / ai_openrouter override shape", () => {
+  const result = ConfigSchema.safeParse({
     ...baseConfig(),
     ai_vertex: { region: "asia-southeast1", service_account_env: "SA_ENV" },
     ai_openrouter: { site_name: "X", site_url: "https://x.io", api_key_env: "K" },
-  };
-  const a = ConfigSchema.safeParse(input);
-  const b = CoreConfigSchema.safeParse(input);
-  assertEquals(a.success, true);
-  assertEquals(b.success, true);
-  if (a.success && b.success) {
-    assertEquals(a.data.ai_vertex, b.data.ai_vertex);
-    assertEquals(a.data.ai_openrouter, b.data.ai_openrouter);
+  });
+  assertEquals(result.success, true);
+  if (result.success) {
+    assertEquals(result.data.ai_vertex.region, "asia-southeast1");
+    assertEquals(result.data.ai_openrouter.api_key_env, "K");
   }
 });
