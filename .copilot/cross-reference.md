@@ -13,6 +13,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 | Task Type | Primary Doc | Secondary Docs |
 | --- | --- | --- |
 | .copilot/prompts/ — Chat Routing Wrappers | [prompts/README.md](prompts/README.md) | |
+| Phase 109: Wire FlowRunner into production execution pipeline | [planning/phase-109-wire-flowrunner.md](planning/phase-109-wire-flowrunner.md) | |
 | .copilot/ — AI Agent Knowledge Base | [README.md](README.md) | |
 | Agent Thought Section Standardization | [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md) | |
 | Exaix Test Development Guidelines | [guidelines/testing.md](guidelines/testing.md) | |
@@ -62,7 +63,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 
 - **`agent-tools`** → [../TOOLS.md](../TOOLS.md)
 - **`agents`** → [guidelines/agent-thought-standardization.md](guidelines/agent-thought-standardization.md), [guidelines/self-improvement.md](guidelines/self-improvement.md), [guidelines/agent-content-schema.md](guidelines/agent-content-schema.md)
-- **`architecture`** → [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`architecture`** → [planning/phase-109-wire-flowrunner.md](planning/phase-109-wire-flowrunner.md), [guidelines/specification-driven-development.md](guidelines/specification-driven-development.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/explore/SKILL.md](skills/explore/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`architecture-review`** → [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
 - **`audit`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`auth`** → [skills/security/SKILL.md](skills/security/SKILL.md)
@@ -122,7 +123,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`parallel-tool-calls`** → [providers/google.md](providers/google.md)
 - **`path-traversal`** → [skills/security/SKILL.md](skills/security/SKILL.md)
 - **`patterns`** → [guidelines/exaix-development.md](guidelines/exaix-development.md), [guidelines/review-research-improvement.md](guidelines/review-research-improvement.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md)
-- **`planning`** → [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
+- **`planning`** → [planning/phase-109-wire-flowrunner.md](planning/phase-109-wire-flowrunner.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/review-research/SKILL.md](skills/review-research/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md)
 - **`process`** → [guidelines/documentation.md](guidelines/documentation.md)
 - **`prompts`** → [prompts/README.md](prompts/README.md), [providers/claude.md](providers/claude.md), [providers/google.md](providers/google.md), [providers/openai.md](providers/openai.md)
 - **`provider-adaptations`** → [providers/claude.md](providers/claude.md), [providers/google.md](providers/google.md), [providers/openai.md](providers/openai.md)
@@ -154,7 +155,7 @@ topics: ["cross-reference", "workflow", "testing", "agents", "self-improvement"]
 - **`structured-logging`** → [skills/commit/SKILL.md](skills/commit/SKILL.md)
 - **`style`** → [skills/clean-codebase/SKILL.md](skills/clean-codebase/SKILL.md)
 - **`submodule`** → [skills/submodule-workflow/SKILL.md](skills/submodule-workflow/SKILL.md)
-- **`tdd`** → [guidelines/testing.md](guidelines/testing.md), [guidelines/exaix-development.md](guidelines/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md), [providers/claude.md](providers/claude.md)
+- **`tdd`** → [planning/phase-109-wire-flowrunner.md](planning/phase-109-wire-flowrunner.md), [guidelines/testing.md](guidelines/testing.md), [guidelines/exaix-development.md](guidelines/exaix-development.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/package-extraction/SKILL.md](skills/package-extraction/SKILL.md), [skills/fix-bug/SKILL.md](skills/fix-bug/SKILL.md), [skills/plan/SKILL.md](skills/plan/SKILL.md), [skills/post-gap-analysis/SKILL.md](skills/post-gap-analysis/SKILL.md), [skills/refactor-check-magic/SKILL.md](skills/refactor-check-magic/SKILL.md), [skills/security/SKILL.md](skills/security/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/next-steps/SKILL.md](skills/next-steps/SKILL.md), [skills/pre-gap-analysis/SKILL.md](skills/pre-gap-analysis/SKILL.md), [providers/claude.md](providers/claude.md)
 - **`terminology`** → [../GLOSSARY.md](../GLOSSARY.md)
 - **`testing`** → [guidelines/README.md](guidelines/README.md), [skills/coverage/SKILL.md](skills/coverage/SKILL.md), [skills/tdd-workflow/SKILL.md](skills/tdd-workflow/SKILL.md), [skills/review/SKILL.md](skills/review/SKILL.md)
 - **`tests`** → [guidelines/testing.md](guidelines/testing.md)
